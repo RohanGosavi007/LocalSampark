@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment files (NEVER commit credentials)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+database.sqlite
+localsampark.db
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+
+# APK signing artifacts
+*.idsig
+*.apk
+*.aab
+*.keystore
+
+# Expo
+.expo/
+
+# Misc
+*.tgz
+.cache

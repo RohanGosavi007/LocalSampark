@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: localsampark-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: localsampark_user
+      POSTGRES_PASSWORD: YOUR_SECURE_PASSWORD
+      POSTGRES_DB: localsampark
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # ─── Redis Cache ──────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: localsampark-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  # ─── Backend API ──────────────────────────────────
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: localsampark-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./backend/.env.production
+    environment:
+      NODE_ENV: production
+      USE_SQLITE: "false"
+      DB_HOST: postgres
+      REDIS_HOST: redis
+
+volumes:
+  postgres_data:

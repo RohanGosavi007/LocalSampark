@@ -1,0 +1,1220 @@
+# LocalSampark — Production-Ready Transformation Plan v2
+
+> Updated with: **Complete RBAC Role-View System**, **Dedicated Admin Revenue Portal**, **Swiggy/Zomato-style Order Ringing for Shop Owners**, and all original features enhanced.
+
+---
+
+## Table of Contents
+1. [Complete RBAC Role-View System](#1-complete-rbac-role-view-system)
+2. [Admin Revenue Management Portal](#2-admin-revenue-management-portal)
+3. [Shop Owner Order Ringing System](#3-shop-owner-order-ringing-system)
+4. [Phase 1: RBAC Infrastructure (✅ COMPLETED)](#phase-1)
+5. [Phase 2: Role-Specific Dashboards (✅ COMPLETED)](#phase-2)
+6. [Phase 3: Shop Owner Portal (✅ COMPLETED)](#phase-3)
+7. [Phase 4: Complete Order Flow (✅ COMPLETED)](#phase-4)
+8. [Phase 5: Appointment Booking System (✅ COMPLETED)](#phase-5)
+9. [Phase 6: Order Ringing & Notifications (✅ COMPLETED)](#phase-6)
+10. [Phase 7: Admin Revenue Portal (✅ COMPLETED)](#phase-7)
+11. [Phase 8: Enhanced Carpool (✅ COMPLETED)](#phase-8)
+12. [Phase 9: Community & Real Estate (✅ COMPLETED)](#phase-9)
+13. [Phase 10: Production Hardening (✅ COMPLETED)](#phase-10)
+14. [Phase 11: Financial Projections & Final Analytics (✅ COMPLETED)](#phase-11)
+15. [Phase 12: AI Chatbot & Customer Support (✅ COMPLETED)](#phase-12)
+16. [Phase 13: Loyalty Rewards & Gamification Engine (✅ COMPLETED)](#phase-13)
+17. [Phase 14: Local Classifieds & Job Board (✅ COMPLETED)](#phase-14)
+18. [Phase 15: Emergency & SOS Broadcasting Engine (✅ COMPLETED)](#phase-15)
+19. [Phase 16: Local News & Community Polls (✅ COMPLETED)](#phase-16)
+20. [Phase 17: Local Events & Ticketing (✅ COMPLETED)](#phase-17)
+21. [Phase 18: Local Blood Bank & Medical Resources (✅ COMPLETED)](#phase-18)
+22. [Phase 19: Local P2P Equipment Rental (The Community Garage) (✅ COMPLETED)](#phase-19)
+23. [Phase 20: Hyperlocal Delivery Agents (The Last Mile) (✅ COMPLETED)](#phase-20)
+24. [Phase 21: Local Home Chef Network (Tiffin & Cloud Kitchens) (✅ COMPLETED)](#phase-21)
+25. [Phase 22: Local Scrap & Recycling Network (RaddiWala) (✅ COMPLETED)](#phase-22)
+26. [Phase 23: Garage Sale & Real-Time Lost & Found (✅ COMPLETED)](#phase-23)
+27. [Phase 24: Local Micro-Volunteering & Civic Bounties (Shramdaan) (🔜 UP NEXT)](#phase-24)
+28. [Open Questions](#open-questions)
+
+---
+
+<a id="1-complete-rbac-role-view-system"></a>
+## 1. Complete RBAC Role-View System
+
+Every role sees a **completely different application experience** — different dashboard, different navigation items, different features. Admin assigns and approves all roles.
+
+### 1.1 Role Definitions & View Matrix
+
+| # | Role | Who They Are | Web View | Mobile View |
+|---|------|-------------|----------|-------------|
+| 1 | **Visitor** | Unauthenticated browser | Landing page, browse shops, view listings, register/login | Onboarding → Login/Register |
+| 2 | **Resident (User)** | Verified local resident | Full consumer experience: order, community, carpool, wallet, events | Consumer app with bottom tabs: Home, Directory, Community, Wallet, Profile |
+| 3 | **Resident Member** | Society-registered resident | All Resident + Society gate pass, complaints, facility booking, notice board | Resident + Society tab added |
+| 4 | **Society Admin** | Building secretary/chairman | All Resident Member + Manage notices, approve visitors, set maintenance, handle complaints | Resident Member + Society Admin panel |
+| 5 | **Security Guard** | Gate security personnel | Gate-only view: Visitor check-in/out, vehicle log, QR scanner, emergency alert | Simplified single-screen: QR scan + visitor log |
+| 6 | **Shop Owner** | Registered business owner | **Shop Dashboard**: Products, Orders, Appointments, Analytics, Profile, Promotions | **Shop Owner App**: Order ringing, product management, earnings |
+| 7 | **Service Provider** | Freelance skilled worker | **Service Dashboard**: Booking requests, availability calendar, earnings, reviews | **Service App**: Accept/reject bookings, earnings tracker |
+| 8 | **Delivery Agent** | Delivery runner | **Delivery Dashboard**: Available orders, active delivery, earnings, route map | **Delivery App**: Accept orders, navigate, mark delivered |
+| 9 | **Field Agent** | On-ground ops executive | **Field Dashboard**: Shop onboarding targets, lead tracking, territory map | **Field App**: Onboard shops, scan docs, submit leads |
+| 10 | **Area Agent** | Multi-zone supervisor | **Area Dashboard**: Agent performance, zone analytics, escalations | **Area App**: Monitor agents, approve onboardings |
+| 11 | **Territory Admin** | Franchise partner | **Franchise Dashboard**: Revenue, commission, agents, shops, territory map | **Franchise App**: Revenue tracking, agent management |
+| 12 | **Moderator** | Content moderator | **Mod Dashboard**: Flagged posts, reported users, content queue | **Mod App**: Quick approve/reject content |
+| 13 | **Super Admin** | Platform owner (You) | **God-Mode Admin Panel**: Everything + Revenue + Config + Analytics | Admin panel (web-only, responsive) |
+
+### 1.2 Role-Specific Navigation (Mobile)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ RESIDENT / USER                                             │
+│ Bottom Tabs: 🏠 Home | 🏪 Directory | 💬 Community |       │
+│              👛 Wallet | 👤 Profile                         │
+│ Modules: Orders, Carpool, Events, Marketplace, Properties,  │
+│          Services, Subscriptions, Pets, Health, Premium      │
+├─────────────────────────────────────────────────────────────┤
+│ SHOP OWNER                                                  │
+│ Bottom Tabs: 📊 Dashboard | 📦 Orders | 📋 Products |      │
+│              📅 Appointments | 👤 Profile                   │
+│ Features: Real-time order ringing, product CRUD, analytics,  │
+│           promotions, reviews, earnings withdrawal           │
+├─────────────────────────────────────────────────────────────┤
+│ DELIVERY AGENT                                              │
+│ Bottom Tabs: 🏠 Home | 📦 Available | 🗺️ Active |          │
+│              💰 Earnings | 👤 Profile                       │
+│ Features: Accept/reject orders, GPS navigation, OTP verify,  │
+│           daily/weekly earnings, payout history              │
+├─────────────────────────────────────────────────────────────┤
+│ SERVICE PROVIDER                                            │
+│ Bottom Tabs: 🏠 Home | 📅 Bookings | ⭐ Reviews |          │
+│              💰 Earnings | 👤 Profile                       │
+│ Features: Accept/reject bookings, set availability,          │
+│           portfolio gallery, skill management                │
+├─────────────────────────────────────────────────────────────┤
+│ SECURITY GUARD                                              │
+│ Single Screen: 📷 QR Scanner + Visitor Log                  │
+│ Features: Scan visitor QR, manual entry, vehicle log,        │
+│           emergency alert button, shift handover             │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD AGENT                                                 │
+│ Bottom Tabs: 🏠 Home | 🏪 Onboard | 📊 Leads |            │
+│              💰 Earnings | 👤 Profile                       │
+│ Features: Shop registration form, document scanner,          │
+│           lead submission, territory map, daily targets       │
+├─────────────────────────────────────────────────────────────┤
+│ FRANCHISE / TERRITORY ADMIN                                 │
+│ Bottom Tabs: 📊 Dashboard | 🏪 Shops | 👥 Agents |         │
+│              💰 Revenue | 👤 Profile                        │
+│ Features: Territory analytics, commission tracking,           │
+│           agent management, shop performance                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1.3 Role-Specific Navigation (Web)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ RESIDENT — Header: Home | Shops | Community | Carpool |     │
+│            Events | Properties | Wallet | Profile           │
+├─────────────────────────────────────────────────────────────┤
+│ SHOP OWNER — Sidebar: Dashboard | Products | Orders |       │
+│              Appointments | Promotions | Analytics |         │
+│              Reviews | Earnings | Settings                   │
+├─────────────────────────────────────────────────────────────┤
+│ DELIVERY AGENT — Sidebar: Available Orders | Active Run |   │
+│                  Earnings | History | Profile                │
+├─────────────────────────────────────────────────────────────┤
+│ SERVICE PROVIDER — Sidebar: Dashboard | Bookings |          │
+│                    Calendar | Portfolio | Earnings | Reviews │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD AGENT — Sidebar: Dashboard | Onboard Shop |           │
+│               Leads | Territory Map | Earnings              │
+├─────────────────────────────────────────────────────────────┤
+│ FRANCHISE — Sidebar: Dashboard | Territory | Shops |        │
+│             Agents | Revenue | Commission | Settings        │
+├─────────────────────────────────────────────────────────────┤
+│ SUPER ADMIN — Full Admin Panel (existing + new tabs)        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1.4 Admin Role Management System
+
+Admin gets a dedicated **User Roles & Permissions** panel:
+
+- **Role Assignment**: Admin searches user by phone/name → assigns role from dropdown → user's app view changes instantly
+- **Role Approval Queue**: When user requests role upgrade (e.g., "I want to become a delivery agent"), it goes to admin approval queue
+- **Multi-Role Support**: One user can have multiple roles (e.g., Resident + Shop Owner) with a role switcher in the app
+- **Role-Specific Onboarding**: When admin assigns "Delivery Agent" role, the user sees a delivery-specific onboarding flow (upload documents, vehicle details, etc.)
+- **Permission Override**: Admin can grant/revoke specific module access per user (e.g., block a user from marketplace but keep everything else)
+- **Bulk Role Assignment**: Admin can assign roles in bulk (e.g., assign "Resident Member" to all users from a specific society)
+
+---
+
+<a id="2-admin-revenue-management-portal"></a>
+## 2. Admin Revenue Management Portal
+
+> [!IMPORTANT]
+> A **completely separate, dedicated page** only accessible to Super Admin role. This is the nerve center for all revenue configuration.
+
+### 2.1 Revenue Admin Page Structure
+
+#### [NEW] `apps/admin/src/app/revenue/page.js` — Dedicated Revenue Portal
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ 💰 REVENUE MANAGEMENT CENTER                                │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│                                                              │
+│ Tabs:                                                        │
+│ [Overview] [Fee Config] [Commissions] [Promo Codes]          │
+│ [Ad Campaigns] [Subscriptions] [Payouts] [Reports]           │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 1: OVERVIEW                                              │
+│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐            │
+│ │ Today   │ │ This    │ │ This    │ │ Total   │            │
+│ │₹12,450  │ │ Week    │ │ Month   │ │ GMV     │            │
+│ │ Revenue │ │₹84,200  │ │₹4.2L   │ │₹28.5L  │            │
+│ └─────────┘ └─────────┘ └─────────┘ └─────────┘            │
+│                                                              │
+│ Revenue Breakdown Chart (by stream):                         │
+│ ████████████ Order Fees      ₹15,000  (36%)                 │
+│ ██████████   Delivery Fees   ₹40,000  (25%)                 │
+│ ████████     Premium Subs    ₹99,500  (24%)                 │
+│ ██████       Featured Shops  ₹19,950  (5%)                  │
+│ ████         Ad Campaigns    ₹19,980  (5%)                  │
+│ ███          Others          ₹25,970  (5%)                  │
+│                                                              │
+│ Zone-wise Revenue Table:                                     │
+│ | Zone       | Orders | Revenue | Growth |                   │
+│ | Dhanori    | 1,240  | ₹2.1L  | +18%   |                   │
+│ | Viman Nagar| 890    | ₹1.5L  | +12%   |                   │
+│ | Kharadi    | 420    | ₹0.6L  | +34%   |                   │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 2: FEE CONFIGURATION                                    │
+│                                                              │
+│ ┌─ Order Convenience Fee ─────────────────────────────────┐  │
+│ │ Global Default: ₹[  5  ] per order                      │  │
+│ │                                                          │  │
+│ │ Category-wise Override:                                  │  │
+│ │ Grocery & Supermarkets    ₹[  5  ] [Active ✅]          │  │
+│ │ Restaurants & Cafes       ₹[ 10  ] [Active ✅]          │  │
+│ │ Pharmacy & Healthcare     ₹[  3  ] [Active ✅]          │  │
+│ │ Salon, Beauty & Spa       ₹[ 15  ] [Active ✅]          │  │
+│ │ Electronics               ₹[ 20  ] [Active ✅]          │  │
+│ │ + Add Category Override                                  │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│                                                              │
+│ ┌─ Delivery Fee Formula ──────────────────────────────────┐  │
+│ │ Base Fee:         ₹[ 20 ]                               │  │
+│ │ Per KM Rate:      ₹[  5 ] /km                           │  │
+│ │ Free Delivery Above: ₹[ 500 ] order value               │  │
+│ │ Surge Multiplier:                                        │  │
+│ │   Peak Hours (12-2PM, 7-9PM):  [ 1.5x ]                │  │
+│ │   Rain/Bad Weather:            [ 2.0x ]                 │  │
+│ │   Late Night (11PM-6AM):       [ 1.8x ]                 │  │
+│ │ Max Delivery Radius:  [ 8 ] km                          │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│                                                              │
+│ ┌─ Platform Fees ─────────────────────────────────────────┐  │
+│ │ Carpool Booking Fee:     ₹[ 10 ] per seat               │  │
+│ │ Event Ticket Commission: [  5 ]%                         │  │
+│ │ Property Featured Spot:  ₹[ 199 ] /month                │  │
+│ │ Marketplace Listing Fee: ₹[  0 ] (currently free)       │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│                                                              │
+│ [💾 Save All Changes]  [↩️ Reset to Defaults]               │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 3: COMMISSION SPLITS                                     │
+│                                                              │
+│ Revenue Split Formula (must total 100%):                     │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ Platform Share (You):  ████████████████████░░░ [ 50 ]%   │ │
+│ │ Franchise Share:       ██████████░░░░░░░░░░░░░ [ 25 ]%   │ │
+│ │ Delivery Agent Share:  ██████░░░░░░░░░░░░░░░░░ [ 15 ]%   │ │
+│ │ Reserve/Reward Pool:   ████░░░░░░░░░░░░░░░░░░░ [ 10 ]%   │ │
+│ │                                          Total: 100% ✅  │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ Per-Territory Override:                                       │
+│ | Territory  | Platform | Franchise | Agent | Reserve |      │
+│ | Dhanori    | 50%      | 25%       | 15%   | 10%     | ✏️  │
+│ | Kharadi    | 45%      | 30%       | 15%   | 10%     | ✏️  │
+│ | + Custom Split for New Territory                     |     │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 4: PROMO CODE MANAGER                                    │
+│                                                              │
+│ [+ Create New Promo Code]                                    │
+│                                                              │
+│ Active Promos:                                               │
+│ | Code       | Type | Value  | Min Order | Used | Limit |   │
+│ | WELCOME50  | Flat | ₹50   | ₹200     | 342  | 1000  | ✏️│
+│ | DHANORI20  | %    | 20%   | ₹100     | 128  | 500   | ✏️│
+│ | FIRST10    | %    | 10%   | ₹0       | 891  | ∞     | ✏️│
+│ | CARPOOL25  | Flat | ₹25   | ₹0       | 45   | 200   | ✏️│
+│                                                              │
+│ Create Promo Form:                                           │
+│ Code: [________] Type: [Flat/Percentage]                     │
+│ Value: [___] Min Order: [___] Max Discount: [___]            │
+│ Valid From: [date] Valid Until: [date]                        │
+│ Usage Limit: [___] Per User Limit: [___]                     │
+│ Applicable Categories: [multi-select]                        │
+│ Applicable Zones: [multi-select]                             │
+│ [Create Promo Code]                                          │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 5: AD CAMPAIGN MANAGER                                   │
+│                                                              │
+│ Pending Approval:                                            │
+│ | Shop              | Type    | Budget | Duration | Action | │
+│ | Sharma Grocery     | Banner  | ₹999  | 7 days   | ✅ ❌  │
+│ | Pune Pharmacy      | Featured| ₹499  | 14 days  | ✅ ❌  │
+│                                                              │
+│ Active Campaigns:                                            │
+│ | Shop           | Impressions | Clicks | CTR  | Spent |    │
+│ | Golden Bakery  | 12,450      | 342    | 2.7% | ₹680 |    │
+│                                                              │
+│ Ad Pricing Config:                                           │
+│ Banner Ad CPM: ₹[ 50 ]  Featured Listing: ₹[ 399 ]/week    │
+│ Sponsored Post: ₹[ 199 ]  Push Notification Ad: ₹[ 999 ]   │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 6: SUBSCRIPTION MANAGEMENT (SamparkPlus)                 │
+│                                                              │
+│ Plan Config:                                                 │
+│ Monthly Price: ₹[ 199 ]   Annual Price: ₹[ 1,999 ]          │
+│ Trial Period: [ 7 ] days                                     │
+│                                                              │
+│ Included Benefits (toggle on/off):                           │
+│ [✅] Zero convenience fees    [✅] Free delivery ₹500+       │
+│ [✅] Premium verified badge   [✅] Priority 24/7 support     │
+│ [✅] Exclusive flash deals    [✅] Early event access         │
+│ [  ] Free carpool rides       [  ] Document vault 10GB       │
+│                                                              │
+│ Active Subscribers: 487 | MRR: ₹96,913 | Churn: 3.2%       │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 7: PAYOUTS                                               │
+│                                                              │
+│ Pending Payouts:                                             │
+│ | Recipient        | Role      | Amount  | Action          | │
+│ | Sunil Deshmukh   | Franchise | ₹42,600 | [Process] [Hold]│ │
+│ | Amol Kulkarni     | Runner   | ₹9,200  | [Process] [Hold]│ │
+│ | Ramesh Shinde     | Service  | ₹3,400  | [Process] [Hold]│ │
+│                                                              │
+│ Payout Schedule: [Weekly ▾]  Min Threshold: ₹[ 500 ]        │
+│ Payment Method: [Bank Transfer ▾]                            │
+├──────────────────────────────────────────────────────────────┤
+│ TAB 8: REPORTS & EXPORT                                      │
+│                                                              │
+│ Generate Report:                                             │
+│ Type: [Revenue Summary ▾]  Period: [This Month ▾]            │
+│ Zone: [All Zones ▾]  Format: [PDF ▾]                         │
+│ [📥 Generate & Download]                                     │
+│                                                              │
+│ Available Reports:                                           │
+│ • Revenue Summary (daily/weekly/monthly)                     │
+│ • Transaction Ledger (all wallet movements)                  │
+│ • Franchise Commission Report                                │
+│ • Delivery Agent Earnings Report                             │
+│ • Tax Report (GST-ready)                                     │
+│ • User Growth Report                                         │
+│ • Shop Performance Report                                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Revenue Admin Database
+
+#### [NEW] `backend/src/migrations/006_revenue_admin.sql`
+
+```sql
+-- Admin-configurable platform fees
+CREATE TABLE platform_fees (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  fee_key VARCHAR(80) UNIQUE NOT NULL,
+  fee_label VARCHAR(200) NOT NULL,
+  fee_type VARCHAR(20) NOT NULL, -- 'fixed', 'percentage', 'formula'
+  amount DECIMAL(10,2) DEFAULT 0,
+  percentage DECIMAL(5,2) DEFAULT 0,
+  formula JSONB, -- { "base": 20, "per_km": 5, "free_above": 500 }
+  category_overrides JSONB DEFAULT '{}',
+  zone_overrides JSONB DEFAULT '{}',
+  is_active BOOLEAN DEFAULT TRUE,
+  updated_by UUID REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Revenue split configuration per territory
+CREATE TABLE revenue_splits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  territory_id UUID REFERENCES franchise_partners(id),
+  territory_name VARCHAR(100),
+  platform_share DECIMAL(5,2) DEFAULT 50.00,
+  franchise_share DECIMAL(5,2) DEFAULT 25.00,
+  agent_share DECIMAL(5,2) DEFAULT 15.00,
+  reserve_share DECIMAL(5,2) DEFAULT 10.00,
+  is_default BOOLEAN DEFAULT FALSE,
+  updated_by UUID REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Promo codes
+CREATE TABLE promo_codes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  code VARCHAR(20) UNIQUE NOT NULL,
+  discount_type VARCHAR(10) NOT NULL, -- 'flat', 'percentage'
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_order_amount DECIMAL(10,2) DEFAULT 0,
+  max_discount DECIMAL(10,2),
+  usage_limit INT,
+  per_user_limit INT DEFAULT 1,
+  used_count INT DEFAULT 0,
+  valid_from TIMESTAMPTZ,
+  valid_until TIMESTAMPTZ,
+  applicable_categories JSONB DEFAULT '[]',
+  applicable_zones JSONB DEFAULT '[]',
+  created_by UUID REFERENCES users(id),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Payout configuration
+CREATE TABLE payout_config (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  role VARCHAR(30) NOT NULL, -- 'delivery_agent', 'franchise', 'service_provider'
+  payout_schedule VARCHAR(20) DEFAULT 'weekly', -- 'daily', 'weekly', 'biweekly', 'monthly'
+  min_threshold DECIMAL(10,2) DEFAULT 500,
+  payment_method VARCHAR(30) DEFAULT 'bank_transfer', -- 'bank_transfer', 'upi', 'wallet'
+  updated_by UUID REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Surge pricing rules
+CREATE TABLE surge_rules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  rule_name VARCHAR(100) NOT NULL,
+  condition_type VARCHAR(30), -- 'time_range', 'weather', 'demand'
+  condition_params JSONB, -- {"start": "19:00", "end": "21:00"}
+  multiplier DECIMAL(3,1) DEFAULT 1.0,
+  is_active BOOLEAN DEFAULT TRUE,
+  updated_by UUID REFERENCES users(id)
+);
+```
+
+---
+
+<a id="3-shop-owner-order-ringing-system"></a>
+## 3. Shop Owner Order Ringing System (Swiggy/Zomato Style)
+
+> [!IMPORTANT]
+> When a new order or appointment is placed, the shop owner's mobile phone must **ring loudly and continuously** with a distinct order sound — exactly like Swiggy/Zomato merchant apps. The ring continues until the shop owner accepts or declines.
+
+### 3.1 Order Ringing Flow
+
+```
+Customer places order
+       │
+       ▼
+Backend creates order (status: 'pending')
+       │
+       ▼
+Socket.io emits 'order:new' to shop owner's device
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│  📱 SHOP OWNER'S PHONE                  │
+│                                          │
+│  🔔🔔🔔 LOUD RINGING SOUND 🔔🔔🔔      │
+│  (Continuous loop, max volume)           │
+│  + Strong vibration pattern              │
+│  + Wake lock (screen turns on)           │
+│  + Notification even if app is closed    │
+│                                          │
+│  ┌────────────────────────────────────┐  │
+│  │  🆕 NEW ORDER #LS-2045            │  │
+│  │                                    │  │
+│  │  Customer: Rohan Patil             │  │
+│  │  Items: Milk ×2, Bread ×1, Eggs   │  │
+│  │  Total: ₹188                       │  │
+│  │  Mode: 🏠 Home Delivery            │  │
+│  │  Address: B-204, Pride Aashiyana   │  │
+│  │  Distance: 1.2 km                  │  │
+│  │                                    │  │
+│  │  ⏱️ Auto-decline in: 00:45         │  │
+│  │                                    │  │
+│  │  ┌─────────┐    ┌─────────────┐   │  │
+│  │  │ ❌ DECLINE│    │ ✅ ACCEPT    │   │  │
+│  │  └─────────┘    └─────────────┘   │  │
+│  └────────────────────────────────────┘  │
+│                                          │
+│  Same screen for APPOINTMENTS:           │
+│  ┌────────────────────────────────────┐  │
+│  │  📅 NEW APPOINTMENT               │  │
+│  │  Customer: Priya Sharma            │  │
+│  │  Service: Haircut + Facial         │  │
+│  │  Date: Tomorrow, 3:00 PM          │  │
+│  │  Staff: Meera (requested)          │  │
+│  │  Amount: ₹800                      │  │
+│  │                                    │  │
+│  │  ┌─────────┐    ┌─────────────┐   │  │
+│  │  │ ❌ DECLINE│    │ ✅ ACCEPT    │   │  │
+│  │  └─────────┘    └─────────────┘   │  │
+│  └────────────────────────────────────┘  │
+└──────────────────────────────────────────┘
+```
+
+### 3.2 Technical Implementation
+
+| Component | Technology |
+|-----------|-----------|
+| **Push Notification** | Firebase Cloud Messaging (FCM) with `priority: "high"` and `android_channel_id: "order_alerts"` |
+| **Sound** | Custom `.mp3` order alert sound (loud, 10-second loop) bundled with app. Plays at MAX volume |
+| **Vibration** | Continuous vibration pattern: `[0, 500, 200, 500, 200, 500]` repeating |
+| **Wake Lock** | `expo-keep-awake` + Android Wake Lock to turn on screen |
+| **Auto-Decline Timer** | 60-second countdown. If no action → order marked "declined" → re-routed to another nearby shop or cancelled |
+| **Background Alert** | FCM data message triggers foreground service even when app is killed |
+| **Real-time Socket** | Socket.io `order:new` event for instant in-app alert |
+| **Sound Channel** | Android Notification Channel `order_alerts` with `importance: IMPORTANCE_HIGH` and custom sound |
+
+### 3.3 Shop Owner Rating System
+
+| Metric | How It's Calculated | Impact |
+|--------|-------------------|--------|
+| **Order Acceptance Rate** | Accepted ÷ Total received (last 30 days) | Below 80% → warning, below 60% → temporary suspension |
+| **Average Response Time** | Time between order notification → accept/decline | Displayed to customers |
+| **Customer Rating** | 1-5 stars after order completion | Shown on shop listing |
+| **On-Time Delivery Rate** | Orders delivered within estimated time | Ranking boost |
+| **Cancellation Rate** | Cancelled after acceptance ÷ Total accepted | Below 5% → penalty |
+| **Appointment No-Show Rate** | No-shows ÷ Total appointments | Affects visibility |
+
+<a id="phase-10"></a>
+## Phase 10: Production Hardening
+> **NEXT UP**: We will perform a final pass across the entire codebase to replace mock data endpoints with real PostgreSQL API calls, handle loading skeletons, and ensure Docker containers build cleanly for final deployment.
+
+### 10.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Do you want me to write an automated suite of Postman tests or a Cypress end-to-end testing script to ensure all roles and revenue streams function perfectly?
+> **Q2**: Should we configure PM2 for the backend daemon, or are we strictly targeting Docker/Kubernetes?
+
+### 10.2 Proposed Changes
+
+#### Backend Hardening
+- Verify all endpoints in `auth.middleware.js` and role decorators.
+- Final database index optimizations on `orders` and `carpool_rides` tables.
+
+#### Frontend Polish
+- Introduce generic loading skeleton components across the Mobile App.
+- Bind `OrderRingOverlay` strictly to real Firebase FCM pushed payloads instead of local timeouts.
+
+### 10.3 Verification Plan
+- **Automated Tests**: Integration tests on critical paths (Order Flow, Carpool Booking, Revenue Split).
+- **Manual Verification**: Run `docker-compose up` and verify the entire stack initializes securely without errors.
+
+<a id="phase-11"></a>
+## Phase 11: Financial Projections & Final Analytics (New!)
+> **NEXT UP**: Since the core 10 phases are completed, we will build out the final piece mentioned in the original documentation: The Financial Projections and Advanced Revenue Ledger system to track platform profitability.
+
+### 11.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: For the Financial Export, do you need the CSV format to match a specific accounting software (like Tally or QuickBooks)?
+> **Q2**: Should we add a historical profitability line chart comparing Revenue vs. Payouts over the last 12 months?
+
+### 11.2 Proposed Changes
+
+#### Backend Ledger Export
+- `backend/src/controllers/finance.controller.js` to generate complex SQL aggregation reports.
+- `GET /api/v1/finance/export` to generate CSVs of all revenue splits.
+
+#### Web Admin Analytics
+- Update the Admin Dashboard to include a `Projections` tab showing estimated MRR (Monthly Recurring Revenue) based on current active shops and carpool usage.
+
+### 11.3 Verification Plan
+- **Manual Verification**: We will navigate to the Admin Portal, trigger a CSV export, and verify the aggregate math totals match the individual transactions.
+
+<a id="phase-12"></a>
+## Phase 12: AI Chatbot & Customer Support Integration
+> **NEXT UP**: To ensure operations scale without overwhelming admins, we will introduce a conversational support module. This allows Residents and Shop Owners to get instant automated help for common queries.
+
+### 12.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Do you want the AI Chatbot to rely strictly on static predefined FAQ responses for now, or should we scaffold it to accept an OpenAI API key in the `.env` file later?
+> **Q2**: Should the Support Chat on Web be a floating widget on the bottom-right, or a dedicated `/support` page like Mobile?
+
+### 12.2 Proposed Changes
+
+#### Mobile Support Module
+- **[NEW]** `apps/mobile/app/modules/support/chat.js`: A dedicated WhatsApp-style chat interface for communicating with the "LocalSampark Assistant".
+
+#### Web Support Module
+- **[NEW]** `apps/web/src/app/components/ChatWidget.js`: A floating bubble that opens a chat window on the website for immediate help.
+
+#### Backend Logic
+- **[NEW]** `backend/src/controllers/chatbot.controller.js`: Logic to parse incoming queries ("where is my order?", "how do I reset password?") and return smart automated responses.
+
+### 12.3 Verification Plan
+- **Automated Tests**: None planned.
+- **Manual Verification**: We will open the Mobile and Web apps, send a test message like "Help with my order", and ensure the chatbot responds appropriately.
+
+<a id="phase-13"></a>
+## Phase 13: Loyalty Rewards & Referral Engine
+> **NEXT UP**: To drive user retention and growth, we will implement a gamified Loyalty Points system and a Referral Engine. Users earn "SamparkCoins" for completing orders, offering carpool rides, or referring friends.
+
+### 13.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: What should the conversion rate be for Loyalty Points? (e.g., 100 SamparkCoins = ₹10 Wallet Balance?)
+> **Q2**: Do you want a spinning "Fortune Wheel" UI on the mobile app for users to win random points daily, or just a standard points ledger?
+
+### 13.2 Proposed Changes
+
+#### Backend Rewards Engine
+- **[NEW]** `backend/src/controllers/loyalty.controller.js`: Handlers to credit points for actions, track referrals, and redeem points for Wallet Balance.
+- **[NEW]** `backend/src/routes/loyalty.routes.js`: Expose `/api/v1/loyalty/balance` and `/api/v1/loyalty/redeem`.
+
+#### Web & Mobile Gamification UI
+- **[NEW]** `apps/mobile/app/modules/rewards/index.js`: A stunning Mobile UI showing the user's current point balance, referral code, and redemption options.
+- **[NEW]** `apps/web/src/app/rewards/page.js`: The Web parity version of the Rewards dashboard.
+
+### 13.3 Verification Plan
+- **Manual Verification**: We will navigate to the new Rewards section, check the UI parity on both Web and Mobile, and verify the backend route successfully calculates points.
+
+<a id="phase-14"></a>
+## Phase 14: Local Classifieds & Job Board
+> **NEXT UP**: To further embed LocalSampark into the community ecosystem, we will introduce a Local Job Board. Shop Owners and Residents can post classified ads (e.g., "Cashier Needed", "Tutor Available"), and users can apply with a single click.
+
+### 14.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should posting a Job/Classified ad be completely FREE, or should it cost a small amount of "SamparkCoins" (from Phase 13) to prevent spam?
+> **Q2**: Should Job Seekers be able to upload a PDF Resume, or just rely on a standard text-based "Application Note" inside the app?
+
+### 14.2 Proposed Changes
+
+#### Backend Jobs Engine
+- **[NEW]** `backend/src/controllers/jobs.controller.js`: CRUD logic for creating job posts, listing active jobs, and handling applications.
+- **[NEW]** `backend/src/routes/jobs.routes.js`: Expose `/api/v1/jobs` endpoints.
+
+#### Web & Mobile Classifieds UI
+- **[NEW]** `apps/mobile/app/modules/jobs/index.js`: A specialized Mobile UI feed where users can scroll through local job postings and hit "Quick Apply".
+- **[NEW]** `apps/web/src/app/jobs/page.js`: The Web parity version featuring advanced filters (e.g., Salary range, Full-time vs Part-time).
+
+### 14.3 Verification Plan
+- **Manual Verification**: We will create a test Job Post as a Shop Owner, navigate to the Job Board as a Resident, and verify the "Quick Apply" logic works across both Web and Mobile.
+
+<a id="phase-15"></a>
+## Phase 15: Emergency & SOS Broadcasting Engine
+> **NEXT UP**: A truly Hyperlocal platform must protect its community. We will introduce a real-time Emergency/SOS broadcasting system. Residents can trigger an SOS (e.g., Medical, Fire, Security) that instantly alerts users and admins in their immediate vicinity using WebSockets.
+
+### 15.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should the SOS button instantly trigger a loud audible alarm sound on the phones of nearby residents who receive the broadcast, or just a standard push notification/banner?
+> **Q2**: Should false SOS reports be penalized by automatically deducting Gamification points (SamparkCoins) or temporarily banning the user?
+
+### 15.2 Proposed Changes
+
+#### Backend Real-Time Engine
+- **[MODIFY]** `backend/src/sockets/index.js`: Add a new `sos:trigger` event listener that broadcasts an `sos:alert` to all connected users within the same geographic room (`room:pincode`).
+- **[NEW]** `backend/src/controllers/sos.controller.js`: REST API to log historical emergencies.
+
+#### Mobile & Web SOS Interfaces
+- **[NEW]** `apps/mobile/app/modules/sos/index.js`: A dedicated Mobile screen with a massive RED Panic Button, allowing the user to select the emergency type (Medical/Police/Fire).
+- **[NEW]** `apps/web/src/app/sos-dashboard/page.js`: A live feed for Admins and Web users to monitor active emergencies in their local zones.
+
+### 15.3 Verification Plan
+- **Manual Verification**: We will trigger an SOS from the Mobile app and verify that the WebSocket instantly pushes the alert payload to the Web Dashboard in real-time.
+
+<a id="phase-16"></a>
+## Phase 16: Local News & Community Polls (The Town Square)
+> **NEXT UP**: To further increase daily active usage (DAU), we will introduce a "Town Square" feature. This module allows admins to post verified local news updates and community polls (e.g., "Should the local park extend its hours?"). Residents can read news and vote on local issues directly from their app.
+
+### 16.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should users earn Gamification points (e.g. +5 SamparkCoins) for participating in a community poll to encourage high voting turnout?
+> **Q2**: Should standard residents be allowed to submit "News Tips" that admins can review and publish, or should News publishing be strictly restricted to Admins/Moderators only?
+
+### 16.2 Proposed Changes
+
+#### Backend News & Polls Engine
+- **[NEW]** `backend/src/controllers/townsquare.controller.js`: CRUD logic for News articles and Poll voting mechanisms.
+- **[NEW]** `backend/src/routes/townsquare.routes.js`: Expose `/api/v1/townsquare` endpoints.
+
+#### Web & Mobile Town Square Interfaces
+- **[NEW]** `apps/mobile/app/modules/townsquare/index.js`: A dedicated feed for Local News and active Poll cards with interactive voting buttons.
+- **[NEW]** `apps/web/src/app/townsquare/page.js`: The Web parity version allowing users to read full news articles and vote on polls, plus an Admin view to publish content.
+
+### 16.3 Verification Plan
+- **Manual Verification**: We will publish a Poll as an Admin, vote on it via the Mobile App, and verify the backend correctly registers the vote (and optionally awards points based on Q1).
+
+<a id="phase-17"></a>
+## Phase 17: Local Events & Ticketing (Hyperlocal Experiences)
+> **NEXT UP**: To drive community engagement and offline connections, we will introduce a "Local Events & Ticketing" engine. Local organizers, RWAs, and shop owners can host paid or free local events (e.g., "Navratri Garba", "Sunday Farmer's Market"). Residents can browse events, purchase tickets, and optionally use their SamparkCoins for discounts.
+
+### 17.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should users be able to redeem their Gamification points (SamparkCoins) to get a discount on paid event tickets? E.g., 100 Coins = ₹10 off.
+> **Q2**: Should standard residents be allowed to host small private/public events (like a local meet & greet), or should event creation be restricted strictly to Verified Shop Owners and Admins?
+
+### 17.2 Proposed Changes
+
+#### Backend Events & Ticketing Engine
+- **[NEW]** `backend/src/controllers/events.controller.js`: CRUD logic for Events, and Ticketing logic (booking tickets, deducting coins for discounts).
+- **[NEW]** `backend/src/routes/events.routes.js`: Expose `/api/v1/events` endpoints.
+
+#### Web & Mobile Event Interfaces
+- **[NEW]** `apps/mobile/app/modules/events/index.js`: A dedicated visual feed for browsing upcoming local events, and a modal for purchasing tickets.
+- **[NEW]** `apps/web/src/app/events/page.js`: The Web parity version allowing users to browse events, book tickets, and allowing hosts to create new events.
+
+### 17.3 Verification Plan
+- **Manual Verification**: We will create an event as a host, book a ticket as a resident (applying SamparkCoins for a discount if Q1 is yes), and verify the booking and coin deduction is recorded in the backend.
+
+<a id="phase-18"></a>
+## Phase 18: Local Blood Bank & Medical Resources
+> **NEXT UP**: Local communities thrive when they support each other during health crises. We will build a Hyperlocal Medical Directory where users can register as Blood Donors, and residents can raise urgent requests for Blood or Medical Equipment (like Wheelchairs, Oxygen Cylinders) available for borrowing in their pincode.
+
+### 18.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should users who register as a Blood Donor receive a massive one-time Gamification reward (e.g., +500 SamparkCoins) to incentivize sign-ups?
+> **Q2**: Should urgent Blood Requests trigger a push notification (similar to the SOS system) to all eligible donors matching that blood type in the pincode?
+
+### 18.2 Proposed Changes
+
+#### Backend Medical Engine
+- **[NEW]** `backend/src/controllers/medical.controller.js`: Logic for registering donors, posting blood/equipment requests, and fetching available resources in the pincode.
+- **[NEW]** `backend/src/routes/medical.routes.js`: Expose `/api/v1/medical` endpoints.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/medical/index.js`: A specialized, easy-to-read UI showing active Blood Requests, a Donor Registration form, and an Equipment directory.
+- **[NEW]** `apps/web/src/app/medical/page.js`: The Web parity version allowing users to register, browse, and raise urgent requests.
+
+### 18.3 Verification Plan
+- **Manual Verification**: We will register as a Blood Donor via the Mobile App (verifying the +500 coin reward if approved in Q1). We will then post an urgent blood request on the Web Portal and verify it appears instantly on the feed.
+
+<a id="phase-19"></a>
+## Phase 19: Local P2P Equipment Rental (The Community Garage)
+> **NEXT UP**: To promote sustainability and community trust, we will introduce a Peer-to-Peer (P2P) Equipment Rental module. Residents can list household items (e.g., Power Drills, Ladders, Tents, DSLR Cameras) for rent on a per-day basis. Neighbors can browse, request to borrow, and pay the owner securely.
+
+### 19.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should users be able to pay for equipment rentals entirely using their Gamification points (SamparkCoins), creating a truly cashless community economy?
+> **Q2**: To prevent theft/damage, should the platform require Renters to submit a "Security Deposit" (in Fiat or Coins) that is held in escrow until the Owner confirms the item was returned safely?
+
+### 19.2 Proposed Changes
+
+#### Backend P2P Engine
+- **[NEW]** `backend/src/controllers/equipment.controller.js`: Logic for listing items, browsing items by category, and handling rental requests/escrow logic.
+- **[NEW]** `backend/src/routes/equipment.routes.js`: Expose `/api/v1/equipment` endpoints.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/equipment/index.js`: A marketplace UI specifically for renting tools/items, with a dual view ("Browse Rentals" vs "My Listings").
+- **[NEW]** `apps/web/src/app/equipment/page.js`: The Web parity version allowing users to list items with photos, set daily prices, and approve incoming rental requests from neighbors.
+
+### 19.3 Verification Plan
+- **Manual Verification**: We will list a "Power Drill" for rent on the Web. Then, using the Mobile app, we will submit a rental request (testing the escrow/coin payment logic from Q1/Q2), and have the owner approve it.
+
+<a id="phase-20"></a>
+## Phase 20: Hyperlocal Delivery Agents (The Last Mile)
+> **NEXT UP**: We have E-Commerce, Grocery, and P2P Equipment rentals. But how do items move around the neighborhood? Phase 20 introduces the "Delivery Agent" module. Residents (or dedicated staff) can sign up as Delivery Agents. When a local shop gets an order, or a neighbor needs a rented tool picked up, they can ping the Delivery Network.
+
+### 20.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should residents who sign up as Delivery Agents be paid in Fiat (Cash/UPI) or should they have the option to be paid in Gamification Points (SamparkCoins) at a premium rate?
+> **Q2**: When a delivery is requested, should the system use WebSockets to instantly ping all active delivery agents in the pincode (first-come, first-serve to accept the job)?
+
+### 20.2 Proposed Changes
+
+#### Backend Delivery Engine
+- **[NEW]** `backend/src/controllers/delivery.controller.js`: Logic for registering as an agent, fetching available delivery jobs, and accepting/completing a job.
+- **[NEW]** `backend/src/routes/delivery.routes.js`: Expose `/api/v1/delivery` endpoints.
+- **[MODIFY]** `backend/src/sockets/index.js`: Add `delivery:job:new` listener to broadcast jobs to agents in the pincode.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/delivery/index.js`: A specialized UI for Delivery Agents to toggle themselves "Online", view incoming job requests on a live feed, and tap to "Accept" and "Complete" deliveries.
+- **[NEW]** `apps/web/src/app/delivery/page.js`: The Web parity version (acting more as an Admin/Shop dashboard) to manually request a delivery agent and view the status of active deliveries.
+
+### 20.3 Verification Plan
+- **Manual Verification**: We will register as an Agent on the mobile app and toggle status to Online. We will then trigger a delivery request from the Web dashboard and verify that the Mobile app receives the WebSocket ping instantly.
+
+<a id="phase-21"></a>
+## Phase 21: Local Home Chef Network (Tiffin & Cloud Kitchens)
+> **NEXT UP**: Food is the heart of a community. Phase 21 introduces a specialized marketplace for neighborhood "Home Chefs". Residents can list daily meals (e.g., "Rajma Chawal - 20 plates available today"), Tiffin subscription services, or festival sweets. This perfectly integrates with Phase 20, as users can opt to have a local Delivery Agent bring them the food.
+
+### 21.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: To ensure quality and hygiene, should Home Chefs require a specific "Verified Chef" tag from the Admin before they can post meals?
+> **Q2**: Should users be able to use their Gamification points (SamparkCoins) to get a discount on Home Chef meals (e.g., Use 100 coins for ₹10 off)?
+
+### 21.2 Proposed Changes
+
+#### Backend Home Chef Engine
+- **[NEW]** `backend/src/controllers/chef.controller.js`: Logic for chefs posting daily meals, users ordering meals, and linking to the `delivery_jobs` table if delivery is requested.
+- **[NEW]** `backend/src/routes/chef.routes.js`: Expose `/api/v1/chef` endpoints.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/chef/index.js`: A mouth-watering UI displaying today's available local meals, with a quick checkout flow that asks: "Pickup or Local Delivery?".
+- **[NEW]** `apps/web/src/app/chef/page.js`: The Web parity version where Home Chefs can upload photos of their food, set plate limits, and view incoming orders.
+
+### 21.3 Verification Plan
+- **Manual Verification**: We will create a Meal on the Web dashboard. Using the Mobile app, we will place an order, apply a coin discount (if Q2 is yes), and select "Delivery", which should seamlessly ping our existing WebSocket delivery network.
+
+<a id="phase-22"></a>
+## Phase 22: Local Scrap & Recycling Network (The "RaddiWala" System)
+> **NEXT UP**: Waste management is a critical part of a hyperlocal economy. Phase 22 introduces a peer-to-peer network for recycling. Residents can ping verified Local Scrap Dealers ("Raddiwalas") to come to their doorstep to weigh and purchase old newspapers, e-waste, and scrap metal. 
+
+### 22.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should residents have the option to "Donate" their scrap to a community fund in exchange for a massive Gamification Point reward (SamparkCoins), rather than taking Fiat cash from the dealer?
+> **Q2**: Should scrap pickup requests use the same real-time WebSocket architecture as Phase 20 (pinging all active dealers in the pincode instantly)?
+
+### 22.2 Proposed Changes
+
+#### Backend Scrap Engine
+- **[NEW]** `backend/src/controllers/scrap.controller.js`: Logic for requesting a scrap pickup, accepting the pickup (for verified dealers), and completing the transaction (distributing Coins if donated).
+- **[NEW]** `backend/src/routes/scrap.routes.js`: Expose `/api/v1/scrap` endpoints.
+- **[MODIFY]** `backend/src/sockets/index.js`: Add `scrap:pickup:new` listener to broadcast requests to dealers.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/scrap/index.js`: A UI for residents to select what scrap they have (Paper, E-Waste, Metal) and hit "Ping Dealers". Includes a toggle: "Sell for Cash" or "Donate for Coins".
+- **[NEW]** `apps/web/src/app/scrap/page.js`: A Dashboard primarily for the Verified Dealers to see active pings, accept them, and mark them as completed.
+
+### 22.3 Verification Plan
+- **Manual Verification**: We will create a "Donate for Coins" scrap request on the Mobile app. We will verify the WebSocket ping hits the Dealer Dashboard (Web), the dealer accepts and completes it, and the resident's Coin wallet increases.
+
+<a id="phase-23"></a>
+## Phase 23: Community Garage Sale & Real-Time Lost & Found
+> **NEXT UP**: We are combining two massive community features into one phase. 
+> **Part 1 (Lost & Found)**: Residents can broadcast an emergency "Lost Pet/Item" ping. Using WebSockets, this instantly alerts everyone online in the pincode. Returning the item yields a Gamification Coin bounty!
+> **Part 2 (Garage Sale)**: A dedicated 100% Coin-Economy flea market. Residents can list old books, toys, or clothes for sale, but they can *only* be purchased using SamparkCoins. This creates a massive, fun economy loop, and integrates perfectly with Phase 20 Delivery Agents to move the items!
+
+### 23.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: For the Lost & Found, should the Coin Bounty given to the "Finder" be automatically deducted from the person who lost the item, or should it be funded by the Admin's community pool to encourage honesty without penalizing the victim?
+> **Q2**: Should the Digital Garage Sale be available 24/7, or should the Admin have a toggle to "Start Weekend Garage Sale" to create a sense of urgency and excitement in the neighborhood?
+
+### 23.2 Proposed Changes
+
+#### Backend Engine (Lost & Found + Garage Sale)
+- **[NEW]** `backend/src/controllers/community_hub.controller.js`: Logic for posting/resolving Lost & Found alerts, and posting/buying Garage Sale items.
+- **[NEW]** `backend/src/routes/community_hub.routes.js`: Expose `/api/v1/community-hub` endpoints.
+- **[MODIFY]** `backend/src/sockets/index.js`: Add `lost-found:alert:new` listener to broadcast emergency pings to the pincode.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/community_hub/index.js`: A sleek 2-tab UI. Tab 1: A glowing red/yellow feed for active Lost & Found alerts with an "I Found It!" button. Tab 2: The Garage Sale feed where items are listed exclusively in 🪙 SamparkCoins, with an option to ping a Phase 20 Delivery Agent for drop-off.
+- **[NEW]** `apps/web/src/app/community-hub/page.js`: The Web parity version, including the Admin Panel to configure Bounties and toggle the "Garage Sale Mode" (if Q2 dictates).
+
+### 23.3 Verification Plan
+- **Manual Verification**: We will trigger a "Lost Dog" alert on the Mobile App, verifying the WebSocket broadcasts to the Web Dashboard. We will then post an old book on the Garage Sale for 50 Coins, buy it on another account, and verify the Coin Ledger safely transfers the 50 Coins from buyer to seller without any Fiat involvement.
+
+<a id="phase-24"></a>
+## Phase 24: Local Micro-Volunteering & Civic Bounties (The "Shramdaan" Network)
+> **NEXT UP**: A strong neighborhood relies on civic duty. Phase 24 introduces a Gamified Volunteering Network. Residents can post civic issues (like a pothole or stray animal rescue), and Admins can attach a "Coin Bounty" to the task. Conversely, residents can ask for micro-volunteer help ("Need 2 people to help set up chairs for the society meeting - Reward: 50 Coins").
+
+### 24.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Should Admins be the only ones who can assign Gamification Coin Bounties to major civic issues (like fixing a park), or can residents pool their own coins to create a bounty?
+> **Q2**: Should residents who complete 5 volunteer tasks receive a special "Community Hero" badge on their profile?
+
+### 24.2 Proposed Changes
+
+#### Backend Volunteering Engine
+- **[NEW]** `backend/src/controllers/volunteer.controller.js`: Logic to post tasks, attach bounties, volunteer for a task, and distribute coins upon completion.
+- **[NEW]** `backend/src/routes/volunteer.routes.js`: Expose `/api/v1/volunteer` endpoints.
+
+#### Web & Mobile Interfaces
+- **[NEW]** `apps/mobile/app/modules/volunteer/index.js`: A specialized UI for residents to browse active Civic Bounties and Micro-Tasks, hit "I'll Help!", and earn Coins.
+- **[NEW]** `apps/web/src/app/volunteer/page.js`: The Web parity version, including an Admin panel to review reported civic issues and attach official Coin Bounties to them.
+
+### 24.3 Verification Plan
+- **Manual Verification**: We will post a Civic Task from the Web as an Admin with a 1000 Coin bounty. A user on the Mobile app will volunteer, complete it, and we will verify the 1000 Coins are deposited into their wallet.
+
+---
+
+<a id="phase-25"></a>
+## Phase 25: Local Social Cause & Donation Portal (Sampark Nidhi + Annadaanam)
+> **NEXT UP**: We are building a massive, dedicated Social Cause portal combining Community Crowdfunding, Zero-Waste Food Rescue, and Local Orphanage (AnathAshram) support.
+
+### Proposed Architecture
+
+This will be a dedicated module on both Web (`/donations`) and Mobile (`/modules/donations`). 
+
+#### 1. Annadaanam (Zero-Waste Food Rescue)
+- **Live Food Alerts**: Restaurants, party caterers, or households with excess food can post a "Food Rescue Alert".
+- **Real-Time Pinging**: Local Delivery Agents (from Phase 20) and NGO partners are pinged immediately via WebSockets.
+- **Logistics**: A runner picks up the food and drops it at a designated AnathAshram or distribution point.
+
+#### 2. Sampark Nidhi (Community Crowdfunding)
+- **Local Projects**: Verified residents or admins can start a fund for a local cause (e.g., "Medical treatment for Raju the Guard", "Install CCTV at Main Gate").
+- **Coin & Fiat Integration**: Users can donate using SamparkCoins (from Wallet) or Fiat (UPI).
+- **Progress Bars**: Real-time progress bars showing goal amounts vs. collected amounts.
+
+#### 3. AnathAshram (Orphanage) Hub
+- **Verified NGO Profiles**: A directory of local orphanages, old-age homes, and animal shelters.
+- **Wishlists**: Orphanages can post exactly what they need (e.g., "Need 50 blankets", "Need Rice", "Need Cash").
+- **Item Donations**: Residents can select "Donate Clothes/Items". A delivery runner is pinged to pick up the clothes from the resident's house and deliver them to the orphanage.
+
+### Open Questions
+
+> [!IMPORTANT]
+> **Q1**: For physical item donations (Clothes/Food), should the platform charge the donor a small delivery fee (e.g., ₹20) to pay the Delivery Agent, or should the platform subsidize this delivery cost entirely as charity?
+> 
+> **Q2**: Should users earn a massive amount of Gamification points (e.g., the "Philanthropist" badge + 1000 Coins) when they successfully complete a donation?
+
+### Verification Plan
+- **Automated Tests**: Unit test the Escrow/Wallet deduction to ensure no double-spending occurs when multiple people donate to the same Crowdfund at the exact same millisecond.
+- **Manual Verification**: We will create a mock "AnathAshram", post a requirement for "Winter Clothes", log in as a Resident on Mobile, initiate a clothes donation, and verify a Delivery Agent receives the pickup ping.
+
+---
+
+<a id="phase-1"></a>
+## Phase 1: RBAC Infrastructure
+> **🔴 CRITICAL — Foundation for everything else**
+
+### Files to Create/Modify
+
+#### [NEW] `backend/src/migrations/007_rbac.sql`
+```sql
+-- Role change requests (user requests role upgrade)
+CREATE TABLE role_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  requested_role VARCHAR(30) NOT NULL,
+  current_role VARCHAR(30) NOT NULL,
+  reason TEXT,
+  supporting_docs JSONB DEFAULT '[]', -- [url1, url2]
+  status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected
+  reviewed_by UUID REFERENCES users(id),
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Multi-role support
+CREATE TABLE user_roles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(30) NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  assigned_by UUID REFERENCES users(id),
+  assigned_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, role)
+);
+
+-- Per-user permission overrides
+CREATE TABLE permission_overrides (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  module VARCHAR(50) NOT NULL,
+  is_allowed BOOLEAN NOT NULL,
+  reason TEXT,
+  set_by UUID REFERENCES users(id),
+  set_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, module)
+);
+```
+
+#### [MODIFY] `apps/mobile/src/utils/permissions.js`
+- Add multi-role support with role switcher
+- Add per-user permission override checking
+- Add role-specific navigation resolver
+
+#### [MODIFY] `apps/mobile/app/(tabs)/_layout.js`
+- Dynamic tab bar based on active role
+- Different tab icons, labels, and screens per role
+
+#### [NEW] `apps/mobile/src/components/RoleSwitcher.js`
+- Floating action button or profile dropdown to switch active role
+- Shows all assigned roles with active indicator
+
+#### [MODIFY] `apps/web/src/app/components/Header.js`
+- Dynamic navigation links based on user role
+- Role indicator badge next to user name
+
+#### [NEW] `backend/src/routes/rbac.routes.js`
+- `GET /rbac/roles` — List all available roles
+- `POST /rbac/assign` — Admin assigns role to user
+- `POST /rbac/request` — User requests role upgrade
+- `GET /rbac/requests` — Admin views pending requests
+- `PUT /rbac/requests/:id` — Admin approves/rejects request
+- `POST /rbac/override` — Admin overrides specific permission
+- `GET /rbac/user/:id/permissions` — Get effective permissions for user
+
+---
+
+<a id="phase-2"></a>
+## Phase 2: Role-Specific Dashboards
+> **🔴 CRITICAL — Each role needs their own home screen**
+
+#### [NEW] `apps/mobile/app/(shop-owner)/` — Shop Owner tab layout
+- `_layout.js` — Bottom tabs: Dashboard, Orders, Products, Appointments, Profile
+- `index.js` — Shop analytics home
+- `orders.js` — Live order feed with ringing
+- `products.js` — Product CRUD
+- `appointments.js` — Calendar view
+- `profile.js` — Shop settings
+
+#### [NEW] `apps/mobile/app/(delivery)/` — Delivery Agent tab layout
+- `_layout.js` — Bottom tabs: Home, Available, Active, Earnings, Profile
+- `index.js` — Today's summary
+- `available.js` — Nearby orders to accept
+- `active.js` — Current delivery with map
+- `earnings.js` — Daily/weekly earnings
+- `profile.js` — Vehicle & documents
+
+#### [NEW] `apps/mobile/app/(service-provider)/` — Service Provider tab layout
+- `_layout.js` — Bottom tabs: Home, Bookings, Reviews, Earnings, Profile
+- `index.js` — Today's schedule
+- `bookings.js` — Incoming booking requests
+- `reviews.js` — Customer reviews
+- `earnings.js` — Earnings tracker
+- `profile.js` — Skills & portfolio
+
+#### [NEW] `apps/mobile/app/(field-agent)/` — Field Agent tab layout
+- `_layout.js` — Bottom tabs: Home, Onboard, Leads, Earnings, Profile
+- `index.js` — Daily targets
+- `onboard.js` — Shop registration flow
+- `leads.js` — Lead tracker
+- `earnings.js` — Commission tracker
+
+#### [NEW] `apps/mobile/app/(security)/` — Security Guard single screen
+- `index.js` — QR scanner + visitor log + emergency button
+
+#### [NEW] `apps/web/src/app/shop-dashboard/page.js` — Shop Owner web dashboard
+#### [NEW] `apps/web/src/app/delivery-dashboard/page.js` — Delivery web dashboard
+#### [NEW] `apps/web/src/app/service-dashboard/page.js` — Service Provider web dashboard
+#### [NEW] `apps/web/src/app/field-dashboard/page.js` — Field Agent web dashboard
+#### [NEW] `apps/web/src/app/franchise-dashboard/page.js` — Franchise web dashboard
+
+---
+
+<a id="phase-3"></a>
+## Phase 3: Shop Owner Portal & Product Management
+> Same as original plan Phase 1 — shop owner can manage products, view orders, set appointment slots, see analytics, update profile. Now integrated into the role-specific dashboard from Phase 2.
+
+---
+
+<a id="phase-4"></a>
+## Phase 4: Complete Order Flow (3 Delivery Modes)
+> Same as original plan Phase 2 — Cart → Checkout → 3 modes (Delivery/Pickup/Dine-in) → Payment → Tracking. Now with the order notification ringing system from Phase 6.
+
+---
+
+<a id="phase-5"></a>
+## Phase 5: Appointment Booking System
+> **NEXT UP**: We are building the consumer booking flow for Salons, Clinics, and Services.
+
+### 5.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: For the Staff Picker, should customers be allowed to select "Any Available Staff" to get the earliest slot, or force them to pick a specific person?
+> **Q2**: Should the booking confirmation QR Code be generated as an actual scannable image using a library, or just a placeholder mock for now?
+
+### 5.2 Proposed Changes
+
+#### [NEW] `apps/mobile/app/modules/services/index.js`
+- Main service listing screen (categories: Haircut, Spa, Dental, etc.)
+
+#### [NEW] `apps/mobile/app/modules/services/booking.js`
+- **Step 1: Service Selection UI** — Checkbox/Add logic to pick multiple services (e.g., Haircut + Beard Trim).
+- **Step 2: Staff Picker** — Horizontal scroll list of available staff (e.g., Rohan, Meera).
+- **Step 3: Date/Time Slot Selection** — Calendar view and grid of available slots respecting the shop's hours.
+
+#### [NEW] `apps/mobile/app/modules/services/confirmation.js`
+- **Booking Confirmation** — Final success screen with a QR code and booking ID.
+
+#### [MODIFY] `apps/mobile/app/(tabs)/index.js`
+- Integrate "Upcoming Appointments" widget into the Resident Home feed.
+
+#### [MODIFY] `apps/web/src/app/service/[id]/page.js`
+- Build the Web equivalent of the booking flow (Service Selection → Staff → Slot → Confirmation).
+
+### 5.3 Verification Plan
+- **Automated Tests**: None planned.
+- **Manual Verification**: 
+  1. Open the Services module on the mobile emulator.
+  2. Proceed through the booking steps (select service, pick staff, pick slot).
+  3. Confirm the booking and ensure the success screen displays the QR code.
+  4. Ensure the Web app mirrors the exact same booking capability.
+
+---
+
+<a id="phase-6"></a>
+## Phase 6: Order Ringing & Notifications (Backend Services)
+> **NEXT UP**: We already built the UI and `OrderRingerContext` for the Shop Owner ringing alert in Phase 3. Now we will build the actual **Backend Socket.io** logic and push notification architecture required to drive this feature in production.
+
+### 6.1 Open Questions
+
+> [!IMPORTANT]
+> **Q1**: For Push Notifications, are you okay with us scaffolding the Firebase Admin SDK initialization using environment variables, even if we don't have the live Google Service Account credentials right now?
+> **Q2**: Should the backend socket service handle "Delivery Agent GPS tracking" in this phase, or leave that for a later phase?
+
+### 6.2 Proposed Changes
+
+#### [NEW] `backend/src/services/notification.service.js`
+- Setup Firebase Admin SDK skeleton.
+- Functions to send high-priority FCM data messages containing the `channel_id: 'order_alerts'` payload.
+
+#### [NEW] `backend/src/sockets/index.js`
+- Initialize Socket.io server.
+- Set up connection handlers for `user_id` mapping.
+- Implement `order:new` broadcast event targeted at specific shop owners.
+- Implement `order:accepted` event targeted at specific consumers.
+
+#### [MODIFY] `backend/src/app.js`
+- Bind the Socket.io server to the Express HTTP server.
+- Expose the io instance to routes via `req.io`.
+
+### 6.3 Verification Plan
+- **Automated Tests**: None planned.
+- **Manual Verification**: 
+  1. We will write a small Node.js test script to connect as a Socket.io client and simulate a shop owner.
+  2. We will trigger an order via HTTP request and ensure the socket emits the payload to the test script correctly.
+
+---
+
+<a id="phase-7"></a>
+## Phase 7: Admin Revenue Portal
+> **🟠 HIGH — Complete dedicated revenue management page for admin**
+
+### Files to Create
+
+#### [NEW] `apps/admin/src/app/revenue/page.js`
+- Complete revenue management center with 8 tabs as designed in Section 2 above
+- All changes persist to `platform_fees`, `revenue_splits`, `promo_codes`, `surge_rules`, and `payout_config` tables
+- Real-time revenue charts using the existing `revenue_transactions` table
+
+#### [NEW] `backend/src/routes/revenue-admin.routes.js`
+- `GET /revenue/overview` — Dashboard stats (today/week/month/total)
+- `GET /revenue/breakdown` — Revenue by stream
+- `GET /revenue/zone-wise` — Revenue by territory
+- `GET /revenue/fees` — Current fee configuration
+- `PUT /revenue/fees/:key` — Update fee config
+- `GET /revenue/splits` — Revenue split config
+- `PUT /revenue/splits/:id` — Update split for territory
+- `POST /revenue/promo` — Create promo code
+- `PUT /revenue/promo/:id` — Edit promo code
+- `DELETE /revenue/promo/:id` — Delete promo code
+- `GET /revenue/promos` — List all promo codes
+- `GET /revenue/ads` — List ad campaigns
+- `PUT /revenue/ads/:id/approve` — Approve ad campaign
+- `GET /revenue/payouts/pending` — Pending payouts
+- `POST /revenue/payouts/:id/process` — Process payout
+- `GET /revenue/reports` — Generate downloadable reports
+- `PUT /revenue/subscription-config` — Update SamparkPlus config
+- `GET /revenue/surge-rules` — List surge rules
+- `POST /revenue/surge-rules` — Create surge rule
+
+#### [MODIFY] `apps/admin/src/app/page.js`
+- Add "Revenue Center" as a prominent nav item linking to `/revenue`
+- Add "Role Management" tab with user search, role assignment, request queue, permission overrides, bulk operations
+
+---
+
+<a id="phase-8"></a>
+## Phase 8: Enhanced Carpool (Major Feature Highlight)
+> Same as original plan Phase 6 with additions:
+- Highlighted on homepage with animated stats section
+- Recurring ride auto-posting
+- Route matching engine
+- Live ride tracking
+- Women-only verified rides
+- Corporate carpool groups
+- Cost calculator with distance formula
+- Ride history with savings analytics
+- CO2 environmental impact tracker
+- Carpool leaderboard (most rides shared)
+
+---
+
+<a id="phase-9"></a>
+## Phase 9: Community & Real Estate Enhancements
+> Same as original plan Phase 7 with additions:
+- **Stories/Reels** with 24-hour expiry
+- **Neighborhood Polls** with live results
+- **Safety Alert broadcast** (one-tap SOS to zone)
+- **Community Groups** (building/interest-based)
+- **Advanced Property Filters** (furnished, parking, floor, pet-friendly)
+- **Landlord Dashboard** with inquiry management
+- **Rental Agreement Generator**
+- **Virtual Tour** embedding
+
+---
+
+<a id="phase-10"></a>
+## Phase 10: Production Hardening
+> Same as original plan Phase 8:
+- Replace all mock data with real API calls
+- Input validation on all routes
+- Loading skeletons, error boundaries
+- Push notification integration
+- Multi-language support (Hindi, Marathi, English)
+- SEO optimization
+- CI/CD pipeline
+- Automated testing
+- Security audit
+- Docker deployment
+
+---
+
+<a id="revenue-model"></a>
+## Revenue Model & Projections
+
+| Revenue Stream | Monthly (10K Users) | Admin Controls |
+|---------------|--------------------|-|
+| Order Convenience Fees | ₹15,000 | Fee per category, toggle on/off |
+| Delivery Fees | ₹40,000 | Base + per-km + surge + free-above threshold |
+| SamparkPlus Subscriptions | ₹99,500 | Price, trial period, included benefits |
+| Featured Shop Listings | ₹19,950 | Price per week, max featured per zone |
+| Ad Campaigns | ₹19,980 | CPM rate, campaign approval, budget caps |
+| Event Ticket Commission | ₹10,000 | % slider per event category |
+| Carpool Booking Fees | ₹10,000 | Fixed fee per seat |
+| Property Featured Spots | ₹5,970 | Monthly price, max featured |
+| Franchise Onboarding | ₹50,000 | One-time fee amount |
+| Franchise Revenue Share | ₹1,50,000 | % per territory (admin override) |
+| **Total** | **₹4,20,400/mo** | **All configurable from Revenue Portal** |
+
+---
+
+<a id="open-questions"></a>
+## Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Which cloud provider for production? (AWS / GCP / Render / Railway)
+
+> [!IMPORTANT]
+> **Q2**: Payment gateway preference? (Razorpay already initialized in code)
+
+> [!IMPORTANT]
+> **Q3**: Image storage preference? (Cloudinary free tier vs AWS S3)
+
+> [!IMPORTANT]
+> **Q4**: Should I build all 10 phases sequentially, or would you like to prioritize specific phases?
+
+> [!WARNING]
+> **Q5**: Wire up live APIs while building features (slower but more solid), or build UI first then connect APIs later (faster initial progress)?
+
+> [!IMPORTANT]
+> **Q6**: For push notifications — Firebase Cloud Messaging (FCM)?
+
+> [!IMPORTANT]
+> **Q7**: For the order ringing sound — should I use a standard notification tone or create a custom distinctive sound file?
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Jest unit tests for all new API routes
+- Playwright E2E tests for critical flows
+
+### Manual Verification
+- Build APK and test on Android device
+- Test all 3 order modes end-to-end
+- Test order ringing on shop owner phone
+- Test each role-specific view
+- Test admin revenue portal with config changes
+- Test role assignment and switching
+- Test push notifications

@@ -1,0 +1,85 @@
+{
+	"info": {
+		"_postman_id": "localsampark-auto-test-1234",
+		"name": "LocalSampark Automated E2E Tests",
+		"description": "Postman test suite covering all roles, revenue streams, and Gamification (Phase 1-13).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication & RBAC",
+			"item": [
+				{
+					"name": "Admin Login",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"url": {"raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"]},
+						"body": {"mode": "raw", "raw": "{\"phone\":\"9999999999\", \"password\":\"admin123\"}"}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"Role is superadmin\", function () { var d = pm.response.json(); pm.expect(d.user.role).to.eql(\"superadmin\"); pm.environment.set(\"adminToken\", d.token); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. E-Commerce & Orders",
+			"item": [
+				{
+					"name": "Place Order",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "Bearer {{userToken}}"}, {"key": "Content-Type", "value": "application/json"}],
+						"url": {"raw": "{{baseUrl}}/api/v1/orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "orders"]},
+						"body": {"mode": "raw", "raw": "{\"shopId\": 1, \"items\": [{\"id\": 10, \"qty\": 2}], \"fulfillmentMode\": \"delivery\"}"}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Order placed successfully\", function () { pm.response.to.have.status(201); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Financial Exports (Phase 11)",
+			"item": [
+				{
+					"name": "Tally CSV Export",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{adminToken}}"}],
+						"url": {"raw": "{{baseUrl}}/api/v1/finance/export?format=csv", "host": ["{{baseUrl}}"], "path": ["api", "v1", "finance", "export"]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"CSV returned\", function () { pm.response.to.have.header(\"Content-Type\", \"text/csv; charset=utf-8\"); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:5000" }
+	]
+}

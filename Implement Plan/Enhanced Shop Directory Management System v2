@@ -1,0 +1,877 @@
+# 🏪 LocalSampark — Enhanced Shop Directory Management System v2
+
+## Executive Summary
+
+**v2 Enhancement** over v1: After 10x deeper analysis, discovered the codebase has **significantly more existing infrastructure** than initially assessed. This enhanced plan builds on top of what exists, adds **16 new essential categories** (total 55), designs **18 unique management systems** (one per distinct business process), resolves all open questions, transforms the icon library system, and adds **advanced visitor experience features** including AI recommendations, voice search, live queue visibility, and loyalty gamification.
+
+---
+
+## Updated Current State (Corrected After Deep Analysis)
+
+### What ACTUALLY Exists (Corrections from v1)
+
+> [!NOTE]
+> The v1 plan underestimated the existing codebase. Here's the corrected inventory:
+
+| Layer | Actual Status | Discovery |
+|-------|---------------|-----------|
+| **Shop Detail Page** | ✅ 672 lines! | [shops/[id]/page.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shops/%5Bid%5D/page.js) — Already has appointment booking flow, Razorpay script, cart integration, walk-in QR detection |
+| **13 Visitor View Components** | ✅ Exist | Hospital, Retail, 2W/4W Garage, Doctor, Beauty, HomeService, Professional, EducationEvents, Restaurant, Pharmacy, TiffinCatering visitor views |
+| **5 Web Manager Components** | ✅ Exist | [shop-manager/components/](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-manager/components) — RetailManagerWeb, PharmacyManagerWeb, DoctorManagerWeb, BeautyManagerWeb, RestaurantManagerWeb |
+| **shop-manager/[category]** | ✅ 17 configs | MANAGER_CONFIGS for pharmacy, restaurant, tiffin, salon, grocery, retail, doctors, laundry, hardware, electronics, boutique, pet-shop, florist, bakery, tailor, gym — many show "Coming Soon" |
+| **DynamicIcon System** | ✅ Both platforms | [DynamicIcon.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/components/DynamicIcon.js) supports **both Lucide + Phosphor** with backend theme config toggle |
+| **GlassIcon System** | ✅ Both platforms | Animated glassmorphism icon wrapper on both web (framer-motion) and mobile (RN) |
+| **Service Booking** | ⚠️ Partial | [service-booking/](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/service-booking) exists with page.js + [id]/page.js |
+| **13 Shop Dashboard Managers** | ⚠️ Dummy data | RetailManager, BeautyManager, HospitalManager, GarageManager, etc. — all still use mock data |
+
+### What's Still Missing (True Gaps)
+
+```
+❌ 16 essential real-world categories not in DB (Tiffin, Mobile Repair, Courier, etc.)
+❌ All 13+5 manager components use DUMMY data — zero backend connection
+❌ 13 visitor views lack REAL data fetching and booking logic
+❌ No real-time notification system between roles
+❌ No visitor ↔ shop owner chat
+❌ No return/refund/dispute lifecycle
+❌ No delivery tracking UI (map)
+❌ No mobile checkout/appointment booking
+❌ No visitor order history
+❌ No shop owner financial dashboard (payouts/settlements)
+❌ No advanced visitor features (AI, voice search, AR, loyalty gamification)
+❌ Icon library not consistently used across all components
+```
+
+---
+
+## Resolved Open Questions
+
+| Question | Decision | Rationale |
+|----------|----------|-----------|
+| **Payment Gateway** | ✅ Real Razorpay test keys for both appointments AND product purchases | User confirmed |
+| **Push Notifications** | ✅ Firebase Cloud Messaging (FCM) — Free tier: unlimited pushes, 500K/month Firestore | Best free option at scale |
+| **Image Uploads** | ✅ Multer + local `/public/uploads/` + Express static serving | Free, unlimited, production-ready. Can migrate to Cloudinary later (free: 25GB) |
+| **SMS/WhatsApp/Email** | ✅ Nodemailer (free SMTP via Gmail) + free email notifications | Gmail allows 500 emails/day free. For SMS, integrate 2Factor.in free tier (25 free SMS/day) |
+
+---
+
+## 16 New Essential Categories
+
+After analyzing real Indian neighborhood needs, these categories are **missing and essential**:
+
+| ID | Category | Model | Commission | Why Essential |
+|----|----------|-------|------------|---------------|
+| cat_040 | **Tiffin & Meal Subscription** | hybrid | 8% | Daily meal delivery — massive in Indian cities |
+| cat_041 | **Mobile & Computer Repair** | hybrid | 10% | Every neighborhood has multiple repair shops |
+| cat_042 | **Courier & Parcel Services** | product | 5% | Local courier pickup/drop — essential |
+| cat_043 | **Travel Agents & Visa** | appointment | 5% | Still heavily used in tier 2/3 cities |
+| cat_044 | **Printing, Xerox & DTP** | hybrid | 8% | Students, offices — constant demand |
+| cat_045 | **Locksmith & Key Maker** | appointment | 10% | Emergency service — high value |
+| cat_046 | **Packers & Movers** | appointment | 5% | Moving is extremely common |
+| cat_047 | **Water Tanker & Supply** | product | 5% | Essential in water-scarce areas |
+| cat_048 | **Gas Cylinder & LPG** | product | 3% | Essential household refill |
+| cat_049 | **Jewellery & Gold** | product | 3% | Huge Indian market — trust-based |
+| cat_050 | **Wedding & Party Planner** | appointment | 8% | Massive Indian wedding industry |
+| cat_051 | **Interior Design & Decor** | appointment | 8% | Growing rapidly in India |
+| cat_052 | **Painting & Renovation** | appointment | 10% | Home improvement — always needed |
+| cat_053 | **Security & CCTV** | hybrid | 8% | Guard services, CCTV installation |
+| cat_054 | **Coaching & Test Prep** | appointment | 8% | Huge education market |
+| cat_055 | **Astrologer & Pandit** | appointment | 5% | Very common in Indian neighborhoods |
+
+---
+
+## 18 Unique Management Systems (One Per Distinct Process)
+
+Each category with a truly distinct business process gets its own management system. Categories with identical processes share a system.
+
+### Management System 1: 🛒 **Retail Product Manager**
+**Categories**: Grocery (cat_001), Hardware (cat_015), Clothing (cat_016), Stationery (cat_006), Pet Supplies (cat_008), Pooja Samagri (cat_009), Jewellery (cat_049)
+
+**Unique Process**: `Product Catalog → Inventory → Cart → Order → Pack → Dispatch/Pickup → Deliver`
+
+**Owner Dashboard Features**:
+- Product CRUD with variants (size, color, weight), barcode, SKU
+- Inventory management with low-stock alerts, reorder level
+- OCR Smart List (customer uploads handwritten list → AI maps to products → quote)
+- Live online orders feed (real-time via Socket.io)
+- In-store POS terminal (barcode scan, quick billing)
+- Combo/bundle builder (e.g., "Festival Pack")
+- Supplier order management
+- Flash sale creator
+- Customer directory with purchase history
+
+**Visitor Experience**:
+- Product grid with search, filters (dietary, brand, price range)
+- Add-to-cart with quantity, variant selection
+- Delivery/pickup toggle with time estimate
+- Flash sale badges with countdown timer
+- "Frequently Bought Together" suggestions
+- Reorder from past orders with 1-tap
+
+---
+
+### Management System 2: 🍽️ **Restaurant & F&B Manager**
+**Category**: Restaurants & Cafes (cat_002)
+
+**Unique Process**: `Menu Browse → Cart → Order → KDS Ticket → Prepare → Pack → Serve/Deliver`
+
+**Owner Dashboard Features**:
+- Digital menu with categories, photos, dietary tags (Veg/Non-Veg/Jain/Vegan)
+- Kitchen Display System (KDS) — live order tickets with prep timer
+- Table reservation management (dine-in)
+- Dine-in QR menu ordering (scan table QR → order from phone)
+- Swiggy/Zomato style order accept/reject with timer
+- Daily specials / Today's menu
+- Takeaway packaging tracker
+- Wastage log
+
+**Visitor Experience**:
+- Visual menu with food photos, dietary badges
+- Customization per item (spice level, extras, no-onion etc.)
+- Live preparation status ("Your Biryani is being prepared 🍳")
+- Estimated delivery time with live tracking
+- Tip for delivery agent option
+
+---
+
+### Management System 3: 🍱 **Tiffin & Subscription Meal Manager**
+**Category**: Tiffin & Meal Subscription (cat_040)
+
+**Unique Process**: `Browse Plans → Subscribe (Weekly/Monthly) → Daily Menu → Dispatch → Deliver → Rate`
+
+**Owner Dashboard Features**:
+- Subscription plan builder (Weekly/Monthly, Veg/Non-Veg, Meal type)
+- Daily menu planner with calendar view
+- Subscriber management (active, paused, cancelled)
+- Daily dispatch list (who gets what today)
+- Delivery route optimization
+- Pause/resume subscriber meals
+- Nutritional info and calorie tracking per meal
+
+**Visitor Experience**:
+- Browse subscription plans with pricing comparison
+- Free trial meal option
+- Daily menu preview for the week
+- Pause/resume subscription from app
+- Rate each day's meal
+- Dietary preference settings (Jain Monday, no-garlic etc.)
+
+---
+
+### Management System 4: 💊 **Pharmacy & Healthcare Products Manager**
+**Category**: Pharmacy & Healthcare (cat_003), Fresh Produce & Meat (cat_004), Dairy/Bakery (cat_005), Gas Cylinder (cat_048), Water Tanker (cat_047)
+
+**Unique Process**: `Product Catalog (with expiry/batch) → Prescription Upload → Verify → Dispatch → Deliver`
+
+**Owner Dashboard Features**:
+- Inventory with **batch number + expiry date tracking**
+- Prescription approval queue (verify before dispatch)
+- Auto-expiry alerts (30/15/7 days before)
+- Controlled substance log
+- Customer prescription vault (E-Vault — store past prescriptions)
+- FSSAI/Drug license display
+- Reorder suggestions for customers (based on purchase cycle)
+- Emergency/urgent order priority queue
+
+**Visitor Experience**:
+- Upload prescription photo → pharmacist maps to products
+- Drug interaction warning (basic)
+- Medicine reminder setup ("Set alarm for your doses")
+- Auto-reorder (monthly medicine subscription)
+- Generic alternative suggestions (save money)
+- Nearest pharmacy with stock availability
+
+---
+
+### Management System 5: 💐 **Fresh & Perishable Manager**
+**Category**: Florists & Nurseries (cat_007)
+
+**Unique Process**: `Browse → Custom Bouquet Builder → Occasion Selection → Schedule Delivery → Deliver with Card`
+
+**Owner Dashboard Features**:
+- Freshness tracker (stock days remaining)
+- Custom bouquet builder (drag-and-drop flowers)
+- Event/occasion pre-orders (wedding, funeral, puja)
+- Plant care schedule reminders for nursery customers
+- Seasonal availability calendar
+
+**Visitor Experience**:
+- Browse by occasion (Birthday, Anniversary, Get Well, Condolence)
+- Custom bouquet builder with live price calculator
+- Add personalized message/card
+- Schedule delivery for future date/time
+- Recurring delivery (weekly fresh flowers)
+
+---
+
+### Management System 6: 💇 **Salon, Beauty & Wellness Manager**
+**Categories**: Salon/Beauty/Spa (cat_012), Gym/Fitness (cat_017), Yoga/Wellness (cat_038), Car/Bike Wash (cat_030)
+
+**Unique Process**: `Browse Services → Select Stylist/Trainer → Pick Slot → Book → Check-in → Serve → Rate Stylist`
+
+**Owner Dashboard Features**:
+- Staff portfolio gallery (before/after photos)
+- Smart waitlist (auto-notify on cancellation)
+- Membership/package management (10-session pack, monthly unlimited)
+- Loyalty punch card (every 5th service free)
+- Skin/hair analysis log per customer
+- Class/group session scheduler (for gym, yoga)
+- Equipment maintenance tracker (for gym)
+- Revenue per stylist/trainer analytics
+
+**Visitor Experience**:
+- Browse services with duration, price, staff specialist
+- Staff profiles with rating, portfolio, specialization
+- Real-time slot availability with surge pricing indicators
+- Membership plan comparison
+- Before/after photo gallery for salon
+- Live queue position display ("You are #3 in line, ~15 min wait")
+- Favorite stylist quick-rebook
+
+---
+
+### Management System 7: 🏥 **Hospital & Multi-Doctor Clinic Manager**
+**Categories**: Dentists (cat_020), Pathology (cat_021), Physiotherapy (cat_022), Ayurvedic (cat_023), Dieticians (cat_039)
+
+**Unique Process**: `Browse Doctors → Select Department → Book OPD → Token → Consultation → Prescription → Lab → Follow-up`
+
+**Owner Dashboard Features**:
+- **Live OPD Queue** with token system (real-time updates)
+- Doctor roster management (shifts, leaves, OPD timings)
+- Department management (Cardiology, Orthopedics, etc.)
+- Patient Electronic Medical Records (EMR)
+- Lab & pharmacy integration (order tests from consultation)
+- Bed/ward board (for hospitals with IPD)
+- Ambulance tracking
+- Insurance/TPA claim processing
+- Blood bank inventory (tier 3 hospitals)
+- Telemedicine video consultation room
+
+**Visitor Experience**:
+- Browse by department or doctor specialty
+- Live OPD queue position ("Dr. Sharma: Token #14 currently, you are #17")
+- Book appointment OR join walk-in queue
+- View doctor qualifications, experience, ratings
+- Download prescriptions and lab reports
+- Follow-up reminder notifications
+- Health record history (all visits across shops)
+
+---
+
+### Management System 8: 🩺 **Solo Doctor/Clinic Manager**
+**Category**: (Subset of Healthcare — individual practitioners)
+
+**Unique Process**: `Book Slot → Arrive → Consultation → Prescription → Lab Referral → Follow-up`
+
+**Owner Dashboard Features**:
+- Patient appointment calendar
+- Digital prescription writer (template-based)
+- Patient history viewer (past visits, allergies, medications)
+- Consultation notes
+- Referral letter generator
+- Follow-up scheduler
+- Consultation fee management
+
+**Visitor Experience**:
+- Quick book by doctor name
+- View doctor's availability calendar
+- Past prescriptions and reports in one place
+- Telemedicine option for follow-ups
+
+---
+
+### Management System 9: 🔧 **Vehicle Garage & Repair Manager**
+**Categories**: Automotive/Mechanic (cat_019), Electricians/Electronics (cat_013), AC/Appliance Repair (cat_026), RO/Water Purifier (cat_027), Mobile/Computer Repair (cat_042)
+
+**Unique Process**: `Create Job Card → Inspection → Estimate → Customer Approval → Repair → Quality Check → Pickup/Deliver → Warranty`
+
+**Owner Dashboard Features**:
+- **Live Job Card Board** (Kanban: Inspection → Estimate → Approved → In Repair → QC → Ready)
+- Spare parts inventory with compatibility mapping
+- Customer approval flow (send estimate with photos → customer approves/rejects)
+- Pickup & drop scheduling
+- Roadside assistance dispatch (emergency)
+- Insurance claim documentation (photos, estimates, bills)
+- Warranty period tracker per repair
+- Service reminder scheduler (next service due)
+
+**Visitor Experience**:
+- Live repair status tracker (like Domino's pizza tracker but for your vehicle/device)
+- Photo updates during repair ("Your bike engine disassembled ✅")
+- Approve/reject estimate from app
+- Service history for each vehicle/device
+- Annual maintenance contract (AMC) subscription
+- Emergency roadside assistance button (1-tap)
+- Nearest garage with real-time availability
+
+---
+
+### Management System 10: 👔 **Laundry & Dry Cleaning Manager**
+**Category**: Laundry & Dry Cleaning (cat_028)
+
+**Unique Process**: `Pickup Schedule → Weigh/Count → Process → Iron → Pack → Deliver`
+
+**Owner Dashboard Features**:
+- Order tracking (Pickup → Wash → Dry → Iron → Pack → Dispatch)
+- Pricing: per-piece vs per-kg toggle
+- Garment condition photo (intake photos for dispute prevention)
+- Express/regular priority queue
+- Daily pickup route planner
+- Stain treatment notes per garment
+
+**Visitor Experience**:
+- Schedule pickup (date, time slot)
+- Choose: wash & fold / wash & iron / dry clean / steam press
+- Weight/piece estimate calculator
+- Live status tracking ("Your clothes are being ironed 👔")
+- Regular schedule (weekly pickup every Monday)
+
+---
+
+### Management System 11: 👓 **Eyewear & Optician Manager**
+**Category**: Eyewear & Opticians (cat_010)
+
+**Unique Process**: `Eye Test Booking → Frame Selection → Lens Prescription → Order → Fabrication → Try/Deliver`
+
+**Owner Dashboard Features**:
+- Eye test appointment scheduler
+- Frame inventory (with virtual try-on photos)
+- Lens prescription database per customer
+- Order fabrication tracker (lens grinding → fitting → QC → ready)
+- Power history per customer
+- Contact lens subscription management
+
+**Visitor Experience**:
+- Book eye test appointment
+- **AR Virtual Try-On** (try frames using phone camera)
+- Browse frames by shape, color, brand, price
+- Store prescription securely
+- Reorder with same prescription
+- Contact lens auto-delivery subscription
+
+---
+
+### Management System 12: 🧵 **Tailoring & Boutique Manager**
+**Category**: Tailoring & Boutiques (cat_029), Clothing/Fashion (cat_016 — when custom)
+
+**Unique Process**: `Select Design → Measurement → Fabric Selection → Stitching → Fitting → Alteration → Deliver`
+
+**Owner Dashboard Features**:
+- Customer measurement profiles (saved per customer)
+- Fabric inventory with photos, pricing
+- Design catalog / lookbook
+- Alteration queue with priority
+- Fitting appointment scheduler
+- Wedding/bulk order management (10+ pieces)
+- Delivery timeline tracker per order
+
+**Visitor Experience**:
+- Browse design catalog / lookbook
+- Upload reference photos ("I want something like this")
+- Self-measurement guide with video tutorial
+- Live status tracker ("Cutting → Stitching → Embroidery → Fitting Ready")
+- Try-on appointment booking
+
+---
+
+### Management System 13: 📋 **Professional Consultation Manager**
+**Categories**: CAs/Tax (cat_035), Lawyers (cat_036), Insurance (cat_037), Real Estate (cat_018), Travel Agents (cat_043)
+
+**Unique Process**: `Book Consultation → Upload Documents → Consultation Session → Action Items → Follow-up → Close`
+
+**Owner Dashboard Features**:
+- Consultation slot calendar
+- Client document vault (encrypted uploads)
+- Case/file tracker with milestones
+- Fee structure (hourly/fixed/retainer)
+- Meeting notes with AI summary
+- Document template library (agreements, tax forms, legal notices)
+- Client communication log
+
+**Visitor Experience**:
+- Browse by specialization (Tax filing, GST, Criminal law, etc.)
+- Upload documents securely before consultation
+- Video consultation option
+- View fee structure transparently
+- Track case/file progress
+- Download generated documents
+
+---
+
+### Management System 14: 📖 **Education & Coaching Manager**
+**Categories**: Tutors/Education (cat_014), Coaching/Test Prep (cat_054), Driving Schools (cat_031)
+
+**Unique Process**: `Browse Courses → Enroll → Schedule → Attend → Assignment → Progress → Certificate`
+
+**Owner Dashboard Features**:
+- Course/class builder (subjects, levels, batch timings)
+- Student enrollment management
+- Attendance tracker (QR code check-in)
+- Assignment/homework distribution
+- Progress reports per student
+- Fee collection with installment plans
+- Demo class scheduler
+- Student-parent communication
+
+**Visitor Experience**:
+- Browse by subject, level, board (CBSE, ICSE, State)
+- Book demo/trial class
+- View tutor qualifications, ratings
+- Class schedule calendar
+- Progress dashboard for parents
+- Online class link integration (Zoom/Google Meet)
+
+---
+
+### Management System 15: 🏠 **Home Visit Service Manager**
+**Categories**: Home Services/Plumbers (cat_011), Pest Control (cat_024), Deep Cleaning (cat_025), Painting/Renovation (cat_052), Packers/Movers (cat_046), Locksmith (cat_045), Security/CCTV (cat_053)
+
+**Unique Process**: `Describe Problem → Get Quote → Schedule Visit → Service Provider Arrives → Before Photos → Work → After Photos → Pay → Rate`
+
+**Owner Dashboard Features**:
+- Service request queue with priority
+- Quotation builder (itemized estimate)
+- Before/after photo documentation
+- Technician assignment & routing
+- Material cost tracker
+- Warranty certificate generator
+- Recurring service contracts (AMC)
+- Customer site address book
+
+**Visitor Experience**:
+- Describe problem with photos/video
+- Get instant estimated quote
+- Compare quotes from multiple providers
+- Schedule visit (date, time slot, address)
+- Live arrival tracker (provider en route)
+- Before/after photo proof
+- AMC subscription option
+
+---
+
+### Management System 16: 🎉 **Event & Creative Service Manager**
+**Categories**: Catering/Party (cat_032), Event Planners/Decorators (cat_033), Photographers/Videographers (cat_034), Wedding Planners (cat_050), Interior Design (cat_051), Astrologer/Pandit (cat_055)
+
+**Unique Process**: `Browse Portfolio → Get Quote → Discuss Requirements → Book Date → Event Day → Deliverables → Rate`
+
+**Owner Dashboard Features**:
+- Portfolio gallery with past work
+- Date availability calendar (block dates)
+- Package builder (Bronze/Silver/Gold)
+- Quotation with itemized breakdown
+- Event checklist with task tracker
+- Client mood board / requirement sheet
+- Deliverable tracker (photos, video editing progress)
+- Advance payment & milestone billing
+
+**Visitor Experience**:
+- Browse portfolio by event type (Wedding, Birthday, Corporate)
+- Check date availability instantly
+- Compare packages with pricing
+- Share requirement details / mood board
+- View event checklist progress
+- Download deliverables (photos, videos)
+- Muhurt/Panchang integration (for Pandit/Astrologer)
+
+---
+
+### Management System 17: 🖨️ **Print & Service Counter Manager**
+**Categories**: Printing/Xerox/DTP (cat_044), Courier/Parcel (cat_042)
+
+**Unique Process**: `Upload File/Drop Parcel → Specify Requirements → Get Price → Pay → Pick Up / Deliver`
+
+**Owner Dashboard Features**:
+- File upload queue (PDFs, photos for printing)
+- Job ticket system (print specs: color, size, copies, binding)
+- Pricing calculator (per page, per copy, binding charges)
+- Parcel tracking integration (for courier)
+- Daily job completion log
+- Bulk order management
+
+**Visitor Experience**:
+- Upload file for printing (PDF, image, Word)
+- Specify print requirements (color/BW, pages, copies, paper size, binding)
+- Instant price calculator
+- Track print job status
+- Schedule pickup or delivery
+- Parcel booking with weight calculator
+
+---
+
+### Management System 18: 📦 **Subscription & Recurring Order Manager**
+**Categories**: Water Tanker (cat_047), Gas Cylinder (cat_048) — also cross-applied to Tiffin, Medicine refills
+
+**Unique Process**: `Subscribe → Auto-Schedule → Confirm → Dispatch → Deliver → Auto-Renew`
+
+**Owner Dashboard Features**:
+- Subscription management (frequency, quantity, address)
+- Auto-dispatch scheduling
+- Route optimization for recurring deliveries
+- Customer notification before scheduled delivery
+- Payment auto-debit management
+- Temporary pause/resume
+
+**Visitor Experience**:
+- Subscribe with frequency (daily, weekly, monthly)
+- Auto-scheduled delivery with notifications
+- Skip/reschedule next delivery
+- Payment auto-debit with reminders
+- Usage tracker (how many cylinders this year, water consumption)
+
+---
+
+## Icon Library Transformation Plan
+
+### Current State
+Both web and mobile already have `DynamicIcon.js` supporting **Lucide** (default) and **Phosphor** with a backend-configurable theme toggle.
+
+### Enhancement Plan
+
+#### [MODIFY] [DynamicIcon.js (Web)](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/components/DynamicIcon.js)
+- Add **category-specific icon mapping** — each of 55 categories gets a dedicated Lucide + Phosphor icon pair
+- Add **weight/style support** for Phosphor (thin, light, regular, bold, fill, duotone)
+- Add size variants (sm=16, md=24, lg=32, xl=48) for consistent sizing
+- Add animated icon option (pulse for notifications, spin for loading)
+- Lazy-load icon bundles to reduce initial bundle size
+
+#### [MODIFY] [DynamicIcon.js (Mobile)](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/mobile_build/mobile_build%2007-07-2026/src/components/DynamicIcon.js)
+- Mirror all web DynamicIcon enhancements
+- Cache theme preference in AsyncStorage (don't fetch on every render)
+- Add Animated icon wrapper using `react-native-reanimated`
+
+#### [NEW] Category Icon Registry
+```
+// Each category mapped to BOTH icon libraries
+CATEGORY_ICONS = {
+  'grocery-supermarkets':    { lucide: 'ShoppingCart',    phosphor: 'ShoppingCart' },
+  'restaurants-cafes':       { lucide: 'UtensilsCrossed', phosphor: 'ForkKnife' },
+  'pharmacy-healthcare':     { lucide: 'Pill',            phosphor: 'Pill' },
+  'salon-beauty-spa':        { lucide: 'Scissors',        phosphor: 'Scissors' },
+  'dentists-orthodontists':  { lucide: 'SmilePlus',       phosphor: 'Tooth' },
+  'automotive-mechanic':     { lucide: 'Wrench',          phosphor: 'Wrench' },
+  'mobile-computer-repair':  { lucide: 'Smartphone',      phosphor: 'DeviceMobile' },
+  'jewellery-gold':          { lucide: 'Gem',             phosphor: 'Diamond' },
+  'tiffin-meal-subscription':{ lucide: 'Soup',            phosphor: 'BowlFood' },
+  // ... all 55 categories
+}
+```
+
+#### [MODIFY] [GlassIcon.js (Web)](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/components/ui/GlassIcon.js)
+- Accept `categorySlug` prop → auto-resolve to correct icon
+- Add category-specific color schemes (healthcare=green, food=orange, auto=blue)
+- Add `animated` prop for micro-interactions
+
+#### [MODIFY] [GlassIcon.js (Mobile)](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/mobile_build/mobile_build%2007-07-2026/src/components/GlassIcon.js)
+- Mirror web enhancements with RN Animated API
+- Add haptic feedback on press (expo-haptics)
+
+#### Global Icon Consistency Sweep
+Replace all raw emoji icons (`🛒`, `💇`, `🏥` etc.) used in:
+- Shop category grid in [shops/page.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shops/page.js) (line 188)
+- Shop dashboard role switcher in [shop-dashboard/page.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/page.js)
+- Manager configs in [shop-manager/[category]/page.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-manager/%5Bcategory%5D/page.js)
+- Mobile shop dashboard
+
+With proper `<DynamicIcon>` or `<GlassIcon>` components for a professional, consistent look that dynamically switches between Lucide and Phosphor based on admin theme config.
+
+---
+
+## Advanced Visitor Experience Enhancements
+
+### 🧠 AI-Powered Features
+
+#### Smart Recommendations Engine
+- **"People in your area also bought"** — collaborative filtering based on same-region purchases
+- **"Based on your past orders"** — personal recommendation carousel on home + shop pages
+- **Seasonal/festival recommendations** — auto-suggest Diwali sweets, Holi colors, Rakhi gifts
+- **Price comparison** — same product across multiple nearby shops
+
+#### Voice Search (Web + Mobile)
+- **Web**: Web Speech API (free, built-in browser)
+- **Mobile**: expo-speech for voice-to-text
+- "Hey, find me a plumber near Kothrud"
+- "Order 1 kg sugar from Sharma General Store"
+- Support Hindi + Marathi + English
+
+#### Smart OCR Enhancements
+- Handwritten grocery list → AI-parsed to product items → auto-mapped to nearest shop inventory
+- Prescription photo → extract medicine names → match to pharmacy stock
+- Vehicle number plate → auto-fill in garage job card
+
+### 🎮 Loyalty & Gamification System
+
+#### Sampark Coins Economy (Enhanced)
+- **Earn**: 1% of every order, 50 coins on first order, 100 coins on referral, 25 coins for review
+- **Burn**: Up to 10% of order value, full payment for small items
+- **Bonus**: 2x coins during festivals, 3x for premium subscribers
+- **Leaderboard**: "Top 10 shoppers in your locality this month"
+
+#### Achievement Badges
+- 🥇 "First Order" — Place your first order
+- 🔥 "Streak Master" — Order 7 days in a row
+- 🏪 "Explorer" — Visit 10 different shop categories
+- ⭐ "Reviewer" — Write 5 reviews with photos
+- 🤝 "Social Butterfly" — Refer 5 friends
+- 💎 "Premium Supporter" — Subscribe to premium
+
+#### Gamified Shop Discovery
+- "Daily Spin Wheel" — Win coupons for random local shops
+- "Mystery Shop" — Try a random shop, get bonus coins
+- "Locality Challenge" — "Order from 3 different shops this week, earn 200 coins"
+
+### 📍 Enhanced Location Features
+
+#### Live Queue Visibility
+- For salons, hospitals, service centers: "Current wait time: ~15 minutes, 3 people ahead"
+- Auto-join queue from app before reaching shop
+- Get notified when your turn is approaching ("Leave now, your turn in 10 min")
+
+#### Shop Busy-ness Indicator
+- 🟢 Not busy (order/service within 15 min)
+- 🟡 Moderate (30-45 min wait)
+- 🔴 Very busy (60+ min wait)
+- Based on real-time order count + staff availability
+
+#### Neighborhood Map View
+- Interactive map showing all nearby shops with category icons
+- Cluster view → zoom to see individual shops
+- Filter by open now, delivery available, top-rated
+- Route to shop with walking/driving directions
+
+### 🎨 Premium Visitor UI Enhancements
+
+#### Shop Stories & Highlights
+- Instagram-style stories from shops (today's special, new arrivals, behind-the-scenes)
+- Highlight reels (best sellers, customer testimonials)
+- Auto-expire after 24 hours
+
+#### Rich Product Cards
+- High-quality image carousel
+- Nutritional info (for food items)
+- Allergen warnings
+- Expiry date display
+- "Add to wishlist" for later
+- Social sharing ("Share this deal with friends")
+
+#### Personalized Dashboard
+- **"Good Morning, Abhi"** — Time-of-day greeting
+- **Quick Actions**: Reorder last order, rebook last appointment, check order status
+- **Nearby Deals**: Flash sales from shops within 2km
+- **Upcoming**: Scheduled appointments, expected deliveries
+
+---
+
+## Enhanced Phase Breakdown
+
+### Phase 1: Database & Backend Foundation
+- New migration: 016_enhanced_shop_management.sqlite.sql (16 new categories + all new tables)
+- Enhanced shop.routes.js (all owner APIs with real data)
+- Enhanced admin.routes.js (disputes, returns, payouts, analytics)
+- New notification.service.js (Socket.io + FCM)
+- New upload.service.js (Multer + local storage)
+- New email.service.js (Nodemailer)
+- Shop owner auth middleware
+- Razorpay real test key integration
+
+### Phase 2: Web — 18 Management Systems (Backend-Connected)
+- Connect all 13 existing shop-dashboard managers to real APIs
+- Connect all 5 existing shop-manager web components to real APIs
+- Build remaining management system components for new categories
+- Implement common shared panels (Orders, Appointments, Staff, Inventory, Payouts, Chat, Disputes)
+- Real-time notifications via Socket.io
+
+### Phase 3: Web — Enhanced Visitor Experience
+- Enhance all 13 existing visitor view components with real data
+- Build visitor views for all 16 new categories
+- Enhanced shop detail page with live queue, busy-ness, recommendations
+- Enhanced checkout with real Razorpay
+- Real-time order tracking with delivery map
+- Order history with reorder/rebook
+- Chat with shop owner
+- Voice search integration
+- Loyalty gamification UI (coins, badges, leaderboard)
+
+### Phase 4: Icon Library Transformation
+- Enhanced DynamicIcon with 55-category icon registry
+- Enhanced GlassIcon with category-specific colors
+- Global sweep: replace all emojis with proper icon components
+- Both web AND mobile platforms
+
+### Phase 5: Mobile — Complete Flows
+- Mobile shop detail with category-aware UI
+- Mobile appointment booking
+- Mobile checkout with Razorpay
+- Mobile order tracking with maps
+- Mobile shop owner dashboard (order management, quick inventory)
+- Mobile chat
+- Push notifications (FCM)
+- Voice search
+- Loyalty dashboard
+
+### Phase 6: Admin & Territory Enhancements
+- Shop performance monitoring dashboard
+- Dispute resolution center
+- Return/refund management
+- Live delivery monitoring (map view)
+- Per-category analytics
+- Payout settlement system
+- Category management (add/edit 55 categories)
+
+### Phase 7: Real-Time Communication
+- Enhanced Socket.io event system (30+ events)
+- Firebase FCM push notifications
+- Email notifications (Nodemailer)
+- In-app notification center
+- Shop owner ↔ visitor chat
+- Admin alert system
+
+### Phase 8: Advanced Features
+- AI recommendation engine
+- Smart OCR enhancements
+- Gamification (badges, leaderboard, spin wheel)
+- AR virtual try-on (eyewear, clothing)
+- Neighborhood map view
+- Live queue system
+- Shop busy-ness indicator
+- Personalized visitor dashboard
+
+---
+
+## Complete File Change Summary
+
+| Category | New Files | Modified Files |
+|----------|-----------|----------------|
+| Backend Migrations | 1 | 0 |
+| Backend Controllers | 3 | 2 |
+| Backend Services | 4 | 0 |
+| Backend Routes | 0 | 4 |
+| Backend Middleware | 2 | 0 |
+| Backend Sockets | 1 | 1 |
+| Web Pages (New) | 8 | 0 |
+| Web Pages (Modified) | 0 | 5 |
+| Web Visitor Views (New) | 16 | 13 |
+| Web Manager Components (New) | 8 | 18 |
+| Web Common Components | 12 | 0 |
+| Web UI Components | 0 | 4 |
+| Web Providers/Services | 3 | 0 |
+| Mobile Screens (New) | 8 | 0 |
+| Mobile Screens (Modified) | 0 | 3 |
+| Mobile Components | 2 | 2 |
+| Mobile Services | 2 | 0 |
+| **Total** | **70 new** | **52 modified** |
+
+---
+
+## Complete 55-Category Management Mapping
+
+| # | Category | Business Model | Management System | Unique Features |
+|---|----------|---------------|------------------|-----------------|
+| 1 | Grocery & Supermarkets | Product | 🛒 Retail Product | OCR Smart List, Combo Builder |
+| 2 | Restaurants & Cafes | Product | 🍽️ Restaurant F&B | KDS, Table Management, QR Menu |
+| 3 | Pharmacy & Healthcare | Product | 💊 Pharmacy | Prescription Vault, Expiry Tracking |
+| 4 | Fresh Produce & Meat | Product | 💊 Pharmacy (shared) | Freshness Tracker, Weight-based |
+| 5 | Dairy, Sweets & Bakery | Product | 🛒 Retail Product | Pre-orders, Daily Bake Schedule |
+| 6 | Stationery, Gifts & Books | Product | 🛒 Retail Product | Gift wrapping, Bulk orders |
+| 7 | Florists & Nurseries | Product | 💐 Fresh & Perishable | Custom Bouquet Builder, Occasion |
+| 8 | Pet Care & Supplies | Product | 🛒 Retail Product | Pet profile, Vaccination reminder |
+| 9 | Pooja Samagri & Religious | Product | 🛒 Retail Product | Festival calendar, Puja kit bundles |
+| 10 | Eyewear & Opticians | Hybrid | 👓 Eyewear | AR Try-On, Prescription Store |
+| 11 | Home Services & Plumbers | Appointment | 🏠 Home Visit | Before/After Photos, Quotation |
+| 12 | Salon, Beauty & Spa | Appointment | 💇 Salon & Wellness | Waitlist, Portfolio, Punch Card |
+| 13 | Electricians & Electronics | Hybrid | 🔧 Garage & Repair | Job Cards, Parts Inventory |
+| 14 | Tutors & Education | Appointment | 📖 Education | Course Builder, Attendance, Progress |
+| 15 | Hardware & Sanitary | Product | 🛒 Retail Product | Tool Rental, Contractor Invoice |
+| 16 | Clothing & Fashion | Product | 🛒 Retail Product | Size/Color Variants, Season Sales |
+| 17 | Gym & Fitness | Appointment | 💇 Salon & Wellness | Member Subscriptions, Class Schedule |
+| 18 | Real Estate & Brokers | Appointment | 📋 Professional | Property Listings, Site Visit |
+| 19 | Automotive & Mechanic | Hybrid | 🔧 Garage & Repair | Job Card Kanban, Insurance Claim |
+| 20 | Dentists & Orthodontists | Appointment | 🏥 Healthcare | OPD Queue, EMR, X-Ray Gallery |
+| 21 | Pathology Labs | Appointment | 🏥 Healthcare | Sample Collection, Report Download |
+| 22 | Physiotherapy | Appointment | 🏥 Healthcare | Session Progress, Exercise Plan |
+| 23 | Ayurvedic & Homeopathic | Appointment | 🏥 Healthcare | Herb Catalog, Dosha Assessment |
+| 24 | Pest Control | Appointment | 🏠 Home Visit | Area Mapping, Chemical Log |
+| 25 | Deep Cleaning | Appointment | 🏠 Home Visit | Room Count Pricing, Checklist |
+| 26 | AC & Appliance Repair | Appointment | 🔧 Garage & Repair | AMC Management, Gas Refill Log |
+| 27 | RO & Water Purifier | Appointment | 🔧 Garage & Repair | Filter Change Schedule, TDS Log |
+| 28 | Laundry & Dry Cleaning | Hybrid | 👔 Laundry | Weight/Piece, Garment Photo |
+| 29 | Tailoring & Boutiques | Appointment | 🧵 Tailoring | Measurement Profiles, Lookbook |
+| 30 | Car & Bike Wash | Appointment | 💇 Salon & Wellness | Subscription Wash Plans |
+| 31 | Driving Schools | Appointment | 📖 Education | Lesson Progress, License Prep |
+| 32 | Catering & Party | Appointment | 🎉 Event & Creative | Menu Packages, Guest Count |
+| 33 | Event Planners & Decorators | Appointment | 🎉 Event & Creative | Portfolio, Date Calendar |
+| 34 | Photographers & Videographers | Appointment | 🎉 Event & Creative | Portfolio, Deliverable Tracker |
+| 35 | CAs & Tax Consultants | Appointment | 📋 Professional | Document Vault, Case Tracker |
+| 36 | Lawyers & Advocates | Appointment | 📋 Professional | Case File, Court Date Calendar |
+| 37 | Insurance Agents | Appointment | 📋 Professional | Policy Comparison, Claim Tracker |
+| 38 | Yoga & Wellness | Appointment | 💇 Salon & Wellness | Class Schedule, Meditation Timer |
+| 39 | Dieticians & Nutritionists | Appointment | 🏥 Healthcare | Meal Plan, Calorie Tracker |
+| 40 | **Tiffin & Meal Subscription** | Hybrid | 🍱 Tiffin | Daily Menu, Subscriber Mgmt |
+| 41 | **Mobile & Computer Repair** | Hybrid | 🔧 Garage & Repair | Device Diagnostics, Data Backup |
+| 42 | **Courier & Parcel** | Product | 🖨️ Print & Counter | Parcel Tracking, Weight Calc |
+| 43 | **Travel Agents & Visa** | Appointment | 📋 Professional | Itinerary Builder, Visa Tracker |
+| 44 | **Printing, Xerox & DTP** | Hybrid | 🖨️ Print & Counter | File Upload, Job Ticket |
+| 45 | **Locksmith & Key Maker** | Appointment | 🏠 Home Visit | Emergency SOS, Key Types |
+| 46 | **Packers & Movers** | Appointment | 🏠 Home Visit | Inventory List, Quote Compare |
+| 47 | **Water Tanker & Supply** | Product | 📦 Subscription | Auto-Schedule, Tank Level |
+| 48 | **Gas Cylinder & LPG** | Product | 📦 Subscription | Refill Schedule, Safety Check |
+| 49 | **Jewellery & Gold** | Product | 🛒 Retail Product | Purity Certificate, Buyback |
+| 50 | **Wedding & Party Planner** | Appointment | 🎉 Event & Creative | Full Wedding Mgmt |
+| 51 | **Interior Design & Decor** | Appointment | 🎉 Event & Creative | 3D Room Preview, Material List |
+| 52 | **Painting & Renovation** | Appointment | 🏠 Home Visit | Color Visualizer, Room Estimate |
+| 53 | **Security & CCTV** | Hybrid | 🏠 Home Visit | Guard Roster, Camera Feed |
+| 54 | **Coaching & Test Prep** | Appointment | 📖 Education | Mock Tests, Performance Analytics |
+| 55 | **Astrologer & Pandit** | Appointment | 🎉 Event & Creative | Muhurt Calendar, Panchang |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Full lifecycle tests
+cd backend && npm test
+
+# Per-management-system lifecycle tests
+node backend/src/__tests__/retail-lifecycle.test.js
+node backend/src/__tests__/appointment-lifecycle.test.js
+node backend/src/__tests__/garage-lifecycle.test.js
+node backend/src/__tests__/home-service-lifecycle.test.js
+node backend/src/__tests__/subscription-lifecycle.test.js
+node backend/src/__tests__/dispute-return-lifecycle.test.js
+```
+
+### Manual Verification (Per Management System)
+1. **Retail**: Browse → Add to cart → Checkout → Razorpay → Track → Deliver → Rate → Return
+2. **Restaurant**: Browse menu → Customize → Order → KDS ticket → Track → Deliver → Rate
+3. **Salon**: Browse services → Select stylist → Book slot → Pay → Check-in → Complete → Rate
+4. **Hospital**: Browse doctors → Book OPD → Join queue → Consult → Prescription → Download
+5. **Garage**: Create job card → Send estimate → Customer approve → Repair → Pickup → Rate
+6. **Home Service**: Describe problem → Get quote → Schedule visit → Track arrival → Complete → Rate
+7. **Professional**: Book consultation → Upload docs → Consult → Get documents → Pay → Rate
+8. **Tiffin**: Browse plans → Subscribe → Daily menu → Pause/resume → Rate daily
+9. **Laundry**: Schedule pickup → Track status → Delivery → Rate
+10. **All 18 systems**: Verify on both Web AND Mobile
+
+### Real-Time Verification
+- Open 3 browsers (visitor + shop owner + admin) → Place order → Verify instant notifications across all roles
+- Test FCM push notification delivery on mobile
+- Test chat between visitor and shop owner
+
+### Icon Library Verification
+- Toggle theme between Lucide and Phosphor from admin settings
+- Verify all 55 categories display correct icons on both web and mobile
+- Verify GlassIcon animations work on both platforms
+
+---
+
+## Implementation Priority Order
+
+| Phase | Priority | Est. Effort | Dependencies |
+|-------|----------|------------|--------------|
+| Phase 1: Backend Foundation | 🔴 Critical | High | None |
+| Phase 2: 18 Management Systems | 🔴 Critical | Very High | Phase 1 |
+| Phase 3: Enhanced Visitor Experience | 🔴 Critical | Very High | Phase 1 |
+| Phase 4: Icon Transformation | 🟡 High | Medium | None (parallel) |
+| Phase 5: Mobile Flows | 🟡 High | High | Phase 1 |
+| Phase 6: Admin Enhancement | 🟡 High | Medium | Phase 1 |
+| Phase 7: Real-Time Communication | 🟡 High | Medium | Phase 1, 2, 3 |
+| Phase 8: Advanced Features | 🟢 Medium | High | Phase 1-7 |

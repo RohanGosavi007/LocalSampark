@@ -1,0 +1,103 @@
+# Nearby Shops — Phase 2 Implementation Plan
+
+Thank you for confirming the feature list! We will omit the "Smart Search" AI component and focus heavily on **both Delivery/Cart logistics and User Engagement**.
+
+Below is the technical implementation plan detailing exactly how we will build these 5 massive upgrades into your platform.
+
+## Proposed Changes
+
+---
+
+### 1. Multi-Shop "Mall Cart" & Batch Delivery (Logistics Upgrade)
+To allow users to buy from a Grocery Shop and a Pharmacy in the same order, and pay only one optimized delivery fee.
+
+#### Database Changes
+* [NEW] Table `batch_orders` (Groups multiple `orders` together for a single delivery partner)
+  * `id` (PK)
+  * `user_id` (FK)
+  * `total_batch_amount`
+  * `combined_delivery_fee`
+  * `delivery_partner_id`
+  * `status`
+* [MODIFY] Table `orders`
+  * Add `batch_id` (FK to `batch_orders`, nullable)
+
+#### Backend Routes
+* [NEW] `POST /api/v1/shops/cart/batch-checkout`
+  * Accepts items grouped by multiple `shop_id`s. Calculates the geographic Haversine distance between the shops and the user to generate a single discounted `combined_delivery_fee`.
+
+---
+
+### 2. "LocalSampark Pass" & Hyperlocal Loyalty Coins (Retention)
+To lock users into the ecosystem with rewards.
+
+#### Database Changes
+* [NEW] Table `loyalty_accounts`
+  * `user_id` (PK/FK)
+  * `sampark_coins_balance` (Integer)
+* [NEW] Table `loyalty_transactions`
+  * Tracks earning and burning of coins per order.
+
+#### Backend Routes
+* [MODIFY] `POST /api/v1/shops/orders/checkout` (or the new batch checkout)
+  * Automatically credit 1% of the order value as Sampark Coins.
+  * Add support for `use_coins=true` flag in checkout to deduct from the order total.
+
+---
+
+### 3. "Local Highlights" (Video/Story Reels for Shops)
+To increase daily active users through engaging 15-second shop stories.
+
+#### Database Changes
+* [MODIFY] Table `stories`
+  * Add `shop_id` (FK to `local_shops`, nullable). If set, this story belongs to a shop rather than a regular user.
+
+#### Backend Routes
+* [NEW] `GET /api/v1/shops/highlights/feed`
+  * Fetches active (non-expired) stories from shops within a 5km radius of the user's location.
+
+---
+
+### 4. Verified Society Reviews & "Ask the Neighborhood" (Trust)
+To build hyper-local trust.
+
+#### Database Changes
+* [MODIFY] Table `shop_reviews`
+  * Add `is_society_verified` (Boolean). Set to true if the reviewer's address/society matches the shop's immediate neighborhood.
+* [NEW] Table `shop_qa`
+  * `id` (PK)
+  * `shop_id` (FK)
+  * `user_id` (FK - asker)
+  * `question`
+  * `answer`
+  * `answered_by` (FK - shop owner or verified neighbor)
+
+#### Backend Routes
+* [NEW] `POST /api/v1/shops/:id/qa` and `GET /api/v1/shops/:id/qa`
+
+---
+
+### 5. Flash Sales & "Happy Hours" (Conversion)
+To allow merchants to clear inventory during slow hours.
+
+#### Database Changes
+* [NEW] Table `flash_sales`
+  * `id` (PK)
+  * `shop_id` (FK)
+  * `product_id` (FK)
+  * `discount_percentage`
+  * `start_time` (Timestamp)
+  * `end_time` (Timestamp)
+
+#### Backend Routes
+* [NEW] `GET /api/v1/shops/flash-sales/active`
+  * Returns all currently active flash sales for nearby shops, pushed to the top carousel of the Shop Directory.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Database Migrations:** Phase 2 involves creating 4 new database tables (`batch_orders`, `loyalty_accounts`, `loyalty_transactions`, `shop_qa`, `flash_sales`) and modifying 2 existing ones (`orders`, `stories`).
+>
+> Please click **"Proceed"** or reply with your approval if you are happy with this technical blueprint, and I will begin execution immediately by setting up the database schemas and building out the backend controllers!

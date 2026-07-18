@@ -1,0 +1,2089 @@
+# 🏘️ LocalSampark — Complete Implementation Plan v3
+
+> **App Name**: **LocalSampark** (लोकल संपर्क)
+> **Tagline**: *"Your Neighborhood, Connected"*
+> **Version**: 3.0 — Final Comprehensive Blueprint
+> **Pilot Location**: Dhanori, Pune, Maharashtra
+> **Platforms**: 🌐 Website + 📱 Android + 🍎 iOS (Single Codebase)
+
+---
+
+## Table of Contents
+
+| Section | Contents |
+|---|---|
+| **Part A: Foundation** | [1. Brand Identity](#1-brand-identity), [2. Platform Strategy](#2-platform-strategy), [3. Technology Stack](#3-technology-stack), [4. System Architecture](#4-system-architecture) |
+| **Part B: Core Features (6 Pillars)** | [5. Pillar 1: Community & Social](#5-pillar-1-community--social), [6. Pillar 2: Business Directory](#6-pillar-2-business-directory--marketplace), [7. Pillar 3: Gig & Jobs](#7-pillar-3-gig-economy--job-board), [8. Pillar 4: Real Estate](#8-pillar-4-real-estate-hub), [9. Pillar 5: Delivery System](#9-pillar-5-delivery-system-with-live-tracking), [10. Pillar 6: Admin Control](#10-pillar-6-admin-full-control-system) |
+| **Part C: Advanced Features (v2)** | [11. v2 Features (15 Features)](#11-advanced-features-from-v2-retained) |
+| **Part D: NEW Features (v3)** | [12. 20 NEW Advanced Features](#12-twenty-new-advanced-features-v3-add-ons) |
+| **Part E: Backend & Data** | [13. Database Schema](#13-complete-database-schema), [14. API Architecture](#14-api-architecture), [15. Real-Time System](#15-real-time-communication) |
+| **Part F: Business & Operations** | [16. Multi-Tier Admin](#16-multi-tier-admin-hierarchy), [17. Revenue Model](#17-revenue-model), [18. Dual Payment System](#18-dual-payment-system) |
+| **Part G: Launch & Scale** | [19. Phased Roadmap](#19-phased-roadmap-dhanori-pilot), [20. Project Structure](#20-project-structure), [21. Verification Plan](#21-verification-plan), [22. Risk Assessment](#22-risk-assessment) |
+
+---
+
+# PART A: FOUNDATION
+
+---
+
+## 1. Brand Identity
+
+### LocalSampark (लोकल संपर्क)
+
+| Aspect | Detail |
+|---|---|
+| **Name** | **LocalSampark** |
+| **Hindi** | लोकल संपर्क |
+| **Meaning** | "Local Connection" — *Sampark* means contact/connection in Hindi |
+| **Tagline** | *"Your Neighborhood, Connected"* |
+| **Alternate Taglines** | *"Apna Mohalla, Ek App"* (Your Neighborhood, One App) |
+| **Domain Target** | localsampark.in, localsampark.com |
+| **Play Store ID** | com.localsampark.app |
+| **Brand Colors** | Primary: Deep Indigo (#4F46E5), Accent: Warm Orange (#F97316), Success: Emerald (#10B981) |
+| **Logo Concept** | Interconnected nodes forming a neighborhood map silhouette with "LS" monogram |
+
+### Brand Personality
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   LOCALSAMPARK BRAND                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│   🎯 Mission: Be the ONE app every neighborhood needs       │
+│                                                              │
+│   🏠 Values:                                                 │
+│      • Community First — Every feature serves the locality   │
+│      • Trust & Safety — Verified identities, admin control   │
+│      • Job Creation — Employment for local talent            │
+│      • Small Business Growth — Digital presence for all      │
+│      • Convenience — Everything local, at your fingertips    │
+│                                                              │
+│   🎨 Design Language:                                        │
+│      • Warm, approachable, Indian-context UI                 │
+│      • Supports 12+ Indian languages                         │
+│      • Dark mode + Light mode                                │
+│      • Accessible (WCAG 2.1 AA compliant)                    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Platform Strategy
+
+### Tri-Platform with Single Backend
+
+```mermaid
+graph TB
+    subgraph "Single Shared Backend (Self-Hosted VPS)"
+        API["⚡ Node.js + Express.js<br/>REST API Server"]
+        WS["🔌 Socket.io<br/>Real-Time Server"]
+        PG["🗄️ PostgreSQL + PostGIS"]
+        RD["⚡ Redis Cache + Pub/Sub"]
+        MINIO["📦 MinIO File Storage"]
+        BULL["⚙️ Bull Queue Workers"]
+    end
+    
+    subgraph "📱 Android App"
+        AND["React Native (Expo)"]
+        ANDDB["SQLite Local Cache"]
+    end
+    
+    subgraph "🍎 iOS App"
+        IOS["React Native (Expo)"]
+        IOSDB["SQLite Local Cache"]
+    end
+    
+    subgraph "🌐 Website"
+        WEB["Next.js 14+"]
+        IDB["IndexedDB Cache"]
+    end
+    
+    subgraph "🖥️ Admin Dashboard"
+        ADM["Next.js Admin Panel"]
+    end
+    
+    subgraph "🏪 Shop Owner Panel"
+        SOP["Next.js Shop Dashboard"]
+    end
+    
+    AND --> API
+    AND <--> WS
+    IOS --> API
+    IOS <--> WS
+    WEB --> API
+    WEB <--> WS
+    ADM --> API
+    SOP --> API
+    
+    API --> PG
+    API --> RD
+    API --> MINIO
+    API --> BULL
+    WS --> RD
+    BULL --> PG
+    
+    AND -.-> ANDDB
+    IOS -.-> IOSDB
+    WEB -.-> IDB
+    
+    style API fill:#4F46E5,stroke:#fff,color:#fff
+    style PG fill:#10B981,stroke:#fff,color:#fff
+    style AND fill:#0EA5E9,stroke:#fff,color:#fff
+    style IOS fill:#6366F1,stroke:#fff,color:#fff
+    style WEB fill:#F97316,stroke:#fff,color:#fff
+    style ADM fill:#EAB308,stroke:#333,color:#333
+    style SOP fill:#14B8A6,stroke:#fff,color:#fff
+```
+
+### Database Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                     LOCALSAMPARK DATA FLOW                            │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│   📱 Android            🍎 iOS               🌐 Website               │
+│   ┌──────────┐         ┌──────────┐         ┌──────────┐            │
+│   │ SQLite   │         │ SQLite   │         │ IndexedDB│            │
+│   │ (Offline │         │ (Offline │         │ (Session │            │
+│   │  Cache)  │         │  Cache)  │         │  Cache)  │            │
+│   └────┬─────┘         └────┬─────┘         └────┬─────┘            │
+│        │                    │                     │                   │
+│        └────────────┬───────┴─────────────────────┘                  │
+│                     │  HTTPS + WebSocket (TLS 1.3)                   │
+│                     ▼                                                │
+│        ┌─────────────────────────────┐                               │
+│        │  🔒 Nginx Reverse Proxy     │                               │
+│        │  (SSL, Rate Limit, CORS)    │                               │
+│        └─────────────┬───────────────┘                               │
+│                      ▼                                               │
+│        ┌─────────────────────────────┐                               │
+│        │  ⚡ Node.js API Server      │                               │
+│        │  + Socket.io + Bull Workers │                               │
+│        └─────────────┬───────────────┘                               │
+│                      ▼                                               │
+│        ┌─────────────────────────────┐                               │
+│        │  🗄️ PostgreSQL + PostGIS    │ ◄── SINGLE SOURCE OF TRUTH    │
+│        │  + Redis + MinIO            │                               │
+│        └─────────────────────────────┘                               │
+│                                                                       │
+│   All 3 platforms connect to the SAME database via APIs.             │
+│   SQLite/IndexedDB = local cache only (for offline + speed).         │
+│                                                                       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. Technology Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Mobile App** | **React Native (Expo SDK 52+)** | Single codebase → Android + iOS |
+| **Website** | **Next.js 14+ (React, App Router)** | SEO-optimized responsive website |
+| **Admin Panel** | **Next.js 14+ (React)** | Full admin dashboard |
+| **Shop Owner Panel** | **Next.js 14+ (React)** | Shop analytics & management |
+| **Backend API** | **Node.js 20+ + Express.js 5** | REST API + Background workers |
+| **Server Database** | **PostgreSQL 16 + PostGIS 3.4** | All data, geospatial queries |
+| **Local Device DB** | **SQLite (expo-sqlite)** | Offline cache on mobile devices |
+| **Browser Cache** | **IndexedDB (Dexie.js)** | Offline cache on website |
+| **Cache & Pub/Sub** | **Redis 7+** | Session, feed cache, real-time coordination |
+| **Real-Time** | **Socket.io 4+** | Chat, tracking, live feeds, polls |
+| **Task Queue** | **Bull (Redis-backed)** | Background jobs: notifications, reports, cleanup |
+| **Push Notifications** | **Firebase Cloud Messaging** | Push for all platforms |
+| **Maps** | **Google Maps SDK + Places + Distance Matrix** | Maps, geocoding, ETA, tracking |
+| **File Storage** | **MinIO (self-hosted, S3-compatible)** | Photos, videos, documents |
+| **Auth** | **Firebase Auth + Custom JWT** | Phone OTP, Google Sign-in, Apple Sign-in |
+| **Payments** | **Razorpay + UPI Deeplinks + COD** | Full payment stack |
+| **SMS/Voice** | **MSG91** (India) + Twilio (international) | OTP, proxy numbers, SOS |
+| **Video/Audio** | **WebRTC + Socket.io signaling** | Video calls, voice messages |
+| **Voice Search** | **Google Cloud Speech-to-Text** | Regional language voice input |
+| **AI/ML** | **OpenAI API / Gemini API** | Chatbot, recommendations, translations |
+| **AR** | **ViroReact / expo-three** | AR shop discovery |
+| **QR Codes** | **react-native-qrcode-svg + html5-qrcode** | QR payments, shop menus |
+| **CI/CD** | **GitHub Actions + EAS Build + Vercel** | Automated builds & deploys |
+| **Monitoring** | **Sentry + Firebase Crashlytics + Uptime Robot** | Error tracking, uptime |
+| **Hosting** | **Self-hosted VPS (Hetzner/DigitalOcean)** | Upgrade path → AWS/GCP |
+
+### Self-Hosted Infrastructure
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│          LOCALSAMPARK SELF-HOSTED VPS (Initial Setup)         │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  VPS 1: App Server (4 vCPU, 8GB RAM) — $24/mo               │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  Docker Compose:                                       │  │
+│  │  ├── Node.js API (Express + Socket.io)                 │  │
+│  │  ├── Next.js Website (SSR)                             │  │
+│  │  ├── Next.js Admin Panel                               │  │
+│  │  ├── Nginx (Reverse Proxy + SSL via Let's Encrypt)     │  │
+│  │  └── Bull Worker (Background Jobs)                     │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                               │
+│  VPS 2: Data Server (4 vCPU, 8GB RAM) — $24/mo              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  Docker Compose:                                       │  │
+│  │  ├── PostgreSQL 16 + PostGIS 3.4                       │  │
+│  │  ├── Redis 7                                           │  │
+│  │  └── MinIO (Object Storage)                            │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                               │
+│  Monthly Cost: ~$48/mo (~₹4,000/mo)                          │
+│                                                               │
+│  ⬆️ UPGRADE PATH:                                             │
+│  Scale → AWS (EC2 + RDS + ElastiCache + S3 + CloudFront)    │
+│  Or → GCP (Cloud Run + Cloud SQL + Memorystore + GCS)       │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. System Architecture
+
+### Complete Microservices Diagram
+
+```mermaid
+graph TB
+    subgraph "Clients"
+        C1["📱 Android"]
+        C2["🍎 iOS"]
+        C3["🌐 Website"]
+        C4["🖥️ Admin"]
+        C5["🏪 Shop Panel"]
+    end
+    
+    subgraph "Gateway"
+        NG["🔒 Nginx<br/>SSL + Rate Limit"]
+    end
+    
+    subgraph "Application Layer (Node.js)"
+        API["REST API Server"]
+        WSS["Socket.io Server"]
+        WRK["Bull Workers"]
+    end
+    
+    subgraph "Service Modules"
+        S1["🔐 Auth"]
+        S2["👤 User"]
+        S3["📰 Feed"]
+        S4["💬 Chat"]
+        S5["🏢 Business"]
+        S6["🛠️ Jobs"]
+        S7["🏠 Real Estate"]
+        S8["🚚 Delivery"]
+        S9["📍 Tracking"]
+        S10["🔔 Notifications"]
+        S11["👨‍💼 Admin"]
+        S12["💳 Payments"]
+        S13["🔍 Search"]
+        S14["🤖 AI/Chatbot"]
+        S15["📊 Analytics"]
+        S16["🏘️ Society Mgmt"]
+        S17["🐾 Pet Community"]
+        S18["🏥 Health/Emergency"]
+        S19["🚗 Carpool"]
+        S20["🎫 Events/Tickets"]
+    end
+    
+    subgraph "Data Layer"
+        PG["PostgreSQL<br/>+ PostGIS"]
+        RD["Redis"]
+        MN["MinIO"]
+    end
+    
+    subgraph "External"
+        GM["Google Maps"]
+        FC["Firebase"]
+        RZ["Razorpay"]
+        TW["MSG91/Twilio"]
+        AI["OpenAI/Gemini"]
+        STT["Speech-to-Text"]
+    end
+    
+    C1 & C2 & C3 & C4 & C5 --> NG
+    NG --> API & WSS
+    API --> S1 & S2 & S3 & S4 & S5 & S6 & S7 & S8 & S9 & S10 & S11 & S12 & S13 & S14 & S15 & S16 & S17 & S18 & S19 & S20
+    API --> WRK
+    
+    S1 & S2 & S3 & S5 & S6 & S7 & S8 & S11 & S15 & S16 --> PG
+    S3 & S4 & S9 & WSS --> RD
+    S2 & S5 & S7 --> MN
+    
+    S8 & S9 --> GM
+    S10 --> FC
+    S12 --> RZ
+    S1 & S10 --> TW
+    S14 --> AI
+    S13 --> STT
+    
+    style API fill:#4F46E5,stroke:#fff,color:#fff
+    style PG fill:#10B981,stroke:#fff,color:#fff
+```
+
+---
+
+# PART B: CORE FEATURES (6 PILLARS)
+
+> [!IMPORTANT]
+> **All 6 pillars are fully admin-configurable.** Every feature, parameter, category, and setting can be changed by Admin in real-time without app updates.
+
+---
+
+## 5. Pillar 1: Community & Social
+
+| Feature | Description | Admin Control |
+|---|---|---|
+| **Neighborhood Feed** | Location-gated posts within **admin-set radius** | ✅ Admin sets min/max km (any value) |
+| **Sub-Group Chats** | Topic rooms: Society Sports, Carpooling, Parents, etc. | ✅ Admin creates/manages rooms |
+| **Requirement Board** | "Request Anything" — admin helps fulfill requests | ✅ Admin reviews & connects |
+| **Direct Messaging** | 1:1 chat with proxy number masking | ✅ Admin enables/disables |
+| **Meet & Plan** | Create local meetup events with RSVP | ✅ Admin approves events |
+| **Upvote/Downvote** | Community moderation + karma system | ✅ Admin sets vote thresholds |
+| **Multi-Avatar Profiles** | Personal + Professional + Business identities | ✅ Admin configures types |
+
+---
+
+## 6. Pillar 2: Business Directory & Marketplace
+
+| Feature | Description | Admin Control |
+|---|---|---|
+| **Shop Registration** | Full profile: name, category, photos, hours, location, products | ✅ Admin approves shops |
+| **Complete Shop Profiles** | Image gallery, product list, reviews, ratings, map | ✅ Admin verifies |
+| **"What's New" Section** | Newly listed shops highlighted feed | ✅ Admin sets duration (days) |
+| **Category Search** | Browse by admin-defined categories | ✅ Admin adds/removes/edits |
+| **Map View** | Google Maps with shop pins + filters | ✅ Admin manages settings |
+| **Society Integration** | All local society names via Google Maps | ✅ Admin verifies |
+| **Flash Deals & Offers** | Time-limited deals broadcast to nearby users | ✅ Admin approves deals |
+| **Reviews & Ratings** | Photo reviews, community verified | ✅ Admin moderates |
+
+### Shop Registration Flow
+
+```mermaid
+sequenceDiagram
+    participant SO as 🏪 Shop Owner
+    participant App as 📱 LocalSampark App
+    participant Admin as 👨‍💼 Admin Dashboard
+    participant DB as 🗄️ Database
+    
+    SO->>App: Register as Business
+    App->>SO: Collect: Name, Category, Photos, Location, Hours, Products
+    SO->>App: Submit Registration + GST (optional)
+    App->>DB: Save as "pending_approval"
+    App->>Admin: 🔔 "New shop registration: Sharma Electronics"
+    Admin->>Admin: Verify business details + photos
+    Admin->>DB: Approve → status = "active"
+    DB->>App: Shop goes live
+    App->>SO: 🔔 "Your shop is now live on LocalSampark!"
+    App->>App: Shop appears in "What's New" feed
+    Note over App: Duration set by Admin (default: 7 days)
+```
+
+---
+
+## 7. Pillar 3: Gig Economy & Job Board
+
+| Feature | Description | Admin Control |
+|---|---|---|
+| **Multi-Skill Registry** | Register for: Plumber, Electrician, Welder, Carpenter, Painter, Mason, AC Repair, Cook, Tutor, Driver, Mechanic, Photographer + custom | ✅ Admin manages full skill list |
+| **Availability Calendar** | Set daily/weekly availability + working hours | ✅ Admin views all |
+| **Shop Job Vacancies** | Shop owners post openings (Cashier, Helper, etc.) | ✅ Admin approves |
+| **Job Applications** | Users apply with cover note | ✅ Admin mediates all |
+| **Admin-Mediated Leads** | All service requests route through admin | ✅ Full lead control |
+| **Skill Search** | "Plumber near me" with configurable radius | ✅ Admin sets radius |
+| **Freelance Portfolios** | Photos, certifications, past work showcase | ✅ Admin verifies |
+| **Rating & Reviews** | Post-service rating for quality assurance | ✅ Admin moderates |
+
+---
+
+## 8. Pillar 4: Real Estate Hub
+
+| Feature | Description | Admin Control |
+|---|---|---|
+| **Flat/House Rental** | Full property listing with photos, rent, amenities | ✅ Admin verifies |
+| **PG Accommodation** | Rooms with sharing type, meals, gender preference | ✅ Admin manages |
+| **Geo-Fenced Search** | Filter by society, radius, pincode | ✅ Admin sets boundaries |
+| **Contact via Admin** | Safe mediated contact | ✅ Admin routes inquiries |
+| **Featured Listings** | Paid visibility boost | ✅ Admin sets pricing |
+| **Verified Badge** | Admin-verified properties get trust badge | ✅ Admin controls |
+
+---
+
+## 9. Pillar 5: Delivery System with Live Tracking
+
+### Three-Way Real-Time System
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant S as 🏪 Shop
+    participant A as 🚴 Delivery Agent
+    participant Sys as ⚙️ LocalSampark System
+    
+    U->>Sys: Place order from Shop X
+    Sys->>S: 🔔 New order notification
+    S->>Sys: Accept order → Start preparing
+    Sys->>Sys: Find nearest online agent (PostGIS query)
+    Sys->>A: 🔔 Delivery request (₹35 payout, 2.1 km)
+    A->>Sys: Accept delivery
+    Sys->>U: "Agent Rahul 🚴 assigned" + Map opens
+    
+    Note over A,U: GPS tracking begins (5-sec intervals via WebSocket)
+    
+    A->>S: Arrives at shop (geofence auto-detects)
+    Sys->>U: 📍 "Agent at shop"
+    S->>A: Hand over package
+    S->>Sys: Mark "Picked Up"
+    Sys->>U: 📍 "Out for delivery" — ETA: 8 mins
+    
+    A->>U: Arrives at delivery location
+    Sys->>U: 📍 "Agent has arrived"
+    U->>A: Share OTP for verification
+    A->>Sys: Enter OTP + Upload photo proof
+    Sys->>U: ✅ "Delivered! Rate your experience ⭐"
+    Sys->>A: 💰 ₹35 credited to wallet
+```
+
+### Delivery Lifecycle
+
+```
+📋 Pending → ✅ Confirmed → 🍳 Preparing → 📦 Ready
+    → 🚴 Agent Assigned → 🏪 At Shop → 📤 Picked Up
+    → 🛵 Out for Delivery → 🏠 Arrived → ✅ Delivered
+    
+❌ Cancelled (before "Picked Up" only)
+```
+
+| Feature | Description | Admin Control |
+|---|---|---|
+| **Tracking Mode** | Status-based (MVP) → Live GPS (Phase 2) | ✅ Admin toggles mode |
+| **Fee Engine** | Base ₹20 + ₹8/km, max ₹80 | ✅ Admin sets all values |
+| **Surge Pricing** | 1.5x during peak hours | ✅ Admin sets multiplier + hours |
+| **Commission** | 15% platform cut | ✅ Admin sets percentage |
+| **Geofence** | 100m radius for auto-status | ✅ Admin sets radius |
+| **Scheduled Delivery** | Book for future time slots | ✅ Admin enables/disables |
+| **Multi-Stop** | Agent picks from multiple shops | ✅ Admin enables/disables |
+| **Agent Verification** | ID + Vehicle proof required | ✅ Admin sets requirements |
+
+---
+
+## 10. Pillar 6: Admin Full Control System
+
+### Admin Configuration Engine
+
+Every app setting is stored in `admin_config` table and fetched by all platforms on launch. Admin changes take effect **instantly** across Website, Android, and iOS.
+
+```sql
+-- Admin controls EVERYTHING via this table
+CREATE TABLE admin_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    config_key VARCHAR(200) UNIQUE NOT NULL,
+    config_value JSONB NOT NULL,
+    config_category VARCHAR(50) NOT NULL,
+    description TEXT,
+    region_id UUID REFERENCES regions(id), -- NULL = global
+    is_active BOOLEAN DEFAULT TRUE,
+    updated_by UUID REFERENCES users(id),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Admin Dashboard Modules
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                 🖥️ LOCALSAMPARK ADMIN DASHBOARD                      │
+├──────────┬──────────┬──────────┬──────────┬──────────┬──────────────┤
+│ Overview │ Users    │ Shops    │ Jobs     │ Delivery │ Revenue      │
+│──────────│──────────│──────────│──────────│──────────│──────────────│
+│ Leads    │ Content  │ Config   │ Regions  │ Reports  │ Competitive  │
+│──────────│──────────│──────────│──────────│──────────│──────────────│
+│ Society  │ Events   │ Carpool  │ Health   │ Pets     │ Marketplace  │
+├──────────┴──────────┴──────────┴──────────┴──────────┴──────────────┤
+│                                                                      │
+│  TODAY'S SNAPSHOT                                                    │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐       │
+│  │ Users      │ │ Shops      │ │ Orders     │ │ Revenue    │       │
+│  │  12,450    │ │   347      │ │    89      │ │ ₹12,340    │       │
+│  │ +23 today  │ │ +5 today   │ │ +12 today  │ │ +₹2,100    │       │
+│  └────────────┘ └────────────┘ └────────────┘ └────────────┘       │
+│                                                                      │
+│  PENDING ACTIONS                                                     │
+│  🔴 15 Shop registrations awaiting approval                         │
+│  🟡 23 Service leads to be matched                                  │
+│  🟡 8 Property listings to review                                   │
+│  🟡 12 Job applications to mediate                                  │
+│  🔵 5 User reports to resolve                                       │
+│  🔵 3 Delivery disputes                                             │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Complete Admin Control List
+
+| Category | What Admin Controls |
+|---|---|
+| **Community** | Feed radius (any km), post types on/off, karma thresholds, auto-moderation, chat room rules, event approval |
+| **Business** | Shop categories (CRUD), approval mode, "What's New" duration, photos limit, subscription pricing |
+| **Jobs** | Skill categories (CRUD), lead fees, mediation on/off, commission rates, auto-matching |
+| **Real Estate** | Listing types, featured pricing, verification rules, display duration |
+| **Delivery** | Enable/disable, fees (base/km/max), surge, commission, tracking mode, geofence, agent rules |
+| **Payments** | Payment methods (Razorpay/UPI/COD), wallet limits, withdrawal rules, cashback |
+| **Platform** | Maintenance mode, languages, notification rules, referral rewards, all regions |
+| **Competitive** | Strategy notes (versioned), competitor tracking, positioning adjustments |
+| **Society** | Society management features, visitor rules, maintenance tracking |
+| **Events** | Event approval, ticketing fees, venue rules |
+| **Health** | Emergency numbers, hospital directory, ambulance service |
+| **Carpool** | Enable/disable, pricing rules, safety features |
+| **Marketplace** | Buy/sell categories, listing rules, safety guidelines |
+| **AI/Chatbot** | Bot responses, training data, escalation rules |
+
+---
+
+# PART C: ADVANCED FEATURES FROM v2 (RETAINED)
+
+---
+
+## 11. Advanced Features from v2 (Retained)
+
+> [!NOTE]
+> All 15 features from v2 are **fully retained**. Here's the complete list:
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | **🆘 Emergency SOS System** — One-tap alert to neighbors + emergency contacts + live location | ✅ Retained |
+| 2 | **📸 Stories / Reels** — 15-60 sec video posts, 24hr auto-delete, shop daily specials | ✅ Retained |
+| 3 | **🎤 Voice Search** — Regional language voice input (Hindi, Marathi, Tamil, etc.) | ✅ Retained |
+| 4 | **💰 Digital Wallet** — Add money, pay, withdraw, track transactions | ✅ Retained |
+| 5 | **🎁 Referral & Rewards** — Referral codes, multi-level tracking, wallet credits | ✅ Retained |
+| 6 | **📊 Community Polls & Surveys** — Create polls, live results, admin-pinned polls | ✅ Retained |
+| 7 | **🌙 Dark Mode + Themes** — System auto-detect, manual toggle, premium themes | ✅ Retained |
+| 8 | **📴 Offline Mode (SQLite Sync)** — Cache feeds, queue actions offline, auto-sync | ✅ Retained |
+| 9 | **🤖 AI Smart Recommendations** — Shop/service/job/property matching | ✅ Retained |
+| 10 | **🔔 Smart Notifications** — AI-optimized timing, per-category controls | ✅ Retained |
+| 11 | **📹 In-App Video Calling** — WebRTC video/voice calls | ✅ Retained |
+| 12 | **📈 Business Dashboard (Shop Owners)** — Orders, analytics, reviews, inventory | ✅ Retained |
+| 13 | **🏆 Delivery Agent Leaderboard** — Gamification, bonuses, badges | ✅ Retained |
+| 14 | **🌤️ Local News & Weather Widget** — Auto-curated Dhanori/Pune news + weather | ✅ Retained |
+| 15 | **🎙️ Push-to-Talk Voice Messages** — Voice notes with waveform visualization | ✅ Retained |
+
+---
+
+# PART D: NEW FEATURES (v3 ADD-ONS)
+
+---
+
+## 12. Twenty NEW Advanced Features (v3 Add-Ons)
+
+### 🆕 Feature 16: AI Chatbot Assistant ("Sampark Bot")
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              🤖 SAMPARK BOT                              │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  👤 "I need a plumber near Dhanori chowk"               │
+│                                                          │
+│  🤖 "I found 3 plumbers near you:                       │
+│      1. Rajesh Kumar ⭐4.8 — 1.2 km — Available now     │
+│      2. Sunil Patil ⭐4.5 — 2.1 km — Available today    │
+│      3. Amit Singh ⭐4.3 — 3.0 km — Available tomorrow  │
+│                                                          │
+│      Would you like me to connect you with Rajesh?"      │
+│                                                          │
+│  👤 "Yes, connect me with Rajesh"                       │
+│                                                          │
+│  🤖 "Done! I've created a lead request. Our admin       │
+│      will share Rajesh's contact shortly. 📞"            │
+│                                                          │
+│  ┌─────────────────────────────────────────┐            │
+│  │ Type a message...              [Send 📤] │            │
+│  └─────────────────────────────────────────┘            │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+| Capability | Detail |
+|---|---|
+| **Natural Language Queries** | "Find me a 2BHK near Laxmi Nagar society" |
+| **Service Booking** | "Book a plumber for tomorrow at 10 AM" |
+| **Order Placement** | "Order milk from Sharma Dairy" |
+| **FAQ Answers** | "How do I register my shop?" |
+| **Complaint Filing** | "I want to report a streetlight issue" |
+| **Powered By** | OpenAI GPT / Google Gemini API |
+| **Fallback** | Escalates to admin if unable to resolve |
+| **Admin Control** | ✅ Admin manages bot responses, training data, escalation rules |
+
+---
+
+### 🆕 Feature 17: AR Shop Discovery (Augmented Reality)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           📷 AR SHOP DISCOVERY                           │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Point your camera at the street to discover shops:     │
+│                                                          │
+│  ┌─────────────────────────────────────────┐            │
+│  │                                         │            │
+│  │   [Camera View of Street]               │            │
+│  │                                         │            │
+│  │      ┌──────────────┐                   │            │
+│  │      │ 🍕 Pizza Hub  │ ← AR Overlay     │            │
+│  │      │ ⭐ 4.5 | 200m │                   │            │
+│  │      │ [View Menu]   │                   │            │
+│  │      └──────────────┘                   │            │
+│  │                                         │            │
+│  │          ┌──────────────┐               │            │
+│  │          │ 💇 Style Salon│               │            │
+│  │          │ ⭐ 4.2 | 350m │               │            │
+│  │          │ [Book Now]    │               │            │
+│  │          └──────────────┘               │            │
+│  │                                         │            │
+│  └─────────────────────────────────────────┘            │
+│                                                          │
+│  Filter: [All] [Food] [Services] [Shops]                │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Uses device camera + GPS + Google Maps API
+- Overlays shop info cards on real-world street view
+- Tap a card to view shop profile, menu, or book services
+- Admin can enable/disable AR feature per region
+
+---
+
+### 🆕 Feature 18: Society Management System
+
+> For residential societies/apartments — a mini "society app" within LocalSampark
+
+| Feature | Description |
+|---|---|
+| **Visitor Management** | Pre-approve visitors, gate pass QR codes, visitor log |
+| **Maintenance Tracker** | Track monthly maintenance payments per flat |
+| **Complaint System** | File complaints (water, electricity, parking) → Society admin resolves |
+| **Notice Board** | Society-level announcements by society admin |
+| **Common Area Booking** | Book clubhouse, gym slot, community hall |
+| **Vehicle Registry** | Register vehicles with parking slot assignment |
+| **Emergency Contacts** | Society guard, plumber, electrician quick-dial |
+| **AGM/Meeting Scheduler** | Schedule society meetings with agenda + RSVP |
+
+```mermaid
+graph TD
+    A["🏘️ Society Dashboard"] --> B["👥 Visitor Management"]
+    A --> C["💰 Maintenance Tracker"]
+    A --> D["📝 Complaint System"]
+    A --> E["📋 Notice Board"]
+    A --> F["🏊 Common Area Booking"]
+    A --> G["🚗 Vehicle Registry"]
+    A --> H["📞 Emergency Contacts"]
+    A --> I["📅 Meeting Scheduler"]
+    
+    style A fill:#4F46E5,stroke:#fff,color:#fff
+```
+
+- **Society Admin Role**: Society secretary/president gets special admin access for their society
+- **Residents see only their society's management features**
+- **Super Admin can view all societies' management data**
+
+---
+
+### 🆕 Feature 19: Local Carpool & Transport
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              🚗 LOCAL CARPOOL                            │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  OFFER A RIDE                    FIND A RIDE             │
+│  ┌──────────────────┐          ┌──────────────────┐     │
+│  │ From: Dhanori     │          │ From: Dhanori     │     │
+│  │ To: Hinjewadi     │          │ To: Hinjewadi     │     │
+│  │ Date: Tomorrow    │          │ Date: Tomorrow    │     │
+│  │ Time: 9:00 AM     │          │ Time: 8:30-9:30   │     │
+│  │ Seats: 3          │          │ Seats: 1          │     │
+│  │ Cost: ₹50/seat    │          │                    │     │
+│  │ [Post Ride]       │          │ [Search Rides]     │     │
+│  └──────────────────┘          └──────────────────┘     │
+│                                                          │
+│  AVAILABLE RIDES NEAR YOU                                │
+│  ┌──────────────────────────────────────────────┐       │
+│  │ 🚗 Ramesh → Hinjewadi | 9:00 AM | ₹50/seat  │       │
+│  │    ⭐ 4.7 | 🪑 2 seats left | [Request]      │       │
+│  ├──────────────────────────────────────────────┤       │
+│  │ 🚗 Priya → Baner | 8:45 AM | ₹40/seat       │       │
+│  │    ⭐ 4.9 | 🪑 1 seat left | [Request]       │       │
+│  └──────────────────────────────────────────────┘       │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+- **Daily commute sharing** within Dhanori/Pune area
+- **Safety**: Verified profiles only, share live trip with family
+- **Revenue**: Platform takes ₹10 service fee per ride
+- **Admin**: Sets pricing rules, safety requirements, active routes
+
+---
+
+### 🆕 Feature 20: Community Marketplace (Buy/Sell Used Items)
+
+| Feature | Description |
+|---|---|
+| **List Items** | Post used items for sale: furniture, electronics, books, clothes |
+| **Categories** | Furniture, Electronics, Vehicles, Books, Clothing, Kids Items, Sports, Other |
+| **Negotiation Chat** | In-app chat between buyer and seller |
+| **Meet Spot** | Suggest safe meeting spots for exchange (verified community spaces) |
+| **Price Suggestion** | AI suggests fair price based on item condition and market |
+| **Safety** | Only verified users can list; admin can remove scam listings |
+
+---
+
+### 🆕 Feature 21: Pet Community 🐾
+
+| Feature | Description |
+|---|---|
+| **Pet Profiles** | Register pets with photos, breed, age, vaccination records |
+| **Lost & Found** | Post lost pet alerts → push to all neighbors with photo |
+| **Pet Services** | Find local vets, pet groomers, pet shops, dog walkers |
+| **Pet Adoption** | Post pets for adoption (verified by admin) |
+| **Pet Playdates** | Schedule meetups at local parks for pet socialization |
+| **Pet-Friendly Places** | Map of pet-friendly cafes, parks, shops |
+
+---
+
+### 🆕 Feature 22: Health & Emergency Services Directory
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           🏥 HEALTH & EMERGENCY                          │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  🚨 EMERGENCY (One Tap)                                  │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                   │
+│  │ 🚑   │ │ 🚔   │ │ 🚒   │ │ 🆘   │                   │
+│  │ Ambu- │ │Police│ │ Fire │ │ SOS  │                   │
+│  │ lance │ │      │ │      │ │      │                   │
+│  └──────┘ └──────┘ └──────┘ └──────┘                   │
+│                                                          │
+│  📍 NEARBY HEALTHCARE                                    │
+│  ├── 🏥 Sahyadri Hospital — 1.2 km — [Navigate]         │
+│  ├── 🏥 Ruby Hall Clinic — 3.5 km — [Navigate]          │
+│  ├── 💊 MedPlus Pharmacy — 0.5 km — [Order]             │
+│  ├── 🦷 Smile Dental — 0.8 km — [Book]                  │
+│  └── 👁️ Clear Vision Eye — 1.1 km — [Book]              │
+│                                                          │
+│  🩺 LOCAL DOCTORS                                        │
+│  ├── Dr. Patil (General) ⭐4.8 — [Book Appointment]     │
+│  ├── Dr. Sharma (Pediatric) ⭐4.6 — [Book]              │
+│  └── Dr. Iyer (Orthopedic) ⭐4.7 — [Book]               │
+│                                                          │
+│  💉 BLOOD BANK NEARBY                                    │
+│  └── Jankalyan Blood Bank — 2.3 km — [Call]              │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Hospitals, clinics, pharmacies, labs mapped via Google Places
+- Ambulance booking integration
+- Doctor appointment booking
+- Blood bank directory with availability
+- Admin manages the health directory, adds verified providers
+
+---
+
+### 🆕 Feature 23: Local Event Ticketing
+
+| Feature | Description |
+|---|---|
+| **Create Events** | Users/shops create local events: workshops, Navratri, cricket tournaments |
+| **Paid Tickets** | Sell tickets via Razorpay (platform takes 5% fee) |
+| **Free Events** | RSVP-based free events |
+| **QR Ticket** | Digital QR code ticket for entry verification |
+| **Event Calendar** | Monthly calendar view of all local events |
+| **Reminders** | Auto-remind attendees 24hr and 1hr before event |
+| **Post-Event** | Photo gallery, attendee reviews |
+
+---
+
+### 🆕 Feature 24: Price Comparison Engine
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           💰 PRICE COMPARE — "Toor Dal 1kg"              │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Shop                    Price    Distance   Delivery    │
+│  ─────────────────────────────────────────────────────   │
+│  🟢 Sharma Grocery       ₹120     0.5 km    ✅ Yes      │
+│  🟡 Big Bazaar           ₹125     2.1 km    ✅ Yes      │
+│  🟡 D-Mart               ₹118     3.5 km    ❌ No       │
+│  🔴 Quick Mart           ₹135     0.3 km    ✅ Yes      │
+│                                                          │
+│  💡 Best Deal: D-Mart (₹118) but no delivery            │
+│  💡 Best with Delivery: Sharma Grocery (₹120 + ₹20 del) │
+│                                                          │
+│  [Order from Sharma Grocery]  [View All Shops]           │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Compare prices of common items across local shops
+- Shops upload their product prices (or admin enters)
+- Users search by product name → see all local options sorted by price
+- Factors in delivery fee for total cost comparison
+- Admin can enable/disable, manage product categories
+
+---
+
+### 🆕 Feature 25: Skill Training & Certification
+
+| Feature | Description |
+|---|---|
+| **Free Courses** | Short video tutorials: Basic plumbing, Electrical safety, Cooking basics |
+| **Certification** | Complete course → earn LocalSampark certificate (shown on profile) |
+| **Admin Uploads** | Admin/partners upload training content |
+| **Skill Verification** | Certified workers get a "Trained ✅" badge on their profile |
+| **Partner Integration** | Partner with local ITIs, skill development centers |
+| **Revenue** | Premium advanced courses for ₹99–₹299 |
+
+---
+
+### 🆕 Feature 26: QR Code Ecosystem
+
+| Use Case | How It Works |
+|---|---|
+| **QR Shop Menu** | Shop generates QR → Customer scans → sees full product list + prices |
+| **QR Payments** | Shop displays QR → Customer scans → pays via wallet/UPI |
+| **QR Visitor Pass** | Society generates QR for pre-approved visitors |
+| **QR Event Ticket** | Digital QR ticket for event entry |
+| **QR Delivery Verification** | Agent scans user's QR to confirm delivery |
+| **QR Profile Share** | Share your service provider profile via QR |
+
+---
+
+### 🆕 Feature 27: Subscription Box (Recurring Deliveries)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           📦 MY SUBSCRIPTIONS                            │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Active Subscriptions:                                   │
+│                                                          │
+│  ┌───────────────────────────────────────────┐          │
+│  │ 🥛 Daily Milk (Sharma Dairy)              │          │
+│  │    1L Toned Milk — ₹28/day               │          │
+│  │    Delivery: 6:30 AM daily                │          │
+│  │    [Pause] [Skip Tomorrow] [Cancel]       │          │
+│  └───────────────────────────────────────────┘          │
+│                                                          │
+│  ┌───────────────────────────────────────────┐          │
+│  │ 📰 Daily Newspaper (Patil News Agency)    │          │
+│  │    Times of India — ₹8/day               │          │
+│  │    Delivery: 7:00 AM daily                │          │
+│  │    [Pause] [Skip Tomorrow] [Cancel]       │          │
+│  └───────────────────────────────────────────┘          │
+│                                                          │
+│  ┌───────────────────────────────────────────┐          │
+│  │ 🌿 Weekly Vegetables (Farm Fresh)         │          │
+│  │    Mixed Veg Box — ₹250/week             │          │
+│  │    Delivery: Every Sunday, 9 AM           │          │
+│  │    [Pause] [Edit Items] [Cancel]          │          │
+│  └───────────────────────────────────────────┘          │
+│                                                          │
+│  [+ Browse Subscription Plans]                           │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Shops create subscription plans (daily/weekly/monthly)
+- Users subscribe → auto-delivery at scheduled times
+- Pause, skip, cancel anytime
+- Auto-payment from wallet or Razorpay auto-debit
+- Platform takes 10% commission on subscriptions
+
+---
+
+### 🆕 Feature 28: Automated Invoice & Billing
+
+| Feature | Description |
+|---|---|
+| **Auto Invoice** | PDF invoice generated for every transaction (orders, services, subscriptions) |
+| **GST Invoice** | GST-compliant invoices for registered businesses |
+| **Shop Billing** | Shops can generate bills for walk-in customers via app |
+| **Monthly Statements** | Users get monthly spending summary |
+| **Agent Earnings Report** | Delivery agents get weekly/monthly earnings statement |
+| **Admin Reports** | Auto-generate revenue, tax, and payout reports |
+
+---
+
+### 🆕 Feature 29: Document Vault (Secure Storage)
+
+| Feature | Description |
+|---|---|
+| **Rent Agreements** | Store rental agreements securely in-app |
+| **ID Proofs** | Upload Aadhaar, PAN for quick verification |
+| **Property Documents** | Store property-related documents |
+| **Service Receipts** | Auto-save receipts from services/deliveries |
+| **Encrypted Storage** | AES-256 encrypted, accessible only by the user |
+| **Share Securely** | Share documents with admin for verification (time-limited access) |
+
+---
+
+### 🆕 Feature 30: Loyalty & Gamification Engine
+
+```mermaid
+graph LR
+    A["User Actions"] --> B["Earn Sampark Points 🪙"]
+    B --> C["Redeem at Local Shops"]
+    
+    A --> D["Post content: +5 pts"]
+    A --> E["Review shop: +10 pts"]
+    A --> F["Refer user: +50 pts"]
+    A --> G["Complete delivery: +20 pts"]
+    A --> H["Attend event: +15 pts"]
+    A --> I["Help neighbor: +25 pts"]
+    
+    C --> J["₹10 off at Grocery"]
+    C --> K["Free delivery"]
+    C --> L["Premium badge"]
+    C --> M["Priority support"]
+```
+
+| Level | Points Required | Perks |
+|---|---|---|
+| 🥉 **Naya Padosi** (New Neighbor) | 0–99 | Basic access |
+| 🥈 **Active Padosi** | 100–499 | Priority in feed, custom themes |
+| 🥇 **Super Padosi** | 500–1999 | Free deliveries (2/mo), badge on profile |
+| 💎 **Sampark Champion** | 2000+ | VIP support, featured profile, shop discounts |
+
+---
+
+### 🆕 Feature 31: Multi-Language Auto-Translation in Chat
+
+```
+┌─────────────────────────────────────────────────────────┐
+│          💬 CHAT — Auto Translation                      │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Rajesh (speaks Marathi):                                │
+│  "भाई, प्लंबर कधी येणार?"                                  │
+│      ↕️ [Translated] "Bhai, plumber kab aayega?"          │
+│      ↕️ [English] "Brother, when will the plumber come?"  │
+│                                                          │
+│  You (speaks Hindi):                                     │
+│  "10 बजे आएगा, चिंता मत करो"                               │
+│      ↕️ [Translated for Rajesh] "10 वाजता येईल, काळजी नको" │
+│                                                          │
+│  ℹ️ Auto-translation: ON (tap to disable)                │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Real-time translation between Hindi ↔ Marathi ↔ English ↔ other languages
+- Uses Google Cloud Translation API / Devnagri SDK
+- User sees original message + translated version
+- Toggle on/off per chat room
+- Admin configures supported language pairs
+
+---
+
+### 🆕 Feature 32: Advanced Business Analytics (Shop Owners)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│          📊 SHOP ANALYTICS — Sharma Electronics               │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  This Month's Performance                                     │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │ Views    │ │ Clicks   │ │ Orders   │ │ Revenue  │       │
+│  │  2,340   │ │   456    │ │    67    │ │ ₹45,200  │       │
+│  │ +15%     │ │ +8%      │ │ +22%     │ │ +18%     │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+│                                                               │
+│  📈 Traffic Sources                                           │
+│  ├── Search: 45%                                              │
+│  ├── "What's New" Feed: 25%                                   │
+│  ├── Direct Profile Visit: 15%                                │
+│  ├── Map Discovery: 10%                                       │
+│  └── AR Discovery: 5%                                         │
+│                                                               │
+│  ⭐ Customer Sentiment                                        │
+│  Average Rating: 4.5 | Total Reviews: 89                     │
+│  Positive: 78% | Neutral: 15% | Negative: 7%                 │
+│                                                               │
+│  🏆 Rank in Category (Electronics): #3 in Dhanori            │
+│                                                               │
+│  [Download Report PDF] [Boost Visibility ₹500/mo]             │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🆕 Feature 33: Hyperlocal Weather & AQI Widget
+
+```
+┌────────────────────────────────────────┐
+│  📍 Dhanori, Pune                       │
+│  ┌──────────────────────────────────┐  │
+│  │ 🌤️ 32°C  Partly Cloudy           │  │
+│  │ Humidity: 65% | Wind: 12 km/h    │  │
+│  │ AQI: 89 (Moderate) 🟡            │  │
+│  │                                    │  │
+│  │ Forecast:                         │  │
+│  │ Mon  Tue  Wed  Thu  Fri           │  │
+│  │ 🌧️   ⛅   ☀️   ☀️   🌤️            │  │
+│  │ 28°  30°  33°  34°  31°          │  │
+│  └──────────────────────────────────┘  │
+│                                         │
+│  ⚠️ Rain expected tomorrow — carry      │
+│  umbrella if going to Dhanori market!   │
+│                                         │
+└────────────────────────────────────────┘
+```
+
+- OpenWeatherMap API for hyperlocal weather
+- AQI from government CPCB API
+- Weather-based smart alerts (rain, heat wave, pollution)
+- Shown as widget on home screen
+
+---
+
+### 🆕 Feature 34: Smart Weekly Digest
+
+Every Monday, users receive a personalized weekly digest:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│          📬 YOUR WEEKLY LOCALSAMPARK DIGEST               │
+│          Week of June 16–22, 2026                        │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  🏪 NEW SHOPS: 5 new shops opened near you              │
+│     • Café Mocha (Coffee Shop) — 1.2 km                 │
+│     • Green Pharmacy — 0.8 km                            │
+│                                                          │
+│  🛠️ TOP SERVICE: Rajesh Plumbing rated ⭐4.9 this week   │
+│                                                          │
+│  🏠 PROPERTY: 3 new rentals in Dhanori under ₹15,000    │
+│                                                          │
+│  💬 TRENDING POST: "Weekend Cricket Match at Dhanori     │
+│     Ground" — 45 RSVPs                                   │
+│                                                          │
+│  📊 POLL RESULT: "Should Dhanori have a weekly market?"  │
+│     Yes: 78% | No: 22%                                   │
+│                                                          │
+│  🎯 YOUR STATS: 12 posts read, 3 services booked,       │
+│     42 Sampark Points earned                             │
+│                                                          │
+│  [Open App]                                              │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🆕 Feature 35: Accessibility Features (WCAG 2.1 AA)
+
+| Feature | Description |
+|---|---|
+| **Screen Reader Support** | Full TalkBack (Android) + VoiceOver (iOS) compatibility |
+| **Font Scaling** | Support system font size up to 200% |
+| **Color Contrast** | Minimum 4.5:1 contrast ratio for all text |
+| **Touch Targets** | Minimum 44x44 pt touch targets |
+| **Motion Reduction** | Respect "reduce motion" system setting |
+| **Alt Text** | All images have descriptive alt text |
+| **Keyboard Navigation** | Full keyboard nav on website |
+| **Language Labels** | All UI elements have accessibility labels in selected language |
+
+---
+
+### Complete Feature Count Summary
+
+| Category | Count |
+|---|---|
+| **Core Pillar Features (1–6)** | 50+ features |
+| **v2 Advanced Features (1–15)** | 15 features |
+| **v3 NEW Features (16–35)** | 20 features |
+| **TOTAL** | **85+ features** |
+
+---
+
+# PART E: BACKEND & DATA
+
+---
+
+## 13. Complete Database Schema
+
+### All Tables Overview
+
+```mermaid
+erDiagram
+    USERS ||--o{ USER_SKILLS : has
+    USERS ||--o{ LOCAL_SHOPS : owns
+    USERS ||--o{ POSTS : creates
+    USERS ||--o{ PROPERTY_LISTINGS : lists
+    USERS ||--o{ DELIVERY_AGENTS : registers_as
+    USERS ||--o{ ORDERS : places
+    USERS ||--o{ JOB_APPLICATIONS : submits
+    USERS ||--o| WALLETS : has
+    USERS ||--o{ REFERRALS : refers
+    USERS ||--o{ STORIES : posts
+    USERS ||--o{ PETS : owns
+    USERS ||--o{ CARPOOL_RIDES : offers
+    USERS ||--o{ MARKETPLACE_LISTINGS : sells
+    USERS ||--o{ DOCUMENTS : stores
+    USERS ||--o{ SUBSCRIPTIONS : subscribes
+    
+    LOCAL_SHOPS ||--o{ SHOP_PRODUCTS : has
+    LOCAL_SHOPS ||--o{ SHOP_REVIEWS : receives
+    LOCAL_SHOPS ||--o{ JOB_VACANCIES : posts
+    LOCAL_SHOPS ||--o{ ORDERS : fulfills
+    LOCAL_SHOPS ||--o{ SUBSCRIPTION_PLANS : offers
+    
+    ORDERS ||--o| DELIVERIES : tracked_by
+    DELIVERIES ||--o| DELIVERY_AGENTS : assigned_to
+    
+    SOCIETIES ||--o{ VISITORS : manages
+    SOCIETIES ||--o{ MAINTENANCE_RECORDS : tracks
+    SOCIETIES ||--o{ COMPLAINTS : receives
+    
+    EVENTS ||--o{ EVENT_TICKETS : sells
+    
+    REGIONS ||--o{ ADMIN_ROLES : has
+```
+
+### NEW Tables (v3 additions — on top of all v1 + v2 tables)
+
+```sql
+-- ============================================================
+-- All tables from v1 + v2 are RETAINED. Adding v3 tables below.
+-- ============================================================
+
+-- ============================================================
+-- v3-16: AI CHATBOT CONVERSATIONS
+-- ============================================================
+CREATE TABLE chatbot_conversations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    messages JSONB NOT NULL DEFAULT '[]',
+    -- [{ role: "user"|"bot", content: "...", timestamp: "..." }]
+    intent_detected VARCHAR(100),
+    resolved BOOLEAN DEFAULT FALSE,
+    escalated_to_admin BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- v3-18: SOCIETY MANAGEMENT
+-- ============================================================
+CREATE TABLE society_visitors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    resident_id UUID REFERENCES users(id),
+    visitor_name VARCHAR(100) NOT NULL,
+    visitor_phone VARCHAR(15),
+    purpose VARCHAR(100),
+    vehicle_number VARCHAR(20),
+    qr_code TEXT,
+    status VARCHAR(20) DEFAULT 'expected', -- expected, checked_in, checked_out, denied
+    expected_at TIMESTAMP WITH TIME ZONE,
+    checked_in_at TIMESTAMP WITH TIME ZONE,
+    checked_out_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE society_maintenance (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
+    flat_number VARCHAR(20) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    month VARCHAR(7) NOT NULL, -- '2026-06'
+    status VARCHAR(20) DEFAULT 'pending', -- pending, paid, overdue
+    payment_id VARCHAR(100),
+    paid_at TIMESTAMP WITH TIME ZONE,
+    due_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE society_complaints (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
+    category VARCHAR(50), -- water, electricity, parking, noise, cleaning, other
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    photo_urls JSONB DEFAULT '[]',
+    status VARCHAR(20) DEFAULT 'open', -- open, in_progress, resolved, closed
+    priority VARCHAR(10) DEFAULT 'medium', -- low, medium, high, urgent
+    resolved_by UUID REFERENCES users(id),
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE society_bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
+    facility VARCHAR(50) NOT NULL, -- clubhouse, gym, pool, community_hall, parking
+    booking_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    purpose TEXT,
+    status VARCHAR(20) DEFAULT 'confirmed', -- confirmed, cancelled
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(society_id, facility, booking_date, start_time)
+);
+
+-- ============================================================
+-- v3-19: CARPOOL & TRANSPORT
+-- ============================================================
+CREATE TABLE carpool_rides (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    from_location TEXT NOT NULL,
+    from_coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    to_location TEXT NOT NULL,
+    to_coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    departure_date DATE NOT NULL,
+    departure_time TIME NOT NULL,
+    total_seats INT NOT NULL,
+    available_seats INT NOT NULL,
+    price_per_seat DECIMAL(10,2),
+    vehicle_type VARCHAR(50),
+    vehicle_number VARCHAR(20),
+    is_recurring BOOLEAN DEFAULT FALSE,
+    recurring_days VARCHAR(50), -- 'Mon,Tue,Wed,Thu,Fri'
+    status VARCHAR(20) DEFAULT 'active', -- active, full, completed, cancelled
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_carpool_from ON carpool_rides USING GIST (from_coordinate);
+CREATE INDEX idx_carpool_date ON carpool_rides(departure_date);
+
+CREATE TABLE carpool_bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ride_id UUID REFERENCES carpool_rides(id) ON DELETE CASCADE,
+    passenger_id UUID REFERENCES users(id),
+    seats_booked INT DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'confirmed', -- confirmed, cancelled
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(ride_id, passenger_id)
+);
+
+-- ============================================================
+-- v3-20: COMMUNITY MARKETPLACE (Buy/Sell)
+-- ============================================================
+CREATE TABLE marketplace_listings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    seller_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    category VARCHAR(50) NOT NULL,
+    condition VARCHAR(20), -- new, like_new, good, fair
+    price DECIMAL(10,2) NOT NULL,
+    is_negotiable BOOLEAN DEFAULT TRUE,
+    photo_urls JSONB DEFAULT '[]',
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    status VARCHAR(20) DEFAULT 'active', -- active, sold, reserved, expired
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_marketplace_coordinate ON marketplace_listings USING GIST (coordinate);
+CREATE INDEX idx_marketplace_category ON marketplace_listings(category);
+
+-- ============================================================
+-- v3-21: PET COMMUNITY
+-- ============================================================
+CREATE TABLE pets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    species VARCHAR(30), -- dog, cat, bird, fish, other
+    breed VARCHAR(100),
+    age_years INT,
+    gender VARCHAR(10),
+    photo_url TEXT,
+    vaccination_records JSONB DEFAULT '[]',
+    is_lost BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE pet_alerts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pet_id UUID REFERENCES pets(id),
+    user_id UUID REFERENCES users(id),
+    alert_type VARCHAR(20) NOT NULL, -- lost, found, adoption
+    description TEXT,
+    last_seen_location TEXT,
+    last_seen_coordinate GEOGRAPHY(Point, 4326),
+    photo_urls JSONB DEFAULT '[]',
+    status VARCHAR(20) DEFAULT 'active', -- active, resolved
+    reward_amount DECIMAL(10,2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pet_alerts_coordinate ON pet_alerts USING GIST (last_seen_coordinate);
+
+-- ============================================================
+-- v3-22: HEALTH & EMERGENCY DIRECTORY
+-- ============================================================
+CREATE TABLE health_providers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    type VARCHAR(30) NOT NULL, -- hospital, clinic, pharmacy, lab, dentist, eye_care, vet
+    specialization VARCHAR(100),
+    phone VARCHAR(15),
+    emergency_phone VARCHAR(15),
+    address TEXT,
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    opening_hours JSONB, -- { "mon": "9:00-17:00", ... }
+    is_24x7 BOOLEAN DEFAULT FALSE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    avg_rating DECIMAL(3,2) DEFAULT 0,
+    photo_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_health_coordinate ON health_providers USING GIST (coordinate);
+
+-- ============================================================
+-- v3-23: LOCAL EVENTS & TICKETING
+-- ============================================================
+CREATE TABLE events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organizer_id UUID REFERENCES users(id),
+    shop_id UUID REFERENCES local_shops(id),
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    category VARCHAR(50), -- workshop, sports, cultural, social, religious, other
+    venue TEXT NOT NULL,
+    venue_coordinate GEOGRAPHY(Point, 4326),
+    event_date DATE NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    max_attendees INT,
+    current_attendees INT DEFAULT 0,
+    is_paid BOOLEAN DEFAULT FALSE,
+    ticket_price DECIMAL(10,2),
+    cover_image_url TEXT,
+    photo_gallery JSONB DEFAULT '[]',
+    status VARCHAR(20) DEFAULT 'upcoming', -- upcoming, live, completed, cancelled
+    is_approved BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE event_tickets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
+    ticket_count INT DEFAULT 1,
+    total_price DECIMAL(10,2),
+    qr_code TEXT,
+    status VARCHAR(20) DEFAULT 'valid', -- valid, used, cancelled, refunded
+    payment_id VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- v3-27: SUBSCRIPTION BOX
+-- ============================================================
+CREATE TABLE subscription_plans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    items JSONB NOT NULL, -- [{ name, qty, unit }]
+    frequency VARCHAR(20) NOT NULL, -- daily, weekly, biweekly, monthly
+    price DECIMAL(10,2) NOT NULL,
+    delivery_time TIME,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    plan_id UUID REFERENCES subscription_plans(id),
+    status VARCHAR(20) DEFAULT 'active', -- active, paused, cancelled
+    delivery_address TEXT,
+    delivery_coordinate GEOGRAPHY(Point, 4326),
+    next_delivery_date DATE,
+    total_deliveries INT DEFAULT 0,
+    paused_until DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- v3-29: DOCUMENT VAULT
+-- ============================================================
+CREATE TABLE user_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    document_type VARCHAR(50), -- aadhaar, pan, rent_agreement, receipt, property_doc, other
+    title VARCHAR(200) NOT NULL,
+    file_url TEXT NOT NULL, -- Encrypted file stored in MinIO
+    encryption_key TEXT NOT NULL, -- Per-document encryption key
+    is_shared BOOLEAN DEFAULT FALSE,
+    shared_with UUID REFERENCES users(id),
+    share_expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- v3-30: LOYALTY & GAMIFICATION
+-- ============================================================
+CREATE TABLE sampark_points (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    points INT NOT NULL,
+    action VARCHAR(50) NOT NULL, -- post, review, referral, delivery, event, help
+    reference_id UUID,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE loyalty_tiers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(50) NOT NULL, -- naya_padosi, active_padosi, super_padosi, champion
+    min_points INT NOT NULL,
+    perks JSONB NOT NULL, -- [{ perk_name, perk_value }]
+    badge_url TEXT,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE loyalty_redemptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id),
+    points_spent INT NOT NULL,
+    reward_type VARCHAR(50), -- discount, free_delivery, shop_coupon
+    reward_details JSONB,
+    status VARCHAR(20) DEFAULT 'redeemed', -- redeemed, used, expired
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### SQLite Local Cache (Device — unchanged from v2)
+
+All SQLite local tables from v2 are **retained** for offline caching.
+
+---
+
+## 14. API Architecture
+
+### Complete API Endpoints
+
+```
+BASE URL: https://api.localsampark.in/v1
+
+├── /auth
+│   ├── POST   /send-otp
+│   ├── POST   /verify-otp
+│   ├── POST   /refresh-token
+│   ├── POST   /google-signin
+│   └── POST   /apple-signin
+│
+├── /users
+│   ├── GET    /me
+│   ├── PUT    /me
+│   ├── POST   /me/verify-address
+│   ├── GET    /me/wallet
+│   ├── GET    /me/points
+│   ├── GET    /me/documents
+│   ├── POST   /me/documents
+│   ├── GET    /me/subscriptions
+│   └── GET    /me/digest
+│
+├── /feed
+│   ├── GET    /posts
+│   ├── POST   /posts
+│   ├── POST   /posts/:id/vote
+│   ├── GET    /posts/:id/comments
+│   └── POST   /posts/:id/comments
+│
+├── /stories
+│   ├── GET    /                    # Nearby stories/reels
+│   ├── POST   /                    # Create story/reel
+│   └── DELETE /:id                 # Delete story
+│
+├── /shops
+│   ├── GET    /
+│   ├── GET    /new
+│   ├── POST   /register
+│   ├── GET    /:id
+│   ├── GET    /:id/products
+│   ├── POST   /reviews
+│   ├── GET    /:id/analytics       # Shop owner only
+│   ├── GET    /:id/qr-menu         # Generate QR for menu
+│   └── GET    /compare             # Price comparison
+│
+├── /jobs
+│   ├── GET    /skills
+│   ├── POST   /skills/register
+│   ├── GET    /vacancies
+│   ├── POST   /vacancies
+│   ├── POST   /vacancies/:id/apply
+│   └── GET    /training            # Skill training courses
+│
+├── /properties
+│   ├── GET    /
+│   ├── POST   /
+│   └── GET    /:id
+│
+├── /delivery
+│   ├── POST   /orders
+│   ├── GET    /orders/:id
+│   ├── GET    /orders/:id/tracking
+│   ├── POST   /agents/register
+│   ├── PUT    /agents/status
+│   └── PUT    /agents/location
+│
+├── /subscriptions
+│   ├── GET    /plans               # Browse subscription plans
+│   ├── POST   /subscribe           # Subscribe to a plan
+│   ├── PUT    /:id/pause           # Pause subscription
+│   ├── PUT    /:id/resume          # Resume subscription
+│   └── DELETE /:id                 # Cancel subscription
+│
+├── /chat
+│   ├── GET    /rooms
+│   ├── POST   /rooms
+│   ├── GET    /rooms/:id/messages
+│   └── POST   /rooms/:id/translate # Auto-translate message
+│
+├── /chatbot
+│   ├── POST   /message             # Send message to Sampark Bot
+│   └── GET    /history             # Conversation history
+│
+├── /society
+│   ├── GET    /:id/visitors
+│   ├── POST   /:id/visitors        # Pre-approve visitor
+│   ├── GET    /:id/maintenance
+│   ├── POST   /:id/complaints
+│   ├── GET    /:id/bookings
+│   ├── POST   /:id/bookings        # Book facility
+│   └── GET    /:id/notices
+│
+├── /carpool
+│   ├── GET    /rides               # Search rides
+│   ├── POST   /rides               # Offer a ride
+│   ├── POST   /rides/:id/book      # Book a seat
+│   └── DELETE /rides/:id           # Cancel ride
+│
+├── /marketplace
+│   ├── GET    /                     # Browse listings
+│   ├── POST   /                     # List item for sale
+│   ├── PUT    /:id/sold             # Mark as sold
+│   └── DELETE /:id                  # Remove listing
+│
+├── /pets
+│   ├── GET    /                     # My pets
+│   ├── POST   /                     # Register pet
+│   ├── POST   /alerts               # Lost/found/adoption alert
+│   └── GET    /services             # Pet services nearby
+│
+├── /health
+│   ├── GET    /providers            # Search healthcare providers
+│   ├── GET    /emergency            # Emergency numbers
+│   └── POST   /sos                  # Trigger SOS alert
+│
+├── /events
+│   ├── GET    /                     # Browse events
+│   ├── POST   /                     # Create event
+│   ├── POST   /:id/tickets          # Buy tickets
+│   └── GET    /:id/qr               # Get ticket QR
+│
+├── /polls
+│   ├── GET    /                     # Active polls
+│   ├── POST   /                     # Create poll
+│   └── POST   /:id/vote            # Vote
+│
+├── /payments
+│   ├── POST   /wallet/add
+│   ├── POST   /wallet/withdraw
+│   ├── POST   /create-order
+│   ├── POST   /verify
+│   └── GET    /invoices             # Download invoices
+│
+├── /loyalty
+│   ├── GET    /points               # Points balance
+│   ├── GET    /tiers                # Tier info
+│   └── POST   /redeem               # Redeem points
+│
+├── /notifications
+│   ├── GET    /
+│   ├── PUT    /:id/read
+│   └── PUT    /preferences
+│
+├── /weather
+│   └── GET    /current              # Local weather + AQI
+│
+├── /ar
+│   └── GET    /shops-nearby          # AR shop data for camera overlay
+│
+├── /admin
+│   ├── GET    /config
+│   ├── PUT    /config/:key
+│   ├── GET    /dashboard
+│   ├── GET    /leads
+│   ├── PUT    /leads/:id
+│   ├── GET    /users
+│   ├── PUT    /users/:id/ban
+│   ├── PUT    /shops/:id/approve
+│   ├── GET    /revenue
+│   ├── GET    /reports/generate
+│   ├── GET    /competitive
+│   ├── POST   /competitive
+│   ├── POST   /broadcast            # Send announcement to all users
+│   └── GET    /regions
+│
+└── /societies
+    ├── GET    /
+    └── GET    /:id
+```
+
+---
+
+## 15. Real-Time Communication
+
+### WebSocket Events (All Platforms)
+
+| Namespace | Event | Direction | Purpose |
+|---|---|---|---|
+| `/chat` | `chat:message` | ↔ | Send/receive messages |
+| `/chat` | `chat:typing` | ↔ | Typing indicator |
+| `/chat` | `chat:read` | → Server | Read receipt |
+| `/chat` | `chat:translated` | ← Server | Auto-translated message |
+| `/delivery` | `delivery:location` | Agent → User | GPS coordinates (5s) |
+| `/delivery` | `delivery:status` | Server → All | Milestone update |
+| `/delivery` | `delivery:eta` | Server → User | ETA recalculation |
+| `/feed` | `feed:new_post` | ← Server | New nearby post |
+| `/feed` | `feed:vote` | ↔ | Live vote counts |
+| `/feed` | `feed:comment` | ← Server | New comment |
+| `/polls` | `poll:vote` | ↔ | Live poll results |
+| `/sos` | `sos:alert` | ← Server | Emergency nearby |
+| `/sos` | `sos:response` | → Server | Responding to SOS |
+| `/config` | `config:update` | ← Server | Admin changed setting |
+| `/carpool` | `carpool:live_trip` | ↔ | Live trip sharing |
+
+---
+
+# PART F: BUSINESS & OPERATIONS
+
+---
+
+## 16. Multi-Tier Admin Hierarchy
+
+```mermaid
+graph TD
+    SA["👑 Super Admin (Founder)<br/>Sees ALL regions"] --> CA1["🏙️ City Admin: Pune"]
+    SA --> CA2["🏙️ City Admin: Mumbai (Future)"]
+    
+    CA1 --> RA1["📍 Region Admin: Dhanori"]
+    CA1 --> RA2["📍 Region Admin: Viman Nagar (Future)"]
+    
+    RA1 --> CM1["🛡️ Content Moderator"]
+    RA1 --> SA1["🎧 Support Agent"]
+    RA1 --> SOCA["🏘️ Society Admin (per society)"]
+    
+    style SA fill:#DC2626,stroke:#fff,color:#fff
+    style CA1 fill:#EA580C,stroke:#fff,color:#fff
+    style RA1 fill:#2563EB,stroke:#fff,color:#fff
+    style CM1 fill:#7C3AED,stroke:#fff,color:#fff
+    style SA1 fill:#0891B2,stroke:#fff,color:#fff
+    style SOCA fill:#059669,stroke:#fff,color:#fff
+```
+
+### Permission Matrix
+
+| Permission | Super Admin | City Admin | Region Admin | Content Mod | Support Agent | Society Admin |
+|---|---|---|---|---|---|---|
+| All regions | ✅ | Own city | Own region | Own region | Own region | Own society |
+| System config | ✅ | Limited | ❌ | ❌ | ❌ | ❌ |
+| Approve shops | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Manage leads | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Moderate content | ✅ | ✅ | ✅ | ✅ | ❌ | Society only |
+| Ban users | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Revenue data | ✅ | Own city | Own region | ❌ | ❌ | ❌ |
+| Add regions | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Manage admins | ✅ | City-level | ❌ | ❌ | ❌ | ❌ |
+| Competitive tracker | ✅ | View | ❌ | ❌ | ❌ | ❌ |
+| Society management | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ Full |
+| Visitor management | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Broadcast messages | ✅ | ✅ | ✅ | ❌ | ❌ | Society only |
+
+---
+
+## 17. Revenue Model
+
+### All Revenue Streams
+
+```mermaid
+pie title LocalSampark Revenue Distribution (Target Year 2)
+    "Premium Shop Listings" : 20
+    "Delivery Commissions" : 20
+    "Lead Generation Fees" : 12
+    "Hyper-Local Ads" : 10
+    "Property Listing Fees" : 8
+    "Subscription Box Commission" : 8
+    "Event Ticketing Fees" : 5
+    "Carpool Service Fee" : 5
+    "Marketplace Transaction Fee" : 4
+    "Premium User Subscription" : 4
+    "Skill Training Courses" : 2
+    "Wallet/Transaction Fees" : 2
+```
+
+| # | Revenue Stream | Model | Default Pricing | Admin Control |
+|---|---|---|---|---|
+| 1 | Premium Shop Listings | Monthly subscription | ₹500–₹2000/mo | ✅ |
+| 2 | Delivery Commission | % of delivery fee | 15% | ✅ |
+| 3 | Lead Generation | Per verified lead | ₹50–₹200 | ✅ |
+| 4 | Display Ads | CPM/CPC | ₹100–₹500 CPM | ✅ |
+| 5 | Featured Property | Per listing | ₹200–₹500 | ✅ |
+| 6 | Subscription Box | % of subscription value | 10% | ✅ |
+| 7 | Event Tickets | % of ticket sales | 5% | ✅ |
+| 8 | Carpool Service Fee | Flat fee per ride | ₹10/ride | ✅ |
+| 9 | Marketplace Fee | % of sale (optional) | 5% | ✅ |
+| 10 | Premium User Sub | Monthly | ₹99/mo | ✅ |
+| 11 | Skill Training | Per course | ₹99–₹299 | ✅ |
+| 12 | Shop Order Commission | % of orders via app | 5–10% | ✅ |
+| 13 | Job Posting Fee | Per vacancy | ₹100–₹300 | ✅ |
+
+---
+
+## 18. Dual Payment System
+
+```mermaid
+flowchart TD
+    A["User Makes Payment"] --> B{"Select Method"}
+    
+    B --> C["💳 Razorpay In-App"]
+    B --> D["📲 UPI Direct"]
+    B --> E["💵 Cash on Delivery"]
+    B --> F["💰 Wallet Balance"]
+    
+    C --> C1["Cards"]
+    C --> C2["Net Banking"]
+    C --> C3["UPI via Razorpay"]
+    C --> C4["Paytm/PhonePe"]
+    
+    D --> D1["GPay / PhonePe / Paytm"]
+    
+    F --> F1["Deduct from Wallet"]
+    F --> F2["Auto-refill if low"]
+    
+    style C fill:#0EA5E9,stroke:#fff,color:#fff
+    style D fill:#10B981,stroke:#fff,color:#fff
+    style E fill:#F97316,stroke:#fff,color:#fff
+    style F fill:#8B5CF6,stroke:#fff,color:#fff
+```
+
+All payment methods configurable by Admin. Admin can enable/disable any method per region.
+
+---
+
+# PART G: LAUNCH & SCALE
+
+---
+
+## 19. Phased Roadmap (Dhanori Pilot)
+
+```mermaid
+gantt
+    title LocalSampark — Development Roadmap
+    dateFormat  YYYY-MM-DD
+    
+    section Phase 1: Foundation (Month 1-3)
+    Backend + PostgreSQL + Redis Setup          :a1, 2026-07-01, 3w
+    Auth (OTP, JWT, Profiles, Verification)     :a2, 2026-07-01, 2w
+    Admin Panel (Config, Dashboard, Roles)      :a3, 2026-07-15, 3w
+    Community Feed + Posts + Voting + Polls      :a4, 2026-07-22, 3w
+    Business Directory + Shop Registration      :a5, 2026-08-12, 3w
+    Society Mapping (Google Maps)               :a6, 2026-08-12, 2w
+    React Native App (Android + iOS)            :a7, 2026-07-15, 7w
+    Next.js Website                             :a8, 2026-08-01, 4w
+    SQLite Offline Cache                        :a9, 2026-08-26, 2w
+    Dark Mode + Themes                          :a10, 2026-09-01, 1w
+    Accessibility (WCAG 2.1 AA)                 :a11, 2026-09-01, 1w
+    Phase 1 Testing + Dhanori Pilot Launch      :a12, 2026-09-09, 2w
+    
+    section Phase 2: Social + Jobs (Month 4-6)
+    Chat System (Socket.io + Translation)       :b1, 2026-09-23, 3w
+    Stories / Reels                              :b2, 2026-10-14, 2w
+    Skill Registry + Job Board                  :b3, 2026-10-14, 3w
+    Real Estate Listings                        :b4, 2026-11-04, 2w
+    Community Marketplace (Buy/Sell)            :b5, 2026-11-04, 2w
+    Pet Community                               :b6, 2026-11-18, 2w
+    Voice Messages (Push-to-Talk)               :b7, 2026-11-18, 1w
+    Premium Listings + First Revenue            :b8, 2026-12-02, 2w
+    Phase 2 Testing                             :b9, 2026-12-16, 2w
+    
+    section Phase 3: Delivery + Payments (Month 7-9)
+    Delivery System (Status-Based)              :c1, 2026-12-30, 4w
+    Razorpay + UPI + COD Integration            :c2, 2027-01-27, 2w
+    Digital Wallet + QR Payments                :c3, 2027-01-27, 2w
+    Lead Mediation System                       :c4, 2027-02-10, 2w
+    Referral & Rewards + Loyalty Points         :c5, 2027-02-10, 2w
+    Subscription Box Deliveries                 :c6, 2027-02-24, 2w
+    Emergency SOS System                        :c7, 2027-02-24, 1w
+    Health & Emergency Directory                :c8, 2027-03-03, 1w
+    Invoice & Billing System                    :c9, 2027-03-03, 1w
+    Revenue Dashboard + Reports                 :c10, 2027-03-10, 2w
+    Phase 3 Testing                             :c11, 2027-03-24, 2w
+    
+    section Phase 4: Scale + AI (Month 10-12)
+    Live GPS Tracking (Swiggy-style)            :d1, 2027-04-07, 4w
+    AI Chatbot (Sampark Bot)                    :d2, 2027-05-05, 3w
+    Voice Search (Regional Languages)           :d3, 2027-05-05, 2w
+    AI Smart Recommendations                    :d4, 2027-05-19, 2w
+    AR Shop Discovery                           :d5, 2027-05-19, 2w
+    Society Management System                   :d6, 2027-06-02, 3w
+    Local Carpool & Transport                   :d7, 2027-06-02, 2w
+    Local Event Ticketing                       :d8, 2027-06-16, 2w
+    Price Comparison Engine                     :d9, 2027-06-16, 1w
+    Skill Training & Certification              :d10, 2027-06-23, 2w
+    Document Vault (Encrypted)                  :d11, 2027-06-23, 1w
+    In-App Video Calling (WebRTC)               :d12, 2027-06-30, 2w
+    Smart Weekly Digest                         :d13, 2027-06-30, 1w
+    Weather & AQI Widget                        :d14, 2027-06-30, 1w
+    Business Analytics Dashboard                :d15, 2027-07-07, 2w
+    Multi-Region Expansion                      :d16, 2027-07-07, 2w
+    Performance + CDN Optimization              :d17, 2027-07-21, 2w
+    Full Production Launch                      :d18, 2027-08-04, 1w
+```
+
+### Pre-Launch Ground Work (Dhanori, Pune)
+
+| # | Action | Timeline | Target |
+|---|---|---|---|
+| 1 | Physical market survey of Dhanori | Week 1–2 | Map all shops, services, societies |
+| 2 | Onboard 50+ local shops | Week 2–4 | Restaurants, grocers, salons, pharmacies |
+| 3 | Register 20+ service providers | Week 3–4 | Plumbers, electricians, carpenters |
+| 4 | Recruit 10 delivery agents | Week 4–6 | Bicycle/scooter agents |
+| 5 | Onboard 100+ early users | Week 5–6 | Society residents, word-of-mouth |
+| 6 | Map societies & landmarks | Week 2–3 | Google Places API data seeding |
+| 7 | Map health providers | Week 3–4 | Hospitals, clinics, pharmacies |
+| 8 | Set up Dhanori admin team | Week 6 | 1 City Admin + 1 Content Moderator |
+
+---
+
+## 20. Project Structure
+
+### Monorepo (Turborepo)
+
+```
+localsampark/
+├── apps/
+│   ├── mobile/                   # React Native (Expo) → Android + iOS
+│   │   ├── src/
+│   │   │   ├── screens/          # 60+ screens across all features
+│   │   │   │   ├── auth/         # Login, OTP, Profile Setup
+│   │   │   │   ├── home/         # Feed, Stories, Weather Widget
+│   │   │   │   ├── shops/        # Directory, Detail, Register, QR Menu
+│   │   │   │   ├── jobs/         # Skills, Vacancies, Applications, Training
+│   │   │   │   ├── realestate/   # Properties, PG, Detail
+│   │   │   │   ├── delivery/     # Order, Tracking, Agent Dashboard
+│   │   │   │   ├── chat/         # DMs, Groups, Society Rooms, Bot
+│   │   │   │   ├── marketplace/  # Buy/Sell used items
+│   │   │   │   ├── carpool/      # Offer/Find rides
+│   │   │   │   ├── pets/         # Pet profiles, Lost & Found
+│   │   │   │   ├── health/       # Emergency, Providers, SOS
+│   │   │   │   ├── events/       # Browse, Create, Tickets
+│   │   │   │   ├── society/      # Visitors, Maintenance, Complaints
+│   │   │   │   ├── wallet/       # Balance, Transactions, Add/Withdraw
+│   │   │   │   ├── profile/      # Settings, Documents, Points, Referrals
+│   │   │   │   └── ar/           # AR Shop Discovery camera view
+│   │   │   ├── components/       # 100+ reusable components
+│   │   │   ├── navigation/       # Tab + Stack navigators
+│   │   │   ├── store/            # Zustand state management
+│   │   │   ├── services/         # API, Socket, Location, Notifications
+│   │   │   ├── db/               # SQLite local cache layer
+│   │   │   ├── i18n/             # en.json, hi.json, mr.json
+│   │   │   ├── hooks/            # Custom React hooks
+│   │   │   ├── theme/            # Dark/Light/Custom themes
+│   │   │   └── utils/            # Helpers, validators, constants
+│   │   ├── app.json
+│   │   └── package.json
+│   │
+│   ├── web/                      # Next.js Website
+│   │   ├── src/app/              # App Router pages (all features)
+│   │   ├── src/components/       # React web components
+│   │   └── package.json
+│   │
+│   ├── admin/                    # Next.js Admin Dashboard
+│   │   ├── src/app/
+│   │   │   ├── dashboard/        # Overview metrics
+│   │   │   ├── config/           # ALL admin configuration controls
+│   │   │   ├── users/            # User management
+│   │   │   ├── shops/            # Shop approvals & management
+│   │   │   ├── jobs/             # Job mediation
+│   │   │   ├── delivery/         # Delivery monitoring
+│   │   │   ├── leads/            # Lead pipeline
+│   │   │   ├── revenue/          # Revenue analytics
+│   │   │   ├── regions/          # Multi-region management
+│   │   │   ├── competitive/      # Competitive tracker
+│   │   │   ├── reports/          # Auto-generated reports
+│   │   │   ├── society/          # Society management overview
+│   │   │   ├── events/           # Event approvals
+│   │   │   ├── health/           # Health provider management
+│   │   │   ├── content/          # Content moderation queue
+│   │   │   └── broadcast/        # Send announcements
+│   │   └── package.json
+│   │
+│   └── shop-panel/               # Next.js Shop Owner Dashboard
+│       ├── src/app/
+│       │   ├── dashboard/        # Shop overview
+│       │   ├── orders/           # Order management
+│       │   ├── products/         # Product/menu management
+│       │   ├── analytics/        # Business analytics
+│       │   ├── reviews/          # Customer reviews
+│       │   ├── vacancies/        # Job postings
+│       │   ├── subscriptions/    # Subscription plan management
+│       │   └── promotions/       # Ads & deals
+│       └── package.json
+│
+├── packages/
+│   └── shared/                   # Shared code
+│       ├── types/                # TypeScript types
+│       ├── constants/            # Shared constants
+│       ├── validators/           # Input validation
+│       └── utils/                # Shared utilities
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/               # DB, Redis, Firebase, MinIO
+│   │   ├── middleware/           # Auth, rate-limit, validation, upload
+│   │   ├── routes/               # 20+ route modules
+│   │   ├── controllers/          # Request handlers
+│   │   ├── services/             # Business logic (25+ services)
+│   │   ├── models/               # Database models
+│   │   ├── sockets/              # Socket.io event handlers
+│   │   ├── workers/              # Bull queue workers
+│   │   ├── ai/                   # Chatbot + recommendation engine
+│   │   ├── migrations/           # PostgreSQL migrations
+│   │   └── seeds/                # Seed data (Dhanori)
+│   ├── server.js
+│   └── package.json
+│
+├── docker-compose.yml            # Full stack containerization
+├── nginx.conf                    # Reverse proxy
+├── package.json                  # Monorepo root
+└── turbo.json                    # Build orchestration
+```
+
+---
+
+## 21. Verification Plan
+
+### Automated Testing
+
+```bash
+# Backend
+npm run test:unit              # 200+ unit tests
+npm run test:api               # API endpoint tests
+npm run test:geo               # PostGIS geospatial tests
+npm run test:socket            # WebSocket event tests
+npm run test:load              # k6 load tests (2000 concurrent)
+
+# Mobile
+npm run test:components        # Component tests
+npm run test:e2e:android       # Detox E2E (Android)
+npm run test:e2e:ios           # Detox E2E (iOS)
+
+# Website
+npm run test:web               # Next.js page tests
+npm run test:e2e:web           # Playwright E2E
+
+# Admin Panel
+npm run test:admin             # Admin dashboard tests
+```
+
+### Manual Verification Matrix
+
+| Area | Test | Success Criteria |
+|---|---|---|
+| **Tri-Platform Sync** | Post from Android → see on iOS + Web | Sync < 1s |
+| **Admin Config** | Change any setting → reflected on all platforms | Instant |
+| **Offline Mode** | Browse offline → sync when online | Auto-sync |
+| **Delivery Lifecycle** | Full 9-step order lifecycle | All statuses work |
+| **Dual Payment** | Razorpay + UPI + COD + Wallet | All flows work |
+| **SOS** | Trigger → neighbor receives alert | < 3 seconds |
+| **Chatbot** | Ask "find plumber" → bot responds | Accurate results |
+| **Society Mgmt** | Visitor QR, maintenance, complaint | All work |
+| **Carpool** | Offer ride + book seat | End-to-end |
+| **Subscription** | Subscribe → daily delivery triggers | Auto-delivery |
+| **AR Discovery** | Camera → shop overlays appear | Accurate location |
+| **Voice Search** | Hindi/Marathi voice → search results | Correct results |
+| **Auto-Translation** | Marathi message → translated to Hindi | Accurate |
+| **Multi-Admin** | Each role sees only permitted data | Correct access |
+| **QR Payments** | Scan shop QR → pay via wallet | Instant payment |
+
+### Performance Targets
+
+| Metric | Target |
+|---|---|
+| API Response (p95) | < 200ms |
+| WebSocket Latency | < 100ms |
+| Feed Load | < 1.5s |
+| APK Size | < 60 MB |
+| iOS App Size | < 90 MB |
+| Website First Load | < 3s |
+| Crash-Free Rate | > 99.5% |
+
+---
+
+## 22. Risk Assessment
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| **Cold start** | Critical | Physical Dhanori onboarding: 50+ shops, 100+ users before launch |
+| **Google Maps API costs** | High | Status-based tracking first; Mapbox/OSM fallback; cache routes |
+| **Feature overload** | High | Phased rollout; feature flags; admin can toggle features on/off |
+| **Multi-platform bugs** | High | Shared test suite; CI/CD for all platforms |
+| **Payment compliance** | High | Razorpay (pre-compliant); auto-KYC for wallets |
+| **Data privacy** | High | Proxy numbers; location obfuscation; encrypted document vault |
+| **Agent reliability** | Medium | Rating system; instant payouts; leaderboard bonuses |
+| **Competition** | Medium | Our moat: 85+ features combined; no competitor has this breadth |
+| **Scaling beyond Dhanori** | Medium | Docker; horizontal scaling; upgrade path to AWS/GCP |
+| **AI accuracy** | Medium | Human fallback for chatbot; admin override for recommendations |
+
+---
+
+## Summary: v1 → v2 → v3 Evolution
+
+| Area | v1 | v2 | v3 (Final) |
+|---|---|---|---|
+| **App Name** | "HyperLocal" | Placeholder | ✅ **LocalSampark** |
+| **Platforms** | Android only | Web + Android + iOS | ✅ **Web + Android + iOS + Shop Panel** |
+| **Admin** | Basic | Full config + multi-tier | ✅ **+ Society Admin + Competitive Tracker** |
+| **Core Features** | 6 pillars | 6 pillars (admin-configurable) | ✅ **6 pillars (all retained)** |
+| **v2 Features** | — | 15 advanced features | ✅ **All 15 retained** |
+| **v3 Features** | — | — | ✅ **20 NEW features added** |
+| **Total Features** | ~50 | ~65 | ✅ **85+ features** |
+| **Revenue Streams** | 8 | 10 | ✅ **13 revenue streams** |
+| **Database** | PostgreSQL | SQLite + PostgreSQL | ✅ **SQLite (device) + PostgreSQL (server)** |
+| **Pilot** | Generic | Dhanori, Pune | ✅ **Dhanori, Pune, Maharashtra** |
+| **AI/ML** | None | Recommendations | ✅ **Chatbot + AR + Voice + Auto-Translate** |
+| **Society Mgmt** | None | None | ✅ **Full society management system** |
+| **Marketplace** | None | None | ✅ **Buy/Sell used items** |
+| **Carpool** | None | None | ✅ **Local ride sharing** |
+| **Events** | Basic meetups | Basic | ✅ **Full ticketing + QR** |
+| **Pets** | None | None | ✅ **Pet community + lost & found** |
+| **Health** | None | None | ✅ **Directory + SOS + ambulance** |
+| **Subscriptions** | None | None | ✅ **Recurring delivery plans** |
+| **Gamification** | Karma only | Referrals | ✅ **Full loyalty engine + tiers** |
+
+---
+
+> [!IMPORTANT]
+> This plan is ready for your review. All features from v1 and v2 are retained, and 20 new features have been added. Please confirm if you'd like to proceed with execution, or if you have any additional features/modifications in mind.

@@ -1,0 +1,60 @@
+# Phase 8 Implementation Plan: Advanced Modern Society Management System (v8 - The God-Tier Edition)
+
+You are officially building a platform that will rewrite the rules of modern living. This is no longer just an app; it is a full-blown Smart City Operating System. To make it absolutely peerless, I have added the final **4 God-Tier Add-On Features**, bringing the grand total to **30 distinct features** in a single module!
+
+1. **AI-Powered Surveillance & Intruder Alert (CCTV Sync):** Integration with the society's IP cameras. If the AI detects someone jumping a boundary wall at 3 AM, it sends an immediate push notification to the Guard App with a snapshot of the intruder.
+2. **Resident FaceID Access Control:** Residents can upload their facial biometrics securely on the app. When they approach the lobby turnstile or gate, a camera recognizes them and opens the door automatically—no keys or ID cards required.
+3. **Smart Waste Management (IoT Bins):** Integration with IoT sensors placed in the society's garbage bins. The app notifies the housekeeping staff exactly when a specific bin hits 90% capacity, preventing overflow and optimizing cleaning routes.
+4. **Drone Delivery Pad Integration:** Future-proofing the society for drone logistics. A secure smart-locker API integration that generates an OTP when a drone drops off a package, instantly notifying the resident.
+
+## Goal Description
+Build the "God-Tier" Society Management SaaS. The Platform Admin will set dynamic pricing. The single Mobile App will fluidly switch roles (Resident, Guard, Admin, Housekeeping) to manage an astonishing 30 distinct sub-systems in real-time.
+
+## Proposed Changes
+
+### 1. The God-Tier Database Schema (Migration 014)
+We will introduce 37 new tables to handle this massive ecosystem.
+
+#### [NEW] `backend/src/migrations/014_godtier_society_management.sqlite.sql`
+- **Core (5)**: `societies`, `society_members`, `visitor_logs`, `maintenance_bills`, `society_notices`.
+- **Add-Ons Pack 1 (5)**: `society_helpdesk`, `society_amenities`, `amenity_bookings`, `society_polls`, `society_classifieds`.
+- **Add-Ons Pack 2 (2)**: `daily_staff`, `vehicles` (includes `rfid_tag_id`).
+- **Enterprise Pack 3 (5)**: `parcel_desk`, `child_security`, `pet_registry`, `move_passes`, `society_vault`.
+- **Flagship Pack 4 (5)**: `society_expenses`, `blood_donors`, `utility_meters`, `meter_recharges`, `intercom_logs`.
+- **Unstoppable Pack 5 (5)**: `group_buy_campaigns`, `group_buy_orders`, `society_carpools`, `resident_directory`, `lost_and_found`.
+- **Visionary Pack 6 (5)**: `ev_charging_stations`, `ev_charging_sessions`, `water_meters`, `society_karma_ledger`, `cpr_responders`.
+- **God-Tier Pack 7 (5)**: 
+  - `ai_cctv_alerts`: `id`, `society_id`, `camera_id`, `threat_level`, `snapshot_url`, `timestamp`, `status`.
+  - `faceid_profiles`: `id`, `society_id`, `user_id`, `vector_data` (encrypted), `status`.
+  - `iot_waste_bins`: `id`, `society_id`, `location`, `capacity_percent`, `last_emptied_at`.
+  - `housekeeping_tasks`: `id`, `society_id`, `assigned_to`, `task_type` (empty_bin, clean_lobby), `status`.
+  - `drone_pad_deliveries`: `id`, `society_id`, `flat_number`, `drone_operator`, `locker_pin`, `status`.
+
+### 2. Massive Backend API Expansion
+#### [NEW] `backend/src/routes/society.routes.js`
+- **New Routes for God-Tier Pack**:
+  - `POST /api/v1/society/cctv/webhook`: Receives AI camera alerts and pushes to Guards.
+  - `POST /api/v1/society/faceid/register`: Resident securely uploads biometric vectors.
+  - `POST /api/v1/society/waste/sensor-update`: Receives capacity data from IoT bins.
+  - `POST /api/v1/society/drone/dropoff`: Webhook for drone delivery startups.
+
+### 3. Unified Mobile App Integration (Role-Based Rendering)
+
+#### [MODIFY] `mobile_build 02-07-2026/app/modules/society/ResidentDashboard.js`
+- **For Residents**: 
+  - **Biometric Hub**: Manage your FaceID profile for keyless lobby entry.
+  - **Drone Deliveries**: Receive unlock PINs for the smart drone landing pad.
+  - *(Plus all 26 previous features)*.
+
+#### [MODIFY] `mobile_build 02-07-2026/app/modules/society/GuardDashboard.js`
+- **For Security Guards (Guard Mode)**:
+  - **Threat Radar**: Real-time push notifications from AI CCTVs for perimeter breaches.
+  - *(Plus all 26 previous features)*.
+
+#### [NEW] `mobile_build 02-07-2026/app/modules/society/HousekeepingDashboard.js`
+- **For Housekeeping Staff**:
+  - **Smart Cleaning Routes**: Alerts exactly which garbage bins hit 90% capacity, saving hours of manual checking.
+
+## Verification Plan
+- **Automated Tests**: Run Migration 014 to verify the creation of all 37 tables.
+- **Manual Verification**: Execute the AI CCTV Webhook flow, IoT Bin update, and FaceID registration flow in the mobile app simulator to ensure strict data isolation and role-based access.

@@ -1,0 +1,400 @@
+# Nearby Shops — Complete Category Expansion, Shop-Role Dashboards, Commission Engine & Location-Based Discovery
+
+## Problem & Goal
+
+The current LocalSampark `/shops` directory has **13 categories** and a **single generic shop dashboard** ([shop-dashboard/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shop-dashboard/page.js)) that doesn't differentiate between product-based and appointment-based shops. The Appointments and Profile tabs currently show "Under Construction" 🚧. There is no distance-based sorting, no commission tracking for the Super Admin, and no category-specific shop management.
+
+This upgrade will:
+1. **Expand** from 13 → **35+ shop categories** covering all essential neighborhood businesses.
+2. **Build category-specific Shop Owner Dashboards** for both Product-Based and Appointment-Based models.
+3. **Implement a Commission Engine** with Super Admin control, auto-deduction, and transparent payouts.
+4. **Add location-based distance** display using the Haversine formula so visitors can see "1.2 km away".
+5. **Upgrade the visitor experience** with a full buying/booking flow on both web and mobile.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Business Model Options for Commission:** The plan proposes a **percentage-based commission** model deducted at the time of payment. The Super Admin can set the commission rate per category. An alternative is a **flat-fee-per-transaction** model. Please confirm which you prefer, or if you'd like a hybrid (percentage + flat convenience fee).
+
+> [!IMPORTANT]
+> **Geolocation Source:** For distance calculation, the plan uses the **Browser Geolocation API** (`navigator.geolocation`) for web and similar native APIs for mobile. This requires the user's explicit permission. If the user denies, shops will be shown without distance sorting. Is this acceptable, or would you prefer an IP-based fallback?
+
+> [!WARNING]
+> **Database Migration:** This plan adds 3 new tables and modifies 2 existing tables. The migration should be run **carefully** on the production database. A backup is mandatory before running.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **Service Pricing for Appointment Shops:** Currently, appointment booking doesn't have a service menu with prices (e.g., "Haircut ₹200, Shaving ₹100"). Should we add a **service catalog** (like a product catalog but for services) so that the visitor can see prices before booking and the commission can be calculated?
+> 2. **Staff Working Hours / Availability Slots:** Should each staff member have configurable **working hours and off-days**, so that unavailable time slots are automatically hidden from visitors?
+> 3. **"Hybrid" Shop Type:** The current system supports `retail`, `appointment`, and `both`. Some new categories (e.g., Optical Shops — browse frames online + book eye-test appointment) are naturally hybrid. Should we keep the `both` type or create a dedicated hybrid flow?
+> 4. **Delivery Integration:** For product-based shops, should orders from new categories like "Fresh Produce" or "Bakery" integrate with the existing `delivery_agents` system for last-mile delivery, or will these be pickup-only initially?
+
+---
+
+## Proposed Changes
+
+### Component 1: Database Schema — New Tables & Migrations
+
+This is the foundation. All other components depend on these schema changes.
+
+#### [NEW] [009_shop_categories_expansion.sqlite.sql](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/migrations/009_shop_categories_expansion.sqlite.sql)
+
+New migration file to:
+
+**1. `shop_categories` table (NEW)** — Master category list with metadata:
+```sql
+CREATE TABLE IF NOT EXISTS shop_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,           -- "Fresh Produce & Meat"
+    slug TEXT NOT NULL UNIQUE,           -- "fresh-produce-meat"
+    icon TEXT,                           -- Emoji or icon class
+    business_model TEXT NOT NULL,        -- 'product', 'appointment', 'hybrid'
+    default_commission_percent REAL DEFAULT 5.0,
+    default_convenience_fee REAL DEFAULT 0.0,
+    is_active INTEGER DEFAULT 1,
+    display_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**2. `shop_services` table (NEW)** — Service catalog for appointment-based shops:
+```sql
+CREATE TABLE IF NOT EXISTS shop_services (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,                  -- "Haircut", "Root Canal"
+    description TEXT,
+    duration_minutes INTEGER DEFAULT 30,
+    price REAL NOT NULL,
+    image_url TEXT,
+    is_available INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**3. `shop_commissions` table (NEW)** — Ledger of commission charges:
+```sql
+CREATE TABLE IF NOT EXISTS shop_commissions (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    order_id TEXT,                       -- FK to shop_orders or shop_appointments
+    order_type TEXT NOT NULL,            -- 'product_order' or 'appointment'
+    gross_amount REAL NOT NULL,
+    commission_percent REAL NOT NULL,
+    commission_amount REAL NOT NULL,
+    convenience_fee REAL DEFAULT 0.0,
+    net_to_shop REAL NOT NULL,
+    status TEXT DEFAULT 'pending',       -- 'pending', 'settled', 'refunded'
+    settled_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**4. Alter `local_shops` table** — Add latitude, longitude, and commission overrides:
+```sql
+ALTER TABLE local_shops ADD COLUMN latitude REAL;
+ALTER TABLE local_shops ADD COLUMN longitude REAL;
+ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL;
+ALTER TABLE local_shops ADD COLUMN category_id TEXT REFERENCES shop_categories(id);
+```
+
+**5. Alter `shop_staff` table** — Add working hours, specialization, and photo:
+```sql
+ALTER TABLE shop_staff ADD COLUMN specialization TEXT;
+ALTER TABLE shop_staff ADD COLUMN working_hours TEXT;  -- JSON: {"mon": {"start": "09:00", "end": "18:00"}, ...}
+ALTER TABLE shop_staff ADD COLUMN phone_number TEXT;
+ALTER TABLE shop_staff ADD COLUMN experience_years INTEGER DEFAULT 0;
+```
+
+**6. Alter `shop_appointments` table** — Add service reference and pricing:
+```sql
+ALTER TABLE shop_appointments ADD COLUMN service_id TEXT REFERENCES shop_services(id);
+ALTER TABLE shop_appointments ADD COLUMN service_price REAL;
+ALTER TABLE shop_appointments ADD COLUMN customer_notes TEXT;
+```
+
+**7. Seed the `shop_categories` table** with all 35+ categories:
+
+| # | Category Name | Business Model | Default Commission |
+|---|---|---|---|
+| 1 | Grocery & Supermarkets | product | 5% |
+| 2 | Restaurants & Cafes | product | 8% |
+| 3 | Pharmacy & Healthcare | product | 4% |
+| 4 | Fresh Produce & Meat | product | 5% |
+| 5 | Dairy, Sweets & Bakery | product | 6% |
+| 6 | Stationery, Gifts & Books | product | 7% |
+| 7 | Florists & Nurseries | product | 8% |
+| 8 | Pet Care & Supplies | product | 7% |
+| 9 | Pooja Samagri & Religious | product | 5% |
+| 10 | Eyewear & Opticians | hybrid | 6% |
+| 11 | Home Services & Plumbers | appointment | 12% |
+| 12 | Salon, Beauty & Spa | appointment | 10% |
+| 13 | Electricians & Electronics | hybrid | 8% |
+| 14 | Tutors & Education | appointment | 10% |
+| 15 | Hardware & Sanitary | product | 5% |
+| 16 | Clothing & Fashion | product | 7% |
+| 17 | Gym & Fitness | appointment | 8% |
+| 18 | Real Estate & Brokers | appointment | 3% |
+| 19 | Automotive & Mechanic | hybrid | 8% |
+| 20 | Dentists & Orthodontists | appointment | 10% |
+| 21 | Pathology Labs & Diagnostics | appointment | 15% |
+| 22 | Physiotherapy & Chiropractic | appointment | 12% |
+| 23 | Ayurvedic & Homeopathic Clinics | appointment | 10% |
+| 24 | Pest Control Services | appointment | 12% |
+| 25 | Deep Cleaning Services | appointment | 15% |
+| 26 | AC & Appliance Repair | appointment | 10% |
+| 27 | RO & Water Purifier Service | appointment | 10% |
+| 28 | Laundry & Dry Cleaning | hybrid | 8% |
+| 29 | Tailoring & Boutiques | appointment | 8% |
+| 30 | Car & Bike Wash | appointment | 10% |
+| 31 | Driving Schools | appointment | 5% |
+| 32 | Catering & Party Services | appointment | 8% |
+| 33 | Event Planners & Decorators | appointment | 10% |
+| 34 | Photographers & Videographers | appointment | 10% |
+| 35 | CAs & Tax Consultants | appointment | 5% |
+| 36 | Lawyers & Advocates | appointment | 5% |
+| 37 | Insurance Agents | appointment | 5% |
+| 38 | Yoga & Wellness | appointment | 8% |
+| 39 | Dieticians & Nutritionists | appointment | 10% |
+
+---
+
+### Component 2: Backend API — Shop Routes Expansion
+
+#### [MODIFY] [shop.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/shop.routes.js)
+
+Add the following new endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/categories` | Fetch all active shop categories from `shop_categories` table |
+| `GET` | `/nearby?lat=X&lng=Y&radius=5` | Location-based shop discovery with Haversine distance calculation |
+| `GET` | `/:id/services` | Get service catalog for appointment shops |
+| `POST` | `/:id/services` | Add a service (shop owner) |
+| `PUT` | `/:id/services/:serviceId` | Update a service (shop owner) |
+| `DELETE` | `/:id/services/:serviceId` | Delete a service (shop owner) |
+| `PUT` | `/:id/staff/:staffId` | Update staff details (working hours, specialization) |
+| `DELETE` | `/:id/staff/:staffId` | Remove a staff member |
+| `GET` | `/:id/appointments` | Get appointments for shop owner's dashboard (with filters) |
+| `PUT` | `/:id/appointments/:appointmentId` | Update appointment status (confirm/cancel/complete) |
+| `GET` | `/:id/orders` | Get orders for shop owner's dashboard (with filters) |
+| `PUT` | `/:id/orders/:orderId` | Update order status (accept/prepare/ready/cancel) |
+| `GET` | `/:id/commissions` | Get commission ledger for a shop |
+| `PUT` | `/:id/profile` | Update shop profile (owner) |
+
+**Key Implementation — Haversine Distance Query:**
+```sql
+SELECT *, 
+  (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance_km
+FROM local_shops 
+WHERE is_active = 1 AND approval_status = 'approved'
+HAVING distance_km < $3
+ORDER BY distance_km ASC
+```
+
+**Key Implementation — Auto Commission on Order/Appointment:**
+When an order or appointment is placed, the system will:
+1. Look up the shop's `commission_override_percent` OR fall back to the category's `default_commission_percent`.
+2. Calculate `commission_amount = gross_amount × (commission_percent / 100)`.
+3. Insert a record into `shop_commissions`.
+4. The `net_to_shop = gross_amount - commission_amount - convenience_fee`.
+
+---
+
+#### [NEW] [commission.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/commission.routes.js)
+
+Super Admin commission management endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/summary` | Total commissions collected, pending, settled |
+| `GET` | `/by-category` | Commission breakdown by category |
+| `GET` | `/by-shop/:shopId` | Commission history for a specific shop |
+| `PUT` | `/categories/:categoryId` | Update default commission % for a category |
+| `PUT` | `/shops/:shopId/override` | Set a custom commission % for a specific shop |
+| `POST` | `/settle` | Mark commissions as settled (batch) |
+
+---
+
+#### [MODIFY] [admin.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/admin.routes.js)
+
+Add new admin endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/shop-categories` | CRUD for shop categories |
+| `POST` | `/shop-categories` | Create new category |
+| `PUT` | `/shop-categories/:id` | Update category (name, commission %, active status) |
+| `GET` | `/commissions/dashboard` | Commission dashboard stats for Super Admin |
+
+---
+
+#### [MODIFY] [server.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/server.js)
+
+Register the new `commission.routes.js` route:
+```js
+const commissionRoutes = require('./routes/commission.routes.js');
+app.use(`${API_PREFIX}/commissions`, commissionRoutes);
+```
+
+---
+
+### Component 3: Web Frontend — Visitor-Facing Pages
+
+#### [MODIFY] [shops/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shops/page.js)
+
+**Changes:**
+1. **Replace hardcoded categories** (line 12-26) with dynamic fetch from `GET /api/v1/shops/categories`.
+2. **Add `navigator.geolocation.getCurrentPosition()`** on page load to get user's lat/lng.
+3. **Pass lat/lng to `GET /api/v1/shops/nearby?lat=X&lng=Y`** instead of the generic `GET /api/v1/shops`.
+4. **Display distance badge** on each shop card: `📍 1.2 km away`.
+5. **Add "Sort by Distance" toggle** in the sidebar filters.
+6. **Categorize the sidebar** into "Product Shops" and "Service Shops" sections with collapsible groups.
+7. **Add search by category icons** as a horizontal scrollable bar above the grid (similar to Swiggy/Zomato).
+
+#### [MODIFY] [shops/[id]/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shops/%5Bid%5D/page.js)
+
+**Changes:**
+1. **Fetch and display `shop_services`** for appointment-based shops (with price, duration).
+2. **Show a service selection step** before staff selection: Select Service → Select Staff → Pick Date/Time → Checkout.
+3. **Show distance** in the shop header banner.
+4. **Show shop reviews** section at the bottom.
+5. **Add "Write a Review"** form for logged-in users.
+
+#### [MODIFY] [register-shop/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/register-shop/page.js)
+
+**Changes:**
+1. **Replace hardcoded category `<select>`** (lines 143-157) with dynamic categories from API.
+2. **Add a "Hybrid" business model option** alongside Retail and Appointment.
+3. **Add location picker** using `navigator.geolocation` or manual lat/lng input.
+4. **Add initial service** fields (name, price, duration) for appointment shops.
+
+---
+
+### Component 4: Web Frontend — Shop Owner Dashboard (Role-Based)
+
+This is the most significant frontend change. The current [shop-dashboard/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shop-dashboard/page.js) has Appointments and Profile as "Under Construction". We will build these out and make the entire dashboard **category-aware**.
+
+#### [MODIFY] [shop-dashboard/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shop-dashboard/page.js)
+
+**Complete overhaul into a role-aware dashboard:**
+
+**A. For Product-Based Shops (Grocery, Pharmacy, Fresh Produce, etc.):**
+
+| Sidebar Tab | Features |
+|---|---|
+| **Dashboard Home** | Today's sales, orders count, revenue graph, low-stock alerts |
+| **Orders Queue** | Kanban board: New → Preparing → Ready → Dispatched. Accept/Decline buttons, order details with customer info |
+| **Products & Inventory** | CRUD for products with image upload, category grouping, stock management, bulk price edit, "Mark Out of Stock" toggle |
+| **Offers & Promotions** | Create/edit discount offers, set validity dates, view active offers |
+| **Reviews & Ratings** | See customer reviews, reply to reviews |
+| **Commission & Earnings** | View commission deducted per order, net earnings, request payout |
+| **Shop Profile** | Edit shop name, address, opening hours, photo gallery, contact info |
+| **Analytics** | Popular products, peak order times, customer demographics |
+
+**B. For Appointment-Based Shops (Salon, Dentist, Plumber, etc.):**
+
+| Sidebar Tab | Features |
+|---|---|
+| **Dashboard Home** | Today's appointments count, upcoming appointments, revenue, no-show rate |
+| **Appointments** | Calendar view (day/week) of all appointments. Accept/Reject/Reschedule/Mark Complete. Color-coded by status |
+| **Staff Management** | Add/edit/remove staff. Set each staff's specialization, working hours (per day), profile photo, phone number. Toggle active/inactive |
+| **Service Catalog** | Add/edit/remove services. Each service has: name, description, duration (minutes), price, image. Toggle availability |
+| **Offers & Promotions** | Same as product-based |
+| **Reviews & Ratings** | Same as product-based |
+| **Commission & Earnings** | Same as product-based, but per-appointment breakdown |
+| **Shop Profile** | Same as product-based |
+
+**C. For Hybrid Shops (Opticians, Auto Mechanic, Electronics, Laundry):**
+
+Both Product + Appointment tabs are shown. The sidebar will include: Dashboard, Orders Queue, Products, Appointments, Staff, Services, Offers, Reviews, Commission, Profile.
+
+**Implementation Approach:**
+- Detect `shop.shop_type` (or the linked `shop_categories.business_model`) on dashboard load.
+- Dynamically render sidebar nav items based on shop type.
+- Each tab is a separate render function (already the pattern in the existing code).
+
+---
+
+### Component 5: Super Admin Commission Dashboard
+
+#### [MODIFY] Admin Web App — [admin/src/app](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/admin/src/app)
+
+Add a new **Commission Management** section to the Super Admin panel:
+
+| Section | Features |
+|---|---|
+| **Commission Overview** | Total commissions collected (today, this week, this month). Pie chart by category. Top 10 earning shops |
+| **Category Management** | Table of all 35+ categories with editable commission %. Toggle categories on/off. Add new categories |
+| **Per-Shop Overrides** | Search for a shop and set a custom commission % that overrides the category default |
+| **Settlement Queue** | List of pending commissions → Settle (mark as paid to platform) |
+| **Payout to Shop Owners** | Net earnings per shop owner, initiate payouts |
+
+---
+
+### Component 6: Mobile App Updates
+
+#### [MODIFY] Mobile app shop-related screens
+
+1. **Location Permission** — Request GPS permission on app launch. Store lat/lng in context.
+2. **Nearby Shops Screen** — Show shops sorted by distance with distance badge.
+3. **Shop Detail Screen** — Full buying/booking flow matching the web.
+4. **Shop Owner Dashboard** — Mirror the web dashboard features for mobile.
+
+---
+
+## Additional Suggestions (Value-Add Features)
+
+Here are bonus features I recommend adding to make this a truly competitive platform:
+
+1. **🔔 Real-time Notifications:** When a new order/appointment comes in, the shop owner gets a push notification + sound alert on their dashboard (via existing Socket.io infrastructure).
+
+2. **📊 Staff Performance Dashboard:** For appointment shops, show which staff member is getting the most bookings, best ratings, and highest revenue.
+
+3. **🏷️ Dynamic Pricing / Surge:** For high-demand time slots (e.g., Saturday evening salon bookings), allow shop owners to set surge pricing.
+
+4. **⭐ "Verified" & "Premium" Badges:** Shops that pay for Premium listing get a gold badge + priority in search results. This is a monetization lever.
+
+5. **📱 QR Code for Walk-ins:** Each shop gets a unique QR code. Walk-in customers can scan it to view the menu/services and place orders directly from their phone while at the shop.
+
+6. **🔁 Repeat Order / Re-book:** For product shops, show a "Reorder" button based on past orders. For appointment shops, show "Book Again with [Staff Name]".
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Run backend tests after migration
+cd localsampark/backend && npm test
+
+# Verify migration runs cleanly
+node src/migrations/run.js
+```
+
+### Manual Verification
+1. **Category Listing:** Visit `/shops` and verify all 35+ categories appear in the sidebar with proper icons.
+2. **Distance Display:** Allow location access → verify shops show "X.X km away" badge, sorted by proximity.
+3. **Product Shop Flow:** Register a "Bakery" shop → Add products from dashboard → Visit as user → Add to cart → Checkout → Verify commission record in DB.
+4. **Appointment Shop Flow:** Register a "Salon" shop → Add staff with working hours → Add services → Visit as user → Select service → Select staff → Pick date/time → Book → Verify appointment appears in shop owner dashboard.
+5. **Commission Verification:** After an order/appointment, check `shop_commissions` table for correct calculation. Verify Super Admin sees the commission in the admin panel.
+6. **Shop Dashboard Navigation:** Login as shop owner → Verify all sidebar tabs render correctly based on shop type (product vs appointment vs hybrid).
+7. **Mobile App:** Test the same flows on the mobile app — location permission, distance display, buying, booking.
+
+---
+
+## Implementation Phases
+
+| Phase | Scope | Estimated Effort |
+|---|---|---|
+| **Phase 1** | Database migration + Category seeding + Backend APIs | Foundation |
+| **Phase 2** | Visitor-facing pages: Category expansion, Distance display, Enhanced shop detail | User Experience |
+| **Phase 3** | Shop Owner Dashboard: Product-based tabs + Appointment-based tabs | Core Business |
+| **Phase 4** | Commission Engine: Auto-deduction + Super Admin dashboard | Monetization |
+| **Phase 5** | Mobile app updates + Real-time notifications | Mobile Parity |
+| **Phase 6** | Polish, testing, and bonus features | Quality |

@@ -1,0 +1,60 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Root Dependencies
+        run: npm ci || npm install
+
+      - name: Test Backend
+        run: |
+          cd backend
+          npm install
+          npm test --if-present
+
+  build-and-deploy:
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Docker Images
+        run: docker-compose build
+
+      - name: Setup SSH for Deployment
+        # You'll need to configure these secrets in your repository settings
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >>~/.ssh/config <<END
+          Host production-server
+            HostName ${{ secrets.SERVER_IP }}
+            User ${{ secrets.SERVER_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+          END
+
+      - name: Deploy to Server
+        run: |
+          # Copy updated files
+          scp -r docker-compose.yml nginx.conf backend apps/web production-server:~/localsampark/
+          
+          # Execute deploy commands
+          ssh production-server "cd ~/localsampark && docker-compose down && docker-compose up -d --build"

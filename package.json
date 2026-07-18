@@ -1,0 +1,28 @@
+{
+  "name": "localsampark",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LocalSampark - Your Neighborhood, Connected",
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "apps/web",
+    "apps/admin"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:admin": "npm run build --workspace=apps/admin",
+    "db:migrate": "npm run migrate --workspace=backend",
+    "db:seed": "npm run seed --workspace=backend",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
+  }
+}

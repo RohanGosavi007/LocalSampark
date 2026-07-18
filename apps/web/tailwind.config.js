@@ -1,0 +1,114 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: 'var(--primary)',
+        'primary-hover': 'var(--primary-hover)',
+        'primary-light': 'var(--primary-light)',
+        'primary-glass': 'var(--primary-glass)',
+        secondary: 'var(--secondary)',
+        'secondary-hover': 'var(--secondary-hover)',
+        'secondary-light': 'var(--secondary-light)',
+        'secondary-glass': 'var(--secondary-glass)',
+        accent: 'var(--accent)',
+        'accent-light': 'var(--accent-light)',
+        'accent-glass': 'var(--accent-glass)',
+        background: 'var(--background)',
+        'background-alt': 'var(--background-alt)',
+        'card-bg': 'var(--card-bg)',
+        'card-border': 'var(--card-border)',
+        border: 'var(--border)',
+        text: 'var(--text)',
+        'text-muted': 'var(--text-muted)',
+        'nav-bg': 'var(--nav-bg)',
+        'glow-color': 'var(--glow-color)',
+      },
+      fontFamily: {
+        heading: ['Outfit', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+      },
+      borderRadius: {
+        'sm-token': 'var(--radius-sm)',
+        'token': 'var(--radius)',
+        'lg-token': 'var(--radius-lg)',
+        'full': '9999px',
+      },
+      boxShadow: {
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
+        'xl': 'var(--shadow-xl)',
+        '2xl': 'var(--shadow-2xl)',
+        'glow': '0 0 20px var(--glow-color)',
+        'glow-lg': '0 0 40px var(--glow-color)',
+        'primary-glow': '0 8px 28px -6px rgba(99, 102, 241, 0.55)',
+        'secondary-glow': '0 8px 28px -6px rgba(249, 115, 22, 0.55)',
+      },
+      animation: {
+        'shimmer': 'shimmer 4s linear infinite',
+        'blobBounce': 'blobBounce 20s infinite ease-in-out',
+        'float': 'float 6s ease-in-out infinite',
+        'pulseGlow': 'pulseGlow 2.5s ease-in-out infinite',
+        'slideInRight': 'slideInRight 0.5s ease-out forwards',
+        'fadeInUp': 'fadeInUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards',
+        'fadeInDown': 'fadeInDown 0.6s ease-out forwards',
+        'spinSlow': 'spinSlow 3s linear infinite',
+        'gradientMove': 'gradientMove 8s ease infinite',
+        'ticker': 'ticker 30s linear infinite',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        blobBounce: {
+          '0%': { transform: 'scale(1) translate(0, 0)' },
+          '33%': { transform: 'scale(1.1) translate(30px, -50px)' },
+          '66%': { transform: 'scale(0.9) translate(-20px, 20px)' },
+          '100%': { transform: 'scale(1) translate(0, 0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        pulseGlow: {
+          '0%, 100%': { boxShadow: '0 0 15px var(--glow-color)' },
+          '50%': { boxShadow: '0 0 40px var(--glow-color)' },
+        },
+        slideInRight: {
+          from: { opacity: '0', transform: 'translateX(30px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        fadeInUp: {
+          from: { opacity: '0', transform: 'translateY(28px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeInDown: {
+          from: { opacity: '0', transform: 'translateY(-20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        spinSlow: {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+        gradientMove: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
+        ticker: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+      },
+    },
+  },
+  plugins: [],
+};

@@ -1,0 +1,430 @@
+# LocalSampark — Production-Ready Transformation Plan
+
+## Deep Analysis Summary
+
+After analyzing every file across the entire codebase — **28 backend API routes**, **30+ web pages**, **22 mobile modules**, **5 mobile tabs**, **1 admin panel (640 lines, 8 tabs)**, and a **708-line database schema with 40+ tables** — here is a complete picture of what exists, what's broken, what's missing, and what needs to be built to make this a production-ready, revenue-generating, industry-best hyper-local super-app.
+
+---
+
+## Current State Audit
+
+### ✅ What Works Well
+| Layer | Status |
+|-------|--------|
+| **Database Schema** | Excellent — 40+ tables covering users, shops, orders, deliveries, carpool, society, events, marketplace, pets, health, franchise, revenue, CRM, loyalty, ads, documents |
+| **Backend API** | 28 route files mounted, Express + PostgreSQL/SQLite dual-mode, Socket.io, Redis, Razorpay initialized |
+| **Web Frontend** | 30+ pages with consistent glass-card dark theme, community feed, shops directory, carpool, marketplace, jobs, properties, etc. |
+| **Mobile App** | 22 modules + 5 tabs with expo-router, role-based access control, dark theme parity |
+| **Admin Panel** | 8-tab God-Mode panel with user management, shop approvals, franchise, territory control, revenue sliders |
+| **Auth System** | JWT-based auth with OTP verification, role hierarchy (12 roles) |
+| **Role-Based Access** | `withRoleGuard` HOC on mobile, `ProtectedRoute` on web, 12-role hierarchy |
+
+### 🔴 Critical Gaps (Blocking Production)
+
+| # | Gap | Impact |
+|---|-----|--------|
+| 1 | **No Shop Owner Portal** — Shop owners can register but cannot manage products, view orders, set appointments, or update profiles | Shops can't operate |
+| 2 | **No Complete Order Flow** — No cart→checkout→payment→tracking pipeline. Missing: delivery/pickup/dine-in options | Users can't order |
+| 3 | **No Appointment Booking UI** — DB schema exists (`shop_type='appointment'`) but no booking interface | Service shops unusable |
+| 4 | **No Push Notifications** — `notification.routes.js` is 350 bytes (nearly empty), no Firebase/FCM integration | Users miss orders/alerts |
+| 5 | **No File/Image Upload** — No S3/MinIO/Cloudinary integration. Products, profiles, posts all lack image upload | No visual content |
+| 6 | **No Real Payment Checkout** — Razorpay initialized but no complete checkout flow on web or mobile | Can't collect money |
+| 7 | **Hardcoded Mock Data Everywhere** — Web pages use `useState([...mock])`, mobile uses `const MOCK = [...]`. No API calls on 90% of pages | Nothing is real |
+| 8 | **No Order Notifications to Shop** — When user places order, shop owner receives nothing | Orders are lost |
+| 9 | **Admin configs not persisted** — Revenue split sliders reset on page reload, no `admin_config` table usage | Admin changes lost |
+| 10 | **No Search/Discovery Engine** — Basic `filter()` on mock arrays, no full-text search, no geo-proximity sorting | Users can't find things |
+
+### 🟡 Missing Features (Needed for Revenue)
+
+| # | Feature | Revenue Impact |
+|---|---------|---------------|
+| 1 | **Configurable Platform Fees** — Per-category convenience fee (₹5-₹25) on every order | Primary revenue |
+| 2 | **Featured/Promoted Listings** — Shops pay ₹99-₹499/week to appear on top | Ad revenue |
+| 3 | **Ad Campaign Manager** — DB table `ad_campaigns` exists, zero UI built | Ad revenue |
+| 4 | **Coupon/Promo System** — No discount codes, referral coupons, or flash deal infrastructure | Growth + retention |
+| 5 | **Surge/Dynamic Delivery Pricing** — Static ₹20 delivery fee, no distance/time-based calculation | Delivery margin |
+| 6 | **Subscription Billing Engine** — Backend has hourly cron but no Razorpay recurring billing | Recurring revenue |
+| 7 | **Commission on Event Tickets** — Events with paid tickets but no platform commission | Event revenue |
+| 8 | **Carpool Booking Fee** — Currently free; should charge ₹5-₹10 platform fee per seat | Transport revenue |
+| 9 | **Property Listing Premium** — Featured property listings for ₹199/month | Real estate revenue |
+| 10 | **SamparkPlus Recurring Billing** — Premium page exists but no actual subscription management | Premium revenue |
+
+---
+
+## Proposed Implementation — 8 Mega-Phases
+
+> [!IMPORTANT]
+> Each phase is self-contained and deployable. Phases are ordered by **revenue impact** and **user experience criticality**.
+
+---
+
+### Phase 1: Shop Owner Portal & Product Management
+> **Priority: 🔴 CRITICAL — Without this, shops can't operate**
+
+#### [NEW] `apps/web/src/app/shop-dashboard/page.js`
+- Full shop owner dashboard with tabs: **Products | Orders | Appointments | Analytics | Profile**
+- **Products Tab**: Add/edit/delete products with name, price, image, category, stock status, variants (size/weight)
+- **Orders Tab**: Real-time incoming order feed with accept/reject/prepare/ready status flow
+- **Appointments Tab**: Calendar view of booked appointments, available slots management, staff assignment
+- **Analytics Tab**: Daily/weekly/monthly sales chart, top products, customer demographics
+- **Profile Tab**: Business hours, delivery radius, shop type toggle (retail/appointment/hybrid), photos, description
+
+#### [NEW] `apps/mobile/app/modules/shop-dashboard/index.js`
+- Mobile equivalent of shop owner dashboard (same tabs)
+
+#### [MODIFY] `backend/src/routes/shop.routes.js`
+- Add `PUT /shops/:id` — Update shop profile
+- Add `POST /shops/:id/products` — Add product with image upload
+- Add `PUT /shops/:id/products/:pid` — Edit product
+- Add `DELETE /shops/:id/products/:pid` — Remove product
+- Add `GET /shops/:id/analytics` — Shop analytics data
+- Add `PUT /shops/:id/availability` — Set appointment slots
+
+#### [NEW] `backend/src/routes/upload.routes.js`
+- Multer + Cloudinary/S3 integration for image uploads
+- Endpoints: `POST /upload/image`, `POST /upload/gallery`
+- Max 5MB per image, auto-resize to 800px
+
+---
+
+### Phase 2: Complete Order Flow (3 Delivery Modes)
+> **Priority: 🔴 CRITICAL — This is the core transaction engine**
+
+#### Order Flow Design:
+```
+User browses shop → Adds to cart → Selects mode:
+  ├── 🏠 Home Delivery (delivery fee applies)
+  ├── 🏃 Self Pickup (no delivery fee, OTP verification)
+  └── 🪑 Dine-in / Visit (for restaurants/salons)
+→ Checkout with payment (Wallet/UPI/COD)
+→ Order notification to shop owner (real-time via Socket.io)
+→ Shop accepts → Prepares → Ready
+→ If delivery: Runner assigned → Picked up → Delivered (OTP)
+→ If pickup: User gets notification when ready, shows OTP at shop
+→ If dine-in: Reservation confirmed with time slot
+```
+
+#### [NEW] `apps/web/src/app/shops/[id]/page.js`
+- Individual shop page with full product catalog
+- Add-to-cart functionality with quantity selector
+- Cart drawer/sidebar with running total
+- Checkout page with address selection, delivery mode toggle, payment method
+- Order confirmation with estimated time
+
+#### [MODIFY] `apps/mobile/app/modules/shop-detail/index.js`
+- Complete rewrite: product grid, cart, checkout flow, 3 delivery modes
+
+#### [NEW] `backend/src/routes/order.routes.js`
+- `POST /orders` — Create order with items, delivery mode, payment
+- `GET /orders/:id` — Order details with live status
+- `PUT /orders/:id/status` — Update order status (shop owner)
+- `GET /orders/my` — User's order history
+- `GET /orders/shop/:shopId` — Shop's incoming orders
+- `POST /orders/:id/assign-runner` — Auto-assign nearest delivery runner
+
+#### [NEW] `apps/web/src/app/order-tracking/[id]/page.js`
+- Real-time order status page with progress bar
+- Live location tracking (when delivery runner is active)
+
+---
+
+### Phase 3: Appointment Booking System
+> **Priority: 🟠 HIGH — Salons, clinics, tutors all need this**
+
+#### [NEW] `apps/web/src/app/shops/[id]/book/page.js`
+- Service selection (e.g., Haircut ₹200, Facial ₹500)
+- Staff member selection with photo and rating
+- Date picker + available time slots (30-min blocks)
+- Booking confirmation with QR code
+
+#### [NEW] `backend/src/migrations/005_appointments.sql`
+```sql
+CREATE TABLE appointments (
+  id UUID PRIMARY KEY,
+  shop_id UUID REFERENCES local_shops(id),
+  user_id UUID REFERENCES users(id),
+  staff_id UUID, -- references shop staff
+  service_name VARCHAR(200),
+  service_price DECIMAL(10,2),
+  appointment_date DATE,
+  start_time TIME,
+  end_time TIME,
+  status VARCHAR(20) DEFAULT 'confirmed', -- confirmed, completed, cancelled, no_show
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE shop_staff (
+  id UUID PRIMARY KEY,
+  shop_id UUID REFERENCES local_shops(id),
+  name VARCHAR(100),
+  role VARCHAR(100),
+  photo_url TEXT,
+  rating DECIMAL(3,2) DEFAULT 5.0,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE shop_services (
+  id UUID PRIMARY KEY,
+  shop_id UUID REFERENCES local_shops(id),
+  name VARCHAR(200),
+  description TEXT,
+  price DECIMAL(10,2),
+  duration_minutes INT DEFAULT 30,
+  is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+---
+
+### Phase 4: Notifications & Real-time Events
+> **Priority: 🟠 HIGH — Users and shops need instant alerts**
+
+#### [MODIFY] `backend/src/routes/notification.routes.js`
+- Complete rewrite from the current 350-byte stub
+- `POST /notifications/send` — Send push to user/shop
+- `GET /notifications/my` — User's notification inbox
+- `PUT /notifications/:id/read` — Mark as read
+- `POST /notifications/broadcast` — Admin broadcast to zone/all
+
+#### [NEW] `backend/src/services/firebase.js`
+- Firebase Admin SDK integration for FCM push notifications
+- Notification templates: order_placed, order_accepted, order_ready, order_delivered, appointment_reminder, community_alert, deal_flash
+
+#### [NEW] `apps/mobile/app/modules/notifications/index.js`
+- Notification inbox with categories (Orders, Community, Deals, System)
+- Tap to navigate to relevant screen
+
+#### [MODIFY] `backend/src/sockets/index.js`
+- Add real-time events: `order:new`, `order:status_change`, `chat:message`, `delivery:location_update`
+
+---
+
+### Phase 5: Revenue Engine & Admin Controls
+> **Priority: 🟠 HIGH — This is how the developer makes money**
+
+#### Revenue Streams (All Admin-Configurable):
+
+| Stream | Default | Admin Control |
+|--------|---------|--------------|
+| **Order Convenience Fee** | ₹5 per order | Per-category slider |
+| **Delivery Fee** | ₹20 base + ₹5/km | Distance formula config |
+| **Featured Listing** | ₹99/week | Duration & price config |
+| **SamparkPlus Subscription** | ₹199/month | Features & price config |
+| **Event Ticket Commission** | 5% of ticket price | % slider |
+| **Carpool Booking Fee** | ₹10 per seat | Fixed fee config |
+| **Property Featured Spot** | ₹199/month | Duration & price config |
+| **Ad Campaign CPM** | ₹50 per 1000 views | CPM rate config |
+| **Franchise Onboarding Fee** | ₹25,000 one-time | Fixed amount config |
+| **Franchise Revenue Share** | 30% commission | % per territory |
+
+#### [MODIFY] `apps/admin/src/app/page.js`
+- **New Tab: Revenue Config** — All fee/commission sliders that persist to `admin_config` table
+- **New Tab: Ad Campaign Manager** — View/approve/reject shop ad campaigns
+- **New Tab: Coupon Manager** — Create/manage promo codes, flash deals, referral coupons
+- **New Tab: Analytics Dashboard** — Charts for DAU, MAU, GMV, revenue by stream, zone-wise breakdown
+- **New Tab: Notification Center** — Broadcast notifications, schedule campaigns
+- **New Tab: Content Moderation** — Flag/remove community posts, reviews
+- **New Tab: Support Tickets** — Chatbot escalations, user complaints
+
+#### [NEW] `backend/src/migrations/006_revenue_config.sql`
+```sql
+CREATE TABLE platform_fees (
+  id UUID PRIMARY KEY,
+  fee_type VARCHAR(50) UNIQUE, -- 'order_convenience', 'delivery_base', 'delivery_per_km', etc.
+  amount DECIMAL(10,2),
+  percentage DECIMAL(5,2),
+  is_active BOOLEAN DEFAULT TRUE,
+  updated_by UUID REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE promo_codes (
+  id UUID PRIMARY KEY,
+  code VARCHAR(20) UNIQUE,
+  discount_type VARCHAR(10), -- 'flat', 'percentage'
+  discount_value DECIMAL(10,2),
+  min_order_amount DECIMAL(10,2),
+  max_discount DECIMAL(10,2),
+  usage_limit INT,
+  used_count INT DEFAULT 0,
+  valid_from TIMESTAMPTZ,
+  valid_until TIMESTAMPTZ,
+  applicable_categories JSONB DEFAULT '[]',
+  created_by UUID REFERENCES users(id),
+  is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+---
+
+### Phase 6: Enhanced Carpool (Major Feature Highlight)
+> **Priority: 🟡 MEDIUM — User specifically asked for this to be more highlighted**
+
+#### Enhancements:
+1. **Recurring Rides** — "I drive to Hinjewadi Mon-Fri at 9 AM" auto-posts daily
+2. **Route Matching Engine** — Auto-suggest rides based on user's saved home/office locations
+3. **Live Ride Tracking** — Share live location during ride via Socket.io
+4. **Ride Rating & Review** — Rate driver/passenger after ride completion
+5. **Women-Only Rides** — Dedicated filter and verification
+6. **Corporate Pools** — Company-specific carpool groups (Infosys, TCS, Wipro corridors)
+7. **Cost Calculator** — Auto-calculate fair price based on distance + fuel cost
+8. **Ride History & Analytics** — Total savings, CO2 saved, rides completed
+
+#### [MODIFY] `apps/web/src/app/carpool/page.js`
+- Add prominent hero section with animated stats
+- Add recurring ride toggle in offer form
+- Add "My Rides" tab showing active/past rides
+- Add ride tracking page after joining
+
+#### [MODIFY] `apps/mobile/app/modules/carpool/index.js`
+- Full feature parity with enhanced web version
+- Push notifications for ride reminders
+
+---
+
+### Phase 7: Enhanced Community & Real Estate
+> **Priority: 🟡 MEDIUM**
+
+#### Community Enhancements:
+1. **Stories/Reels** — 24-hour disappearing posts (DB table exists, no UI)
+2. **Neighborhood Polls** — Interactive polls with results (DB exists, basic UI)
+3. **Events Calendar** — Monthly calendar view of local events
+4. **Safety Alert System** — One-tap emergency broadcast to zone
+5. **Marketplace Chat** — In-app chat between buyer/seller for marketplace items
+6. **Community Groups** — Sub-communities (building-wise, interest-wise)
+7. **Verified Badge System** — Aadhaar-verified residents get ✅ badge
+
+#### Real Estate Enhancements:
+1. **Advanced Filters** — Furnished/unfurnished, pet-friendly, parking, floor
+2. **Map View** — Plot properties on interactive map
+3. **Virtual Tour Links** — Embed YouTube/Matterport tours
+4. **Landlord Dashboard** — Manage listings, view inquiries, schedule visits
+5. **Tenant Verification** — Background check via Aadhaar + employment proof
+6. **Rental Agreement Generator** — Auto-fill rental agreement template
+7. **EMI Calculator** — For sale properties
+
+---
+
+### Phase 8: Production Hardening & Polish
+> **Priority: 🟢 FINAL — Deploy-ready checklist**
+
+#### Backend:
+- [ ] Replace all mock data with real API calls across all web/mobile pages
+- [ ] Add input validation (Joi/Zod) on every route
+- [ ] Add proper error codes and messages
+- [ ] Add request logging with Winston + correlation IDs
+- [ ] Add API rate limiting per user (not just global)
+- [ ] Add database connection pooling optimization
+- [ ] Add background job queue (Bull/Agenda) instead of `setInterval`
+- [ ] Add automated database backups
+- [ ] Add health check endpoints for all dependencies
+- [ ] Environment-specific configs (dev/staging/prod)
+
+#### Frontend (Web + Mobile):
+- [ ] Replace ALL `useState([...mock])` with `useEffect(() => fetch(API))` calls
+- [ ] Add loading skeletons on every page
+- [ ] Add error boundaries and retry logic
+- [ ] Add pull-to-refresh on mobile
+- [ ] Add infinite scroll pagination
+- [ ] Add offline mode with AsyncStorage cache
+- [ ] Add deep linking (mobile ↔ web URL sharing)
+- [ ] Add multi-language support (Hindi, Marathi, English)
+- [ ] Add dark/light theme toggle
+- [ ] SEO optimization on all web pages (meta tags, Open Graph)
+
+#### Security:
+- [ ] HTTPS everywhere
+- [ ] CSRF protection
+- [ ] SQL injection prevention audit
+- [ ] XSS prevention audit
+- [ ] File upload validation (type, size, malware scan)
+- [ ] API key rotation system
+- [ ] Admin 2FA authentication
+- [ ] Rate limiting on auth endpoints (brute force protection)
+
+#### DevOps:
+- [ ] Docker Compose for local dev (Postgres + Redis + API + Web)
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Staging environment on Render/Railway
+- [ ] Production deployment on AWS/GCP
+- [ ] CDN for static assets (Cloudflare)
+- [ ] Monitoring (Sentry for errors, Grafana for metrics)
+- [ ] Automated test suite (Jest + Supertest for API, Playwright for E2E)
+
+---
+
+## Role-Based Access Design
+
+| Role | Access |
+|------|--------|
+| **Visitor** (unauthenticated) | Browse shops, view community, see listings |
+| **User** (registered) | Order, post, carpool, marketplace, wallet, refer |
+| **Resident Member** | All User + Society management, gate pass, maintenance |
+| **Society Admin** | All Resident + Notice board, complaints, facility booking |
+| **Security Guard** | Visitor check-in/out, vehicle log |
+| **Shop Owner** | Shop dashboard, product CRUD, order management, analytics |
+| **Service Provider** | Service listing, appointment management, earnings |
+| **Delivery Agent** | Available orders, delivery tracking, earnings |
+| **Field Agent** | Lead generation, shop onboarding, territory ops |
+| **Area Agent** | Multi-zone oversight, agent management |
+| **Territory Admin** | Franchise dashboard, commission tracking |
+| **Moderator** | Content moderation, flagged posts, user reports |
+| **Super Admin** | Everything + revenue config + platform settings |
+
+---
+
+## Revenue Model Summary for Developer
+
+| Revenue Stream | Est. Monthly (at 10K users) | Admin Configurable? |
+|---------------|---------------------------|-------------------|
+| Order Convenience Fees (₹5 × 3000 orders) | ₹15,000 | ✅ Per-category |
+| Delivery Fees (₹20 × 2000 deliveries) | ₹40,000 | ✅ Base + per-km |
+| Featured Shop Listings (50 shops × ₹399) | ₹19,950 | ✅ Price + duration |
+| SamparkPlus Subscriptions (500 × ₹199) | ₹99,500 | ✅ Price + features |
+| Ad Campaigns (20 shops × ₹999) | ₹19,980 | ✅ CPM rate |
+| Event Ticket Commission (5% of ₹2L) | ₹10,000 | ✅ % slider |
+| Carpool Booking Fees (₹10 × 1000) | ₹10,000 | ✅ Fixed fee |
+| Property Featured Spots (30 × ₹199) | ₹5,970 | ✅ Price |
+| Franchise Onboarding (2 × ₹25K) | ₹50,000 | ✅ One-time fee |
+| Franchise Revenue Share (30% of ₹5L) | ₹1,50,000 | ✅ % per zone |
+| **Total Estimated** | **₹4,20,400/mo** | |
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Q1**: Which cloud provider do you want to use for production? (AWS / GCP / Render / Railway)
+
+> [!IMPORTANT]
+> **Q2**: Do you want Razorpay or PayU for the payment gateway? (Razorpay is initialized in code already)
+
+> [!IMPORTANT]
+> **Q3**: For image storage, do you prefer Cloudinary (easier, free tier) or AWS S3 (cheaper at scale)?
+
+> [!IMPORTANT]
+> **Q4**: Should I implement all 8 phases in order, or would you like to prioritize specific phases first?
+
+> [!WARNING]
+> **Q5**: The current codebase uses mock data in 90%+ of pages. Connecting everything to the live database is a massive effort. Should I prioritize the **new features first** (Phases 1-6) and then wire up APIs afterward (Phase 8)? Or wire up APIs as I build each feature?
+
+> [!IMPORTANT]
+> **Q6**: For push notifications, do you want Firebase Cloud Messaging (FCM)? Or a different service?
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- `npm test` — Jest unit tests for all new API routes
+- `npx playwright test` — E2E tests for critical flows (register → order → pay → deliver)
+
+### Manual Verification
+- Build APK and test on physical Android device
+- Test all 3 order modes (delivery, pickup, dine-in) end-to-end
+- Test shop owner dashboard with real product management
+- Test admin panel revenue config persistence
+- Test push notifications on mobile
+- Test carpool ride booking flow
+- Test appointment booking flow

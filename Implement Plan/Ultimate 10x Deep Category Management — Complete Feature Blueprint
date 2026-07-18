@@ -1,0 +1,555 @@
+# 🚀 Ultimate 10x Deep Category Management — Complete Feature Blueprint
+
+After analyzing all **39 categories** from the database, here is the exhaustive feature list for both **Shop Owner Dashboard** and **Visitor/Customer Experience**. Every feature below will be implemented as a UI module.
+
+---
+
+## 🛒 CLUSTER A: Daily Needs & Retail (Product-Based)
+
+### A1. Grocery & Supermarkets (`cat_001`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 1 | **Recurring Subscriptions** | Manage daily/weekly delivery subscriptions (milk, bread, eggs) | Subscribe button with frequency picker (Daily/Weekly/Monthly) |
+| 2 | **Wholesale B2B Toggle** | Toggle between retail & bulk pricing mode | See B2B prices if logged in as business account |
+| 3 | **Smart Reorder Alerts** | AI suggests reorder quantities based on sales velocity | "Reorder Previous Cart" one-tap button |
+| 4 | **Perishable Tracker** | Expiry date tracker with color-coded alerts (Red/Yellow/Green) | See "Expiring Soon - 20% OFF" badge on items |
+
+### A2. Pharmacy & Healthcare (`cat_003`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 5 | **Prescription Vault** | Review/Approve/Reject uploaded prescriptions before dispensing | **📤 Upload Prescription** button mandatory before ordering medicines |
+| 6 | **Drug Interaction Checker** | Warning system when conflicting medicines are in same order | Auto-warning popup if adding conflicting items |
+| 7 | **Refill Reminders** | See upcoming refill dates for chronic patients | "Set Refill Reminder" toggle per medicine (30/60/90 days) |
+| 8 | **OTC vs Rx Tagging** | Tag products as Over-the-Counter or Prescription-Required | Rx items show 🔒 lock icon, require prescription upload |
+
+### A3. Restaurants & Cafes (`cat_002`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 9 | **Kitchen Display System (KDS)** | Live order tickets appearing in real-time for kitchen staff | Live order status tracker (Preparing → Ready → Picked Up) |
+| 10 | **QR Table Ordering** | Generate unique QR per table number | Scan QR → menu opens → order sent directly to KDS |
+| 11 | **Dietary Tags** | Multi-select tags per item: Vegan 🟢, Jain 🟡, Halal ☪️, Gluten-Free 🌾 | Filter menu by dietary preference |
+| 12 | **Happy Hour Automation** | Schedule flash discounts (e.g., 30% OFF 2-4 PM daily) | See animated "⚡ Happy Hour Active!" banner |
+| 13 | **Combo Builder** | Create meal combos (Burger + Fries + Drink = ₹199) | See combo deals highlighted at top |
+| 13a | **Table Reservation System** | Manage table inventory with real-time availability | "Reserve Table for 4 at 7:30 PM" with confirmation |
+| 13b | **Live Order Status** | See kitchen queue, mark orders as Preparing/Ready | Real-time tracker: Placed → Preparing → Ready → Picked Up |
+
+### A4. Fresh Produce & Meat (`cat_004`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 14 | **Freshness Guarantee Badge** | Set maximum hours since harvest/slaughter for each item | See "🕐 Harvested 4 hours ago" real-time badge |
+| 15 | **Weight-Based Pricing** | Toggle pricing by kg/gram instead of fixed price | Slider to choose quantity by weight (250g, 500g, 1kg) |
+
+### A5. Dairy, Sweets & Bakery (`cat_005`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 16 | **Custom Order Form** | Accept cake/sweet custom orders with design upload | "📝 Custom Order" form with image upload & special instructions |
+| 17 | **Allergen Declarations** | Tag allergens (Nuts, Gluten, Lactose) per product | See allergen icons on each product card |
+
+### A6. Stationery, Gifts & Books (`cat_006`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 18 | **Gift Wrapping Option** | Toggle gift wrapping as add-on service | "🎁 Add Gift Wrapping (+₹30)" checkbox at checkout |
+| 19 | **Bulk/School Order Mode** | Accept school supply bulk orders with CSV upload | "📋 Upload School List" to auto-add items |
+
+### A7. Florists & Nurseries (`cat_007`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 20 | **Occasion-Based Collections** | Create curated collections (Birthday, Wedding, Sympathy) | Browse by occasion with beautiful cards |
+| 21 | **Delivery Time Slot Picker** | Set available delivery windows (Morning/Afternoon/Evening) | Pick precise delivery time slot |
+
+### A8. Pet Care & Supplies (`cat_008`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 22 | **Pet Profile Manager** | View customer pet profiles for targeted product suggestions | Register pet (Name, Breed, Age, Weight) for personalized recommendations |
+| 23 | **Vaccination Reminder** | Track and send vaccination due date alerts | See pet health timeline & upcoming vaccinations |
+| 23a | **Pet Grooming Booking** | Manage grooming appointment slots | Book grooming: Bath, Haircut, Nail Trim with breed-specific pricing |
+| 23b | **Lost Pet Alert** | N/A | Post "🐾 Lost Pet" alert visible to all nearby users with photo & last-seen location |
+
+### A9. Pooja Samagri & Religious (`cat_009`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 24 | **Panchang-Based Bundles** | Auto-create bundles based on upcoming festivals (Navratri Kit, Diwali Kit) | See "🪔 Festival Special Kit" with one-tap purchase |
+
+### A10. Hardware & Sanitary (`cat_015`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 25 | **Compatibility Checker** | Link related products (e.g., pipe → fittings → adhesive) | "Frequently Bought Together" section |
+
+### A11. Clothing & Fashion (`cat_016`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 26 | **Size Chart Manager** | Upload brand-specific size charts | Interactive size guide popup |
+| 27 | **Try-at-Home Request** | Accept try-at-home requests for premium items | "👗 Request Try-at-Home" button |
+
+---
+
+## 💇 CLUSTER B: Beauty, Grooming & Wellness (Appointment-Based)
+
+### B1. Salon, Beauty & Spa (`cat_012`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 28 | **Stylist Portfolio Gallery** | Staff upload before/after transformation photos | View stylist's portfolio before selecting |
+| 29 | **Smart Waitlist** | Auto-notify waitlisted users on cancellations | "Join Waitlist" button when fully booked |
+| 30 | **Membership Packages** | Create subscription bundles (5 Haircuts for ₹1200) | Purchase membership card from shop page |
+| 31 | **Loyalty Punch Card** | Digital "Buy 9, Get 10th Free" tracker | See punch card progress on profile |
+| 31a | **Skin/Hair Analysis Log** | Record customer's skin/hair type for personalized recommendations | View your analysis & recommended treatments |
+| 31b | **Product Upsell Post-Service** | Suggest retail products used during service (shampoo, serum) | See "Products used on you today" with buy links |
+
+### B2. Gym & Fitness (`cat_017`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 32 | **Class Schedule Board** | Manage group class timetable (Yoga 6AM, Zumba 7PM) | View weekly class schedule & book specific class |
+| 33 | **Body Metrics Tracker** | Log member's weight, BMI, body fat % over time | View personal progress chart |
+| 34 | **Trial Pass Generator** | Generate limited-time trial passes | "🎫 Get Free Trial Pass" CTA |
+
+### B3. Yoga & Wellness (`cat_038`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 35 | **Session Recording Vault** | Upload recorded session videos for paid access | Purchase & stream past session recordings |
+| 36 | **Meditation Timer** | N/A | In-app guided meditation timer with ambient sounds |
+
+---
+
+## 🏥 CLUSTER C: Health & Medical (Appointment-Based)
+
+### C1. Dentists & Orthodontists (`cat_020`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 37 | **Treatment Plan Builder** | Create multi-visit treatment plans (Root Canal: Visit 1/3) | View treatment progress & upcoming visits |
+| 38 | **X-Ray/Scan Upload** | Attach dental X-rays to patient's digital file | Upload X-rays before appointment |
+
+### C2. Pathology Labs & Diagnostics (`cat_021`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 39 | **Report Delivery Portal** | Upload PDF test reports to patient profiles | Download reports digitally (no need to visit lab) |
+| 40 | **Home Sample Collection** | Toggle home collection availability with time slots | "🏠 Book Home Collection" option during checkout |
+
+### C3. Physiotherapy & Chiropractic (`cat_022`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 41 | **Exercise Prescription Pad** | Prescribe home exercises with video links | View prescribed exercise videos in profile |
+| 42 | **Progress Photo Timeline** | Track recovery with dated progress photos | View own recovery timeline |
+
+### C4. Ayurvedic & Homeopathic (`cat_023`) / Dieticians (`cat_039`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 43 | **Diet Plan Builder** | Create weekly meal plans for patients | View & follow personalized diet plan |
+| 44 | **Video Consultation** | Start/schedule video call with patient | "📹 Book Video Consultation" option |
+| 45 | **Follow-Up Reminders** | Schedule automated WhatsApp reminders | Receive follow-up notifications |
+
+---
+
+## 🏨 NEW CLUSTER C2: Hospital & OPD Management (`cat_040` — NEW CATEGORY)
+
+> [!IMPORTANT]
+> This category is designed to serve **BOTH Big Multi-Specialty Hospitals AND Small Single-Doctor OPD Clinics**. The dashboard auto-adapts based on a **Tier System**: the owner selects their tier at registration, and the UI shows only relevant modules.
+
+### Tier System
+| Tier | Example | Modules Shown |
+|------|---------|---------------|
+| **Tier 1: Small OPD Clinic** | Dr. Sharma's Clinic (1-3 doctors) | Simple token queue, basic patient records, single-department booking, prescription pad |
+| **Tier 2: Polyclinic** | City Health Center (4-10 doctors, 2-5 depts) | Multi-department booking, lab referral, pharmacy link, staff roster |
+| **Tier 3: Big Hospital** | Apollo/Sahyadri-level (10+ doctors, 10+ depts) | Full OPD system, wards, ICU, blood bank, ambulance fleet, insurance/TPA, health packages |
+
+### Database Seed (New Category to Add)
+```sql
+INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields)
+VALUES ('cat_040', 'Hospitals & OPD Clinics', 'hospitals-opd-clinics', '🏨', 'appointment', 5.0, 25.0, 40,
+'[{"field":"hospital_reg","label":"Hospital Registration No.","type":"text","required":true},{"field":"nabh_accreditation","label":"NABH Accreditation","type":"text","required":false},{"field":"hospital_tier","label":"Tier (small_opd / polyclinic / big_hospital)","type":"select","required":true}]');
+```
+
+### Hospital/Clinic Owner Dashboard Features
+| # | Feature | Tier | Description |
+|---|---------|------|-------------|
+| H1 | **Tier-Adaptive Dashboard** | All | Auto-shows only relevant modules. Small clinic sees simple view; big hospital sees full ERP. |
+| H2 | **Department Manager** | T2, T3 | Create departments: General Medicine, Cardiology, Orthopedics, Pediatrics, ENT, Gynecology, Dermatology, Ophthalmology, Neurology, Urology, etc. |
+| H3 | **Doctor Roster & Scheduling** | All | Assign doctors with OPD days/times. Small clinic: just set "Dr. Sharma — Mon-Sat 10AM-2PM, 5PM-8PM". Big hospital: per-department scheduling. |
+| H4 | **OPD Token System** | All | Digital token queue. Small clinic: single queue. Big hospital: per-department queues. Owner sees live: Token #14 (Current) → #15 → #16. |
+| H5 | **Walk-In Patient Registration** | All | Quick-register: Name, Phone, Age, Gender, Aadhaar (optional). Small clinic: assign directly to doctor. Big hospital: assign to department + doctor. |
+| H6 | **Consultation Fee Manager** | All | Set fees. Small clinic: single fee (₹200). Big hospital: per-doctor fees (Regular ₹300 / Senior ₹500 / Super-Specialist ₹1000). |
+| H7 | **Digital Prescription Pad** | All | Doctor types/dictates prescription → auto-generates printable PDF with clinic/hospital letterhead, doctor's registration number, and signature. |
+| H8 | **Patient Medical Records (EMR)** | All | Attach consultation notes, prescriptions, lab reports, X-rays to patient file. Searchable by phone/name. Small clinic: simple notes. Big hospital: full EMR with history timeline. |
+| H9 | **Lab Integration Panel** | T2, T3 | Send lab test requests to hospital's pathology lab. Results auto-attach to patient record. |
+| H10 | **Pharmacy Cross-Sell** | T2, T3 | Auto-forward prescription to in-house pharmacy. Patient gets notification: "Your medicines are ready for pickup at Counter 3". |
+| H11 | **Bed/Ward Availability Board** | T3 | Display beds per ward: General (12/20 available), Semi-Private (3/8), ICU (1/4). Color-coded occupancy. |
+| H12 | **Emergency SOS Alert** | T2, T3 | Receive critical emergency alerts with patient GPS location. |
+| H13 | **Revenue Dashboard** | All | Small clinic: daily/monthly earnings. Big hospital: department-wise revenue, doctor-wise consultation counts, OPD vs IPD split. |
+| H14 | **Staff Duty Roster** | T2, T3 | Manage nurse/paramedic/receptionist shifts with attendance. |
+| H15 | **Insurance & TPA Panel** | T2, T3 | Process cashless treatment claims. Upload TPA forms, track approval status (Pending/Approved/Rejected). Supported TPAs: Star Health, ICICI Lombard, etc. |
+| H16 | **Health Package Manager** | T2, T3 | Create health checkup packages: "Full Body Checkup ₹1999", "Diabetes Screening ₹799", "Heart Health Package ₹2499". |
+| H17 | **Blood Bank Availability** | T3 | Show available blood units by type (A+, B+, O+, AB+, etc.). Accept donation requests. |
+| H18 | **Ambulance Fleet Manager** | T3 | Track ambulance locations on map. Dispatch nearest ambulance to emergency requests. |
+| H19 | **Discharge Summary Generator** | T3 | Auto-generate discharge summary with diagnosis, treatment given, medications prescribed, follow-up instructions. |
+| H20 | **Clinic-to-Hospital Referral System** | All | Small clinic can **refer patients to a bigger hospital** on the platform. Referral includes patient notes and is received by the hospital’s dashboard directly. |
+| H21 | **Telemedicine Toggle** | All | Mark specific OPD slots as "Video Consultation". System auto-generates a meeting link for both doctor and patient. |
+| H22 | **Multi-Location Management** | T2, T3 | Manage multiple clinic/hospital branches from one dashboard. |
+
+### Hospital/Clinic Visitor/Patient Features
+| # | Feature | Description |
+|---|---------|-------------|
+| H23 | **Smart Hospital Finder** | Search nearby hospitals/clinics filtered by: Department, Doctor specialization, Distance, Ratings, Insurance accepted, Consultation fee range. |
+| H24 | **Department-Wise OPD Booking** | Big Hospital: Select Department → Doctor → Date → Slot. Small Clinic: Select Doctor → Date → Slot. See doctor photo, qualification, experience, fee. |
+| H25 | **Live OPD Token Tracker** | Real-time: "Your Token: #18 • Current: #14 • Wait: ~40 mins". Push notification 5 mins before turn. |
+| H26 | **Health Package Booking** | Browse & book health checkup packages online. See what tests are included. |
+| H27 | **Medical History Portal** | View all past consultations, prescriptions, lab reports, X-rays across ALL hospitals/clinics visited on the platform — one unified health record. |
+| H28 | **Prescription & Lab Report Download** | Download doctor’s prescription and lab reports as PDF. |
+| H29 | **🚑 Emergency Ambulance Request** | One-tap ambulance request with live GPS. See nearest hospital with bed availability. |
+| H30 | **Insurance Cashless Check** | Before booking, check: "Is my insurance accepted here?" See list of accepted TPAs. |
+| H31 | **Follow-Up Auto-Booking** | Doctor marks follow-up → system auto-suggests rebooking with same doctor on suggested date. |
+| H32 | **Blood Donation Request** | Urgent blood requirement? Post a request visible to nearby users with matching blood type. |
+| H33 | **Hospital Rating & Feedback** | Rate overall experience + specific doctor + specific department. |
+| H34 | **Video Consultation Booking** | Book telemedicine slot → receive video call link → join from app/browser. |
+
+---
+
+## 🔧 CLUSTER D: Home & Professional Services (Appointment-Based)
+
+### D1. Home Services & Plumbers (`cat_011`) / AC Repair (`cat_026`) / RO Service (`cat_027`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 46 | **Proof-of-Work Upload** | Technician uploads before/after photos of completed job | See job completion photos before releasing payment |
+| 47 | **Hourly vs Fixed Billing** | Toggle billing mode per service | See transparent pricing (Fixed ₹500 or ₹200/hr) |
+| 48 | **Live Agent Tracking** | Track technician's GPS location en route | Uber-style live map showing technician ETA |
+| 49 | **AMC (Annual Maintenance Contract)** | Create & manage AMC plans | Purchase AMC for discounted recurring service |
+
+### D2. Pest Control (`cat_024`) / Deep Cleaning (`cat_025`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 50 | **Property Size Estimator** | N/A | Enter BHK/sq.ft. for instant quote |
+| 51 | **Chemical Safety Info** | Upload safety datasheets for chemicals used | View safety information & precautions |
+
+### D3. Electricians & Electronics (`cat_013`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 52 | **Warranty Tracker** | Register product warranties for customers | View warranty status & claim history |
+
+---
+
+## 🚗 CLUSTER E: Automotive & Logistics
+
+### E1. Automotive & Mechanic (`cat_019`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 53 | **Vehicle Profile Manager** | View customer vehicles for pricing accuracy | Register vehicle (Make, Model, Year, Reg No.) |
+| 54 | **Service History Log** | Maintain complete service record per vehicle | View full service history of your vehicle |
+
+### E2. Car & Bike Wash (`cat_030`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 55 | **Wash Package Comparison** | Create Bronze/Silver/Gold wash packages | Compare packages side-by-side |
+| 56 | **Monthly Subscription** | Manage unlimited wash subscriptions | Subscribe to "Unlimited Monthly Wash" plan |
+
+### E3. Driving Schools (`cat_031`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 57 | **Lesson Progress Tracker** | Mark lessons completed (Steering, Parking, Highway) | View learning progress checklist |
+| 58 | **Instructor Rating** | View per-instructor rating breakdown | Rate instructor after each lesson |
+
+---
+
+## 🔩 NEW CLUSTER E2: 2-Wheeler & 4-Wheeler Garage (`cat_041` — NEW CATEGORY)
+
+> [!IMPORTANT]
+> Complete lifecycle management for local garages: appointment booking, vehicle pickup/drop, live repair tracking, spare parts billing, insurance claim help, roadside assistance, and full service history.
+
+### Database Seed (New Category to Add)
+```sql
+INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields)
+VALUES ('cat_041', '2W & 4W Garage & Service', '2w-4w-garage-service', '🔩', 'hybrid', 8.0, 20.0, 41,
+'[{"field":"workshop_license","label":"Workshop License No.","type":"text","required":true},{"field":"brands_serviced","label":"Brands Serviced","type":"text","required":false}]');
+```
+
+### Garage Owner Dashboard Features
+| # | Feature | Description |
+|---|---------|-------------|
+| G1 | **Vehicle Type Selector** | Categorize services: 🏍️ 2-Wheeler (Bike/Scooter) or 🚗 4-Wheeler (Car/SUV). Different pricing per type. |
+| G2 | **Service Menu Builder** | Catalog: Regular Service, Full Service, Brake Pad, Oil Change, Denting & Painting, AC Gas Refill, Wheel Alignment, Battery, Clutch Plate, Chain Sprocket, etc. with 2W/4W pricing. |
+| G3 | **Job Card Generator** | Auto-generate digital Job Card: Vehicle details, customer info, issues reported, estimated cost, expected delivery. Printable PDF. |
+| G4 | **Live Repair Status Board** | Track stages: Received → Inspection → Awaiting Approval → Parts Ordered → Repair In Progress → Quality Check → Ready for Pickup. |
+| G5 | **Spare Parts Inventory** | Parts stock with part numbers & compatibility. Auto-deduct when used; add to bill with MRP. Low-stock alerts. |
+| G6 | **Before/After Damage Photos** | Mandatory photo upload at intake (pre-existing damage) and after repair (proof of work). Timestamped. |
+| G7 | **Pickup & Drop Management** | Assign agent to collect vehicle from customer. Track on map. Same for delivery post-repair. |
+| G8 | **Multi-Bay Management** | Track service bays: Bay 1 = Honda Activa (Oil Change) • Bay 2 = Maruti Swift (Denting). Optimize allocation. |
+| G9 | **Warranty on Repairs** | Set warranty per repair type: "90-day warranty on Brake Pads", "6-month on Engine Overhaul". |
+| G10 | **Estimation vs Actual Cost** | Show estimate at intake. If actual > estimated after inspection, send approval request to customer before proceeding. |
+| G11 | **Revenue by Vehicle Type** | Revenue split: 2W vs 4W, top services, repeat customers, monthly trends. |
+| G12 | **🚨 Roadside Assistance Manager** | Receive breakdown/towing requests from users. Dispatch nearest tow truck or mechanic with live GPS. |
+| G13 | **Towing Service Dispatch** | Manage tow truck fleet. Auto-assign nearest truck. Track tow in progress on live map. |
+| G14 | **Insurance Claim Documentation** | Help customer document damage for insurance: generate photo report, estimate sheet, FIR reference (for accidents). Export as PDF for insurance submission. |
+| G15 | **PUC/Emission Test Scheduling** | Offer PUC certificate generation. Track when customers' PUC expires and send renewal reminders. |
+| G16 | **Video Repair Proof** | Record short video of repair process (e.g., showing worn brake pads being replaced). Upload to customer's job card for full transparency. |
+| G17 | **Mechanic Performance Tracker** | Track per-mechanic: jobs completed, avg time per job, customer ratings, specializations. |
+| G18 | **Customer Communication Log** | Record all calls/messages with customer per job card. "Called customer at 2:30 PM — Approved extra ₹1200 for timing belt". |
+| G19 | **Seasonal Service Campaigns** | Create campaigns: "Monsoon Ready Package ₹999" or "Pre-Road-Trip 40-Point Check ₹1499". Push to all registered customers. |
+
+### Garage Visitor/Customer Features
+| # | Feature | Description |
+|---|---------|-------------|
+| G20 | **Vehicle Registration** | Register: Type (2W/4W), Make, Model, Year, Reg No., Fuel Type, KM Reading. Multiple vehicles per user. |
+| G21 | **Service Booking** | Select vehicle → Choose service → Pick date/time → See estimate → Confirm. |
+| G22 | **🚗 Request Vehicle Pickup** | Enter pickup address → Garage sends agent → Track agent on live map (Uber-style). |
+| G23 | **Live Repair Tracking** | "Your Activa is in Stage 3/5: Repair In Progress. Mechanic: Raju." Push notifications on each stage. |
+| G24 | **Photo & Video Proof View** | See before/after photos AND video of repair work done on your vehicle. |
+| G25 | **Itemized Bill View** | Transparent: Labor ₹500 + Brake Pad (MRP ₹850) + Oil 1L (₹450) + Service Charge ₹200 = Total ₹2,000. No hidden costs. |
+| G26 | **Service History** | Full log per vehicle: "15 Jun 2026 — Oil Change at 12,450 km", "3 Mar 2026 — Full Service at 10,200 km". |
+| G27 | **Service Reminder** | Auto: "Your next service is due in 500 km or 30 days". Also: "PUC expiring in 15 days". |
+| G28 | **Warranty Claim** | One-tap "Claim Warranty" if repair fails within warranty period. |
+| G29 | **🚨 Roadside Assistance Request** | Breakdown on road? One-tap SOS: share GPS location → nearest garage dispatches mechanic or tow truck → track on live map. |
+| G30 | **Insurance Claim Helper** | After accident repair, download ready-made insurance claim document package (photos, estimate, FIR ref, repair invoice).
+| G31 | **Garage Comparison** | Compare 2-3 garages side-by-side: prices for same service, ratings, distance, warranty offered. |
+
+---
+
+## 📋 CLUSTER F: Professional & Legal Services
+
+### F1. CAs & Tax Consultants (`cat_035`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 59 | **Secure Document Vault** | Request & receive encrypted client documents | Upload ITR, PAN, Aadhaar securely |
+| 60 | **Deadline Tracker** | Set tax filing deadline reminders per client | See upcoming compliance deadlines |
+
+### F2. Lawyers & Advocates (`cat_036`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 61 | **Case File Manager** | Organize documents by case/matter | View case status & next hearing date |
+| 62 | **Confidentiality Agreement** | Auto-generate NDA before consultation | E-sign NDA digitally before meeting |
+
+### F3. Insurance Agents (`cat_037`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 63 | **Policy Comparison Tool** | Upload multiple policy PDFs for comparison | Side-by-side policy comparison chart |
+| 64 | **Renewal Reminder** | Track policy renewal dates | Receive renewal reminders 30 days before expiry |
+
+---
+
+## 🎉 CLUSTER G: Events, Lifestyle & Education
+
+### G1. Catering & Party Services (`cat_032`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 65 | **Menu Customizer** | Create per-plate pricing with cuisine options | Build custom menu with guest count calculator |
+| 66 | **Headcount-Based Quote** | Auto-generate quote based on guest count | Instant quote: "150 guests × ₹350/plate = ₹52,500" |
+
+### G2. Event Planners & Decorators (`cat_033`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 67 | **Mood Board Builder** | Create visual mood boards with Pinterest-style pins | Browse & select from curated theme boards |
+| 68 | **Vendor Coordination Panel** | Coordinate with sub-vendors (DJ, Caterer, Florist) | N/A |
+
+### G3. Photographers & Videographers (`cat_034`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 69 | **Portfolio Gallery** | Upload categorized portfolio (Wedding, Corporate, Product) | Browse portfolio by event type |
+| 70 | **Delivery Timeline** | Set expected delivery date for edited photos/videos | Track editing progress (Shot → Editing → Delivered) |
+
+### G4. Tutors & Education (`cat_014`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 71 | **Batch Management** | Create class batches with student capacity limits | Join a batch with available seats indicator |
+| 72 | **Assignment Portal** | Upload assignments & grade submissions | Submit assignments & view grades |
+| 73 | **Demo Class Booking** | Offer free demo classes | "📚 Book Free Demo Class" CTA |
+| 73a | **Attendance Tracker** | Mark daily attendance per student per batch | View own attendance % |
+| 73b | **Parent Progress Reports** | Generate per-student progress reports | Parents view child's weekly progress |
+| 73c | **Online Quiz System** | Create timed quizzes per subject | Take quiz & see instant score + leaderboard |
+
+### G5. Real Estate & Brokers (`cat_018`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 74 | **Property Listing Manager** | Add properties with photos, floor plans, pricing | Browse properties with advanced filters (BHK, Budget, Area) |
+| 75 | **Virtual Tour Links** | Attach 360° virtual tour links to listings | View immersive virtual tour |
+| 76 | **EMI Calculator** | N/A | Built-in EMI calculator for property financing |
+| 76a | **Neighborhood Info Card** | Add nearby schools, hospitals, metro distances | See "Nearby: School 0.5km, Hospital 1km, Metro 2km" |
+| 76b | **Site Visit Booking** | Manage site visit slots per property | Book a guided site visit with calendar |
+
+### G6. Tailoring & Boutiques (`cat_029`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 77 | **Measurement Profile** | Store customer body measurements | Save measurements for future orders |
+| 78 | **Design Reference Upload** | Accept design reference images from customers | Upload reference photo with order |
+
+### G7. Eyewear & Opticians (`cat_010`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 79 | **Lens Power Profile** | Store customer's eye prescription data | Save lens prescription for quick reorders |
+| 80 | **Virtual Try-On** | N/A | AR-based frame try-on using phone camera (future) |
+
+### G8. Laundry & Dry Cleaning (`cat_028`)
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 81 | **Garment Count Tracker** | Count & photograph garments at pickup | See itemized list with per-garment pricing |
+| 82 | **Pickup/Drop Scheduling** | Manage pickup & delivery agent routes | Schedule doorstep pickup & delivery time |
+
+---
+
+## 📸 MEGA FEATURE: Smart Shopping List & OCR Order System (All Retail Categories)
+
+> [!IMPORTANT]
+> This is a **flagship feature** for all Product-based retail shops (Grocery, Pharmacy, Hardware, Stationery, etc.). It allows visitors to submit orders via handwritten list photos or manual text entry. The shop owner reviews, prices, and accepts/rejects them.
+
+### How It Works — Visitor Side
+
+```
+┌──────────────────────────────────────────────────┐
+│          📋 SMART LIST ORDER                     │
+│                                                  │
+│  Choose how to submit your shopping list:        │
+│                                                  │
+│  ┌─────────────────┐  ┌─────────────────┐       │
+│  │  📷 Capture /    │  │  ⌨️ Type Your   │       │
+│  │  Upload Photo    │  │  List Manually  │       │
+│  │  of Handwritten  │  │                 │       │
+│  │  List            │  │  - Dal 1kg      │       │
+│  │                  │  │  - Rice 5kg     │       │
+│  │  [Take Photo]    │  │  - Sugar 2kg    │       │
+│  └─────────────────┘  └─────────────────┘       │
+│                                                  │
+│  Order Type: 🏪 Self-Pickup Only (Bulk Order)    │
+│  Special Notes: ___________________________      │
+│                                                  │
+│  [Submit List to Shop Owner →]                   │
+└──────────────────────────────────────────────────┘
+```
+
+**Step-by-step Visitor Flow:**
+1. **Option A — Photo Upload:** User clicks a photo of their handwritten shopping list (paper note, diary page, etc.) using camera or file upload.
+2. **OCR Processing:** The system uses Tesseract.js (client-side OCR) to extract text from the image and displays it as a formatted list.
+3. **Option B — Manual Typing:** User types items line-by-line in a text area (e.g., "Dal 1kg, Rice 5kg, Sugar 2kg").
+4. **Review & Submit:** User reviews the extracted/typed list and submits it as a **Self-Pickup Bulk Order** to the shop owner.
+5. **Both the original image AND the converted text** are sent to the shop owner.
+
+### How It Works — Shop Owner Side
+
+```
+┌──────────────────────────────────────────────────┐
+│  📥 INCOMING LIST ORDERS                         │
+│                                                  │
+│  ┌────────────────────────────────────────────┐  │
+│  │ 🧾 Order #LST-4821  •  From: Ramesh S.    │  │
+│  │ Status: ⏳ Pending Review                  │  │
+│  │                                            │  │
+│  │ 📷 Original Image:    📝 OCR Extracted:    │  │
+│  │ ┌──────────────┐     ┌──────────────────┐  │  │
+│  │ │ [Handwritten │     │ • Dal - 1 kg     │  │  │
+│  │ │  list photo] │     │ • Rice - 5 kg    │  │  │
+│  │ │              │     │ • Sugar - 2 kg   │  │  │
+│  │ │              │     │ • Atta - 10 kg   │  │  │
+│  │ └──────────────┘     │ • Oil - 2 litre  │  │  │
+│  │                      └──────────────────┘  │  │
+│  │                                            │  │
+│  │ Owner Pricing:                             │  │
+│  │ Dal 1kg        ₹[___120___]               │  │
+│  │ Rice 5kg       ₹[___450___]               │  │
+│  │ Sugar 2kg      ₹[___90____]               │  │
+│  │ Atta 10kg      ₹[___380___]               │  │
+│  │ Oil 2L         ₹[___260___]               │  │
+│  │                ─────────────               │  │
+│  │ Total:         ₹1,300                      │  │
+│  │                                            │  │
+│  │ [✅ Accept & Send Quote]  [❌ Decline]     │  │
+│  └────────────────────────────────────────────┘  │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+**Step-by-step Owner Flow:**
+1. **Notification:** Owner receives a new "List Order" in their dashboard with a special 📋 badge.
+2. **Side-by-Side View:** The original handwritten photo is displayed next to the OCR-extracted text so the owner can verify accuracy.
+3. **Price Each Item:** Owner fills in prices for each extracted item (since list items may not match exact catalog products).
+4. **Accept / Decline:** Owner clicks "Accept & Send Quote" to push a priced quote back to the customer, or "Decline" with a reason.
+5. **Customer Confirmation:** Visitor receives the priced quote and can confirm to finalize the Self-Pickup Bulk Order.
+
+### Technical Implementation:
+- **OCR Engine:** `Tesseract.js` (runs entirely in browser, no server needed)
+- **Mobile:** `expo-camera` for photo capture + `Tesseract.js` via WebView or a lightweight API call
+- **Data Flow:** Image stored as base64 or uploaded to server; extracted text stored as JSON array of items
+
+---
+
+## 🌐 UNIVERSAL PLATFORM FEATURES (All Categories)
+
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 83 | **Multi-Language Toggle** | Switch dashboard to Hindi/Marathi/English | N/A (follows browser language) |
+| 84 | **POS (Point of Sale)** | In-store register with barcode scanning | N/A |
+| 85 | **AI Smart Analytics** | Demand forecasting, review auto-replies, surge suggestions | N/A |
+| 86 | **Fleet Management** | Track delivery agents on live map | Live delivery tracking |
+| 87 | **Staff Commission Tracker** | Auto-calculate per-staff payouts | N/A |
+| 88 | **QR Code Generator** | Generate shop/table/counter QR codes | Scan to open shop instantly |
+| 89 | **Storefront Banner Manager** | Upload promotional banners | See animated banners on shop page |
+| 90 | **WhatsApp Business Alerts** | Send booking confirmations via WhatsApp | Receive order/booking confirmations |
+
+---
+
+## ⭐ ADDITIONAL ADVANCED ADD-ON FEATURES (New)
+
+These are **bonus features** that will further enhance the complete management experience for both Shop Owners and Visitors:
+
+### 🛒 Retail & Product Add-Ons
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 91 | **Voice-to-Shopping-List** | N/A | 🎤 Speak items aloud → auto-converted to typed list (Web Speech API) |
+| 92 | **Saved List Templates** | See popular list templates created by users | Save & reuse lists ("Weekly Groceries", "Party Supplies", "Office Stationery") |
+| 93 | **Shared Family Cart** | See collaborative carts from family groups | Invite family members to add items to a shared cart |
+| 94 | **Neighborhood Group Buy** | Set minimum bulk quantity for group discounts | Join a group buy → unlock lower price when enough neighbors order |
+| 95 | **Price Match Guarantee** | Toggle price match policy ON/OFF | See "💰 Lowest Price Guaranteed" badge; report lower price elsewhere |
+| 96 | **Product Availability Ping** | Receive "Is this available?" pings from users | Tap "🔔 Notify When Available" on out-of-stock items |
+
+### 📅 Appointment & Service Add-Ons
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 97 | **Waitlist Priority Bidding** | See bid amounts from waitlisted users | Pay a premium (₹50 extra) to move up in the waitlist |
+| 98 | **Service Bundle Discounts** | Create combos (Haircut + Beard + Facial = ₹499) | See discounted service bundles with savings shown |
+| 99 | **Repeat Booking Shortcut** | See returning customer patterns | "📌 Rebook Last Appointment" one-tap button |
+| 100 | **Post-Service Feedback Survey** | View aggregated survey results with NPS score | Pop-up micro-survey (1-5 stars + one comment) after service |
+
+### 🏪 Shop Owner Experience Add-Ons
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 101 | **Digital Business Card** | Generate & share a sleek digital card with QR, phone, socials | Tap to save shop owner's contact to phone |
+| 102 | **Competitor Price Scout** | View anonymized pricing trends from similar category shops nearby | N/A |
+| 103 | **Daily Revenue Digest Email** | Auto-receive end-of-day summary email with revenue, top products, reviews | N/A |
+| 104 | **Offline Mode (PWA)** | Dashboard works offline; syncs data when back online | Browse cached shop page offline |
+| 105 | **RBAC (Role-Based Access)** | Assign roles: Owner, Manager, Cashier, Delivery Boy — each with limited permissions | N/A |
+| 106 | **Multi-Branch Management** | Switch between branches from a single dashboard | See "📍 Select Branch" if shop has multiple locations |
+
+### 👤 Visitor Experience Add-Ons
+| # | Feature | Owner Dashboard | Visitor Page |
+|---|---------|----------------|--------------|
+| 107 | **Shop Comparison Mode** | N/A | Compare 2-3 shops side-by-side (prices, ratings, distance) |
+| 108 | **Shop-to-Shop Recommendations** | N/A | "Customers who visited X also visited Y" AI suggestions |
+| 109 | **Neighborhood Deal Feed** | Post daily deals to the feed | Scrollable "🔥 Deals Near You" feed showing flash offers from all nearby shops |
+| 110 | **AR Store Navigator** | Upload store aisle map | AR-powered in-store navigation: "Find Rice → Aisle 3, Shelf 2" (future) |
+| 111 | **Per-Shop Referral Program** | Set referral reward (₹50 credit per referral) | "Refer a friend to this shop, earn ₹50" |
+| 112 | **Estimated Ready Time** | Set preparation/packing time per order size | See "📦 Your order will be ready for pickup in ~25 mins" |
+
+---
+
+## Implementation Strategy
+
+All features above will be implemented as **conditional UI modules** that activate based on the shop's `category_id` or `business_model`. The rendering logic pattern:
+
+```javascript
+// In shop-dashboard/page.js
+const categorySlug = shop.category_details?.slug;
+const bm = shop.category_details?.business_model;
+
+// Smart List OCR — All product/hybrid categories
+if (bm === 'product' || bm === 'hybrid') {
+  // Show List Orders tab with OCR image + text side-by-side review
+}
+
+// Pharmacy-specific modules
+if (categorySlug === 'pharmacy-healthcare') {
+  // Show Prescription Vault, Drug Interaction, Refill Reminders, OTC/Rx Tags
+}
+
+// Restaurant-specific modules  
+if (categorySlug === 'restaurants-cafes') {
+  // Show KDS, QR Table Ordering, Dietary Tags, Happy Hour, Combo Builder
+}
+```
+
+> [!IMPORTANT]
+> This plan now contains **160+ total features** across **41 categories** (39 original + 2 new: Hospital & OPD, 2W/4W Garage). The Hospital system supports **both big hospitals AND small OPD clinics** via a 3-tier adaptive dashboard. The Garage system includes **Roadside Assistance, Towing, Insurance Claim Docs, and Video Repair Proof**.
+>
+> Click **Proceed** to begin implementing them in batches across the Web and Mobile codebases.

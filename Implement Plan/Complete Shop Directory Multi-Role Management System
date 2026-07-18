@@ -1,0 +1,680 @@
+# 🏪 LocalSampark — Complete Shop Directory Multi-Role Management System
+
+## Executive Summary
+
+This plan transforms the LocalSampark shop directory from its current state (partially-connected dashboards with dummy data, 11 of 39 categories having manager components, disconnected visitor/owner/delivery flows) into a **fully integrated, role-aware management system** spanning **39 shop categories**, **8 user roles**, and the **complete visitor-to-delivery lifecycle** — on both Web (Next.js) and Mobile (React Native/Expo).
+
+---
+
+## Current State Analysis (Deep Research Findings)
+
+### What Exists Today
+
+| Layer | Status | Details |
+|-------|--------|---------|
+| **39 Shop Categories** | ✅ Seeded in DB | 11 Product · 22 Appointment · 4 Hybrid — all with commission, convenience fee, registration fields |
+| **Shop Routes (Backend)** | ✅ 621 lines | Register, products, services, staff, appointments, orders, batch checkout, reviews, Q&A, flash sales |
+| **Shop Dashboard (Web)** | ⚠️ 13 components | RetailManager, BeautyManager, HospitalManager, GarageManager, etc. — **all use dummy/mock data, NOT connected to backend APIs** |
+| **Shop Dashboard (Mobile)** | ⚠️ ShopDashboard.js | Basic order list only — no category-specific management |
+| **Visitor Flow (Web)** | ⚠️ Partial | Shop directory + category filter + checkout — but **no appointment booking UI, no service request flow, no walk-in QR** |
+| **Visitor Flow (Mobile)** | ⚠️ Basic | Shop list only — no detail page, no cart, no checkout |
+| **Delivery System** | ✅ Functional | Job creation, agent dispatch (Haversine + OSRM), OTP verification, wallet/analytics — but **no real-time GPS tracking UI** |
+| **Admin Dashboard** | ✅ 11 sections | Approvals, commissions, revenue, franchises, users, categories, settings — **but no category-specific monitoring** |
+| **Territory Admin** | ✅ Routes exist | Approvals hub, dashboard stats, region-scoped — **but no shop performance analytics** |
+| **Order State Machine** | ⚠️ Basic | `pending → accepted → preparing → ready_for_pickup → dispatched → delivered → cancelled` — **no return/refund/dispute states** |
+| **Commission Engine** | ✅ Functional | Per-category commission %, convenience fee, commission ledger, settlement tracking |
+| **Real-time (Socket.io)** | ⚠️ Scaffolded | Socket server initialized, rooms for zones — **but no per-order live tracking, no shop notification channels** |
+
+### Critical Gaps Identified (10x Thinking)
+
+```
+❌ 28 of 39 categories have NO dedicated management component
+❌ All 13 existing managers use DUMMY data — zero backend connection
+❌ No appointment booking UI for visitors (22 categories need this!)
+❌ No category-specific shop detail pages (one-size-fits-all view)
+❌ No real-time order/appointment notifications to shop owners
+❌ No visitor ↔ shop owner chat channel
+❌ No return/refund/dispute lifecycle
+❌ No delivery tracking UI (real-time map)
+❌ No walk-in QR code scanning flow
+❌ No mobile checkout or appointment booking
+❌ No shop owner mobile dashboard with order management
+❌ No push notification integration
+❌ No category-specific admin monitoring
+❌ No financial settlement/payout dashboard for shop owners
+❌ No visitor order history / reorder
+```
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Category Grouping Strategy**: Rather than building 39 separate manager components, the plan groups categories into **7 Management Archetypes** (see below). Each archetype handles a family of related categories. Please confirm this grouping approach before we proceed.
+
+> [!IMPORTANT]
+> **Mobile Scope**: The plan covers both Web (Next.js) and Mobile (React Native). The mobile changes will modify files in `mobile_build/mobile_build 07-07-2026/src/`. Confirm this is the correct target for mobile changes.
+
+> [!WARNING]
+> **Breaking Change — Order State Machine**: The current order states will be extended with `return_requested → returned → refunded` and `disputed → resolved`. Existing orders with status `delivered` or `cancelled` will remain unaffected.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **Payment Gateway**: Razorpay keys are mock (`rzp_test_mockkey`). Should we integrate real Razorpay test keys for appointment payments, or keep the mock for now?
+> 2. **Push Notifications**: Should we integrate Firebase Cloud Messaging (FCM) for real push notifications, or use only in-app socket notifications?
+> 3. **Image Uploads**: Shop photos, product images, and service images currently reference URLs. Should we add Cloudinary/S3 upload integration, or keep URL-based references?
+> 4. **SMS/WhatsApp**: Should OTP delivery and order notifications use actual SMS/WhatsApp APIs (MSG91, Twilio), or remain console-logged?
+
+---
+
+## Architecture: 7 Management Archetypes
+
+Instead of 39 separate dashboards, we group all categories into **7 reusable management archetypes**:
+
+```mermaid
+graph TD
+    A["39 Shop Categories"] --> B["7 Management Archetypes"]
+    B --> C1["🛒 RETAIL<br/>Product Catalog + Cart + Delivery"]
+    B --> C2["🍽️ F&B / RESTAURANT<br/>Menu + KDS + Table + Delivery"]
+    B --> C3["💇 APPOINTMENT SERVICE<br/>Staff + Slots + Booking + Waitlist"]
+    B --> C4["🏥 HEALTHCARE<br/>Doctor + OPD Queue + EMR + Bed"]
+    B --> C5["🔧 REPAIR / GARAGE<br/>Job Cards + Parts + Pickup/Drop"]
+    B --> C6["📋 PROFESSIONAL CONSULT<br/>Consultation Slots + Documents + Fees"]
+    B --> C7["🏠 HOME SERVICE<br/>Visit Booking + Before/After + Quotation"]
+    
+    C1 --> D1["cat_001 Grocery<br/>cat_003 Pharmacy<br/>cat_004 Fresh Produce<br/>cat_005 Dairy/Bakery<br/>cat_006 Stationery<br/>cat_007 Florists<br/>cat_008 Pet Supplies<br/>cat_009 Pooja Samagri<br/>cat_015 Hardware<br/>cat_016 Clothing"]
+    C2 --> D2["cat_002 Restaurants"]
+    C3 --> D3["cat_012 Salon/Spa<br/>cat_017 Gym/Fitness<br/>cat_029 Tailoring<br/>cat_030 Car/Bike Wash<br/>cat_031 Driving Schools<br/>cat_032 Catering<br/>cat_033 Event Planners<br/>cat_034 Photographers<br/>cat_038 Yoga/Wellness"]
+    C4 --> D4["cat_020 Dentists<br/>cat_021 Pathology<br/>cat_022 Physiotherapy<br/>cat_023 Ayurvedic<br/>cat_039 Dieticians"]
+    C5 --> D5["cat_013 Electricians<br/>cat_019 Automotive<br/>cat_026 AC Repair<br/>cat_027 RO Service<br/>cat_028 Laundry<br/>cat_010 Eyewear"]
+    C6 --> D6["cat_014 Tutors<br/>cat_018 Real Estate<br/>cat_035 CAs/Tax<br/>cat_036 Lawyers<br/>cat_037 Insurance"]
+    C7 --> D7["cat_011 Home Services<br/>cat_024 Pest Control<br/>cat_025 Deep Cleaning"]
+```
+
+---
+
+## Proposed Changes
+
+### Phase 1: Core Backend — Role-Aware APIs & Extended State Machines
+
+This phase builds the foundational backend services that all other phases depend on.
+
+---
+
+#### [NEW] backend/src/migrations/016_shop_management_upgrade.sqlite.sql
+
+New database migration adding:
+- `shop_orders` extended states: `return_requested`, `returned`, `refunded`, `disputed`, `resolved`
+- `shop_disputes` table: dispute ID, order/appointment ref, initiator (visitor/owner), category, description, resolution, admin notes
+- `shop_returns` table: return request, reason, approval status, pickup scheduling
+- `shop_notifications` table: recipient_id, type, title, body, data JSON, read status, created_at
+- `shop_chat_messages` table: shop_id, sender_id, receiver_id, message, type (text/image/system), read_at
+- `shop_walkin_scans` table: shop_id, visitor_id, scanned_at, source (qr/nfc)
+- `shop_owner_payouts` table: payout_id, shop_id, amount, period, status, settled_at, bank_ref
+- `visitor_order_history` view: unified view of orders + appointments per user
+- Alter `shop_appointments` add `check_in_status`, `no_show`, `reschedule_count`
+- Alter `local_shops` add `management_archetype` TEXT (auto-derived from category)
+
+---
+
+#### [MODIFY] [shop.routes.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/backend/src/routes/shop.routes.js)
+
+Major expansion of shop routes:
+
+**Visitor APIs (New)**:
+- `GET /shops/:id/full` — Category-aware full shop detail (products OR services OR both, staff, reviews, Q&A, hours, gallery)
+- `POST /shops/:id/appointments/book` — Book appointment with slot validation, surge pricing, payment
+- `GET /shops/:id/availability` — Get available dates/slots for all staff
+- `POST /shops/:id/walkin-scan` — Record QR/NFC walk-in scan
+- `GET /shops/visitor/order-history` — Unified order + appointment history
+- `POST /shops/orders/:id/return` — Request return/exchange
+- `POST /shops/orders/:id/dispute` — Raise dispute
+- `GET /shops/orders/:id/track` — Real-time delivery tracking data
+
+**Shop Owner APIs (New)**:
+- `GET /shops/my-shop/dashboard` — Category-archetype-aware dashboard data (orders/appointments/revenue/staff/inventory)
+- `PUT /shops/my-shop/products/:pid` — Update product (price, stock, availability)
+- `DELETE /shops/my-shop/products/:pid` — Remove product
+- `PUT /shops/my-shop/services/:sid` — Update service
+- `PUT /shops/my-shop/staff/:sid/availability` — Manage staff schedule
+- `PUT /shops/my-shop/appointments/:aid/status` — Accept/reject/complete appointment
+- `GET /shops/my-shop/analytics` — Revenue, orders, ratings over time
+- `GET /shops/my-shop/payouts` — Settlement history
+- `POST /shops/my-shop/notifications/send` — Send notification to customer
+- `GET /shops/my-shop/chat/:userId` — Chat with customer
+- `POST /shops/my-shop/chat/:userId` — Send chat message
+- `PUT /shops/my-shop/settings` — Update shop hours, delivery toggle, description, photos
+- `POST /shops/my-shop/flash-sale` — Create flash sale
+- `GET /shops/my-shop/disputes` — View disputes
+
+**Order State Machine Enhancement**:
+```
+pending → accepted → preparing → ready_for_pickup → dispatched → delivered
+                                                                    ↓
+                                                         return_requested → returned → refunded
+                                                                    ↓
+                                                              disputed → resolved
+cancelled (from any pre-delivered state)
+```
+
+---
+
+#### [MODIFY] [admin.routes.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/backend/src/routes/admin.routes.js)
+
+**New Admin APIs**:
+- `GET /admin/shops/performance` — All shops with revenue, order count, rating, disputes
+- `GET /admin/shops/:id/audit` — Full shop audit trail (orders, complaints, disputes, payouts)
+- `GET /admin/disputes` — All open disputes with filtering
+- `PUT /admin/disputes/:id/resolve` — Resolve dispute with admin notes
+- `GET /admin/returns` — All return requests
+- `PUT /admin/returns/:id` — Approve/reject return
+- `GET /admin/payouts/pending` — Pending shop owner payouts
+- `POST /admin/payouts/settle` — Batch settle payouts
+- `GET /admin/categories/:id/analytics` — Per-category performance metrics
+- `GET /admin/delivery/live` — Live delivery agent map data
+
+---
+
+#### [MODIFY] [territory.routes.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/backend/src/routes/territory.routes.js)
+
+**New Territory Admin APIs**:
+- `GET /territory/shops/performance` — Region-scoped shop performance
+- `GET /territory/disputes` — Region-scoped disputes
+- `GET /territory/delivery/agents` — Region delivery agents with status
+- `GET /territory/revenue/breakdown` — Revenue by category in region
+
+---
+
+#### [NEW] backend/src/controllers/shop-management.controller.js
+
+Central controller handling:
+- Dashboard data aggregation per archetype
+- Appointment lifecycle (book → confirm → check-in → complete → rate)
+- Return/refund workflow
+- Dispute handling
+- Notification dispatch (Socket.io + DB persistence)
+- Chat message storage and retrieval
+- Payout calculation and settlement
+
+---
+
+#### [NEW] backend/src/services/notification.service.js
+
+Unified notification service:
+- Socket.io real-time push to connected clients
+- Database persistence for offline users
+- Notification types: `order_update`, `appointment_reminder`, `dispute_update`, `payout_settled`, `new_review`, `chat_message`, `flash_sale`
+- User preference-aware (respect mute settings)
+
+---
+
+#### [MODIFY] [delivery.controller.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/backend/src/controllers/delivery.controller.js)
+
+Add:
+- `updateLocation` — Agent GPS coordinate update (for live tracking)
+- `getDeliveryTrack` — Returns agent coordinate + ETA for a specific order (for visitor tracking UI)
+- `handleReturnPickup` — Assign agent for return pickup
+
+---
+
+### Phase 2: Web — Category-Aware Shop Detail & Visitor Flows
+
+---
+
+#### [NEW] apps/web/src/app/shop/[id]/page.js
+
+**Complete category-aware shop detail page** replacing the current basic view:
+
+For **Product shops** (Retail archetype):
+- Product grid with categories, search, dietary filters
+- Add-to-cart with quantity, variant selection
+- Delivery/pickup toggle
+- Flash sale badges
+
+For **Appointment shops** (Salon, Healthcare, Professional archetypes):
+- Service catalog with pricing, duration, staff specialist
+- Staff cards with rating, specialization, portfolio
+- Date picker → Available slot grid (with surge pricing indicators)
+- Book button → Payment → Confirmation
+- Walk-in QR display (for shop's own customers)
+
+For **Hybrid shops** (Garage, Electrician, Laundry, Eyewear):
+- Both product catalog AND service booking in tabbed view
+- Job card status tracking (for garage)
+- Quotation request (for home services)
+
+Common features across all:
+- Photo gallery carousel
+- Reviews (society-verified badge)
+- Q&A section
+- Opening hours with live open/closed status
+- Distance, delivery time estimate
+- Share button, save/favorite
+
+---
+
+#### [NEW] apps/web/src/app/service-booking/[shopId]/page.js
+
+Dedicated appointment booking flow:
+1. Select service → 2. Choose staff → 3. Pick date/time → 4. Review (surge pricing shown) → 5. Payment → 6. Confirmation with calendar add
+
+---
+
+#### [MODIFY] [checkout/page.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/checkout/page.js)
+
+Connect to real backend APIs instead of simulated timeout:
+- Real `POST /shops/:id/orders` call
+- Real Razorpay payment flow
+- Loyalty coin burn integration
+- Coupon validation via backend
+- Redirect to real order tracking
+
+---
+
+#### [NEW] apps/web/src/app/order-tracking/[orderId]/page.js
+
+Real-time order tracking page:
+- Stepper showing current state (pending → accepted → preparing → dispatched → delivered)
+- Live delivery agent map (Leaflet/MapLibre) with agent GPS coordinates
+- ETA countdown
+- OTP display (for delivery verification)
+- Contact delivery agent button
+- Cancel/return buttons (state-dependent)
+
+---
+
+#### [NEW] apps/web/src/app/my-orders/page.js
+
+Visitor order history:
+- Tabs: Active | Completed | Cancelled | Returns
+- Unified list of both product orders AND appointments
+- Reorder button (for product orders)
+- Rebook button (for appointments)
+- Rate & review (post-delivery/post-appointment)
+- Dispute button
+
+---
+
+### Phase 3: Web — Shop Owner Dashboard (Backend-Connected)
+
+---
+
+#### [MODIFY] [shop-dashboard/page.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/page.js)
+
+Replace the "Developer Role Simulator" with **real authenticated shop owner dashboard**:
+- Auto-detect shop's category → derive management archetype
+- Load real data from `GET /shops/my-shop/dashboard`
+- Show appropriate manager component based on archetype
+- Real-time order/appointment notifications via Socket.io
+- Common sidebar: Orders, Appointments, Products/Services, Staff, Analytics, Payouts, Chat, Settings, Disputes
+
+---
+
+#### [MODIFY] All 13 existing Manager components
+
+Connect **every** manager to real backend APIs:
+
+| Component | Connect To | Key Changes |
+|-----------|-----------|-------------|
+| [RetailManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/RetailManager.js) | Products, Orders, Inventory APIs | Real CRUD, real-time order updates, stock management |
+| [BeautyManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/BeautyManager.js) | Appointments, Staff, Services APIs | Real waitlist, real portfolio upload, real memberships |
+| [HospitalManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/HospitalManager.js) | Appointments, Doctors, Queue APIs | Real OPD queue, real bed tracker, real EMR |
+| [GarageManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/GarageManager.js) | Job Cards, Parts, Orders APIs | Real job card CRUD, real inventory, real pickup/drop |
+| [DoctorManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/DoctorManager.js) | Appointments, Prescriptions APIs | Real patient queue, real prescription writing |
+| [POSManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/POSManager.js) | Products, Orders APIs | Real POS terminal, barcode scan, receipt gen |
+| [FleetManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/FleetManager.js) | Delivery Jobs, Agents APIs | Real fleet tracking |
+| [AnalyticsManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/AnalyticsManager.js) | Analytics APIs | Real charts with real revenue/order data |
+| [HomeServiceManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/HomeServiceManager.js) | Service Requests, Quotations APIs | Real service request queue, quotation builder |
+| [ProfessionalManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/ProfessionalManager.js) | Consultations, Documents APIs | Real consultation slots, document sharing |
+| [EducationEventsManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/EducationEventsManager.js) | Classes, Events, Enrollments APIs | Real class scheduling, attendance |
+| [TwoWheelerManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/TwoWheelerManager.js) | Job Cards, Parts APIs | Real 2W-specific job cards |
+| [FourWheelerManager.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/apps/web/src/app/shop-dashboard/components/FourWheelerManager.js) | Job Cards, Parts APIs | Real 4W-specific job cards |
+
+---
+
+#### [NEW] apps/web/src/app/shop-dashboard/components/common/
+
+Shared sub-components for all managers:
+- `OrdersPanel.js` — Real-time order list with accept/reject/prepare/dispatch actions
+- `AppointmentsPanel.js` — Appointment list with confirm/check-in/complete/no-show actions
+- `StaffPanel.js` — Staff CRUD + availability calendar
+- `InventoryPanel.js` — Product/parts CRUD with stock alerts
+- `PayoutsPanel.js` — Settlement history + upcoming payouts
+- `ChatPanel.js` — Customer chat (Socket.io powered)
+- `DisputesPanel.js` — View + respond to disputes
+- `SettingsPanel.js` — Shop hours, delivery toggle, photos, description
+- `ReviewsPanel.js` — View reviews, respond to Q&A
+- `NotificationBell.js` — Real-time notification dropdown (Socket.io)
+
+---
+
+### Phase 4: Web — Admin & Territory Management Enhancement
+
+---
+
+#### [NEW] apps/web/src/app/admin-dashboard/shop-monitor/page.js
+
+Shop performance monitoring:
+- All shops table: name, category, archetype, orders, revenue, rating, disputes, status
+- Click → Drill-down audit trail
+- Filters by category, region, performance tier
+- Flagged shops (high disputes, low rating) with alert badges
+
+---
+
+#### [NEW] apps/web/src/app/admin-dashboard/disputes/page.js
+
+Dispute resolution center:
+- All disputes with status, initiator, shop, order ref
+- Chat-style dispute thread view
+- Resolve with notes, refund trigger, penalty options
+
+---
+
+#### [NEW] apps/web/src/app/admin-dashboard/returns/page.js
+
+Return management:
+- All return requests with item details, reason, photos
+- Approve/reject with notes
+- Auto-trigger refund on approval
+
+---
+
+#### [MODIFY] apps/web/src/app/admin-dashboard/payouts/page.js
+
+Enhanced payout dashboard:
+- Pending payouts grouped by shop
+- Batch settle with bank transfer references
+- Settlement history with filters
+
+---
+
+#### [NEW] apps/web/src/app/admin-dashboard/live-delivery/page.js
+
+Live delivery monitoring:
+- Map view with all active delivery agents (real-time GPS)
+- Active deliveries with ETA
+- Agent performance metrics
+
+---
+
+### Phase 5: Mobile — Complete Visitor & Shop Owner Flows
+
+---
+
+#### [MODIFY] [ShopDashboard.js](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/mobile_build/mobile_build%2007-07-2026/src/screens/dashboards/ShopDashboard.js)
+
+Full mobile shop owner dashboard:
+- Real-time order/appointment notifications
+- Accept/reject orders with one tap
+- Quick inventory update (toggle availability)
+- Today's analytics (revenue, orders, appointments)
+- Chat with customers
+
+---
+
+#### [NEW] mobile_build/.../src/screens/ShopDetailScreen.js
+
+Category-aware mobile shop detail:
+- Product grid (for retail) / Service list (for appointment) / Both (for hybrid)
+- Add to cart / Book appointment
+- Reviews, gallery, hours, distance
+
+---
+
+#### [NEW] mobile_build/.../src/screens/AppointmentBookingScreen.js
+
+Mobile appointment booking:
+- Service selection → Staff selection → Date/time picker → Payment → Confirmation
+
+---
+
+#### [NEW] mobile_build/.../src/screens/CheckoutScreen.js
+
+Mobile checkout:
+- Cart summary with multi-shop grouping
+- Delivery/pickup toggle
+- Address input with GPS auto-fill
+- Payment method selection
+- Loyalty coins toggle
+- Razorpay integration
+
+---
+
+#### [NEW] mobile_build/.../src/screens/OrderTrackingScreen.js
+
+Mobile order tracking:
+- Real-time status stepper
+- Delivery agent map (React Native Maps)
+- OTP display
+- Contact agent
+- Cancel/return
+
+---
+
+#### [NEW] mobile_build/.../src/screens/MyOrdersScreen.js
+
+Mobile order history:
+- Tabs: Active | Completed | Returns
+- Unified orders + appointments
+- Reorder / Rebook / Rate
+
+---
+
+#### [NEW] mobile_build/.../src/screens/ChatScreen.js
+
+In-app chat between visitor and shop owner:
+- Real-time messaging via Socket.io
+- Image sharing
+- Order/appointment context card
+
+---
+
+### Phase 6: Real-Time Communication & Notifications
+
+---
+
+#### [MODIFY] [backend/src/sockets/](file:///c:/Users/Abhi%20Laptop/Downloads/Local%2007-7-2026%20Office/Local%2007-7-2026%20Office/localsampark/backend/src/sockets)
+
+Enhanced Socket.io event system:
+
+| Event | Direction | Purpose |
+|-------|-----------|---------|
+| `shop:order:new` | Server → Shop Owner | New order placed |
+| `shop:order:status` | Server → Visitor | Order status change |
+| `shop:appointment:new` | Server → Shop Owner | New appointment booked |
+| `shop:appointment:reminder` | Server → Visitor | 30min before appointment |
+| `delivery:location:update` | Agent → Server → Visitor | GPS coordinate update |
+| `shop:chat:message` | Bidirectional | Chat messages |
+| `shop:dispute:update` | Server → Both | Dispute status change |
+| `admin:alert` | Server → Admin | High-priority alerts (disputes, fraud) |
+| `shop:notification` | Server → Shop Owner | General notifications |
+
+---
+
+### Phase 7: Cross-Cutting Concerns
+
+---
+
+#### [NEW] backend/src/middleware/shop-owner.middleware.js
+
+Shop ownership verification middleware:
+- Validates `req.user.id` owns the shop being accessed
+- Prevents cross-shop data access
+- Used on all `/my-shop/*` routes
+
+---
+
+#### [NEW] apps/web/src/app/components/ShopNotificationProvider.js
+
+Web notification provider:
+- Socket.io connection management
+- Toast notifications for new orders/appointments
+- Sound alerts for shop owners
+- Badge count on notification bell
+
+---
+
+#### [NEW] mobile_build/.../src/services/NotificationService.js
+
+Mobile notification service:
+- Socket.io connection with reconnection
+- Local notification display (expo-notifications)
+- Badge count management
+
+---
+
+## Complete Role ↔ Feature Matrix
+
+| Feature | Visitor | Shop Owner | Delivery Agent | Territory Admin | Super Admin |
+|---------|---------|------------|----------------|-----------------|-------------|
+| Browse shop directory | ✅ | ✅ | — | ✅ | ✅ |
+| View shop detail (category-aware) | ✅ | — | — | ✅ | ✅ |
+| Add to cart / Place order | ✅ | — | — | — | — |
+| Book appointment | ✅ | — | — | — | — |
+| Walk-in QR scan | ✅ | — | — | — | — |
+| Track order (real-time) | ✅ | — | — | — | ✅ |
+| Order history & reorder | ✅ | — | — | — | — |
+| Rate & review | ✅ | — | — | — | — |
+| Request return/refund | ✅ | — | — | — | — |
+| Raise dispute | ✅ | ✅ | — | — | — |
+| Chat with shop/visitor | ✅ | ✅ | — | — | — |
+| Manage products/services | — | ✅ | — | — | ✅ |
+| Manage staff & schedule | — | ✅ | — | — | ✅ |
+| Accept/reject orders | — | ✅ | — | — | — |
+| Manage appointments | — | ✅ | — | — | — |
+| View analytics & revenue | — | ✅ | — | ✅ | ✅ |
+| View payouts | — | ✅ | — | — | ✅ |
+| Create flash sales | — | ✅ | — | — | — |
+| Respond to reviews/Q&A | — | ✅ | — | — | — |
+| Accept delivery jobs | — | — | ✅ | — | — |
+| Update GPS location | — | — | ✅ | — | — |
+| Complete delivery (OTP) | — | — | ✅ | — | — |
+| View earnings & wallet | — | — | ✅ | — | — |
+| Approve shops | — | — | — | ✅ | ✅ |
+| Monitor shop performance | — | — | — | ✅ | ✅ |
+| Resolve disputes | — | — | — | ✅ | ✅ |
+| Manage returns/refunds | — | — | — | — | ✅ |
+| Configure commissions | — | — | — | — | ✅ |
+| Settle payouts | — | — | — | — | ✅ |
+| Live delivery monitoring | — | — | — | ✅ | ✅ |
+| Category management | — | — | — | — | ✅ |
+
+---
+
+## Complete Visitor Journey (End-to-End)
+
+```mermaid
+graph TD
+    A["🏠 Visitor Opens App/Web"] --> B["📍 Location Detection<br/>(GPS / IP Fallback)"]
+    B --> C["🛒 Shop Directory<br/>(39 Categories, Nearby Sort)"]
+    C --> D{"Select Shop"}
+    
+    D --> E["🏪 Shop Detail Page<br/>(Category-Aware UI)"]
+    
+    E --> F{"Shop Type?"}
+    
+    F -->|Product| G["Add Products to Cart"]
+    F -->|Appointment| H["Select Service → Staff → Slot"]
+    F -->|Hybrid| I["Products + Services in Tabs"]
+    
+    G --> J["🛒 Checkout<br/>(Address, Payment, Coins)"]
+    H --> K["📅 Book Appointment<br/>(Confirm, Pay)"]
+    I --> J
+    I --> K
+    
+    J --> L["💳 Payment<br/>(Razorpay / COD / Wallet)"]
+    K --> L
+    
+    L --> M["✅ Order/Appointment Confirmed"]
+    
+    M --> N["🔔 Shop Owner Notified<br/>(Real-time Socket.io)"]
+    
+    N --> O{"Shop Owner Action"}
+    O -->|Accept| P["Preparing / Confirmed"]
+    O -->|Reject| Q["Cancelled + Refund"]
+    
+    P --> R{"Delivery Type?"}
+    R -->|Delivery| S["🚴 Delivery Agent Dispatched<br/>(Haversine + OSRM)"]
+    R -->|Pickup| T["Ready for Pickup<br/>(Visitor Notified)"]
+    R -->|Appointment| U["Appointment Day<br/>(Reminder Sent)"]
+    
+    S --> V["📍 Live Tracking<br/>(GPS Map, ETA)"]
+    V --> W["🔐 OTP Verification"]
+    W --> X["✅ Delivered"]
+    
+    T --> X
+    U --> Y["✅ Service Completed"]
+    
+    X --> Z["⭐ Rate & Review"]
+    Y --> Z
+    
+    Z --> AA{"Issue?"}
+    AA -->|Return| AB["📦 Return Request<br/>→ Admin Approval<br/>→ Pickup Scheduled<br/>→ Refund"]
+    AA -->|Dispute| AC["⚖️ Dispute Filed<br/>→ Admin Review<br/>→ Resolution"]
+    AA -->|Happy| AD["🎉 Complete!<br/>(Loyalty Coins Earned)"]
+```
+
+---
+
+## File Summary
+
+| Category | New Files | Modified Files |
+|----------|-----------|----------------|
+| Backend Migrations | 1 | 0 |
+| Backend Controllers | 1 | 1 |
+| Backend Services | 1 | 0 |
+| Backend Routes | 0 | 3 |
+| Backend Middleware | 1 | 0 |
+| Backend Sockets | 0 | 1 |
+| Web Pages | 7 | 2 |
+| Web Components | 10 (common) | 13 (managers) |
+| Web Providers | 1 | 0 |
+| Mobile Screens | 6 | 1 |
+| Mobile Services | 1 | 0 |
+| **Total** | **29 new** | **21 modified** |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Backend API tests
+cd backend && npm test
+
+# Test shop registration → approval → product listing → order → delivery flow
+node backend/src/__tests__/shop-lifecycle.test.js
+
+# Test appointment booking → confirmation → check-in → completion → review flow
+node backend/src/__tests__/appointment-lifecycle.test.js
+
+# Test return/refund/dispute flows
+node backend/src/__tests__/dispute-lifecycle.test.js
+```
+
+### Manual Verification
+1. **Visitor Flow**: Browse shops → View detail (test each archetype) → Add to cart → Checkout → Track order → Rate
+2. **Appointment Flow**: Browse → Book appointment → Receive confirmation → Complete → Rate
+3. **Shop Owner Flow**: Login as shop owner → See real dashboard → Accept order → Mark prepared → Track delivery
+4. **Admin Flow**: Login as admin → View shop performance → Resolve dispute → Settle payout
+5. **Mobile**: All above flows on mobile app
+6. **Real-time**: Open two browsers (visitor + shop owner) → Place order → Verify instant notification
+7. **Delivery Tracking**: Place delivery order → Simulate agent movement → Verify map updates
+
+---
+
+## Implementation Priority Order
+
+| Phase | Priority | Estimated Effort | Dependencies |
+|-------|----------|-----------------|--------------|
+| Phase 1: Backend APIs | 🔴 Critical | High | None |
+| Phase 2: Web Visitor Flows | 🔴 Critical | High | Phase 1 |
+| Phase 3: Web Shop Owner Dashboard | 🔴 Critical | High | Phase 1 |
+| Phase 5: Mobile Flows | 🟡 High | High | Phase 1 |
+| Phase 6: Real-Time | 🟡 High | Medium | Phase 1, 2, 3 |
+| Phase 4: Admin Enhancement | 🟢 Medium | Medium | Phase 1 |
+| Phase 7: Cross-Cutting | 🟢 Medium | Low | Phase 1 |

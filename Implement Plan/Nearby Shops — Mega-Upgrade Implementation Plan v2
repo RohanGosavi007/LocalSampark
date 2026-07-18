@@ -1,0 +1,823 @@
+# Nearby Shops — Mega-Upgrade Implementation Plan v2
+
+> Complete shop ecosystem: Registration → Category-specific Dashboard → Visitor Discovery → Buy/Book → Delivery → Commission → Super Admin Control
+
+**Scope:** Website only. Mobile app will be upgraded separately after website completion.
+
+---
+
+## Decisions Confirmed (from your feedback)
+
+| Decision | Your Choice |
+|---|---|
+| Commission Model | **Hybrid** — Percentage + Flat Convenience Fee, configurable per category by Super Admin |
+| Geolocation | **Browser API** + **IP-based fallback** if user denies permission |
+| Shop Registration | Must capture **exact GPS location** (map picker) |
+| Service Catalog | **Yes** — with pricing, duration. Free services available for paid/premium shop owners |
+| Staff Availability | **Yes** — configurable working hours & off-days per staff, managed by Shop Owner |
+| Hybrid Shop Type | **Dedicated hybrid flow** (not just "both") |
+| Delivery | **Integrated** with existing `delivery_agents` — user chooses Pickup or Delivery |
+| Value-Add Features | **All 6 included** — Notifications, Staff Performance, Surge Pricing, Badges, QR, Re-book |
+| Super Admin Control | **Complete modification access** over ALL revenue models, commissions, categories |
+| Service Freebies | Super Admin can mark certain services as **free for Premium shops** |
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Visitor Flow"
+        A["🌐 /shops — Browse by Category + Distance"] --> B["🏪 /shops/:id — Shop Detail"]
+        B --> C{"Shop Type?"}
+        C -->|Product| D["🛒 Browse Products → Add to Cart → Checkout"]
+        C -->|Appointment| E["📋 Select Service → Select Staff → Pick Slot → Book"]
+        C -->|Hybrid| F["Both Product Cart + Appointment Booking"]
+        D --> G["💳 Payment — COD / Wallet / Razorpay"]
+        E --> G
+        F --> G
+        G --> H{"Delivery or Pickup?"}
+        H -->|Delivery| I["🚴 Auto-assign Delivery Agent"]
+        H -->|Pickup| J["📍 Show Pickup Instructions"]
+        I --> K["📦 Real-time Order Tracking"]
+    end
+
+    subgraph "Shop Owner Flow"
+        L["📝 /register-shop — Category-specific Registration"] --> M["⏳ Pending Approval"]
+        M --> N["✅ Approved by Admin"]
+        N --> O["🎛️ /shop-dashboard — Role-based Dashboard"]
+        O --> P["Product: Inventory, Orders, Offers"]
+        O --> Q["Appointment: Staff, Services, Calendar"]
+        O --> R["Common: Commission Ledger, Analytics, Reviews, Profile, QR Code"]
+    end
+
+    subgraph "Super Admin Flow"
+        S["🛡️ /admin-dashboard"] --> T["📊 Commission Hub — Per-category % + Flat Fee"]
+        S --> U["🏷️ Category Manager — CRUD all 39 categories"]
+        S --> V["💰 Revenue Models — Complete control"]
+        S --> W["🔍 Per-Shop Override — Custom commission"]
+        S --> X["📋 Settlement Queue — Mark commissions paid"]
+        S --> Y["📈 Analytics — By category, shop, region"]
+    end
+```
+
+---
+
+## Proposed Changes
+
+---
+
+### Phase 1: Database Schema — Foundation
+
+#### [NEW] [009_shop_mega_upgrade.sqlite.sql](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/migrations/009_shop_mega_upgrade.sqlite.sql)
+
+**Table 1: `shop_categories` — Master category registry (Super Admin CRUD)**
+```sql
+CREATE TABLE IF NOT EXISTS shop_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL UNIQUE,
+    icon TEXT,                              -- emoji or icon name
+    business_model TEXT NOT NULL,           -- 'product', 'appointment', 'hybrid'
+    commission_percent REAL DEFAULT 5.0,    -- Super Admin editable
+    convenience_fee REAL DEFAULT 0.0,       -- Flat fee per transaction
+    is_active INTEGER DEFAULT 1,
+    display_order INTEGER DEFAULT 0,
+    -- Category-specific registration fields metadata
+    registration_fields TEXT DEFAULT '[]',  -- JSON: additional fields needed during shop registration
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Table 2: `shop_services` — Service catalog for appointment/hybrid shops**
+```sql
+CREATE TABLE IF NOT EXISTS shop_services (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    duration_minutes INTEGER DEFAULT 30,
+    price REAL NOT NULL,
+    is_free_for_premium INTEGER DEFAULT 0,  -- Super Admin can mark services as free for premium shops
+    image_url TEXT,
+    category TEXT,                           -- sub-category: "Haircut", "Color", "Spa"
+    is_available INTEGER DEFAULT 1,
+    display_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Table 3: `shop_commissions` — Commission ledger (the revenue engine)**
+```sql
+CREATE TABLE IF NOT EXISTS shop_commissions (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    order_id TEXT,
+    order_type TEXT NOT NULL,              -- 'product_order', 'appointment', 'subscription'
+    gross_amount REAL NOT NULL,
+    commission_percent REAL NOT NULL,
+    commission_amount REAL NOT NULL,
+    convenience_fee REAL DEFAULT 0.0,
+    total_platform_earning REAL NOT NULL,  -- commission_amount + convenience_fee
+    net_to_shop REAL NOT NULL,
+    status TEXT DEFAULT 'pending',         -- 'pending', 'settled', 'refunded'
+    settled_at TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Table 4: `shop_invoices` — Auto-generated invoices for every transaction**
+```sql
+CREATE TABLE IF NOT EXISTS shop_invoices (
+    id TEXT PRIMARY KEY,
+    invoice_number TEXT UNIQUE NOT NULL,   -- "INV-2026-00001"
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    order_id TEXT,
+    order_type TEXT NOT NULL,
+    items TEXT NOT NULL,                    -- JSON array of line items
+    subtotal REAL NOT NULL,
+    convenience_fee REAL DEFAULT 0.0,
+    delivery_fee REAL DEFAULT 0.0,
+    discount_amount REAL DEFAULT 0.0,
+    total_amount REAL NOT NULL,
+    payment_method TEXT,
+    payment_status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Table 5: `shop_qr_codes` — QR codes for walk-in customers**
+```sql
+CREATE TABLE IF NOT EXISTS shop_qr_codes (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE UNIQUE,
+    qr_data TEXT NOT NULL,                 -- URL: "https://localsampark.in/shops/{shop_id}?walkin=true"
+    qr_image_url TEXT,
+    scan_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Table 6: `staff_availability` — Granular staff scheduling**
+```sql
+CREATE TABLE IF NOT EXISTS staff_availability (
+    id TEXT PRIMARY KEY,
+    staff_id TEXT REFERENCES shop_staff(id) ON DELETE CASCADE,
+    day_of_week INTEGER NOT NULL,          -- 0=Sunday, 1=Monday, ... 6=Saturday
+    start_time TEXT NOT NULL,               -- "09:00"
+    end_time TEXT NOT NULL,                 -- "18:00"
+    slot_duration_minutes INTEGER DEFAULT 30,
+    is_available INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(staff_id, day_of_week)
+);
+```
+
+**Table 7: `staff_off_days` — Leave/holiday management**
+```sql
+CREATE TABLE IF NOT EXISTS staff_off_days (
+    id TEXT PRIMARY KEY,
+    staff_id TEXT REFERENCES shop_staff(id) ON DELETE CASCADE,
+    off_date TEXT NOT NULL,
+    reason TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(staff_id, off_date)
+);
+```
+
+**Table 8: `surge_pricing_rules` — Dynamic pricing for peak slots**
+```sql
+CREATE TABLE IF NOT EXISTS surge_pricing_rules (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    day_of_week INTEGER,                   -- null = all days
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    surge_multiplier REAL DEFAULT 1.5,     -- 1.5x price
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Alter existing `local_shops` table:**
+```sql
+ALTER TABLE local_shops ADD COLUMN latitude REAL;
+ALTER TABLE local_shops ADD COLUMN longitude REAL;
+ALTER TABLE local_shops ADD COLUMN category_id TEXT REFERENCES shop_categories(id);
+ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL;
+ALTER TABLE local_shops ADD COLUMN convenience_fee_override REAL;
+ALTER TABLE local_shops ADD COLUMN is_premium INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN premium_expires_at TEXT;
+ALTER TABLE local_shops ADD COLUMN delivery_available INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN pickup_available INTEGER DEFAULT 1;
+ALTER TABLE local_shops ADD COLUMN estimated_delivery_time TEXT;  -- "30-45 mins"
+ALTER TABLE local_shops ADD COLUMN gst_number TEXT;
+ALTER TABLE local_shops ADD COLUMN bank_account TEXT;             -- JSON: {account, ifsc, name}
+ALTER TABLE local_shops ADD COLUMN registration_metadata TEXT;    -- JSON: category-specific fields
+```
+
+**Alter existing `shop_staff` table:**
+```sql
+ALTER TABLE shop_staff ADD COLUMN specialization TEXT;
+ALTER TABLE shop_staff ADD COLUMN phone_number TEXT;
+ALTER TABLE shop_staff ADD COLUMN experience_years INTEGER DEFAULT 0;
+ALTER TABLE shop_staff ADD COLUMN avg_rating REAL DEFAULT 0.0;
+ALTER TABLE shop_staff ADD COLUMN total_bookings INTEGER DEFAULT 0;
+ALTER TABLE shop_staff ADD COLUMN total_revenue REAL DEFAULT 0.0;
+```
+
+**Alter existing `shop_appointments` table:**
+```sql
+ALTER TABLE shop_appointments ADD COLUMN service_id TEXT REFERENCES shop_services(id);
+ALTER TABLE shop_appointments ADD COLUMN service_price REAL;
+ALTER TABLE shop_appointments ADD COLUMN surge_multiplier REAL DEFAULT 1.0;
+ALTER TABLE shop_appointments ADD COLUMN final_price REAL;
+ALTER TABLE shop_appointments ADD COLUMN customer_notes TEXT;
+ALTER TABLE shop_appointments ADD COLUMN customer_name TEXT;
+ALTER TABLE shop_appointments ADD COLUMN customer_phone TEXT;
+```
+
+**Alter existing `shop_orders` table:**
+```sql
+ALTER TABLE shop_orders ADD COLUMN delivery_type TEXT DEFAULT 'pickup';  -- 'pickup' or 'delivery'
+ALTER TABLE shop_orders ADD COLUMN delivery_address TEXT;
+ALTER TABLE shop_orders ADD COLUMN delivery_coordinate TEXT;
+ALTER TABLE shop_orders ADD COLUMN delivery_fee REAL DEFAULT 0.0;
+ALTER TABLE shop_orders ADD COLUMN delivery_agent_id TEXT;
+ALTER TABLE shop_orders ADD COLUMN estimated_delivery_time TEXT;
+ALTER TABLE shop_orders ADD COLUMN customer_name TEXT;
+ALTER TABLE shop_orders ADD COLUMN customer_phone TEXT;
+ALTER TABLE shop_orders ADD COLUMN tracking_otp TEXT;
+```
+
+**Seed 39 categories** with `business_model`, `commission_percent`, `convenience_fee`, and `registration_fields`:
+
+| # | Category | Model | Commission % | Convenience ₹ | Special Registration Fields |
+|---|---|---|---|---|---|
+| 1 | Grocery & Supermarkets | product | 5 | 10 | FSSAI License |
+| 2 | Restaurants & Cafes | product | 8 | 15 | FSSAI License, Cuisine Type |
+| 3 | Pharmacy & Healthcare | product | 4 | 5 | Drug License No. |
+| 4 | Fresh Produce & Meat | product | 5 | 10 | FSSAI License |
+| 5 | Dairy, Sweets & Bakery | product | 6 | 10 | FSSAI License |
+| 6 | Stationery, Gifts & Books | product | 7 | 10 | — |
+| 7 | Florists & Nurseries | product | 8 | 15 | — |
+| 8 | Pet Care & Supplies | product | 7 | 10 | — |
+| 9 | Pooja Samagri & Religious | product | 5 | 5 | — |
+| 10 | Eyewear & Opticians | hybrid | 6 | 10 | Optometrist License |
+| 11 | Home Services & Plumbers | appointment | 12 | 20 | Service Area Pincodes |
+| 12 | Salon, Beauty & Spa | appointment | 10 | 15 | — |
+| 13 | Electricians & Electronics | hybrid | 8 | 15 | — |
+| 14 | Tutors & Education | appointment | 10 | 10 | Qualification/Degree |
+| 15 | Hardware & Sanitary | product | 5 | 10 | — |
+| 16 | Clothing & Fashion | product | 7 | 10 | — |
+| 17 | Gym & Fitness | appointment | 8 | 15 | Trainer Certification |
+| 18 | Real Estate & Brokers | appointment | 3 | 50 | RERA Registration |
+| 19 | Automotive & Mechanic | hybrid | 8 | 20 | Workshop License |
+| 20 | Dentists & Orthodontists | appointment | 10 | 20 | Dental Registration No. |
+| 21 | Pathology Labs & Diagnostics | appointment | 15 | 20 | Lab License No. |
+| 22 | Physiotherapy & Chiropractic | appointment | 12 | 15 | Practitioner License |
+| 23 | Ayurvedic & Homeopathic | appointment | 10 | 10 | AYUSH Registration |
+| 24 | Pest Control Services | appointment | 12 | 25 | Pest Control License |
+| 25 | Deep Cleaning Services | appointment | 15 | 25 | — |
+| 26 | AC & Appliance Repair | appointment | 10 | 20 | — |
+| 27 | RO & Water Purifier Service | appointment | 10 | 15 | — |
+| 28 | Laundry & Dry Cleaning | hybrid | 8 | 10 | — |
+| 29 | Tailoring & Boutiques | appointment | 8 | 10 | — |
+| 30 | Car & Bike Wash | appointment | 10 | 15 | — |
+| 31 | Driving Schools | appointment | 5 | 20 | RTO Affiliation |
+| 32 | Catering & Party Services | appointment | 8 | 30 | FSSAI License |
+| 33 | Event Planners & Decorators | appointment | 10 | 30 | — |
+| 34 | Photographers & Videographers | appointment | 10 | 20 | Portfolio Link |
+| 35 | CAs & Tax Consultants | appointment | 5 | 25 | CA Membership No. |
+| 36 | Lawyers & Advocates | appointment | 5 | 25 | Bar Council Registration |
+| 37 | Insurance Agents | appointment | 5 | 15 | IRDA License |
+| 38 | Yoga & Wellness | appointment | 8 | 10 | Yoga Alliance Cert. |
+| 39 | Dieticians & Nutritionists | appointment | 10 | 15 | Degree/Certification |
+
+---
+
+### Phase 2: Backend API — Complete Shop Ecosystem
+
+#### [MODIFY] [shop.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/shop.routes.js)
+
+**New/Modified Endpoints:**
+
+| Method | Path | Who | Purpose |
+|---|---|---|---|
+| `GET` | `/categories` | Public | Dynamic category list from `shop_categories` |
+| `GET` | `/nearby` | Public | `?lat=X&lng=Y&radius=5&category=slug` — Haversine distance query with IP fallback |
+| `POST` | `/register` | Auth | **Enhanced** — accepts `registration_metadata` JSON based on category |
+| `GET` | `/:id/services` | Public | Service catalog for appointment/hybrid shops |
+| `POST` | `/:id/services` | Owner | Add a service with price, duration, image |
+| `PUT` | `/:id/services/:sid` | Owner | Edit service |
+| `DELETE` | `/:id/services/:sid` | Owner | Remove service |
+| `GET` | `/:id/staff` | Public | **Enhanced** — includes availability slots |
+| `POST` | `/:id/staff` | Owner | Add staff with availability |
+| `PUT` | `/:id/staff/:sid` | Owner | Update staff + working hours |
+| `DELETE` | `/:id/staff/:sid` | Owner | Deactivate staff |
+| `GET` | `/:id/staff/:sid/slots` | Public | Available time slots for a staff on a given date (auto-filters booked + off-days) |
+| `POST` | `/:id/staff/:sid/availability` | Owner | Set weekly schedule |
+| `POST` | `/:id/staff/:sid/off-days` | Owner | Add off-day |
+| `GET` | `/:id/appointments` | Owner | Dashboard: list appointments with filters (date, status, staff) |
+| `PUT` | `/:id/appointments/:aid/status` | Owner | Accept / Reject / Complete / No-show |
+| `GET` | `/:id/orders` | Owner | Dashboard: list orders with filters |
+| `PUT` | `/:id/orders/:oid/status` | Owner | Accept → Preparing → Ready → Dispatched → Delivered → Cancel |
+| `PUT` | `/:id/profile` | Owner | Update all shop details |
+| `GET` | `/:id/commissions` | Owner | Commission ledger for this shop |
+| `GET` | `/:id/analytics` | Owner | Sales analytics, popular products, peak hours |
+| `GET` | `/:id/qr-code` | Owner | Generate & retrieve shop QR code |
+| `GET` | `/:id/reviews` | Public | Customer reviews |
+| `POST` | `/:id/reviews` | Auth | Submit a review |
+| `GET` | `/:id/staff-performance` | Owner | Staff leaderboard (bookings, revenue, rating) |
+| `POST` | `/:id/surge-rules` | Owner | Set surge pricing rules |
+| `GET` | `/:id/invoices` | Owner | All invoices generated for this shop |
+
+**Key — Commission Auto-Calculation on Order/Appointment:**
+```js
+// When placing an order or booking an appointment:
+const category = await queryOne('SELECT * FROM shop_categories WHERE id = $1', [shop.category_id]);
+const commissionPercent = shop.commission_override_percent || category.commission_percent;
+const convenienceFee = shop.convenience_fee_override ?? category.convenience_fee;
+const commissionAmount = grossAmount * (commissionPercent / 100);
+const totalPlatformEarning = commissionAmount + convenienceFee;
+const netToShop = grossAmount - totalPlatformEarning;
+
+// Insert into shop_commissions
+// Insert into shop_invoices with invoice_number
+// Record in revenue_transactions for Super Admin
+```
+
+**Key — Haversine Distance with IP Fallback:**
+```js
+router.get('/nearby', async (req, res) => {
+  let { lat, lng, radius = 5, category } = req.query;
+  
+  // If no lat/lng provided, try IP-based geolocation
+  if (!lat || !lng) {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const geo = await ipToGeo(ip); // Uses free ip-api.com or ipinfo.io
+    lat = geo.lat; lng = geo.lng;
+  }
+  
+  const shops = await query(`
+    SELECT *, 
+      (6371 * acos(cos(radians($1)) * cos(radians(latitude)) 
+      * cos(radians(longitude) - radians($2)) 
+      + sin(radians($1)) * sin(radians(latitude)))) AS distance_km
+    FROM local_shops 
+    WHERE is_active = 1 AND approval_status = 'approved'
+    ${category ? "AND category = $4" : ""}
+    ORDER BY distance_km ASC
+  `, [lat, lng, radius, ...(category ? [category] : [])]);
+  
+  res.json({ shops, userLocation: { lat, lng } });
+});
+```
+
+**Key — Available Slot Calculation:**
+```js
+router.get('/:id/staff/:sid/slots', async (req, res) => {
+  const { date } = req.query; // "2026-07-05"
+  const dayOfWeek = new Date(date).getDay();
+  
+  // 1. Get staff's availability for that day
+  const schedule = await queryOne(
+    'SELECT * FROM staff_availability WHERE staff_id = $1 AND day_of_week = $2 AND is_available = 1',
+    [req.params.sid, dayOfWeek]
+  );
+  if (!schedule) return res.json({ slots: [], message: 'Staff not available on this day' });
+  
+  // 2. Check if it's an off-day
+  const offDay = await queryOne(
+    'SELECT * FROM staff_off_days WHERE staff_id = $1 AND off_date = $2',
+    [req.params.sid, date]
+  );
+  if (offDay) return res.json({ slots: [], message: 'Staff is on leave' });
+  
+  // 3. Generate all possible slots
+  const allSlots = generateTimeSlots(schedule.start_time, schedule.end_time, schedule.slot_duration_minutes);
+  
+  // 4. Filter out already-booked slots
+  const booked = await query(
+    "SELECT time_slot FROM shop_appointments WHERE staff_id = $1 AND appointment_date = $2 AND status != 'cancelled'",
+    [req.params.sid, date]
+  );
+  const bookedSlots = new Set(booked.map(b => b.time_slot));
+  
+  // 5. Apply surge pricing
+  const surgeRules = await query(
+    'SELECT * FROM surge_pricing_rules WHERE shop_id = $1 AND (day_of_week = $2 OR day_of_week IS NULL) AND is_active = 1',
+    [req.params.id, dayOfWeek]
+  );
+  
+  const availableSlots = allSlots
+    .filter(slot => !bookedSlots.has(slot))
+    .map(slot => ({
+      time: slot,
+      surgeMultiplier: getSurgeMultiplier(slot, surgeRules)
+    }));
+  
+  res.json({ slots: availableSlots });
+});
+```
+
+---
+
+#### [NEW] [commission.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/commission.routes.js)
+
+**Super Admin Commission Management — Complete Control:**
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/dashboard` | Total commissions: today, this week, this month, all-time. Breakdown by category pie chart |
+| `GET` | `/by-category` | Per-category commission summary with totals |
+| `GET` | `/by-shop` | Per-shop commission breakdown. Search/filter |
+| `GET` | `/by-shop/:shopId/history` | Full commission history for a specific shop |
+| `GET` | `/categories` | List all categories with their commission % and convenience fee |
+| `PUT` | `/categories/:categoryId` | **Super Admin updates**: commission %, convenience fee, active status, registration fields |
+| `POST` | `/categories` | **Super Admin creates** a new category |
+| `DELETE` | `/categories/:categoryId` | **Super Admin deactivates** a category |
+| `PUT` | `/shops/:shopId/override` | Set custom commission % AND convenience fee for a specific shop |
+| `DELETE` | `/shops/:shopId/override` | Remove override (revert to category default) |
+| `POST` | `/settle` | Batch settle: mark selected commissions as "settled" |
+| `GET` | `/settlements` | History of all settlements |
+| `PUT` | `/services/:serviceId/free-premium` | Mark a service as free for premium shops |
+| `GET` | `/premium-shops` | List all premium shops with subscription status |
+
+---
+
+#### [MODIFY] [admin.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/admin.routes.js)
+
+**Add to existing admin routes:**
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/shop-categories` | Full CRUD for categories |
+| `POST` | `/shop-categories` | Create new category |
+| `PUT` | `/shop-categories/:id` | Modify anything: name, commission, fields |
+| `DELETE` | `/shop-categories/:id` | Soft-delete a category |
+| `PUT` | `/shops/:id/premium` | Grant/revoke premium status for a shop |
+| `GET` | `/shops/:id/full-details` | Full shop details + owner info + commission history |
+| `GET` | `/delivery/overview` | Delivery system stats: active agents, pending orders |
+
+---
+
+#### [MODIFY] [server.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/server.js)
+
+Register new route + Socket.io events for real-time notifications:
+```js
+const commissionRoutes = require('./routes/commission.routes');
+app.use(`${API_PREFIX}/commissions`, commissionRoutes);
+
+// In initializeSockets — add:
+// 'shop:new-order' — notify shop owner when new order arrives
+// 'shop:new-appointment' — notify shop owner on new booking
+// 'order:status-update' — notify customer on order status change
+// 'delivery:assigned' — notify customer when delivery agent picks up
+```
+
+---
+
+### Phase 3: Web Frontend — Visitor-Facing Pages
+
+#### [MODIFY] [shops/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shops/page.js) — Nearby Shops Directory
+
+**Complete redesign:**
+1. **Category icon bar** at top — horizontal scrollable strip of category icons (like Swiggy/Zomato). Clicking filters the grid.
+2. **Dynamic categories** fetched from `GET /api/v1/shops/categories` — replaces hardcoded list (lines 12-26).
+3. **Geolocation request** on page load → passes lat/lng to `GET /api/v1/shops/nearby`.
+4. **IP fallback** if geolocation denied.
+5. **Distance badge** on each shop card: `📍 1.2 km away`.
+6. **Sort by**: Distance (default) | Rating | Newest | A-Z.
+7. **Filter sidebar** grouped: "🛒 Product Shops" / "📅 Service Shops" / "✨ Hybrid Shops" with collapsible sections.
+8. **Premium badge** ⭐ on premium/verified shops, shown at top of results.
+9. **"Reorder"** button on shops the user has ordered from before.
+10. **Delivery/Pickup badge** per shop card.
+
+#### [MODIFY] [shops/[id]/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shops/%5Bid%5D/page.js) — Shop Detail & Buy/Book
+
+**For Product Shops:**
+1. **Product catalog** with categories, images, search within shop.
+2. **Add to Cart** with quantity +/- controls.
+3. **Delivery vs Pickup toggle** — if delivery, show address input + delivery fee estimate.
+4. **Checkout** with delivery details, payment method, invoice preview.
+
+**For Appointment Shops:**
+1. **Step 1: Select Service** — browse service catalog with prices & durations. Surge pricing indicator 🔥 on peak slots.
+2. **Step 2: Select Staff** — cards with name, specialization, rating, experience. Show "Available today ✅" or "Next available: Wed".
+3. **Step 3: Pick Date & Time** — calendar widget. Only shows available slots (auto-filtered by staff schedule + off-days + existing bookings).
+4. **Step 4: Confirm & Pay** — booking summary, price (with surge if applicable), payment method.
+
+**For Hybrid Shops:**
+1. **Two tabs**: "🛒 Products" and "📅 Services" — user can use both.
+2. Combined checkout: products + appointment booked together.
+
+**Common Features:**
+1. **Distance** shown in header: "📍 1.2 km from you".
+2. **Reviews section** with star ratings + review text. "Write a Review" form.
+3. **Offers banner** — active discount offers.
+4. **Shop hours** — open/closed indicator.
+5. **"Book Again"** / **"Reorder"** for returning customers.
+6. **QR code** scan detection — if `?walkin=true` in URL, show "Welcome! You're at the shop" banner.
+7. **Share** button — copy shop link or share via WhatsApp.
+
+#### [MODIFY] [register-shop/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/register-shop/page.js) — Category-Aware Registration
+
+**Multi-step registration form:**
+
+| Step | Fields |
+|---|---|
+| **Step 1: Basic Info** | Shop Name, Owner Name, Phone, Email, Shop Description |
+| **Step 2: Business Model** | Select Category (from dynamic list) → auto-detects Product/Appointment/Hybrid. Show relevant icon + commission info |
+| **Step 3: Category-Specific** | **Dynamic fields** based on `registration_fields` from category metadata. E.g., Pharmacy → "Drug License No.", Restaurant → "FSSAI License, Cuisine Type", Dentist → "Dental Registration No." |
+| **Step 4: Location** | **Map picker** using Leaflet.js (free, no API key). Click on map to set pin. Auto-detect using browser geolocation. Manual address input + pincode |
+| **Step 5: Operating Hours** | Weekly schedule: Mon-Sun open/close times. Mark off-days |
+| **Step 6: Initial Setup** | For Product: Add first 3 products (name, price, image). For Appointment: Add first staff member + first 3 services. For Hybrid: Both |
+| **Step 7: Bank & GST** | GST number (optional), Bank account details for payouts |
+| **Step 8: Submit** | Review all info → Submit for approval |
+
+#### [NEW] [order-tracking/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/order-tracking/page.js)
+
+**Real-time order tracking page:**
+- Stepper UI: Order Placed → Shop Accepted → Preparing → Ready → Picked Up → Out for Delivery → Delivered
+- OTP verification at delivery
+- Map showing delivery agent location (mock for now, real with GPS later)
+- Estimated time remaining
+- Contact delivery agent button
+- Invoice download
+
+---
+
+### Phase 4: Web Frontend — Shop Owner Dashboard (Role-Based)
+
+#### [MODIFY] [shop-dashboard/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shop-dashboard/page.js)
+
+**Complete overhaul — dynamic sidebar based on shop type:**
+
+**A. Common Tabs (all shop types):**
+
+| Tab | Features |
+|---|---|
+| **📊 Dashboard Home** | Today's revenue, orders/appointments count, charts, alerts (low stock, new reviews), recent activity feed |
+| **💰 Commission & Earnings** | Commission ledger (table): Date, Order ID, Gross Amount, Commission %, Commission Amount, Convenience Fee, Net to Shop. Summary cards: Total Earned, Total Commission Deducted, Pending Settlement. Request Payout button |
+| **⭐ Reviews & Ratings** | All customer reviews with star ratings. Reply to reviews. Average rating card. Rating distribution chart (5★/4★/3★...) |
+| **🏷️ Offers & Promotions** | Create/edit discount offers with title, description, %, validity. Toggle active/inactive. View active offers count |
+| **🏪 Shop Profile** | Edit: name, description, address (with map picker), phone, opening hours, photo gallery (upload multiple), delivery/pickup toggle, estimated delivery time. View: approval status, premium status, QR code download |
+| **📱 QR Code** | View & download shop QR code. Print-ready format. Scan count stats |
+| **📈 Analytics** | Revenue graph (daily/weekly/monthly), Popular products/services, Peak hours heatmap, Customer demographics, Repeat customer rate |
+
+**B. Product-Specific Tabs:**
+
+| Tab | Features |
+|---|---|
+| **🛒 Orders Queue** | Kanban board: New → Accepted → Preparing → Ready → Out for Delivery → Delivered. Each card shows: Order ID, customer name, items, amount, time, delivery/pickup. Actions: Accept, Reject, Mark Preparing, Mark Ready. **🔔 Sound alert** on new order (via Socket.io) |
+| **📦 Products & Inventory** | Full CRUD table. Columns: Image, Name, Category, Price, Stock, Status. Actions: Edit, Toggle Active, Delete. Bulk operations: Update prices, Mark out of stock. Image upload. Category grouping. Low stock warnings (configurable threshold) |
+| **📋 Subscriptions** | View active subscription plans for this shop. Manage recurring orders |
+
+**C. Appointment-Specific Tabs:**
+
+| Tab | Features |
+|---|---|
+| **📅 Appointments Calendar** | **Day view & Week view** calendar. Color-coded by status: 🟢 Confirmed, 🟡 Pending, 🔴 Cancelled, ⚪ Completed. Click appointment → modal with details + actions (Accept/Reject/Complete/No-show/Reschedule). **🔔 Sound alert** on new booking. Today's appointment count + upcoming list |
+| **👥 Staff Management** | Add/Edit/Remove staff. Each staff card shows: Photo, Name, Specialization, Experience, Rating, Total Bookings, Revenue Generated. **Working Hours Editor**: Day-by-day toggle (Mon-Sun), set start/end time per day, set slot duration. **Off-Days Manager**: Add off-day with reason. Calendar view of upcoming off-days. Active/Inactive toggle per staff |
+| **📋 Service Catalog** | Full CRUD for services. Fields: Name, Description, Duration (mins), Price, Image, Category, Display Order. Toggle availability. Reorder services. **Free for Premium** badge (set by Super Admin) |
+| **📊 Staff Performance** | Leaderboard: Staff ranked by bookings, revenue, rating. Individual staff cards: Booking count, revenue generated, avg rating, completion rate, no-show rate. Date range filter |
+| **💲 Surge Pricing** | Set surge rules: Day of week + time range + multiplier (e.g., Saturday 5-8 PM → 1.5x). Toggle active/inactive. Preview: "₹200 → ₹300 during surge" |
+
+**D. Hybrid Shop — Shows ALL tabs from both B + C.**
+
+**Real-time Notifications (Socket.io):**
+```js
+// In shop-dashboard, connect to socket and listen:
+socket.on('shop:new-order', (data) => {
+  playNotificationSound();
+  showToast(`🛒 New Order #${data.orderId} — ₹${data.amount}`);
+  refreshOrders();
+});
+
+socket.on('shop:new-appointment', (data) => {
+  playNotificationSound();
+  showToast(`📅 New Appointment — ${data.serviceName} with ${data.staffName}`);
+  refreshAppointments();
+});
+```
+
+---
+
+### Phase 5: Super Admin — Commission Hub & Category Management
+
+#### [MODIFY] [admin-dashboard/layout.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/layout.js)
+
+**Add new sidebar items:**
+```js
+{ label: 'Commission Hub', icon: IndianRupee, path: '/admin-dashboard/commissions' },
+{ label: 'Shop Categories', icon: Grid3X3, path: '/admin-dashboard/shop-categories' },
+{ label: 'Delivery Monitor', icon: Truck, path: '/admin-dashboard/delivery-monitor' },
+```
+
+#### [NEW] [admin-dashboard/commissions/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/commissions/page.js)
+
+**Super Admin Commission Dashboard — Complete Control:**
+
+| Section | Features |
+|---|---|
+| **Summary Cards** | Total Commission Earned (today/week/month/all-time), Total Convenience Fees, Total Settlements Done, Pending Settlements |
+| **Revenue by Category** | Pie chart: which categories generate the most commission. Table with sortable columns |
+| **Per-Shop Commission** | Searchable table: Shop Name, Category, Total Orders, Gross Revenue, Commission Collected, Convenience Fees, Net to Shop. Click → drill-down to individual transactions |
+| **Commission Rate Editor** | Inline editable table of all 39 categories: Category Name, Commission %, Convenience Fee ₹. Save button per row. Bulk update |
+| **Per-Shop Override** | Search for shop → Set custom commission % and convenience fee → Save. Show "Override Active" badge. Remove override button |
+| **Settlement Queue** | Table of unsettled commissions. Select all / individual → "Mark as Settled" button. Settlement receipt generation |
+| **Premium Shop Manager** | List of premium shops. Grant/revoke premium. Set expiry date. Revenue from premium subscriptions |
+| **Free Service Manager** | List of all services. Toggle "Free for Premium" per service |
+
+#### [NEW] [admin-dashboard/shop-categories/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/shop-categories/page.js)
+
+| Section | Features |
+|---|---|
+| **Category Table** | All 39 categories in a table: Icon, Name, Business Model, Commission %, Convenience Fee, Active Status, Shop Count. All cells editable inline |
+| **Add New Category** | Modal: Name, Slug, Icon, Business Model, Commission %, Convenience Fee, Registration Fields (dynamic field builder) |
+| **Registration Fields Editor** | Per category: define what extra fields shop owners must fill during registration. Field types: text, number, file upload, dropdown |
+| **Reorder Categories** | Drag-and-drop to change display order |
+
+#### [MODIFY] [admin-dashboard/revenue-models/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/revenue-models/page.js)
+
+**Enhance existing page** to include shop-category-level commission controls alongside the existing subscription, loyalty, and ad economics sections.
+
+---
+
+### Phase 6: Delivery Integration — Shop to Customer
+
+#### [MODIFY] [delivery.controller.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/controllers/delivery.controller.js)
+
+**Enhance to support shop order deliveries:**
+
+1. When a shop order is placed with `delivery_type = 'delivery'`:
+   - Auto-create a `delivery_jobs` entry with shop coordinates as pickup and customer address as dropoff
+   - Set `delivery_fee` based on distance (Super Admin configurable base fee + per-km rate)
+   - Notify nearby delivery agents via Socket.io
+2. Delivery agent accepts → `shop_orders.delivery_agent_id` updated
+3. Status flow: Agent at Shop → Picked Up → Out for Delivery → Arrived → Delivered (OTP verified)
+4. On delivery completion → mark `shop_orders.status = 'delivered'`
+
+**Delivery Fee Calculation:**
+```js
+const baseFee = adminConfig.delivery_base_fee || 40;
+const perKmRate = adminConfig.delivery_per_km_rate || 8;
+const distanceKm = haversineDistance(shopLat, shopLng, customerLat, customerLng);
+const deliveryFee = baseFee + (perKmRate * distanceKm);
+// Super Admin can override these rates
+```
+
+#### [NEW] [admin-dashboard/delivery-monitor/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/delivery-monitor/page.js)
+
+| Section | Features |
+|---|---|
+| **Live Overview** | Active deliveries count, Available agents, Avg delivery time today |
+| **Active Deliveries** | Table: Order ID, Shop, Customer, Agent, Status, ETA |
+| **Delivery Settings** | Base fee (₹), Per-km rate (₹), Agent payout rate (%), Max delivery radius (km) |
+
+---
+
+### Phase 7: Value-Add Features
+
+#### Feature 1: 🔔 Real-Time Notifications
+- **Backend:** Socket.io events for `shop:new-order`, `shop:new-appointment`, `order:status-update`, `delivery:assigned`
+- **Frontend:** Toast notifications + sound alert in shop-dashboard. Notification bell icon with unread count
+
+#### Feature 2: 📊 Staff Performance Dashboard
+- **Backend:** Aggregation queries on `shop_appointments` joined with `shop_staff` and `shop_reviews`
+- **Frontend:** Leaderboard cards, bar charts comparing staff metrics
+
+#### Feature 3: 🏷️ Surge Pricing
+- **Backend:** `surge_pricing_rules` table + `getSurgeMultiplier()` function applied during slot generation
+- **Frontend:** 🔥 icon on surge slots, price shown as "~~₹200~~ ₹300" in booking flow. Shop owner can set/edit rules from dashboard
+
+#### Feature 4: ⭐ Verified & Premium Badges
+- **Backend:** `is_premium` + `premium_expires_at` on `local_shops`. Super Admin grants/revokes
+- **Frontend:** Gold badge on shop cards + priority sort. Premium shops shown first in search. "Free services" for premium shops (Super Admin marks which services)
+
+#### Feature 5: 📱 QR Code for Walk-ins
+- **Backend:** Auto-generate QR on shop approval (URL: `/shops/{id}?walkin=true`). Store in `shop_qr_codes`
+- **Frontend:** QR download/print in shop dashboard. Walk-in banner on shop page when `walkin=true` in URL
+
+#### Feature 6: 🔁 Repeat Order / Re-book
+- **Backend:** `GET /shops/:id/user-history` — returns past orders/appointments for the logged-in user
+- **Frontend:** "🔁 Reorder" button on product shops (pre-fills cart with past order). "📅 Book Again with [Staff Name]" on appointment shops (pre-selects service + staff)
+
+---
+
+### Phase 8: Additional Suggested Features (New Add-ons)
+
+Here are **13 additional features** I recommend adding to make this a truly complete ecosystem:
+
+#### 7. 🧾 Auto Invoice & Digital Receipt
+Every order/appointment generates a professional PDF invoice with: Invoice number, Shop details, Line items, GST (if applicable), Commission breakdown (hidden from customer). Customer receives invoice via email/WhatsApp. Shop owner can download all invoices.
+
+#### 8. 📱 WhatsApp Notifications
+Send order/appointment confirmations, delivery updates, and payment receipts via WhatsApp Business API (or a mock template for now). Customer and shop owner both receive relevant messages.
+
+#### 9. 🗓️ Appointment Reminders
+Auto-send reminders to customers: 24 hours before + 1 hour before an appointment. Via in-app notification + WhatsApp. Reduces no-shows.
+
+#### 10. 🔄 Return & Refund Management
+For product orders: customer can request a return/refund within X hours (Super Admin configurable). Shop owner reviews → approves/rejects. Refund to wallet or original payment method. Commission is reversed on refund.
+
+#### 11. 📊 Customer CRM for Shop Owners
+In the shop dashboard, show a "My Customers" tab: List of all customers who've ordered/booked, with: Total orders, Total spend, Last visit date, Preferred products/services. Helps shop owners build relationships.
+
+#### 12. 🗺️ Map View for Nearby Shops
+Add a "Map View" toggle on the `/shops` page (alongside the grid view). Shows all shops as pins on an interactive map. Click pin → shop card popup. User's location shown as a blue dot.
+
+#### 13. 🕐 Estimated Delivery Time Calculator
+Based on distance (Haversine) + average preparation time (per category), show: "Estimated delivery: 35-45 mins" on the shop card and checkout page. Updates in real-time once a delivery agent is assigned.
+
+#### 14. 📦 Order Scheduling (Future Delivery)
+Allow customers to schedule orders for a future date/time. "Deliver tomorrow at 10 AM" or "Schedule for next Saturday". Shop owner sees scheduled orders in a separate queue.
+
+#### 15. 🏢 Multi-Branch Support
+Some shops (e.g., chain bakeries, salons) have multiple branches. Allow a single shop owner to manage multiple branches from one dashboard. Each branch has its own location, staff, and inventory.
+
+#### 16. 💳 Shop Owner Payout Dashboard
+In the shop owner dashboard: show a "Payouts" tab with: Current balance, Pending commission deductions, Net available for payout, Request Payout button (to bank account), Payout history with bank reference.
+
+#### 17. 🎫 Coupon Code System
+Shop owners can create coupon codes (e.g., "FIRST50" for 50% off first order). Super Admin can also create platform-wide coupons. Applied at checkout with validation.
+
+#### 18. 📣 Shop Announcement Board
+Shop owners can post announcements visible on their shop page: "Closed on July 4th", "New menu items added!", "Special Diwali offer". Shown as a scrollable banner.
+
+#### 19. 🧪 A/B Testing for Promotions (Super Admin)
+Super Admin can A/B test different commission rates, convenience fees, or promotional placements for a subset of shops. Track which configuration drives more orders.
+
+---
+
+## File Change Summary
+
+| File | Action | Component |
+|---|---|---|
+| [009_shop_mega_upgrade.sqlite.sql](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/migrations/009_shop_mega_upgrade.sqlite.sql) | **NEW** | 8 new tables + 4 table alterations + 39 category seeds |
+| [shop.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/shop.routes.js) | **MODIFY** | 25+ new endpoints |
+| [commission.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/commission.routes.js) | **NEW** | 14 Super Admin commission endpoints |
+| [admin.routes.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/routes/admin.routes.js) | **MODIFY** | 7 new admin endpoints |
+| [delivery.controller.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/controllers/delivery.controller.js) | **MODIFY** | Shop order delivery integration |
+| [server.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/backend/src/server.js) | **MODIFY** | Register new routes + Socket events |
+| [shops/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shops/page.js) | **MODIFY** | Complete redesign with distance, icons, dynamic categories |
+| [shops/[id]/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shops/%5Bid%5D/page.js) | **MODIFY** | Full buy/book flow for all 3 shop types |
+| [register-shop/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/register-shop/page.js) | **MODIFY** | Multi-step category-aware form + map picker |
+| [shop-dashboard/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/shop-dashboard/page.js) | **MODIFY** | Complete overhaul — role-based dashboard |
+| [order-tracking/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/order-tracking/page.js) | **NEW** | Real-time order tracking page |
+| [admin-dashboard/layout.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/layout.js) | **MODIFY** | Add 3 new sidebar items |
+| [admin-dashboard/commissions/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/commissions/page.js) | **NEW** | Commission Hub dashboard |
+| [admin-dashboard/shop-categories/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/shop-categories/page.js) | **NEW** | Category CRUD + registration field editor |
+| [admin-dashboard/delivery-monitor/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/delivery-monitor/page.js) | **NEW** | Delivery monitoring dashboard |
+| [admin-dashboard/revenue-models/page.js](file:///c:/Users/Admin/Downloads/Local%2001-7-2026/Local%2001-7-2026/localsampark/apps/web/src/app/admin-dashboard/revenue-models/page.js) | **MODIFY** | Enhanced with category-level controls |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+cd localsampark/backend && npm test
+node src/migrations/run.js   # Run new migration
+```
+
+### Manual Verification Checklist
+
+| # | Test | Expected Result |
+|---|---|---|
+| 1 | Visit `/shops` | All 39 categories visible, distance badges on shops |
+| 2 | Deny location access | IP fallback provides approximate distance |
+| 3 | Register a "Salon" shop | Asks for category-specific fields, map picker, staff + services |
+| 4 | Register a "Grocery" shop | Asks for FSSAI License, product upload, delivery toggle |
+| 5 | Register a "Optician" (hybrid) | Shows both product + service registration |
+| 6 | Shop owner dashboard — Salon | Shows: Appointments Calendar, Staff Mgmt, Services, Surge Pricing, Staff Performance |
+| 7 | Shop owner dashboard — Grocery | Shows: Orders Queue, Products/Inventory, Subscriptions |
+| 8 | Book appointment at Salon | Service → Staff → Date/Time (unavailable slots hidden) → Pay |
+| 9 | Order from Grocery with Delivery | Products → Cart → Delivery address → Pay → Delivery agent assigned |
+| 10 | Super Admin: change Salon commission to 12% | New appointments from that category use 12% |
+| 11 | Super Admin: set shop override to 8% | That specific shop uses 8% instead of category default |
+| 12 | Super Admin: settle commissions | Commissions marked as settled |
+| 13 | Real-time notification test | Place order → shop owner dashboard gets sound alert + toast |
+| 14 | QR code scan | Scan shop QR → opens shop page with walk-in banner |
+| 15 | Surge pricing | Set Saturday 5-8 PM surge 1.5x → booking shows increased price |
+| 16 | Reorder/Re-book | Visit previously ordered shop → "Reorder" button pre-fills cart |
+
+---
+
+## Implementation Order
+
+| Phase | Scope | Priority |
+|---|---|---|
+| **Phase 1** | Database migration + Category seeding | 🔴 Critical (foundation) |
+| **Phase 2** | Backend APIs — all shop + commission endpoints | 🔴 Critical |
+| **Phase 3** | Visitor pages — `/shops`, `/shops/:id`, `/register-shop` | 🔴 Critical |
+| **Phase 4** | Shop Owner Dashboard — role-based overhaul | 🔴 Critical |
+| **Phase 5** | Super Admin Commission Hub + Category Management | 🟠 High |
+| **Phase 6** | Delivery integration — shop order → agent → customer | 🟠 High |
+| **Phase 7** | Value-add: Notifications, QR, Surge, Badges, Rebook, Staff Perf | 🟡 Medium |
+| **Phase 8** | Bonus: Invoices, WhatsApp, Reminders, Refunds, CRM, Map View, Coupons, Scheduling, Multi-branch, Payouts, Announcements | 🟢 Enhancement |

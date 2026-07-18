@@ -1,0 +1,1821 @@
+# 🏘️ HyperLocal — Neighborhood Super-App Implementation Plan
+
+## Executive Summary
+
+**HyperLocal** is a hyper-local, community-driven Android super-app designed to be the **one-stop solution** for everything in a user's neighborhood. It combines **social networking**, a **local business directory & marketplace**, a **gig economy job board**, a **real estate hub**, a **community requirement board**, and an **on-demand local delivery system** with live GPS tracking — all within a single application.
+
+The app is architected as a **local revenue model system** that creates job opportunities for unemployed people, connects local businesses with customers, and empowers the community to self-organize.
+
+> [!IMPORTANT]
+> This plan is based on deep competitive analysis of **Nextdoor**, **Nyburs**, **IamHere**, **Citizen**, **Neighbors by Ring**, and **Jodel** — extracting the best architectural patterns from each while building a unique India-first hyperlocal ecosystem.
+
+---
+
+## Table of Contents
+
+1. [Competitive Landscape & Strategic Positioning](#1-competitive-landscape--strategic-positioning)
+2. [Six-Pillar Feature Architecture](#2-six-pillar-feature-architecture)
+3. [Technology Stack](#3-technology-stack)
+4. [System Architecture](#4-system-architecture)
+5. [Database Schema Design](#5-database-schema-design)
+6. [Delivery System — Deep Dive](#6-delivery-system--deep-dive)
+7. [Real-Time Communication Architecture](#7-real-time-communication-architecture)
+8. [User Verification & Trust System](#8-user-verification--trust-system)
+9. [Revenue Model — Multi-Stream Monetization](#9-revenue-model--multi-stream-monetization)
+10. [Admin Panel & Mediation System](#10-admin-panel--mediation-system)
+11. [Multilingual & Localization Strategy](#11-multilingual--localization-strategy)
+12. [Regulatory Compliance](#12-regulatory-compliance)
+13. [Phased MVP Rollout Strategy](#13-phased-mvp-rollout-strategy)
+14. [Project Structure & Module Breakdown](#14-project-structure--module-breakdown)
+15. [Verification Plan](#15-verification-plan)
+16. [Risk Assessment & Mitigation](#16-risk-assessment--mitigation)
+
+---
+
+## 1. Competitive Landscape & Strategic Positioning
+
+### Competitive Matrix
+
+| Feature | Nextdoor | Nyburs | IamHere | Citizen | Neighbors (Ring) | Jodel | **HyperLocal (Ours)** |
+|---|---|---|---|---|---|---|---|
+| Community Chat | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Business Directory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Job Board (Blue-collar) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Real Estate/PG Listings | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| On-Demand Delivery | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Live GPS Tracking | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Admin-Mediated Leads | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Multilingual (Indian) | ❌ | ✅ (12+) | ❌ | ❌ | ❌ | ❌ | ✅ (12+) |
+| Verified Identity | ✅ | Partial | Partial | Partial | Partial | ❌ | ✅ |
+| Revenue Model | Ads+Sub | Creator | Promos | Sub | Hardware | Sub+Ads | **Multi-Stream** |
+
+### Our Strategic Differentiation
+
+```mermaid
+graph TD
+    A["HyperLocal Super-App"] --> B["🏢 Business Directory"]
+    A --> C["🛠️ Gig & Job Board"]
+    A --> D["🏠 Real Estate Hub"]
+    A --> E["💬 Community Social"]
+    A --> F["🚚 Delivery System"]
+    A --> G["👨‍💼 Admin Mediation"]
+    
+    B --> H["Revenue: Premium Listings + Ads"]
+    C --> I["Revenue: Lead Fees + Commissions"]
+    D --> J["Revenue: Featured Listings"]
+    E --> K["Revenue: Premium Features"]
+    F --> L["Revenue: Delivery Fees + Commissions"]
+    G --> M["Revenue: Service Charges"]
+    
+    style A fill:#6C5CE7,stroke:#fff,color:#fff
+    style H fill:#00B894,stroke:#fff,color:#fff
+    style I fill:#00B894,stroke:#fff,color:#fff
+    style J fill:#00B894,stroke:#fff,color:#fff
+    style K fill:#00B894,stroke:#fff,color:#fff
+    style L fill:#00B894,stroke:#fff,color:#fff
+    style M fill:#00B894,stroke:#fff,color:#fff
+```
+
+**No single app in the Indian market combines ALL six pillars.** This is our moat.
+
+---
+
+## 2. Six-Pillar Feature Architecture
+
+### Pillar 1: 💬 Community & Social Layer
+
+| Feature | Description | Inspired By |
+|---|---|---|
+| **Neighborhood Feed** | Location-gated posts within configurable radius (2–10 km) | Jodel's geofenced feed |
+| **Sub-Group Chats** | Topic-specific rooms: "Society Sports", "Carpooling", "Local Events", "Parents" | Nextdoor Groups |
+| **Requirement Board** | "Request Anything" feed — users post needs, admin/community responds | Unique to HyperLocal |
+| **Direct Messaging** | 1:1 private chat with proxy number masking option | Neighbors by Ring |
+| **Meet & Plan** | Users can create local meetup events, RSVP, and coordinate | Nyburs Events |
+| **Upvote/Downvote** | Community-moderated content with karma system | Jodel's karma model |
+| **Multi-Avatar Profiles** | Personal + Professional + Business identities | IamHere's dual-avatar |
+
+#### User Stories
+- As a resident, I can post "Looking for a morning jogging partner" and see responses from my 3 km radius.
+- As a user, I can create a "Weekend Cricket Match" event and invite neighbors to RSVP.
+- As a user, I can post "Need a car jack for 1 hour" on the Requirement Board.
+
+---
+
+### Pillar 2: 🏢 Hyper-Local Business Directory & Marketplace
+
+| Feature | Description |
+|---|---|
+| **Shop Registration** | Shop owners register with full profile: name, category, hours, photos, contact, location |
+| **Complete Shop Profiles** | Detailed pages with image galleries, product/service lists, reviews, ratings |
+| **"What's New" Section** | Algorithmic feed of newly onboarded shops — drives discovery |
+| **Category Search** | Browse by category: Restaurants, Grocers, Salons, Pharmacies, Hardware, etc. |
+| **Map View** | Google Maps integration showing all shops as pins with filters |
+| **Society Integration** | All local society names & details mapped via Google Maps API |
+| **Flash Deals & Offers** | Shops can broadcast time-limited deals to nearby users |
+| **Reviews & Ratings** | Community-verified ratings with photo reviews |
+
+#### Shop Registration Flow
+
+```mermaid
+sequenceDiagram
+    participant SO as Shop Owner
+    participant App as HyperLocal App
+    participant Admin as Admin Panel
+    participant DB as Database
+    
+    SO->>App: Register as Business
+    App->>SO: Collect: Name, Category, GST (optional), Photos, Location
+    SO->>App: Submit Registration
+    App->>Admin: New shop registration pending
+    Admin->>Admin: Verify business details
+    Admin->>DB: Approve & activate listing
+    DB->>App: Shop goes live
+    App->>SO: "Your shop is now live!" notification
+    App->>App: Shop appears in "What's New" feed for 7 days
+```
+
+---
+
+### Pillar 3: 🛠️ Gig Economy & Blue-Collar Job Board
+
+| Feature | Description |
+|---|---|
+| **Skill Registry** | Workers register with multiple skills: Plumber, Electrician, Welder, Construction Labour, Painter, Carpenter, AC Repair, etc. |
+| **Multi-Skill Profiles** | One user can register for multiple skilled jobs |
+| **Availability Calendar** | Workers set daily/weekly availability |
+| **Shop Job Vacancies** | Shop owners post openings: Cashier, Delivery Staff, Helper, etc. |
+| **Job Application System** | Users can apply to shop vacancies; Admin mediates |
+| **Admin-Mediated Leads** | All service requests route through admin for quality control |
+| **Skill Search** | Users search "Plumber near me" with radius filter |
+| **Rating & Reviews** | Post-service rating system for quality assurance |
+| **Freelance Profiles** | Full portfolio with photos of past work, certifications |
+
+#### Supported Skill Categories (Expandable)
+
+| Category | Example Skills |
+|---|---|
+| **Home Services** | Plumber, Electrician, Carpenter, Painter, AC/Appliance Repair |
+| **Construction** | Mason, Welder, Construction Labour, Tile Fitter, Waterproofing |
+| **Personal Services** | Beautician, Tailor, Tutor, Cook, Nanny/Babysitter |
+| **Vehicle Services** | Mechanic, Car Wash, Driving Instructor |
+| **Technical** | CCTV Installation, Computer Repair, Mobile Repair |
+| **Event Services** | Photographer, Caterer, DJ, Tent House, Event Decorator |
+| **Cleaning** | House Cleaning, Deep Cleaning, Pest Control |
+| **Other** | Custom skill entry by user |
+
+---
+
+### Pillar 4: 🏠 Hyper-Local Real Estate Hub
+
+| Feature | Description |
+|---|---|
+| **Flat/House Rental** | Owners list available properties with photos, rent, amenities, terms |
+| **PG Accommodation** | PG owners list rooms with meal options, sharing type, gender preference |
+| **Geo-Fenced Search** | Filter strictly by society name, radius, or pin code |
+| **Property Details** | BHK type, furnishing, floor, deposit, restrictions |
+| **Contact via Admin** | Interested users contact through admin mediation for safety |
+| **Featured Listings** | Paid option to boost listing visibility |
+| **Verified Tag** | Admin-verified properties get a trust badge |
+
+---
+
+### Pillar 5: 🚚 On-Demand Local Delivery System
+
+> [!IMPORTANT]
+> This is the most technically complex pillar. It implements a **three-way real-time system** comparable to Swiggy/Zomato but scoped to the local neighborhood.
+
+| Feature | Description |
+|---|---|
+| **Delivery Agent Registration** | Users register as local delivery agents (bicycle/scooter/walking) |
+| **Order Placement** | Users order from local shops or request custom pickups |
+| **Agent Assignment** | Nearest available agent auto-assigned or admin-assigned |
+| **Live GPS Tracking** | Real-time map tracking with agent location updates every 5–10 seconds |
+| **Status Milestones** | Pending → Assigned → Picked Up → En Route → Delivered |
+| **Geofencing** | Auto-status updates when agent enters shop/delivery zones |
+| **ETA Calculation** | Real-time ETA using Google Maps Distance Matrix API |
+| **Delivery Fee Engine** | Distance-based automatic fee calculation |
+| **Agent Payout** | Transparent payout tracking for agents |
+| **Order History** | Complete delivery history for users, agents, and shops |
+| **Rating System** | Users rate agents; agents rate shops |
+
+#### Three-Way Delivery Workflow
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant S as 🏪 Shop
+    participant A as 🚴 Delivery Agent
+    participant Sys as ⚙️ System/Admin
+    
+    U->>Sys: Place order from Shop X
+    Sys->>S: New order notification
+    S->>Sys: Accept order, start preparing
+    Sys->>Sys: Find nearest available agent
+    Sys->>A: Delivery request (Shop → User address)
+    A->>Sys: Accept delivery
+    Sys->>U: "Agent assigned: Rahul 🚴" + Live map opens
+    
+    Note over A,U: Live GPS tracking begins (5-sec intervals)
+    
+    A->>S: Arrives at shop
+    Sys->>U: Status: "Agent at shop"
+    S->>A: Hand over package
+    S->>Sys: Mark "Ready & Picked Up"
+    Sys->>U: Status: "Out for delivery" + Updated ETA
+    
+    A->>U: Arrives at delivery location
+    Sys->>U: Status: "Agent has arrived"
+    A->>Sys: Mark "Delivered" + Photo proof
+    Sys->>U: "Order delivered! Rate your experience"
+    Sys->>A: Payout credited to wallet
+```
+
+---
+
+### Pillar 6: 👨‍💼 Admin Mediation & Control Panel
+
+| Feature | Description |
+|---|---|
+| **Lead Management** | All service requests routed through admin dashboard |
+| **Business Verification** | Admin reviews and approves shop registrations |
+| **Content Moderation** | Review flagged posts, spam filter management |
+| **User Dispute Resolution** | Handle complaints between users, shops, agents |
+| **Analytics Dashboard** | Real-time metrics: users, shops, orders, revenue |
+| **Requirement Fulfillment** | Admin receives user requirements and connects with solutions |
+| **Agent Management** | Monitor delivery agents, payouts, performance |
+| **Revenue Tracking** | Track all revenue streams in one dashboard |
+
+---
+
+## 3. Technology Stack
+
+### Recommended Stack (Production-Grade)
+
+| Layer | Technology | Justification |
+|---|---|---|
+| **Mobile App** | **React Native** (or Flutter) | Single codebase for Android + iOS; large ecosystem; hot reload |
+| **Backend API** | **Node.js + Express.js** | Handles concurrent requests, real-time data, heavy chat loads |
+| **Database** | **PostgreSQL + PostGIS** | Complex geospatial queries (e.g., "Find all electricians within 2km") in O(log N) |
+| **Cache & Pub/Sub** | **Redis** | Real-time WebSocket coordination, session caching, feed caching |
+| **Real-Time Chat** | **Socket.io** | Persistent WebSocket connections for live chat + delivery tracking |
+| **Push Notifications** | **Firebase Cloud Messaging (FCM)** | Background notifications when app is closed |
+| **Maps & Geocoding** | **Google Maps SDK + Places API + Distance Matrix API** | Society mapping, auto-complete, ETA calculation, live tracking |
+| **File Storage** | **AWS S3 / Firebase Storage** | Shop photos, user avatars, property images, delivery proofs |
+| **Authentication** | **Firebase Auth + Custom JWT** | Phone OTP, Google Sign-in, secure token management |
+| **SMS/Voice Proxy** | **Twilio Proxy API** | Anonymous contact between users (privacy-preserving) |
+| **Payment Gateway** | **Razorpay / PhonePe SDK** | UPI, cards, wallets — India-optimized |
+| **Admin Panel** | **React.js + Material UI** | Web-based admin dashboard |
+| **CI/CD** | **GitHub Actions + Fastlane** | Automated builds, testing, Play Store deployment |
+| **Monitoring** | **Sentry + Firebase Crashlytics** | Error tracking, performance monitoring |
+| **Analytics** | **Mixpanel / Firebase Analytics** | User behavior, funnel analysis, retention |
+
+### Architecture Decision Records
+
+> [!NOTE]
+> **Why PostgreSQL + PostGIS over MongoDB?**
+> MongoDB's geospatial queries use flat-Earth approximation for `$near` queries. PostGIS uses true spherical/ellipsoidal calculations with GiST indexes, providing **accurate distance computation** critical for delivery fee calculation and geofencing. PostGIS reduces spatial queries from O(N) to O(log N).
+
+> [!NOTE]
+> **Why React Native over Flutter?**
+> Both are excellent choices. React Native is recommended for JavaScript ecosystem familiarity (same language as Node.js backend), larger community, and easier integration with existing npm packages. Flutter is the alternative if the team prefers Dart and wants pixel-perfect UI control. **Either works — pick based on team skills.**
+
+---
+
+## 4. System Architecture
+
+### High-Level Microservices Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        MA["📱 Mobile App (React Native)"]
+        WA["🖥️ Admin Panel (React.js)"]
+        SA["🏪 Shop Panel (React.js)"]
+    end
+    
+    subgraph "API Gateway"
+        GW["API Gateway (Express.js)"]
+    end
+    
+    subgraph "Core Microservices"
+        AUTH["🔐 Auth Service"]
+        USER["👤 User Service"]
+        FEED["📰 Feed Service"]
+        CHAT["💬 Chat Service"]
+        BIZ["🏢 Business Service"]
+        JOB["🛠️ Jobs Service"]
+        RENT["🏠 Real Estate Service"]
+        DEL["🚚 Delivery Service"]
+        TRACK["📍 Tracking Service"]
+        NOTIFY["🔔 Notification Service"]
+        ADMIN["👨‍💼 Admin Service"]
+        PAY["💳 Payment Service"]
+        SEARCH["🔍 Search Service"]
+    end
+    
+    subgraph "Data Layer"
+        PG["PostgreSQL + PostGIS"]
+        RD["Redis Cache"]
+        S3["AWS S3 / Firebase Storage"]
+        ES["Elasticsearch (Future)"]
+    end
+    
+    subgraph "External Services"
+        GMAP["Google Maps API"]
+        FCM["Firebase Cloud Messaging"]
+        TWI["Twilio Proxy"]
+        RAZ["Razorpay"]
+        FAUTH["Firebase Auth"]
+    end
+    
+    MA --> GW
+    WA --> GW
+    SA --> GW
+    
+    GW --> AUTH
+    GW --> USER
+    GW --> FEED
+    GW --> CHAT
+    GW --> BIZ
+    GW --> JOB
+    GW --> RENT
+    GW --> DEL
+    GW --> TRACK
+    GW --> ADMIN
+    GW --> PAY
+    GW --> SEARCH
+    
+    AUTH --> PG
+    AUTH --> FAUTH
+    USER --> PG
+    USER --> S3
+    FEED --> PG
+    FEED --> RD
+    CHAT --> RD
+    BIZ --> PG
+    BIZ --> S3
+    JOB --> PG
+    RENT --> PG
+    RENT --> S3
+    DEL --> PG
+    TRACK --> RD
+    TRACK --> GMAP
+    NOTIFY --> FCM
+    PAY --> RAZ
+    SEARCH --> PG
+    
+    style MA fill:#6C5CE7,stroke:#fff,color:#fff
+    style WA fill:#0984E3,stroke:#fff,color:#fff
+    style SA fill:#00B894,stroke:#fff,color:#fff
+    style GW fill:#FD79A8,stroke:#fff,color:#fff
+```
+
+### Service Communication Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    REQUEST FLOW                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Mobile App ──HTTPS──► API Gateway ──Route──► Microservice       │
+│                              │                      │            │
+│                              │               ┌──────┴──────┐    │
+│                              │               │ PostgreSQL  │    │
+│                              │               │ + PostGIS   │    │
+│                              │               └─────────────┘    │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                    REAL-TIME FLOW                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Mobile App ◄═WebSocket═► Socket.io Server ◄═Pub/Sub═► Redis    │
+│                                                                  │
+│  Background App ◄══FCM Push══ Node.js Backend ◄══Event══ Redis  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5. Database Schema Design
+
+### Core Tables Overview
+
+```mermaid
+erDiagram
+    USERS ||--o{ USER_SKILLS : has
+    USERS ||--o{ LOCAL_SHOPS : owns
+    USERS ||--o{ POSTS : creates
+    USERS ||--o{ PROPERTY_LISTINGS : lists
+    USERS ||--o{ DELIVERY_AGENTS : registers_as
+    USERS ||--o{ ORDERS : places
+    USERS ||--o{ JOB_APPLICATIONS : submits
+    
+    LOCAL_SHOPS ||--o{ SHOP_PRODUCTS : has
+    LOCAL_SHOPS ||--o{ SHOP_REVIEWS : receives
+    LOCAL_SHOPS ||--o{ JOB_VACANCIES : posts
+    LOCAL_SHOPS ||--o{ ORDERS : fulfills
+    
+    JOB_VACANCIES ||--o{ JOB_APPLICATIONS : receives
+    
+    ORDERS ||--o| DELIVERIES : tracked_by
+    DELIVERIES ||--o| DELIVERY_AGENTS : assigned_to
+    
+    DELIVERY_AGENTS ||--o{ DELIVERY_TRACKING : emits
+    
+    POSTS ||--o{ POST_COMMENTS : has
+    POSTS ||--o{ POST_VOTES : receives
+    
+    SOCIETIES ||--o{ USERS : belongs_to
+```
+
+### Complete SQL Schema
+
+```sql
+-- ============================================================
+-- EXTENSION SETUP
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================================
+-- 1. USERS & AUTHENTICATION
+-- ============================================================
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    phone VARCHAR(15) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    full_name VARCHAR(100) NOT NULL,
+    display_name VARCHAR(50),
+    avatar_url TEXT,
+    
+    -- Location
+    home_coordinate GEOGRAPHY(Point, 4326),
+    address_line TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    society_id UUID REFERENCES societies(id),
+    
+    -- Verification
+    is_phone_verified BOOLEAN DEFAULT FALSE,
+    is_address_verified BOOLEAN DEFAULT FALSE,
+    verification_method VARCHAR(30), -- 'gps', 'document', 'admin'
+    
+    -- Profile
+    user_type VARCHAR(20) DEFAULT 'resident', -- resident, shop_owner, service_provider, delivery_agent
+    karma_points INT DEFAULT 0,
+    preferred_language VARCHAR(10) DEFAULT 'en',
+    
+    -- Status
+    is_active BOOLEAN DEFAULT TRUE,
+    is_banned BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_users_coordinate ON users USING GIST (home_coordinate);
+CREATE INDEX idx_users_society ON users(society_id);
+CREATE INDEX idx_users_phone ON users(phone);
+
+-- ============================================================
+-- 2. SOCIETIES & LOCALITIES
+-- ============================================================
+CREATE TABLE societies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    google_place_id VARCHAR(100),
+    total_residents INT DEFAULT 0,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_societies_coordinate ON societies USING GIST (coordinate);
+CREATE INDEX idx_societies_pincode ON societies(pincode);
+
+-- ============================================================
+-- 3. LOCAL SHOPS / BUSINESSES
+-- ============================================================
+CREATE TABLE local_shops (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    shop_name VARCHAR(200) NOT NULL,
+    category VARCHAR(100) NOT NULL, -- Restaurant, Grocery, Salon, Pharmacy, etc.
+    sub_category VARCHAR(100),
+    description TEXT,
+    
+    -- Contact
+    phone VARCHAR(15),
+    whatsapp VARCHAR(15),
+    email VARCHAR(255),
+    website VARCHAR(500),
+    
+    -- Location
+    address TEXT NOT NULL,
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    society_id UUID REFERENCES societies(id),
+    
+    -- Business Details
+    opening_time TIME,
+    closing_time TIME,
+    working_days VARCHAR(100), -- 'Mon,Tue,Wed,Thu,Fri,Sat'
+    gst_number VARCHAR(20),
+    
+    -- Media
+    logo_url TEXT,
+    cover_photo_url TEXT,
+    photo_gallery JSONB DEFAULT '[]',
+    
+    -- Status & Ranking
+    is_verified BOOLEAN DEFAULT FALSE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    subscription_tier VARCHAR(20) DEFAULT 'free', -- free, basic, premium
+    
+    -- Metrics
+    avg_rating DECIMAL(3,2) DEFAULT 0.0,
+    total_reviews INT DEFAULT 0,
+    total_orders INT DEFAULT 0,
+    
+    -- Delivery
+    accepts_delivery BOOLEAN DEFAULT FALSE,
+    delivery_radius_km DECIMAL(5,2) DEFAULT 5.0,
+    min_order_amount DECIMAL(10,2) DEFAULT 0,
+    
+    listed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_shops_coordinate ON local_shops USING GIST (coordinate);
+CREATE INDEX idx_shops_category ON local_shops(category);
+CREATE INDEX idx_shops_listed ON local_shops(listed_at DESC);
+CREATE INDEX idx_shops_featured ON local_shops(is_featured) WHERE is_featured = TRUE;
+
+-- Shop Products/Services
+CREATE TABLE shop_products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2),
+    image_url TEXT,
+    category VARCHAR(100),
+    is_available BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Shop Reviews
+CREATE TABLE shop_reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    rating INT CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT,
+    photo_urls JSONB DEFAULT '[]',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(shop_id, user_id)
+);
+
+-- ============================================================
+-- 4. SKILL REGISTRY & GIG ECONOMY
+-- ============================================================
+CREATE TABLE skill_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL UNIQUE, -- Plumber, Electrician, Welder, etc.
+    icon VARCHAR(50),
+    parent_category VARCHAR(100), -- Home Services, Construction, etc.
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE user_skills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    skill_id UUID REFERENCES skill_categories(id),
+    
+    experience_years INT DEFAULT 0,
+    hourly_rate DECIMAL(10,2),
+    description TEXT,
+    certifications JSONB DEFAULT '[]',
+    portfolio_photos JSONB DEFAULT '[]',
+    
+    -- Availability
+    is_available BOOLEAN DEFAULT TRUE,
+    available_days VARCHAR(100), -- 'Mon,Tue,Wed,Thu,Fri'
+    available_from TIME,
+    available_to TIME,
+    service_radius_km DECIMAL(5,2) DEFAULT 5.0,
+    
+    -- Location
+    service_coordinate GEOGRAPHY(Point, 4326),
+    
+    -- Metrics
+    avg_rating DECIMAL(3,2) DEFAULT 0.0,
+    total_jobs INT DEFAULT 0,
+    
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_user_skills_coordinate ON user_skills USING GIST (service_coordinate);
+CREATE INDEX idx_user_skills_skill ON user_skills(skill_id);
+
+-- ============================================================
+-- 5. JOB VACANCIES & APPLICATIONS
+-- ============================================================
+CREATE TABLE job_vacancies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    posted_by UUID REFERENCES users(id),
+    
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    job_type VARCHAR(50), -- full-time, part-time, contract, daily-wage
+    skill_required UUID REFERENCES skill_categories(id),
+    
+    salary_min DECIMAL(10,2),
+    salary_max DECIMAL(10,2),
+    salary_type VARCHAR(20), -- hourly, daily, monthly
+    
+    vacancies_count INT DEFAULT 1,
+    experience_required VARCHAR(50),
+    
+    coordinate GEOGRAPHY(Point, 4326),
+    
+    is_active BOOLEAN DEFAULT TRUE,
+    is_filled BOOLEAN DEFAULT FALSE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_vacancies_coordinate ON job_vacancies USING GIST (coordinate);
+CREATE INDEX idx_vacancies_skill ON job_vacancies(skill_required);
+
+CREATE TABLE job_applications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    vacancy_id UUID REFERENCES job_vacancies(id) ON DELETE CASCADE,
+    applicant_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    cover_note TEXT,
+    status VARCHAR(20) DEFAULT 'pending', -- pending, shortlisted, accepted, rejected
+    admin_notes TEXT,
+    
+    applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    
+    UNIQUE(vacancy_id, applicant_id)
+);
+
+-- ============================================================
+-- 6. REAL ESTATE / PROPERTY LISTINGS
+-- ============================================================
+CREATE TABLE property_listings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    listing_type VARCHAR(20) NOT NULL, -- rent, pg, sale, commercial
+    property_type VARCHAR(30), -- flat, house, room, pg, shop
+    
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    
+    -- Property Details
+    bhk VARCHAR(10), -- 1BHK, 2BHK, 3BHK, Studio
+    furnishing VARCHAR(20), -- furnished, semi-furnished, unfurnished
+    floor_number INT,
+    total_floors INT,
+    area_sqft INT,
+    
+    -- PG Specific
+    sharing_type VARCHAR(20), -- single, double, triple
+    gender_preference VARCHAR(10), -- male, female, any
+    meals_included BOOLEAN DEFAULT FALSE,
+    
+    -- Pricing
+    rent_amount DECIMAL(10,2),
+    deposit_amount DECIMAL(10,2),
+    maintenance_amount DECIMAL(10,2),
+    
+    -- Location
+    address TEXT NOT NULL,
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    society_id UUID REFERENCES societies(id),
+    
+    -- Media
+    photo_urls JSONB DEFAULT '[]',
+    video_url TEXT,
+    
+    -- Amenities
+    amenities JSONB DEFAULT '[]', -- ['WiFi', 'AC', 'Parking', 'Gym', 'Power Backup']
+    
+    -- Status
+    is_verified BOOLEAN DEFAULT FALSE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    available_from DATE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_property_coordinate ON property_listings USING GIST (coordinate);
+CREATE INDEX idx_property_type ON property_listings(listing_type, property_type);
+CREATE INDEX idx_property_rent ON property_listings(rent_amount);
+
+-- ============================================================
+-- 7. COMMUNITY POSTS & FEED
+-- ============================================================
+CREATE TABLE posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    author_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    post_type VARCHAR(30) NOT NULL, -- general, requirement, event, safety, marketplace, announcement
+    title VARCHAR(300),
+    content TEXT NOT NULL,
+    
+    media_urls JSONB DEFAULT '[]',
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    
+    -- Engagement
+    upvotes INT DEFAULT 0,
+    downvotes INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    
+    -- Event specific
+    event_date TIMESTAMP WITH TIME ZONE,
+    event_location TEXT,
+    max_attendees INT,
+    
+    -- Status
+    is_active BOOLEAN DEFAULT TRUE,
+    is_flagged BOOLEAN DEFAULT FALSE,
+    is_resolved BOOLEAN DEFAULT FALSE, -- for requirement posts
+    
+    visibility_radius_km DECIMAL(5,2) DEFAULT 5.0,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_posts_coordinate ON posts USING GIST (coordinate);
+CREATE INDEX idx_posts_type ON posts(post_type);
+CREATE INDEX idx_posts_created ON posts(created_at DESC);
+
+CREATE TABLE post_comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    author_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    parent_comment_id UUID REFERENCES post_comments(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE post_votes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    vote_type VARCHAR(10) CHECK (vote_type IN ('up', 'down')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, user_id)
+);
+
+-- ============================================================
+-- 8. CHAT & MESSAGING
+-- ============================================================
+CREATE TABLE chat_rooms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_type VARCHAR(20) NOT NULL, -- direct, group, society, topic
+    name VARCHAR(200),
+    description TEXT,
+    created_by UUID REFERENCES users(id),
+    society_id UUID REFERENCES societies(id),
+    max_members INT DEFAULT 500,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chat_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_id UUID REFERENCES chat_rooms(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) DEFAULT 'member', -- admin, moderator, member
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(room_id, user_id)
+);
+
+CREATE TABLE chat_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_id UUID REFERENCES chat_rooms(id) ON DELETE CASCADE,
+    sender_id UUID REFERENCES users(id),
+    message_type VARCHAR(20) DEFAULT 'text', -- text, image, location, system
+    content TEXT NOT NULL,
+    media_url TEXT,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_messages_room ON chat_messages(room_id, created_at DESC);
+
+-- ============================================================
+-- 9. ORDERS & DELIVERY SYSTEM
+-- ============================================================
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id),
+    shop_id UUID REFERENCES local_shops(id),
+    
+    order_type VARCHAR(20) DEFAULT 'shop', -- shop, custom_pickup
+    order_status VARCHAR(20) DEFAULT 'pending',
+    -- pending, confirmed, preparing, ready, picked_up, delivered, cancelled
+    
+    items JSONB NOT NULL DEFAULT '[]',
+    -- [{product_id, name, qty, price}]
+    
+    subtotal DECIMAL(10,2),
+    delivery_fee DECIMAL(10,2),
+    platform_fee DECIMAL(10,2),
+    total_amount DECIMAL(10,2),
+    
+    -- Delivery Address
+    delivery_address TEXT NOT NULL,
+    delivery_coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    
+    -- Custom Pickup
+    pickup_instructions TEXT,
+    
+    -- Payment
+    payment_method VARCHAR(20), -- cod, upi, card, wallet
+    payment_status VARCHAR(20) DEFAULT 'pending', -- pending, paid, refunded
+    payment_id VARCHAR(100),
+    
+    special_instructions TEXT,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_orders_user ON orders(user_id, created_at DESC);
+CREATE INDEX idx_orders_shop ON orders(shop_id, created_at DESC);
+
+-- Delivery Agents
+CREATE TABLE delivery_agents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    
+    vehicle_type VARCHAR(50), -- bicycle, scooter, walking
+    license_number VARCHAR(50),
+    vehicle_number VARCHAR(50),
+    
+    -- Live Location
+    current_status VARCHAR(20) DEFAULT 'offline', -- online, offline, busy
+    current_coordinate GEOGRAPHY(Point, 4326),
+    last_location_update TIMESTAMP WITH TIME ZONE,
+    
+    -- Metrics
+    avg_rating DECIMAL(3,2) DEFAULT 5.0,
+    total_deliveries INT DEFAULT 0,
+    total_earnings DECIMAL(10,2) DEFAULT 0,
+    
+    -- Verification
+    is_verified BOOLEAN DEFAULT FALSE,
+    id_proof_url TEXT,
+    
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_agents_coordinate ON delivery_agents USING GIST (current_coordinate);
+CREATE INDEX idx_agents_status ON delivery_agents(current_status) WHERE current_status = 'online';
+
+-- Deliveries (Lifecycle Tracking)
+CREATE TABLE deliveries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE UNIQUE,
+    shop_id UUID REFERENCES local_shops(id),
+    user_id UUID REFERENCES users(id),
+    agent_id UUID REFERENCES delivery_agents(id),
+    
+    delivery_status VARCHAR(20) DEFAULT 'pending',
+    -- pending, assigned, en_route_to_shop, at_shop, picked_up, en_route_to_user, arrived, delivered, cancelled
+    
+    -- Coordinates
+    shop_coordinate GEOGRAPHY(Point, 4326),
+    user_coordinate GEOGRAPHY(Point, 4326),
+    
+    -- Fees
+    delivery_distance_km DECIMAL(5,2),
+    delivery_fee DECIMAL(10,2),
+    agent_payout DECIMAL(10,2),
+    platform_commission DECIMAL(10,2),
+    
+    -- ETA
+    estimated_delivery_time INT, -- minutes
+    
+    -- Timestamps
+    assigned_at TIMESTAMP WITH TIME ZONE,
+    en_route_to_shop_at TIMESTAMP WITH TIME ZONE,
+    at_shop_at TIMESTAMP WITH TIME ZONE,
+    picked_up_at TIMESTAMP WITH TIME ZONE,
+    en_route_to_user_at TIMESTAMP WITH TIME ZONE,
+    arrived_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+    cancelled_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Proof
+    delivery_photo_url TEXT,
+    delivery_otp VARCHAR(6),
+    
+    cancellation_reason TEXT,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Real-time GPS tracking points
+CREATE TABLE delivery_tracking (
+    id BIGSERIAL PRIMARY KEY,
+    delivery_id UUID REFERENCES deliveries(id) ON DELETE CASCADE,
+    agent_id UUID REFERENCES delivery_agents(id),
+    coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+    speed DECIMAL(5,2), -- km/h
+    heading DECIMAL(5,2), -- degrees
+    recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tracking_delivery ON delivery_tracking(delivery_id, recorded_at DESC);
+CREATE INDEX idx_tracking_coordinate ON delivery_tracking USING GIST (coordinate);
+
+-- ============================================================
+-- 10. ADVERTISEMENTS & PROMOTIONS
+-- ============================================================
+CREATE TABLE advertisements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    advertiser_id UUID REFERENCES users(id),
+    shop_id UUID REFERENCES local_shops(id),
+    
+    ad_type VARCHAR(30), -- banner, featured_shop, featured_listing, sponsored_post
+    title VARCHAR(200),
+    description TEXT,
+    image_url TEXT,
+    cta_url TEXT,
+    
+    -- Targeting
+    target_radius_km DECIMAL(5,2) DEFAULT 5.0,
+    target_coordinate GEOGRAPHY(Point, 4326),
+    target_categories JSONB DEFAULT '[]',
+    
+    -- Budget
+    budget_amount DECIMAL(10,2),
+    cost_per_click DECIMAL(10,2),
+    cost_per_impression DECIMAL(10,2),
+    
+    -- Metrics
+    impressions INT DEFAULT 0,
+    clicks INT DEFAULT 0,
+    
+    -- Schedule
+    start_date TIMESTAMP WITH TIME ZONE,
+    end_date TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT TRUE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 11. ADMIN LEADS & MEDIATION
+-- ============================================================
+CREATE TABLE admin_leads (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    lead_type VARCHAR(30) NOT NULL,
+    -- service_request, job_inquiry, property_inquiry, requirement, complaint, custom
+    
+    from_user_id UUID REFERENCES users(id),
+    to_user_id UUID REFERENCES users(id),
+    
+    -- Reference
+    reference_type VARCHAR(30), -- skill, vacancy, property, shop, post
+    reference_id UUID,
+    
+    description TEXT,
+    admin_notes TEXT,
+    
+    status VARCHAR(20) DEFAULT 'new',
+    -- new, in_progress, matched, completed, closed
+    
+    assigned_admin UUID REFERENCES users(id),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ============================================================
+-- 12. NOTIFICATIONS
+-- ============================================================
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    type VARCHAR(30) NOT NULL,
+    -- order_update, delivery_update, chat_message, job_alert, lead_update, system
+    
+    title VARCHAR(200) NOT NULL,
+    body TEXT NOT NULL,
+    data JSONB DEFAULT '{}',
+    
+    is_read BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_notifications_user ON notifications(user_id, created_at DESC);
+```
+
+---
+
+## 6. Delivery System — Deep Dive
+
+### MVP Approach: Status-Based Tracking (Phase 1)
+
+> [!TIP]
+> **Cost-Saving Strategy**: Start with **status-based tracking** (no live GPS map pins) to avoid expensive Google Maps API costs. Display a static map with shop & user pins plus status updates. Upgrade to live tracking once revenue supports API costs.
+
+#### Phase 1 — Status-Based (Launch)
+```
+┌───────────────────────────────────────────────────┐
+│                STATUS TRACKER UI                   │
+├───────────────────────────────────────────────────┤
+│                                                    │
+│  ● Order Placed              ✅  9:00 AM          │
+│  │                                                 │
+│  ● Agent Assigned: Rahul 🚴  ✅  9:02 AM          │
+│  │                                                 │
+│  ● En Route to Shop          ✅  9:02 AM          │
+│  │                                                 │
+│  ● At Shop                   ✅  9:08 AM          │
+│  │                                                 │
+│  ● Order Picked Up           ✅  9:12 AM          │
+│  │                                                 │
+│  ◐ Out for Delivery          🔄  9:12 AM          │
+│  │    ETA: ~8 mins                                 │
+│  │                                                 │
+│  ○ Delivered                  ⏳                   │
+│                                                    │
+│  ┌─────────────────────────────────────────┐      │
+│  │       [Static Map: Shop → User]         │      │
+│  │       📍 Shop    ─ ─ ─ ─ ─    🏠 You   │      │
+│  └─────────────────────────────────────────┘      │
+│                                                    │
+│        [ Call Agent ]    [ Cancel Order ]           │
+└───────────────────────────────────────────────────┘
+```
+
+#### Phase 2 — Live GPS Tracking (Post-Revenue)
+```
+┌───────────────────────────────────────────────────┐
+│           LIVE TRACKING UI (Like Swiggy)           │
+├───────────────────────────────────────────────────┤
+│                                                    │
+│  ┌─────────────────────────────────────────┐      │
+│  │                                         │      │
+│  │    🏪────────🚴─────────────🏠          │      │
+│  │     Shop     Agent (LIVE)   You         │      │
+│  │                                         │      │
+│  │    [Google Maps with live polyline      │      │
+│  │     and moving agent marker]            │      │
+│  │                                         │      │
+│  └─────────────────────────────────────────┘      │
+│                                                    │
+│  Agent: Rahul • ⭐ 4.8 • 🏍️ Scooter              │
+│  ETA: 6 mins (updating live)                       │
+│  Status: Out for Delivery                          │
+│                                                    │
+│    [ Call ]  [ Chat ]  [ Share Location ]           │
+└───────────────────────────────────────────────────┘
+```
+
+### Delivery Fee Calculation Engine
+
+```javascript
+// Distance-based pricing model
+function calculateDeliveryFee(distanceKm) {
+  const BASE_FEE = 20;          // ₹20 base fee
+  const PER_KM_RATE = 8;        // ₹8 per km
+  const SURGE_MULTIPLIER = 1.5; // During peak hours
+  const PLATFORM_CUT = 0.15;    // 15% platform commission
+  
+  let fee = BASE_FEE + (distanceKm * PER_KM_RATE);
+  
+  // Surge pricing during peak hours (12-2 PM, 7-10 PM)
+  if (isPeakHour()) {
+    fee *= SURGE_MULTIPLIER;
+  }
+  
+  // Cap at ₹80 for hyperlocal
+  fee = Math.min(fee, 80);
+  
+  return {
+    totalFee: Math.round(fee),
+    agentPayout: Math.round(fee * (1 - PLATFORM_CUT)),
+    platformCommission: Math.round(fee * PLATFORM_CUT)
+  };
+}
+```
+
+### Geofencing Auto-Status Updates
+
+```sql
+-- Check if agent has entered shop's geofence (100m radius)
+SELECT 
+    ST_DWithin(
+        da.current_coordinate,
+        ls.coordinate,
+        100  -- 100 meters geofence
+    ) AS agent_at_shop
+FROM delivery_agents da
+JOIN deliveries d ON d.agent_id = da.id
+JOIN local_shops ls ON ls.id = d.shop_id
+WHERE d.id = :delivery_id;
+```
+
+---
+
+## 7. Real-Time Communication Architecture
+
+### WebSocket Events Map
+
+| Event | Direction | Purpose |
+|---|---|---|
+| `chat:message` | Client ↔ Server | Real-time chat messages |
+| `delivery:location_update` | Agent → Server → User | Agent GPS coordinates (every 5s) |
+| `delivery:status_change` | Server → User, Shop, Agent | Milestone updates |
+| `feed:new_post` | Server → Nearby Users | New post in radius |
+| `feed:vote_update` | Client → Server → Users | Live vote counts |
+| `notification:push` | Server → Client | In-app notifications |
+| `agent:availability` | Agent → Server | Online/offline toggle |
+
+### Socket.io Server Architecture
+
+```javascript
+// Namespace-based isolation
+const chatNamespace = io.of('/chat');
+const deliveryNamespace = io.of('/delivery');
+const feedNamespace = io.of('/feed');
+
+// Delivery tracking - Agent sends location
+deliveryNamespace.on('connection', (socket) => {
+  
+  // Agent broadcasts location every 5 seconds
+  socket.on('agent:location', async (data) => {
+    const { agentId, lat, lng, deliveryId } = data;
+    
+    // Store in Redis for instant access
+    await redis.setex(`agent:${agentId}:location`, 30, JSON.stringify({ lat, lng }));
+    
+    // Persist to PostgreSQL for route history
+    await db.query(
+      'INSERT INTO delivery_tracking (delivery_id, agent_id, coordinate, recorded_at) VALUES ($1, $2, ST_MakePoint($3, $4)::geography, NOW())',
+      [deliveryId, agentId, lng, lat]
+    );
+    
+    // Broadcast to user watching this delivery
+    socket.to(`delivery:${deliveryId}`).emit('delivery:location_update', { lat, lng });
+    
+    // Check geofence triggers
+    await checkGeofenceStatus(deliveryId, agentId, lat, lng);
+  });
+});
+```
+
+### Push Notification Topology
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  NOTIFICATION ROUTING                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  App Active?  ──YES──►  WebSocket (instant, no FCM cost)     │
+│       │                                                      │
+│       NO                                                     │
+│       │                                                      │
+│       ▼                                                      │
+│  FCM Topic-Based Push                                        │
+│       │                                                      │
+│       ├── /topics/zone_{pincode}     → Local safety alerts   │
+│       ├── /topics/shop_{shop_id}     → Shop order updates    │
+│       ├── /topics/delivery_{id}      → Delivery status       │
+│       └── /topics/user_{user_id}     → Personal notifications│
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. User Verification & Trust System
+
+### Multi-Layer Verification (Inspired by Nextdoor)
+
+```mermaid
+flowchart TD
+    A["User Downloads App"] --> B["Phone OTP Verification"]
+    B --> C{"Verification Level 1 ✅"}
+    C --> D["Enter Home Address"]
+    D --> E{"GPS at Home?"}
+    
+    E -->|Yes| F["Auto-verify via GPS ✅"]
+    E -->|No| G["Upload Document"]
+    
+    G --> H["Aadhaar / Utility Bill / Rent Agreement"]
+    H --> I["Admin Manual Review"]
+    I --> J{"Verification Level 2 ✅"}
+    
+    F --> J
+    
+    J --> K["Society Auto-Mapped via Google Places"]
+    K --> L{"Full Verified Badge 🏅"}
+    
+    style L fill:#00B894,stroke:#fff,color:#fff
+    style C fill:#FDCB6E,stroke:#333
+    style J fill:#74B9FF,stroke:#333
+```
+
+### Trust Tiers
+
+| Tier | Badge | Requirements | Capabilities |
+|---|---|---|---|
+| **Basic** | ⚪ | Phone OTP only | View feed, browse shops |
+| **Verified** | 🔵 | Phone + Address verified | Post, comment, chat, apply for jobs |
+| **Trusted** | 🟢 | Verified + 30 days active + karma > 50 | Create events, moderate, post requirements |
+| **Business** | 🟡 | GST/License verified by admin | List shop, post jobs, run ads |
+| **Agent** | 🟠 | ID + Vehicle verified by admin | Accept deliveries |
+
+---
+
+## 9. Revenue Model — Multi-Stream Monetization
+
+### Revenue Streams Overview
+
+```mermaid
+pie title Revenue Distribution (Projected Year 2)
+    "Premium Shop Listings" : 30
+    "Delivery Commissions" : 25
+    "Lead Generation Fees" : 15
+    "Hyper-Local Ads" : 15
+    "Property Listing Fees" : 10
+    "Premium User Features" : 5
+```
+
+### Detailed Revenue Breakdown
+
+| # | Revenue Stream | Pricing Model | Target | Projected Monthly (per 1000 users) |
+|---|---|---|---|---|
+| 1 | **Premium Shop Listings** | ₹500–₹2000/month subscription | Shop owners | ₹25,000–₹100,000 |
+| 2 | **Delivery Commission** | 15% platform fee on each delivery | Per transaction | ₹15,000–₹50,000 |
+| 3 | **Lead Generation Fees** | ₹50–₹200 per verified lead | Service providers | ₹10,000–₹30,000 |
+| 4 | **Hyper-Local Display Ads** | CPM ₹100–₹500 / CPC ₹5–₹15 | Restaurants, gyms, grocers | ₹10,000–₹40,000 |
+| 5 | **Featured Property Listings** | ₹200–₹500 per listing bump | Landlords, PG owners | ₹5,000–₹15,000 |
+| 6 | **Premium User Subscription** | ₹99/month for enhanced features | Power users | ₹5,000–₹10,000 |
+| 7 | **Job Posting Fees** | ₹100–₹300 per job vacancy listing | Shop owners | ₹3,000–₹10,000 |
+
+### Shop Subscription Tiers
+
+| Tier | Price | Features |
+|---|---|---|
+| **Free** | ₹0 | Basic listing, 5 photos, standard search position |
+| **Basic** | ₹500/mo | Priority listing, 20 photos, analytics dashboard, "Verified" badge |
+| **Premium** | ₹2000/mo | Top search position, featured in "What's New" for 30 days, unlimited photos, delivery integration, ad credits |
+
+---
+
+## 10. Admin Panel & Mediation System
+
+### Admin Dashboard Modules
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ADMIN DASHBOARD                               │
+├──────────┬──────────┬──────────┬──────────┬──────────┬──────────┤
+│ Overview │  Users   │  Shops   │  Jobs    │ Delivery │ Revenue  │
+├──────────┴──────────┴──────────┴──────────┴──────────┴──────────┤
+│                                                                  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │ Total Users      │  │ Active Shops     │  │ Today's Revenue  │ │
+│  │     12,450       │  │      347         │  │    ₹8,230        │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  PENDING ACTIONS                                            ││
+│  │  • 12 Shop registrations awaiting verification              ││
+│  │  • 8 Service leads to be matched                            ││
+│  │  • 5 Property listings to review                            ││
+│  │  • 3 User complaints to resolve                             ││
+│  │  • 15 Job applications to mediate                           ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  LEAD MANAGEMENT PIPELINE                                   ││
+│  │                                                             ││
+│  │  New (23) → In Progress (12) → Matched (8) → Closed (145) ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Admin Lead Mediation Workflow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant App as App
+    participant Admin as Admin Panel
+    participant SP as Service Provider
+    
+    U->>App: "I need a plumber for bathroom leak"
+    App->>Admin: New service lead created
+    Admin->>Admin: Search matching plumbers in 3km radius
+    Admin->>Admin: Filter by rating, availability, reviews
+    Admin->>SP: "New job lead: Bathroom plumbing, 2.1km away"
+    SP->>Admin: Accepts lead
+    Admin->>U: "We found Ramesh (Plumber, ⭐4.8) - Contact: [Proxy Number]"
+    U->>SP: Contact via Twilio proxy number
+    
+    Note over U,SP: Service completed
+    
+    U->>App: Rate & review Ramesh
+    Admin->>SP: Lead fee of ₹100 deducted
+    Admin->>Admin: Log revenue, update analytics
+```
+
+---
+
+## 11. Multilingual & Localization Strategy
+
+### Supported Languages (Phase 1)
+
+| Language | Code | Priority |
+|---|---|---|
+| English | `en` | P0 — Default |
+| Hindi | `hi` | P0 — Launch |
+| Marathi | `mr` | P1 |
+| Tamil | `ta` | P1 |
+| Telugu | `te` | P1 |
+| Kannada | `kn` | P1 |
+| Bengali | `bn` | P2 |
+| Gujarati | `gu` | P2 |
+| Malayalam | `ml` | P2 |
+| Punjabi | `pa` | P2 |
+| Odia | `or` | P2 |
+| Urdu | `ur` | P2 |
+
+### Translation Architecture
+
+- **Static UI strings**: i18n JSON files bundled with the app
+- **Dynamic content** (user posts): Runtime translation via **Devnagri DOTA SDK** or **Google Cloud Translation API**
+- **Cache layer**: Redis cache for frequently translated strings (avoid repeated API calls)
+
+---
+
+## 12. Regulatory Compliance
+
+### India-Specific Compliance
+
+| Regulation | Requirement | Implementation |
+|---|---|---|
+| **IT Act 2000 (India)** | Data localization, user consent | Servers in India (AWS Mumbai), explicit consent flows |
+| **Personal Data Protection Bill** | Consent-based data collection | Granular permission controls, data deletion on request |
+| **FSSAI** (if food delivery) | Food safety compliance for delivery | Shop food license verification during onboarding |
+| **GST Compliance** | Tax collection on premium services | Razorpay handles GST invoicing |
+| **Intermediary Guidelines 2021** | Content moderation, grievance officer | Admin moderation panel, appointed grievance officer |
+
+### Data Privacy Measures
+
+- **Twilio Proxy**: All user-to-user calls/SMS routed through temporary proxy numbers
+- **Location Obfuscation**: Safety posts show nearest intersection, not exact address (Neighbors by Ring pattern)
+- **Right to Erasure**: Users can delete account and all associated data
+- **Consent Collection**: Explicit opt-in for location tracking, notifications, data sharing
+- **Data Encryption**: AES-256 at rest, TLS 1.3 in transit
+
+---
+
+## 13. Phased MVP Rollout Strategy
+
+### Phase Roadmap
+
+```mermaid
+gantt
+    title HyperLocal Development Roadmap
+    dateFormat  YYYY-MM-DD
+    
+    section Phase 1 - Foundation (Months 1-3)
+    Auth & User System           :a1, 2026-07-01, 3w
+    Database & Backend Setup     :a2, 2026-07-01, 3w
+    Community Feed & Posts       :a3, 2026-07-22, 3w
+    Business Directory (Basic)   :a4, 2026-08-12, 3w
+    Admin Panel (Basic)          :a5, 2026-08-12, 3w
+    Phase 1 Testing & Launch     :a6, 2026-09-02, 2w
+    
+    section Phase 2 - Growth (Months 4-6)
+    Chat System (Socket.io)      :b1, 2026-09-16, 3w
+    Skill Registry & Job Board   :b2, 2026-10-07, 3w
+    Real Estate Listings         :b3, 2026-10-28, 2w
+    Premium Listings & Ads       :b4, 2026-11-11, 2w
+    Phase 2 Testing              :b5, 2026-11-25, 2w
+    
+    section Phase 3 - Monetization (Months 7-9)
+    Delivery System (Status)     :c1, 2026-12-09, 4w
+    Payment Integration          :c2, 2027-01-06, 2w
+    Lead Mediation System        :c3, 2027-01-20, 2w
+    Revenue Dashboard            :c4, 2027-02-03, 2w
+    Phase 3 Testing              :c5, 2027-02-17, 2w
+    
+    section Phase 4 - Scale (Months 10-12)
+    Live GPS Tracking            :d1, 2027-03-03, 4w
+    Multilingual Support         :d2, 2027-03-31, 3w
+    Analytics & Recommendations  :d3, 2027-04-21, 2w
+    Performance Optimization     :d4, 2027-05-05, 2w
+    Full Launch                  :d5, 2027-05-19, 1w
+```
+
+### Phase 1: Foundation MVP (Months 1–3)
+
+**Goal**: Launch in ONE pilot neighborhood with core value
+
+| Component | Features |
+|---|---|
+| **Auth** | Phone OTP login, basic profile, GPS verification |
+| **Feed** | Post, comment, upvote/downvote, requirement posts |
+| **Business Directory** | Shop registration, search, categories, "What's New" |
+| **Society Mapping** | Google Maps integration, society registration |
+| **Admin Panel** | Basic dashboard, shop approval, content moderation |
+
+**Pre-Launch Actions**:
+1. Select pilot neighborhood (dense suburb with active markets)
+2. Physically onboard 30–50 local shops
+3. Register 10–15 service providers (plumbers, electricians)
+4. Seed community with 100+ early adopter residents
+
+### Phase 2: Social & Jobs (Months 4–6)
+
+| Component | Features |
+|---|---|
+| **Chat** | Direct messaging, group chats, society rooms |
+| **Job Board** | Skill registry, job vacancies, applications |
+| **Real Estate** | Property listings, PG listings, search filters |
+| **Monetization Start** | Premium shop listings, featured properties |
+
+### Phase 3: Delivery & Revenue (Months 7–9)
+
+| Component | Features |
+|---|---|
+| **Delivery** | Status-based tracking, agent registration, order system |
+| **Payments** | Razorpay integration, COD, UPI, delivery fee collection |
+| **Lead System** | Admin-mediated leads, commission tracking |
+| **Revenue Dashboard** | Complete financial analytics for admin |
+
+### Phase 4: Scale & Optimize (Months 10–12)
+
+| Component | Features |
+|---|---|
+| **Live Tracking** | Real-time GPS map pins (Swiggy-style) |
+| **Multilingual** | 12+ Indian language support |
+| **AI/ML** | Smart recommendations, auto-matching leads |
+| **Performance** | Caching optimization, CDN, load balancing |
+
+---
+
+## 14. Project Structure & Module Breakdown
+
+### React Native App Structure
+
+```
+hyperlocal-app/
+├── src/
+│   ├── api/                          # API client layer
+│   │   ├── client.js                 # Axios instance with interceptors
+│   │   ├── auth.api.js
+│   │   ├── feed.api.js
+│   │   ├── shops.api.js
+│   │   ├── jobs.api.js
+│   │   ├── delivery.api.js
+│   │   └── chat.api.js
+│   │
+│   ├── screens/                      # All app screens
+│   │   ├── auth/
+│   │   │   ├── LoginScreen.js
+│   │   │   ├── OTPScreen.js
+│   │   │   └── ProfileSetupScreen.js
+│   │   │
+│   │   ├── home/
+│   │   │   ├── HomeScreen.js         # Main feed
+│   │   │   ├── PostDetailScreen.js
+│   │   │   └── CreatePostScreen.js
+│   │   │
+│   │   ├── shops/
+│   │   │   ├── ShopListScreen.js
+│   │   │   ├── ShopDetailScreen.js
+│   │   │   ├── ShopRegisterScreen.js
+│   │   │   └── NewlyAddedScreen.js
+│   │   │
+│   │   ├── jobs/
+│   │   │   ├── SkillSearchScreen.js
+│   │   │   ├── SkillRegistrationScreen.js
+│   │   │   ├── JobVacancyListScreen.js
+│   │   │   ├── JobVacancyDetailScreen.js
+│   │   │   └── JobApplicationScreen.js
+│   │   │
+│   │   ├── realestate/
+│   │   │   ├── PropertyListScreen.js
+│   │   │   ├── PropertyDetailScreen.js
+│   │   │   └── PropertyPostScreen.js
+│   │   │
+│   │   ├── delivery/
+│   │   │   ├── OrderScreen.js
+│   │   │   ├── TrackingScreen.js
+│   │   │   ├── AgentDashboardScreen.js
+│   │   │   └── DeliveryHistoryScreen.js
+│   │   │
+│   │   ├── chat/
+│   │   │   ├── ChatListScreen.js
+│   │   │   ├── ChatRoomScreen.js
+│   │   │   └── DirectMessageScreen.js
+│   │   │
+│   │   └── profile/
+│   │       ├── ProfileScreen.js
+│   │       ├── SettingsScreen.js
+│   │       └── NotificationsScreen.js
+│   │
+│   ├── components/                   # Reusable UI components
+│   │   ├── common/
+│   │   │   ├── Button.js
+│   │   │   ├── Card.js
+│   │   │   ├── SearchBar.js
+│   │   │   ├── MapView.js
+│   │   │   ├── RatingStars.js
+│   │   │   └── Badge.js
+│   │   │
+│   │   ├── feed/
+│   │   │   ├── PostCard.js
+│   │   │   ├── CommentThread.js
+│   │   │   └── VoteButtons.js
+│   │   │
+│   │   ├── shop/
+│   │   │   ├── ShopCard.js
+│   │   │   ├── ProductList.js
+│   │   │   └── ReviewCard.js
+│   │   │
+│   │   ├── delivery/
+│   │   │   ├── StatusTracker.js
+│   │   │   ├── LiveMap.js
+│   │   │   ├── AgentCard.js
+│   │   │   └── OrderSummary.js
+│   │   │
+│   │   └── chat/
+│   │       ├── MessageBubble.js
+│   │       ├── ChatInput.js
+│   │       └── TypingIndicator.js
+│   │
+│   ├── navigation/
+│   │   ├── AppNavigator.js           # Main tab + stack navigator
+│   │   ├── AuthNavigator.js
+│   │   └── DeliveryAgentNavigator.js
+│   │
+│   ├── store/                        # State management (Redux/Zustand)
+│   │   ├── authStore.js
+│   │   ├── feedStore.js
+│   │   ├── shopStore.js
+│   │   ├── deliveryStore.js
+│   │   └── chatStore.js
+│   │
+│   ├── services/
+│   │   ├── socket.service.js         # Socket.io client
+│   │   ├── location.service.js       # GPS tracking
+│   │   ├── notification.service.js   # FCM handler
+│   │   └── storage.service.js        # AsyncStorage
+│   │
+│   ├── utils/
+│   │   ├── constants.js
+│   │   ├── helpers.js
+│   │   └── validators.js
+│   │
+│   └── i18n/                         # Localization
+│       ├── en.json
+│       ├── hi.json
+│       └── index.js
+│
+├── android/
+├── ios/
+├── package.json
+└── app.json
+```
+
+### Node.js Backend Structure
+
+```
+hyperlocal-backend/
+├── src/
+│   ├── config/
+│   │   ├── database.js               # PostgreSQL + PostGIS config
+│   │   ├── redis.js
+│   │   ├── firebase.js
+│   │   └── environment.js
+│   │
+│   ├── middleware/
+│   │   ├── auth.middleware.js         # JWT verification
+│   │   ├── rateLimiter.middleware.js
+│   │   ├── validator.middleware.js
+│   │   └── upload.middleware.js       # Multer for file uploads
+│   │
+│   ├── routes/
+│   │   ├── auth.routes.js
+│   │   ├── users.routes.js
+│   │   ├── feed.routes.js
+│   │   ├── shops.routes.js
+│   │   ├── jobs.routes.js
+│   │   ├── properties.routes.js
+│   │   ├── delivery.routes.js
+│   │   ├── chat.routes.js
+│   │   ├── admin.routes.js
+│   │   └── ads.routes.js
+│   │
+│   ├── controllers/                  # Request handlers
+│   │   ├── auth.controller.js
+│   │   ├── users.controller.js
+│   │   ├── feed.controller.js
+│   │   ├── shops.controller.js
+│   │   ├── jobs.controller.js
+│   │   ├── properties.controller.js
+│   │   ├── delivery.controller.js
+│   │   ├── chat.controller.js
+│   │   ├── admin.controller.js
+│   │   └── ads.controller.js
+│   │
+│   ├── services/                     # Business logic
+│   │   ├── auth.service.js
+│   │   ├── user.service.js
+│   │   ├── feed.service.js
+│   │   ├── shop.service.js
+│   │   ├── job.service.js
+│   │   ├── property.service.js
+│   │   ├── delivery.service.js
+│   │   ├── tracking.service.js
+│   │   ├── chat.service.js
+│   │   ├── notification.service.js
+│   │   ├── payment.service.js
+│   │   ├── lead.service.js
+│   │   └── geofence.service.js
+│   │
+│   ├── models/                       # Database models (Knex/Sequelize)
+│   │   ├── User.js
+│   │   ├── Society.js
+│   │   ├── Shop.js
+│   │   ├── Product.js
+│   │   ├── Post.js
+│   │   ├── SkillCategory.js
+│   │   ├── UserSkill.js
+│   │   ├── JobVacancy.js
+│   │   ├── PropertyListing.js
+│   │   ├── Order.js
+│   │   ├── Delivery.js
+│   │   ├── DeliveryAgent.js
+│   │   ├── ChatRoom.js
+│   │   ├── ChatMessage.js
+│   │   └── AdminLead.js
+│   │
+│   ├── sockets/
+│   │   ├── index.js                  # Socket.io server setup
+│   │   ├── chat.socket.js
+│   │   ├── delivery.socket.js
+│   │   └── feed.socket.js
+│   │
+│   ├── migrations/                   # Database migrations
+│   ├── seeds/                        # Seed data
+│   └── utils/
+│       ├── geospatial.js             # PostGIS helpers
+│       ├── jwt.js
+│       └── validators.js
+│
+├── admin-panel/                      # React.js admin dashboard
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── Dashboard.js
+│   │   │   ├── Users.js
+│   │   │   ├── Shops.js
+│   │   │   ├── Jobs.js
+│   │   │   ├── Deliveries.js
+│   │   │   ├── Leads.js
+│   │   │   ├── Properties.js
+│   │   │   ├── Ads.js
+│   │   │   └── Revenue.js
+│   │   └── components/
+│   │       ├── LeadPipeline.js
+│   │       ├── ShopApproval.js
+│   │       ├── DeliveryMonitor.js
+│   │       └── RevenueChart.js
+│   └── package.json
+│
+├── package.json
+├── server.js
+└── docker-compose.yml
+```
+
+---
+
+## 15. Verification Plan
+
+### Automated Tests
+
+```bash
+# Backend API tests
+npm run test:api           # Mocha/Jest API endpoint tests
+npm run test:services      # Service layer unit tests
+npm run test:geospatial    # PostGIS query validation tests
+
+# Mobile app tests
+npm run test:components    # React Native component tests
+npm run test:screens       # Screen integration tests
+npm run test:e2e           # Detox end-to-end tests
+
+# Load testing
+npm run test:load          # Artillery/k6 load tests for WebSocket & API
+```
+
+### Manual Verification Checklist
+
+| Area | Test | Success Criteria |
+|---|---|---|
+| **Auth** | Register via phone OTP, verify address via GPS | User gets verified badge |
+| **Feed** | Post, comment, upvote from two different accounts | Posts visible only within radius |
+| **Shops** | Register shop, admin approves, appears in "What's New" | Shop searchable by category & map |
+| **Jobs** | Register skill, search nearby plumber | Results sorted by distance |
+| **Property** | Post PG listing, search by society | Listing appears with photos |
+| **Delivery** | Place order, assign agent, track status changes | All 7 status milestones update correctly |
+| **Chat** | 1:1 chat, group chat, society room | Real-time message delivery < 500ms |
+| **Admin** | Review leads, approve shops, match service requests | Pipeline moves leads through stages |
+| **Payments** | Pay via UPI, delivery fee split correctly | Agent payout = 85%, platform = 15% |
+| **Notifications** | Receive push when app is closed | FCM push arrives within 5 seconds |
+
+### Performance Targets
+
+| Metric | Target |
+|---|---|
+| API Response Time (p95) | < 200ms |
+| WebSocket Latency | < 100ms |
+| GPS Tracking Update | Every 5 seconds |
+| Feed Load Time | < 1.5 seconds |
+| Map Render Time | < 2 seconds |
+| App Size | < 50 MB (APK) |
+| Crash-Free Sessions | > 99.5% |
+
+---
+
+## 16. Risk Assessment & Mitigation
+
+| Risk | Impact | Probability | Mitigation |
+|---|---|---|---|
+| **Google Maps API costs spiral** | High | Medium | Start with status-based tracking; use OpenStreetMap for non-critical maps; cache routes |
+| **Cold start problem** (no users/shops) | Critical | High | Physical on-ground onboarding of 50+ shops before user launch; seed content |
+| **Real-time system scalability** | High | Medium | Redis Pub/Sub for horizontal scaling; partition by pincode zones |
+| **User trust & safety** | Critical | Medium | Multi-layer verification; admin moderation; proxy numbers; content filtering |
+| **Delivery agent reliability** | High | Medium | Rating system; minimum delivery requirement; instant payout incentives |
+| **Regulatory changes** | Medium | Low | Modular compliance layer; appointed grievance officer; data localization |
+| **Competition from Nextdoor/Nyburs** | Medium | Medium | Differentiate with delivery + jobs (no competitor has both); hyper-local focus |
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Technology Choice**: The plan recommends **React Native** for mobile + **Node.js** for backend. If your team has Flutter/Dart expertise, Flutter is an equally valid choice. Please confirm your preference.
+
+> [!IMPORTANT]
+> **MVP Scope**: Phase 1 includes Auth, Feed, Business Directory, and Admin Panel. This is the minimum needed to demonstrate value. Do you agree with this scope, or do you want to include/exclude specific features from the MVP?
+
+> [!IMPORTANT]
+> **Pilot Location**: The strategy requires selecting ONE dense neighborhood to launch first. Do you have a specific city/area in mind for the pilot?
+
+## Open Questions
+
+> [!WARNING]
+> 1. **iOS Support**: The request mentions "Android application" — should we build Android-only (native Kotlin) or cross-platform (React Native) for eventual iOS support?
+
+> [!IMPORTANT]
+> 2. **Budget & Team Size**: The full roadmap spans ~12 months. What is the available development team size and budget? This affects whether we use managed services (Firebase) or self-hosted infrastructure.
+
+> [!IMPORTANT]
+> 3. **Payment Model**: For delivery fees and lead commissions — should payments be handled in-app (Razorpay wallet) or via external UPI/cash? In-app payments require RBI compliance.
+
+> [!NOTE]
+> 4. **Admin Role**: Is "Admin" a single person (the founder) or a team? Should there be multiple admin roles (Super Admin, City Admin, Content Moderator)?
+
+> [!NOTE]
+> 5. **App Name**: "HyperLocal" is used as a placeholder. Do you have a finalized app name and branding?
+
+> [!NOTE]
+> 6. **Existing Assets**: Do you have any existing design mockups, wireframes, or branding guidelines?

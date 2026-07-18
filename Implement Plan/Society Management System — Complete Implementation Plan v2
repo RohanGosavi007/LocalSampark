@@ -1,0 +1,755 @@
+# Society Management System — Complete Implementation Plan v2
+
+## Goal
+
+Build a **complete Society Management Platform** inside LocalSampark with **15 features** across **3 role-based views**:
+
+| Role | Access |
+|---|---|
+| **Society Admin** | Full control — members, bills, settings, analytics, notices, polls, amenities |
+| **Security Guard** | Visitor logging with photos, staff attendance, package logging, reminders |
+| **Resident (Flat Owner)** | Doorbell alerts, approve/decline visitors, bills, complaints, bookings, polls, directory |
+
+---
+
+## All 15 Features at a Glance
+
+| # | Feature | Guard | Resident | Admin |
+|---|---|---|---|---|
+| 1 | **Visitor Management** (webcam, ID capture) | ✅ Log | ✅ Approve/Decline | ✅ View All |
+| 2 | **Doorbell Notification** (real-time alarm) | — | ✅ Receive | — |
+| 3 | **Member Management** | — | — | ✅ Full CRUD |
+| 4 | **Guard Messaging** | ✅ Receive | ✅ Send | ✅ Send |
+| 5 | **Guard Reminders** (loud alarm) | ✅ Receive | ✅ Set | ✅ Set |
+| 6 | **🧹 Domestic Staff Attendance** | ✅ Mark in/out | ✅ View history | ✅ Manage staff |
+| 7 | **💰 Maintenance Bills** | — | ✅ View/Pay | ✅ Generate/Track |
+| 8 | **🅿️ Parking Management** | ✅ Log visitor cars | ✅ View slot | ✅ Assign slots |
+| 9 | **🏊 Amenity/Facility Booking** | — | ✅ Book | ✅ Manage |
+| 10 | **📋 Complaints & Grievance** | — | ✅ File | ✅ Assign/Resolve |
+| 11 | **📦 Package Collection** | ✅ Log packages | ✅ View/Collect | ✅ View all |
+| 12 | **🗳️ Polls & Voting** | — | ✅ Vote | ✅ Create |
+| 13 | **🚨 Emergency Alert** | ✅ Trigger/Receive | ✅ Trigger/Receive | ✅ Trigger/Receive |
+| 14 | **📞 Digital Flat Directory** | ✅ View | ✅ View | ✅ Manage |
+| 15 | **📅 Events Calendar** | — | ✅ RSVP | ✅ Create |
+
+---
+
+## Existing Codebase State
+
+| Component | Current State |
+|---|---|
+| [societies table](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/migrations/init.sqlite.sql#L72-L81) | Basic: `id, region_id, name, address, coordinate, visitor_gate_pass_code` |
+| [society.routes.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/routes/society.routes.js) | Minimal: list societies, basic visitor pre-approve |
+| [society-admin.routes.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/routes/society-admin.routes.js) | Minimal: pre-approve visitors, bookings, complaints |
+| [society/page.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/apps/web/src/app/society/page.js) | Static demo with hardcoded data, no role-based views |
+| [sockets/index.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/sockets/index.js) | SOS, blood, delivery, chat events — no society events |
+| [auth.middleware.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/middleware/auth.middleware.js) | `authenticate`, `requireAdmin`, `requireRole` — user has `society_id` |
+| [globals.css](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/apps/web/src/app/globals.css) | Custom design system — **NO Tailwind** |
+| Database | SQLite via `init.sqlite.sql` |
+
+> [!IMPORTANT]
+> The `society_visitors` table referenced in existing routes does **not exist** in the migration. All tables will be created fresh.
+
+---
+
+## Proposed Changes
+
+---
+
+### 1. Database — New Migration
+
+#### [NEW] [008_society_management.sqlite.sql](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/migrations/008_society_management.sqlite.sql)
+
+**18 new tables** organized by feature:
+
+#### Core Tables
+
+```sql
+-- Society Members (links users → societies with roles)
+CREATE TABLE IF NOT EXISTS society_members (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    flat_number TEXT NOT NULL,
+    role TEXT DEFAULT 'resident',    -- admin, guard, resident
+    is_active INTEGER DEFAULT 1,
+    added_by TEXT REFERENCES users(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(society_id, user_id)
+);
+
+-- Society Settings
+CREATE TABLE IF NOT EXISTS society_settings (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE UNIQUE,
+    auto_approve_expected INTEGER DEFAULT 0,
+    visitor_photo_required INTEGER DEFAULT 1,
+    id_card_required INTEGER DEFAULT 1,
+    max_visitors_per_flat INTEGER DEFAULT 10,
+    guard_shift_start TEXT DEFAULT '06:00',
+    guard_shift_end TEXT DEFAULT '22:00',
+    maintenance_due_day INTEGER DEFAULT 5,
+    late_fee_percentage REAL DEFAULT 5.0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Society Notices
+CREATE TABLE IF NOT EXISTS society_notices (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    posted_by TEXT REFERENCES users(id),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    priority TEXT DEFAULT 'normal',    -- normal, important, urgent
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 1: Visitor Management
+
+```sql
+CREATE TABLE IF NOT EXISTS society_visitors (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    resident_id TEXT REFERENCES users(id),
+    guard_id TEXT REFERENCES users(id),
+    visitor_name TEXT NOT NULL,
+    visitor_phone TEXT,
+    purpose TEXT DEFAULT 'guest',
+    vehicle_number TEXT,
+    visitor_photo_url TEXT,          -- base64 data URI
+    id_card_photo_url TEXT,          -- base64 data URI
+    flat_number TEXT,
+    status TEXT DEFAULT 'pending',   -- pending, approved, declined, checked_in, checked_out
+    approved_at TEXT,
+    checked_in_at TEXT,
+    checked_out_at TEXT,
+    qr_code TEXT,
+    expected_at TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS society_visitor_log (
+    id TEXT PRIMARY KEY,
+    visitor_id TEXT REFERENCES society_visitors(id) ON DELETE CASCADE,
+    action TEXT NOT NULL,
+    performed_by TEXT REFERENCES users(id),
+    notes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Features 4–5: Guard Messages & Reminders
+
+```sql
+CREATE TABLE IF NOT EXISTS society_guard_messages (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    sender_id TEXT REFERENCES users(id),
+    guard_id TEXT REFERENCES users(id),
+    message TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS society_guard_reminders (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    guard_id TEXT REFERENCES users(id),
+    created_by TEXT REFERENCES users(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    reminder_time TEXT NOT NULL,
+    is_recurring INTEGER DEFAULT 0,
+    recurrence_pattern TEXT,
+    priority TEXT DEFAULT 'normal',   -- normal, high, critical
+    status TEXT DEFAULT 'active',     -- active, completed, dismissed
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 6: Domestic Staff Attendance
+
+```sql
+CREATE TABLE IF NOT EXISTS society_domestic_staff (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    staff_name TEXT NOT NULL,
+    staff_phone TEXT,
+    staff_photo_url TEXT,
+    staff_type TEXT NOT NULL,        -- maid, cook, driver, gardener, watchman, other
+    assigned_flats TEXT DEFAULT '[]', -- JSON array of flat numbers
+    id_proof_url TEXT,
+    is_active INTEGER DEFAULT 1,
+    added_by TEXT REFERENCES users(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS society_staff_attendance (
+    id TEXT PRIMARY KEY,
+    staff_id TEXT REFERENCES society_domestic_staff(id) ON DELETE CASCADE,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    marked_by TEXT REFERENCES users(id),  -- guard who marked
+    check_in_time TEXT,
+    check_out_time TEXT,
+    date TEXT NOT NULL,               -- YYYY-MM-DD
+    status TEXT DEFAULT 'present',    -- present, absent, half_day, leave
+    notes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(staff_id, date)
+);
+```
+
+#### Feature 7: Maintenance Bills
+
+```sql
+CREATE TABLE IF NOT EXISTS society_maintenance_bills (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    member_id TEXT REFERENCES society_members(id) ON DELETE CASCADE,
+    flat_number TEXT NOT NULL,
+    month TEXT NOT NULL,               -- '2026-07'
+    base_amount REAL NOT NULL,
+    water_charges REAL DEFAULT 0,
+    parking_charges REAL DEFAULT 0,
+    other_charges REAL DEFAULT 0,
+    late_fee REAL DEFAULT 0,
+    total_amount REAL NOT NULL,
+    due_date TEXT NOT NULL,
+    paid_amount REAL DEFAULT 0,
+    payment_status TEXT DEFAULT 'pending',  -- pending, partial, paid, overdue
+    paid_at TEXT,
+    payment_reference TEXT,
+    notes TEXT,
+    generated_by TEXT REFERENCES users(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 8: Parking Management
+
+```sql
+CREATE TABLE IF NOT EXISTS society_parking_slots (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    slot_number TEXT NOT NULL,
+    slot_type TEXT DEFAULT 'car',      -- car, bike, visitor
+    flat_number TEXT,                   -- NULL for visitor slots
+    vehicle_number TEXT,
+    vehicle_type TEXT,
+    vehicle_photo_url TEXT,
+    is_occupied INTEGER DEFAULT 0,
+    assigned_to TEXT REFERENCES society_members(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(society_id, slot_number)
+);
+```
+
+#### Feature 9: Amenity/Facility Booking
+
+```sql
+CREATE TABLE IF NOT EXISTS society_amenities (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,                -- Clubhouse, Gym, Swimming Pool, Party Hall, Guest Room
+    description TEXT,
+    capacity INTEGER,
+    hourly_rate REAL DEFAULT 0,
+    booking_advance_days INTEGER DEFAULT 7,
+    available_from TEXT DEFAULT '06:00',
+    available_until TEXT DEFAULT '22:00',
+    is_active INTEGER DEFAULT 1,
+    rules TEXT,                        -- usage rules
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS society_amenity_bookings (
+    id TEXT PRIMARY KEY,
+    amenity_id TEXT REFERENCES society_amenities(id) ON DELETE CASCADE,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    booked_by TEXT REFERENCES users(id),
+    flat_number TEXT,
+    booking_date TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    purpose TEXT,
+    guest_count INTEGER DEFAULT 0,
+    total_charge REAL DEFAULT 0,
+    status TEXT DEFAULT 'confirmed',   -- confirmed, cancelled, completed
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 10: Complaints & Grievance
+
+```sql
+CREATE TABLE IF NOT EXISTS society_complaints (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    filed_by TEXT REFERENCES users(id),
+    flat_number TEXT,
+    category TEXT NOT NULL,            -- plumbing, electrical, water, noise, parking, cleanliness, security, other
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    photo_urls TEXT DEFAULT '[]',       -- JSON array of base64 photos
+    priority TEXT DEFAULT 'medium',     -- low, medium, high, critical
+    status TEXT DEFAULT 'open',         -- open, in_progress, resolved, closed, rejected
+    assigned_to TEXT,                   -- maintenance person name
+    admin_notes TEXT,
+    resolved_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 11: Package Collection
+
+```sql
+CREATE TABLE IF NOT EXISTS society_packages (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    flat_number TEXT NOT NULL,
+    resident_id TEXT REFERENCES users(id),
+    logged_by TEXT REFERENCES users(id),   -- guard
+    courier_name TEXT,                      -- Amazon, Flipkart, Swiggy, etc.
+    package_description TEXT,
+    package_photo_url TEXT,
+    receiver_name TEXT,
+    status TEXT DEFAULT 'received',         -- received, notified, collected
+    collected_at TEXT,
+    collected_by TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 12: Polls & Voting
+
+```sql
+CREATE TABLE IF NOT EXISTS society_polls (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    created_by TEXT REFERENCES users(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    options TEXT NOT NULL,              -- JSON: ["Option A", "Option B", "Option C"]
+    poll_type TEXT DEFAULT 'single',    -- single, multiple
+    is_anonymous INTEGER DEFAULT 0,
+    starts_at TEXT,
+    ends_at TEXT,
+    status TEXT DEFAULT 'active',       -- draft, active, closed
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS society_poll_votes (
+    id TEXT PRIMARY KEY,
+    poll_id TEXT REFERENCES society_polls(id) ON DELETE CASCADE,
+    voter_id TEXT REFERENCES users(id),
+    selected_option INTEGER NOT NULL,   -- index of selected option
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(poll_id, voter_id)
+);
+```
+
+#### Feature 13: Emergency Alerts
+
+```sql
+CREATE TABLE IF NOT EXISTS society_emergency_alerts (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    triggered_by TEXT REFERENCES users(id),
+    alert_type TEXT NOT NULL,           -- fire, medical, security_breach, gas_leak, earthquake, other
+    description TEXT,
+    flat_number TEXT,
+    status TEXT DEFAULT 'active',       -- active, resolved, false_alarm
+    resolved_at TEXT,
+    resolved_by TEXT REFERENCES users(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Feature 15: Events Calendar
+
+```sql
+CREATE TABLE IF NOT EXISTS society_events (
+    id TEXT PRIMARY KEY,
+    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    created_by TEXT REFERENCES users(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    event_date TEXT NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    venue TEXT,
+    event_type TEXT DEFAULT 'general',  -- festival, meeting, sports, cultural, maintenance, general
+    max_attendees INTEGER,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS society_event_rsvps (
+    id TEXT PRIMARY KEY,
+    event_id TEXT REFERENCES society_events(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES users(id),
+    flat_number TEXT,
+    guests_count INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'going',        -- going, maybe, not_going
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(event_id, user_id)
+);
+```
+
+**Total: 18 new tables + indexes**
+
+---
+
+### 2. Backend — Controller
+
+#### [NEW] [society-visitor.controller.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/controllers/society-visitor.controller.js)
+
+**~60+ API handler functions** organized by feature module:
+
+##### Core Visitor Management (Features 1–2)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/visitors` | Guard | Log visitor with photos (base64) → triggers doorbell socket |
+| GET | `/visitors/today` | Guard | Today's visitor log |
+| PUT | `/visitors/:id/check-in` | Guard | Mark checked-in |
+| PUT | `/visitors/:id/check-out` | Guard | Mark checked-out |
+| GET | `/my-visitors` | Resident | Pending + recent visitors for my flat |
+| PUT | `/visitors/:id/approve` | Resident | Approve entry → socket to guard |
+| PUT | `/visitors/:id/decline` | Resident | Decline entry → socket to guard |
+| GET | `/visitors/all` | Admin | All visitors with filters |
+| GET | `/visitors/analytics` | Admin | Stats by day, purpose, flat |
+
+##### Member Management (Feature 3)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| GET | `/members` | Admin | List all members |
+| POST | `/members` | Admin | Add member (search by phone from users table) |
+| PUT | `/members/:id` | Admin | Update role/flat/status |
+| DELETE | `/members/:id` | Admin | Remove member |
+
+##### Guard Messaging & Reminders (Features 4–5)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/guard-message` | Resident/Admin | Send message to guard → socket |
+| GET | `/guard-messages` | Guard | Get my messages |
+| PUT | `/guard-messages/:id/read` | Guard | Mark read |
+| POST | `/guard-reminder` | Resident/Admin | Set timed reminder → loud alarm socket |
+| GET | `/guard-reminders` | Guard | My active reminders |
+| PUT | `/guard-reminders/:id/dismiss` | Guard | Dismiss reminder |
+
+##### Domestic Staff Attendance (Feature 6)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| GET | `/staff` | Admin | List all domestic staff |
+| POST | `/staff` | Admin | Register new staff member |
+| PUT | `/staff/:id` | Admin | Update staff details |
+| DELETE | `/staff/:id` | Admin | Deactivate staff |
+| POST | `/staff/:id/attendance` | Guard | Mark check-in/check-out |
+| GET | `/staff/attendance/today` | Guard | Today's attendance |
+| GET | `/staff/:id/attendance-history` | Resident/Admin | Monthly attendance log |
+
+##### Maintenance Bills (Feature 7)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/bills/generate` | Admin | Generate monthly bills for all flats |
+| GET | `/bills` | Admin | View all bills with filters |
+| GET | `/my-bills` | Resident | My pending/paid bills |
+| PUT | `/bills/:id/pay` | Resident | Mark as paid (with reference) |
+| GET | `/bills/summary` | Admin | Revenue summary (paid vs pending) |
+
+##### Parking Management (Feature 8)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| GET | `/parking` | Admin | All parking slots |
+| POST | `/parking` | Admin | Create/assign slot |
+| PUT | `/parking/:id` | Admin | Update assignment |
+| DELETE | `/parking/:id` | Admin | Remove slot |
+| GET | `/my-parking` | Resident | My assigned slot |
+| POST | `/parking/visitor` | Guard | Log visitor vehicle in visitor slot |
+
+##### Amenity Booking (Feature 9)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| GET | `/amenities` | All | List amenities |
+| POST | `/amenities` | Admin | Create amenity |
+| PUT | `/amenities/:id` | Admin | Update amenity |
+| POST | `/amenities/:id/book` | Resident | Book a slot |
+| GET | `/amenities/:id/bookings` | All | View bookings for date |
+| GET | `/my-bookings` | Resident | My bookings |
+| PUT | `/bookings/:id/cancel` | Resident | Cancel booking |
+
+##### Complaints (Feature 10)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/complaints` | Resident | File complaint with photos |
+| GET | `/my-complaints` | Resident | My filed complaints |
+| GET | `/complaints/all` | Admin | All complaints |
+| PUT | `/complaints/:id/assign` | Admin | Assign + change status |
+| PUT | `/complaints/:id/resolve` | Admin | Mark resolved |
+
+##### Package Collection (Feature 11)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/packages` | Guard | Log received package → socket to resident |
+| GET | `/packages/pending` | Guard | Uncollected packages |
+| GET | `/my-packages` | Resident | My packages |
+| PUT | `/packages/:id/collect` | Resident/Guard | Mark collected |
+
+##### Polls & Voting (Feature 12)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/polls` | Admin | Create poll |
+| GET | `/polls` | All | List active polls |
+| POST | `/polls/:id/vote` | Resident | Cast vote |
+| GET | `/polls/:id/results` | All | View results (counts + percentages) |
+| PUT | `/polls/:id/close` | Admin | Close poll |
+
+##### Emergency Alert (Feature 13)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/emergency` | All | Trigger emergency → loud socket to ALL |
+| GET | `/emergency/active` | All | Active emergencies |
+| PUT | `/emergency/:id/resolve` | Admin/Guard | Mark resolved |
+
+##### Flat Directory (Feature 14)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| GET | `/directory` | All (society) | Searchable flat directory |
+
+##### Events Calendar (Feature 15)
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| POST | `/events` | Admin | Create event |
+| GET | `/events` | All | List upcoming events |
+| POST | `/events/:id/rsvp` | Resident | RSVP to event |
+| GET | `/events/:id/attendees` | Admin | View RSVPs |
+| DELETE | `/events/:id` | Admin | Cancel event |
+
+---
+
+### 3. Backend — Routes
+
+#### [NEW] [society-visitor.routes.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/routes/society-visitor.routes.js)
+
+All routes use `authenticate` middleware. A custom `requireSocietyRole('admin'|'guard'|'resident')` middleware checks the user's role in `society_members` table.
+
+---
+
+### 4. Backend — Socket.io Events
+
+#### [MODIFY] [sockets/index.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/sockets/index.js)
+
+**8 new socket events:**
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                    SOCKET EVENT FLOWS                              │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  VISITOR DOORBELL FLOW:                                           │
+│  Guard → POST /visitors                                           │
+│    → Server emits 'society:doorbell' to resident                  │
+│    → Resident approves/declines                                   │
+│    → Server emits 'society:visitor:status' to guard               │
+│                                                                   │
+│  GUARD MESSAGING:                                                 │
+│  Resident → POST /guard-message                                   │
+│    → Server emits 'society:guard:message:new' to guard            │
+│                                                                   │
+│  GUARD REMINDER ALARM:                                            │
+│  Server checks every 30s for due reminders                        │
+│    → Server emits 'society:guard:reminder:alarm' to guard         │
+│    → Plays LOUD persistent alarm on guard device                  │
+│                                                                   │
+│  PACKAGE NOTIFICATION:                                            │
+│  Guard → POST /packages                                           │
+│    → Server emits 'society:package:new' to resident               │
+│                                                                   │
+│  EMERGENCY ALERT:                                                 │
+│  Any user → POST /emergency                                       │
+│    → Server emits 'society:emergency' to ALL society members      │
+│    → LOUD ALARM on all devices                                    │
+│                                                                   │
+│  COMPLAINT UPDATE:                                                │
+│  Admin → PUT /complaints/:id/resolve                              │
+│    → Server emits 'society:complaint:update' to complainant       │
+│                                                                   │
+│  POLL NOTIFICATION:                                               │
+│  Admin → POST /polls                                              │
+│    → Server emits 'society:poll:new' to all residents             │
+│                                                                   │
+│  BILL NOTIFICATION:                                               │
+│  Admin → POST /bills/generate                                     │
+│    → Server emits 'society:bill:new' to each resident             │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5. Backend — Server Registration
+
+#### [MODIFY] [server.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/backend/src/server.js)
+
+- Import: `const societyVisitorRoutes = require('./routes/society-visitor.routes');`
+- Register: `app.use(\`${API_PREFIX}/society-management\`, societyVisitorRoutes);`
+- Add 30-second `setInterval` for guard reminder checks
+- Increase `express.json` limit to `15mb` (for base64 photo uploads)
+
+---
+
+### 6. Frontend — Complete Society Page
+
+#### [MODIFY] [society/page.js](file:///C:/Users/Abhi%20Laptop/Downloads/Local%2029-06-2026/Local%2029-06-2026/localsampark/apps/web/src/app/society/page.js)
+
+Complete rewrite using `globals.css` design system (NO Tailwind). Structure:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  🏢 SOCIETY MANAGEMENT PLATFORM                                      │
+│  ──────────────────────────────────                                    │
+│  Role: [Society Admin ▾] | Society: Ganga Aria Society                │
+│                                                                        │
+│  ═══════════════════════════════════════════════════════════════════   │
+│                                                                        │
+│  NAVIGATION TABS (shown per role):                                     │
+│  ┌────────┬──────────┬────────┬──────────┬──────────┬────────────┐    │
+│  │Visitors│ Staff    │ Bills  │ Parking  │ Amenities│ Complaints │    │
+│  ├────────┼──────────┼────────┼──────────┼──────────┼────────────┤    │
+│  │Packages│ Polls    │ Emergency│ Directory│ Events │ Notices    │    │
+│  └────────┴──────────┴────────┴──────────┴──────────┴────────────┘    │
+│                                                                        │
+│  Each tab renders a self-contained section with forms + data tables    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Key UI Components per Feature:**
+
+##### 🔔 Visitor Tab (Guard View)
+- **Log Visitor Form**: Name, phone, purpose dropdown, flat number
+- **Dual Webcam Capture**: Two live camera previews — visitor face + ID card
+- **Capture buttons** using `navigator.mediaDevices.getUserMedia()`
+- **Photo previews** before submission
+- **Today's Visitor Log** — table with status badges
+
+##### 🔔 Visitor Tab (Resident View) — Doorbell Modal
+- **Full-screen overlay** with doorbell sound (`new Audio()`)
+- Large visitor photo + ID card photo
+- Visitor details (name, phone, purpose)
+- Giant **✅ Allow Entry** / **❌ Decline Entry** buttons
+- Auto-plays alarm sound on `society:doorbell` socket event
+
+##### 🧹 Staff Attendance Tab
+- **Guard**: Grid of staff cards with Check-In / Check-Out buttons + timestamps
+- **Admin**: Staff CRUD form + monthly attendance calendar heatmap
+- **Resident**: View attendance of their assigned staff
+
+##### 💰 Bills Tab
+- **Admin**: Generate bills form (base amount, water, parking, other charges) → bulk generate for all flats
+- **Admin**: Bills dashboard — paid/pending/overdue counts with progress bar
+- **Resident**: My bills list with Pay button and payment reference input
+
+##### 🅿️ Parking Tab
+- **Admin**: Slot grid visualization (occupied/empty), assign to flat
+- **Guard**: Log visitor vehicle to visitor slots
+- **Resident**: View my assigned slot + vehicle info
+
+##### 🏊 Amenities Tab
+- **Admin**: CRUD for amenities (name, capacity, hourly rate, rules)
+- **Resident**: Calendar-style slot picker, view availability, book
+- **Booking confirmation** with details
+
+##### 📋 Complaints Tab
+- **Resident**: File complaint form with category dropdown, priority, photo upload (webcam or file)
+- **Resident**: My complaints with status timeline
+- **Admin**: All complaints table with assign + resolve actions
+
+##### 📦 Packages Tab
+- **Guard**: Log package form (flat, courier, description, photo)
+- **Resident**: My packages with "Mark Collected" button
+- **Real-time notification** on package arrival
+
+##### 🗳️ Polls Tab
+- **Admin**: Create poll (title, options, end date, single/multi select, anonymous toggle)
+- **Resident**: Vote UI with radio/checkbox options
+- **Results**: Horizontal bar chart showing vote percentages
+
+##### 🚨 Emergency Tab
+- **All roles**: Big red "🚨 TRIGGER EMERGENCY" button
+- **Alert type selector**: Fire, Medical, Security Breach, Gas Leak, Other
+- **Active alerts** board with resolve button
+- **Emergency alarm modal** — full-screen red flashing with loud siren on socket event
+
+##### 📞 Directory Tab
+- **Searchable flat directory** — search by flat number, name, phone
+- **Cards** showing flat number, resident name, phone (privacy: only for same-society members)
+
+##### 📅 Events Tab
+- **Admin**: Create event form (title, date, time, venue, type, max attendees)
+- **Resident**: Upcoming events list with RSVP button (Going / Maybe / Not Going)
+- **Attendee count** shown per event
+
+##### 📝 Notices Tab
+- Pinned notices board with priority-colored borders (normal=blue, important=orange, urgent=red)
+- **Admin**: Post new notice form
+
+---
+
+### File Summary
+
+| Action | File | Purpose |
+|---|---|---|
+| **NEW** | `backend/src/migrations/008_society_management.sqlite.sql` | 18 new tables + indexes |
+| **NEW** | `backend/src/controllers/society-visitor.controller.js` | ~60+ API handlers for all 15 features |
+| **NEW** | `backend/src/routes/society-visitor.routes.js` | Route wiring with society role middleware |
+| **MODIFY** | `backend/src/server.js` | Register route, reminder interval, body limit |
+| **MODIFY** | `backend/src/sockets/index.js` | 8 new socket events |
+| **MODIFY** | `apps/web/src/app/society/page.js` | Complete rewrite — 15 feature tabs, 3 role views |
+
+---
+
+## Design Decisions
+
+- **Photo Storage**: Base64 data URIs stored directly in SQLite (per user's approval)
+- **Reminder Scheduling**: 30-second `setInterval` check (per user's approval)
+- **No Tailwind**: All UI uses existing `globals.css` classes (`glass-card`, `btn-primary`, `form-input`, etc.)
+- **Single Page**: All 15 features on one page with tab navigation (keeps codebase manageable)
+- **Role Detection**: Auto-detects user role from `society_members` table — shows appropriate tabs
+- **Webcam**: Native `getUserMedia()` API — works on both desktop (webcam) and mobile (camera)
+
+---
+
+## Implementation Order
+
+Due to the massive scope, I will build in this order:
+
+| Phase | Features | Why first |
+|---|---|---|
+| **Phase 1** | Migration + Core tables + Member Management + Directory | Foundation for everything |
+| **Phase 2** | Visitor Management + Doorbell + Guard Messaging + Reminders | Core user request |
+| **Phase 3** | Staff Attendance + Package Collection + Parking | Guard-heavy features |
+| **Phase 4** | Bills + Complaints + Amenity Booking | Resident/Admin features |
+| **Phase 5** | Polls + Events + Emergency + Notices | Community features |
+| **Phase 6** | Socket.io events + Real-time alarms | Wire up all real-time |
+
+All phases will be built in a single execution pass.
+
+---
+
+## Verification Plan
+
+### Manual Verification
+1. **Start backend** — verify migration runs, all 18 tables created
+2. **Start frontend** — verify `/society` page loads with tab navigation
+3. **Test each role view** using mock login
+4. **Test visitor flow** — Guard logs → Resident gets doorbell → Approve → Guard notified
+5. **Test webcam** — Camera opens, photo captures, previews display
+6. **Test emergency** — Trigger → All members get loud alarm
+7. **Test bills** — Admin generates → Residents see pending → Pay
+8. **Test each feature tab** — CRUD operations work
