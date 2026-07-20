@@ -62,3 +62,21 @@ databases:
     user: localsampark_admin
     region: singapore
     plan: starter
+
+  # 5. Frontend Web App
+  - type: web
+    name: localsampark-web
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: npm ci && npm run build:web
+    startCommand: npm run start --workspace=apps/web
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: localsampark-api
+          property: envVars.RENDER_EXTERNAL_URL
+    autoDeploy: false
