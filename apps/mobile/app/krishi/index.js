@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Leaf, Tractor, Sprout } from 'lucide-react-native';
 import { RURAL_CATEGORIES, TOP_FEATURES, MANDI_RATES } from '../../src/data/rural-services';

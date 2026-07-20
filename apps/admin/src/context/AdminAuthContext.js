@@ -4,16 +4,23 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_BASE } from '../lib/api';
 
 // Global interceptor for 401 Unauthorized errors
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && !window.__fetch_patched) {
+  window.__fetch_patched = true;
   const originalFetch = window.fetch;
   window.fetch = async (...args) => {
-    const response = await originalFetch(...args);
-    if (response.status === 401) {
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_user');
-      window.location.href = '/login';
+    try {
+      const response = await originalFetch(...args);
+      if (response.status === 401) {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        window.location.href = '/login';
+      }
+      return response;
+    } catch (error) {
+      // Allow the error to propagate so the caller can catch it,
+      // but avoid crashing the interceptor itself.
+      throw error;
     }
-    return response;
   };
 }
 

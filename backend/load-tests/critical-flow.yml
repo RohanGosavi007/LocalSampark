@@ -1,0 +1,58 @@
+config:
+  target: "http://localhost:5000"
+  environments:
+    local:
+      target: "http://localhost:5000"
+    staging:
+      target: "https://localsampark-api-staging.onrender.com"
+  phases:
+    # Phase 1: Warm up the cache and connections
+    - duration: 30
+      arrivalRate: 50
+      name: "Warm up"
+    # Phase 2: Rapid ramp up to 10,000 concurrent VUs over 2 minutes
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 300
+      name: "Ramp up to peak load (10k+ aggregate VUs)"
+    # Phase 3: Sustain peak load
+    - duration: 300
+      arrivalRate: 300
+      name: "Sustain peak load"
+  variables:
+    searchTerm:
+      - "milk"
+      - "bread"
+      - "electrician"
+      - "paracetamol"
+  http:
+    timeout: 10
+scenarios:
+  - name: "Core E-Commerce Flow: Browse & Add to Cart"
+    weight: 7
+    flow:
+      - get:
+          url: "/api/v1/zones/active"
+      - get:
+          url: "/api/v1/shops?zoneId=1"
+      - get:
+          url: "/api/v1/shops/1/products"
+      - get:
+          url: "/api/v1/search?q={{ searchTerm }}"
+      # Mock add to cart action (reads)
+      - get:
+          url: "/api/v1/products/101"
+
+  - name: "Community Trust Feed Engine"
+    weight: 2
+    flow:
+      - get:
+          url: "/api/v1/trust-reviews/feed?zoneId=1"
+
+  - name: "Heavy Transaction / Analytics Engine"
+    weight: 1
+    flow:
+      - get:
+          url: "/api/v1/analytics/1/predictions"
+      - get:
+          url: "/api/v1/group-buy/active"

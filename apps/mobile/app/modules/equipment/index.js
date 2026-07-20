@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from '../../../../../../../../../src/lib/api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, Modal, Switch } from 'react-native';
 

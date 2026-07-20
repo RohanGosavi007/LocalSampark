@@ -14,7 +14,7 @@ router.get('/garage/items', authenticate, communityHubController.getGarageItems)
 router.post('/garage/:itemId/buy', authenticate, communityHubController.buyGarageItem);
 
 // Admin
-router.get('/garage/admin/mode', communityHubController.getWeekendMode);
+router.get('/garage/admin/mode', authenticate, requireAdmin, communityHubController.getWeekendMode);
 router.post('/garage/admin/mode', authenticate, requireAdmin, requireRole('admin'), communityHubController.toggleWeekendMode);
 
 module.exports = router;

@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, Image, TouchableOpacity, Dimensions, SafeAreaView, Animated } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions, SafeAreaView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
@@ -63,7 +64,7 @@ export default function StoryViewer({ visible, stories, initialIndex = 0, onClos
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <TouchableOpacity activeOpacity={1} style={styles.imageContainer} onPress={handlePress}>
-          <Image source={{ uri: currentStory.image || 'https://via.placeholder.com/600x800?text=Story' }} style={styles.image} />
+          <Image source={currentStory.image || 'https://via.placeholder.com/600x800?text=Story' } style={styles.image}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
           
           <View style={styles.overlay}>
             {/* Progress Bars */}
@@ -86,7 +87,7 @@ export default function StoryViewer({ visible, stories, initialIndex = 0, onClos
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.userInfo}>
-                <Image source={{ uri: currentStory.userAvatar || 'https://ui-avatars.com/api/?name=U' }} style={styles.avatar} />
+                <Image source={currentStory.userAvatar || 'https://ui-avatars.com/api/?name=U' } style={styles.avatar}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
                 <View>
                   <Text style={styles.userName}>{currentStory.userName || 'User'}</Text>
                   <Text style={styles.timeText}>{currentStory.time || 'Just now'}</Text>

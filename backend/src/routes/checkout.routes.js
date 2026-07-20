@@ -217,7 +217,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
 });
 
 // Verify Razorpay Payment Signature
-router.post('/verify', async (req, res) => {
+router.post('/verify', authenticate, async (req, res) => {
   try {
     const { orderId, razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
 

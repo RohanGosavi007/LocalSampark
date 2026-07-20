@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
 import { Pill, ShoppingCart } from 'lucide-react-native';
 
 export default function PharmacyVisitorView({ shop, products = [] }) {
@@ -7,7 +9,7 @@ export default function PharmacyVisitorView({ shop, products = [] }) {
     <View style={styles.card}>
       <View style={styles.iconContainer}>
         {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.image} />
+          <Image source={item.image_url } style={styles.image}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
         ) : (
           <Pill size={24} color="#059669" />
         )}
@@ -42,7 +44,7 @@ export default function PharmacyVisitorView({ shop, products = [] }) {
 
       <Text style={styles.sectionTitle}>Available Medicines & OTC ({products.length})</Text>
       {products.length > 0 ? (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={products}
           keyExtractor={(p, i) => p.id ? p.id.toString() : i.toString()}
           renderItem={renderItem}

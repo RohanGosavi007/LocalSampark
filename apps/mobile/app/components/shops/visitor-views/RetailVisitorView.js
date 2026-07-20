@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { ShoppingBag } from 'lucide-react-native';
 
 export default function RetailVisitorView({ shop, products = [] }) {
@@ -7,7 +8,7 @@ export default function RetailVisitorView({ shop, products = [] }) {
     <View style={styles.card}>
       <View style={styles.imageContainer}>
         {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.image} />
+          <Image source={item.image_url } style={styles.image}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
         ) : (
           <View style={styles.placeholderImage}>
             <ShoppingBag size={24} color="#9ca3af" />

@@ -82,7 +82,9 @@
 
 /* === DARK MODE === */
 body.dark-mode,
-[data-theme="dark"] {
+[data-theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :root {
   --background:     #060b18;
   --background-alt: #0d1526;
   --card-bg:        rgba(13, 21, 38, 0.85);
@@ -106,6 +108,142 @@ body.dark-mode,
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ============================================================
+   CATEGORY ARCHETYPE COLOR TOKENS
+   6 neon accent systems for category-specific shop theming
+   ============================================================ */
+
+/* Archetype 1: Food & Dining — Electric Amber */
+[data-category="food"] {
+  --cat-primary: #FF6B00;
+  --cat-primary-light: rgba(255, 107, 0, 0.12);
+  --cat-primary-glass: rgba(255, 107, 0, 0.18);
+  --cat-glow: rgba(255, 107, 0, 0.35);
+  --cat-gradient: linear-gradient(135deg, #FF6B00 0%, #DC2626 100%);
+  --cat-badge-bg: #FFF7ED;
+  --cat-badge-text: #C2410C;
+}
+[data-theme="dark"] [data-category="food"],
+body.dark-mode [data-category="food"] {
+  --cat-badge-bg: rgba(255, 107, 0, 0.15);
+  --cat-badge-text: #FB923C;
+}
+
+/* Archetype 2: Retail & Grocery — Vibrant Mint */
+[data-category="retail"] {
+  --cat-primary: #00E676;
+  --cat-primary-light: rgba(0, 230, 118, 0.12);
+  --cat-primary-glass: rgba(0, 230, 118, 0.18);
+  --cat-glow: rgba(0, 230, 118, 0.35);
+  --cat-gradient: linear-gradient(135deg, #00E676 0%, #00C853 100%);
+  --cat-badge-bg: #ECFDF5;
+  --cat-badge-text: #059669;
+}
+[data-theme="dark"] [data-category="retail"],
+body.dark-mode [data-category="retail"] {
+  --cat-badge-bg: rgba(0, 230, 118, 0.15);
+  --cat-badge-text: #34D399;
+}
+
+/* Archetype 3: Healthcare & Booking — Cyber Cyan */
+[data-category="booking"] {
+  --cat-primary: #00E5FF;
+  --cat-primary-light: rgba(0, 229, 255, 0.12);
+  --cat-primary-glass: rgba(0, 229, 255, 0.18);
+  --cat-glow: rgba(0, 229, 255, 0.35);
+  --cat-gradient: linear-gradient(135deg, #00E5FF 0%, #2563EB 100%);
+  --cat-badge-bg: #ECFEFF;
+  --cat-badge-text: #0891B2;
+}
+[data-theme="dark"] [data-category="booking"],
+body.dark-mode [data-category="booking"] {
+  --cat-badge-bg: rgba(0, 229, 255, 0.15);
+  --cat-badge-text: #22D3EE;
+}
+
+/* Archetype 4: Beauty & Wellness — Neon Magenta */
+[data-category="beauty"] {
+  --cat-primary: #FF007F;
+  --cat-primary-light: rgba(255, 0, 127, 0.12);
+  --cat-primary-glass: rgba(255, 0, 127, 0.18);
+  --cat-glow: rgba(255, 0, 127, 0.35);
+  --cat-gradient: linear-gradient(135deg, #FF007F 0%, #8B5CF6 100%);
+  --cat-badge-bg: #FDF2F8;
+  --cat-badge-text: #BE185D;
+}
+[data-theme="dark"] [data-category="beauty"],
+body.dark-mode [data-category="beauty"] {
+  --cat-badge-bg: rgba(255, 0, 127, 0.15);
+  --cat-badge-text: #F472B6;
+}
+
+/* Archetype 5: Services & Repairs — Solar Yellow */
+[data-category="services"] {
+  --cat-primary: #FFD600;
+  --cat-primary-light: rgba(255, 214, 0, 0.12);
+  --cat-primary-glass: rgba(255, 214, 0, 0.18);
+  --cat-glow: rgba(255, 214, 0, 0.35);
+  --cat-gradient: linear-gradient(135deg, #FFD600 0%, #F59E0B 100%);
+  --cat-badge-bg: #FFFBEB;
+  --cat-badge-text: #B45309;
+}
+[data-theme="dark"] [data-category="services"],
+body.dark-mode [data-category="services"] {
+  --cat-badge-bg: rgba(255, 214, 0, 0.15);
+  --cat-badge-text: #FBBF24;
+}
+
+/* Archetype 6: Agriculture & Rentals — Emerald Energy */
+[data-category="rentals"] {
+  --cat-primary: #10B981;
+  --cat-primary-light: rgba(16, 185, 129, 0.12);
+  --cat-primary-glass: rgba(16, 185, 129, 0.18);
+  --cat-glow: rgba(16, 185, 129, 0.35);
+  --cat-gradient: linear-gradient(135deg, #10B981 0%, #065F46 100%);
+  --cat-badge-bg: #ECFDF5;
+  --cat-badge-text: #047857;
+}
+[data-theme="dark"] [data-category="rentals"],
+body.dark-mode [data-category="rentals"] {
+  --cat-badge-bg: rgba(16, 185, 129, 0.15);
+  --cat-badge-text: #34D399;
+}
+
+/* Archetype 7: Directory & Leads — Electric Indigo */
+[data-category="directory"] {
+  --cat-primary: #6366F1;
+  --cat-primary-light: rgba(99, 102, 241, 0.12);
+  --cat-primary-glass: rgba(99, 102, 241, 0.18);
+  --cat-glow: rgba(99, 102, 241, 0.35);
+  --cat-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  --cat-badge-bg: #EEF2FF;
+  --cat-badge-text: #4338CA;
+}
+[data-theme="dark"] [data-category="directory"],
+body.dark-mode [data-category="directory"] {
+  --cat-badge-bg: rgba(99, 102, 241, 0.15);
+  --cat-badge-text: #818CF8;
+}
+
+/* ── Category Utility Classes ── */
+.cat-accent { color: var(--cat-primary); }
+.cat-accent-bg { background-color: var(--cat-primary); }
+.cat-accent-light { background-color: var(--cat-primary-light); }
+.cat-accent-glass { background-color: var(--cat-primary-glass); }
+.cat-glow { box-shadow: 0 0 25px var(--cat-glow); }
+.cat-glow-lg { box-shadow: 0 0 45px var(--cat-glow); }
+.cat-gradient { background: var(--cat-gradient); }
+.cat-badge { background: var(--cat-badge-bg); color: var(--cat-badge-text); }
+.cat-border { border-color: var(--cat-primary); }
+.cat-border-light { border-color: var(--cat-primary-light); }
+
+.cat-card-hover:hover {
+  border-color: var(--cat-primary) !important;
+  box-shadow: 0 0 25px var(--cat-glow), var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
 /* ============================================================

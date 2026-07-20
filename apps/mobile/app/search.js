@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, FlatList, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, TextInput, StyleSheet, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 
 export default function GlobalSearch() {
@@ -32,7 +33,7 @@ export default function GlobalSearch() {
           autoFocus
         />
       </View>
-      <FlatList
+      <FlashList estimatedItemSize={100}
         data={results}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (

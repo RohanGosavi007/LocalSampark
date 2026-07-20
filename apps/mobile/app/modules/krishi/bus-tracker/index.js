@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Box, LayoutGrid, Clock, AlertCircle } from 'lucide-react-native';
-import { apiGet } from '../../../../../../../../../../src/lib/api';
+import { apiGet } from '../../../../src/lib/api';
 
 export default function NativebustrackerScreen() {
   const router = useRouter();

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Wallet, Plus, QrCode, Landmark, ShieldCheck, History, ArrowUpRight } from 'lucide-react-native';
 import { apiGet } from '../../src/lib/api';
@@ -170,7 +171,7 @@ export default function NativeWalletScreen() {
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={walletTransactions}
           keyExtractor={(item, index) => index.toString()}
           renderItem={renderTransaction}

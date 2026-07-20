@@ -12,23 +12,31 @@ const http = require('http');
 
 // Import Sentry for Error Tracking
 const Sentry = require('@sentry/node');
-const { nodeProfilingIntegration } = require('@sentry/profiling-node');
+let nodeProfilingIntegration = null;
+try {
+  nodeProfilingIntegration = require('@sentry/profiling-node').nodeProfilingIntegration;
+} catch (e) {
+  console.warn('Sentry profiling-node module not found. Profiling will be disabled.');
+}
 
 // Initialize Sentry before everything else
 if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  const integrations = [];
+  if (nodeProfilingIntegration) {
+    integrations.push(nodeProfilingIntegration());
+  }
+  
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    integrations: [
-      nodeProfilingIntegration(),
-    ],
+    integrations,
     tracesSampleRate: 1.0, 
     profilesSampleRate: 1.0,
   });
 }
 
-// Import config
 const { connectDB, pool, query } = require('./config/database');
-const { connectRedis, redisClient } = require('./config/redis');
+const { connectRedis, redisClient, cacheGet, cacheSet } = require('./config/redis');
+const apiCache = require('./middleware/cache.middleware');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -88,11 +96,22 @@ const uploadRoutes = require('./routes/upload.routes');
 const engagementRoutes = require('./routes/engagement.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const orderRoutes = require('./routes/order.routes');
+
+require('./jobs/orderMaintenance');
+require('./jobs/tokenMaintenance');
+require('./jobs/campaignScheduler'); // New Campaign Engine Scheduler
+
 const proxyRoutes = require('./routes/proxy.routes');
 const cartRoutes = require('./routes/cart.routes');
 const checkoutRoutes = require('./routes/checkout.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 const addressesRoutes = require('./routes/addresses.routes');
+
+// ── New Archetype Routes ──
+const tokenQueueRoutes = require('./routes/token-queue.routes');
+const jobCardsRoutes = require('./routes/job-cards.routes');
+const fleetAssetsRoutes = require('./routes/fleet-assets.routes');
+const leadsCrmRoutes = require('./routes/leads-crm.routes');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/error.middleware');
@@ -101,6 +120,11 @@ const { errorHandler, notFound } = require('./middleware/error.middleware');
 // Initialize Express
 const app = express();
 const server = http.createServer(app);
+
+// ── Socket.io Real-Time Engine ──
+const { initSocketIO } = require('./sockets');
+const io = initSocketIO(server);
+app.set('io', io); // Make io accessible in route handlers via req.app.get('io')
 
 // Import Supabase Realtime Service
 const supabaseRealtime = require('./services/supabaseRealtime.service');
@@ -254,8 +278,8 @@ const API_PREFIX = '/api/v1';
 app.use(`${API_PREFIX}/auth`, authLimiter, authRoutes);
 app.use(`${API_PREFIX}/users/addresses`, addressesRoutes);
 app.use(`${API_PREFIX}/users`, userRoutes);
-app.use(`${API_PREFIX}/feed`, feedRoutes);
-app.use(`${API_PREFIX}/shops`, shopRoutes);
+app.use(`${API_PREFIX}/feed`, apiCache(300), feedRoutes); // Cache feed for 5 mins
+app.use(`${API_PREFIX}/shops`, apiCache(600), shopRoutes); // Cache shop listings for 10 mins
 app.use(`${API_PREFIX}/jobs`, jobRoutes);
 app.use(`${API_PREFIX}/jobs-board`, jobsBoardRoutes);
 app.use(`${API_PREFIX}/properties`, propertyRoutes);
@@ -266,9 +290,9 @@ app.use(`${API_PREFIX}/chatbot`, chatbotRoutes);
 app.use(`${API_PREFIX}/loyalty`, loyaltyRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/societies`, societyRoutes);
-app.use(`${API_PREFIX}/marketplace`, marketplaceRoutes);
-app.use(`${API_PREFIX}/events`, eventRoutes);
-app.use(`${API_PREFIX}/health-services`, healthRoutes);
+app.use(`${API_PREFIX}/marketplace`, apiCache(600), marketplaceRoutes); // Cache marketplace for 10 mins
+app.use(`${API_PREFIX}/events`, apiCache(3600), eventRoutes); // Cache events for 1 hour
+app.use(`${API_PREFIX}/health-services`, apiCache(600), healthRoutes);
 app.use(`${API_PREFIX}/carpool`, carpoolRoutes);
 app.use(`${API_PREFIX}/pets`, petRoutes);
 app.use(`${API_PREFIX}/payments`, paymentLimiter, paymentRoutes);
@@ -280,6 +304,7 @@ app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/proxy', proxyRoutes);
 app.use('/api/v1/disputes', disputesRoutes);
 app.use(`${API_PREFIX}/franchise`, franchiseRoutes);
+app.use(`${API_PREFIX}/franchise-intelligence`, require('./routes/franchise-intelligence.routes'));
 app.use(`${API_PREFIX}/earnings`, earningsRoutes);
 app.use(`${API_PREFIX}/crm`, crmRoutes);
 app.use(`${API_PREFIX}/commissions`, commissionRoutes);
@@ -287,13 +312,24 @@ app.use(`${API_PREFIX}/society-admin`, societyAdminRoutes);
 app.use(`${API_PREFIX}/rental`, rentalRoutes);
 app.use(`${API_PREFIX}/admin-auth`, adminAuthRoutes);
 app.use(`${API_PREFIX}/territory`, territoryRoutes);
+
+// Campaign Engine
+const campaignRoutes = require('./routes/campaigns.routes');
+app.use(`${API_PREFIX}/campaigns`, campaignRoutes);
+
+// Social Commerce
+app.use(`${API_PREFIX}/group-buy`, require('./routes/group-buying.routes'));
+app.use(`${API_PREFIX}/trust-reviews`, require('./routes/trust-reviews.routes'));
+
+// AI Analytics
+app.use(`${API_PREFIX}/analytics`, require('./routes/ai-analytics.routes'));
 app.use(`${API_PREFIX}/sos`, sosRoutes);
 app.use(`${API_PREFIX}/townsquare`, townsquareRoutes);
 app.use(`${API_PREFIX}/medical`, medicalRoutes);
 app.use(`${API_PREFIX}/equipment`, equipmentRoutes);
 app.use(`${API_PREFIX}/chef`, chefRoutes);
 app.use(`${API_PREFIX}/scrap`, scrapRoutes);
-app.use(`${API_PREFIX}/community-hub`, communityHubRoutes);
+app.use(`${API_PREFIX}/community-hub`, apiCache(300), communityHubRoutes);
 app.use(`${API_PREFIX}/volunteer`, volunteerRoutes);
 app.use(`${API_PREFIX}/donations`, donationsRoutes);
 app.use(`${API_PREFIX}/society-management`, societyVisitorRoutes);
@@ -306,7 +342,7 @@ app.use(`${API_PREFIX}/care`, careRoutes);
 app.use(`${API_PREFIX}/premium`, premiumRoutes);
 app.use(`${API_PREFIX}/referral`, referralRoutes);
 // Duplicate mounts removed
-app.use(`${API_PREFIX}/zones`, zoneRoutes);
+app.use(`${API_PREFIX}/zones`, apiCache(3600), zoneRoutes);
 app.use(`${API_PREFIX}/users`, userZoneRoutes); // userZoneRoutes mounts /api/v1/users/zone and /saved-zones
 app.use(`${API_PREFIX}/upload`, uploadRoutes);
 app.use(`${API_PREFIX}/settings`, settingsRoutes);
@@ -314,6 +350,12 @@ app.use(`${API_PREFIX}/orders`, orderRoutes);
 app.use(`${API_PREFIX}/cart`, cartRoutes);
 app.use(`${API_PREFIX}/checkout`, checkoutRoutes);
 app.use(`${API_PREFIX}/webhooks`, webhooksRoutes);
+
+// ── New Archetype API Routes ──
+app.use(`${API_PREFIX}/token-queue`, tokenQueueRoutes);
+app.use(`${API_PREFIX}/job-cards`, jobCardsRoutes);
+app.use(`${API_PREFIX}/fleet-assets`, fleetAssetsRoutes);
+app.use(`${API_PREFIX}/leads-crm`, leadsCrmRoutes);
 
 // ─── ERROR HANDLING ─────────────────────────────────────────
 if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {

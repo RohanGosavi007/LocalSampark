@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { X, CheckCircle, RefreshCcw, Camera as CameraIcon } from 'lucide-react-native';
 
@@ -62,7 +63,7 @@ export default function ARVirtualTryOn({ item, onClose }) {
       {/* Camera View */}
       <View style={styles.cameraContainer}>
         {snapshot ? (
-          <Image source={{ uri: snapshot }} style={styles.camera} />
+          <Image source={snapshot } style={styles.camera}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
         ) : (
           <CameraView 
             ref={cameraRef} 

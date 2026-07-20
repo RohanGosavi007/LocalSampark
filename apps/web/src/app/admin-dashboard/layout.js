@@ -23,8 +23,7 @@ export default function AdminLayout({ children }) {
   const navItems = [
     { label: 'Overview', icon: LayoutDashboard, path: '/admin-dashboard' },
     { label: 'Approvals Hub', icon: ShieldCheck, path: '/admin-dashboard/approvals' },
-    { label: 'Revenue Dashboard', icon: Wallet, path: '/admin-dashboard/revenue' },
-    { label: 'Finance Ledger', icon: Wallet, path: '/admin/revenue' },
+    { label: 'Finance Ledger', icon: Wallet, path: '/admin-dashboard/finance-ledger' },
     { label: 'Commission Hub', icon: Wallet, path: '/admin-dashboard/commissions' },
     { label: 'Shop Categories', icon: Briefcase, path: '/admin-dashboard/shop-categories' },
     { label: 'Delivery Monitor', icon: MapPin, path: '/admin-dashboard/delivery-monitor' },
@@ -35,7 +34,7 @@ export default function AdminLayout({ children }) {
     { label: 'Community Admin', icon: Users, path: '/community-hub' },
     { label: 'Operations CRM', icon: Briefcase, path: '/crm' },
     { label: 'SOS Radar', icon: ShieldCheck, path: '/sos-dashboard' },
-    { label: 'Logistics Monitor', icon: MapPin, path: '/admin/logistics' },
+    { label: 'Logistics Monitor', icon: MapPin, path: '/admin-dashboard/logistics' },
     { label: 'Settings', icon: Settings, path: '/admin-dashboard/settings' },
   ];
 

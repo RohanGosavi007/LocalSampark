@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Switch, ActivityIndicator, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { Settings, Bell, CreditCard, Clock, Shield, AlertCircle, ChevronRight, Store } from 'lucide-react-native';
-import { apiGet } from '../../../../src/lib/api';
-import { useAppStore } from '../../../../src/store/useAppStore';
+import { apiGet } from '../../../src/lib/api';
+import { useAppStore } from '../../../src/store/useAppStore';
 
 export default function NativeSettingsManager() {
   const [settings, setSettings] = useState({});

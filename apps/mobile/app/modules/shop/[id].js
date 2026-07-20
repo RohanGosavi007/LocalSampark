@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useCartStore } from '../../../src/store/cartStore';
 
@@ -37,7 +38,7 @@ export default function ShopDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header Image & Back Button */}
         <View style={styles.headerImageContainer}>
-          <Image source={{ uri: shop.image }} style={styles.headerImage} />
+          <Image source={shop.image } style={styles.headerImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
           <View style={styles.overlay} />
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={{ fontSize: 20 }}>←</Text>

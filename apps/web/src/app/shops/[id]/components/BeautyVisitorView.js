@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Clock, Star, MapPin, Phone, Calendar, CheckCircle, Users,
-  Heart, Timer, Scissors, Award, Sparkles, ChevronRight
+  Heart, Timer, Scissors, Award, Sparkles, ChevronRight, Users
 } from 'lucide-react';
+import TokenTrackerBar from '@/components/ui/TokenTrackerBar';
+import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
 
 import { API_BASE } from '@/lib/api';
 
@@ -28,24 +29,12 @@ export default function EnhancedSalonVisitorView({ shop, services = [], staff = 
   return (
     <div className="space-y-8">
       {/* Live Waitlist Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-2xl p-5 flex items-center justify-between"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center">
-            <Timer className="w-5 h-5 text-pink-500" />
-          </div>
-          <div>
-            <p className="text-text font-bold">Current Wait Time</p>
-            <p className="text-text-muted text-sm">Walk-in availability</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-black text-pink-500">~15 min</p>
-          <p className="text-xs text-text-muted">2 ahead of you</p>
-        </div>
-      </motion.div>
+      <div className="mb-6">
+        <h3 className="font-heading font-bold text-text mb-3 flex items-center gap-2">
+          <Users className="w-5 h-5 text-cat-beauty" /> Current Wait Time
+        </h3>
+        <TokenTrackerBar shopId={shop?.id} userToken={5} />
+      </div>
 
       {/* Service Catalog */}
       <div className="bg-background-alt p-6 rounded-2xl border border-border">
@@ -196,23 +185,39 @@ export default function EnhancedSalonVisitorView({ shop, services = [], staff = 
         </div>
       </div>
 
-      {/* Book CTA */}
+      {/* Book Appointment / Slot Picker */}
       <AnimatePresence>
         {selectedService && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-pink-500 text-white rounded-2xl px-6 py-4 shadow-2xl shadow-pink-500/30 flex items-center gap-4 max-w-md w-[90%]"
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }} 
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-background-alt p-6 rounded-2xl border border-cat-beauty/30"
           >
-            <div className="flex-1">
-              <p className="font-bold">{selectedService.name || 'Service Selected'}</p>
-              <p className="text-pink-200 text-sm">₹{selectedService.price} • {selectedService.duration_minutes || 30} min</p>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="font-heading font-bold text-lg text-text">Book: {selectedService.name}</h3>
+                <p className="text-sm text-text-muted">₹{selectedService.price} • {selectedService.duration_minutes || 30} min</p>
+              </div>
+              <button onClick={() => setSelectedService(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
             </div>
-            <button
-              onClick={() => onBookAppointment?.({ service: selectedService, staff: selectedStaff })}
-              className="bg-white text-pink-500 font-bold px-5 py-2 rounded-xl text-sm flex items-center gap-1"
-            >
-              Book Now <ChevronRight className="w-4 h-4" />
-            </button>
+            
+            <SlotMatrixGrid 
+              slots={{
+                morning: [
+                  { id: 'm1', time: '10:00', status: 'available' },
+                  { id: 'm2', time: '11:00', status: 'booked' },
+                ],
+                afternoon: [
+                  { id: 'a1', time: '13:00', status: 'filling_fast', remaining: 1 },
+                  { id: 'a2', time: '15:00', status: 'available' },
+                ],
+                evening: [
+                  { id: 'e1', time: '18:00', status: 'available' }
+                ]
+              }}
+              onSelectSlot={(slot) => onBookAppointment?.({ service: selectedService, staff: selectedStaff, slot })}
+            />
           </motion.div>
         )}
       </AnimatePresence>

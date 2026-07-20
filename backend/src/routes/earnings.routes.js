@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { authenticate } = require('../middleware/auth.middleware');
 
 // Get user earnings ledger
-router.get('/user/:userId', async (req, res, next) => {
+router.get('/user/:userId', authenticate, async (req, res, next) => {
   try {
     const { userId } = req.params;
     const earnings = await db.queryMany(
@@ -17,7 +18,7 @@ router.get('/user/:userId', async (req, res, next) => {
 });
 
 // Get user earnings summary
-router.get('/summary/:userId', async (req, res, next) => {
+router.get('/summary/:userId', authenticate, async (req, res, next) => {
   try {
     const { userId } = req.params;
     const result = await db.queryOne(
@@ -31,7 +32,7 @@ router.get('/summary/:userId', async (req, res, next) => {
 });
 
 // Request withdrawal
-router.post('/withdraw', async (req, res, next) => {
+router.post('/withdraw', authenticate, async (req, res, next) => {
   try {
     const { userId, amount, upiId } = req.body;
     
@@ -58,7 +59,7 @@ router.post('/withdraw', async (req, res, next) => {
 });
 
 // Leaderboard
-router.get('/leaderboard', async (req, res, next) => {
+router.get('/leaderboard', authenticate, async (req, res, next) => {
   try {
     const leaderboardData = await db.queryMany(
       `SELECT u.full_name as name, u.role, COALESCE(SUM(ue.amount), 0) as total_earned

@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { authenticate } = require('../middleware/auth.middleware');
 
 // Pre-approve visitor
-router.post('/visitors', async (req, res, next) => {
+router.post('/visitors', authenticate, async (req, res, next) => {
   try {
     const { societyId, residentId, visitorName, visitorPhone, purpose, vehicleNumber, expectedAt } = req.body;
     const passCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -19,7 +20,7 @@ router.post('/visitors', async (req, res, next) => {
 });
 
 // List visitors
-router.get('/visitors/:societyId', async (req, res, next) => {
+router.get('/visitors/:societyId', authenticate, async (req, res, next) => {
   try {
     const { societyId } = req.params;
     const visitors = await db.queryMany(
@@ -33,7 +34,7 @@ router.get('/visitors/:societyId', async (req, res, next) => {
 });
 
 // Book facility
-router.post('/bookings', async (req, res, next) => {
+router.post('/bookings', authenticate, async (req, res, next) => {
   try {
     const { societyId, userId, facility, bookingDate, startTime, endTime, purpose } = req.body;
     const result = await db.query(
@@ -48,7 +49,7 @@ router.post('/bookings', async (req, res, next) => {
 });
 
 // File complaint
-router.post('/complaints', async (req, res, next) => {
+router.post('/complaints', authenticate, async (req, res, next) => {
   try {
     const { societyId, userId, category, title, description, priority } = req.body;
     const result = await db.query(

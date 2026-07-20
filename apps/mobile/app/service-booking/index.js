@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Calendar, Clock, User, CheckCircle2, AlertCircle, RefreshCcw } from 'lucide-react-native';
 import { apiGet } from '../../src/lib/api';
@@ -147,7 +148,7 @@ export default function NativeServiceBookingScreen() {
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={filteredBookings}
           keyExtractor={(item, index) => item.id || index.toString()}
           renderItem={renderBooking}

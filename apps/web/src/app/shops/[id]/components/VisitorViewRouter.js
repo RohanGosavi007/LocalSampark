@@ -1,21 +1,23 @@
 'use client';
 import React from 'react';
 
-// ─── Visitor View Imports ──────────────────────────────────────────
-import HospitalVisitorView from './HospitalVisitorView';
-import RetailVisitorView from './RetailVisitorView';
-import TwoWheelerVisitorView from './TwoWheelerVisitorView';
-import FourWheelerVisitorView from './FourWheelerVisitorView';
-import DoctorVisitorView from './DoctorVisitorView';
-import BeautyVisitorView from './BeautyVisitorView';
-import HomeServiceVisitorView from './HomeServiceVisitorView';
-import ProfessionalVisitorView from './ProfessionalVisitorView';
-import EducationEventsVisitorView from './EducationEventsVisitorView';
-import RestaurantVisitorView from './RestaurantVisitorView';
-import PharmacyVisitorView from './PharmacyVisitorView';
-import TiffinCateringVisitorView from './TiffinCateringVisitorView';
-import GarageVisitorView from './GarageVisitorView';
-import TurfVisitorView from './TurfVisitorView';
+// ─── Lazy-Loaded Visitor View Imports ──────────────────────────────────────────
+const HospitalVisitorView = React.lazy(() => import('./HospitalVisitorView'));
+const RetailVisitorView = React.lazy(() => import('./RetailVisitorView'));
+const TwoWheelerVisitorView = React.lazy(() => import('./TwoWheelerVisitorView'));
+const FourWheelerVisitorView = React.lazy(() => import('./FourWheelerVisitorView'));
+const DoctorVisitorView = React.lazy(() => import('./DoctorVisitorView'));
+const BeautyVisitorView = React.lazy(() => import('./BeautyVisitorView'));
+const HomeServiceVisitorView = React.lazy(() => import('./HomeServiceVisitorView'));
+const ProfessionalVisitorView = React.lazy(() => import('./ProfessionalVisitorView'));
+const EducationEventsVisitorView = React.lazy(() => import('./EducationEventsVisitorView'));
+const RestaurantVisitorView = React.lazy(() => import('./RestaurantVisitorView'));
+const PharmacyVisitorView = React.lazy(() => import('./PharmacyVisitorView'));
+const TiffinCateringVisitorView = React.lazy(() => import('./TiffinCateringVisitorView'));
+const GarageVisitorView = React.lazy(() => import('./GarageVisitorView'));
+const TurfVisitorView = React.lazy(() => import('./TurfVisitorView'));
+const RentalVisitorView = React.lazy(() => import('./RentalVisitorView'));
+const LeadDirectoryVisitorView = React.lazy(() => import('./LeadDirectoryVisitorView'));
 
 // ═══════════════════════════════════════════════════════════════════════
 // VISITOR VIEW ROUTER — Maps 55 categories → correct visitor experience
@@ -107,6 +109,22 @@ const CATEGORY_VIEW_MAP = {
 
   // Sports & Recreation
   'turf-grounds':               'turf',
+  
+  // NEW Archetype 5: Rentals & Heavy Equipment
+  'vehicle-rentals':            'rental',
+  'construction-equipment':     'rental',
+  'agriculture-tractor':        'rental',
+  'party-tent-rentals':         'rental',
+  'scaffolding-rentals':        'rental',
+  'borewell-drilling':          'rental',
+
+  // NEW Archetype 6: Leads & Directory
+  'real-estate-brokers':        'lead_directory', // Moved from professional
+  'matrimony-marriage':         'lead_directory',
+  'jobs-placements':            'lead_directory',
+  'scrap-kabadi':               'lead_directory',
+  'krishi-mandi':               'lead_directory',
+  'community-volunteer':        'lead_directory',
 };
 
 /**
@@ -132,31 +150,30 @@ export default function VisitorViewRouter({
 }) {
   const viewType = CATEGORY_VIEW_MAP[categorySlug] || 'retail';
 
-  switch (viewType) {
-    case 'restaurant':
-      return <RestaurantVisitorView shop={shop} products={products} />;
-    case 'tiffin':
-      return <TiffinCateringVisitorView shop={shop} products={products} onSubscribe={onSubscribe} />;
-    case 'beauty':
-      return <BeautyVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
-    case 'hospital':
-      return <HospitalVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
-    case 'pharmacy':
-      return <PharmacyVisitorView shop={shop} products={products} />;
-    case 'garage':
-      return <GarageVisitorView shop={shop} services={services} onRequestService={onRequestService} />;
-    case 'home_service':
-      return <HomeServiceVisitorView shop={shop} services={services} staff={staff} onRequestQuote={onRequestQuote} />;
-    case 'professional':
-      return <ProfessionalVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
-    case 'education':
-      return <EducationEventsVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
-    case 'turf':
-      return <TurfVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
-    case 'retail':
-    default:
-      return <RetailVisitorView shop={shop} products={products} />;
-  }
+  const renderView = () => {
+    switch (viewType) {
+      case 'restaurant': return <RestaurantVisitorView shop={shop} products={products} />;
+      case 'tiffin': return <TiffinCateringVisitorView shop={shop} products={products} onSubscribe={onSubscribe} />;
+      case 'beauty': return <BeautyVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
+      case 'hospital': return <HospitalVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
+      case 'pharmacy': return <PharmacyVisitorView shop={shop} products={products} />;
+      case 'garage': return <GarageVisitorView shop={shop} services={services} onRequestService={onRequestService} />;
+      case 'home_service': return <HomeServiceVisitorView shop={shop} services={services} staff={staff} onRequestQuote={onRequestQuote} />;
+      case 'professional': return <ProfessionalVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
+      case 'education': return <EducationEventsVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
+      case 'turf': return <TurfVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
+      case 'rental': return <RentalVisitorView shop={shop} products={products} />;
+      case 'lead_directory': return <LeadDirectoryVisitorView shop={shop} />;
+      case 'retail':
+      default: return <RetailVisitorView shop={shop} products={products} />;
+    }
+  };
+
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-text-muted animate-pulse">Loading Shop View...</div>}>
+      {renderView()}
+    </React.Suspense>
+  );
 }
 
 /**

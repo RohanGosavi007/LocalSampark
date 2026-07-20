@@ -4,7 +4,8 @@ export default function DashboardTab(props) {
     summaryStats, pendingShops, platformShare, franchiseShare, agentShare, miscShare,
     franchisePartners, usersTotal, userSearch, users, usersPage, territorySearch, territoryFilter,
     selectedBulk, territories, properties, revenueChart, newZone, editTerritory, approveShop, rejectShop,
-    fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk
+    fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk,
+    API_BASE, authHeaders, fetchFranchisePartners
   } = props;
 
   // Mock components for inline usages
@@ -18,8 +19,6 @@ export default function DashboardTab(props) {
   const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #334155', background: '#0f172a', color: '#fff' };
 
   return (
-    {/* ─── DASHBOARD TAB ────────────────────────────────── */}
-        
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
               <Stat label="Total Users" value={summaryStats ? summaryStats.totalUsers.toLocaleString() : '...'} diff={summaryStats ? `${summaryStats.activeRegions} active zones` : ''} icon="👤" color="#4f46e5" />

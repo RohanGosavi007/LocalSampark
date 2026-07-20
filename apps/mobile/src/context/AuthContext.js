@@ -1,12 +1,55 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 
+// ── Secure Token Storage Helpers ──
+// Sensitive data (JWT tokens) → encrypted keychain/keystore via SecureStore
+// Non-sensitive data (user profile, role names) → AsyncStorage for fast reads
+export const SecureTokenStorage = {
+  async setToken(key, value) {
+    try {
+      if (Platform.OS === 'web') {
+        // SecureStore is not available on web, fallback to AsyncStorage
+        await AsyncStorage.setItem(key, value);
+      } else {
+        await SecureStore.setItemAsync(key, value);
+      }
+    } catch (e) {
+      console.warn(`SecureStore.setItem failed for ${key}, falling back to AsyncStorage`, e.message);
+      await AsyncStorage.setItem(key, value);
+    }
+  },
+  async getToken(key) {
+    try {
+      if (Platform.OS === 'web') {
+        return await AsyncStorage.getItem(key);
+      }
+      return await SecureStore.getItemAsync(key);
+    } catch (e) {
+      console.warn(`SecureStore.getItem failed for ${key}, falling back to AsyncStorage`, e.message);
+      return await AsyncStorage.getItem(key);
+    }
+  },
+  async deleteToken(key) {
+    try {
+      if (Platform.OS === 'web') {
+        await AsyncStorage.removeItem(key);
+      } else {
+        await SecureStore.deleteItemAsync(key);
+      }
+    } catch (e) {
+      console.warn(`SecureStore.deleteItem failed for ${key}`, e.message);
+      await AsyncStorage.removeItem(key);
+    }
+  }
+};
+
 // Use env variables for Supabase (fallback to placeholder for now if not set)
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://qahlydtjfypxhumixtwo.supabase.co';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhaGx5ZHRqZnlweGh1bWl4dHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzU3ODksImV4cCI6MjA5ODgxMTc4OX0.evlCQSJYWBxLub9aGBbneP6JHVxJg-zZx8th0TbByio';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const AuthContext = createContext();
@@ -33,7 +76,8 @@ export function AuthProvider({ children }) {
     // Restore session on app load
     const restoreSession = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem('authToken');
+        // Sensitive token from encrypted storage, display data from AsyncStorage
+        const storedToken = await SecureTokenStorage.getToken('authToken');
         const storedUser = await AsyncStorage.getItem('user');
         const storedActiveRole = await AsyncStorage.getItem('activeRole');
         const storedAssignedRoles = await AsyncStorage.getItem('assignedRoles');
@@ -143,8 +187,8 @@ export function AuthProvider({ children }) {
         setActiveRole(finalActiveRole);
         setPermissionOverrides(userData.permission_overrides || {});
 
-        // Save to AsyncStorage
-        await AsyncStorage.setItem('authToken', token);
+        // Save sensitive token to encrypted storage, display data to AsyncStorage
+        await SecureTokenStorage.setToken('authToken', token);
         await AsyncStorage.setItem('user', JSON.stringify(userData));
         await AsyncStorage.setItem('activeRole', finalActiveRole);
         await AsyncStorage.setItem('assignedRoles', JSON.stringify(roles));
@@ -187,7 +231,7 @@ export function AuthProvider({ children }) {
       setActiveRole(mockRole);
       setPermissionOverrides({});
       
-      await AsyncStorage.setItem('authToken', token);
+      await SecureTokenStorage.setToken('authToken', token);
       await AsyncStorage.setItem('user', JSON.stringify(mockUser));
       await AsyncStorage.setItem('activeRole', mockRole);
       await AsyncStorage.setItem('assignedRoles', JSON.stringify(mockRoles));
@@ -236,11 +280,14 @@ export function AuthProvider({ children }) {
     setWalletTransactions([]);
     
     try {
+      // Delete sensitive token from encrypted storage
+      await SecureTokenStorage.deleteToken('authToken');
+      // Clear non-sensitive display data from AsyncStorage
       await AsyncStorage.multiRemove([
-        'authToken', 'user', 'activeRole', 'assignedRoles'
+        'user', 'activeRole', 'assignedRoles'
       ]);
     } catch (e) {
-      console.error('Error clearing AsyncStorage during logout', e);
+      console.error('Error clearing storage during logout', e);
     }
   };
 
@@ -320,7 +367,7 @@ export function AuthProvider({ children }) {
         setActiveRole(finalActiveRole);
         setPermissionOverrides(userData.permission_overrides || {});
 
-        await AsyncStorage.setItem('authToken', token);
+        await SecureTokenStorage.setToken('authToken', token);
         await AsyncStorage.setItem('user', JSON.stringify(userData));
         await AsyncStorage.setItem('activeRole', finalActiveRole);
         await AsyncStorage.setItem('assignedRoles', JSON.stringify(roles));

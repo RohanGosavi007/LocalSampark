@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 
 export default function ServiceBookingScreen() {
@@ -68,7 +69,7 @@ export default function ServiceBookingScreen() {
               style={[styles.staffCard, selectedStaff === staff.id && styles.staffCardActive]}
               onPress={() => setSelectedStaff(staff.id)}
             >
-              <Image source={{ uri: staff.image }} style={styles.staffImg} />
+              <Image source={staff.image } style={styles.staffImg}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
               <Text style={styles.staffName}>{staff.name}</Text>
               <Text style={styles.staffRole}>{staff.role}</Text>
               

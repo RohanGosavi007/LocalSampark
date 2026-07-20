@@ -1,9 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, FlatList } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../src/context/AuthContext';
+import { useZone } from '../../src/context/ZoneContext';
 import { router, useLocalSearchParams } from 'expo-router';
-import { apiGet } from '../../src/lib/api';
 import * as Location from 'expo-location';
+import { useShops, useCategories } from '../../src/hooks/useShops';
+
+// Demo shops matching web data — shown as fallback when API returns empty
+const DEMO_SHOPS = [
+  { id: 'demo-1', name: 'Sharma Grocery & Dairy', category: 'Grocery & Supermarkets', category_name: 'Grocery & Supermarkets', rating: 4.8, distance: '0.5', has_delivery: true, type: 'product', address: 'Kalyani Nagar, Pune', description: 'Fresh vegetables, dairy products, and daily essentials.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-2', name: 'Apollo Pharmacy Plus', category: 'Pharmacy & Healthcare', category_name: 'Pharmacy & Healthcare', rating: 4.5, distance: '0.8', has_delivery: true, type: 'product', address: 'Viman Nagar, Pune', description: '24/7 medicines and healthcare products.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-3', name: 'QuickFix Garage & Auto', category: 'Automotive & Mechanic', category_name: 'Automotive & Mechanic', rating: 4.3, distance: '1.2', has_delivery: false, type: 'appointment', address: 'Dhanori, Pune', description: 'Expert car & bike repair services.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-4', name: 'Golden Crumb Bakery', category: 'Sweet Shops & Bakeries', category_name: 'Sweet Shops & Bakeries', rating: 4.7, distance: '0.3', has_delivery: true, type: 'product', address: 'Dhanori Main Road, Pune', description: 'Freshly baked cakes, pastries & breads.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-5', name: 'Glow & Glamour Salon', category: 'Salon, Beauty & Spa', category_name: 'Salon, Beauty & Spa', rating: 4.6, distance: '0.6', has_delivery: false, type: 'appointment', address: 'Lohegaon, Pune', description: 'Premium haircuts, facials & spa treatments.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-6', name: 'Sanjeevani Medical Store', category: 'Pharmacy & Healthcare', category_name: 'Pharmacy & Healthcare', rating: 4.4, distance: '1.0', has_delivery: true, type: 'product', address: 'Vishrantwadi, Pune', description: 'All medicines, surgical items & health supplements.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-7', name: 'Cafe Coffee Day', category: 'Restaurants & Cafes', category_name: 'Restaurants & Cafes', rating: 4.2, distance: '0.4', has_delivery: true, type: 'product', address: 'Dhanori Chowk, Pune', description: 'Premium coffee, snacks & beverages.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-8', name: 'Raj Electronics & Repair', category: 'Electricians & Electronics', category_name: 'Electricians & Electronics', rating: 4.1, distance: '1.5', has_delivery: false, type: 'hybrid', address: 'Lohegaon Road, Pune', description: 'TV, AC, fridge repair & electrical appliances.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-9', name: 'Fresh Veggie Mart', category: 'Vegetables & Fruits', category_name: 'Vegetables & Fruits', rating: 4.9, distance: '0.2', has_delivery: true, type: 'product', address: 'Dhanori Gaon, Pune', description: 'Farm-fresh organic vegetables & fruits daily.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-10', name: 'Patel Hardware & Sanitary', category: 'Hardware & Sanitary', category_name: 'Hardware & Sanitary', rating: 4.0, distance: '1.8', has_delivery: false, type: 'product', address: 'Vishrantwadi, Pune', description: 'Pipes, fittings, paints & construction material.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-11', name: 'Shree Ganesh Tiffin Service', category: 'Tiffin Services', category_name: 'Tiffin Services', rating: 4.5, distance: '0.7', has_delivery: true, type: 'product', address: 'Dhanori, Pune', description: 'Homestyle veg & non-veg meals delivered daily.', approval_status: 'approved', is_demo: true },
+  { id: 'demo-12', name: 'FitZone Gym & Fitness', category: 'Gym & Fitness', category_name: 'Gym & Fitness', rating: 4.3, distance: '1.1', has_delivery: false, type: 'appointment', address: 'Lohegaon, Pune', description: 'Modern gym with personal trainers & group classes.', approval_status: 'approved', is_demo: true },
+];
 
 const FALLBACK_CATEGORIES = [
   { name: 'All Categories', icon: '🏪' },
@@ -66,10 +84,10 @@ const FALLBACK_CATEGORIES = [
 
 export default function DirectoryScreen() {
   const { API_URL } = useAuth();
+  const { activeZone, switchZone } = useZone();
   const { category } = useLocalSearchParams();
   const [shops, setShops] = useState([]);
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
-  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(category || 'All Categories');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -84,59 +102,60 @@ export default function DirectoryScreen() {
     if (category) setSelectedCategory(category);
   }, [category]);
 
+  // Request location on mount
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      let loc = null;
+    (async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status === 'granted') {
           let location = await Location.getCurrentPositionAsync({});
-          loc = { lat: location.coords.latitude, lng: location.coords.longitude };
-          setUserLocation(loc);
+          setUserLocation({ lat: location.coords.latitude, lng: location.coords.longitude });
         }
-      } catch(e) { console.warn("Location error", e); }
-      
-      const shopsEndpoint = loc ? `/shops/nearby?lat=${loc.lat}&lng=${loc.lng}` : '/shops';
-      
-      const [shopsRes, categoriesRes] = await Promise.allSettled([
-        apiGet(shopsEndpoint),
-        apiGet('/shops/categories')
-      ]);
+      } catch (e) { console.warn("Location error", e); }
+    })();
+  }, []);
 
-      if (shopsRes.status === 'fulfilled') {
-        const shopsData = Array.isArray(shopsRes.value) ? shopsRes.value : (shopsRes.value.data || shopsRes.value.shops || shopsRes.value.rows || []);
+  const { data: shopsRes, isLoading: shopsLoading, isError: shopsError } = useShops({
+    zoneId: activeZone?.id,
+    category: selectedCategory === 'All Categories' ? undefined : selectedCategory,
+    lat: userLocation?.lat,
+    lng: userLocation?.lng
+  });
+
+  const { data: categoriesRes, isLoading: categoriesLoading } = useCategories();
+
+  useEffect(() => {
+    if (shopsRes) {
+      const shopsData = Array.isArray(shopsRes) ? shopsRes : (shopsRes.data || shopsRes.shops || shopsRes.rows || []);
+      if (shopsData.length > 0) {
         setShops(shopsData);
       } else {
-        setShops([]);
+        setShops(DEMO_SHOPS);
       }
-
-      if (categoriesRes.status === 'fulfilled') {
-        const catsData = Array.isArray(categoriesRes.value) ? categoriesRes.value : (categoriesRes.value.categories || []);
-        if (catsData.length > 0) {
-          const mergedCategories = [{ name: 'All Categories', icon: '🏪' }, ...catsData.map(c => {
-            const fallback = FALLBACK_CATEGORIES.find(fc => fc.name === c.name || fc.name === c.title);
-            return {
-              name: c.name || c.title,
-              icon: c.icon || fallback?.icon || '🏪',
-              id: c.id,
-              count: c.count || 0
-            };
-          })];
-          setCategories(mergedCategories);
-        }
-      }
-    } catch (err) {
-      console.warn("Error in fetchData:", err);
-    } finally {
-      setLoading(false);
+    } else if (shopsError) {
+      setShops(DEMO_SHOPS);
     }
-  };
+  }, [shopsRes, shopsError]);
+
+  useEffect(() => {
+    if (categoriesRes) {
+      const catsData = Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes.categories || []);
+      if (catsData.length > 0) {
+        const mergedCategories = [{ name: 'All Categories', icon: '🏪' }, ...catsData.map(c => {
+          const fallback = FALLBACK_CATEGORIES.find(fc => fc.name === c.name || fc.name === c.title);
+          return {
+            name: c.name || c.title,
+            icon: c.icon || fallback?.icon || '🏪',
+            id: c.id,
+            count: c.count || 0
+          };
+        })];
+        setCategories(mergedCategories);
+      }
+    }
+  }, [categoriesRes]);
+
+  const isLoading = shopsLoading || categoriesLoading;
 
   let filteredShops = shops.filter(shop => {
     const matchesCategory = selectedCategory === 'All Categories' || shop.category === selectedCategory || shop.category_name === selectedCategory;
@@ -163,6 +182,24 @@ export default function DirectoryScreen() {
           <Text style={{ fontSize: 24 }}>{viewMode === 'list' ? '🗺️' : '📋'}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Zone Selector Banner */}
+      <TouchableOpacity 
+        style={styles.zoneBanner} 
+        onPress={() => router.push('/modules/zone-selector')}
+        activeOpacity={0.7}
+      >
+        <View style={styles.zoneBannerLeft}>
+          <Text style={{ fontSize: 16 }}>📍</Text>
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.zoneLabel}>Showing shops in</Text>
+            <Text style={styles.zoneName}>{activeZone?.name || 'All Zones'}{activeZone?.city ? `, ${activeZone.city}` : ''}</Text>
+          </View>
+        </View>
+        <View style={styles.zoneChangeBtn}>
+          <Text style={styles.zoneChangeBtnText}>Change ▸</Text>
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.searchContainer}>
         <Text style={styles.searchIcon}>🔍</Text>
@@ -217,7 +254,7 @@ export default function DirectoryScreen() {
         </View>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 40 }} />
       ) : viewMode === 'map' ? (
         <View style={styles.mapContainer}>
@@ -226,12 +263,12 @@ export default function DirectoryScreen() {
           <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 8 }}>(Requires react-native-maps integration)</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={filteredShops}
           keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
           numColumns={2}
           contentContainerStyle={styles.scrollContent}
-          columnWrapperStyle={styles.columnWrapper}
+          estimatedItemSize={250}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No shops found. Try another category or adjust filters.</Text>
           }
@@ -243,9 +280,11 @@ export default function DirectoryScreen() {
               
               <View style={styles.badgesRow}>
                 <View style={styles.badgePrimary}><Text style={styles.badgePrimaryText} numberOfLines={1}>{shop.category || shop.category_name || 'General'}</Text></View>
+                {shop.is_demo && <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>DEMO</Text></View>}
               </View>
 
               <Text style={styles.shopName} numberOfLines={1}>{shop.name}</Text>
+              <Text style={styles.shopAddress} numberOfLines={1}>{shop.address || ''}</Text>
               <View style={styles.shopMetaRow}>
                 <Text style={styles.shopMeta} numberOfLines={1}>⭐ {shop.rating || 'New'}</Text>
                 <Text style={styles.shopMeta} numberOfLines={1}>📍 {shop.distance ? shop.distance + 'km' : 'Nearby'}</Text>
@@ -253,7 +292,14 @@ export default function DirectoryScreen() {
 
               <TouchableOpacity 
                 style={styles.actionBtn} 
-                onPress={() => router.push(`/modules/shop-detail?id=${shop.id}&type=${shop.type || 'retail'}`)}
+                onPress={() => {
+                  // For demo shops pass extra data so shop-detail doesn't show blank
+                  const categorySlug = (shop.category || shop.category_name || 'retail')
+                    .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                  router.push(
+                    `/modules/shop-detail?id=${shop.id}&type=${shop.type || 'retail'}&category=${categorySlug}&name=${encodeURIComponent(shop.name)}`
+                  );
+                }}
               >
                 <Text style={styles.actionBtnText}>{shop.type === 'appointment' ? 'Book Now' : 'View Shop'}</Text>
               </TouchableOpacity>
@@ -271,7 +317,15 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: '800', color: '#0f172a' },
   subtitle: { color: '#64748b', fontSize: 13, marginTop: 4 },
   viewToggle: { width: 44, height: 44, backgroundColor: '#f1f5f9', borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, marginHorizontal: 16, marginTop: 16, elevation: 2 },
+  // Zone Banner
+  zoneBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#eff6ff', marginHorizontal: 16, marginTop: 12, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe' },
+  zoneBannerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  zoneLabel: { fontSize: 11, color: '#64748b', fontWeight: '500' },
+  zoneName: { fontSize: 14, color: '#1e40af', fontWeight: '800' },
+  zoneChangeBtn: { backgroundColor: '#3b82f6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  zoneChangeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  // Search & Filters
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, marginHorizontal: 16, marginTop: 12, elevation: 2 },
   searchIcon: { marginRight: 12, fontSize: 18 },
   searchInput: { flex: 1, paddingVertical: 14, color: '#0f172a', fontSize: 15 },
   filterBtn: { padding: 8, marginLeft: 8 },
@@ -294,7 +348,10 @@ const styles = StyleSheet.create({
   badgesRow: { flexDirection: 'row', marginBottom: 8 },
   badgePrimary: { backgroundColor: '#e0e7ff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flex: 1 },
   badgePrimaryText: { color: '#4338ca', fontSize: 10, fontWeight: '700' },
-  shopName: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 6 },
+  demoBadge: { backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 4 },
+  demoBadgeText: { color: '#d97706', fontSize: 8, fontWeight: '800' },
+  shopName: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 2 },
+  shopAddress: { fontSize: 11, color: '#94a3b8', marginBottom: 6, fontStyle: 'italic' },
   shopMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   shopMeta: { color: '#64748b', fontSize: 12, fontWeight: '600' },
   actionBtn: { backgroundColor: '#3b82f6', paddingVertical: 10, borderRadius: 10, alignItems: 'center' },

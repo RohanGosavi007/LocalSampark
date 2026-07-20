@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   UtensilsCrossed, Star, Clock, Flame, Heart, Leaf,
-  Search, Filter, ChevronRight, ShoppingBag, MapPin,
-  Truck, Shield, Award, Percent
+  Truck, Shield, Award, Percent, Search
 } from 'lucide-react';
+import ModifierDrawer from '@/components/ui/ModifierDrawer';
+import { KitchenStatusPill } from '@/components/ui/UnitSelector';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED RESTAURANT VISITOR VIEW
@@ -17,6 +18,10 @@ export default function RestaurantVisitorView({ shop, products = [], onAddToCart
   const [searchQuery, setSearchQuery] = useState('');
   const [vegFilter, setVegFilter] = useState('all'); // all | veg | nonveg
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Modifier Drawer State
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const categories = ['all', ...new Set(products.map(p => p.category || 'Main Course'))];
   const filtered = products
@@ -54,6 +59,12 @@ export default function RestaurantVisitorView({ shop, products = [], onAddToCart
               🟢 Open Now
             </span>
           </div>
+        </div>
+        
+        {/* Live Kitchen Status (Demo) */}
+        <div className="mt-4 pt-4 border-t border-orange-500/10">
+          <p className="text-xs font-bold text-text-muted mb-2">Live Kitchen Status</p>
+          <KitchenStatusPill stage={1} />
         </div>
       </motion.div>
 
@@ -138,7 +149,7 @@ export default function RestaurantVisitorView({ shop, products = [], onAddToCart
                     </div>
                   )}
                 </div>
-                <button onClick={() => onAddToCart?.(item)}
+                <button onClick={() => { setSelectedItem(item); setIsDrawerOpen(true); }}
                   className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border-2 border-green-500 text-green-500 font-bold text-xs px-4 py-1 rounded-lg shadow-md hover:bg-green-500 hover:text-white transition-all">
                   ADD
                 </button>
@@ -167,6 +178,15 @@ export default function RestaurantVisitorView({ shop, products = [], onAddToCart
           </div>
         ))}
       </div>
+
+      <ModifierDrawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+        item={selectedItem}
+        onConfirm={(itemData) => {
+          onAddToCart?.(itemData.id, itemData.quantity, itemData.options);
+        }}
+      />
     </div>
   );
 }

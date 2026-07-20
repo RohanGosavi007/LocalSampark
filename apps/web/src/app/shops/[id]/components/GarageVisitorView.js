@@ -5,6 +5,7 @@ import {
   Wrench, Clock, Star, Phone, Camera, Shield, FileText,
   CheckCircle, ChevronRight, Car, Search, MapPin, AlertTriangle
 } from 'lucide-react';
+import { KitchenStatusPill } from '@/components/ui/UnitSelector';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED GARAGE / REPAIR VISITOR VIEW
@@ -25,7 +26,7 @@ export default function EnhancedGarageVisitorView({ shop, services = [], onReque
         <h2 className="text-xl font-bold text-text mb-3 flex items-center gap-2">
           <Search className="w-5 h-5 text-blue-500" /> Track Your Job Card
         </h2>
-        <div className="flex gap-3">
+        <div className="flex gap-3 mb-4">
           <input
             type="text"
             value={trackingId}
@@ -37,9 +38,17 @@ export default function EnhancedGarageVisitorView({ shop, services = [], onReque
             Track
           </button>
         </div>
-        <p className="text-xs text-text-muted mt-2">
-          Track status: Received → Inspection → Estimate → Approved → In Repair → QC → Ready
-        </p>
+        
+        {trackingId === 'JC-0042' ? (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-xs font-bold text-text mb-3">Status: In Repair</p>
+            <KitchenStatusPill stage={1} />
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted">
+            Track status: Received → Inspection → Estimate → Approved → In Repair → QC → Ready
+          </p>
+        )}
       </motion.div>
 
       {/* Services Offered */}

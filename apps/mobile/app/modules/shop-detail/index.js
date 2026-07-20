@@ -38,7 +38,7 @@ const VIEW_COMPONENTS = {
 };
 
 export default function ShopDetailRouter() {
-  const { id, category } = useLocalSearchParams();
+  const { id, category, type, name } = useLocalSearchParams();
   const [shop, setShop] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,18 +48,19 @@ export default function ShopDetailRouter() {
         const data = await apiGet(`/shops/${id}`);
         setShop(data);
       } catch (err) {
-        console.warn('Failed to load shop, falling back to mock:', err);
+        console.warn('Failed to load shop, falling back to params data:', err);
+        // Use URL params for demo/offline fallback so the right view renders
         setShop({
           id,
-          name: 'Demo Shop',
-          category_slug: category || 'retail',
+          name: name ? decodeURIComponent(name) : 'Demo Shop',
+          category_slug: category || type || 'retail',
         });
       } finally {
         setLoading(false);
       }
     };
     fetchShop();
-  }, [id, category]);
+  }, [id, category, type, name]);
 
   if (loading) {
     return (

@@ -7,7 +7,6 @@ buildscript {
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')
         targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
         kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.25'
-
         ndkVersion = "26.1.10909125"
     }
     repositories {
@@ -46,6 +45,7 @@ allprojects {
             force 'androidx.activity:activity-compose:1.9.3'
             force 'androidx.activity:activity-ktx:1.9.3'
             force 'androidx.browser:browser:1.8.0'
+            force 'com.google.android.gms:play-services-wallet:19.3.0'
         }
     }
     

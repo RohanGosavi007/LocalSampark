@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -149,7 +150,7 @@ export default function PharmacyScreen() {
               {popularMedicines.map(med => (
                 <View key={med.id} style={styles.medicineCard}>
                   <View style={styles.medicineImageContainer}>
-                    <Image source={{ uri: med.image }} style={styles.medicineImage} />
+                    <Image source={med.image } style={styles.medicineImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
                   </View>
                   <Text style={styles.medicineName} numberOfLines={1}>{med.name}</Text>
                   <Text style={styles.medicineType}>{med.type} • {med.use}</Text>
@@ -189,7 +190,7 @@ export default function PharmacyScreen() {
 
             {prescriptionImage ? (
               <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: prescriptionImage }} style={styles.imagePreview} />
+                <Image source={prescriptionImage } style={styles.imagePreview}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
                 <TouchableOpacity 
                   style={styles.removeImageBtn} 
                   onPress={() => setPrescriptionImage(null)}

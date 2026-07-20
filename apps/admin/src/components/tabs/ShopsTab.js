@@ -1,7 +1,7 @@
 import React from 'react';
 export default function ShopsTab(props) {
   const { 
-    summaryStats, pendingShops, platformShare, franchiseShare, agentShare, miscShare,
+    summaryStats, pendingShops, shops, platformShare, franchiseShare, agentShare, miscShare,
     franchisePartners, usersTotal, userSearch, users, usersPage, territorySearch, territoryFilter,
     selectedBulk, territories, properties, revenueChart, newZone, editTerritory, approveShop, rejectShop,
     fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk
@@ -18,8 +18,7 @@ export default function ShopsTab(props) {
   const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #334155', background: '#0f172a', color: '#fff' };
 
   return (
-    {/* ─── SHOPS TAB ────────────────────────────────────── */}
-        
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {shops.map(s => (
               <div key={s.id} style={{ ...cardStyle, display: 'grid', gridTemplateColumns: '1fr auto', gap: '2rem', alignItems: 'center' }}>

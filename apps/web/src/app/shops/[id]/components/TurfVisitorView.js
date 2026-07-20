@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle, MapPin, CalendarDays, Dribbble, Target } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
+import { Clock, CheckCircle, MapPin, CalendarDays, Trophy, Target } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 export default function TurfVisitorView({ shop, services = [], staff = [], onBookAppointment }) {
   const [selectedService, setSelectedService] = useState(null);
@@ -17,7 +17,7 @@ export default function TurfVisitorView({ shop, services = [], staff = [], onBoo
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <Dribbble className="w-5 h-5 text-emerald-600" />
+            <Trophy className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
             <p className="text-text font-bold">Turf & Grounds Booking</p>

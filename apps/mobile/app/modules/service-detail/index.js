@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 
 export default function ServiceDetailScreen() {
@@ -28,7 +29,7 @@ export default function ServiceDetailScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: service.image }} style={styles.headerImage} />
+          <Image source={service.image } style={styles.headerImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
           </TouchableOpacity>

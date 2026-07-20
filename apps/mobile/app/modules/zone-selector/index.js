@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useZone } from '../../../src/context/ZoneContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,7 +89,7 @@ export default function ZoneSelectorScreen() {
       {savedZones.length > 0 && !searchQuery && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Saved Zones</Text>
-          <FlatList
+          <FlashList estimatedItemSize={100}
             data={savedZones}
             keyExtractor={(item) => `saved-${item.id}`}
             renderItem={renderZoneItem}
@@ -102,7 +103,7 @@ export default function ZoneSelectorScreen() {
         {isLoading ? (
           <ActivityIndicator size="large" color="#3b82f6" style={{marginTop: 20}} />
         ) : (
-          <FlatList
+          <FlashList estimatedItemSize={100}
             data={filteredZones}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderZoneItem}

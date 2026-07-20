@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Store, Map, TrendingUp, IndianRupee, PieChart, Activity, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { API_URL } from '@/lib/api';
+import FranchiseIntelligenceWidget from './components/FranchiseIntelligenceWidget';
 
 export default function FranchiseDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -103,6 +104,11 @@ export default function FranchiseDashboard() {
               <h3 className="text-xl font-bold text-slate-300">Category Split</h3>
               <p className="text-slate-500 text-sm">Visualizing active shop distribution.</p>
             </div>
+            
+            {/* Franchise Intelligence Section */}
+            {data.franchise?.zone_id && (
+              <FranchiseIntelligenceWidget zoneId={data.franchise.zone_id} />
+            )}
           </div>
         </div>
       </main>

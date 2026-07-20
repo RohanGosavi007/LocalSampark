@@ -8,6 +8,7 @@ import { SocketProvider } from '../context/SocketContext';
 import { LanguageProvider } from './components/LanguageToggle';
 import { ToastProvider } from './components/ui/Toast';
 import ServiceWorkerRegistrar from './components/ServiceWorkerRegistrar';
+import QueryProvider from './components/QueryProvider';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -86,8 +87,9 @@ export default function RootLayout({ children }) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <ServiceWorkerRegistrar />
-        <LanguageProvider>
-          <AuthProvider>
+        <QueryProvider>
+          <LanguageProvider>
+            <AuthProvider>
             <ZoneProvider>
               <LocationProvider>
                 <ConfigProvider>
@@ -100,6 +102,7 @@ export default function RootLayout({ children }) {
             </ZoneProvider>
           </AuthProvider>
         </LanguageProvider>
+        </QueryProvider>
       </body>
     </html>
   );

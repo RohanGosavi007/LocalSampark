@@ -1,6 +1,7 @@
-import { apiGet, apiPost, apiPut, apiDelete } from '../../../../../../../../../src/lib/api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
@@ -179,7 +180,7 @@ export default function JobsScreen() {
             <View style={styles.grid}>
               {filteredFreelancers.map((f, i) => (
                 <View key={i} style={styles.gridCard}>
-                  <Image source={{ uri: f.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${f.full_name}` }} style={styles.avatar} />
+                  <Image source={f.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${f.full_name}`} style={styles.avatar} contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
                   <Text style={styles.gridTitle} numberOfLines={1}>{f.full_name}</Text>
                   <View style={styles.skillBadge}><Text style={styles.skillBadgeText}>{f.skill_name}</Text></View>
                   <Text style={styles.ratingText}>⭐ {f.rating || '4.5'}</Text>

@@ -4,7 +4,8 @@ export default function FranchiseTab(props) {
     summaryStats, pendingShops, platformShare, franchiseShare, agentShare, miscShare,
     franchisePartners, usersTotal, userSearch, users, usersPage, territorySearch, territoryFilter,
     selectedBulk, territories, properties, revenueChart, newZone, editTerritory, approveShop, rejectShop,
-    fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk
+    fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk,
+    API_BASE, authHeaders, fetchFranchisePartners, fetchTerritories, setUserFilterZone, setActiveTab
   } = props;
 
   // Mock components for inline usages
@@ -18,8 +19,7 @@ export default function FranchiseTab(props) {
   const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #334155', background: '#0f172a', color: '#fff' };
 
   return (
-    {/* ─── FRANCHISE TAB ────────────────────────────────── */}
-        
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem' }}>🤝 Franchise Partners ({franchisePartners.length})</h3>

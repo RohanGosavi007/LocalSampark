@@ -50,14 +50,6 @@ const StatusBadge = ({ status }) => {
   };
   const style = map[status] || { bg: '#1e293b', color: '#94a3b8' };
   
-  const props = {
-    summaryStats, pendingShops, platformShare, franchiseShare, agentShare, miscShare,
-    franchisePartners, usersTotal, userSearch, users, usersPage, territorySearch, territoryFilter,
-    selectedBulk, territories, properties, revenueChart, newZone, editTerritory,
-    approveShop, rejectShop, fetchUsers, setUserSearch, changeUserRole, toggleUserStatus,
-    setUsersPage, bulkToggle, setSelectedBulk
-  };
-
   return (
     <span style={{ background: style.bg, color: style.color, padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
       {status}
@@ -438,6 +430,20 @@ export default function AdminDashboardPage() {
   }
 
   if (!admin) return null;
+
+  const props = {
+    summaryStats, pendingShops, shops, platformShare, franchiseShare, agentShare, miscShare,
+    franchisePartners, usersTotal, userSearch, users, usersPage, territorySearch, territoryFilter,
+    selectedBulk, territories, properties, revenueChart, newZone, editTerritory,
+    approveShop, rejectShop, fetchUsers, setUserSearch, changeUserRole, toggleUserStatus,
+    setUsersPage, bulkToggle, setSelectedBulk,
+    adminJobs, adminDelivery, adminWalletStats, adminAuditLogs, adminSkilledBookings,
+    activeTab, setActiveTab,
+    setTerritorySearch, setTerritoryFilter, toggleTerritory, territoryTogglingId,
+    saveTerritory, assignFranchiseModal, setAssignFranchiseModal, assignFranchise,
+    zoneAdded, addTerritory, setNewZone, API_BASE, authHeaders, fetchFranchisePartners,
+    fetchTerritories, fetchSummary, setUserFilterZone, approveProperty
+  };
 
   return (
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', color: '#f8fafc', background: '#0f172a', minHeight: '100vh', display: 'flex' }}>

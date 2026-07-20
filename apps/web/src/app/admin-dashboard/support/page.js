@@ -1,13 +1,10 @@
 'use client';
 import React from 'react';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export default function Page() {
   return (
     <>
-      <Header />
       <main className="min-h-screen bg-slate-950 pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-4xl font-black text-white mb-4">Customer Support</h1>
@@ -17,7 +14,6 @@ export default function Page() {
           </Link>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

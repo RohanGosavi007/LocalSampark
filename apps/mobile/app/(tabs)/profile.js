@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { useAuth } from '../../src/context/AuthContext';
 import { router } from 'expo-router';
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Store, MapPin, MessageCircle, Share2, Star, CheckCircle } from 'lucide-react-native';
 
@@ -88,7 +89,7 @@ export default function ShopDetailScreen() {
           <View style={styles.headerTop}>
             <View style={styles.logoContainer}>
               {shop.photo_urls && JSON.parse(shop.photo_urls).length > 0 ? (
-                <Image source={{ uri: JSON.parse(shop.photo_urls)[0] }} style={styles.logoImage} />
+                <Image source={JSON.parse(shop.photo_urls)[0] } style={styles.logoImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
               ) : (
                 <Store size={40} color="#9ca3af" />
               )}

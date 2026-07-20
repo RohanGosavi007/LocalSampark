@@ -17,6 +17,7 @@ import BeautyManager from './components/BeautyManager';
 import HomeServiceManager from './components/HomeServiceManager';
 import ProfessionalManager from './components/ProfessionalManager';
 import EducationEventsManager from './components/EducationEventsManager';
+import CampaignBuilder from './components/CampaignBuilder';
 import { useLanguage } from '../../context/LanguageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 
@@ -81,9 +82,15 @@ export default function ShopDashboardScreen() {
   const isEduEvent = ['cat_014', 'cat_031', 'cat_032', 'cat_033', 'cat_034'].includes(shop.category_id);
   const isDoctor = ['cat_022', 'cat_023', 'cat_020', 'cat_021', 'cat_039'].includes(shop.category_id);
 
+  const commonTabs = [
+      { id: 'dashboard', label: 'Overview', icon: 'home-outline' },
+      { id: 'pos', label: 'Billing / POS', icon: 'calculator-outline' },
+      { id: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
+      { id: 'analytics', label: 'Analytics', icon: 'stats-chart-outline' }
+  ];
+
   const navItems = [
-    { id: 'dashboard', label: t('nav_dashboard'), icon: 'home-outline', show: true },
-    { id: 'pos', label: t('nav_pos'), icon: 'calculator-outline', show: true },
+    ...commonTabs,
     { id: 'retail_manager', label: t('nav_retail'), icon: 'cart-outline', show: isRetail },
     { id: 'hospital_manager', label: t('nav_hospital'), icon: 'medical-outline', show: isHospital },
     { id: 'doctor_manager', label: t('nav_doctor'), icon: 'medkit-outline', show: isDoctor },
@@ -143,6 +150,11 @@ export default function ShopDashboardScreen() {
           {activeTab === 'professional_manager' && <ProfessionalManager shop={shop} />}
           {activeTab === 'edu_events_manager' && <EducationEventsManager shop={shop} />}
           {activeTab === 'retail_manager' && <RetailManager shop={shop} />}
+          {activeTab === 'campaigns' && (
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+              <CampaignBuilder />
+            </ScrollView>
+          )}
         </View>
       </View>
     </SafeAreaView>

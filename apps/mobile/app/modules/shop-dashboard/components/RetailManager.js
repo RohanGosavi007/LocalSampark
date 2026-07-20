@@ -1,21 +1,58 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Image } from 'expo-image';
+import { OfflineQueueService } from '../../../src/services/OfflineQueueService';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function RetailManager() {
+  const [isOnline, setIsOnline] = useState(true);
+  const [orders, setOrders] = useState([
+    {
+      id: 'LST-4821',
+      customer: 'Ramesh S.',
+      status: 'pending',
+      items: ['Dal - 1 kg', 'Rice - 5 kg', 'Sugar - 2 kg']
+    }
+  ]);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(!!state.isConnected && !!state.isInternetReachable);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleProcessOrder = async (orderId) => {
+    // Optimistic Update
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    Alert.alert("Order Processed", isOnline ? "Quote sent successfully." : "Saved offline. Will sync when connected.");
+
+    // Queue API call
+    await OfflineQueueService.enqueue(`/merchant/orders/${orderId}/process`, 'POST', { action: 'send_quote' });
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>🛒 Retail & Orders</Text>
+        {!isOnline && (
+          <View style={[styles.badge, { backgroundColor: '#fef3c7' }]}>
+            <Text style={[styles.badgeText, { color: '#d97706' }]}>Offline Mode</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>📋 Smart List OCR Orders</Text>
-          <View style={styles.badge}><Text style={styles.badgeText}>1 Pending</Text></View>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{orders.length} Pending</Text>
+          </View>
         </View>
 
-        <View style={styles.orderContainer}>
-          <Text style={styles.orderId}>🧾 Order #LST-4821 • Ramesh S.</Text>
+        {orders.map(order => (
+          <View key={order.id} style={styles.orderContainer}>
+            <Text style={styles.orderId}>🧾 Order #{order.id} • {order.customer}</Text>
           
           <View style={styles.compareRow}>
             <View style={styles.compareCol}>
@@ -27,17 +64,22 @@ export default function RetailManager() {
             <View style={styles.compareCol}>
               <Text style={styles.colTitle}>📝 OCR Extracted</Text>
               <View style={styles.textContainer}>
-                <Text style={styles.extractedText}>• Dal - 1 kg</Text>
-                <Text style={styles.extractedText}>• Rice - 5 kg</Text>
-                <Text style={styles.extractedText}>• Sugar - 2 kg</Text>
+                {order.items.map((item, idx) => (
+                  <Text key={idx} style={styles.extractedText}>• {item}</Text>
+                ))}
               </View>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.btnPrimary}>
+          <TouchableOpacity 
+            style={styles.btnPrimary} 
+            onPress={() => handleProcessOrder(order.id)}
+          >
             <Text style={styles.btnPrimaryText}>Add Pricing & Send Quote</Text>
           </TouchableOpacity>
         </View>
+        ))}
+
       </View>
 
       <View style={styles.card}>

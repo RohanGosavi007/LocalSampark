@@ -7,7 +7,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { SERVICES } from '../services/page';
+import { SERVICE_CATEGORIES as SERVICES } from '../services/page';
 import {
   Wallet, Building2, Car, HeartPulse, Package, Zap, Gift,
   Star, CalendarDays, PawPrint, Megaphone, ShoppingCart, PartyPopper,

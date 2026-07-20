@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl, TextInput, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
 import { Package, Search, Edit2, Archive, CheckCircle2, AlertCircle } from 'lucide-react-native';
-import { apiGet } from '../../../../src/lib/api';
-import { useAppStore } from '../../../../src/store/useAppStore';
+import { apiGet } from '../../../src/lib/api';
+import { useAppStore } from '../../../src/store/useAppStore';
 
 export default function NativeInventoryManager() {
   const [products, setProducts] = useState([]);
@@ -52,7 +54,7 @@ export default function NativeInventoryManager() {
         {/* Thumbnail Placeholder or Image */}
         <View className="w-16 h-16 bg-slate-800 rounded-xl mr-4 overflow-hidden border border-slate-700 items-center justify-center">
           {item.image_url ? (
-            <Image source={{ uri: item.image_url }} className="w-full h-full" resizeMode="cover" />
+            <Image source={item.image_url } className="w-full h-full" resizeMode="cover"  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
           ) : (
             <Package size={24} color="#64748b" />
           )}
@@ -135,7 +137,7 @@ export default function NativeInventoryManager() {
           <Text className="text-slate-500 font-bold text-lg">No products found</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={filteredProducts}
           keyExtractor={item => item.id?.toString() || Math.random().toString()}
           renderItem={renderProductCard}

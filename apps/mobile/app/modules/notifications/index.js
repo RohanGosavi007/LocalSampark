@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useNotifications } from '../../../src/context/NotificationContext';
@@ -79,7 +80,7 @@ export default function NotificationsScreen() {
           <Text style={styles.emptySub}>You're all caught up!</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={notifications}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}

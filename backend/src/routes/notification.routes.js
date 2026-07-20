@@ -131,4 +131,37 @@ router.post('/send', authenticate, async (req, res, next) => {
   }
 });
 
+// Trigger push notification for token queue update
+router.post('/trigger-token-queue-update', authenticate, async (req, res, next) => {
+  try {
+    const { targetUserId, shopName, currentToken, estimatedWait } = req.body;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'targetUserId is required' });
+    }
+
+    const title = `${shopName} Queue Update`;
+    const body = `They are currently serving Token #${currentToken}. Your estimated wait is ${estimatedWait} mins.`;
+
+    const tokens = await query(
+      'SELECT fcm_token FROM user_fcm_tokens WHERE user_id = $1',
+      [targetUserId]
+    ).catch(() => []);
+
+    if (!tokens || tokens.length === 0) {
+      return res.json({ success: false, message: 'No FCM tokens found for user' });
+    }
+
+    const results = [];
+    for (const t of tokens) {
+      const result = await sendPushNotification(t.fcm_token, title, body, { type: 'token_queue' });
+      results.push(result);
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

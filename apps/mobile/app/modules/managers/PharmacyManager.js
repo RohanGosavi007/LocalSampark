@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import ManagerLayout from './components/ManagerLayout';
 
 const PrescriptionApprovalsTab = () => {

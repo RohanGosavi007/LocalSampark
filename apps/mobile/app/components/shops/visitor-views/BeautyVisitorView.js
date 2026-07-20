@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import { Scissors, Clock, Star, Calendar } from 'lucide-react-native';
 
 export default function BeautyVisitorView({ shop, services = [], staff = [] }) {
@@ -37,7 +38,7 @@ export default function BeautyVisitorView({ shop, services = [], staff = [] }) {
               <TouchableOpacity key={st.id || i} style={styles.staffCard}>
                 <View style={styles.avatarContainer}>
                   {st.profile_image ? (
-                    <Image source={{ uri: st.profile_image }} style={styles.avatar} />
+                    <Image source={st.profile_image } style={styles.avatar}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
                   ) : (
                     <Text style={styles.avatarEmoji}>👤</Text>
                   )}

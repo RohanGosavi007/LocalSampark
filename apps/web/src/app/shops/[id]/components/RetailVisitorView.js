@@ -6,6 +6,7 @@ import {
   Truck, Shield, Clock, ChevronRight, Grid, List,
   Percent, Award, Package
 } from 'lucide-react';
+import UnitSelector, { StockBadge } from '@/components/ui/UnitSelector';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED RETAIL VISITOR VIEW
@@ -104,23 +105,24 @@ export default function RetailVisitorView({ shop, products = [], onAddToCart }) 
               </div>
               {/* Product Info */}
               <div className={viewMode === 'grid' ? 'p-3' : 'flex-1'}>
-                <p className="font-bold text-sm text-text line-clamp-2">{product.name || 'Product'}</p>
+                <div className="flex items-start justify-between mb-1">
+                  <p className="font-bold text-sm text-text line-clamp-2 leading-tight">{product.name || 'Product'}</p>
+                  <StockBadge stock={product.stock !== undefined ? product.stock : Math.floor(Math.random() * 20)} />
+                </div>
                 {product.unit && <p className="text-[10px] text-text-muted mt-0.5">{product.unit}</p>}
-                <div className="flex items-center justify-between mt-2">
-                  <div>
-                    <span className="font-black text-primary">₹{product.price || '—'}</span>
-                    {product.mrp && product.mrp > product.price && (
-                      <span className="text-xs text-text-muted line-through ml-1">₹{product.mrp}</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => onAddToCart?.(product)}
-                    className="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:shadow-md transition-all"
-                  >
-                    + Add
-                  </button>
+                
+                <div className="mt-3">
+                  <UnitSelector 
+                    price={product.price || 0}
+                    quantity={0} // Default to 0, when changed, trigger onAddToCart
+                    onQuantityChange={(qty) => {
+                      if(qty > 0) onAddToCart?.(product.id, qty, { unit: product.unit || '1 Pack' });
+                    }}
+                  />
                 </div>
               </div>
+
+
             </motion.div>
           ))}
         </div>

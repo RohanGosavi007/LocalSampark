@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -90,7 +91,7 @@ export default function StoryCreateScreen() {
         <View style={styles.content}>
           {imageUri ? (
             <View style={styles.previewContainer}>
-              <Image source={{ uri: imageUri }} style={styles.previewImage} />
+              <Image source={imageUri } style={styles.previewImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
               <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImageUri(null)}>
                 <Ionicons name="trash" size={20} color="#fff" />
               </TouchableOpacity>

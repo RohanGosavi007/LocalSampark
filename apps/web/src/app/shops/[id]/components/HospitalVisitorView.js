@@ -6,6 +6,8 @@ import {
   MapPin, CheckCircle, Activity, Shield, FileText,
   ChevronRight, AlertCircle
 } from 'lucide-react';
+import TokenTrackerBar from '@/components/ui/TokenTrackerBar';
+import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED HOSPITAL / HEALTHCARE VISITOR VIEW
@@ -19,36 +21,12 @@ export default function EnhancedHospitalVisitorView({ shop, services = [], staff
   return (
     <div className="space-y-8">
       {/* Live OPD Queue Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl p-5"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center">
-              <Users className="w-6 h-6 text-cyan-500" />
-            </div>
-            <div>
-              <p className="text-text font-bold">Live OPD Status</p>
-              <p className="text-text-muted text-sm">Real-time queue information</p>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-black text-amber-500">5</p>
-              <p className="text-[10px] text-text-muted font-bold uppercase">Waiting</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-cyan-500">~25</p>
-              <p className="text-[10px] text-text-muted font-bold uppercase">Min Wait</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-green-500">Open</p>
-              <p className="text-[10px] text-text-muted font-bold uppercase">Status</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      <div className="mb-6">
+        <h3 className="font-heading font-bold text-text mb-3 flex items-center gap-2">
+          <Users className="w-5 h-5 text-cat-booking" /> Live OPD Status
+        </h3>
+        <TokenTrackerBar shopId={shop?.id} userToken={22} />
+      </div>
 
       {/* Doctors / Practitioners */}
       <div className="bg-background-alt p-6 rounded-2xl border border-border">
@@ -105,6 +83,32 @@ export default function EnhancedHospitalVisitorView({ shop, services = [], staff
             </motion.div>
           ))}
         </div>
+        
+        {/* Slot Picker for Selected Doctor */}
+        {selectedDoctor && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-6 pt-6 border-t border-border"
+          >
+            <h3 className="font-heading font-bold text-text mb-4">Book Appointment with {selectedDoctor.name}</h3>
+            <SlotMatrixGrid 
+              slots={{
+                morning: [
+                  { id: 'm1', time: '09:00', status: 'available' },
+                  { id: 'm2', time: '09:30', status: 'booked' },
+                  { id: 'm3', time: '10:00', status: 'filling_fast', remaining: 2 },
+                  { id: 'm4', time: '10:30', status: 'available' },
+                ],
+                afternoon: [
+                  { id: 'a1', time: '14:00', status: 'available' },
+                  { id: 'a2', time: '15:00', status: 'available' },
+                ]
+              }}
+              onSelectSlot={(slot) => onBookAppointment?.(selectedDoctor, slot)}
+            />
+          </motion.div>
+        )}
       </div>
 
       {/* Services */}

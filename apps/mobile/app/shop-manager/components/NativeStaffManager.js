@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Users, Phone, Mail, Edit2, Shield, CheckCircle2, AlertCircle } from 'lucide-react-native';
-import { apiGet } from '../../../../src/lib/api';
-import { useAppStore } from '../../../../src/store/useAppStore';
+import { apiGet } from '../../../src/lib/api';
+import { useAppStore } from '../../../src/store/useAppStore';
 
 export default function NativeStaffManager() {
   const [staff, setStaff] = useState([]);
@@ -98,7 +99,7 @@ export default function NativeStaffManager() {
           <Text className="text-slate-500 font-bold text-lg">No staff members found</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={staff}
           keyExtractor={item => item.id?.toString() || Math.random().toString()}
           renderItem={renderStaffCard}

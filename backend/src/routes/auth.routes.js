@@ -509,7 +509,7 @@ router.put('/switch-role', authenticate, async (req, res, next) => {
       { expiresIn: '1d' }
     );
 
-    res.json({ success: true, accessToken, role: targetRole, message: \`Switched to \${targetRole}\` });
+    res.json({ success: true, accessToken, role: targetRole, message: `Switched to ${targetRole}` });
   } catch (error) {
     next(error);
   }

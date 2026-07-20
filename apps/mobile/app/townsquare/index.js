@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, Image, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, MessageCircle, Heart, Share2, AlertTriangle, Plus, MoreHorizontal } from 'lucide-react-native';
 import { apiGet } from '../../src/lib/api';
@@ -129,7 +131,7 @@ export default function NativeTownsquareScreen() {
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={posts}
           keyExtractor={item => item.id.toString()}
           renderItem={renderPost}

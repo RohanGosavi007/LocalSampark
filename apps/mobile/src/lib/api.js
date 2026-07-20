@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { SecureTokenStorage } from '../context/AuthContext';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -32,7 +33,7 @@ export class ApiError extends Error {
  * Retrieve authorization headers with stored JWT token
  */
 export async function getAuthHeaders() {
-  const token = await AsyncStorage.getItem('authToken');
+  const token = await SecureTokenStorage.getToken('authToken');
   return {
     'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
@@ -85,7 +86,8 @@ async function request(endpoint, options = {}) {
       // Auto-logout on token expiration / unauthorized access
       if (response.status === 401) {
         console.warn('[API Auth] 401 Unauthorized received, clearing credentials...');
-        await AsyncStorage.multiRemove(['authToken', 'user', 'activeRole', 'assignedRoles']);
+        await SecureTokenStorage.deleteToken('authToken');
+        await AsyncStorage.multiRemove(['user', 'activeRole', 'assignedRoles']);
         // Note: Global app state notification or navigation redirect can be triggered here
       }
       

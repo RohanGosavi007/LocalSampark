@@ -1,0 +1,353 @@
+# 🔬 Complete Detailed Review — Plan 1 & Plan 2: Category-Native Engine Transformation
+
+## Executive Summary
+
+Both plans propose transforming LocalSampark from a **generic shop directory** into a **category-specialized micro-app ecosystem** across Web (Next.js) and Android (Expo/React Native). After deep analysis of your actual codebase, this review covers **what already exists, what's missing, what's excellent, what's risky, and a unified implementation roadmap** that merges the best of both plans.
+
+---
+
+## 📊 Current Codebase Reality Check
+
+Before evaluating the plans, here's what your codebase **actually has today**:
+
+| Layer | Current State | File Evidence |
+|-------|--------------|---------------|
+| **Visitor View Router** | ✅ Already exists — maps 55 categories → 11 view types | [VisitorViewRouter.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/VisitorViewRouter.js) |
+| **Category-Specific Visitor Views** | ✅ 14 specialized views built (Restaurant, Retail, Hospital, Beauty, Garage, Pharmacy, Tiffin, Turf, etc.) | [components/](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components) |
+| **Merchant Dashboard Router** | ⚠️ Exists but uses a manual `switch` statement with mock data | [shop-dashboard/page.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/page.js) |
+| **Merchant Category Managers** | ✅ 13 managers built (Retail, Hospital, Beauty, Garage, POS, Fleet, etc.) | [shop-dashboard/components/](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/components) |
+| **Cart Store (Web)** | ✅ Zustand + persist + backend sync | [cartStore.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/store/cartStore.js) |
+| **Cart Store (Mobile)** | ✅ Zustand + AsyncStorage + backend sync | [mobile/cartStore.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/mobile/src/store/cartStore.js) |
+| **Mobile Shop Dashboard** | ⚠️ Generic dashboard with mock stats, no category specialization | [ShopDashboard.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/mobile/src/screens/dashboards/ShopDashboard.js) |
+| **Design System** | ✅ Tailwind CSS vars, glassmorphism, animations (shimmer, float, glow, etc.) | [tailwind.config.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/tailwind.config.js) |
+| **Socket.io Backend** | ❌ Empty — `backend/src/sockets/` directory exists but has zero files | [sockets/](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/sockets) |
+| **Shop Listing Page** | ✅ Full implementation with categories, filters, map view, quick-view modal | [shops/page.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/page.js) |
+| **Backend API Routes** | ✅ 65 route files including shop, cart, checkout, order, booking, services, medical, rental, equipment, etc. | [routes/](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes) |
+
+> [!IMPORTANT]
+> **You are NOT starting from zero.** Your codebase already has ~60% of the architecture both plans describe. The critical gaps are in **real-time infrastructure, mobile-native UX, merchant dashboard connectivity, and the final 6th archetype (Leads/Directory)**.
+
+---
+
+## 🔍 Plan 1: Detailed Review
+
+### What Plan 1 Gets Right ✅
+
+| Aspect | Assessment |
+|--------|-----------|
+| **Root Cause Analysis** | Spot-on. The diagnosis of "generic grid for all categories" is the core problem. Your [shops/page.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/page.js) confirms this — all shops render the same card layout regardless of category. |
+| **Dynamic Category Router** | Excellent architecture — and **you already have this** in [VisitorViewRouter.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/VisitorViewRouter.js). Plan 1's `CATEGORY_VIEW_MAP` pattern is already implemented. |
+| **Cart State Engine (Zustand)** | The proposed cart store is nearly **identical to your existing** [cartStore.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/store/cartStore.js). Your version is actually MORE complete (has `persist`, backend sync, session IDs). |
+| **Merchant Kanban Pipeline** | Strong concept. Currently your [RetailManager.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/components/RetailManager.js) uses flat tables and static dummy data — converting to Kanban is high-value. |
+| **4 Archetype Clusters** | Good starting framework (Food, Retail, Healthcare, Services). |
+
+### What Plan 1 Gets Wrong / Misses ⚠️
+
+| Issue | Details | Risk Level |
+|-------|---------|------------|
+| **Underestimates existing work** | Plan proposes building `DynamicShopVisitorShell` from scratch, but `VisitorViewRouter` already handles this with 55 category mappings across 11 view types. Rebuilding would discard working code. | 🔴 High |
+| **Only 4 archetypes for 56 categories** | Lumping Salons, Gyms, Doctors, and Dentists all into "Healthcare" ignores that salon booking ≠ medical token queue. Your existing code already separates `beauty` from `hospital` from `pharmacy`. | 🟡 Medium |
+| **No Rental/Equipment archetype** | Completely ignores tractor rentals, borewell services, construction equipment — categories that exist in your [equipment.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/equipment.routes.js) and [rental.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/rental.routes.js) backend. | 🟡 Medium |
+| **No Directory/Lead archetype** | Ignores Real Estate, Matrimony, Jobs, Scrap/Kabadi — all of which have dedicated backend routes ([properties.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/properties.routes.js), [scrap.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/scrap.routes.js), [job.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/job.routes.js)). | 🟡 Medium |
+| **Cart store proposal is redundant** | The Zustand store code in Plan 1 is simpler than what you already have. Your existing store has `persist` middleware, backend sync, and session management. | 🟢 Low |
+| **Missing real-time implementation details** | Mentions "real-time" everywhere but provides zero Socket.io/Firebase architecture. Your `backend/src/sockets/` is empty — this is your biggest technical gap. | 🔴 High |
+| **Thermal printer integration is hand-waved** | "Direct Bluetooth/USB thermal receipt printer integration" is a single sentence, but this is a complex multi-platform challenge (Web Bluetooth API, Android USB Host API, ESC/POS protocol). | 🟡 Medium |
+| **Barcode scanner — no technical detail** | "Barcode Camera Scanner (Mobile)" needs a specific library recommendation (e.g., `expo-barcode-scanner` or `react-native-vision-camera`). | 🟢 Low |
+
+### Plan 1 Code Quality Assessment
+
+```diff
+- The proposed cart store REMOVES persist middleware and backend sync
+- The proposed cart store REMOVES session ID management
++ Good factory pattern for category routing
++ Clean separation of concerns
+
+# Verdict: Use existing cartStore.js, don't replace it
+```
+
+---
+
+## 🔍 Plan 2: Detailed Review
+
+### What Plan 2 Gets Right ✅
+
+| Aspect | Assessment |
+|--------|-----------|
+| **6 Archetype Architecture** | Superior to Plan 1's 4 clusters. The 6-way split (Food, Retail, Booking, Services, Rentals, Directory) maps much more naturally to your existing backend routes and visitor views. | 
+| **Explicit 56-Category Mapping** | Provides a complete mapping table for all categories → archetypes. This is actionable and auditable. |
+| **Category Color Accent Tokens** | Brilliant UX touch. Currently your [tailwind.config.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/tailwind.config.js) has a single `primary` color — per-category neon accents would dramatically differentiate shop experiences. |
+| **Dual Factory Pattern** | Having BOTH a `DynamicShopView` (visitor) AND `DynamicMerchantDashboard` (owner) factory is the correct architecture. Your web has the visitor router but the merchant dashboard still uses a manual switch. |
+| **Kitchen Display System (KDS)** | The touchscreen Kanban with color-coded cards is a genuine industry-standard POS concept. Much more production-ready than Plan 1's vague "drag-and-drop stages". |
+| **Live Token Tracker** | "Currently Serving Token #18 | You are Token #22 (Est. wait 12 mins)" — this is a killer feature for Indian clinics/salons. |
+| **Job Card Console** | Step-by-step milestone tracking for garages/repair services with photo proof is excellent domain modeling. |
+| **Fleet & Asset Tracker** | The rental archetype with asset status grid and return date logging addresses a real gap in your current system. |
+
+### What Plan 2 Gets Wrong / Misses ⚠️
+
+| Issue | Details | Risk Level |
+|-------|---------|------------|
+| **Also underestimates existing work** | Proposes building `DynamicShopView` from scratch, ignoring that [VisitorViewRouter.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/VisitorViewRouter.js) already maps 55 categories → 11 view types. Should EXTEND, not replace. | 🔴 High |
+| **Aurora/Mesh Gradient performance** | "Animated dark-mode mesh gradients" with `backdrop-blur-2xl` are GPU-intensive. On low-end Android devices (your target market in India), this will cause jank. Needs performance budgeting. | 🔴 High |
+| **Particle celebrations on order confirm** | "Confetti or neon particle explosions" — fun but adds bundle weight (canvas-confetti is ~10KB). Should be lazy-loaded and device-capability-gated. | 🟡 Medium |
+| **No mention of existing mobile dashboard** | Your [ShopDashboard.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/mobile/src/screens/dashboards/ShopDashboard.js) already has category detection via `getManagerRoute(categorySlug)`. Plan 2 doesn't acknowledge this. | 🟡 Medium |
+| **Missing backend API gap analysis** | Plan 2 proposes features like "Live Token Tracker" and "Job Card Console" but doesn't audit which backend APIs exist vs. need to be built. Your backend has routes for orders, bookings, and services, but NO token queue or job card routes. | 🔴 High |
+| **Socket infrastructure completely absent** | Like Plan 1, mentions real-time extensively but your `backend/src/sockets/` is empty. No Socket.io or Firebase implementation exists. | 🔴 High |
+| **OCR/AI prescription extraction** | "AI extracts items directly into the cart" — requires an OCR service (Google Cloud Vision, Tesseract). No implementation detail or cost analysis. | 🟡 Medium |
+| **Web Bluetooth for thermal printers** | Same hand-waving as Plan 1. Web Bluetooth API has limited browser support (Chrome only, no Firefox/Safari). Android native is feasible via `react-native-ble-plx`. | 🟡 Medium |
+
+### Plan 2 Code Quality Assessment
+
+```diff
++ Better factory pattern with explicit archetype grouping
++ Separate Visitor and Merchant factory dispatchers
++ Category color token system is production-ready
+- bg-slate-950 hardcoded instead of using CSS variables (breaks your existing theme system)
+- min-h-screen and font-sans hardcoded in factory (should be in layout, not components)
+- RetailVisitorView as fallback for unknown categories matches your existing pattern ✓
+```
+
+---
+
+## ⚖️ Plan 1 vs Plan 2: Head-to-Head Comparison
+
+| Dimension | Plan 1 | Plan 2 | Winner |
+|-----------|--------|--------|--------|
+| **Archetype Granularity** | 4 clusters (too few) | 6 clusters (just right) | **Plan 2** ✅ |
+| **Category Coverage** | ~30 categories mentioned | All 56 explicitly mapped | **Plan 2** ✅ |
+| **Visitor UX Detail** | Good for Food & Healthcare | Detailed for all 6 archetypes | **Plan 2** ✅ |
+| **Merchant Dashboard** | Kanban concept only | KDS + POS + Queue Desk + Job Cards + Fleet + CRM | **Plan 2** ✅ |
+| **Visual Design Spec** | Glassmorphism + hover effects | Aurora gradients + category colors + particles | **Plan 2** ✅ |
+| **Mobile-Native UX** | Bottom sheets + haptics mentioned | Same + audio chimes | **Tie** |
+| **Technical Architecture** | Single factory + Zustand cart | Dual factory + color tokens | **Plan 2** ✅ |
+| **Implementation Realism** | 4-step plan | 5-step plan | **Tie** |
+| **Awareness of Existing Code** | None | None | **Neither** ❌ |
+| **Backend API Gaps** | Not addressed | Not addressed | **Neither** ❌ |
+| **Real-Time Infrastructure** | Not addressed | Not addressed | **Neither** ❌ |
+| **Performance Budgeting** | Not addressed | Not addressed | **Neither** ❌ |
+
+> [!TIP]
+> **Verdict: Plan 2 is the superior architecture**, but both plans ignore your existing codebase. The unified implementation below merges Plan 2's structure with awareness of what you've already built.
+
+---
+
+## 🏗️ Unified Implementation Roadmap (Merging Both Plans + Reality)
+
+### Phase 0: Foundation Fixes (Week 1)
+> Prerequisites that MUST be done before any feature work.
+
+#### Backend: Socket.io Real-Time Infrastructure
+- **[NEW]** `backend/src/sockets/orderSocket.js` — Real-time order push to merchants
+- **[NEW]** `backend/src/sockets/tokenQueueSocket.js` — Live token counter for clinics/salons
+- **[NEW]** `backend/src/sockets/trackingSocket.js` — Order stage tracking for visitors
+- **[MODIFY]** [server.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/server.js) — Initialize Socket.io server
+
+#### Backend: Missing API Routes
+- **[NEW]** `backend/src/routes/token-queue.routes.js` — Token queue CRUD + increment
+- **[NEW]** `backend/src/routes/job-cards.routes.js` — Repair job card CRUD + milestones
+- **[NEW]** `backend/src/routes/fleet-assets.routes.js` — Rental asset tracking
+- **[NEW]** `backend/src/routes/leads-crm.routes.js` — Lead pipeline for directory archetype
+- **[MODIFY]** [order.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/order.routes.js) — Add Kanban stage transitions + Socket.io emit
+
+#### Design System: Category Color Tokens
+- **[MODIFY]** [tailwind.config.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/tailwind.config.js) — Add category accent colors:
+  ```
+  food: '#FF6B00', retail: '#00E676', healthcare: '#00E5FF',
+  beauty: '#FF007F', services: '#FFD600', agriculture: '#10B981'
+  ```
+- **[MODIFY]** [globals.css](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/globals.css) — Add CSS custom properties for category themes
+- **[MODIFY]** [tailwind.config.js (mobile)](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/mobile/tailwind.config.js) — Mirror category tokens for NativeWind
+
+---
+
+### Phase 1: Visitor Experience Upgrade (Weeks 2-4)
+> Enhance existing visitor views, don't rebuild from scratch.
+
+#### Upgrade VisitorViewRouter to 6-Archetype Model
+- **[MODIFY]** [VisitorViewRouter.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/VisitorViewRouter.js)
+  - Add `rental` view type mapping for tractor, borewell, construction equipment categories
+  - Add `lead_directory` view type mapping for real estate, matrimony, jobs, scrap categories
+  - Add category color theme injection as prop to all views
+  - Keep existing 11 view type → 6 archetype consolidation gradual (don't break working views)
+
+#### New Visitor Views (Missing Archetypes)
+- **[NEW]** `RentalVisitorView.js` — Duration slider, availability calendar, deposit breakdown
+- **[NEW]** `LeadDirectoryVisitorView.js` — Media cards, WhatsApp/Call/GPS buttons, map pins
+
+#### Enhance Existing Visitor Views
+- **[MODIFY]** [RestaurantVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/RestaurantVisitorView.js) — Add sticky sub-category tabs, 1-tap modifier drawer, live kitchen status bar
+- **[MODIFY]** [RetailVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/RetailVisitorView.js) — Add multi-unit selector (250g/500g/1kg), stock badges, list uploader
+- **[MODIFY]** [HospitalVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/HospitalVisitorView.js) — Add live token tracker bar, interactive slot matrix grid
+- **[MODIFY]** [BeautyVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/BeautyVisitorView.js) — Add specialist carousel, combo builder with savings calculator
+- **[MODIFY]** [GarageVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/GarageVisitorView.js) — Add job estimator wizard, interactive quote acceptor
+- **[MODIFY]** [TiffinCateringVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/TiffinCateringVisitorView.js) — Add weekly/monthly calendar with pause/swap
+
+#### Enhance Cart Store
+- **[MODIFY]** [cartStore.js (web)](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/store/cartStore.js) — Add `customOptions` support (modifiers, portions, units)
+- **[MODIFY]** [cartStore.js (mobile)](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/mobile/src/store/cartStore.js) — Mirror customOptions, add haptic trigger hooks
+
+#### Shared UI Primitives
+- **[NEW]** `apps/web/src/app/components/ui/FloatingCartBar.js` — Sticky bottom cart summary
+- **[NEW]** `apps/web/src/app/components/ui/ModifierDrawer.js` — Slide-up customization panel
+- **[NEW]** `apps/web/src/app/components/ui/SlotMatrixGrid.js` — Morning/Afternoon/Evening slot picker
+- **[NEW]** `apps/web/src/app/components/ui/TokenTrackerBar.js` — Real-time queue position indicator
+- **[NEW]** `apps/web/src/app/components/ui/UnitSelector.js` — Weight/size dropdown with conversion
+
+---
+
+### Phase 2: Merchant Dashboard Overhaul (Weeks 4-6)
+> Convert static CRUD tables into real-time command centers.
+
+#### Merchant Dashboard Factory
+- **[MODIFY]** [shop-dashboard/page.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/page.js)
+  - Replace manual switch statement with factory pattern (like Plan 2's `MERCHANT_ARCHETYPE_MAP`)
+  - Connect to real authenticated merchant profile instead of mock data
+  - Add real-time order notification listener (Socket.io)
+  - Add audio chime on new order arrival
+
+#### Upgrade Existing Managers
+- **[MODIFY]** [RetailManager.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/components/RetailManager.js)
+  - Replace flat HTML tables with interactive data grid
+  - Add POS billing terminal mode (barcode scan + cash calculator)
+  - Add low-stock threshold alerts with flashing badges
+  - Add Khata/Ledger management with WhatsApp reminder links
+  - Replace dummy data with real API integration
+
+- **[MODIFY]** [HospitalManager.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/components/HospitalManager.js)
+  - Add Live Reception Desk (1-tap token increment + push notification)
+  - Add daily appointment timeline (drag-and-drop calendar)
+
+- **[MODIFY]** [BeautyManager.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/components/BeautyManager.js)
+  - Add stylist schedule management
+  - Add service combo pricing builder
+
+#### New Merchant Dashboards
+- **[NEW]** `FoodKDS.js` — Kitchen Display System with touchscreen Kanban, auto-print, stock toggle
+- **[NEW]** `JobCardConsole.js` — Repair job cards with photo proof, parts/labor breakdown, milestone switcher
+- **[NEW]** `FleetAssetTracker.js` — Asset status grid, return date logging, fuel/operator console
+- **[NEW]** `LeadCRMCenter.js` — Lead pipeline, call logs, response notes, deal closure tracking
+
+#### Kanban Order Pipeline (Shared Component)
+- **[NEW]** `apps/web/src/app/shop-dashboard/components/shared/OrderKanban.js`
+  - Drag-and-drop columns: Incoming → In Preparation → Ready → Completed
+  - Quick action buttons ("Accept in 15 mins", "Delay 10 mins")
+  - Real-time updates via Socket.io
+  - Audio chime on new incoming orders
+  - Color-coded order cards (New: Red, Cooking: Yellow, Ready: Green)
+
+---
+
+### Phase 3: Mobile-Native Transformation (Weeks 6-8)
+> Android-specific UX enhancements.
+
+#### Mobile Visitor Experience
+- **[MODIFY]** [ShopDashboard.js (mobile)](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/mobile/src/screens/dashboards/ShopDashboard.js)
+  - Replace generic stats with category-specific KPIs
+  - Connect to real backend data instead of mock arrays
+  - Add Socket.io listener for real-time order notifications
+
+#### Mobile-Native UI Components
+- **[NEW]** Bottom sheet components using `@gorhom/bottom-sheet` for:
+  - Item customization (modifiers, portions)
+  - Category filters
+  - Checkout preview
+  - Quick cart view
+- **[NEW]** Haptic feedback integration:
+  - `expo-haptics` for quantity increment, category switch, order accept
+  - Light impact on add-to-cart, medium on checkout confirm
+- **[NEW]** Skeleton loaders using `react-native-reanimated`:
+  - Shimmer animations for product lists, order cards, dashboard stats
+  - Replace current plain spinner (`animate-spin` div)
+
+#### Mobile Barcode Scanner
+- **[NEW]** Camera barcode scanner using `expo-barcode-scanner`:
+  - Scan physical product → jump to checkout page
+  - Available only when user is near/inside shop (GPS proximity check)
+
+---
+
+### Phase 4: Real-Time & Notifications (Week 8-9)
+> The connective tissue that makes everything "live".
+
+#### Socket.io Server Implementation
+```
+backend/src/sockets/
+├── index.js              — Socket.io initialization + auth middleware
+├── orderSocket.js        — New order → merchant push + stage transitions
+├── tokenQueueSocket.js   — Token increment → waiting visitors update
+├── trackingSocket.js     — Kitchen/delivery stage → visitor tracker
+└── chatSocket.js         — Shop ↔ visitor real-time chat
+```
+
+#### Audio & Notification System
+- **[NEW]** `apps/web/src/lib/audioNotifier.js` — Cash-register chime on new order (Web Audio API)
+- **[NEW]** `apps/mobile/src/services/orderRinger.js` — Enhanced version of existing `useOrderRinger` context
+- **[MODIFY]** [notification.routes.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/backend/src/routes/notification.routes.js) — Add push notification triggers for token queue updates
+
+---
+
+### Phase 5: Polish & Advanced Features (Weeks 9-10)
+
+#### Thermal Printer Integration
+- **Web**: Web Bluetooth API (Chrome only) with ESC/POS protocol library
+- **Android**: `react-native-ble-plx` for Bluetooth thermal printers
+- **Fallback**: Generate PDF invoice for download/share
+
+#### OCR Prescription/List Upload
+- Use Google Cloud Vision API or Tesseract.js for text extraction
+- **[MODIFY]** [PharmacyVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/PharmacyVisitorView.js) — Add prescription upload drawer
+- **[MODIFY]** [RetailVisitorView.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shops/%5Bid%5D/components/RetailVisitorView.js) — Add handwritten list uploader
+
+#### Performance Optimizations
+- Lazy-load all visitor view components (dynamic `import()`)
+- Device capability detection for animations (reduce motion for low-end devices)
+- Image optimization with Next.js `<Image>` component
+- Skeleton loaders everywhere instead of spinners
+
+---
+
+## ⚠️ Critical Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| **GPU-heavy animations on low-end Android** | App becomes unusable on budget phones (80% of Indian market) | Implement `prefers-reduced-motion` detection; disable aurora/mesh gradients on devices with <4GB RAM |
+| **Socket.io scaling** | Single-server Socket.io won't handle 1000+ concurrent merchants | Use Redis adapter for Socket.io; consider Firebase Realtime DB as alternative |
+| **OCR accuracy for handwritten lists** | Handwritten Devanagari/Marathi text has low OCR accuracy | Start with typed text support; add manual correction UI; phase in ML improvements |
+| **Thermal printer fragmentation** | Dozens of printer models with different protocols | Support only 2-3 popular Indian models initially (TVS RP 3150, Epson TM-T82); add others based on demand |
+| **Cart store for complex modifiers** | Current cart store doesn't support item variants/options | Add `customOptions` object to cart items (both plans propose this) — must be done BEFORE building modifier UIs |
+| **Mobile app size bloat** | Adding barcode scanner + haptics + bottom sheets + animations | Use Expo config plugins for tree-shaking; lazy-load heavy screens |
+
+---
+
+## 📋 Open Questions for Your Decision
+
+> [!IMPORTANT]
+> These decisions will shape the implementation direction. Please respond before I begin coding.
+
+1. **Real-time backend**: Should I implement Socket.io (you have an empty `sockets/` directory ready) or Firebase Realtime Database (simpler but adds a Google dependency)?
+
+2. **Mobile archetype views**: Should the mobile app get the same 6-archetype visitor views as web, or should we start with the top 3 (Food, Retail, Booking) and add others iteratively?
+
+3. **Merchant dashboard connectivity**: Your [shop-dashboard/page.js](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/shop-dashboard/page.js) currently uses mock data (`mockShop`). Should I connect it to real authenticated merchant sessions first, or build the new archetype dashboards with mock data and connect later?
+
+4. **Dark mode**: Plan 2 proposes a dark-mode-first design (`bg-slate-950`). Your current [globals.css](file:///c:/localsampark1%2019-07-2026/localsampark1%2019-07-2026/apps/web/src/app/globals.css) has CSS variables for theming. Should the category-specific shops always be dark mode, or should they respect the user's system preference?
+
+5. **Priority categories**: Which 3-5 shop categories are your MOST ACTIVE with real merchants? I'll prioritize those archetypes for the first build.
+
+6. **OCR and barcode scanner**: Should these be Phase 1 (MVP) features or Phase 5 (polish)? They add significant complexity and third-party dependencies.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- `npm test` on backend after each new route
+- Component render tests for each new visitor view and merchant dashboard
+- Socket.io integration tests with mock clients
+
+### Manual Verification
+- Web: Test all 6 archetype visitor views with real shop data
+- Web: Test merchant dashboard Kanban with simulated order flow
+- Android: Test bottom sheets, haptics, and skeleton loaders on physical device
+- Android: Test barcode scanner in-store proximity detection
+- Performance: Lighthouse audit for web (target >80 on mobile)
+- Performance: Android profiling for 60fps scroll on budget devices

@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { authenticate } = require('../middleware/auth.middleware');
 
 // List properties
-router.post('/properties', async (req, res, next) => {
+router.post('/properties', authenticate, async (req, res, next) => {
   try {
     const { userId, title, description, propertyType, listingType, price, deposit, coordinate } = req.body;
     const result = await db.query(
@@ -18,7 +19,7 @@ router.post('/properties', async (req, res, next) => {
 });
 
 // Landlord dashboard stats
-router.get('/dashboard/:landlordId', async (req, res, next) => {
+router.get('/dashboard/:landlordId', authenticate, async (req, res, next) => {
   try {
     const { landlordId } = req.params;
     const listings = await db.queryMany(

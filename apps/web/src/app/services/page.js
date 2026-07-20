@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wrench, Search, Star, MapPin, Phone, Clock, Calendar, CheckCircle2, X, Filter, ChevronRight } from 'lucide-react';
 import { API_URL } from '@/lib/api';
 
-const SERVICE_CATEGORIES = [
+export const SERVICE_CATEGORIES = [
   { value: '', label: 'All Services', icon: '🔧' },
   { value: 'plumber', label: 'Plumber', icon: '🔧' },
   { value: 'electrician', label: 'Electrician', icon: '⚡' },

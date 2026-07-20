@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl, TextInput, LayoutAnimation, UIManager, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, LayoutAnimation, UIManager, Platform } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Package, CheckCircle2, XCircle, Truck, Search, Bell, MapPin, Phone, CreditCard, MessageCircle, ChevronDown, ChevronUp, Timer, ArrowRight } from 'lucide-react-native';
-import { apiGet, apiPut } from '../../../../src/lib/api';
+import { apiGet, apiPut } from '../../../src/lib/api';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -92,7 +93,7 @@ export default function NativeOrdersManager() {
 
   const renderStatusTabs = () => (
     <View className="mb-4">
-      <FlatList
+      <FlashList estimatedItemSize={100}
         horizontal
         showsHorizontalScrollIndicator={false}
         data={STATUS_TABS}
@@ -245,7 +246,7 @@ export default function NativeOrdersManager() {
           <Text className="text-slate-500 font-bold text-lg">No {ORDER_STATUS_CONFIG[activeTab]?.label} orders</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={filteredOrders}
           keyExtractor={item => item.id}
           renderItem={renderOrderCard}

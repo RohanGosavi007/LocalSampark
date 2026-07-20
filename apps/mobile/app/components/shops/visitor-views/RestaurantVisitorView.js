@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
 import { Leaf, Flame } from 'lucide-react-native';
 
 export default function RestaurantVisitorView({ shop, products = [] }) {
@@ -23,7 +25,7 @@ export default function RestaurantVisitorView({ shop, products = [] }) {
 
       <View style={styles.imageContainer}>
         {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.image} />
+          <Image source={item.image_url } style={styles.image}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
         ) : (
           <View style={styles.placeholderImage}>
             <Text style={styles.placeholderEmoji}>{item.is_veg ? '🥗' : '🍖'}</Text>
@@ -40,7 +42,7 @@ export default function RestaurantVisitorView({ shop, products = [] }) {
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Menu ({products.length})</Text>
       {products.length > 0 ? (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={products}
           keyExtractor={(p, i) => p.id ? p.id.toString() : i.toString()}
           renderItem={renderItem}

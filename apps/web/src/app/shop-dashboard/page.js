@@ -1,84 +1,111 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useAuthStore } from '@/store/authStore';
+import { useRouter } from 'next/navigation';
 
-// Import all Manager Components
-import AnalyticsManager from './components/AnalyticsManager';
-import BeautyManager from './components/BeautyManager';
-import DoctorManager from './components/DoctorManager';
-import EducationEventsManager from './components/EducationEventsManager';
-import FleetManager from './components/FleetManager';
-import FourWheelerManager from './components/FourWheelerManager';
-import GarageManager from './components/GarageManager';
-import HospitalManager from './components/HospitalManager';
-import POSManager from './components/POSManager';
-import RetailManager from './components/RetailManager';
-import TwoWheelerManager from './components/TwoWheelerManager';
+// Archetype Dashboards (Phase 2)
+import FoodKDS from './components/FoodKDS';
+import RetailPOS from './components/RetailPOS';
+import QueueReceptionDesk from './components/QueueReceptionDesk';
+import JobCardConsole from './components/JobCardConsole';
+import FleetAssetTracker from './components/FleetAssetTracker';
+import ShopStatusToggle from './components/ShopStatusToggle';
+import LeadCRMCenter from './components/LeadCRMCenter';
+import CampaignManager from './components/CampaignManager';
+import AIInsightsWidget from './components/AIInsightsWidget';
+import AudioNotifier from '@/components/ui/AudioNotifier';
+import { io } from 'socket.io-client';
 
 export default function ShopDashboardPage() {
-  const [activeRole, setActiveRole] = useState('Retail/Grocery');
+  const { user, isAuthenticated } = useAuthStore();
+  const router = useRouter();
+  const [hasNewOrder, setHasNewOrder] = useState(false);
+  const [socket, setSocket] = useState(null);
 
-  // We are simulating the "shop" prop that would normally come from the authenticated context
-  const mockShop = {
-    id: 'sim_123',
-    name: 'Simulated Merchant',
-    category: activeRole
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    if (user?.shop_id) {
+      const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+      
+      newSocket.on('connect', () => {
+        newSocket.emit('join_shop_room', user.shop_id);
+      });
+
+      newSocket.on('merchant_new_order', (order) => {
+        setHasNewOrder(true);
+        setTimeout(() => setHasNewOrder(false), 2000); // Reset chime state after 2 seconds
+      });
+
+      setSocket(newSocket);
+      return () => newSocket.disconnect();
+    }
+  }, [user]);
+
+  // Simplified Map: Category slug -> Archetype View + Theme Category
+  const getArchetypeConfig = (category) => {
+    const map = {
+      'restaurants-cafes': { view: 'food', theme: 'food' },
+      'tiffin-meal-subscription': { view: 'food', theme: 'food' },
+      
+      'grocery-supermarkets': { view: 'retail', theme: 'retail' },
+      'pharmacy-healthcare': { view: 'retail', theme: 'retail' },
+      
+      'dentists-orthodontists': { view: 'booking', theme: 'booking' },
+      'salon-beauty-spa': { view: 'booking', theme: 'beauty' },
+      
+      'automotive-mechanic': { view: 'jobcard', theme: 'services' },
+      'home-services-plumbers': { view: 'jobcard', theme: 'services' },
+      
+      'vehicle-rentals': { view: 'fleet', theme: 'rentals' },
+      
+      'real-estate-brokers': { view: 'crm', theme: 'directory' },
+      'jobs-placements': { view: 'crm', theme: 'directory' }
+    };
+    return map[category] || { view: 'retail', theme: 'retail' };
   };
 
-  const renderManagerComponent = () => {
-    switch (activeRole) {
-      case 'Analytics': return <AnalyticsManager shop={mockShop} />;
-      case 'Beauty': return <BeautyManager shop={mockShop} />;
-      case 'Doctor': return <DoctorManager shop={mockShop} />;
-      case 'Education/Events': return <EducationEventsManager shop={mockShop} />;
-      case 'Fleet/Logistics': return <FleetManager shop={mockShop} />;
-      case '4-Wheeler Garage': return <FourWheelerManager shop={mockShop} />;
-      case 'Generic Garage': return <GarageManager shop={mockShop} />;
-      case 'Hospital': return <HospitalManager shop={mockShop} />;
-      case 'POS': return <POSManager shop={mockShop} />;
-      case 'Retail/Grocery': return <RetailManager shop={mockShop} />;
-      case '2-Wheeler Garage': return <TwoWheelerManager shop={mockShop} />;
-      default: return <RetailManager shop={mockShop} />;
+  const activeCategory = user?.shop_category_slug || 'grocery-supermarkets'; // Fallback if missing
+  const config = getArchetypeConfig(activeCategory);
+
+  const renderDashboard = () => {
+    switch (config.view) {
+      case 'food': return <FoodKDS socket={socket} />;
+      case 'retail': return <RetailPOS socket={socket} />;
+      case 'booking': return <QueueReceptionDesk socket={socket} />;
+      case 'jobcard': return <JobCardConsole socket={socket} />;
+      case 'fleet': return <FleetAssetTracker socket={socket} />;
+      case 'crm': return <LeadCRMCenter socket={socket} />;
+      default: return <RetailPOS socket={socket} />;
     }
   };
 
-  const roles = [
-    'Retail/Grocery', '2-Wheeler Garage', '4-Wheeler Garage', 'Generic Garage',
-    'Hospital', 'Doctor', 'Beauty', 'Education/Events', 'Fleet/Logistics', 'Analytics', 'POS'
-  ];
+  if (!isAuthenticated) return null; // Wait for redirect
 
   return (
-    <div className="min-h-screen bg-section-alt flex flex-col font-sans">
+    <div className="min-h-screen bg-section-alt flex flex-col font-sans" data-theme="light" data-category={config.theme}>
       <Header />
       
+      {/* Hidden Audio Notifier */}
+      <AudioNotifier playSound={hasNewOrder} />
+      
       <main className="flex-1 py-8 lg:py-12">
-        <div className="container max-w-7xl">
-          
-          {/* Developer Role Switcher (Simulation Wrapper) */}
-          <div className="glass-card p-6 rounded-3xl border border-primary/30 bg-primary/5 shadow-sm mb-8">
-            <h3 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
-              🛠️ Developer Role Simulator
-            </h3>
-            <p className="text-sm text-text-muted mb-4">
-              Select a business category to dynamically load the specialized dashboard component that was built during the transformation but left disconnected.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {roles.map(role => (
-                <button 
-                  key={role}
-                  onClick={() => setActiveRole(role)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeRole === role ? 'bg-primary text-white shadow-md' : 'bg-background border border-border text-text hover:border-primary/50'}`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
+        <div className="container max-w-[1400px] mb-12">
+          <AIInsightsWidget shopId={user?.shop_id || 1} />
+          <div className="mt-8">
+            {renderDashboard()}
           </div>
+        </div>
 
-          {/* Dynamically Rendered Component */}
-          {renderManagerComponent()}
-
+        <div className="container max-w-[1400px]">
+          {/* Universal Tools */}
+          <CampaignManager />
         </div>
       </main>
       

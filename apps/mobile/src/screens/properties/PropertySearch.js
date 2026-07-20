@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,7 +24,7 @@ export default function PropertySearchScreen() {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <Image source={item.image } style={styles.cardImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
       <View style={styles.badgeContainer}>
         <Text style={styles.badgeText}>{item.type}</Text>
       </View>

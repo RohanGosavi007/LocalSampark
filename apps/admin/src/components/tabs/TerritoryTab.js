@@ -4,7 +4,10 @@ export default function TerritoryTab(props) {
     summaryStats, pendingShops, platformShare, franchiseShare, agentShare, miscShare,
     franchisePartners, usersTotal, userSearch, users, usersPage, territorySearch, territoryFilter,
     selectedBulk, territories, properties, revenueChart, newZone, editTerritory, approveShop, rejectShop,
-    fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk
+    fetchUsers, setUserSearch, changeUserRole, toggleUserStatus, setUsersPage, bulkToggle, setSelectedBulk,
+    setTerritorySearch, setTerritoryFilter, toggleTerritory, territoryTogglingId, saveTerritory,
+    assignFranchiseModal, setAssignFranchiseModal, assignFranchise, zoneAdded, addTerritory, setNewZone,
+    API_BASE, authHeaders, fetchFranchisePartners, fetchTerritories, fetchSummary
   } = props;
 
   // Mock components for inline usages
@@ -18,8 +21,7 @@ export default function TerritoryTab(props) {
   const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #334155', background: '#0f172a', color: '#fff' };
 
   return (
-    {/* ─── TERRITORY TAB ────────────────────────────────── */}
-        
+
           <div>
             {/* Search & Filter Bar */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>

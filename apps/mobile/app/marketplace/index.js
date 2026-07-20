@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, TextInput, Image } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Search, ShoppingCart, Store, Star, Plus, Minus } from 'lucide-react-native';
-import { apiGet } from '../../src/lib/api';
 import { useCartStore } from '../../src/store/cartStore';
+import { useAllProducts } from '../../src/hooks/useProducts';
 
 export default function NativeMarketplaceScreen() {
   const router = useRouter();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   
@@ -19,33 +19,17 @@ export default function NativeMarketplaceScreen() {
   
   const categories = ['All', 'Groceries', 'Electronics', 'Fashion', 'Pharmacy', 'Services'];
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await apiGet('/products'); // Requires backend endpoint
-      const items = data.data || data.items || (Array.isArray(data) ? data : []);
-      
-      // If API returns empty, mock data for UI visualization
-      if (items.length === 0) {
-        setProducts([
-          { id: '1', name: 'Farm Fresh Milk (1L)', price: 65, category: 'Groceries', shop_name: 'Dhanori Fresh', shop_id: 'shop_1', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=200&q=80', rating: 4.8 },
-          { id: '2', name: 'Whole Wheat Bread', price: 45, category: 'Groceries', shop_name: 'Dhanori Fresh', shop_id: 'shop_1', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=200&q=80', rating: 4.5 },
-          { id: '3', name: 'Paracetamol 500mg', price: 30, category: 'Pharmacy', shop_name: 'City Medico', shop_id: 'shop_2', image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=200&q=80', rating: 4.9 },
-          { id: '4', name: 'Wireless Earbuds', price: 1299, category: 'Electronics', shop_name: 'TechHub', shop_id: 'shop_3', image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=200&q=80', rating: 4.2 }
-        ]);
-      } else {
-        setProducts(items);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch marketplace products:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  const { data: productsData, isLoading } = useAllProducts();
+  
+  // Use data from React Query or fallback to mock if empty
+  const rawProducts = Array.isArray(productsData?.data) ? productsData.data : (Array.isArray(productsData?.items) ? productsData.items : (Array.isArray(productsData) ? productsData : []));
+  
+  const products = rawProducts.length > 0 ? rawProducts : [
+    { id: '1', name: 'Farm Fresh Milk (1L)', price: 65, category: 'Groceries', shop_name: 'Dhanori Fresh', shop_id: 'shop_1', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=200&q=80', rating: 4.8 },
+    { id: '2', name: 'Whole Wheat Bread', price: 45, category: 'Groceries', shop_name: 'Dhanori Fresh', shop_id: 'shop_1', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=200&q=80', rating: 4.5 },
+    { id: '3', name: 'Paracetamol 500mg', price: 30, category: 'Pharmacy', shop_name: 'City Medico', shop_id: 'shop_2', image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=200&q=80', rating: 4.9 },
+    { id: '4', name: 'Wireless Earbuds', price: 1299, category: 'Electronics', shop_name: 'TechHub', shop_id: 'shop_3', image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=200&q=80', rating: 4.2 }
+  ];
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -69,7 +53,7 @@ export default function NativeMarketplaceScreen() {
         <Image 
           source={{ uri: item.image || 'https://via.placeholder.com/200' }} 
           className="w-full h-36 bg-slate-800"
-          resizeMode="cover"
+          contentFit="cover"
         />
         <View className="p-4">
           <View className="flex-row justify-between items-start mb-1">
@@ -86,7 +70,7 @@ export default function NativeMarketplaceScreen() {
           </View>
           
           <View className="flex-row justify-between items-end mt-2">
-            <Text className="text-2xl font-black text-white">₹{item.price}</Text>
+            <Text className="text-2xl font-black text-white">?{item.price}</Text>
             
             {qty === 0 ? (
               <TouchableOpacity 
@@ -120,7 +104,6 @@ export default function NativeMarketplaceScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
-      {/* Header */}
       <View className="flex-row items-center p-4 border-b border-slate-900">
         <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
           <ChevronLeft color="#fff" size={24} />
@@ -139,7 +122,6 @@ export default function NativeMarketplaceScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Search & Categories */}
       <View className="px-4 py-4">
         <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 shadow-sm mb-4">
           <Search size={20} color="#64748b" />
@@ -152,33 +134,34 @@ export default function NativeMarketplaceScreen() {
           />
         </View>
 
-        <FlatList
+        <FlashList
           horizontal
           showsHorizontalScrollIndicator={false}
           data={categories}
           keyExtractor={(item) => item}
+          estimatedItemSize={80}
           renderItem={({ item }) => (
             <TouchableOpacity 
               onPress={() => setSelectedCategory(item)}
-              className={`mr-3 px-4 py-2 rounded-full border ${selectedCategory === item ? 'bg-blue-600 border-blue-500' : 'bg-slate-900 border-slate-800'}`}
+              className={mr-3 px-4 py-2 rounded-full border }
             >
-              <Text className={`font-bold ${selectedCategory === item ? 'text-white' : 'text-slate-400'}`}>{item}</Text>
+              <Text className={ont-bold }>{item}</Text>
             </TouchableOpacity>
           )}
         />
       </View>
 
-      {/* Product Grid */}
-      {loading ? (
+      {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={filteredProducts}
           keyExtractor={item => item.id.toString()}
           renderItem={renderProductCard}
           numColumns={2}
+          estimatedItemSize={250}
           contentContainerStyle={{ padding: 8, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         />

@@ -18,8 +18,7 @@ export default function UsersTab(props) {
   const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #334155', background: '#0f172a', color: '#fff' };
 
   return (
-    {/* ─── USERS TAB ────────────────────────────────────── */}
-        
+
           <div style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.1rem', margin: 0 }}>User Directory — Live Data ({usersTotal} total)</h3>

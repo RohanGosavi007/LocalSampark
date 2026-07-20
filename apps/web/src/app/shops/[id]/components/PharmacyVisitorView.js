@@ -6,6 +6,7 @@ import {
   Upload, CheckCircle, AlertCircle, Package, Pill,
   FileText, Phone, Star
 } from 'lucide-react';
+import UnitSelector, { StockBadge } from '@/components/ui/UnitSelector';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED PHARMACY VISITOR VIEW
@@ -85,17 +86,22 @@ export default function PharmacyVisitorView({ shop, products = [], onAddToCart }
                   <Pill className="w-8 h-8 text-green-500/30" />
                 )}
               </div>
-              <div className="p-3">
-                <p className="font-bold text-xs text-text line-clamp-2">{product.name}</p>
+              <div className="p-3 flex-1 flex flex-col">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="font-bold text-xs text-text line-clamp-2 leading-tight">{product.name}</p>
+                  <StockBadge stock={product.stock !== undefined ? product.stock : Math.floor(Math.random() * 20)} />
+                </div>
                 {product.requires_prescription && (
-                  <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold mt-1 inline-block">Rx Required</span>
+                  <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold mt-1 inline-block w-fit">Rx Required</span>
                 )}
-                <div className="flex items-center justify-between mt-2">
-                  <span className="font-black text-green-500">₹{product.price}</span>
-                  <button onClick={() => onAddToCart?.(product)}
-                    className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg">
-                    + Add
-                  </button>
+                <div className="mt-auto pt-3">
+                  <UnitSelector 
+                    price={product.price || 0}
+                    quantity={0} 
+                    onQuantityChange={(qty) => {
+                      if(qty > 0) onAddToCart?.(product.id, qty, { unit: product.unit || '1 Pack' });
+                    }}
+                  />
                 </div>
               </div>
             </motion.div>

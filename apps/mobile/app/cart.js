@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCartStore } from '../src/store/cartStore';
 import { ShoppingBag, Minus, Plus, Trash2, ArrowRight } from 'lucide-react-native';

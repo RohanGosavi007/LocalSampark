@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -81,7 +82,7 @@ export default function ImageUploader({ onUploadSuccess, label = "Upload Image" 
         {isUploading ? (
           <ActivityIndicator size="large" color="#3b82f6" />
         ) : imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+          <Image source={imageUri } style={styles.imagePreview}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
         ) : (
           <View style={styles.placeholderContainer}>
             <Ionicons name="cloud-upload-outline" size={32} color="#6b7280" />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AuthContext } from '../../src/context/AuthContext';
 import { apiGet } from '../../src/lib/api';
@@ -152,7 +153,7 @@ export default function TrackingScreen() {
         {/* Driver Details */}
         {order?.driver && order?.status === 'out_for_delivery' && (
           <View className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-lg mb-6 flex-row items-center">
-            <Image source={{ uri: order.driver.image }} className="w-16 h-16 rounded-full mr-4 border-2 border-blue-500" />
+            <Image source={order.driver.image } className="w-16 h-16 rounded-full mr-4 border-2 border-blue-500"  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
             <View className="flex-1">
               <Text className="text-white font-bold text-lg">{order.driver.name}</Text>
               <Text className="text-slate-400 text-sm mb-1">{order.driver.vehicle}</Text>

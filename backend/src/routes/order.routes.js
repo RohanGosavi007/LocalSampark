@@ -6,29 +6,12 @@ const { authenticate } = require('../middleware/auth.middleware');
 const { sendNewOrderNotification, sendOrderConfirmation } = require('../services/email.service');
 
 // Checkout - Mock Payment Flow (or actual COD/Wallet)
-router.post('/checkout', async (req, res, next) => {
+router.post('/checkout', authenticate, async (req, res, next) => {
   try {
-    // Authenticate manually to allow guest checkouts for demo if needed
-    const authHeader = req.headers.authorization;
-    let userId = null;
-    let userEmail = null;
-    let userName = 'Guest User';
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const jwt = require('jsonwebtoken');
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_key');
-        userId = decoded.userId;
-        const user = await queryOne('SELECT email, full_name FROM users WHERE id = $1', [userId]);
-        if (user) {
-          userEmail = user.email;
-          userName = user.full_name;
-        }
-      } catch (err) {
-        // Ignore invalid token for demo
-      }
-    }
+    // We are now using the authenticate middleware, so req.user is guaranteed to be set
+    let userId = req.user.userId;
+    let userEmail = req.user.email || 'user@example.com';
+    let userName = req.user.full_name || 'Authenticated User';
 
     const { items, totalAmount, deliveryAddress, pincode, paymentMethod } = req.body;
 

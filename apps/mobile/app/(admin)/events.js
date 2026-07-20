@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { API_BASE } from '../config/api';
@@ -58,7 +59,7 @@ export default function AdminEventsScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 50 }} />
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={data}
           keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
           renderItem={renderItem}

@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, CreditCard, MapPin, Truck, CheckCircle2, Navigation, AlertCircle, Store } from 'lucide-react';
-import { useCartStore } from '../store/cartStore';
+import { useCartStore } from '../../store/cartStore';
 import { useAuth } from '../../context/AuthContext';
 import { apiPost } from '../../lib/api';
 

@@ -13,6 +13,7 @@ import {
   Video, Smile, MapPin, ShieldCheck, TrendingUp, Users, Plus, Filter,
   ChevronDown
 } from 'lucide-react';
+import TrustFeed from './TrustFeed';
 
 const POSTS = [
   { id: 1, author: 'Rohan Joshi', society: 'Goodwill Woodlands', time: '1 hr ago', type: 'question', content: 'Did anyone else experience a power outage in Phase 2 last night? Any updates from the power department on restoration ETA?', likes: 14, comments: 6, pinned: false },

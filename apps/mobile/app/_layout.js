@@ -2,11 +2,14 @@ import { Stack } from 'expo-router';
 import { AuthProvider } from '../src/context/AuthContext';
 import { ZoneProvider } from '../src/context/ZoneContext';
 import { OrderRingerProvider } from '../src/context/OrderRingerContext';
-import { LanguageProvider } from './context/LanguageContext';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../src/lib/queryClient';
 import { NotificationProvider } from '../src/context/NotificationContext';
+import { LanguageProvider } from '../src/context/LanguageContext';
+import { OfflineQueueService } from '../src/services/OfflineQueueService';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, Suspense } from 'react';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -65,6 +68,8 @@ const errorStyles = StyleSheet.create({
 
 export default function RootLayout() {
   useEffect(() => {
+    OfflineQueueService.init();
+
     // Request permission for push notifications — wrapped in dynamic import
     // to prevent native module crashes if expo-notifications isn't properly linked
     const setupNotifications = async () => {
@@ -97,28 +102,32 @@ export default function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <AuthProvider>
-            <ZoneProvider>
-              <OrderRingerProvider>
-                <NotificationProvider>
-                  <LanguageProvider>
-                    <StatusBar style="auto" />
-                    <Stack screenOptions={{ headerShown: false }}>
-                      <Stack.Screen name="index" options={{ headerShown: false }} />
-                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                      <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-                      <Stack.Screen name="register" options={{ presentation: 'modal' }} />
-                      <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
-                      <Stack.Screen name="modules" options={{ headerShown: false }} />
-                      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-                      <Stack.Screen name="search" options={{ headerShown: false }} />
-                      <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
-                    </Stack>
-                  </LanguageProvider>
-                </NotificationProvider>
-              </OrderRingerProvider>
-            </ZoneProvider>
-          </AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <ZoneProvider>
+                <OrderRingerProvider>
+                  <NotificationProvider>
+                    <LanguageProvider>
+                      <StatusBar style="auto" />
+                      <Suspense fallback={<View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}><ActivityIndicator size="large" color="#3b82f6" /></View>}>
+                        <Stack screenOptions={{ headerShown: false }}>
+                          <Stack.Screen name="index" options={{ headerShown: false }} />
+                          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                          <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+                          <Stack.Screen name="register" options={{ presentation: 'modal' }} />
+                          <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
+                          <Stack.Screen name="modules" options={{ headerShown: false }} />
+                          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+                          <Stack.Screen name="search" options={{ headerShown: false }} />
+                          <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
+                        </Stack>
+                      </Suspense>
+                    </LanguageProvider>
+                  </NotificationProvider>
+                </OrderRingerProvider>
+              </ZoneProvider>
+            </AuthProvider>
+          </QueryClientProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

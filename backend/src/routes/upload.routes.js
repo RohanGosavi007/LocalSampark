@@ -47,7 +47,7 @@ const upload = multer({
 });
 
 // Single file upload
-router.post('/', upload.single('file'), (req, res) => {
+router.post('/', authenticate, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
@@ -67,7 +67,7 @@ router.post('/', upload.single('file'), (req, res) => {
 });
 
 // Multiple file upload (up to 5)
-router.post('/multiple', upload.array('files', 5), (req, res) => {
+router.post('/multiple', authenticate, upload.array('files', 5), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, message: 'No files uploaded' });

@@ -6,6 +6,7 @@ import {
   CheckCircle, ChevronRight, Users, FileText, Calendar,
   Image, Award, ThumbsUp
 } from 'lucide-react';
+import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED HOME SERVICE VISITOR VIEW
@@ -160,27 +161,47 @@ export default function EnhancedHomeServiceVisitorView({ shop, services = [], st
         ))}
       </div>
 
-      {/* Book CTA */}
+      {/* Book / Request Quote CTA */}
       <AnimatePresence>
         {selectedService && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-blue-500 text-white rounded-2xl px-6 py-4 shadow-2xl shadow-blue-500/30 flex items-center gap-4 max-w-md w-[90%]"
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="bg-background-alt p-6 rounded-2xl border border-cat-services/30"
           >
-            <div className="flex-1">
-              <p className="font-bold">{selectedService.name}</p>
-              <p className="text-blue-200 text-sm">
-                {selectedService.quote ? 'Custom quote' : `₹${selectedService.price}+`}
-                {' • '}
-                {urgency === 'emergency' ? '🔴 Emergency' : urgency === 'urgent' ? '🟡 Urgent' : '🟢 Scheduled'}
-              </p>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="font-heading font-bold text-lg text-text">Service: {selectedService.name}</h3>
+                <p className="text-sm text-text-muted">
+                  {selectedService.quote ? 'Custom quote' : `₹${selectedService.price}+`}
+                  {' • '}
+                  {urgency === 'emergency' ? '🔴 Emergency' : urgency === 'urgent' ? '🟡 Urgent' : '🟢 Scheduled'}
+                </p>
+              </div>
+              <button onClick={() => setSelectedService(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
             </div>
-            <button
-              onClick={() => onRequestQuote?.({ service: selectedService, urgency })}
-              className="bg-white text-blue-500 font-bold px-5 py-2 rounded-xl text-sm flex items-center gap-1"
-            >
-              {selectedService.quote ? 'Get Quote' : 'Book Now'} <ChevronRight className="w-4 h-4" />
-            </button>
+
+            {selectedService.quote ? (
+              <button
+                onClick={() => onRequestQuote?.({ service: selectedService, urgency })}
+                className="w-full bg-cat-services text-white font-bold px-5 py-3 rounded-xl text-sm shadow-md hover:bg-cat-services-dark transition-all"
+              >
+                Request Free Quote
+              </button>
+            ) : (
+              <SlotMatrixGrid 
+                slots={{
+                  morning: [
+                    { id: 'm1', time: '09:00', status: 'available' },
+                    { id: 'm2', time: '11:00', status: 'available' },
+                  ],
+                  afternoon: [
+                    { id: 'a1', time: '14:00', status: 'booked' },
+                    { id: 'a2', time: '16:00', status: 'filling_fast', remaining: 1 },
+                  ],
+                }}
+                onSelectSlot={(slot) => onRequestQuote?.({ service: selectedService, urgency, slot })}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

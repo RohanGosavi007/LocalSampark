@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import StoryViewer from './StoryViewer';
 import { router } from 'expo-router';
 
@@ -35,7 +36,7 @@ export default function StoriesRow() {
             onPress={() => handleStoryPress(story)}
           >
             <View style={[styles.avatarWrapper, story.hasStory ? styles.hasStory : styles.noStory]}>
-              <Image source={{ uri: story.avatar }} style={styles.avatar} />
+              <Image source={story.avatar } style={styles.avatar}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
               {story.isUser && (
                 <View style={styles.addButton}>
                   <Text style={styles.addButtonText}>+</Text>

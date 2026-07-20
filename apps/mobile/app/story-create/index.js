@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';

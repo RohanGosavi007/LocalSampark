@@ -1,85 +1,64 @@
-# LocalSampark — Render.com Deployment Configuration
-# This file defines the services for deployment on Render.com
-
+# LocalSampark — Render.com Deployment Configuration (Backend + Background Workers)
 services:
-  # ─── Backend API Server ──────────────────────────────────────
+  # 1. Main API Server
   - type: web
     name: localsampark-api
     runtime: node
     region: singapore
-    plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && node src/server.js
+    plan: starter
+    buildCommand: npm ci --prefix backend
+    startCommand: npm start --prefix backend
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5000
-      - key: USE_SQLITE
-        value: "false"
       - key: DATABASE_URL
         fromDatabase:
           name: localsampark-db
           property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: localsampark-redis
+          property: connectionString
       - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_REFRESH_SECRET
-        generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: JWT_REFRESH_EXPIRES_IN
-        value: 30d
-      - key: API_URL
-        value: https://localsampark-api.onrender.com
-      - key: FIREBASE_PROJECT_ID
-        value: ""
-      - key: FIREBASE_PRIVATE_KEY
-        value: ""
-      - key: FIREBASE_CLIENT_EMAIL
-        value: ""
-      - key: MSG91_AUTH_KEY
-        value: ""
-      - key: MSG91_TEMPLATE_ID
-        value: ""
-      - key: MSG91_SENDER_ID
-        value: LSAMPR
-    healthCheckPath: /health
-    autoDeploy: false
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+    autoDeploy: false # Managed by GitHub Actions
 
-  # ─── Web Frontend (Next.js) ─────────────────────────────────
-  - type: web
-    name: localsampark-web
+  # 2. BullMQ Campaign & Surge Pricing Worker
+  - type: worker
+    name: localsampark-worker
     runtime: node
     region: singapore
-    plan: free
-    buildCommand: cd apps/web && npm install && npm run build
-    startCommand: cd apps/web && npm start
+    plan: starter
+    buildCommand: npm ci --prefix backend
+    startCommand: node backend/src/jobs/campaignScheduler.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://localsampark-api.onrender.com
-    autoDeploy: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: localsampark-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: localsampark-redis
+          property: connectionString
 
-  # ─── Admin Panel (Next.js) ──────────────────────────────────
-  - type: web
-    name: localsampark-admin
-    runtime: node
+  # 3. Redis Cache Engine
+  - type: redis
+    name: localsampark-redis
     region: singapore
-    plan: free
-    buildCommand: cd apps/admin && npm install && npm run build
-    startCommand: cd apps/admin && npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://localsampark-api.onrender.com
-    autoDeploy: false
+    plan: starter
 
-  # ─── PostgreSQL Database ─────────────────────────────────────
-  - type: pgo
-    name: localsampark-db
-    region: singapore
-    plan: free
+databases:
+  # 4. Core PostgreSQL Database
+  - name: localsampark-db
     databaseName: localsampark
-    user: localsampark_user
+    user: localsampark_admin
+    region: singapore
+    plan: starter

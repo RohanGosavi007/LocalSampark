@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, TextInput, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Search, Package, Clock, ShoppingBag, CheckCircle2 } from 'lucide-react-native';
 import { apiGet, apiPost } from '../../src/lib/api';
@@ -159,7 +160,7 @@ export default function NativeSubscriptionsScreen() {
           <Text className="text-slate-500 text-center">There are no subscription plans matching your search in this area.</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList estimatedItemSize={100}
           data={filteredPlans}
           keyExtractor={item => item.id?.toString() || Math.random().toString()}
           renderItem={renderPlanCard}

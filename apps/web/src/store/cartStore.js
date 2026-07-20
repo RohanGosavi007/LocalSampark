@@ -14,6 +14,7 @@ export const useCartStore = create(
       isOpen: false,
       currentShopId: null,
       currentShopName: null,
+      currentShopCategory: null,  // NEW: Track category for theming
       sessionId: generateSessionId(),
       
       toggleCart: () => set({ isOpen: !get().isOpen }),
@@ -21,7 +22,7 @@ export const useCartStore = create(
       closeCart: () => set({ isOpen: false }),
 
       // Sync with backend API
-      syncToBackend: async (productId, quantity) => {
+      syncToBackend: async (productId, quantity, customOptions = {}) => {
         try {
           const { sessionId } = get();
           await fetch(`${API_URL}/api/v1/cart`, {
@@ -30,7 +31,8 @@ export const useCartStore = create(
             body: JSON.stringify({
               sessionId,
               productId,
-              quantity
+              quantity,
+              customOptions
             })
           });
         } catch (e) {
@@ -38,29 +40,51 @@ export const useCartStore = create(
         }
       },
 
-      addItem: (product, quantity = 1) => {
+      /**
+       * Add item with custom options (modifiers, portions, units)
+       * Two items with different customOptions are treated as separate line items
+       */
+      addItem: (product, quantity = 1, customOptions = {}) => {
         set((state) => {
           if (state.currentShopId && state.currentShopId !== product.shop_id) {
             const confirm = window.confirm(`Your cart contains items from ${state.currentShopName}. Do you want to discard them and start a new order from ${product.shop_name}?`);
             if (!confirm) return state; // Do nothing
             
             return {
-              items: [{ ...product, quantity }],
+              items: [{ ...product, quantity, options: customOptions }],
               currentShopId: product.shop_id,
               currentShopName: product.shop_name,
+              currentShopCategory: product.shop_category || null,
               isOpen: true
             };
           }
 
-          const existingItem = state.items.find((i) => i.id === product.id);
-          const newQty = existingItem ? existingItem.quantity + quantity : quantity;
-          
+          // Generate a unique key based on item ID + options
+          const optionsKey = JSON.stringify(customOptions || {});
+          const existingIndex = state.items.findIndex(
+            i => i.id === product.id && JSON.stringify(i.options || {}) === optionsKey
+          );
+
+          if (existingIndex > -1) {
+            const updated = [...state.items];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              quantity: updated[existingIndex].quantity + quantity,
+            };
+            return {
+              items: updated,
+              currentShopId: product.shop_id,
+              currentShopName: product.shop_name,
+              currentShopCategory: product.shop_category || state.currentShopCategory,
+              isOpen: true
+            };
+          }
+
           return {
-            items: existingItem 
-              ? state.items.map((i) => i.id === product.id ? { ...i, quantity: newQty } : i)
-              : [...state.items, { ...product, quantity }],
+            items: [...state.items, { ...product, quantity, options: customOptions }],
             currentShopId: product.shop_id,
             currentShopName: product.shop_name,
+            currentShopCategory: product.shop_category || state.currentShopCategory,
             isOpen: true
           };
         });
@@ -68,34 +92,56 @@ export const useCartStore = create(
         // Sync to DB
         const state = get();
         const item = state.items.find(i => i.id === product.id);
-        if (item) get().syncToBackend(product.id, item.quantity);
+        if (item) get().syncToBackend(product.id, item.quantity, customOptions);
       },
 
-      removeItem: (productId) => {
+      removeItem: (productId, options = null) => {
         set((state) => {
-          const newItems = state.items.filter((i) => i.id !== productId);
+          let newItems;
+          if (options !== null) {
+            // Remove specific variant
+            const optionsKey = JSON.stringify(options || {});
+            newItems = state.items.filter(
+              i => !(i.id === productId && JSON.stringify(i.options || {}) === optionsKey)
+            );
+          } else {
+            newItems = state.items.filter((i) => i.id !== productId);
+          }
           return {
             items: newItems,
             currentShopId: newItems.length === 0 ? null : state.currentShopId,
             currentShopName: newItems.length === 0 ? null : state.currentShopName,
+            currentShopCategory: newItems.length === 0 ? null : state.currentShopCategory,
           };
         });
         // Sync removal to DB (qty 0)
         get().syncToBackend(productId, 0);
       },
 
-      updateQuantity: (productId, quantity) => {
-        const newQty = Math.max(1, quantity);
+      updateQuantity: (productId, quantity, options = null) => {
+        const newQty = Math.max(0, quantity);
+        if (newQty === 0) {
+          get().removeItem(productId, options);
+          return;
+        }
         set((state) => ({
-          items: state.items.map((i) =>
-            i.id === productId ? { ...i, quantity: newQty } : i
-          ),
+          items: state.items.map((i) => {
+            if (options !== null) {
+              const optionsKey = JSON.stringify(options || {});
+              if (i.id === productId && JSON.stringify(i.options || {}) === optionsKey) {
+                return { ...i, quantity: newQty };
+              }
+            } else if (i.id === productId) {
+              return { ...i, quantity: newQty };
+            }
+            return i;
+          }),
         }));
         get().syncToBackend(productId, newQty);
       },
 
       clearCart: () => {
-        set({ items: [], currentShopId: null, currentShopName: null });
+        set({ items: [], currentShopId: null, currentShopName: null, currentShopCategory: null });
       },
 
       getCartTotal: () => {
@@ -104,7 +150,12 @@ export const useCartStore = create(
       
       getItemCount: () => {
         return get().items.reduce((count, item) => count + item.quantity, 0);
-      }
+      },
+
+      // NEW: Get items grouped by customization for display
+      getGroupedItems: () => {
+        return get().items;
+      },
     }),
     {
       name: 'localsampark-cart',

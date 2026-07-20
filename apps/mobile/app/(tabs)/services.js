@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/context/AuthContext';
 import { withRoleGuard } from '../../src/utils/permissions';
@@ -125,7 +126,7 @@ function ServicesModule() {
       </View>
 
       {/* Services List */}
-      <FlatList 
+      <FlashList estimatedItemSize={100} 
         data={filteredServices}
         keyExtractor={s => s.id}
         contentContainerStyle={styles.scrollContent}
