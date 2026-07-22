@@ -35,18 +35,5 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(
-  nextConfig,
-  {
-    silent: true,
-    org: "localsampark",
-    project: "localsampark-web",
-  },
-  {
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    hideSourceMaps: true,
-    disableLogger: true,
-  }
-);
+export default nextConfig;
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Camera, Check } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PropertyListingScreen() {
@@ -25,45 +25,45 @@ export default function PropertyListingScreen() {
     }
     
     // Stub for backend integration
-    Alert.alert('Success', 'Property listed successfully!');
+    Alert.alert('Success 🎉', 'Property listed successfully!');
     navigation.goBack();
   };
 
   const updateForm = (key, value) => setForm({ ...form, [key]: value });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <View className="flex-row items-center justify-between p-4 border-b border-slate-900">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-slate-900 rounded-full border border-slate-800">
+          <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>List Property</Text>
-        <View style={{ width: 24 }} />
+        <Text className="text-white font-black text-lg">List Property</Text>
+        <View className="w-10" />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
         
         {/* Type Toggle */}
-        <View style={styles.toggleContainer}>
+        <View className="flex-row bg-slate-900 p-1.5 rounded-2xl border border-slate-800 mb-6">
           <TouchableOpacity 
-            style={[styles.toggleBtn, form.type === 'Rent' && styles.toggleActive]}
+            className={`flex-1 py-3 items-center rounded-xl ${form.type === 'Rent' ? 'bg-blue-600' : ''}`}
             onPress={() => updateForm('type', 'Rent')}
           >
-            <Text style={[styles.toggleText, form.type === 'Rent' && styles.toggleTextActive]}>For Rent</Text>
+            <Text className={`font-black text-sm ${form.type === 'Rent' ? 'text-white' : 'text-slate-400'}`}>For Rent</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.toggleBtn, form.type === 'Buy' && styles.toggleActive]}
+            className={`flex-1 py-3 items-center rounded-xl ${form.type === 'Buy' ? 'bg-blue-600' : ''}`}
             onPress={() => updateForm('type', 'Buy')}
           >
-            <Text style={[styles.toggleText, form.type === 'Buy' && styles.toggleTextActive]}>For Sale</Text>
+            <Text className={`font-black text-sm ${form.type === 'Buy' ? 'text-white' : 'text-slate-400'}`}>For Sale</Text>
           </TouchableOpacity>
         </View>
 
         {/* Basic Details */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Title *</Text>
+        <View className="mb-4">
+          <Text className="text-slate-400 font-bold text-xs mb-1.5">Title *</Text>
           <TextInput 
-            style={styles.input} 
+            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-white font-medium text-sm" 
             placeholder="e.g. 2 BHK in Ganga Aria" 
             placeholderTextColor="#64748b"
             value={form.title}
@@ -71,10 +71,10 @@ export default function PropertyListingScreen() {
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Society / Location *</Text>
+        <View className="mb-4">
+          <Text className="text-slate-400 font-bold text-xs mb-1.5">Society / Location *</Text>
           <TextInput 
-            style={styles.input} 
+            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-white font-medium text-sm" 
             placeholder="e.g. Dhanori, Pune" 
             placeholderTextColor="#64748b"
             value={form.location}
@@ -82,11 +82,11 @@ export default function PropertyListingScreen() {
           />
         </View>
 
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>{form.type === 'Rent' ? 'Monthly Rent *' : 'Asking Price *'}</Text>
+        <View className="flex-row gap-3 mb-4">
+          <View className="flex-1">
+            <Text className="text-slate-400 font-bold text-xs mb-1.5">{form.type === 'Rent' ? 'Monthly Rent *' : 'Asking Price *'}</Text>
             <TextInput 
-              style={styles.input} 
+              className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-white font-medium text-sm" 
               keyboardType="numeric" 
               placeholder="₹"
               placeholderTextColor="#64748b"
@@ -94,10 +94,10 @@ export default function PropertyListingScreen() {
               onChangeText={(t) => updateForm('price', t)}
             />
           </View>
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>{form.type === 'Rent' ? 'Deposit' : 'Token Amount'}</Text>
+          <View className="flex-1">
+            <Text className="text-slate-400 font-bold text-xs mb-1.5">{form.type === 'Rent' ? 'Deposit' : 'Token Amount'}</Text>
             <TextInput 
-              style={styles.input} 
+              className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-white font-medium text-sm" 
               keyboardType="numeric" 
               placeholder="₹"
               placeholderTextColor="#64748b"
@@ -107,26 +107,27 @@ export default function PropertyListingScreen() {
           </View>
         </View>
 
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 4 }]}>
-            <Text style={styles.label}>Beds</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={form.beds} onChangeText={(t) => updateForm('beds', t)} />
+        <View className="flex-row gap-2 mb-4">
+          <View className="flex-1">
+            <Text className="text-slate-400 font-bold text-xs mb-1.5">Beds</Text>
+            <TextInput className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white font-medium text-sm text-center" keyboardType="numeric" value={form.beds} onChangeText={(t) => updateForm('beds', t)} />
           </View>
-          <View style={[styles.inputGroup, { flex: 1, marginHorizontal: 4 }]}>
-            <Text style={styles.label}>Baths</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={form.baths} onChangeText={(t) => updateForm('baths', t)} />
+          <View className="flex-1">
+            <Text className="text-slate-400 font-bold text-xs mb-1.5">Baths</Text>
+            <TextInput className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white font-medium text-sm text-center" keyboardType="numeric" value={form.baths} onChangeText={(t) => updateForm('baths', t)} />
           </View>
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 4 }]}>
-            <Text style={styles.label}>SqFt</Text>
-            <TextInput style={styles.input} keyboardType="numeric" placeholder="1000" placeholderTextColor="#64748b" value={form.sqft} onChangeText={(t) => updateForm('sqft', t)} />
+          <View className="flex-1">
+            <Text className="text-slate-400 font-bold text-xs mb-1.5">SqFt</Text>
+            <TextInput className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white font-medium text-sm text-center" keyboardType="numeric" placeholder="1000" placeholderTextColor="#64748b" value={form.sqft} onChangeText={(t) => updateForm('sqft', t)} />
           </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
+        <View className="mb-6">
+          <Text className="text-slate-400 font-bold text-xs mb-1.5">Description</Text>
           <TextInput 
-            style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
+            className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-white font-medium text-sm h-28" 
             multiline 
+            style={{ textAlignVertical: 'top' }}
             placeholder="Describe the amenities, furnishings, etc." 
             placeholderTextColor="#64748b"
             value={form.description}
@@ -134,37 +135,17 @@ export default function PropertyListingScreen() {
           />
         </View>
 
-        {/* Image Upload Mock */}
-        <TouchableOpacity style={styles.imageUploadBox}>
-          <Ionicons name="camera-outline" size={32} color="#3b82f6" />
-          <Text style={styles.imageUploadText}>Add Photos</Text>
+        {/* Image Upload Box */}
+        <TouchableOpacity className="bg-slate-900 border-2 border-dashed border-slate-800 rounded-2xl h-28 justify-center items-center mb-6">
+          <Camera size={28} color="#3b82f6" className="mb-1" />
+          <Text className="text-blue-400 font-bold text-xs">Add Property Photos</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-          <Text style={styles.submitBtnText}>Post Listing</Text>
+        <TouchableOpacity className="bg-emerald-600 py-4 rounded-xl items-center active:bg-emerald-500" onPress={handleSubmit}>
+          <Text className="text-white font-black text-base">Post Listing</Text>
         </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#ffffff' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  toggleContainer: { flexDirection: 'row', backgroundColor: '#ffffff', padding: 4, borderRadius: 12, marginBottom: 24 },
-  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
-  toggleActive: { backgroundColor: '#3b82f6' },
-  toggleText: { color: '#64748b', fontWeight: 'bold', fontSize: 16 },
-  toggleTextActive: { color: '#0f172a' },
-  inputGroup: { marginBottom: 16 },
-  label: { color: '#475569', fontSize: 13, marginBottom: 8, fontWeight: '500' },
-  input: { backgroundColor: '#ffffff', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, color: '#0f172a', fontSize: 16, borderWidth: 1, borderColor: '#e2e8f0' },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  imageUploadBox: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e2e8f0', borderStyle: 'dashed', borderRadius: 12, height: 120, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  imageUploadText: { color: '#3b82f6', marginTop: 8, fontWeight: '600' },
-  submitBtn: { backgroundColor: '#10b981', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-  submitBtnText: { color: '#0f172a', fontSize: 18, fontWeight: 'bold' }
-});

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import NetInfo from '@react-native-community/netinfo';
 import { OfflineQueueService } from '../../services/OfflineQueueService';
+import { WifiOff, Store, Box, ListChecks, Calendar, Users, Briefcase, Car } from 'lucide-react-native';
 
 import FoodKDS from './components/FoodKDS';
 import RetailPOS from './components/RetailPOS';
@@ -36,22 +37,23 @@ export default function ShopDashboard({ user }) {
 
   const getArchetypeConfig = (category) => {
     const map = {
-      'restaurants-cafes': { view: 'food', theme: '#FF6B00', title: 'Food KDS' },
-      'tiffin-meal-subscription': { view: 'food', theme: '#FF6B00', title: 'Food KDS' },
-      'grocery-supermarkets': { view: 'retail', theme: '#00E676', title: 'Retail POS' },
-      'pharmacy-healthcare': { view: 'retail', theme: '#00E676', title: 'Retail POS' },
-      'dentists-orthodontists': { view: 'booking', theme: '#00E5FF', title: 'Reception Desk' },
-      'salon-beauty-spa': { view: 'booking', theme: '#FF007F', title: 'Queue & Appointments' },
-      'automotive-mechanic': { view: 'jobcard', theme: '#FFD600', title: 'Job Cards' },
-      'home-services-plumbers': { view: 'jobcard', theme: '#FFD600', title: 'Job Cards' },
-      'vehicle-rentals': { view: 'fleet', theme: '#10B981', title: 'Fleet Tracker' },
-      'real-estate-brokers': { view: 'crm', theme: '#6366F1', title: 'Lead CRM' },
-      'jobs-placements': { view: 'crm', theme: '#6366F1', title: 'Lead CRM' },
+      'restaurants-cafes': { view: 'food', theme: '#f97316', title: 'Food KDS', icon: Store },
+      'tiffin-meal-subscription': { view: 'food', theme: '#f97316', title: 'Food KDS', icon: Store },
+      'grocery-supermarkets': { view: 'retail', theme: '#10b981', title: 'Retail POS', icon: Box },
+      'pharmacy-healthcare': { view: 'retail', theme: '#10b981', title: 'Retail POS', icon: Box },
+      'dentists-orthodontists': { view: 'booking', theme: '#0ea5e9', title: 'Reception Desk', icon: Calendar },
+      'salon-beauty-spa': { view: 'booking', theme: '#ec4899', title: 'Queue & Appointments', icon: ListChecks },
+      'automotive-mechanic': { view: 'jobcard', theme: '#eab308', title: 'Job Cards', icon: Briefcase },
+      'home-services-plumbers': { view: 'jobcard', theme: '#eab308', title: 'Job Cards', icon: Briefcase },
+      'vehicle-rentals': { view: 'fleet', theme: '#14b8a6', title: 'Fleet Tracker', icon: Car },
+      'real-estate-brokers': { view: 'crm', theme: '#6366f1', title: 'Lead CRM', icon: Users },
+      'jobs-placements': { view: 'crm', theme: '#6366f1', title: 'Lead CRM', icon: Users },
     };
-    return map[category] || { view: 'retail', theme: '#0f172a', title: 'Shop Manager' };
+    return map[category] || { view: 'retail', theme: '#3b82f6', title: 'Shop Manager', icon: Store };
   };
 
   const config = getArchetypeConfig(categorySlug);
+  const IconComponent = config.icon;
 
   const renderDashboard = () => {
     switch (config.view) {
@@ -67,12 +69,12 @@ export default function ShopDashboard({ user }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <SkeletonLoader width={200} height={30} style={{ marginBottom: 10 }} />
-          <SkeletonLoader width={150} height={20} />
+      <View className="flex-1 bg-slate-950 p-4 pt-12">
+        <View className="mb-6">
+          <SkeletonLoader width={200} height={30} style={{ marginBottom: 10 }} borderRadius={8} />
+          <SkeletonLoader width={150} height={20} borderRadius={8} />
         </View>
-        <View style={styles.statsGrid}>
+        <View className="flex-row flex-wrap justify-between">
           {[1,2,3,4].map(i => (
              <SkeletonLoader key={i} width={'48%'} height={100} style={{ marginBottom: 15 }} borderRadius={16} />
           ))}
@@ -82,17 +84,28 @@ export default function ShopDashboard({ user }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={[styles.header, { borderBottomColor: config.theme, borderBottomWidth: 3 }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.greeting}>{config.title}</Text>
+    <ScrollView className="flex-1 bg-slate-950" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+      <View className="mb-6 mt-2 pb-4 border-b-2" style={{ borderBottomColor: `${config.theme}40` }}>
+        <View className="flex-row justify-between items-center mb-1">
+          <View className="flex-row items-center">
+            <View className="w-10 h-10 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: `${config.theme}20` }}>
+              <IconComponent size={20} color={config.theme} />
+            </View>
+            <View>
+              <Text className="text-2xl font-black text-white">{config.title}</Text>
+            </View>
+          </View>
+          
           {isOffline && (
-            <View style={styles.offlineBadge}>
-              <Text style={styles.offlineText}>Offline Mode</Text>
+            <View className="bg-red-500/20 border border-red-500/50 px-3 py-1.5 rounded-full flex-row items-center">
+              <WifiOff size={14} color="#ef4444" className="mr-1.5" />
+              <Text className="text-red-400 font-bold text-xs">OFFLINE</Text>
             </View>
           )}
         </View>
-        <Text style={styles.subtitle}>{user?.name || 'Local'} • {categorySlug}</Text>
+        <Text className="text-slate-400 font-semibold text-sm capitalize mt-1 ml-13" style={{ marginLeft: 52 }}>
+          {user?.name || 'Local'} • {categorySlug.replace(/-/g, ' ')}
+        </Text>
       </View>
 
       {/* Render the dynamically selected Phase 2 archetype dashboard */}
@@ -101,13 +114,3 @@ export default function ShopDashboard({ user }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, flexGrow: 1, backgroundColor: '#f8fafc' },
-  header: { marginBottom: 10, marginTop: 10, paddingBottom: 16 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#0f172a', marginBottom: 4 },
-  subtitle: { fontSize: 16, color: '#64748b', textTransform: 'capitalize' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
-  offlineBadge: { backgroundColor: '#ef4444', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  offlineText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' }
-});

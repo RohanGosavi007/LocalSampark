@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Play, Heart, MessageCircle, Share2, CheckCircle2 } from 'lucide-react';
-import { apiGet } from '../../../lib/api';
-import { useAuthStore } from '../../../store/authStore';
+import { apiGet } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 
 export default function TrustFeed() {
   const [feed, setFeed] = useState([]);

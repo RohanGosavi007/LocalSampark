@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Car, KeyRound } from 'lucide-react-native';
 
 export default function RentalVisitorView({ shop }) {
   const handleRent = () => {
@@ -8,26 +9,31 @@ export default function RentalVisitorView({ shop }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{shop?.name || 'Kisan Tractors & Tools'}</Text>
-        <Text style={styles.subtitle}>Fleet & Heavy Equipment</Text>
+    <ScrollView className="flex-1 bg-slate-950">
+      <View className="p-5 bg-slate-900 border-b border-slate-800">
+        <Text className="text-2xl font-black text-white">{shop?.name || 'Kisan Tractors & Tools'}</Text>
+        <Text className="text-slate-400 font-semibold text-xs mt-1">Fleet & Heavy Equipment</Text>
       </View>
 
-      <View style={styles.equipmentContainer}>
-        <Text style={styles.sectionTitle}>Available Equipment</Text>
+      <View className="p-4">
+        <Text className="text-white font-bold text-lg mb-4">Available Equipment</Text>
         {['Mahindra Tractor', 'JCB Excavator', 'Water Tanker'].map((item, idx) => (
-          <View key={idx} style={styles.equipCard}>
-            <View style={styles.equipImage} />
-            <View style={styles.equipDetails}>
-              <Text style={styles.equipName}>{item}</Text>
-              <Text style={styles.equipRate}>₹500 / hr</Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Available Now</Text>
+          <View key={idx} className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl mb-3 flex-row items-center">
+            <View className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-800 items-center justify-center mr-3">
+              <Car size={24} color="#64748b" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-bold text-white text-base mb-0.5">{item}</Text>
+              <Text className="text-emerald-400 font-black text-sm mb-1">₹500 / hr</Text>
+              <View className="bg-emerald-500/10 border border-emerald-500/30 self-start px-2 py-0.5 rounded-md">
+                <Text className="text-emerald-400 text-[10px] font-bold">Available Now</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.rentBtn} onPress={handleRent}>
-              <Text style={styles.rentText}>RENT</Text>
+            <TouchableOpacity 
+              className="bg-emerald-600 px-4 py-2.5 rounded-xl items-center active:bg-emerald-500" 
+              onPress={handleRent}
+            >
+              <Text className="text-white font-black text-xs">RENT</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -35,21 +41,3 @@ export default function RentalVisitorView({ shop }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, backgroundColor: '#ffffff', borderBottomWidth: 1, borderColor: '#e2e8f0' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#0f172a' },
-  subtitle: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  equipmentContainer: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 16 },
-  equipCard: { flexDirection: 'row', backgroundColor: '#ffffff', padding: 12, borderRadius: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2, alignItems: 'center' },
-  equipImage: { width: 70, height: 70, borderRadius: 12, backgroundColor: '#e2e8f0', marginRight: 12 },
-  equipDetails: { flex: 1 },
-  equipName: { fontSize: 15, fontWeight: 'bold', color: '#1e293b', marginBottom: 4 },
-  equipRate: { fontSize: 14, color: '#10B981', fontWeight: 'bold', marginBottom: 6 },
-  badge: { backgroundColor: '#ECFDF5', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  badgeText: { fontSize: 10, color: '#047857', fontWeight: 'bold' },
-  rentBtn: { backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
-  rentText: { color: '#ffffff', fontWeight: 'bold' }
-});

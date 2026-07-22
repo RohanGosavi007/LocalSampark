@@ -1,6 +1,16 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAdminAuth } from '../context/AdminAuthContext';
+import { API_BASE, getAuthHeaders } from '../lib/api';
+
+import DashboardTab from '../components/tabs/DashboardTab';
+import UsersTab from '../components/tabs/UsersTab';
+import ShopsTab from '../components/tabs/ShopsTab';
+import FranchiseTab from '../components/tabs/FranchiseTab';
+import TerritoryTab from '../components/tabs/TerritoryTab';
+import RevenueTab from '../components/tabs/RevenueTab';
+import PropertiesTab from '../components/tabs/PropertiesTab';
+import SettingsTab from '../components/tabs/SettingsTab';
 import JobsTab from '../components/tabs/JobsTab';
 import DeliveryTab from '../components/tabs/DeliveryTab';
 import WalletTab from '../components/tabs/WalletTab';
@@ -13,27 +23,13 @@ import SubscriptionsTab from '../components/tabs/SubscriptionsTab';
 import PremiumTab from '../components/tabs/PremiumTab';
 import SOSTab from '../components/tabs/SOSTab';
 import CRMTab from '../components/tabs/CRMTab';
-import { API_BASE, getAuthHeaders } from '../lib/api';
-import DashboardTab from '../components/tabs/DashboardTab';
-import UsersTab from '../components/tabs/UsersTab';
-import ShopsTab from '../components/tabs/ShopsTab';
-import FranchiseTab from '../components/tabs/FranchiseTab';
-import TerritoryTab from '../components/tabs/TerritoryTab';
-import RevenueTab from '../components/tabs/RevenueTab';
-import PropertiesTab from '../components/tabs/PropertiesTab';
-import SettingsTab from '../components/tabs/SettingsTab';
 import RBACTab from '../components/tabs/RBACTab';
 import AuditTab from '../components/tabs/AuditTab';
 import ShopCategoriesTab from '../components/tabs/ShopCategoriesTab';
 import ChefTab from '../components/tabs/ChefTab';
 import BillsTab from '../components/tabs/BillsTab';
-import AdCampaignsTab from '../components/tabs/AdCampaignsTab';
-
-
 
 const authHeaders = getAuthHeaders;
-
-// ─── Data is now fetched from real backend API ───────────────────────────────
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -49,7 +45,7 @@ const StatusBadge = ({ status }) => {
     'Accepting Leads': { bg: '#042f2e', color: '#5eead4' },
   };
   const style = map[status] || { bg: '#1e293b', color: '#94a3b8' };
-  
+
   return (
     <span style={{ background: style.bg, color: style.color, padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
       {status}
@@ -563,7 +559,7 @@ export default function AdminDashboardPage() {
         {activeTab === 'sos' && <SOSTab API_BASE={API_BASE} authHeaders={authHeaders} />}
 
         {/* ─── RBAC & ROLES TAB ──────────────────────────────── */}
-        {activeTab === 'rbac' && <RBACTab franchisePartners={franchisePartners} />}
+        {activeTab === 'rbac' && <RBACTab API_BASE={API_BASE} authHeaders={authHeaders} franchisePartners={franchisePartners} />}
 
         {/* ─── AUDIT LOGS TAB ─────────────────────────────────── */}
         {activeTab === 'audit' && <AuditTab API_BASE={API_BASE} authHeaders={authHeaders} />}

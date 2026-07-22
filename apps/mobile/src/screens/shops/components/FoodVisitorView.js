@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useCartStore } from '../../../store/cartStore';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { Utensils, Plus, Clock } from 'lucide-react-native';
 
 export default function FoodVisitorView({ shop, products = [], loading = false }) {
   const addItem = useCartStore((state) => state.addItem);
@@ -22,10 +23,10 @@ export default function FoodVisitorView({ shop, products = [], loading = false }
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View className="flex-1 bg-slate-950">
         <SkeletonLoader height={200} width="100%" />
-        <View style={{ padding: 16 }}>
-           <SkeletonLoader height={40} width={200} style={{ marginBottom: 20 }} />
+        <View className="p-4">
+           <SkeletonLoader height={40} width={200} style={{ marginBottom: 20 }} borderRadius={12} />
            {[1, 2, 3].map(i => <SkeletonLoader key={i} height={100} width="100%" style={{ marginBottom: 15 }} borderRadius={16} />)}
         </View>
       </View>
@@ -33,45 +34,48 @@ export default function FoodVisitorView({ shop, products = [], loading = false }
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.headerImageContainer}>
+    <ScrollView className="flex-1 bg-slate-950">
+      <View className="h-48 w-full bg-slate-900 justify-center items-center">
         {shop?.cover_image ? (
-          <Image source={shop.cover_image } style={styles.coverImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
+          <Image source={shop.cover_image} className="w-full h-full" contentFit="cover" transition={200} />
         ) : (
-          <View style={styles.placeholderImage} />
+          <View className="w-full h-full bg-orange-500/20 justify-center items-center">
+            <Utensils size={48} color="#f97316" />
+          </View>
         )}
       </View>
-      <View style={styles.header}>
-        <Text style={styles.title}>{shop?.name || 'Restaurant'}</Text>
-        <Text style={styles.subtitle}>Food & Beverages • {shop?.delivery_time || '15-20 mins'}</Text>
+      <View className="p-5 bg-slate-900 border-b border-slate-800 -mt-5 rounded-t-3xl">
+        <Text className="text-2xl font-black text-white">{shop?.name || 'Restaurant'}</Text>
+        <Text className="text-slate-400 font-semibold text-xs mt-1">Food & Beverages • {shop?.delivery_time || '15-20 mins'}</Text>
       </View>
       
-      <View style={styles.menuContainer}>
-        <Text style={styles.sectionTitle}>Recommended</Text>
+      <View className="p-4">
+        <Text className="text-white font-bold text-lg mb-4">Recommended</Text>
         {products.length > 0 ? (
           products.map((item, idx) => (
-            <View key={idx} style={styles.menuItem}>
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.price}</Text>
-                <Text style={styles.itemDesc} numberOfLines={2}>{item.description}</Text>
+            <View key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-3 flex-row items-center justify-between">
+              <View className="flex-1 mr-3">
+                <Text className="font-bold text-white text-base mb-1">{item.name}</Text>
+                <Text className="text-orange-400 font-black text-sm mb-1">₹{item.price}</Text>
+                <Text className="text-slate-400 text-xs font-medium" numberOfLines={2}>{item.description}</Text>
               </View>
-              <TouchableOpacity style={styles.addButton} onPress={() => handleAdd(item)}>
-                <Text style={styles.addText}>ADD</Text>
+              <TouchableOpacity className="bg-orange-500 px-4 py-2 rounded-xl flex-row items-center active:bg-orange-400" onPress={() => handleAdd(item)}>
+                <Plus size={14} color="#fff" className="mr-1" />
+                <Text className="text-white font-black text-xs">ADD</Text>
               </TouchableOpacity>
             </View>
           ))
         ) : (
-          // Fallback Dummy Data if no products provided
           [1, 2, 3].map((item) => (
-            <View key={item} style={styles.menuItem}>
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemName}>Margherita Pizza</Text>
-                <Text style={styles.itemPrice}>₹250</Text>
-                <Text style={styles.itemDesc} numberOfLines={2}>Classic cheese and tomato pizza with basil.</Text>
+            <View key={item} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-3 flex-row items-center justify-between">
+              <View className="flex-1 mr-3">
+                <Text className="font-bold text-white text-base mb-1">Margherita Pizza</Text>
+                <Text className="text-orange-400 font-black text-sm mb-1">₹250</Text>
+                <Text className="text-slate-400 text-xs font-medium" numberOfLines={2}>Classic cheese and tomato pizza with basil.</Text>
               </View>
-              <TouchableOpacity style={styles.addButton} onPress={() => handleAdd({ name: 'Margherita Pizza', price: 250 })}>
-                <Text style={styles.addText}>ADD</Text>
+              <TouchableOpacity className="bg-orange-500 px-4 py-2 rounded-xl flex-row items-center active:bg-orange-400" onPress={() => handleAdd({ name: 'Margherita Pizza', price: 250 })}>
+                <Plus size={14} color="#fff" className="mr-1" />
+                <Text className="text-white font-black text-xs">ADD</Text>
               </TouchableOpacity>
             </View>
           ))
@@ -80,43 +84,3 @@ export default function FoodVisitorView({ shop, products = [], loading = false }
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  headerImageContainer: { height: 200, width: '100%', backgroundColor: '#e2e8f0' },
-  coverImage: { width: '100%', height: '100%', objectFit: 'cover' },
-  placeholderImage: { width: '100%', height: '100%', backgroundColor: '#FF6B00', opacity: 0.2 },
-  header: { padding: 20, backgroundColor: '#ffffff', borderBottomWidth: 1, borderColor: '#e2e8f0', marginTop: -20, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#0f172a' },
-  subtitle: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  menuContainer: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 16 },
-  menuItem: { 
-    flexDirection: 'row', 
-    backgroundColor: '#ffffff', 
-    padding: 16, 
-    borderRadius: 16, 
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    alignItems: 'center'
-  },
-  itemDetails: { flex: 1, paddingRight: 12 },
-  itemName: { fontSize: 16, fontWeight: 'bold', color: '#1e293b' },
-  itemPrice: { fontSize: 14, fontWeight: '600', color: '#FF6B00', marginTop: 4 },
-  itemDesc: { fontSize: 12, color: '#64748b', marginTop: 4 },
-  addButton: { 
-    backgroundColor: '#fff7ed', 
-    borderColor: '#FF6B00',
-    borderWidth: 1,
-    paddingHorizontal: 16, 
-    paddingVertical: 8, 
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  addText: { color: '#FF6B00', fontWeight: 'bold' }
-});

@@ -2,8 +2,8 @@ module.exports = (io, socket) => {
   // Listen for new orders placed by a visitor
   socket.on('visitor_place_order', (payload) => {
     const { shopId, order } = payload;
-    // Broadcast to the merchant's room
-    io.to(`shop_${shopId}`).emit('merchant_new_order', order);
+    // Broadcast to all merchant room conventions
+    io.to(`shop_${shopId}`).to(`shop:${shopId}`).to(`room:shop:${shopId}`).emit('merchant_new_order', order);
   });
 
   // Listen for merchant updating order status (e.g. Kanban drag-and-drop)

@@ -31,11 +31,11 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    debuggableVariants = ["debug"]
+    // debuggableVariants = ["liteDebug", "prodDebug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
-    nodeExecutableAndArgs = ["node", "--max-old-space-size=6144"]
+    // nodeExecutableAndArgs = ["node"]
 
     //
     //   The path to the CLI configuration file. Default is empty.
@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.localsamparkmobile'
+    namespace 'in.localsampark.app'
     defaultConfig {
-        applicationId 'com.anonymous.localsamparkmobile'
+        applicationId 'in.localsampark.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -174,3 +174,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply plugin: 'com.google.gms.google-services'

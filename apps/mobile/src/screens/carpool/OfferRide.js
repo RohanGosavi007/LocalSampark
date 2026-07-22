@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { MapPin, Navigation, Calendar, Clock, Users, IndianRupee, Car, ShieldCheck, Leaf } from 'lucide-react-native';
+import { apiPost } from '../../lib/api';
 
-export default function OfferRideScreen() {
-  const navigation = useNavigation();
+export default function OfferRide() {
   const [formData, setFormData] = useState({
     fromLocation: '',
     toLocation: '',
@@ -14,7 +12,9 @@ export default function OfferRideScreen() {
     totalSeats: '3',
     pricePerSeat: '50',
     vehicleType: 'Car',
-    vehicleNumber: ''
+    vehicleNumber: '',
+    isWomenOnly: false,
+    isEV: false
   });
 
   const handleSubmit = async () => {
@@ -24,74 +24,80 @@ export default function OfferRideScreen() {
     }
 
     try {
-      // Stub for backend integration
-      // await axios.post('/api/v1/carpool/rides', formData)
-      Alert.alert('Success', 'Your ride has been successfully listed!');
-      navigation.goBack();
+      await apiPost('/carpool/rides', {
+        origin: formData.fromLocation,
+        destination: formData.toLocation,
+        departure_time: `${formData.departureDate} ${formData.departureTime}`,
+        seats_available: parseInt(formData.totalSeats, 10) || 1,
+        price_per_seat: parseFloat(formData.pricePerSeat) || 0
+      });
+      Alert.alert('Success 🎉', 'Your ride has been successfully listed! Fellow residents will be notified.');
     } catch (err) {
-      Alert.alert('Error', 'Could not post ride. Try again.');
+      Alert.alert('Error', err.message || 'Could not post ride. Try again.');
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Offer a Ride</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+      
+      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+        <Text className="text-white font-bold text-lg mb-4">Route Details</Text>
         
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Leaving from *</Text>
-          <View style={styles.inputRow}>
-            <Ionicons name="location-outline" size={20} color="#999" />
+        <View className="mb-4">
+          <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Leaving from *</Text>
+          <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-4 h-12">
+            <MapPin size={20} color="#64748b" />
             <TextInput
-              style={styles.input}
+              className="flex-1 ml-3 text-white text-base"
               placeholder="E.g., Hinjewadi Phase 1"
+              placeholderTextColor="#475569"
               value={formData.fromLocation}
               onChangeText={t => setFormData({ ...formData, fromLocation: t })}
             />
           </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Going to *</Text>
-          <View style={styles.inputRow}>
-            <Ionicons name="navigate-circle-outline" size={20} color="#999" />
+        <View className="mb-2">
+          <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Going to *</Text>
+          <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-4 h-12">
+            <Navigation size={20} color="#64748b" />
             <TextInput
-              style={styles.input}
+              className="flex-1 ml-3 text-white text-base"
               placeholder="E.g., Pune Station"
+              placeholderTextColor="#475569"
               value={formData.toLocation}
               onChangeText={t => setFormData({ ...formData, toLocation: t })}
             />
           </View>
         </View>
+      </View>
 
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Date *</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="calendar-outline" size={20} color="#999" />
+      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+        <Text className="text-white font-bold text-lg mb-4">Schedule & Capacity</Text>
+        
+        <View className="flex-row gap-3 mb-4">
+          <View className="flex-1">
+            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Date *</Text>
+            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+              <Calendar size={18} color="#64748b" />
               <TextInput
-                style={styles.input}
+                className="flex-1 ml-2 text-white text-base"
                 placeholder="YYYY-MM-DD"
+                placeholderTextColor="#475569"
                 value={formData.departureDate}
                 onChangeText={t => setFormData({ ...formData, departureDate: t })}
               />
             </View>
           </View>
 
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>Time *</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="time-outline" size={20} color="#999" />
+          <View className="flex-1">
+            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Time *</Text>
+            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+              <Clock size={18} color="#64748b" />
               <TextInput
-                style={styles.input}
+                className="flex-1 ml-2 text-white text-base"
                 placeholder="HH:MM AM"
+                placeholderTextColor="#475569"
                 value={formData.departureTime}
                 onChangeText={t => setFormData({ ...formData, departureTime: t })}
               />
@@ -99,13 +105,13 @@ export default function OfferRideScreen() {
           </View>
         </View>
 
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Seats Available</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="people-outline" size={20} color="#999" />
+        <View className="flex-row gap-3 mb-2">
+          <View className="flex-1">
+            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Seats *</Text>
+            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+              <Users size={18} color="#64748b" />
               <TextInput
-                style={styles.input}
+                className="flex-1 ml-2 text-white text-base"
                 keyboardType="numeric"
                 value={formData.totalSeats}
                 onChangeText={t => setFormData({ ...formData, totalSeats: t })}
@@ -113,12 +119,12 @@ export default function OfferRideScreen() {
             </View>
           </View>
 
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>Price / Seat (₹)</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="cash-outline" size={20} color="#999" />
+          <View className="flex-1">
+            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Price / Seat *</Text>
+            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+              <IndianRupee size={18} color="#64748b" />
               <TextInput
-                style={styles.input}
+                className="flex-1 ml-2 text-white text-base"
                 keyboardType="numeric"
                 value={formData.pricePerSeat}
                 onChangeText={t => setFormData({ ...formData, pricePerSeat: t })}
@@ -126,38 +132,70 @@ export default function OfferRideScreen() {
             </View>
           </View>
         </View>
+      </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Vehicle Number (Optional)</Text>
-          <View style={styles.inputRow}>
-            <Ionicons name="car-outline" size={20} color="#999" />
+      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+        <Text className="text-white font-bold text-lg mb-4">Vehicle Details</Text>
+        
+        <View className="mb-4">
+          <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Vehicle Number</Text>
+          <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-4 h-12">
+            <Car size={20} color="#64748b" />
             <TextInput
-              style={styles.input}
-              placeholder="MH 12 AB 1234"
+              className="flex-1 ml-3 text-white text-base"
+              placeholder="E.g. MH 12 AB 1234"
+              placeholderTextColor="#475569"
               value={formData.vehicleNumber}
               onChangeText={t => setFormData({ ...formData, vehicleNumber: t })}
             />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-          <Text style={styles.submitText}>Publish Ride</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        <View className="flex-row items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 mb-3">
+          <View className="flex-row items-center gap-3">
+            <View className="w-10 h-10 rounded-full bg-pink-500/10 items-center justify-center">
+              <ShieldCheck size={20} color="#ec4899" />
+            </View>
+            <View>
+              <Text className="text-white font-bold">Women Only Ride</Text>
+              <Text className="text-slate-400 text-xs">Visible only to female users</Text>
+            </View>
+          </View>
+          <Switch 
+            value={formData.isWomenOnly} 
+            onValueChange={v => setFormData({...formData, isWomenOnly: v})}
+            trackColor={{ false: '#334155', true: '#ec4899' }}
+            thumbColor={formData.isWomenOnly ? '#fbcfe8' : '#94a3b8'}
+          />
+        </View>
+
+        <View className="flex-row items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <View className="flex-row items-center gap-3">
+            <View className="w-10 h-10 rounded-full bg-emerald-500/10 items-center justify-center">
+              <Leaf size={20} color="#10b981" />
+            </View>
+            <View>
+              <Text className="text-white font-bold">Green Ride (EV)</Text>
+              <Text className="text-slate-400 text-xs">I am driving an Electric Vehicle</Text>
+            </View>
+          </View>
+          <Switch 
+            value={formData.isEV} 
+            onValueChange={v => setFormData({...formData, isEV: v})}
+            trackColor={{ false: '#334155', true: '#10b981' }}
+            thumbColor={formData.isEV ? '#a7f3d0' : '#94a3b8'}
+          />
+        </View>
+      </View>
+
+      <TouchableOpacity 
+        className="bg-indigo-600 py-4 rounded-xl items-center flex-row justify-center gap-2 mb-8"
+        onPress={handleSubmit}
+      >
+        <Car size={20} color="#fff" />
+        <Text className="text-white font-black text-lg">Publish Ride</Text>
+      </TouchableOpacity>
+
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#0f172a', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  title: { fontSize: 18, fontWeight: 'bold' },
-  scrollContent: { padding: 20 },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 8 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderRadius: 12, paddingHorizontal: 15, borderWidth: 1, borderColor: '#ddd' },
-  input: { flex: 1, paddingVertical: 15, paddingHorizontal: 10, fontSize: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  submitBtn: { backgroundColor: '#3b82f6', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
-  submitText: { color: '#0f172a', fontSize: 18, fontWeight: 'bold' }
-});

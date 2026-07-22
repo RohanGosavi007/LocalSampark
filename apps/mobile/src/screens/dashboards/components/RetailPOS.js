@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import NetInfo from '@react-native-community/netinfo';
 import { OfflineQueueService } from '../../../services/OfflineQueueService';
+import { Camera, Search, ShoppingBag, Minus, Plus } from 'lucide-react-native';
 
-export default function RetailPOS({ themeColor = '#00E676' }) {
+export default function RetailPOS({ themeColor = '#10b981' }) {
   const [items, setItems] = React.useState([
     { id: 1, name: 'Aashirvaad Atta 5kg', stock: 12 },
     { id: 2, name: 'Tata Salt 1kg', stock: 45 },
@@ -24,17 +25,13 @@ export default function RetailPOS({ themeColor = '#00E676' }) {
     
     // Optimistic Update
     setItems(prev => prev.map(p => 
-      p.id === item.id ? { ...p, stock: p.stock - 1 } : p
+      p.id === item.id ? { ...p, stock: Math.max(0, p.stock - 1) } : p
     ));
 
     // Offline Queue
     try {
       if (isOffline) {
         await OfflineQueueService.enqueue(`/api/v1/shops/inventory/decrement`, 'POST', { productId: item.id });
-        alert('Saved offline. Will sync when connection is restored.');
-      } else {
-        // Normal API call would go here
-        // await fetch(...)
       }
     } catch (e) {
       console.log('Error queueing:', e);
@@ -42,57 +39,46 @@ export default function RetailPOS({ themeColor = '#00E676' }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Smart POS & Inventory</Text>
+    <View className="flex-1 mt-4">
+      <Text className="text-lg font-black text-white mb-4">Smart POS & Inventory</Text>
       
-      <View style={styles.scannerBox}>
-        <Text style={styles.scannerIcon}>📷</Text>
-        <Text style={styles.scannerText}>Tap to scan barcode</Text>
-      </View>
+      <TouchableOpacity className="h-24 bg-slate-900 border-2 border-dashed border-slate-800 rounded-2xl justify-center items-center mb-4 active:opacity-80">
+        <Camera size={28} color="#94a3b8" className="mb-1" />
+        <Text className="text-slate-400 font-bold text-xs">Tap to scan barcode</Text>
+      </TouchableOpacity>
       
-      <View style={styles.searchRow}>
-        <TextInput 
-          placeholder="Search products..."
-          style={[styles.searchInput, { borderColor: themeColor + '50' }]}
-        />
-        <TouchableOpacity style={[styles.btn, { backgroundColor: themeColor }]} onPress={handleAction}>
-          <Text style={styles.btnText}>Search</Text>
+      <View className="flex-row gap-2 mb-6">
+        <View className="flex-1 flex-row items-center bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl">
+          <Search size={18} color="#64748b" className="mr-2" />
+          <TextInput 
+            placeholder="Search products..."
+            placeholderTextColor="#64748b"
+            className="flex-1 text-white font-medium text-sm"
+          />
+        </View>
+        <TouchableOpacity className="bg-emerald-600 px-5 justify-center rounded-xl items-center">
+          <Text className="text-white font-black text-xs">Search</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.subTitle}>Quick Add Items</Text>
-      <ScrollView style={styles.itemList}>
-        {items.map((item) => (
-          <View key={item.id} style={styles.productRow}>
-            <View>
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productStock}>Stock: {item.stock} units left</Text>
+      <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">Quick Add Items</Text>
+      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-2">
+        {items.map((item, idx) => (
+          <View key={item.id} className={`flex-row justify-between items-center p-3 ${idx !== items.length - 1 ? 'border-b border-slate-800' : ''}`}>
+            <View className="flex-1 mr-2">
+              <Text className="text-white font-bold text-sm mb-0.5">{item.name}</Text>
+              <Text className="text-slate-400 text-xs font-medium">Stock: <Text className="text-emerald-400 font-bold">{item.stock}</Text> units left</Text>
             </View>
-            <TouchableOpacity style={[styles.addBtn, { borderColor: themeColor }]} onPress={() => handleAction(item)}>
-              <Text style={[styles.addBtnText, { color: themeColor }]}>- SELL</Text>
+            <TouchableOpacity 
+              className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 rounded-lg flex-row items-center active:bg-emerald-500/20"
+              onPress={() => handleAction(item)}
+            >
+              <Minus size={14} color="#10b981" className="mr-1" />
+              <Text className="text-emerald-400 font-black text-xs">SELL</Text>
             </TouchableOpacity>
           </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, marginTop: 20 },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, color: '#1e293b' },
-  scannerBox: { height: 100, backgroundColor: '#f1f5f9', borderRadius: 16, borderWidth: 2, borderColor: '#cbd5e1', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  scannerIcon: { fontSize: 32, marginBottom: 4 },
-  scannerText: { color: '#64748b', fontWeight: '500' },
-  searchRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  searchInput: { flex: 1, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, backgroundColor: '#fff' },
-  btn: { paddingHorizontal: 20, justifyContent: 'center', borderRadius: 12 },
-  btnText: { color: '#fff', fontWeight: 'bold' },
-  subTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
-  itemList: { backgroundColor: '#fff', borderRadius: 16, padding: 12 },
-  productRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  productName: { fontSize: 14, fontWeight: '600', color: '#334155' },
-  productStock: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-  addBtn: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderRadius: 8 },
-  addBtnText: { fontWeight: 'bold', fontSize: 12 }
-});

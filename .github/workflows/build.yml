@@ -21,7 +21,110 @@ jobs:
         cache: 'npm'
 
     - name: Install Monorepo Dependencies
-      run: npm install
+      run: npm install --legacy-peer-deps
 
     - name: Run Linting check
       run: npm run test --if-present
+
+  build-android:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Install Dependencies
+      run: npm install --legacy-peer-deps
+      
+    # =========================================================
+    # OPTION A: NATIVE EXPO BUNDLING (RECOMMENDED)
+    # This relies on the Expo Gradle plugin to natively bundle 
+    # the Javascript and assets during the assembleRelease task.
+    # =========================================================
+    # - name: Build Android Release APK (Native Bundling)
+    #   run: |
+    #     cd apps/mobile/android
+    #     chmod +x gradlew
+    #     ./gradlew assembleRelease --no-daemon
+
+    # =========================================================
+    # OPTION B: MANUAL BUNDLING OVERRIDE
+    # This manually generates the index.android.bundle and assets
+    # before running the Gradle build. Useful for edge cases.
+    # To switch to Option A, comment this out and uncomment Option A.
+    # =========================================================
+    - name: Generate React Native Bundle Manually
+      run: |
+        cd apps/mobile
+        mkdir -p android/app/src/main/assets
+        npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
+        
+    - name: Build Android Release APK (After Manual Bundling)
+      run: |
+        cd apps/mobile/android
+        chmod +x gradlew
+        ./gradlew assembleRelease --no-daemon
+        
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-unsigned
+        path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+        retention-days: 7
+
+    # =========================================================
+    # OPTION 2: E2E TESTING ON MACOS (COMMENTED OUT BY DEFAULT)
+    # macOS runners natively support nested virtualization required
+    # for the Android Emulator to run quickly and reliably.
+    # Warning: macOS minutes are consumed at 10x the Linux rate.
+    # Uncomment the block below to run Detox on every PR/Push.
+    # =========================================================
+    # test-android-e2e:
+    #   needs: build-and-test
+    #   runs-on: macos-latest
+    #   
+    #   steps:
+    #   - name: Checkout Code
+    #     uses: actions/checkout@v4
+    #     
+    #   - name: Set up Node.js
+    #     uses: actions/setup-node@v4
+    #     with:
+    #       node-version: 20
+    #       cache: 'npm'
+    #       
+    #   - name: Set up Java
+    #     uses: actions/setup-java@v4
+    #     with:
+    #       distribution: 'temurin'
+    #       java-version: '17'
+    #       
+    #   - name: Install Dependencies
+    #     run: npm install --legacy-peer-deps
+    #     
+    #   - name: Build Android App for Detox (Debug)
+    #     run: |
+    #       cd apps/mobile
+    #       npm run test:e2e:build
+    #       
+    #   - name: Run Detox Tests in Emulator
+    #     uses: reactivecircus/android-emulator-runner@v2
+    #     with:
+    #       api-level: 30
+    #       target: google_apis
+    #       arch: x86_64
+    #       profile: Pixel_4
+    #       script: cd apps/mobile && npm run test:e2e:test

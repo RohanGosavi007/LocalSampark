@@ -183,6 +183,50 @@ const hasAccess = (allowedRoles) => {
   };
 };
 
+// Enforce Multi-Tenancy for Vendor CRM Routes
+const enforceMultiTenancy = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Admins bypass tenant checks
+    if (req.user.role === ROLES.SUPER_ADMIN || req.user.role === ROLES.ADMIN) {
+      return next();
+    }
+
+    if (req.user.role === ROLES.SHOP_OWNER) {
+      // Find the shop owned by this user
+      const shop = await queryOne('SELECT id, crm_tier, is_locked FROM local_shops WHERE owner_id = $1 LIMIT 1', [req.user.id]);
+      
+      if (!shop) {
+        return res.status(403).json({ error: 'No shop associated with this account' });
+      }
+
+      if (shop.is_locked) {
+        return res.status(403).json({ error: 'Shop is locked due to billing or policy violation' });
+      }
+
+      // Inject shop context into the request
+      req.shopId = shop.id;
+      req.crmTier = shop.crm_tier || 'free';
+
+      // If the route provided a shopId explicitly (in params or body), ensure it matches
+      const targetShopId = req.params.shopId || req.body.shopId || req.query.shopId;
+      if (targetShopId && targetShopId !== req.shopId) {
+        return res.status(403).json({ error: 'Tenant Mismatch: Access Denied' });
+      }
+
+      return next();
+    }
+
+    // If not a shop owner or admin, they shouldn't access CRM routes
+    return res.status(403).json({ error: 'Forbidden: Insufficient permissions for Vendor CRM' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   authenticate,
   optionalAuth,
@@ -192,5 +236,6 @@ module.exports = {
   requireAreaAgent,
   generateTokens,
   ROLES,
-  hasAccess
+  hasAccess,
+  enforceMultiTenancy
 };

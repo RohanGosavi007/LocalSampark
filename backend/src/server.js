@@ -36,82 +36,10 @@ if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
 
 const { connectDB, pool, query } = require('./config/database');
 const { connectRedis, redisClient, cacheGet, cacheSet } = require('./config/redis');
-const apiCache = require('./middleware/cache.middleware');
 
-// Import routes
-const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const feedRoutes = require('./routes/feed.routes');
-const shopRoutes = require('./routes/shop.routes');
-const jobRoutes = require('./routes/job.routes');
-const jobsBoardRoutes = require('./routes/jobs.routes');
-const propertyRoutes = require('./routes/property.routes');
-const deliveryRoutes = require('./routes/delivery.routes');
-const chatRoutes = require('./routes/chat.routes');
-const financeRoutes = require('./routes/finance.routes');
-const chatbotRoutes = require('./routes/chatbot.routes');
-const loyaltyRoutes = require('./routes/loyalty.routes');
-const adminRoutes = require('./routes/admin.routes');
-const societyRoutes = require('./routes/society.routes');
-const marketplaceRoutes = require('./routes/marketplace.routes');
-const eventRoutes = require('./routes/event.routes');
-const healthRoutes = require('./routes/health.routes');
-const disputesRoutes = require('./routes/disputes.routes');
-const petRoutes = require('./routes/pet.routes');
-const paymentRoutes = require('./routes/payment.routes');
-const notificationRoutes = require('./routes/notification.routes');
-const storyRoutes = require('./routes/story.routes');
-const subscriptionRoutes = require('./routes/subscription.routes');
-const franchiseRoutes = require('./routes/franchise.routes');
-const crmRoutes = require('./routes/crm.routes');
-const commissionRoutes = require('./routes/commission.routes');
-const societyAdminRoutes = require('./routes/society-admin.routes');
-const rentalRoutes = require('./routes/rental.routes');
-const adminAuthRoutes = require('./routes/admin-auth.routes');
-const territoryRoutes = require('./routes/territory.routes');
-const carpoolRoutes = require('./routes/carpool.routes');
-const earningsRoutes = require('./routes/earnings.routes');
-const sosRoutes = require('./routes/sos.routes');
-const townsquareRoutes = require('./routes/townsquare.routes');
-const zoneRoutes = require('./routes/zone.routes');
-const userZoneRoutes = require('./routes/user_zone.routes');
-// Duplicate requires removed for events, properties, pets, subscriptions
-const medicalRoutes = require('./routes/medical.routes');
-const equipmentRoutes = require('./routes/equipment.routes');
-const chefRoutes = require('./routes/chef.routes');
-const scrapRoutes = require('./routes/scrap.routes');
-const communityHubRoutes = require('./routes/community_hub.routes');
-const volunteerRoutes = require('./routes/volunteer.routes');
-const donationsRoutes = require('./routes/donations.routes');
-const societyVisitorRoutes = require('./routes/society-visitor.routes');
-const trackingRoutes = require('./routes/tracking.routes');
-const servicesRoutes = require('./routes/services.routes');
-const billsRoutes = require('./routes/bills.routes');
-const walletRoutes = require('./routes/wallet.routes');
-const rewardsRoutes = require('./routes/rewards.routes');
-const careRoutes = require('./routes/care.routes');
-const premiumRoutes = require('./routes/premium.routes');
-const referralRoutes = require('./routes/referral.routes');
-const uploadRoutes = require('./routes/upload.routes');
-const engagementRoutes = require('./routes/engagement.routes');
-const settingsRoutes = require('./routes/settings.routes');
-const orderRoutes = require('./routes/order.routes');
 
-require('./jobs/orderMaintenance');
-require('./jobs/tokenMaintenance');
-require('./jobs/campaignScheduler'); // New Campaign Engine Scheduler
-
-const proxyRoutes = require('./routes/proxy.routes');
-const cartRoutes = require('./routes/cart.routes');
-const checkoutRoutes = require('./routes/checkout.routes');
-const webhooksRoutes = require('./routes/webhooks.routes');
-const addressesRoutes = require('./routes/addresses.routes');
-
-// ── New Archetype Routes ──
-const tokenQueueRoutes = require('./routes/token-queue.routes');
-const jobCardsRoutes = require('./routes/job-cards.routes');
-const fleetAssetsRoutes = require('./routes/fleet-assets.routes');
-const leadsCrmRoutes = require('./routes/leads-crm.routes');
+// Import aggregated api router
+const apiRouter = require('./routes');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/error.middleware');
@@ -127,7 +55,7 @@ const io = initSocketIO(server);
 app.set('io', io); // Make io accessible in route handlers via req.app.get('io')
 
 // Import Supabase Realtime Service
-const supabaseRealtime = require('./services/supabaseRealtime.service');
+const supabaseRealtime = require('./modules/core/services/supabaseRealtime.service');
 
 // ─── MIDDLEWARE ──────────────────────────────────────────────
 app.use(helmet({
@@ -148,6 +76,15 @@ app.use(helmet({
 }));
 
 // ─── CORS: Whitelist-based origin validation ────────────────
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:5000',
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin && process.env.NODE_ENV !== 'production') return callback(null, true);
@@ -179,7 +116,7 @@ app.use(compression());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
-const { rateLimiter, authLimiter, paymentLimiter } = require('./middleware/rateLimit.middleware');
+const { rateLimiter } = require('./middleware/rateLimit.middleware');
 app.use(rateLimiter);
 
 // ─── SAFE XSS SANITIZATION (Express 5 Compatible) ─────────────
@@ -275,87 +212,8 @@ app.get('/metrics', (req, res) => {
 // ─── API ROUTES ─────────────────────────────────────────────
 const API_PREFIX = '/api/v1';
 
-app.use(`${API_PREFIX}/auth`, authLimiter, authRoutes);
-app.use(`${API_PREFIX}/users/addresses`, addressesRoutes);
-app.use(`${API_PREFIX}/users`, userRoutes);
-app.use(`${API_PREFIX}/feed`, apiCache(300), feedRoutes); // Cache feed for 5 mins
-app.use(`${API_PREFIX}/shops`, apiCache(600), shopRoutes); // Cache shop listings for 10 mins
-app.use(`${API_PREFIX}/jobs`, jobRoutes);
-app.use(`${API_PREFIX}/jobs-board`, jobsBoardRoutes);
-app.use(`${API_PREFIX}/properties`, propertyRoutes);
-app.use(`${API_PREFIX}/delivery`, deliveryRoutes);
-app.use(`${API_PREFIX}/chat`, chatRoutes);
-app.use(`${API_PREFIX}/finance`, financeRoutes);
-app.use(`${API_PREFIX}/chatbot`, chatbotRoutes);
-app.use(`${API_PREFIX}/loyalty`, loyaltyRoutes);
-app.use(`${API_PREFIX}/admin`, adminRoutes);
-app.use(`${API_PREFIX}/societies`, societyRoutes);
-app.use(`${API_PREFIX}/marketplace`, apiCache(600), marketplaceRoutes); // Cache marketplace for 10 mins
-app.use(`${API_PREFIX}/events`, apiCache(3600), eventRoutes); // Cache events for 1 hour
-app.use(`${API_PREFIX}/health-services`, apiCache(600), healthRoutes);
-app.use(`${API_PREFIX}/carpool`, carpoolRoutes);
-app.use(`${API_PREFIX}/pets`, petRoutes);
-app.use(`${API_PREFIX}/payments`, paymentLimiter, paymentRoutes);
-app.use(`${API_PREFIX}/notifications`, notificationRoutes);
-app.use(`${API_PREFIX}/stories`, storyRoutes);
-app.use('/api/v1/subscriptions', subscriptionRoutes);
-app.use('/api/v1/settings', settingsRoutes);
-app.use('/api/v1/upload', uploadRoutes);
-app.use('/api/v1/proxy', proxyRoutes);
-app.use('/api/v1/disputes', disputesRoutes);
-app.use(`${API_PREFIX}/franchise`, franchiseRoutes);
-app.use(`${API_PREFIX}/franchise-intelligence`, require('./routes/franchise-intelligence.routes'));
-app.use(`${API_PREFIX}/earnings`, earningsRoutes);
-app.use(`${API_PREFIX}/crm`, crmRoutes);
-app.use(`${API_PREFIX}/commissions`, commissionRoutes);
-app.use(`${API_PREFIX}/society-admin`, societyAdminRoutes);
-app.use(`${API_PREFIX}/rental`, rentalRoutes);
-app.use(`${API_PREFIX}/admin-auth`, adminAuthRoutes);
-app.use(`${API_PREFIX}/territory`, territoryRoutes);
-
-// Campaign Engine
-const campaignRoutes = require('./routes/campaigns.routes');
-app.use(`${API_PREFIX}/campaigns`, campaignRoutes);
-
-// Social Commerce
-app.use(`${API_PREFIX}/group-buy`, require('./routes/group-buying.routes'));
-app.use(`${API_PREFIX}/trust-reviews`, require('./routes/trust-reviews.routes'));
-
-// AI Analytics
-app.use(`${API_PREFIX}/analytics`, require('./routes/ai-analytics.routes'));
-app.use(`${API_PREFIX}/sos`, sosRoutes);
-app.use(`${API_PREFIX}/townsquare`, townsquareRoutes);
-app.use(`${API_PREFIX}/medical`, medicalRoutes);
-app.use(`${API_PREFIX}/equipment`, equipmentRoutes);
-app.use(`${API_PREFIX}/chef`, chefRoutes);
-app.use(`${API_PREFIX}/scrap`, scrapRoutes);
-app.use(`${API_PREFIX}/community-hub`, apiCache(300), communityHubRoutes);
-app.use(`${API_PREFIX}/volunteer`, volunteerRoutes);
-app.use(`${API_PREFIX}/donations`, donationsRoutes);
-app.use(`${API_PREFIX}/society-management`, societyVisitorRoutes);
-app.use(`${API_PREFIX}/bills`, billsRoutes);
-app.use(`${API_PREFIX}/tracking`, trackingRoutes);
-app.use(`${API_PREFIX}/services`, servicesRoutes);
-app.use(`${API_PREFIX}/wallet`, walletRoutes);
-app.use(`${API_PREFIX}/rewards`, rewardsRoutes);
-app.use(`${API_PREFIX}/care`, careRoutes);
-app.use(`${API_PREFIX}/premium`, premiumRoutes);
-app.use(`${API_PREFIX}/referral`, referralRoutes);
-// Duplicate mounts removed
-app.use(`${API_PREFIX}/zones`, apiCache(3600), zoneRoutes);
-app.use(`${API_PREFIX}/users`, userZoneRoutes); // userZoneRoutes mounts /api/v1/users/zone and /saved-zones
-app.use(`${API_PREFIX}/upload`, uploadRoutes);
-app.use(`${API_PREFIX}/settings`, settingsRoutes);
-app.use(`${API_PREFIX}/orders`, orderRoutes);
-app.use(`${API_PREFIX}/cart`, cartRoutes);
-app.use(`${API_PREFIX}/checkout`, checkoutRoutes);
-app.use(`${API_PREFIX}/webhooks`, webhooksRoutes);
-
-// ── New Archetype API Routes ──
-app.use(`${API_PREFIX}/token-queue`, tokenQueueRoutes);
-app.use(`${API_PREFIX}/job-cards`, jobCardsRoutes);
-app.use(`${API_PREFIX}/fleet-assets`, fleetAssetsRoutes);
-app.use(`${API_PREFIX}/leads-crm`, leadsCrmRoutes);
+app.use(API_PREFIX, apiRouter);
+app.use('/api', apiRouter); // Backward compatibility fallback mount
 
 // ─── ERROR HANDLING ─────────────────────────────────────────
 if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
@@ -388,7 +246,7 @@ async function startServer() {
     }
 
     // Initialize notification service with Supabase Realtime
-    const notificationService = require('./services/notification.service');
+    const notificationService = require('./modules/core/services/notification.service');
     notificationService.init(supabaseRealtime);
     logger.info('✅ Notification service initialized with Supabase');
 
@@ -460,8 +318,14 @@ process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at: ' + promise + ' reason: ' + reason);
 });
 
+const { initPaymentWorker } = require('./workers/paymentWorker');
+const { initEventWorker } = require('./workers/eventWorker');
+
 if (process.env.NODE_ENV !== 'test') {
-  startServer();
+  startServer().then(() => {
+    initPaymentWorker();
+    initEventWorker();
+  });
 }
 
 module.exports = { app, server };

@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Store, MapPin, MessageCircle, Share2, Star, CheckCircle } from 'lucide-react-native';
 
-import VisitorViewRouter from '../components/shops/VisitorViewRouter';
+import VisitorViewRouter from '../../src/components/shops/VisitorViewRouter';
 import { apiGet } from '../../src/lib/api';
 import { useAuth } from '../../src/context/AuthContext';
 

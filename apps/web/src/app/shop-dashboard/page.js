@@ -11,7 +11,6 @@ import RetailPOS from './components/RetailPOS';
 import QueueReceptionDesk from './components/QueueReceptionDesk';
 import JobCardConsole from './components/JobCardConsole';
 import FleetAssetTracker from './components/FleetAssetTracker';
-import ShopStatusToggle from './components/ShopStatusToggle';
 import LeadCRMCenter from './components/LeadCRMCenter';
 import CampaignManager from './components/CampaignManager';
 import AIInsightsWidget from './components/AIInsightsWidget';

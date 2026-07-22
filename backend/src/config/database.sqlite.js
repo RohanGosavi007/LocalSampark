@@ -80,8 +80,12 @@ async function connectDB() {
           console.error('❌ SQLite connection failed:', err.message);
           reject(err);
         } else {
-          console.log(`📂 SQLite connected. Database location: ${dbPath}`);
-          resolve();
+          db.run("ALTER TABLE local_shops ADD COLUMN is_featured INTEGER DEFAULT 0", () => {});
+          db.run("ALTER TABLE local_shops ADD COLUMN rating REAL DEFAULT 4.5", () => {});
+          db.run("ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL DEFAULT NULL", () => {
+            console.log(`📂 SQLite connected. Database location: ${dbPath}`);
+            resolve();
+          });
         }
       });
     });
@@ -95,7 +99,8 @@ async function query(text, params = []) {
   
   return new Promise((resolve, reject) => {
     // Determine query type (SELECT vs INSERT/UPDATE/DELETE)
-    const isSelect = translated.sql.trim().toUpperCase().startsWith('SELECT');
+    const isSelect = translated.sql.trim().toUpperCase().startsWith('SELECT') || 
+                     /\bRETURNING\b/i.test(translated.sql);
     
     if (isSelect) {
       db.all(translated.sql, translated.params, (err, rows) => {
@@ -140,6 +145,14 @@ async function withTransaction(callback) {
           query: async (text, params = []) => {
             const res = await query(text, params);
             return res;
+          },
+          queryOne: async (text, params = []) => {
+            const res = await query(text, params);
+            return res.rows[0] || null;
+          },
+          queryMany: async (text, params = []) => {
+            const res = await query(text, params);
+            return res.rows;
           }
         };
 

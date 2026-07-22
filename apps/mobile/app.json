@@ -21,7 +21,9 @@
       "bundleIdentifier": "in.localsampark.app",
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "plugins": [
@@ -45,6 +47,13 @@
         "expo-camera",
         {
           "cameraPermission": "Allow LocalSampark to use the camera to scan QR codes and upload photos."
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.localsampark",
+          "enableGooglePay": true
         }
       ]
     ],

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Phone, MessageSquare, MapPin } from 'lucide-react-native';
 
 export default function DirectoryVisitorView({ shop }) {
   const handleContact = (type) => {
@@ -8,38 +9,38 @@ export default function DirectoryVisitorView({ shop }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{shop?.name || 'Local Real Estate'}</Text>
-        <Text style={styles.subtitle}>Directory Listing</Text>
+    <ScrollView className="flex-1 bg-slate-950">
+      <View className="p-5 bg-slate-900 border-b border-slate-800">
+        <Text className="text-2xl font-black text-white">{shop?.name || 'Local Real Estate'}</Text>
+        <Text className="text-slate-400 font-semibold text-xs mt-1">Directory Listing</Text>
       </View>
       
-      <View style={styles.contactRow}>
-        <TouchableOpacity style={styles.contactBtn} onPress={() => handleContact('call')}>
-          <Text style={styles.contactIcon}>📞</Text>
-          <Text style={styles.contactText}>Call</Text>
+      <View className="flex-row p-4 gap-3">
+        <TouchableOpacity className="flex-1 bg-indigo-500/10 border border-indigo-500/30 py-3 rounded-2xl items-center flex-row justify-center active:bg-indigo-500/20" onPress={() => handleContact('call')}>
+          <Phone size={16} color="#6366f1" className="mr-1.5" />
+          <Text className="text-indigo-400 font-bold text-xs">Call</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.contactBtn} onPress={() => handleContact('whatsapp')}>
-          <Text style={styles.contactIcon}>💬</Text>
-          <Text style={styles.contactText}>WhatsApp</Text>
+        <TouchableOpacity className="flex-1 bg-emerald-500/10 border border-emerald-500/30 py-3 rounded-2xl items-center flex-row justify-center active:bg-emerald-500/20" onPress={() => handleContact('whatsapp')}>
+          <MessageSquare size={16} color="#10b981" className="mr-1.5" />
+          <Text className="text-emerald-400 font-bold text-xs">WhatsApp</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.contactBtn} onPress={() => handleContact('map')}>
-          <Text style={styles.contactIcon}>📍</Text>
-          <Text style={styles.contactText}>Map</Text>
+        <TouchableOpacity className="flex-1 bg-sky-500/10 border border-sky-500/30 py-3 rounded-2xl items-center flex-row justify-center active:bg-sky-500/20" onPress={() => handleContact('map')}>
+          <MapPin size={16} color="#0ea5e9" className="mr-1.5" />
+          <Text className="text-sky-400 font-bold text-xs">Map</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.listingsContainer}>
-        <Text style={styles.sectionTitle}>Featured Listings</Text>
+      <View className="p-4">
+        <Text className="text-white font-bold text-lg mb-4">Featured Listings</Text>
         {['2 BHK Apartment in City Center', 'Office Space - 1200 sqft', 'Plot for Sale'].map((item, idx) => (
-          <View key={idx} style={styles.listingCard}>
-            <View style={styles.listingImage} />
-            <View style={styles.listingDetails}>
-              <Text style={styles.listingTitle} numberOfLines={2}>{item}</Text>
-              <Text style={styles.listingPrice}>₹45,00,000</Text>
-              <Text style={styles.listingLoc}>Sector 15, Near Mall</Text>
-              <TouchableOpacity style={styles.inquireBtn} onPress={() => handleContact('inquire')}>
-                <Text style={styles.inquireText}>Inquire Now</Text>
+          <View key={idx} className="bg-slate-900 border border-slate-800 rounded-2xl mb-4 overflow-hidden shadow-sm shadow-slate-950">
+            <View className="w-full h-36 bg-slate-950 border-b border-slate-800" />
+            <View className="p-4">
+              <Text className="font-bold text-base text-white mb-2" numberOfLines={2}>{item}</Text>
+              <Text className="text-indigo-400 font-black text-base mb-1">₹45,00,000</Text>
+              <Text className="text-slate-400 text-xs font-semibold mb-4">Sector 15, Near Mall</Text>
+              <TouchableOpacity className="bg-indigo-600 py-3 rounded-xl items-center active:bg-indigo-500" onPress={() => handleContact('inquire')}>
+                <Text className="text-white font-black text-xs">Inquire Now</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -48,24 +49,3 @@ export default function DirectoryVisitorView({ shop }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, backgroundColor: '#ffffff', borderBottomWidth: 1, borderColor: '#e2e8f0' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#0f172a' },
-  subtitle: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  contactRow: { flexDirection: 'row', padding: 16, gap: 12, backgroundColor: '#ffffff', marginBottom: 16 },
-  contactBtn: { flex: 1, backgroundColor: '#EEF2FF', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  contactIcon: { fontSize: 20, marginBottom: 4 },
-  contactText: { fontSize: 12, color: '#4338CA', fontWeight: 'bold' },
-  listingsContainer: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 16 },
-  listingCard: { backgroundColor: '#ffffff', borderRadius: 16, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
-  listingImage: { width: '100%', height: 160, backgroundColor: '#e2e8f0' },
-  listingDetails: { padding: 16 },
-  listingTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
-  listingPrice: { fontSize: 16, color: '#6366F1', fontWeight: 'bold', marginBottom: 4 },
-  listingLoc: { fontSize: 13, color: '#64748b', marginBottom: 12 },
-  inquireBtn: { borderWidth: 1, borderColor: '#6366F1', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  inquireText: { color: '#6366F1', fontWeight: 'bold' }
-});

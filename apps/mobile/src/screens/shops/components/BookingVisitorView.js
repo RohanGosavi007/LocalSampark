@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Calendar, Clock, Plus } from 'lucide-react-native';
 
 export default function BookingVisitorView({ shop }) {
   const handleBook = () => {
@@ -8,37 +9,37 @@ export default function BookingVisitorView({ shop }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{shop?.name || 'City Clinic'}</Text>
-        <Text style={styles.subtitle}>Healthcare & Appointments</Text>
+    <ScrollView className="flex-1 bg-slate-950">
+      <View className="p-5 bg-slate-900 border-b border-slate-800">
+        <Text className="text-2xl font-black text-white">{shop?.name || 'City Clinic'}</Text>
+        <Text className="text-slate-400 font-semibold text-xs mt-1">Healthcare & Appointments</Text>
       </View>
       
-      <View style={styles.trackerBox}>
-        <Text style={styles.trackerLabel}>LIVE TOKEN TRACKER</Text>
-        <View style={styles.trackerRow}>
-          <View style={styles.trackerCol}>
-            <Text style={styles.trackerValue}>#18</Text>
-            <Text style={styles.trackerSub}>Currently Serving</Text>
+      <View className="m-4 bg-sky-500/10 border border-sky-500/30 rounded-3xl p-5 items-center">
+        <Text className="text-xs font-black text-sky-400 mb-3 tracking-widest uppercase">LIVE TOKEN TRACKER</Text>
+        <View className="flex-row w-full justify-around items-center">
+          <View className="items-center">
+            <Text className="text-4xl font-black text-sky-400">#18</Text>
+            <Text className="text-xs text-slate-400 font-medium mt-1">Currently Serving</Text>
           </View>
-          <View style={styles.trackerDivider} />
-          <View style={styles.trackerCol}>
-            <Text style={styles.trackerValue}>12m</Text>
-            <Text style={styles.trackerSub}>Est. Wait Time</Text>
+          <View className="w-px h-10 bg-sky-500/30" />
+          <View className="items-center">
+            <Text className="text-4xl font-black text-sky-400">12m</Text>
+            <Text className="text-xs text-slate-400 font-medium mt-1">Est. Wait Time</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.servicesContainer}>
-        <Text style={styles.sectionTitle}>Book Appointment</Text>
+      <View className="p-4">
+        <Text className="text-white font-bold text-lg mb-4">Book Appointment</Text>
         {['General Checkup', 'Dental Cleaning', 'Consultation'].map((service, idx) => (
-          <View key={idx} style={styles.serviceCard}>
-            <View style={styles.serviceDetails}>
-              <Text style={styles.serviceName}>{service}</Text>
-              <Text style={styles.servicePrice}>₹500</Text>
+          <View key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="font-bold text-white text-base">{service}</Text>
+              <Text className="text-sky-400 font-bold text-xs mt-0.5">₹500</Text>
             </View>
-            <TouchableOpacity style={styles.bookButton} onPress={handleBook}>
-              <Text style={styles.bookText}>BOOK</Text>
+            <TouchableOpacity className="bg-sky-500 px-5 py-2.5 rounded-xl items-center active:bg-sky-400" onPress={handleBook}>
+              <Text className="text-slate-950 font-black text-xs">BOOK</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -46,25 +47,3 @@ export default function BookingVisitorView({ shop }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, backgroundColor: '#ffffff', borderBottomWidth: 1, borderColor: '#e2e8f0' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#0f172a' },
-  subtitle: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  trackerBox: { margin: 16, backgroundColor: '#00E5FF15', borderWidth: 1, borderColor: '#00E5FF40', borderRadius: 16, padding: 16, alignItems: 'center' },
-  trackerLabel: { fontSize: 12, fontWeight: 'bold', color: '#00B8D4', marginBottom: 12, letterSpacing: 1 },
-  trackerRow: { flexDirection: 'row', width: '100%', justifyContent: 'space-around' },
-  trackerCol: { alignItems: 'center' },
-  trackerValue: { fontSize: 32, fontWeight: 'bold', color: '#00E5FF' },
-  trackerSub: { fontSize: 12, color: '#64748b', marginTop: 4 },
-  trackerDivider: { width: 1, backgroundColor: '#00E5FF40' },
-  servicesContainer: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 16 },
-  serviceCard: { flexDirection: 'row', backgroundColor: '#ffffff', padding: 16, borderRadius: 16, marginBottom: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
-  serviceDetails: { flex: 1 },
-  serviceName: { fontSize: 16, fontWeight: 'bold', color: '#1e293b' },
-  servicePrice: { fontSize: 14, fontWeight: '600', color: '#00E5FF', marginTop: 4 },
-  bookButton: { backgroundColor: '#00E5FF', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
-  bookText: { color: '#ffffff', fontWeight: 'bold' }
-});

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Wrench, Plus, Calculator } from 'lucide-react-native';
 
 export default function ServiceVisitorView({ shop }) {
   const handleQuote = () => {
@@ -8,30 +9,38 @@ export default function ServiceVisitorView({ shop }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{shop?.name || 'Quick Repair Garage'}</Text>
-        <Text style={styles.subtitle}>Automotive Services</Text>
+    <ScrollView className="flex-1 bg-slate-950">
+      <View className="p-5 bg-slate-900 border-b border-slate-800">
+        <Text className="text-2xl font-black text-white">{shop?.name || 'Quick Repair Garage'}</Text>
+        <Text className="text-slate-400 font-semibold text-xs mt-1">Automotive Services</Text>
       </View>
       
-      <View style={styles.estimatorBox}>
-        <Text style={styles.estimatorTitle}>Need a repair?</Text>
-        <Text style={styles.estimatorSub}>Get a quick estimated quote for your service.</Text>
-        <TouchableOpacity style={styles.estimatorBtn} onPress={handleQuote}>
-          <Text style={styles.estimatorBtnText}>GET ESTIMATE</Text>
+      <View className="m-4 bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5">
+        <Text className="text-lg font-black text-amber-400 mb-1">Need a repair?</Text>
+        <Text className="text-slate-400 text-xs font-medium mb-4">Get a quick estimated quote for your service.</Text>
+        <TouchableOpacity 
+          className="bg-amber-500 py-3 rounded-xl items-center flex-row justify-center active:bg-amber-400" 
+          onPress={handleQuote}
+        >
+          <Calculator size={16} color="#000" className="mr-2" />
+          <Text className="text-slate-950 font-black text-xs">GET ESTIMATE</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.servicesContainer}>
-        <Text style={styles.sectionTitle}>Popular Services</Text>
+      <View className="p-4">
+        <Text className="text-white font-bold text-lg mb-4">Popular Services</Text>
         {['Car Wash', 'Oil Change', 'Wheel Alignment'].map((service, idx) => (
-          <View key={idx} style={styles.serviceCard}>
-            <View style={styles.serviceDetails}>
-              <Text style={styles.serviceName}>{service}</Text>
-              <Text style={styles.servicePrice}>From ₹399</Text>
+          <View key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="font-bold text-white text-base">{service}</Text>
+              <Text className="text-amber-400 font-bold text-xs mt-0.5">From ₹399</Text>
             </View>
-            <TouchableOpacity style={styles.addButton} onPress={handleQuote}>
-              <Text style={styles.addText}>ADD</Text>
+            <TouchableOpacity 
+              className="bg-amber-500/10 border border-amber-500/30 px-4 py-2 rounded-xl flex-row items-center active:bg-amber-500/20" 
+              onPress={handleQuote}
+            >
+              <Plus size={14} color="#f59e0b" className="mr-1" />
+              <Text className="text-amber-400 font-black text-xs">ADD</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -39,23 +48,3 @@ export default function ServiceVisitorView({ shop }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, backgroundColor: '#ffffff', borderBottomWidth: 1, borderColor: '#e2e8f0' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#0f172a' },
-  subtitle: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  estimatorBox: { margin: 16, backgroundColor: '#FFD60015', borderWidth: 1, borderColor: '#FFD60040', borderRadius: 16, padding: 20 },
-  estimatorTitle: { fontSize: 18, fontWeight: 'bold', color: '#B45309', marginBottom: 4 },
-  estimatorSub: { fontSize: 13, color: '#64748b', marginBottom: 16 },
-  estimatorBtn: { backgroundColor: '#FFD600', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  estimatorBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  servicesContainer: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 16 },
-  serviceCard: { flexDirection: 'row', backgroundColor: '#ffffff', padding: 16, borderRadius: 16, marginBottom: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
-  serviceDetails: { flex: 1 },
-  serviceName: { fontSize: 16, fontWeight: 'bold', color: '#1e293b' },
-  servicePrice: { fontSize: 14, fontWeight: '600', color: '#F59E0B', marginTop: 4 },
-  addButton: { borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  addText: { color: '#F59E0B', fontWeight: 'bold' }
-});

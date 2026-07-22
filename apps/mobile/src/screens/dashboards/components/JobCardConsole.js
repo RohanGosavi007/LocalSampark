@@ -1,78 +1,65 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Plus, Wrench, CheckCircle, Clock } from 'lucide-react-native';
 
-export default function JobCardConsole({ themeColor = '#FFD600' }) {
+export default function JobCardConsole({ themeColor = '#eab308' }) {
   const handleAction = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Active Repairs</Text>
-        <TouchableOpacity style={[styles.newBtn, { backgroundColor: themeColor }]} onPress={handleAction}>
-          <Text style={styles.newBtnText}>+ New Job</Text>
+    <View className="flex-1 mt-4">
+      <View className="flex-row justify-between items-center mb-4">
+        <Text className="text-lg font-black text-white">Active Repairs</Text>
+        <TouchableOpacity 
+          className="bg-amber-500 px-4 py-2 rounded-xl flex-row items-center active:bg-amber-400" 
+          onPress={handleAction}
+        >
+          <Plus size={16} color="#000" className="mr-1" />
+          <Text className="text-slate-950 font-black text-xs">New Job</Text>
         </TouchableOpacity>
       </View>
       
-      <ScrollView style={styles.list}>
+      <View className="gap-4">
         {[1, 2].map((job) => (
-          <View key={job} style={[styles.jobCard, { borderColor: themeColor + '40' }]}>
-            <View style={styles.jobHeader}>
+          <View key={job} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm shadow-slate-900">
+            <View className="flex-row justify-between items-start mb-4">
               <View>
-                <Text style={styles.jobNo}>JC-204{job}</Text>
-                <Text style={styles.customerName}>Maruti Swift - MH12 AB 1234</Text>
+                <Text className="font-black text-white text-base">JC-204{job}</Text>
+                <Text className="text-xs text-slate-400 font-medium mt-0.5">Maruti Swift • MH12 AB 1234</Text>
               </View>
-              <View style={[styles.badge, { backgroundColor: themeColor + '20' }]}>
-                <Text style={[styles.badgeText, { color: themeColor }]}>In Progress</Text>
+              <View className="bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg">
+                <Text className="text-amber-400 font-bold text-xs">In Progress</Text>
               </View>
             </View>
             
-            <View style={styles.milestoneRow}>
+            <View className="flex-row justify-between mb-5 bg-slate-950 p-3 rounded-xl border border-slate-800/60">
               {['Check', 'Repair', 'Wash', 'Ready'].map((step, idx) => (
-                <View key={step} style={styles.stepBox}>
-                  <View style={[styles.stepDot, idx < 2 ? { backgroundColor: themeColor } : {}]} />
-                  <Text style={styles.stepText}>{step}</Text>
+                <View key={step} className="items-center">
+                  <View className={`w-3 h-3 rounded-full mb-1.5 ${idx < 2 ? 'bg-amber-400' : 'bg-slate-800'}`} />
+                  <Text className="text-[10px] text-slate-400 font-bold">{step}</Text>
                 </View>
               ))}
             </View>
 
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.actionBtn} onPress={handleAction}>
-                <Text style={styles.actionText}>Add Parts</Text>
+            <View className="flex-row gap-3">
+              <TouchableOpacity 
+                className="flex-1 py-3 rounded-xl border border-slate-800 bg-slate-950 items-center active:bg-slate-800" 
+                onPress={handleAction}
+              >
+                <Text className="text-slate-300 font-bold text-xs">Add Parts</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtnPrimary, { backgroundColor: themeColor }]} onPress={handleAction}>
-                <Text style={styles.actionTextPrimary}>Update Status</Text>
+              <TouchableOpacity 
+                className="flex-1 py-3 rounded-xl bg-amber-500 items-center active:bg-amber-400" 
+                onPress={handleAction}
+              >
+                <Text className="text-slate-950 font-black text-xs">Update Status</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, marginTop: 20 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
-  newBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  newBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 13 },
-  list: { paddingBottom: 20 },
-  jobCard: { backgroundColor: '#ffffff', borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 16 },
-  jobHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  jobNo: { fontWeight: 'bold', fontSize: 16, color: '#1e293b' },
-  customerName: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontWeight: 'bold' },
-  milestoneRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 10 },
-  stepBox: { alignItems: 'center' },
-  stepDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#e2e8f0', marginBottom: 6 },
-  stepText: { fontSize: 10, color: '#64748b', fontWeight: '500' },
-  actionRow: { flexDirection: 'row', gap: 10 },
-  actionBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center' },
-  actionText: { color: '#475569', fontWeight: 'bold', fontSize: 13 },
-  actionBtnPrimary: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  actionTextPrimary: { color: '#ffffff', fontWeight: 'bold', fontSize: 13 }
-});

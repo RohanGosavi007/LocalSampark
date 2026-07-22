@@ -11,9 +11,9 @@ export default function JobsTab({ API_BASE, authHeaders }) {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/skilled-bookings`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/admin/jobs`, { headers: authHeaders() });
       const data = await res.json();
-      setJobs(data.data || data.jobs || []);
+      setJobs(data.jobs || data.data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -25,12 +25,17 @@ export default function JobsTab({ API_BASE, authHeaders }) {
     fetchJobs();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this job?')) return;
+  const handleApproval = async (id, status) => {
     try {
-      await fetch(`${API_BASE}/admin/jobs/${id}`, { method: 'DELETE', headers: authHeaders() });
-      fetchJobs();
-    } catch (e) {
+      const res = await fetch(`${API_BASE}/admin/approvals/job/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        setJobs(jobs.map(j => j.id === id ? { ...j, status } : j));
+      }
+    } catch(e) {
       console.error(e);
     }
   };
@@ -40,8 +45,8 @@ export default function JobsTab({ API_BASE, authHeaders }) {
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.5rem 0' }}>💼 Jobs & Services Management</h3>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>Review, approve, or reject job postings and service listings from local professionals.</p>
+            <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.5rem 0', color: '#f8fafc' }}>💼 Local Jobs & Micro-Gig Management</h3>
+            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>Review, approve, or remove job postings from local employers and business vendors.</p>
           </div>
           <button onClick={fetchJobs} style={btnPrimary}>{loading ? 'Loading...' : 'Refresh'}</button>
         </div>
@@ -50,32 +55,35 @@ export default function JobsTab({ API_BASE, authHeaders }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #334155' }}>
-                {['Title', 'Provider', 'Category', 'Salary/Price', 'Location', 'Status', 'Actions'].map(h => 
+                {['Job Title', 'Category', 'Salary Range', 'Job Type', 'Address', 'Status', 'Actions'].map(h => 
                   <th key={h} style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600 }}>{h}</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {jobs.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No jobs found.</td></tr>
+                <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No active job postings found.</td></tr>
               ) : jobs.map((job) => (
                 <tr key={job.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#f8fafc' }}>{job.title || 'Untitled'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{job.provider_name || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#64748b' }}>{job.category || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#4ade80' }}>₹{job.salary || job.price || 0}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{job.location || job.zone || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#f8fafc' }}>{job.title}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{job.category}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: '#4ade80', fontWeight: 700 }}>{job.salary_range}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: '#64748b' }}>{job.job_type}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{job.address}</td>
                   <td style={{ padding: '0.85rem 1rem' }}>
                     <span style={{ 
-                      background: job.is_active ? '#052e16' : '#431407', 
-                      color: job.is_active ? '#4ade80' : '#fb923c', 
-                      padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700 
+                      background: job.status === 'approved' ? '#052e16' : (job.status === 'rejected' ? '#450a0a' : '#431407'), 
+                      color: job.status === 'approved' ? '#4ade80' : (job.status === 'rejected' ? '#f87171' : '#fb923c'), 
+                      padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap'
                     }}>
-                      {job.is_active ? 'Active' : 'Pending'}
+                      {job.status ? job.status.toUpperCase() : 'PENDING'}
                     </span>
                   </td>
                   <td style={{ padding: '0.85rem 1rem' }}>
-                    <button onClick={() => handleDelete(job.id)} style={{ ...btnDanger, padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}>Delete</button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => handleApproval(job.id, 'approved')} style={{...btnPrimary, background: '#10b981', padding: '0.4rem 0.8rem', fontSize: '0.75rem'}}>Approve</button>
+                      <button onClick={() => handleApproval(job.id, 'rejected')} style={{...btnDanger, padding: '0.4rem 0.8rem', fontSize: '0.75rem'}}>Reject</button>
+                    </div>
                   </td>
                 </tr>
               ))}

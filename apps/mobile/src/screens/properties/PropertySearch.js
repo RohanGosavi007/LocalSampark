@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, PlusCircle, Search, MapPin, Bed, Bath, Maximize2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MOCK_PROPERTIES = [
@@ -23,59 +23,59 @@ export default function PropertySearchScreen() {
   });
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card}>
-      <Image source={item.image } style={styles.cardImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
-      <View style={styles.badgeContainer}>
-        <Text style={styles.badgeText}>{item.type}</Text>
+    <TouchableOpacity className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden mb-5 shadow-lg shadow-slate-950">
+      <Image source={item.image} className="w-full h-44" contentFit="cover" transition={200} />
+      <View className="absolute top-3 left-3 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-lg">
+        <Text className="text-sky-400 font-bold text-xs">{item.type}</Text>
       </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.price}>{item.price}</Text>
-        <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-        <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={14} color="#64748b" />
-          <Text style={styles.location}>{item.location}</Text>
+      <View className="p-4">
+        <Text className="text-2xl font-black text-emerald-400 mb-1">{item.price}</Text>
+        <Text className="text-white font-bold text-base mb-1" numberOfLines={1}>{item.title}</Text>
+        <View className="flex-row items-center mb-4">
+          <MapPin size={14} color="#94a3b8" className="mr-1" />
+          <Text className="text-slate-400 text-xs font-semibold">{item.location}</Text>
         </View>
-        <View style={styles.statsRow}>
-          <View style={styles.stat}><Ionicons name="bed-outline" size={14} color="#64748b" /><Text style={styles.statText}>{item.beds} Bed</Text></View>
-          <View style={styles.stat}><Ionicons name="water-outline" size={14} color="#64748b" /><Text style={styles.statText}>{item.baths} Bath</Text></View>
-          <View style={styles.stat}><Ionicons name="expand-outline" size={14} color="#64748b" /><Text style={styles.statText}>{item.sqft} sqft</Text></View>
+        <View className="flex-row justify-between border-t border-slate-800 pt-3">
+          <View className="flex-row items-center gap-1.5"><Bed size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.beds} Bed</Text></View>
+          <View className="flex-row items-center gap-1.5"><Bath size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.baths} Bath</Text></View>
+          <View className="flex-row items-center gap-1.5"><Maximize2 size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.sqft} sqft</Text></View>
         </View>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <View className="flex-row items-center justify-between p-4 border-b border-slate-900">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-slate-900 rounded-full border border-slate-800">
+          <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Real Estate</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('screens/properties/PropertyListing')}>
-          <Ionicons name="add-circle-outline" size={24} color="#3b82f6" />
+        <Text className="text-white font-black text-lg">Real Estate</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('screens/properties/PropertyListing')} className="p-2 bg-slate-900 rounded-full border border-slate-800">
+          <PlusCircle size={20} color="#3b82f6" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#94a3b8" />
+      <View className="p-4">
+        <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 mb-4">
+          <Search size={20} color="#64748b" className="mr-3" />
           <TextInput 
-            style={styles.searchInput}
+            className="flex-1 text-white font-medium text-sm"
             placeholder="Search localities, societies..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor="#64748b"
             value={search}
             onChangeText={setSearch}
           />
         </View>
         
-        <View style={styles.filterTabs}>
+        <View className="flex-row gap-2">
           {['All', 'Rent', 'Buy'].map(tab => (
             <TouchableOpacity 
               key={tab} 
-              style={[styles.filterTab, filter === tab && styles.activeTab]}
+              className={`px-5 py-2.5 rounded-full border ${filter === tab ? 'bg-blue-600 border-blue-500' : 'bg-slate-900 border-slate-800'}`}
               onPress={() => setFilter(tab)}
             >
-              <Text style={[styles.filterText, filter === tab && styles.activeText]}>{tab}</Text>
+              <Text className={`font-bold text-xs ${filter === tab ? 'text-white' : 'text-slate-400'}`}>{tab}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -85,36 +85,9 @@ export default function PropertySearchScreen() {
         data={filteredProperties}
         renderItem={renderItem}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#ffffff' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
-  searchSection: { padding: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 12, paddingHorizontal: 12, marginBottom: 16 },
-  searchInput: { flex: 1, paddingVertical: 12, marginLeft: 8, color: '#0f172a', fontSize: 16 },
-  filterTabs: { flexDirection: 'row', gap: 10 },
-  filterTab: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0' },
-  activeTab: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  filterText: { color: '#475569', fontWeight: '500' },
-  activeText: { color: '#0f172a' },
-  listContainer: { padding: 16, paddingBottom: 40 },
-  card: { backgroundColor: '#ffffff', borderRadius: 16, overflow: 'hidden', marginBottom: 20, elevation: 5 },
-  cardImage: { width: '100%', height: 180 },
-  badgeContainer: { position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(15, 23, 42, 0.8)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  badgeText: { color: '#38bdf8', fontWeight: 'bold', fontSize: 12 },
-  cardContent: { padding: 16 },
-  price: { fontSize: 22, fontWeight: '900', color: '#10b981', marginBottom: 4 },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#f8fafc', marginBottom: 6 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  location: { color: '#64748b', fontSize: 14, marginLeft: 4 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 12 },
-  stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statText: { color: '#475569', fontSize: 13, fontWeight: '500' }
-});

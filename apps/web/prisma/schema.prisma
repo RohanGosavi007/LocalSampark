@@ -28,6 +28,8 @@ model User {
   shop          Shop?     @relation(fields: [shopId], references: [id])
   shopId        String?
   wallet        Wallet?
+
+  @@index([shopId])
 }
 
 enum UserRole {
@@ -49,6 +51,8 @@ model Address {
   lat       Float?
   lng       Float?
   isDefault Boolean  @default(false)
+
+  @@index([userId])
 }
 
 // ---------------------------------------------------------
@@ -100,6 +104,8 @@ model Product {
   // Relations
   cartItems   CartItem[]
   orderItems  OrderItem[]
+
+  @@index([shopId])
 }
 
 // ---------------------------------------------------------
@@ -116,6 +122,10 @@ model CartItem {
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([productId])
+  @@index([sessionId])
 }
 
 // ---------------------------------------------------------
@@ -148,6 +158,9 @@ model Order {
   // Relations
   items         OrderItem[]
   tracking      OrderTracking?
+
+  @@index([userId])
+  @@index([shopId])
 }
 
 enum OrderStatus {
@@ -167,6 +180,9 @@ model OrderItem {
   product   Product  @relation(fields: [productId], references: [id])
   quantity  Int
   priceAtBuy Float
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model OrderTracking {

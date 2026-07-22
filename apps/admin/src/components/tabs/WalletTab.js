@@ -12,7 +12,7 @@ export default function WalletTab({ API_BASE, authHeaders }) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/wallet/transactions/all`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/admin/wallet/transactions/all?limit=50`, { headers: authHeaders() });
       const data = await res.json();
       setDataList(data.data || data.items || data.records || (Array.isArray(data) ? data : []));
     } catch (e) {
@@ -35,6 +35,15 @@ export default function WalletTab({ API_BASE, authHeaders }) {
             <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>Monitor platform wallet balances, process payouts to shops and agents, and resolve disputes.</p>
           </div>
           <button onClick={fetchData} style={btnPrimary}>{loading ? 'Loading...' : 'Refresh'}</button>
+        </div>
+
+        {/* Append-Only Ledger Alert */}
+        <div style={{ background: '#431407', border: '1px solid #7c2d12', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', color: '#fb923c', fontSize: '0.85rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+          <div>
+            <strong style={{ display: 'block', marginBottom: '0.2rem' }}>STRICT APPEND-ONLY LEDGER</strong>
+            Direct modifications (UPDATEs) to wallet balances are technically blocked at the database level. All balance modifications must be submitted as positive or negative transaction entries for double-entry bookkeeping compliance.
+          </div>
         </div>
         
         <div style={{ overflowX: 'auto' }}>

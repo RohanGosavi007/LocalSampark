@@ -7,6 +7,7 @@ buildscript {
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')
         targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
         kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.25'
+
         ndkVersion = "26.1.10909125"
     }
     repositories {
@@ -14,6 +15,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
+        classpath 'com.google.gms:google-services:4.4.1'
         classpath('com.android.tools.build:gradle')
         classpath('com.facebook.react:react-native-gradle-plugin')
         classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
@@ -36,25 +38,5 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
-    }
-    configurations.all {
-        resolutionStrategy {
-            force 'androidx.core:core:1.15.0'
-            force 'androidx.core:core-ktx:1.15.0'
-            force 'androidx.activity:activity:1.9.3'
-            force 'androidx.activity:activity-compose:1.9.3'
-            force 'androidx.activity:activity-ktx:1.9.3'
-            force 'androidx.browser:browser:1.8.0'
-            force 'com.google.android.gms:play-services-wallet:19.3.0'
-        }
-    }
-    
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            freeCompilerArgs += [
-                "-P",
-                "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
-            ]
-        }
     }
 }

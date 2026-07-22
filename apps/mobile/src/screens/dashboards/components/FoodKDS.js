@@ -1,39 +1,45 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Utensils, Clock, Check } from 'lucide-react-native';
 
-export default function FoodKDS({ themeColor = '#FF6B00' }) {
+export default function FoodKDS({ themeColor = '#f97316' }) {
   const handleAction = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Live Kitchen Display</Text>
+    <View className="flex-1 mt-4">
+      <Text className="text-lg font-black text-white mb-4">Live Kitchen Display</Text>
       
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.kanbanBoard}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pb-4">
         {['Incoming', 'Preparing', 'Ready'].map((stage, i) => (
-          <View key={stage} style={[styles.column, { borderColor: themeColor + '30' }]}>
-            <View style={[styles.colHeader, { backgroundColor: themeColor + '10' }]}>
-              <Text style={[styles.colTitle, { color: themeColor }]}>{stage}</Text>
-              <View style={[styles.badge, { backgroundColor: themeColor }]}><Text style={styles.badgeText}>{3 - i}</Text></View>
+          <View key={stage} className="w-72 mr-4 border border-slate-800 rounded-2xl p-2 bg-slate-900">
+            <View className="flex-row justify-between items-center p-3 rounded-xl mb-3 bg-orange-500/10 border border-orange-500/20">
+              <Text className="font-bold text-sm text-orange-400">{stage}</Text>
+              <View className="w-6 h-6 rounded-full bg-orange-500 items-center justify-center">
+                <Text className="text-white font-black text-xs">{3 - i}</Text>
+              </View>
             </View>
             
             {[1, 2].map(order => (
-              <View key={order} style={styles.orderCard}>
-                <View style={styles.orderHeader}>
-                  <Text style={styles.orderNo}>#10{order + i}</Text>
-                  <Text style={styles.orderTime}>4m ago</Text>
+              <View key={order} className="border border-slate-800 rounded-xl p-3 mb-2 bg-slate-950">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="font-black text-white text-base">#10{order + i}</Text>
+                  <View className="flex-row items-center">
+                    <Clock size={12} color="#94a3b8" className="mr-1" />
+                    <Text className="text-slate-400 text-xs font-semibold">4m ago</Text>
+                  </View>
                 </View>
-                <View style={styles.itemsList}>
-                  <Text style={styles.itemText}>1x Margherita Pizza</Text>
-                  <Text style={styles.itemText}>2x Garlic Bread</Text>
+                <View className="mb-3">
+                  <Text className="text-xs text-slate-300 font-medium mb-1">1x Margherita Pizza</Text>
+                  <Text className="text-xs text-slate-300 font-medium mb-1">2x Garlic Bread</Text>
                 </View>
                 <TouchableOpacity 
-                  style={[styles.actionBtn, { backgroundColor: themeColor }]}
+                  className="bg-orange-500 py-2.5 rounded-lg items-center active:bg-orange-400"
                   onPress={handleAction}
                 >
-                  <Text style={styles.actionText}>{stage === 'Incoming' ? 'Accept' : 'Next Stage'}</Text>
+                  <Text className="text-white font-black text-xs">{stage === 'Incoming' ? 'Accept' : 'Next Stage'}</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -43,22 +49,3 @@ export default function FoodKDS({ themeColor = '#FF6B00' }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, marginTop: 20 },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
-  kanbanBoard: { flexGrow: 0, paddingBottom: 10 },
-  column: { width: 280, marginRight: 16, borderWidth: 1, borderRadius: 16, padding: 8, backgroundColor: '#ffffff' },
-  colHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderRadius: 10, marginBottom: 12 },
-  colTitle: { fontWeight: 'bold', fontSize: 14 },
-  badge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  badgeText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
-  orderCard: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 12, marginBottom: 10 },
-  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  orderNo: { fontWeight: 'bold', fontSize: 16 },
-  orderTime: { color: '#64748b', fontSize: 12 },
-  itemsList: { marginBottom: 12 },
-  itemText: { fontSize: 13, color: '#334155', marginBottom: 4 },
-  actionBtn: { padding: 10, borderRadius: 8, alignItems: 'center' },
-  actionText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-});

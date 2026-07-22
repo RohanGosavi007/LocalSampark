@@ -162,9 +162,7 @@ export const ROLE_TABS = {
       { name: 'index', title: 'Home', icon: '🏠' },
       { name: 'directory', title: 'Nearby', icon: '🏪' },
       { name: 'community', title: 'Community', icon: '💬' },
-      { name: 'services', title: 'Services', icon: '🛠️' },
-      { name: 'wallet', title: 'Wallet', icon: '👛' },
-      { name: 'profile', title: 'Profile', icon: '👤' },
+      { name: 'more', title: 'More', icon: '🎛️' },
     ]
   },
   [ROLES.RESIDENT_MEMBER]: {
@@ -173,9 +171,7 @@ export const ROLE_TABS = {
       { name: 'index', title: 'Home', icon: '🏠' },
       { name: 'directory', title: 'Nearby', icon: '🏪' },
       { name: 'community', title: 'Community', icon: '💬' },
-      { name: 'services', title: 'Services', icon: '🛠️' },
-      { name: 'wallet', title: 'Wallet', icon: '👛' },
-      { name: 'profile', title: 'Profile', icon: '👤' },
+      { name: 'more', title: 'More', icon: '🎛️' },
     ]
   },
   [ROLES.SOCIETY_ADMIN]: {
@@ -184,9 +180,7 @@ export const ROLE_TABS = {
       { name: 'index', title: 'Home', icon: '🏠' },
       { name: 'directory', title: 'Nearby', icon: '🏪' },
       { name: 'community', title: 'Society', icon: '🏢' },
-      { name: 'services', title: 'Services', icon: '🛠️' },
-      { name: 'wallet', title: 'Wallet', icon: '👛' },
-      { name: 'profile', title: 'Profile', icon: '👤' },
+      { name: 'more', title: 'More', icon: '🎛️' },
     ]
   },
   [ROLES.SHOP_OWNER]: {
@@ -261,8 +255,7 @@ export const ROLE_TABS = {
       { name: 'index', title: 'Home', icon: '🏠' },
       { name: 'community', title: 'Moderate', icon: '🛡️' },
       { name: 'directory', title: 'Shops', icon: '🏪' },
-      { name: 'wallet', title: 'Wallet', icon: '👛' },
-      { name: 'profile', title: 'Profile', icon: '👤' },
+      { name: 'more', title: 'More', icon: '🎛️' },
     ]
   },
   [ROLES.SUPER_ADMIN]: {
@@ -271,8 +264,7 @@ export const ROLE_TABS = {
       { name: 'index', title: 'Home', icon: '🏠' },
       { name: 'directory', title: 'Shops', icon: '🏪' },
       { name: 'community', title: 'Community', icon: '💬' },
-      { name: 'wallet', title: 'Wallet', icon: '👛' },
-      { name: 'profile', title: 'Profile', icon: '👤' },
+      { name: 'more', title: 'More', icon: '🎛️' },
     ]
   },
 };

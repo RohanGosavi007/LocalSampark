@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Dimensions, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, SafeAreaView, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { Bell, MapPin, Search, ChevronDown, MessageCircle, Store, Briefcase, Building2, Truck, Car, Home, IndianRupee, AlertTriangle, Cross, ShoppingBag, Droplet, Wallet, ShieldCheck, Heart, User } from 'lucide-react-native';
 import StoriesRow from '../../components/StoriesRow';
 import { useNotifications } from '../../context/NotificationContext';
 import { useZone } from '../../context/ZoneContext';
@@ -29,20 +30,17 @@ export default function ResidentDashboard({ user }) {
   }, []);
 
   const PILLARS = [
-    { title: 'Community', icon: '💬', route: '/(tabs)/community', color: '#3b82f6' },
-    { title: 'Local Shops', icon: '🛒', route: '/(tabs)/directory', color: '#10b981' },
-    { title: 'Gig & Jobs', icon: '🔧', route: '/modules/jobs', color: '#f59e0b' },
-    { title: 'Real Estate', icon: '🏢', route: '/modules/properties', color: '#8b5cf6' },
-    { title: 'Delivery', icon: '📦', route: '/modules/delivery', color: '#ef4444' },
-    { title: 'Carpool', icon: '🚗', route: '/modules/carpool', color: '#06b6d4' },
-    { title: 'Society', icon: '🏘️', route: '/modules/society', color: '#6366f1' },
-    { title: 'Earn Money', icon: '💸', route: '/modules/earn', color: '#14b8a6' },
+    { title: 'Community', icon: MessageCircle, route: '/(tabs)/community', color: '#3b82f6' },
+    { title: 'Local Shops', icon: Store, route: '/(tabs)/directory', color: '#10b981' },
+    { title: 'Gig & Jobs', icon: Briefcase, route: '/modules/jobs', color: '#f59e0b' },
+    { title: 'Real Estate', icon: Building2, route: '/modules/properties', color: '#8b5cf6' },
+    { title: 'Delivery', icon: Truck, route: '/modules/delivery', color: '#ef4444' },
+    { title: 'Carpool', icon: Car, route: '/modules/carpool', color: '#06b6d4' },
+    { title: 'Society', icon: Home, route: '/modules/society', color: '#6366f1' },
+    { title: 'Earn Money', icon: IndianRupee, route: '/modules/earn', color: '#14b8a6' },
   ];
 
   const QUICK_TILES = [
-    { label: 'SOS', icon: '🚨', route: '/modules/sos', bg: '#fee2e2' },
-    { label: 'Medical', icon: '🏥', route: '/modules/medical', bg: '#dcfce7' },
-    { label: 'Blood Bank', icon: '🩸', route: '/modules/blood-bank', bg: '#fee2e2' },
     { label: 'Services', icon: '🛠️', route: '/(tabs)/services', bg: '#e0e7ff' },
     { label: 'Bills', icon: '🧾', route: '/modules/bills', bg: '#fef3c7' },
     { label: 'Chef', icon: '🍲', route: '/modules/chef', bg: '#ffedd5' },
@@ -61,126 +59,152 @@ export default function ResidentDashboard({ user }) {
     { label: 'Volunteer', icon: '🙋', route: '/modules/volunteer', bg: '#ffedd5' },
     { label: 'Comm Hub', icon: '🏫', route: '/modules/community_hub', bg: '#e0f2fe' },
     { label: 'Tracking', icon: '📍', route: '/modules/tracking', bg: '#fef9c3' },
-    { label: 'Features', icon: '🚀', route: '/modules/features', bg: '#e0f2fe' },
-    { label: 'Download', icon: '📱', route: '/modules/download', bg: '#fae8ff' },
-    { label: 'Krishi Hub', icon: '🌱', route: '/modules/krishi', bg: '#dcfce7' },
-    { label: 'Franchise', icon: '🤝', route: '/modules/franchise', bg: '#f3e8ff' },
-    { label: 'All Shops', icon: '🏪', route: '/(tabs)/directory', bg: '#ffedd5' },
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <View className="flex-row justify-between items-center mb-6 mt-2">
           <View>
-            <Text style={styles.greeting}>Hello, {user?.name || 'Resident'}</Text>
+            <Text className="text-white text-2xl font-black mb-1">Hello, {user?.name || 'Resident'}</Text>
             <TouchableOpacity 
-              style={styles.locationBadge} 
+              className="flex-row items-center bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full self-start"
               onPress={() => router.push('/modules/zone-selector')}
             >
-              <Text style={{fontSize: 12}}>📍</Text>
-              <Text style={styles.locationText}>{activeZone?.name || 'Select Zone'}</Text>
-              <Text style={{fontSize: 12, marginLeft: 4, color: '#10b981'}}>▼</Text>
+              <MapPin size={12} color="#10b981" className="mr-1.5" />
+              <Text className="text-slate-300 font-bold text-xs">{activeZone?.name || 'Select Zone'}</Text>
+              <ChevronDown size={12} color="#64748b" className="ml-1.5" />
             </TouchableOpacity>
           </View>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/modules/wallet')}>
-              <Text style={{fontSize: 20}}>💳</Text>
+          <View className="flex-row gap-3">
+            <TouchableOpacity 
+              className="w-11 h-11 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
+              onPress={() => router.push('/modules/wallet')}
+            >
+              <Wallet size={20} color="#e2e8f0" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/modules/notifications')}>
-              <Text style={{fontSize: 20}}>🔔</Text>
+            <TouchableOpacity 
+              className="relative w-11 h-11 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
+              onPress={() => router.push('/modules/notifications')}
+            >
+              <Bell size={20} color="#e2e8f0" />
               {unreadCount > 0 && (
-                <View style={styles.badge}><Text style={styles.badgeText}>{unreadCount}</Text></View>
+                <View className="absolute top-0 right-0 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-slate-950">
+                  <Text className="text-white text-[10px] font-black">{unreadCount}</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Search */}
-        <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+        <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 mb-6 shadow-sm shadow-slate-900">
+          <Search size={20} color="#94a3b8" className="mr-3" />
           <TextInput 
             placeholder="Search shops, plumbers, community..." 
-            placeholderTextColor="#94a3b8"
-            style={styles.searchInput}
+            placeholderTextColor="#64748b"
+            className="flex-1 text-white font-medium text-sm"
           />
         </View>
 
         {/* Stories */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={styles.sectionTitle}>Neighborhood Stories</Text>
+        <View className="mb-6">
+          <Text className="text-white font-bold text-lg mb-4">Neighborhood Stories</Text>
           <StoriesRow />
         </View>
         
         {/* Urgent Actions Banner */}
-        <View style={styles.urgentRow}>
-          <TouchableOpacity style={[styles.urgentBtn, { backgroundColor: '#ef4444' }]} onPress={() => router.push('/modules/sos')}>
-            <Text style={{fontSize: 24}}>🚨</Text>
-            <Text style={styles.urgentText}>SOS Alert</Text>
+        <View className="flex-row justify-between mb-8 gap-3">
+          <TouchableOpacity 
+            className="flex-1 bg-red-950/40 border border-red-900/50 p-4 rounded-2xl items-center shadow-lg shadow-red-900/20"
+            onPress={() => router.push('/modules/sos')}
+          >
+            <View className="w-12 h-12 bg-red-500/20 rounded-full items-center justify-center mb-2">
+              <AlertTriangle size={24} color="#ef4444" />
+            </View>
+            <Text className="text-red-400 font-bold text-xs mt-1">SOS Alert</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.urgentBtn, { backgroundColor: '#3b82f6' }]} onPress={() => router.push('/modules/pharmacy')}>
-            <Text style={{fontSize: 24}}>💊</Text>
-            <Text style={styles.urgentText}>Pharmacy</Text>
+          <TouchableOpacity 
+            className="flex-1 bg-blue-950/40 border border-blue-900/50 p-4 rounded-2xl items-center shadow-lg shadow-blue-900/20"
+            onPress={() => router.push('/modules/pharmacy')}
+          >
+            <View className="w-12 h-12 bg-blue-500/20 rounded-full items-center justify-center mb-2">
+              <Cross size={24} color="#3b82f6" />
+            </View>
+            <Text className="text-blue-400 font-bold text-xs mt-1">Pharmacy</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.urgentBtn, { backgroundColor: '#10b981' }]} onPress={() => router.push('/(tabs)/directory')}>
-            <Text style={{fontSize: 24}}>🛒</Text>
-            <Text style={styles.urgentText}>Groceries</Text>
+          <TouchableOpacity 
+            className="flex-1 bg-emerald-950/40 border border-emerald-900/50 p-4 rounded-2xl items-center shadow-lg shadow-emerald-900/20"
+            onPress={() => router.push('/(tabs)/directory')}
+          >
+            <View className="w-12 h-12 bg-emerald-500/20 rounded-full items-center justify-center mb-2">
+              <ShoppingBag size={24} color="#10b981" />
+            </View>
+            <Text className="text-emerald-400 font-bold text-xs mt-1">Groceries</Text>
           </TouchableOpacity>
         </View>
 
         {/* 8 Pillars / Primary Categories */}
-        <Text style={styles.sectionTitle}>Platform Services</Text>
-        <View style={styles.pillarsGrid}>
-          {PILLARS.map((p, i) => (
-            <TouchableOpacity key={i} style={styles.pillarCard} onPress={() => router.push(p.route)}>
-              <View style={[styles.pillarIconBg, { backgroundColor: p.color + '15' }]}>
-                <Text style={{ fontSize: 28 }}>{p.icon}</Text>
-              </View>
-              <Text style={styles.pillarTitle}>{p.title}</Text>
-            </TouchableOpacity>
-          ))}
+        <Text className="text-white font-bold text-lg mb-4">Platform Services</Text>
+        <View className="flex-row flex-wrap justify-between mb-6">
+          {PILLARS.map((p, i) => {
+            const IconComponent = p.icon;
+            return (
+              <TouchableOpacity key={i} className="w-[48%] bg-slate-900 border border-slate-800 rounded-2xl p-4 items-center mb-4 shadow-sm shadow-slate-900" onPress={() => router.push(p.route)}>
+                <View className="w-14 h-14 rounded-full justify-center items-center mb-3" style={{ backgroundColor: `${p.color}15` }}>
+                  <IconComponent size={28} color={p.color} />
+                </View>
+                <Text className="text-white font-bold text-sm">{p.title}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Quick Tiles Grid */}
-        <Text style={styles.sectionTitle}>Explore More</Text>
-        <View style={styles.quickGrid}>
+        <Text className="text-white font-bold text-lg mb-4">Explore More</Text>
+        <View className="flex-row flex-wrap mb-6 bg-slate-900 border border-slate-800 rounded-3xl p-4 pb-0 shadow-sm shadow-slate-900">
           {QUICK_TILES.map((t, i) => (
-            <TouchableOpacity key={i} style={styles.quickTile} onPress={() => router.push(t.route)}>
-              <View style={[styles.quickIconBg, { backgroundColor: t.bg }]}>
-                <Text style={{ fontSize: 24 }}>{t.icon}</Text>
+            <TouchableOpacity key={i} className="w-[25%] items-center mb-5" onPress={() => router.push(t.route)}>
+              <View className="w-12 h-12 rounded-[18px] justify-center items-center mb-2" style={{ backgroundColor: t.bg + '20' }}>
+                <Text className="text-2xl">{t.icon}</Text>
               </View>
-              <Text style={styles.quickLabel}>{t.label}</Text>
+              <Text className="text-slate-400 font-bold text-[10px] text-center">{t.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Community Feed Preview */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Townsquare Feed</Text>
+        <View className="flex-row justify-between items-center mb-4 mt-2">
+          <Text className="text-white font-bold text-lg">Townsquare Feed</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/community')}>
-            <Text style={styles.seeAll}>View All</Text>
+            <Text className="text-blue-400 font-bold text-xs">View All</Text>
           </TouchableOpacity>
         </View>
         
         {loadingFeed ? (
-          <ActivityIndicator style={{ marginTop: 20 }} />
+          <ActivityIndicator color="#3b82f6" className="my-6" />
         ) : feedPosts.length === 0 ? (
-          <Text style={{ textAlign: 'center', color: '#64748b', marginTop: 20 }}>No stories in your area yet.</Text>
+          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 items-center">
+            <MessageCircle size={32} color="#64748b" className="mb-3" />
+            <Text className="text-slate-400 font-semibold text-sm">No stories in your area yet.</Text>
+          </View>
         ) : feedPosts.map(post => (
-          <View key={post.id} style={styles.postCard}>
-            <View style={styles.postHeader}>
-              <View style={styles.postAvatar}><Text style={styles.avatarInitial}>{post.author_name?.charAt(0) || post.full_name?.charAt(0) || 'U'}</Text></View>
+          <View key={post.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 shadow-sm shadow-slate-900">
+            <View className="flex-row items-center mb-3">
+              <View className="w-10 h-10 rounded-full bg-blue-600 justify-center items-center mr-3">
+                <Text className="text-white font-black text-base">{post.author_name?.charAt(0) || post.full_name?.charAt(0) || 'U'}</Text>
+              </View>
               <View>
-                <Text style={styles.postAuthor}>{post.author_name || post.full_name}</Text>
-                <Text style={styles.postTime}>{post.time || new Date(post.created_at).toLocaleDateString()}</Text>
+                <Text className="text-white font-bold text-sm">{post.author_name || post.full_name}</Text>
+                <Text className="text-slate-400 text-[10px]">{post.time || new Date(post.created_at).toLocaleDateString()}</Text>
               </View>
             </View>
-            <Text style={styles.postContent}>{post.content}</Text>
-            <View style={styles.postFooter}>
-              <TouchableOpacity><Text style={styles.postAction}>❤️ {post.likes || 0} Likes</Text></TouchableOpacity>
-              <TouchableOpacity><Text style={styles.postAction}>💬 {post.comments || 0} Comments</Text></TouchableOpacity>
-              <TouchableOpacity><Text style={styles.postAction}>🔗 Share</Text></TouchableOpacity>
+            <Text className="text-slate-300 font-medium text-sm leading-5 mb-4">{post.content}</Text>
+            <View className="flex-row justify-between border-t border-slate-800 pt-3 mt-1">
+              <TouchableOpacity className="flex-row items-center"><Text className="text-slate-400 font-bold text-xs">❤️ {post.likes || 0} Likes</Text></TouchableOpacity>
+              <TouchableOpacity className="flex-row items-center"><Text className="text-slate-400 font-bold text-xs">💬 {post.comments || 0} Comments</Text></TouchableOpacity>
+              <TouchableOpacity className="flex-row items-center"><Text className="text-blue-400 font-bold text-xs">🔗 Share</Text></TouchableOpacity>
             </View>
           </View>
         ))}
@@ -190,45 +214,3 @@ export default function ResidentDashboard({ user }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  scrollContent: { padding: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  greeting: { fontSize: 22, fontWeight: '800', color: '#0f172a', marginBottom: 4 },
-  locationBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e2e8f0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' },
-  locationText: { color: '#475569', fontSize: 12, fontWeight: '700', marginLeft: 4 },
-  iconBtn: { backgroundColor: '#fff', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 } },
-  badge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#ef4444', width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
-  badgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, marginBottom: 24, elevation: 2 },
-  searchIcon: { fontSize: 18, marginRight: 10 },
-  searchInput: { flex: 1, paddingVertical: 16, color: '#0f172a', fontSize: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a', marginBottom: 16 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, marginBottom: 16 },
-  seeAll: { color: '#3b82f6', fontSize: 14, fontWeight: '700' },
-  
-  urgentRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, gap: 12 },
-  urgentBtn: { flex: 1, padding: 16, borderRadius: 16, alignItems: 'center', elevation: 3 },
-  urgentText: { color: '#fff', fontWeight: '800', fontSize: 12, marginTop: 8 },
-  
-  pillarsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
-  pillarCard: { width: '48%', backgroundColor: '#fff', borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 16, elevation: 2 },
-  pillarIconBg: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  pillarTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 24 },
-  quickTile: { width: '25%', alignItems: 'center', marginBottom: 20 },
-  quickIconBg: { width: 56, height: 56, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  quickLabel: { fontSize: 11, color: '#475569', fontWeight: '600', textAlign: 'center' },
-  
-  postCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 1 },
-  postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  postAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  postAuthor: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  postTime: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-  postContent: { fontSize: 14, color: '#334155', lineHeight: 20, marginBottom: 16 },
-  postFooter: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 },
-  postAction: { fontSize: 13, color: '#64748b', fontWeight: '600' },
-});

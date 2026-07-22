@@ -1,74 +1,60 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Car, Phone, CheckCircle2, AlertCircle } from 'lucide-react-native';
 
-export default function FleetAssetTracker({ themeColor = '#10B981' }) {
+export default function FleetAssetTracker({ themeColor = '#14b8a6' }) {
   const handleAction = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Asset Tracker</Text>
+    <View className="flex-1 mt-4">
+      <Text className="text-lg font-black text-white mb-4">Asset Tracker</Text>
       
-      <View style={styles.statsRow}>
-        <View style={[styles.statBox, { borderColor: themeColor + '40', backgroundColor: themeColor + '10' }]}>
-          <Text style={styles.statValue}>12</Text>
-          <Text style={styles.statLabel}>Available</Text>
+      <View className="flex-row gap-3 mb-6">
+        <View className="flex-1 border border-teal-500/30 bg-teal-500/10 rounded-2xl p-4 items-center">
+          <Text className="text-3xl font-black text-teal-400">12</Text>
+          <Text className="text-xs text-slate-400 font-bold mt-1">Available</Text>
         </View>
-        <View style={[styles.statBox, { borderColor: '#e2e8f0', backgroundColor: '#f8fafc' }]}>
-          <Text style={styles.statValue}>5</Text>
-          <Text style={styles.statLabel}>Rented Out</Text>
+        <View className="flex-1 border border-slate-800 bg-slate-900 rounded-2xl p-4 items-center">
+          <Text className="text-3xl font-black text-white">5</Text>
+          <Text className="text-xs text-slate-400 font-bold mt-1">Rented Out</Text>
         </View>
       </View>
       
-      <Text style={styles.subTitle}>Recent Bookings</Text>
-      <ScrollView style={styles.list}>
+      <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">Recent Bookings</Text>
+      <View className="gap-3">
         {[1, 2].map((item) => (
-          <View key={item} style={styles.assetCard}>
-            <View style={styles.assetHeader}>
-              <Text style={styles.assetName}>Mahindra Tractor 575 DI</Text>
-              <View style={[styles.badge, { backgroundColor: '#fef9c3' }]}>
-                <Text style={[styles.badgeText, { color: '#ca8a04' }]}>In Field</Text>
+          <View key={item} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm shadow-slate-900">
+            <View className="flex-row justify-between items-start mb-2">
+              <Text className="font-bold text-base text-white flex-1 mr-2">Mahindra Tractor 575 DI</Text>
+              <View className="bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg">
+                <Text className="text-amber-400 font-bold text-xs">In Field</Text>
               </View>
             </View>
-            <Text style={styles.customerDetail}>Rented by: Suresh Kumar (9876543210)</Text>
-            <Text style={styles.returnDetail}>Due: Tomorrow, 5:00 PM</Text>
+            <Text className="text-xs text-slate-300 font-medium mb-1">Rented by: Suresh Kumar (9876543210)</Text>
+            <Text className="text-xs text-red-400 font-bold mb-4">Due: Tomorrow, 5:00 PM</Text>
             
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.actionBtn} onPress={handleAction}>
-                <Text style={styles.actionText}>Call Client</Text>
+            <View className="flex-row gap-3">
+              <TouchableOpacity 
+                className="flex-1 py-3 rounded-xl border border-slate-800 bg-slate-950 items-center flex-row justify-center active:bg-slate-800" 
+                onPress={handleAction}
+              >
+                <Phone size={14} color="#94a3b8" className="mr-1.5" />
+                <Text className="text-slate-300 font-bold text-xs">Call Client</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtnPrimary, { backgroundColor: themeColor }]} onPress={handleAction}>
-                <Text style={styles.actionTextPrimary}>Mark Returned</Text>
+              <TouchableOpacity 
+                className="flex-1 py-3 rounded-xl bg-teal-600 items-center flex-row justify-center active:bg-teal-500" 
+                onPress={handleAction}
+              >
+                <CheckCircle2 size={14} color="#fff" className="mr-1.5" />
+                <Text className="text-white font-black text-xs">Mark Returned</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, marginTop: 20 },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, color: '#1e293b' },
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  statBox: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 16, alignItems: 'center' },
-  statValue: { fontSize: 28, fontWeight: 'bold', color: '#1e293b' },
-  statLabel: { fontSize: 12, color: '#64748b', marginTop: 4, fontWeight: '500' },
-  subTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
-  list: { paddingBottom: 20 },
-  assetCard: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 16, padding: 16, marginBottom: 12 },
-  assetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  assetName: { fontWeight: 'bold', fontSize: 15, color: '#1e293b', flex: 1 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginLeft: 8 },
-  badgeText: { fontSize: 11, fontWeight: 'bold' },
-  customerDetail: { fontSize: 13, color: '#475569', marginBottom: 4 },
-  returnDetail: { fontSize: 13, color: '#ef4444', fontWeight: '500', marginBottom: 16 },
-  actionRow: { flexDirection: 'row', gap: 10 },
-  actionBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center' },
-  actionText: { color: '#475569', fontWeight: 'bold', fontSize: 13 },
-  actionBtnPrimary: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  actionTextPrimary: { color: '#ffffff', fontWeight: 'bold', fontSize: 13 }
-});

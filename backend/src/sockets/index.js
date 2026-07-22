@@ -3,6 +3,7 @@ const orderSocket = require('./orderSocket');
 const tokenQueueSocket = require('./tokenQueueSocket');
 const trackingSocket = require('./trackingSocket');
 const chatSocket = require('./chatSocket');
+const inventorySocket = require('./inventorySocket');
 
 let io;
 
@@ -20,14 +21,16 @@ const initSockets = (server) => {
     // Allow clients to join shop-specific rooms for private broadcast
     socket.on('join_shop_room', (shopId) => {
       socket.join(`shop_${shopId}`);
-      socket.join(`shop:${shopId}`); // Also join colon-style room for chat/fleet events
-      console.log(`[Socket.io] Client joined shop_${shopId}`);
+      socket.join(`shop:${shopId}`); 
+      socket.join(`room:shop:${shopId}`);
+      console.log(`[Socket.io] Client joined room:shop:${shopId}`);
     });
 
     orderSocket(io, socket);
     tokenQueueSocket(io, socket);
     trackingSocket(io, socket);
     chatSocket.register(io, socket);
+    inventorySocket(io, socket);
 
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);
