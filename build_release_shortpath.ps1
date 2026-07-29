@@ -1,5 +1,5 @@
 $src = "e:\localsampark 27-07-2026\localsampark 27-07-2026"
-$dst = "C:\ls_proj"
+$dst = "E:\ls_build_temp"
 
 Write-Host "========================================="
 Write-Host "  LocalSampark Release APK Build Script"
