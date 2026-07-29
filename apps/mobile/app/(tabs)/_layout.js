@@ -65,7 +65,7 @@ export default function TabLayout() {
         })}
         
         {/* Hide screens that are not part of the active role's tab config */}
-        {['index', 'directory', 'community', 'wallet', 'profile', 'services', 'orders', 'products', 'appointments', 'available', 'active', 'earnings', 'bookings', 'reviews', 'onboard', 'leads', 'shops', 'agents', 'revenue'].map(screen => {
+        {['index', 'directory', 'community', 'wallet', 'profile', 'services', 'orders', 'products', 'appointments', 'available', 'active', 'earnings', 'bookings', 'reviews', 'onboard', 'leads', 'shops', 'agents', 'revenue', 'more'].map(screen => {
           if (!tabConfig.tabs.find(t => t.name === screen)) {
             return (
               <Tabs.Screen

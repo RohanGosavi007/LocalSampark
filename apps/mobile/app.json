@@ -12,7 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "android": {
       "package": "in.localsampark.app",
       "usesCleartextTraffic": true,

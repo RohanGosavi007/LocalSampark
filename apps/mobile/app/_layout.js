@@ -9,6 +9,16 @@ import { StatusBar } from 'expo-status-bar';
 // If ANY native module fails to load, the app still renders.
 // ══════════════════════════════════════════════════════════════════════
 
+// IMMEDIATE SPLASH SCREEN DISMISSAL — runs at module load time
+// This is the FIRST LINE OF DEFENSE against white screen deadlocks.
+// If the JS bundle loads at all, this fires before any component mounts.
+try {
+  const _SplashScreen = require('expo-splash-screen');
+  _SplashScreen.hideAsync().catch(() => {});
+} catch (_e) {
+  // expo-splash-screen not available — no-op
+}
+
 // GestureHandlerRootView — fallback to plain View
 let GestureHandlerRootView;
 try {
