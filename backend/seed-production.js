@@ -33,6 +33,36 @@ async function seedProduction() {
       console.log('ℹ️ Super Admin account already exists. Skipping...');
     }
 
+    // Initialize PostGIS Partitioning and Indexes
+    console.log('Initializing Spatial Partitions & GIST Indexes...');
+    
+    // Create base shops table if it doesn't exist (simulated for deployment plan)
+    // Normally handled by migrations, but ensuring partition schema
+    await query(`
+      CREATE TABLE IF NOT EXISTS shops_partitioned (
+        id UUID PRIMARY KEY,
+        name VARCHAR(255),
+        pincode VARCHAR(6),
+        location geometry(Point, 4326)
+      ) PARTITION BY LIST (pincode);
+    `);
+
+    // Ensure partitions for major pincodes exist
+    const initialPincodes = ['411014', '411015', '411047'];
+    for (const pin of initialPincodes) {
+      await query(`
+        CREATE TABLE IF NOT EXISTS shops_${pin}
+        PARTITION OF shops_partitioned FOR VALUES IN ('${pin}');
+      `);
+      
+      // Create GIST Index for spatial queries on the partition
+      await query(`
+        CREATE INDEX IF NOT EXISTS idx_shops_${pin}_location 
+        ON shops_${pin} USING GIST (location);
+      `);
+    }
+    console.log('✅ Spatial Partitions configured.');
+
     console.log('✅ Production seeding completed successfully.');
     process.exit(0);
   } catch (error) {

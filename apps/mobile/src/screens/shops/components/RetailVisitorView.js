@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useCartStore } from '../../../store/cartStore';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader from '../../../components/ui/SkeletonLoader';
 import { ShoppingBag, Plus } from 'lucide-react-native';
 
 export default function RetailVisitorView({ shop, products = [], loading = false }) {

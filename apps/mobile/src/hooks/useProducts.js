@@ -21,7 +21,7 @@ export const useUpdateInventory = () => {
   
   return useMutation({
     mutationFn: async ({ productId, stock, price }) => {
-      return await apiPut(/marketplace/products//inventory, { stock, price });
+      return await apiPut(`/marketplace/products/${productId}/inventory`, { stock, price });
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });

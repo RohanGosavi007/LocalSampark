@@ -28,6 +28,7 @@ import AuditTab from '../components/tabs/AuditTab';
 import ShopCategoriesTab from '../components/tabs/ShopCategoriesTab';
 import ChefTab from '../components/tabs/ChefTab';
 import BillsTab from '../components/tabs/BillsTab';
+import MultilingualTab from '../components/tabs/MultilingualTab';
 
 const authHeaders = getAuthHeaders;
 
@@ -390,7 +391,9 @@ export default function AdminDashboardPage() {
     { id: 'shop-categories', label: 'Shop Categories', icon: '🏪' },
     { id: 'chef', label: 'Home Chef & Tiffin', icon: '👨‍🍳' },
     { id: 'bills', label: 'Utility Bills', icon: '🧾' },
-    { id: 'ads', label: 'Ad Campaigns', icon: '📢' },];
+    { id: 'ads', label: 'Ad Campaigns', icon: '📢' },
+    { id: 'multilingual', label: 'Regional Languages', icon: '🌐' }
+  ];
 
   const tabStyle = (id) => ({
     display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -572,6 +575,7 @@ export default function AdminDashboardPage() {
         {activeTab === 'chef' && <ChefTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'bills' && <BillsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'ads' && <AdCampaignsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'multilingual' && <MultilingualTab API_BASE={API_BASE} authHeaders={authHeaders} />}
 
       </main>
     </div>

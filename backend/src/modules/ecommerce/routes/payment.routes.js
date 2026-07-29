@@ -1,96 +1,67 @@
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
-const { query, queryOne, transaction } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
-const { paymentLimiter } = require('../../../middleware/rateLimit.middleware');
+const PaymentGatewayEngine = require('../../../services/payment.gateway');
+const { query } = require('../../../config/database');
 
-router.post('/wallet/add', authenticate, paymentLimiter, async (req, res, next) => {
+// Webhook Handler for Payment Callbacks (Razorpay/Cashfree)
+router.post('/webhook/:provider', express.raw({ type: 'application/json' }), async (req, res) => {
+  const { provider } = req.params;
+  const payload = req.body;
+  const signature = req.headers['x-razorpay-signature'] || req.headers['x-webhook-signature'];
+
   try {
-    const { amount } = req.body;
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Invalid amount' });
-    }
-
-    const tx = await transaction(async (client) => {
-      const walletRes = await client.query(
-        'UPDATE wallets SET balance = balance + $1 WHERE user_id = $2 RETURNING *',
-        [amount, req.user.id]
-      );
-      const wallet = walletRes.rows[0];
-
-      const transactionRes = await client.query(
-        `INSERT INTO wallet_transactions (wallet_id, amount, type, purpose, status)
-         VALUES ($1, $2, 'credit', 'wallet_load', 'completed')
-         RETURNING *`,
-        [wallet.id, amount]
-      );
-
-      return { wallet, transaction: transactionRes.rows[0] };
-    });
-
-    res.json(tx);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/create-order', authenticate, async (req, res, next) => {
-  try {
-    const { amount } = req.body;
-    res.json({
-      id: `rzp_test_${Math.random().toString(36).substr(2, 9)}`,
-      amount: amount * 100,
-      currency: 'INR',
-      status: 'created'
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Verification API route
-router.post('/verify', authenticate, async (req, res, next) => {
-  try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-      return res.status(400).json({ error: 'Razorpay parameters are required' });
-    }
-
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'rzp_secret_dev';
-    const generatedSignature = crypto
-      .createHmac('sha256', keySecret)
-      .update(razorpayOrderId + '|' + razorpayPaymentId)
-      .digest('hex');
-
-    if (generatedSignature !== razorpaySignature) {
-      return res.status(400).json({ error: 'Invalid payment signature' });
-    }
-
-    res.json({ success: true, message: 'Payment verified successfully' });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Fetch invoices / billing statements
-router.get('/invoices', authenticate, async (req, res, next) => {
-  try {
-    const wallet = await queryOne('SELECT id FROM wallets WHERE user_id = $1', [req.user.id]);
-    if (!wallet) {
-      return res.status(404).json({ error: 'Wallet not found' });
-    }
-
-    const statements = await query(
-      `SELECT * FROM wallet_transactions 
-       WHERE wallet_id = $1 
-       ORDER BY created_at DESC`,
-      [wallet.id]
+    // 1. Verify Signature for Security
+    const payloadString = payload.toString('utf8');
+    const isValid = PaymentGatewayEngine.verifyWebhookSignature(
+      provider, 
+      payloadString, 
+      signature, 
+      process.env.PAYMENT_WEBHOOK_SECRET
     );
 
-    res.json(statements);
+    if (!isValid) {
+      console.error(`[PaymentWebhook] Invalid signature for provider: ${provider}`);
+      return res.status(400).send('Invalid signature');
+    }
+
+    // 2. Parse payload based on provider
+    let orderId, paymentStatus, paymentRef;
+
+    if (provider === 'razorpay') {
+      const event = JSON.parse(payloadString);
+      if (event.event === 'order.paid') {
+        const paymentEntity = event.payload.payment.entity;
+        orderId = paymentEntity.notes.internal_order_id; // mapped during creation
+        paymentStatus = 'paid';
+        paymentRef = paymentEntity.id;
+      }
+    } else if (provider === 'cashfree') {
+      const event = JSON.parse(payloadString);
+      if (event.type === 'PAYMENT_SUCCESS_WEBHOOK') {
+        orderId = event.data.order.order_id;
+        paymentStatus = 'paid';
+        paymentRef = event.data.payment.cf_payment_id;
+      }
+    }
+
+    // 3. Update Database Idempotently
+    if (orderId && paymentStatus === 'paid') {
+      console.log(`[PaymentWebhook] Marking order ${orderId} as paid (Ref: ${paymentRef})`);
+      
+      // Update order status in database
+      await query(`
+        UPDATE shop_orders 
+        SET payment_status = $1, 
+            payment_gateway_ref = $2,
+            status = 'accepted'
+        WHERE id = $3 AND payment_status != 'paid'
+      `, [paymentStatus, paymentRef, orderId]);
+    }
+
+    res.status(200).send('OK');
   } catch (error) {
-    next(error);
+    console.error('[PaymentWebhook] Error processing webhook:', error);
+    res.status(500).send('Webhook Error');
   }
 });
 

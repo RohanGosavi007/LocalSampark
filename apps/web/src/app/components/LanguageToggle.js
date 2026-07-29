@@ -39,21 +39,24 @@ export default function LanguageToggle() {
   const { lang, changeLanguage } = useLanguage();
 
   return (
-    <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--surface)', padding: '0.25rem', borderRadius: '50px', border: '1px solid var(--border)', fontSize: '0.8rem', fontWeight: 600 }}>
+    <div className="flex items-center gap-1 bg-background-alt p-1 rounded-full border border-border shadow-inner">
       <button 
         onClick={() => changeLanguage('en')}
-        style={{ padding: '0.4rem 0.75rem', borderRadius: '50px', background: lang === 'en' ? 'var(--primary)' : 'transparent', color: lang === 'en' ? 'white' : 'var(--text-muted)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
+        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${lang === 'en' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text hover:bg-border/30'}`}
+      >
         EN
       </button>
       <button 
-        onClick={() => changeLanguage('mr')}
-        style={{ padding: '0.4rem 0.75rem', borderRadius: '50px', background: lang === 'mr' ? 'var(--primary)' : 'transparent', color: lang === 'mr' ? 'white' : 'var(--text-muted)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
-        मरा
+        onClick={() => changeLanguage('hi')}
+        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${lang === 'hi' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text hover:bg-border/30'}`}
+      >
+        हिं
       </button>
       <button 
-        onClick={() => changeLanguage('hi')}
-        style={{ padding: '0.4rem 0.75rem', borderRadius: '50px', background: lang === 'hi' ? 'var(--primary)' : 'transparent', color: lang === 'hi' ? 'white' : 'var(--text-muted)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
-        हिं
+        onClick={() => changeLanguage('mr')}
+        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${lang === 'mr' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text hover:bg-border/30'}`}
+      >
+        मरा
       </button>
     </div>
   );

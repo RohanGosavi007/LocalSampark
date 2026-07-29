@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { OfflineQueueService } from '../../../src/services/OfflineQueueService';
+import { OfflineQueueService } from '../../../../src/services/OfflineQueueService';
 import NetInfo from '@react-native-community/netinfo';
 
 export default function RetailManager() {

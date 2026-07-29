@@ -1,0 +1,35 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 10
+      arrivalRate: 5
+      name: "Baseline"
+    - duration: 10
+      arrivalRate: 500
+      rampTo: 500
+      name: "Spike"
+    - duration: 30
+      arrivalRate: 5
+      name: "Recovery"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Spike - Health Check"
+    weight: 40
+    flow:
+      - get:
+          url: "/health"
+
+  - name: "Spike - Shop Browse"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/v1/shops"
+
+  - name: "Spike - Feed Load"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/v1/feed"

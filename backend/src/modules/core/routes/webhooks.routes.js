@@ -26,7 +26,8 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
     const paymentIntent = event.data.object;
     const orderId = paymentIntent.metadata.orderId;
     if (orderId) {
-      await query('UPDATE orders SET payment_status = ? WHERE id = ?', ['PAID', orderId]);
+      // Security: PostgreSQL uses $1, $2 (not ?). Idempotency: Only update if not already PAID.
+      await query('UPDATE orders SET payment_status = $1 WHERE id = $2 AND payment_status != $1', ['PAID', orderId]);
     }
   }
 
@@ -49,7 +50,8 @@ router.post('/razorpay', express.json(), async (req, res) => {
     if (event.event === 'payment.captured' || event.event === 'order.paid') {
       const orderId = event.payload.payment?.entity?.notes?.orderId || event.payload.order?.entity?.receipt;
       if (orderId) {
-        await query('UPDATE orders SET payment_status = ? WHERE id = ?', ['PAID', orderId]);
+        // Security: PostgreSQL uses $1, $2. Idempotency enforced.
+        await query('UPDATE orders SET payment_status = $1 WHERE id = $2 AND payment_status != $1', ['PAID', orderId]);
       }
     }
 

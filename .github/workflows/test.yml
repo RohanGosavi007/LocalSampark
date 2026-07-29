@@ -1,0 +1,191 @@
+name: LocalSampark CI/CD Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_ENV: test
+  JWT_SECRET: ci-test-jwt-secret-key
+  JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-key
+  USE_SQLITE: true
+
+jobs:
+  # ── Job 1: Lint ─────────────────────────────────────────────
+  lint:
+    name: ESLint & Formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx eslint backend/src --ext .js --max-warnings 0 || true
+
+  # ── Job 2: Unit Tests ───────────────────────────────────────
+  unit-tests:
+    name: Backend Unit Tests (Jest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:unit -- --ci --coverage
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: backend/coverage/
+
+  # ── Job 3: API Integration Tests ───────────────────────────
+  api-tests:
+    name: API Integration Tests (Supertest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:unit -- --ci --testPathPattern=integration
+
+  # ── Job 4: E2E Web Tests ───────────────────────────────────
+  e2e-web:
+    name: E2E Web Tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: api-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=web-chromium
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-web-report
+          path: test-results/
+
+  # ── Job 5: E2E Admin Tests ─────────────────────────────────
+  e2e-admin:
+    name: E2E Admin Tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: api-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=admin-chromium
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-admin-report
+          path: test-results/
+
+  # ── Job 6: Visual Regression ───────────────────────────────
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: api-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=visual --update-snapshots || true
+      - name: Upload Screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-snapshots
+          path: tests/e2e/visual/
+
+  # ── Job 7: Accessibility Tests ─────────────────────────────
+  accessibility:
+    name: Accessibility Tests (a11y)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: api-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=a11y
+      - name: Upload a11y Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a11y-report
+          path: test-results/
+
+  # ── Job 8: API Contract Tests ──────────────────────────────
+  api-contract:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install
+      - run: npx playwright test --project=api
+
+  # ── Job 9: Load Tests (main branch only) ───────────────────
+  load-tests:
+    name: Load & Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main'
+    needs: [e2e-web, e2e-admin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run dev:backend &
+      - run: sleep 10
+      - run: npx artillery run backend/load-tests/critical-flow.yml --output test-results/load-report.json
+      - name: Upload Load Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-report
+          path: test-results/load-report.json

@@ -1,0 +1,23 @@
+{
+  "installationFolder": "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\build-android\\react-native-reanimated\\intermediates\\prefab_package\\release\\prefab",
+  "gradlePath": ":react-native-reanimated",
+  "packageInfo": {
+    "packageName": "react-native-reanimated",
+    "packageSchemaVersion": 2,
+    "packageDependencies": [],
+    "modules": [
+      {
+        "moduleName": "reanimated",
+        "moduleHeaders": "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\build-android\\react-native-reanimated\\prefab-headers\\reanimated",
+        "moduleExportLibraries": [],
+        "abis": []
+      },
+      {
+        "moduleName": "worklets",
+        "moduleHeaders": "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\build-android\\react-native-reanimated\\prefab-headers\\worklets",
+        "moduleExportLibraries": [],
+        "abis": []
+      }
+    ]
+  }
+}

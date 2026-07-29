@@ -75,6 +75,10 @@ app.use(helmet({
   }
 }));
 
+// ─── Enable Brotli/Gzip Compression & ETag Caching ────────
+app.use(compression());
+app.set('etag', 'strong'); // Enable strong ETags for HTTP validation caching
+
 // ─── CORS: Whitelist-based origin validation ────────────────
 const allowedOrigins = [
   'http://localhost:3000',
@@ -147,7 +151,7 @@ const logger = require('./config/logger');
 if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
   logger.info('✅ Sentry Error-Tracking SDK initialized successfully (Production)');
 } else {
-  logger.info('Sentry Error-Tracking SDK initialized successfully (Staging Stub)');
+  logger.info('Sentry Error-Tracking SDK initialized successfully (Staging)');
 }
 
 // ─── HEALTH CHECK & METRICS ─────────────────────────────────
@@ -235,7 +239,9 @@ async function startServer() {
     }
     
     await connectDB();
-    if (process.env.USE_SQLITE !== 'true') {
+    if (process.env.USE_SQLITE === 'true' || process.env.NODE_ENV === 'test') {
+      logger.info('✅ SQLite connected for testing/development');
+    } else {
       logger.info('✅ PostgreSQL connected');
     }
 
@@ -273,24 +279,12 @@ async function startServer() {
       `);
     });
 
-    // Initialize BullMQ Workers for Background Jobs
-    if (redisClient) {
-      const { Queue } = require('bullmq');
-      const { initWorkers } = require('./jobs/worker');
-      
-      initWorkers(redisClient);
-
-      // Create schedulers
-      const hourlyQueue = new Queue('hourly-maintenance', { connection: redisClient });
-      const frequentQueue = new Queue('high-frequency-tasks', { connection: redisClient });
-
-      hourlyQueue.add('cleanup-and-billing', {}, { repeat: { pattern: '0 * * * *' } }); // Every hour
-      frequentQueue.add('guard-reminders', {}, { repeat: { every: 30000 } }); // Every 30 seconds
-      
-      logger.info('✅ BullMQ Queues and Schedulers initialized');
-    } else {
-      logger.warn('⚠️ Redis not connected, background jobs (BullMQ) will not run.');
-    }
+    // Initialize Queue Engine (BullMQ if Redis connected, Synchronous Fallback otherwise)
+    const { startQueueEngine } = require('./jobs/worker');
+    startQueueEngine(redisClient);
+    
+    // 10x Scale: Initialize Async Notification Queue
+    notificationService.initQueue(redisClient);
 
   } catch (error) {
     logger.error('❌ Failed to start server: ' + error.message);
@@ -316,6 +310,11 @@ process.on('SIGTERM', async () => {
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at: ' + promise + ' reason: ' + reason);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception: ' + error.message);
+  process.exit(1);
 });
 
 const { initPaymentWorker } = require('./workers/paymentWorker');

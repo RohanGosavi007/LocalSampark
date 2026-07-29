@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Animated, Alert } from 'react-native';
-import { Image } from 'expo-image';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Animated, Alert, Image as RNImage } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
+
+// Crash-safe native module imports with fallbacks
+let ExpoImage;
+try {
+  ExpoImage = require('expo-image').Image;
+} catch (e) {
+  console.warn('[index] expo-image not available, using RN Image:', e.message);
+  ExpoImage = RNImage;
+}
+
+let LinearGradient;
+try {
+  LinearGradient = require('expo-linear-gradient').LinearGradient;
+} catch (e) {
+  console.warn('[index] expo-linear-gradient not available, using View fallback:', e.message);
+  LinearGradient = ({ children, style, ...rest }) => <View style={[style, { backgroundColor: '#e0e7ff' }]}>{children}</View>;
+}
 
 const { width } = Dimensions.get('window');
 
@@ -74,7 +89,7 @@ export default function WelcomeScreen() {
             </View>
             
             <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <Image source={require('../assets/icon.png')} style={{ width: 100, height: 100, resizeMode: 'contain' }} />
+              <ExpoImage source={require('../assets/icon.png')} style={{ width: 100, height: 100, resizeMode: 'contain' }} />
             </View>
             
             <Text style={styles.heroTitle}>

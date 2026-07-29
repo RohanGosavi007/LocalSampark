@@ -1,0 +1,34 @@
+version: '3.8'
+
+# Lightweight test-only Docker Compose
+# Only spins up PostgreSQL and Redis for integration tests.
+# Usage: docker compose -f docker-compose.test.yml up -d
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: localsampark-test-db
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: localsampark_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d localsampark_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: localsampark-test-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

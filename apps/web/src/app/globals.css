@@ -10,32 +10,35 @@
    ============================================================ */
 
 :root {
-  /* === LIGHT MODE (default) === */
-  --primary:       hsl(243, 75%, 59%);
-  --primary-hover: hsl(243, 75%, 50%);
-  --primary-light: hsl(243, 100%, 95%);
-  --primary-glass: rgba(99, 102, 241, 0.1);
+  /* === INDIAN HYPERLOCAL ECOMMERCE MODE (Emerald/Indigo) === */
+  --primary:       #00B074; /* Vibrant Emerald Green */
+  --primary-hover: #008C5D;
+  --primary-light: #E6F7F1;
+  --primary-glass: rgba(0, 176, 116, 0.15);
 
-  --secondary:       hsl(24, 95%, 53%);
-  --secondary-hover: hsl(24, 95%, 44%);
-  --secondary-light: hsl(24, 100%, 95%);
-  --secondary-glass: rgba(249, 115, 22, 0.1);
+  --secondary:       #FF5E00; /* Deep Hyper Orange */
+  --secondary-hover: #CC4B00;
+  --secondary-light: #FFF0E6;
+  --secondary-glass: rgba(255, 94, 0, 0.15);
 
-  --accent:       hsl(150, 70%, 40%);
-  --accent-light: hsl(150, 80%, 94%);
-  --accent-glass: rgba(16, 185, 129, 0.1);
+  --accent:       #E52E2E; /* Festive Crimson */
+  --accent-light: #FCEAEA;
+  --accent-glass: rgba(229, 46, 46, 0.15);
+  
+  --trust:        #1A1D36; /* Deep Indigo Blue */
+  --promo:        #FFD600; /* Electric Yellow */
 
-  --background:     #f0f4ff;
-  --background-alt: #ffffff;
-  --card-bg:        rgba(255, 255, 255, 0.85);
-  --card-border:    rgba(99, 102, 241, 0.18);
-  --text:           #0f172a;
-  --text-muted:     #475569;
-  --border:         #dde3f5;
-  --glow-color:     rgba(99, 102, 241, 0.2);
-  --nav-bg:         rgba(240, 244, 255, 0.88);
-  --section-alt:    linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
-  --hero-bg:        linear-gradient(135deg, #ede9fe 0%, #dbeafe 50%, #fef3c7 100%);
+  --background:     #F8FAFC; 
+  --background-alt: #FFFFFF;
+  --card-bg:        rgba(255, 255, 255, 0.95);
+  --card-border:    #F0F0F5; /* Ultra-thin border */
+  --text:           #1A1D36; /* Using Trust Color for main text */
+  --text-muted:     #64748B;
+  --border:         #F0F0F5;
+  --glow-color:     rgba(0, 176, 116, 0.25);
+  --nav-bg:         rgba(255, 255, 255, 0.85); /* Frosted Glass Base */
+  --section-alt:    linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  --hero-bg:        linear-gradient(135deg, #E6F7F1 0%, #FFF0E6 50%, #FCEAEA 100%);
 
   /* Typography Scale */
   --font-heading: 'Outfit', sans-serif;

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, FlatList, InteractionManager } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../src/context/AuthContext';
 import { useZone } from '../../src/context/ZoneContext';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
+import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useShops, useCategories } from '../../src/hooks/useShops';
 
 // Demo shops matching web data — shown as fallback when API returns empty
@@ -115,6 +117,13 @@ export default function DirectoryScreen() {
     })();
   }, []);
 
+  const [isInteractionReady, setIsInteractionReady] = useState(false);
+  useEffect(() => {
+    InteractionManager.runAfterInteractions(() => {
+      setIsInteractionReady(true);
+    });
+  }, []);
+
   const { data: shopsRes, isLoading: shopsLoading, isError: shopsError } = useShops({
     zoneId: activeZone?.id,
     category: selectedCategory === 'All Categories' ? undefined : selectedCategory,
@@ -155,21 +164,65 @@ export default function DirectoryScreen() {
     }
   }, [categoriesRes]);
 
-  const isLoading = shopsLoading || categoriesLoading;
+  const isLoading = shopsLoading || categoriesLoading || !isInteractionReady;
 
-  let filteredShops = shops.filter(shop => {
-    const matchesCategory = selectedCategory === 'All Categories' || shop.category === selectedCategory || shop.category_name === selectedCategory;
-    const matchesSearch = (shop.name || '').toLowerCase().includes((searchTerm || '').toLowerCase());
-    const matchesTopRated = !topRatedOnly || (shop.rating && shop.rating >= 4.0);
-    const matchesDelivery = !deliveryOnly || shop.has_delivery;
-    
-    return matchesCategory && matchesSearch && matchesTopRated && matchesDelivery;
+  // 10x Scale: UI Thread Worklet for scroll animation (Reanimated v3)
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      'worklet';
+      scrollY.value = event.contentOffset.y;
+    },
   });
+  
+  const AnimatedFlashList = Animated.createAnimatedComponent(FlashList);
 
-  if (sortBy === 'rating') filteredShops.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  if (sortBy === 'name') filteredShops.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  if (sortBy === 'distance') filteredShops.sort((a, b) => (a.distance || 999) - (b.distance || 999));
-  if (sortBy === 'newest') filteredShops.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const [filteredShops, setFilteredShops] = useState([]);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // 10x Scale: Time-Slicing Heavy Array Operations
+  useEffect(() => {
+    setIsFiltering(true);
+    let isCancelled = false;
+    
+    // Chunking function to avoid blocking JS Thread
+    const processInChunks = (items, processChunk, onComplete, chunkSize = 50) => {
+      let index = 0;
+      let results = [];
+      const nextChunk = () => {
+        if (isCancelled) return;
+        const chunk = items.slice(index, index + chunkSize);
+        if (chunk.length === 0) {
+          onComplete(results);
+          return;
+        }
+        results = results.concat(processChunk(chunk));
+        index += chunkSize;
+        requestAnimationFrame(nextChunk);
+      };
+      requestAnimationFrame(nextChunk);
+    };
+
+    processInChunks(shops, (chunk) => {
+      return chunk.filter(shop => {
+        const matchesCategory = selectedCategory === 'All Categories' || shop.category === selectedCategory || shop.category_name === selectedCategory;
+        const matchesSearch = (shop.name || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+        const matchesTopRated = !topRatedOnly || (shop.rating && shop.rating >= 4.0);
+        const matchesDelivery = !deliveryOnly || shop.has_delivery;
+        return matchesCategory && matchesSearch && matchesTopRated && matchesDelivery;
+      });
+    }, (filteredResults) => {
+      if (isCancelled) return;
+      if (sortBy === 'rating') filteredResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      if (sortBy === 'name') filteredResults.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      if (sortBy === 'distance') filteredResults.sort((a, b) => (a.distance || 999) - (b.distance || 999));
+      if (sortBy === 'newest') filteredResults.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      setFilteredShops(filteredResults);
+      setIsFiltering(false);
+    }, 50); // 50 items per frame
+
+    return () => { isCancelled = true; };
+  }, [shops, selectedCategory, searchTerm, topRatedOnly, deliveryOnly, sortBy]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -220,7 +273,10 @@ export default function DirectoryScreen() {
           {categories.map(cat => (
             <TouchableOpacity 
               key={cat.name} 
-              onPress={() => setSelectedCategory(cat.name)}
+              onPress={() => {
+                try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch(e){}
+                setSelectedCategory(cat.name);
+              }}
               style={[styles.categoryChip, selectedCategory === cat.name && styles.categoryChipActive]}
             >
               <Text style={{ marginRight: 6 }}>{cat.icon}</Text>
@@ -263,12 +319,15 @@ export default function DirectoryScreen() {
           <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 8 }}>(Requires react-native-maps integration)</Text>
         </View>
       ) : (
-        <FlashList
+        <AnimatedFlashList
           data={filteredShops}
           keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
           numColumns={2}
           contentContainerStyle={styles.scrollContent}
           estimatedItemSize={250}
+          getItemType={(item) => item.type || 'retail'}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No shops found. Try another category or adjust filters.</Text>
           }

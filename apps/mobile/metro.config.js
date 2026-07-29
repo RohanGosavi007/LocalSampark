@@ -3,9 +3,7 @@ const { getDefaultConfig } = require('expo/metro-config');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-config.projectRoot = __dirname;
-config.resolver.unstable_enableSymlinks = false;
-
-config.maxWorkers = 0;
+config.projectRoot = process.cwd();
+config.maxWorkers = 2;
 
 module.exports = config;

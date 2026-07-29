@@ -18,12 +18,49 @@ function init(supabase) {
   supabaseInstance = supabase;
 }
 
+const { Queue, Worker } = require('bullmq');
+
+let notificationQueue = null;
+
+// Initialize BullMQ asynchronously when Redis is ready
+function initQueue(redisClient) {
+  if (redisClient && !notificationQueue) {
+    notificationQueue = new Queue('notification-queue', { connection: redisClient });
+    
+    // Start background worker for notifications
+    const worker = new Worker('notification-queue', async (job) => {
+      const { recipientId, notification } = job.data;
+      await processNotification(recipientId, notification);
+    }, { connection: redisClient });
+
+    worker.on('failed', (job, err) => {
+      console.error(`[NOTIFICATION-QUEUE] Job failed: ${err.message}`);
+    });
+  }
+}
+
 /**
- * Send a notification to a specific user
+ * Send a notification to a specific user (Async API - Offloaded to Queue)
  */
 async function sendToUser(recipientId, notification) {
   const id = crypto.randomUUID();
-  const { type, title, body, data, actionUrl, icon } = notification;
+  
+  if (notificationQueue) {
+    // 10x Scale: Offload to background BullMQ worker
+    await notificationQueue.add('send-notification', { recipientId, notification: { ...notification, id } });
+    return id;
+  }
+  
+  // Fallback to synchronous execution
+  await processNotification(recipientId, { ...notification, id });
+  return id;
+}
+
+/**
+ * Actual heavy processing logic
+ */
+async function processNotification(recipientId, notification) {
+  const { id, type, title, body, data, actionUrl, icon } = notification;
 
   // 1. Persist to database
   try {
@@ -44,8 +81,6 @@ async function sendToUser(recipientId, notification) {
       createdAt: new Date().toISOString(),
     });
   }
-
-  return id;
 }
 
 /**
@@ -254,7 +289,7 @@ function emitKDSUpdate(shopId, ticketData) {
 }
 
 module.exports = {
-  init,
+  init, initQueue,
   sendToUser, sendToShopOwner, sendToRegion,
   getUnread, getAll, markRead, markAllRead, getUnreadCount,
   notifyOrderUpdate, notifyNewOrder,

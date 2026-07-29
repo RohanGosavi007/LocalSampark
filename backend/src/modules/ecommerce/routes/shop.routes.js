@@ -27,24 +27,67 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 }
 function deg2rad(deg) { return deg * (Math.PI / 180) }
 
-// GET all active categories
-router.get('/categories', async (req, res, next) => {
+const CacheService = require('../../../services/cache.service');
+const AuditLogger = require('../../../services/audit.logger');
+const SearchEngine = require('../../../services/search.engine');
+
+// GET /search via Typesense AI Search Engine
+router.get('/search', async (req, res, next) => {
   try {
-    const categories = await query("SELECT * FROM shop_categories WHERE is_active = 1 ORDER BY display_order ASC");
-    res.json(categories.rows || categories);
+    const { q, category, lat, lng, radius = 10, limit = 20 } = req.query;
+    
+    // Log intent parsing to BullMQ audit pipeline
+    AuditLogger.log('ai_search_query', { query: q, category, lat, lng, ip: req.ip });
+
+    const searchResults = await SearchEngine.searchShops({
+      query: q,
+      category,
+      lat,
+      lng,
+      radius_km: radius,
+      limit: parseInt(limit)
+    });
+
+    if (searchResults) {
+      return res.json({ source: 'typesense', data: searchResults });
+    }
+
+    // Fallback if Typesense is offline: Route to standard nearby/SQL search (Placeholder)
+    res.status(503).json({ error: 'Search Engine Offline. Falling back to basic browse.' });
   } catch (error) {
     next(error);
   }
 });
-// GET all shops (with optional limit, pagination, and admin filtering)
+router.get('/categories', async (req, res, next) => {
+  try {
+    AuditLogger.log('api_access', { endpoint: '/categories', ip: req.ip });
+
+    const result = await CacheService.getOrSet('shop:categories:active', 3600, async () => {
+      const categories = await query("SELECT * FROM shop_categories WHERE is_active = 1 ORDER BY display_order ASC");
+      return categories.rows || categories;
+    });
+
+    res.setHeader('X-Cache-Source', result.source);
+    res.json(result.data);
+  } catch (error) {
+    next(error);
+  }
+});
+// GET all shops (with cursor-based pagination and admin filtering)
 router.get('/', async (req, res, next) => {
   try {
-    const { limit = 100, page = 1, search = '', status } = req.query;
-    const offset = (page - 1) * limit;
+    const { limit = 20, cursor, search = '', status } = req.query;
     
     let shopsQuery = "SELECT * FROM local_shops WHERE 1=1";
     const params = [];
     let paramIdx = 1;
+
+    // 10x Scale: Cursor-Based Pagination (Replaces OFFSET)
+    if (cursor) {
+        shopsQuery += ` AND id < $${paramIdx}`;
+        params.push(cursor);
+        paramIdx++;
+    }
 
     if (search) {
         shopsQuery += ` AND (name ILIKE $${paramIdx} OR description ILIKE $${paramIdx})`;
@@ -58,29 +101,18 @@ router.get('/', async (req, res, next) => {
         paramIdx++;
     }
 
-    shopsQuery += ` ORDER BY created_at DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
-    params.push(limit, offset);
+    shopsQuery += ` ORDER BY id DESC LIMIT $${paramIdx}`;
+    params.push(parseInt(limit));
 
     let shops = await query(shopsQuery, params);
+    const shopRows = shops.rows || shops;
     
-    // Get total count
-    let countQuery = "SELECT COUNT(*) as total FROM local_shops WHERE 1=1";
-    const countParams = [];
-    if (search) {
-        countQuery += ` AND (name ILIKE $1 OR description ILIKE $1)`;
-        countParams.push(`%${search}%`);
-    }
-    if (status) {
-        countQuery += search ? ` AND approval_status = $2` : ` AND approval_status = $1`;
-        countParams.push(status);
-    }
-    
-    const totalResult = await queryOne(countQuery, countParams);
+    // Determine the next cursor
+    const nextCursor = shopRows.length > 0 ? shopRows[shopRows.length - 1].id : null;
 
     res.json({
-        data: shops.rows || shops,
-        total: parseInt(totalResult?.total || 0),
-        page: parseInt(page),
+        data: shopRows,
+        nextCursor,
         limit: parseInt(limit)
     });
   } catch (error) {

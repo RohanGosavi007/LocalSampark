@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
+const { cacheInvalidate } = require('../../../config/redis');
 const notificationService = require('../../core/services/notification.service');
 const emailService = require('../../core/services/email.service');
 
@@ -893,17 +894,20 @@ async function updateShopSettings(req, res, next) {
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) { updates.push(`${key} = $${idx}`); params.push(value); idx++; }
     }
-
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     updates.push('updated_at = CURRENT_TIMESTAMP');
     params.push(shop.id);
+    await query(`UPDATE local_shops SET ${updates.join(', ')} WHERE id = $${idx}`, params);
 
-    const updated = await queryOne(
-      `UPDATE local_shops SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params
-    );
+    // 10x Scale: Invalidate cache for the shop's pincode and region
+    if (shop.pincode) {
+        await cacheInvalidate(`cache:${shop.pincode}:*`);
+    } else {
+        await cacheInvalidate('cache:*');
+    }
 
-    res.json({ success: true, shop: updated });
+    res.json({ message: 'Shop settings updated successfully' });
   } catch (error) { next(error); }
 }
 

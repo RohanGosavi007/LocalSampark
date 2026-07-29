@@ -1,4 +1,15 @@
 const { query, queryOne } = require('../../../config/database');
+const SurgeEngine = require('../../../services/surge.engine');
+
+async function calculateDeliveryFee(req, res, next) {
+  try {
+    const { pincode = '411015', activeOrders = 10, availableDrivers = 2 } = req.query;
+    const surgeData = await SurgeEngine.calculateSurge(pincode, parseInt(activeOrders), parseInt(availableDrivers));
+    return res.json({ success: true, deliveryDetails: surgeData });
+  } catch (err) {
+    next(err);
+  }
+}
 const RoutingService = require('../services/routing.service');
 
 /**

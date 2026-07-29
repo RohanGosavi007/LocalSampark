@@ -1,5 +1,42 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Modal, Switch } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Modal, Switch } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+
+// Memoized Product Card for zero-allocation Recycling
+const ProductCard = React.memo(({ prod, onToggleStatus, onOpenEditor }) => {
+  return (
+    <View style={[styles.productCard, !prod.active && styles.inactiveCard]}>
+      <View style={styles.prodDetails}>
+        <Text style={styles.prodName}>{prod.name}</Text>
+        <Text style={styles.prodCategory}>{prod.category}</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.prodPrice}>₹{prod.price}</Text>
+          <Text style={[styles.prodStock, prod.stock === 0 && { color: '#ef4444' }]}>
+            {prod.stock > 0 ? `${prod.stock} in stock` : 'Out of stock'}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={styles.prodActions}>
+        <Switch 
+          value={prod.active} 
+          onValueChange={() => onToggleStatus(prod.id)}
+          trackColor={{ false: '#334155', true: '#3b82f6' }}
+        />
+        <TouchableOpacity style={styles.editBtn} onPress={() => onOpenEditor(prod)}>
+          <Text style={styles.editBtnText}>Edit</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}, (prev, next) => (
+  prev.prod.id === next.prod.id &&
+  prev.prod.active === next.prod.active &&
+  prev.prod.stock === next.prod.stock &&
+  prev.prod.price === next.prod.price &&
+  prev.prod.name === next.prod.name &&
+  prev.prod.category === next.prod.category
+));
 
 export default function ProductsScreen() {
   const [products, setProducts] = useState([
@@ -14,7 +51,7 @@ export default function ProductsScreen() {
   // Form State
   const [form, setForm] = useState({ name: '', category: '', price: '', stock: '' });
 
-  const openEditor = (prod = null) => {
+  const openEditor = useCallback((prod = null) => {
     if (prod) {
       setEditingProduct(prod);
       setForm({ name: prod.name, category: prod.category, price: prod.price, stock: String(prod.stock) });
@@ -23,20 +60,28 @@ export default function ProductsScreen() {
       setForm({ name: '', category: '', price: '', stock: '' });
     }
     setEditorVisible(true);
-  };
+  }, []);
 
-  const saveProduct = () => {
+  const saveProduct = useCallback(() => {
     if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...form, stock: parseInt(form.stock) || 0 } : p));
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...form, stock: parseInt(form.stock) || 0 } : p));
     } else {
-      setProducts([...products, { id: Math.random().toString(), ...form, stock: parseInt(form.stock) || 0, active: true }]);
+      setProducts(prev => [...prev, { id: Math.random().toString(), ...form, stock: parseInt(form.stock) || 0, active: true }]);
     }
     setEditorVisible(false);
-  };
+  }, [editingProduct, form]);
 
-  const toggleStatus = (id) => {
-    setProducts(products.map(p => p.id === id ? { ...p, active: !p.active } : p));
-  };
+  const toggleStatus = useCallback((id) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  }, []);
+
+  const renderItem = useCallback(({ item }) => (
+    <ProductCard 
+      prod={item} 
+      onToggleStatus={toggleStatus} 
+      onOpenEditor={openEditor} 
+    />
+  ), [toggleStatus, openEditor]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -47,33 +92,16 @@ export default function ProductsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.listContainer}>
-        {products.map(prod => (
-          <View key={prod.id} style={[styles.productCard, !prod.active && styles.inactiveCard]}>
-            <View style={styles.prodDetails}>
-              <Text style={styles.prodName}>{prod.name}</Text>
-              <Text style={styles.prodCategory}>{prod.category}</Text>
-              <View style={styles.metaRow}>
-                <Text style={styles.prodPrice}>₹{prod.price}</Text>
-                <Text style={[styles.prodStock, prod.stock === 0 && { color: '#ef4444' }]}>
-                  {prod.stock > 0 ? `${prod.stock} in stock` : 'Out of stock'}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.prodActions}>
-              <Switch 
-                value={prod.active} 
-                onValueChange={() => toggleStatus(prod.id)}
-                trackColor={{ false: '#334155', true: '#3b82f6' }}
-              />
-              <TouchableOpacity style={styles.editBtn} onPress={() => openEditor(prod)}>
-                <Text style={styles.editBtnText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      <View style={{ flex: 1, paddingHorizontal: 16 }}>
+        <FlashList
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          estimatedItemSize={90}
+          getItemType={(item) => 'product_card'}
+          contentContainerStyle={{ paddingVertical: 16 }}
+        />
+      </View>
 
       {/* Product Editor Modal */}
       <Modal visible={isEditorVisible} animationType="slide" transparent={true}>

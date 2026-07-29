@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - localsampark_net
+
+  api:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=pgbouncer
+      - DB_PORT=6432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    expose:
+      - "5000"
+    depends_on:
+      - pgbouncer
+      - redis
+    restart: always
+    networks:
+      - localsampark_net
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=1000
+      - DEFAULT_POOL_SIZE=200
+      - ADMIN_USERS=postgres
+    expose:
+      - "6432"
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - localsampark_net
+
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres123}
+      - POSTGRES_DB=${DB_NAME:-localsampark}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: always
+    networks:
+      - localsampark_net
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    restart: always
+    networks:
+      - localsampark_net
+
+volumes:
+  db-data:
+  redis-data:
+
+networks:
+  localsampark_net:
+    driver: bridge

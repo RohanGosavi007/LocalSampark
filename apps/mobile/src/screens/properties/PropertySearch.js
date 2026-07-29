@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, memo, useMemo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, PlusCircle, Search, MapPin, Bed, Bath, Maximize2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,38 +12,44 @@ const MOCK_PROPERTIES = [
   { id: '3', title: '1 BHK Fully Furnished', location: 'Tingre Nagar', price: '₹14,000/mo', type: 'Rent', beds: 1, baths: 1, sqft: 600, image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=400' }
 ];
 
+const PropertyItem = memo(({ item }) => (
+  <TouchableOpacity className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden mb-5 shadow-lg shadow-slate-950">
+    <Image source={item.image} className="w-full h-44" contentFit="cover" transition={200} />
+    <View className="absolute top-3 left-3 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-lg">
+      <Text className="text-sky-400 font-bold text-xs">{item.type}</Text>
+    </View>
+    <View className="p-4">
+      <Text className="text-2xl font-black text-emerald-400 mb-1">{item.price}</Text>
+      <Text className="text-white font-bold text-base mb-1" numberOfLines={1}>{item.title}</Text>
+      <View className="flex-row items-center mb-4">
+        <MapPin size={14} color="#94a3b8" className="mr-1" />
+        <Text className="text-slate-400 text-xs font-semibold">{item.location}</Text>
+      </View>
+      <View className="flex-row justify-between border-t border-slate-800 pt-3">
+        <View className="flex-row items-center gap-1.5"><Bed size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.beds} Bed</Text></View>
+        <View className="flex-row items-center gap-1.5"><Bath size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.baths} Bath</Text></View>
+        <View className="flex-row items-center gap-1.5"><Maximize2 size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.sqft} sqft</Text></View>
+      </View>
+    </View>
+  </TouchableOpacity>
+), (prevProps, nextProps) => prevProps.item.id === nextProps.item.id);
+
 export default function PropertySearchScreen() {
   const navigation = useNavigation();
-  const [filter, setFilter] = useState('All'); // All, Rent, Buy
+  const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
 
-  const filteredProperties = MOCK_PROPERTIES.filter(p => {
-    if (filter !== 'All' && p.type !== filter) return false;
-    if (search && !p.location.toLowerCase().includes(search.toLowerCase()) && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const filteredProperties = useMemo(() => {
+    return MOCK_PROPERTIES.filter(p => {
+      if (filter !== 'All' && p.type !== filter) return false;
+      if (search && !p.location.toLowerCase().includes(search.toLowerCase()) && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [filter, search]);
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden mb-5 shadow-lg shadow-slate-950">
-      <Image source={item.image} className="w-full h-44" contentFit="cover" transition={200} />
-      <View className="absolute top-3 left-3 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-lg">
-        <Text className="text-sky-400 font-bold text-xs">{item.type}</Text>
-      </View>
-      <View className="p-4">
-        <Text className="text-2xl font-black text-emerald-400 mb-1">{item.price}</Text>
-        <Text className="text-white font-bold text-base mb-1" numberOfLines={1}>{item.title}</Text>
-        <View className="flex-row items-center mb-4">
-          <MapPin size={14} color="#94a3b8" className="mr-1" />
-          <Text className="text-slate-400 text-xs font-semibold">{item.location}</Text>
-        </View>
-        <View className="flex-row justify-between border-t border-slate-800 pt-3">
-          <View className="flex-row items-center gap-1.5"><Bed size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.beds} Bed</Text></View>
-          <View className="flex-row items-center gap-1.5"><Bath size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.baths} Bath</Text></View>
-          <View className="flex-row items-center gap-1.5"><Maximize2 size={16} color="#94a3b8" /><Text className="text-slate-300 text-xs font-bold">{item.sqft} sqft</Text></View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderItem = useCallback(({ item }) => (
+    <PropertyItem item={item} />
+  ), []);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
@@ -56,7 +63,7 @@ export default function PropertySearchScreen() {
         </TouchableOpacity>
       </View>
 
-      <View className="p-4">
+      <View className="p-4 z-10">
         <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 mb-4">
           <Search size={20} color="#64748b" className="mr-3" />
           <TextInput 
@@ -81,13 +88,17 @@ export default function PropertySearchScreen() {
         </View>
       </View>
 
-      <FlatList 
-        data={filteredProperties}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      />
+      <View className="flex-1 w-full h-full">
+        <FlashList 
+          data={filteredProperties}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          estimatedItemSize={285}
+        />
+      </View>
+
     </SafeAreaView>
   );
 }

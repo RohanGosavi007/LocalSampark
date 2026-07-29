@@ -1,0 +1,67 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 30
+      arrivalRate: 100
+      name: "Webhook Storm"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Razorpay Webhook Flood"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/v1/payments/webhook/razorpay"
+          headers:
+            x-razorpay-signature: "test-signature-{{ $randomNumber() }}"
+          json:
+            event: "order.paid"
+            payload:
+              payment:
+                entity:
+                  id: "pay_{{ $randomNumber() }}"
+                  amount: 50000
+                  status: "captured"
+
+  - name: "Cashfree Webhook Flood"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/v1/payments/webhook/cashfree"
+          json:
+            type: "PAYMENT_SUCCESS_WEBHOOK"
+            data:
+              order:
+                order_id: "order_{{ $randomNumber() }}"
+                order_amount: 500
+                order_status: "PAID"
+
+  - name: "Duplicate Webhook Idempotency"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/v1/payments/webhook/razorpay"
+          headers:
+            x-razorpay-signature: "fixed-test-sig-123"
+          json:
+            event: "order.paid"
+            payload:
+              payment:
+                entity:
+                  id: "pay_DUPLICATE_TEST_001"
+                  amount: 10000
+                  status: "captured"
+      - post:
+          url: "/api/v1/payments/webhook/razorpay"
+          headers:
+            x-razorpay-signature: "fixed-test-sig-123"
+          json:
+            event: "order.paid"
+            payload:
+              payment:
+                entity:
+                  id: "pay_DUPLICATE_TEST_001"
+                  amount: 10000
+                  status: "captured"

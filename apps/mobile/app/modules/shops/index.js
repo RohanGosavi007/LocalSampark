@@ -134,7 +134,7 @@ export default function ShopsScreen() {
             {isRestaurant && (
               <TouchableOpacity 
                 style={[styles.dineInBtn, { backgroundColor: theme.primary + '15', borderColor: theme.primary + '30' }]} 
-                onPress={(e) => { e.stopPropagation(); router.push(/modules/dine-in?shopId= + shop.id); }}
+                onPress={(e) => { e.stopPropagation(); router.push(`/modules/dine-in?shopId=${shop.id}`); }}
               >
                 <Text style={[styles.dineInText, { color: theme.primary }]}>??? Book Dine-in</Text>
               </TouchableOpacity>

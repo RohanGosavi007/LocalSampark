@@ -2,18 +2,15 @@ const { Worker } = require('bullmq');
 const { query } = require('../config/database');
 const logger = require('../config/logger');
 
-// Initialize BullMQ Workers for Background Jobs
-function initWorkers(redisConnection) {
-  logger.info('Initializing BullMQ Background Workers...');
-
-  // 1. Hourly Maintenance Worker
-  const hourlyWorker = new Worker('hourly-maintenance', async (job) => {
-    logger.info(`Processing hourly maintenance job: ${job.id}`);
-    
+// Execute maintenance logic (extracted for reuse across BullMQ and In-Memory fallback)
+async function runHourlyMaintenance() {
+  logger.info('⚡ [Worker:Sync] Running hourly maintenance & subscription processing...');
+  try {
     // Cleanup expired stories
     const res = await query('DELETE FROM stories WHERE expires_at < CURRENT_TIMESTAMP');
-    if (res.rowCount > 0) {
-      logger.info(`🧹 Deleted ${res.rowCount} expired stories`);
+    const deletedCount = res.rowCount || (Array.isArray(res) ? res.length : 0);
+    if (deletedCount > 0) {
+      logger.info(`🧹 Deleted ${deletedCount} expired stories`);
     }
 
     // Auto-debit and create delivery orders for active daily/recurring subscriptions
@@ -24,7 +21,8 @@ function initWorkers(redisConnection) {
       WHERE us.status = 'active' AND us.next_delivery_date <= CURRENT_DATE
     `);
     
-    for (const sub of activeSubs.rows) {
+    const rows = activeSubs.rows || activeSubs || [];
+    for (const sub of rows) {
       try {
         await query(
           `UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`,
@@ -56,31 +54,87 @@ function initWorkers(redisConnection) {
         logger.error(`❌ Failed processing subscription ${sub.id}: ` + subErr.message);
       }
     }
-  }, { connection: redisConnection });
+  } catch (err) {
+    logger.error('❌ Error in hourly maintenance execution: ' + err.message);
+  }
+}
 
-  hourlyWorker.on('completed', job => logger.info(`Hourly maintenance completed: ${job.id}`));
-  hourlyWorker.on('failed', (job, err) => logger.error(`Hourly maintenance failed: ${job.id}, error: ${err.message}`));
-
-  // 2. High Frequency Worker (Guard Reminders)
-  const frequentWorker = new Worker('high-frequency-tasks', async (job) => {
-    // Note: To properly emit to sockets from BullMQ, we would use a Redis adapter for Socket.io.
-    // For now, we process DB updates and log. Sockets can be bridged via a pub/sub if needed.
+async function runHighFrequencyTasks() {
+  try {
     const dueReminders = await query(`
       SELECT sgr.*, u.full_name as created_by_name FROM society_guard_reminders sgr
       JOIN users u ON sgr.created_by = u.id
-      WHERE sgr.status = 'active' AND sgr.reminder_time <= datetime('now')
+      WHERE sgr.status = 'active' AND sgr.reminder_time <= CURRENT_TIMESTAMP
     `);
     
-    for (const reminder of (dueReminders.rows || [])) {
-      // Mark as completed (non-recurring)
+    const rows = dueReminders.rows || dueReminders || [];
+    for (const reminder of rows) {
       if (!reminder.is_recurring) {
         await query("UPDATE society_guard_reminders SET status = 'completed' WHERE id = $1", [reminder.id]);
         logger.info(`🔔 Processed guard reminder: ${reminder.id}`);
       }
     }
+  } catch (err) {
+    logger.error('❌ Error in high frequency task execution: ' + err.message);
+  }
+}
+
+// In-Memory Fallback Worker Initialization
+function initFallbackWorkers() {
+  logger.info('⚡ Initializing Synchronous In-Memory Fallback Queue Workers...');
+
+  // Run immediately on boot
+  runHourlyMaintenance();
+  runHighFrequencyTasks();
+
+  // Recurring intervals
+  setInterval(runHourlyMaintenance, 3600000); // 1 hour interval
+  setInterval(runHighFrequencyTasks, 30000);     // 30 seconds interval
+  
+  logger.info('✅ Synchronous In-Memory Queue Workers Active (No Redis Required)');
+}
+
+// BullMQ Worker Initialization
+function initWorkers(redisConnection) {
+  logger.info('Initializing BullMQ Background Workers...');
+
+  const hourlyWorker = new Worker('hourly-maintenance', async (job) => {
+    logger.info(`Processing hourly maintenance job: ${job.id}`);
+    await runHourlyMaintenance();
+  }, { connection: redisConnection });
+
+  hourlyWorker.on('completed', job => logger.info(`Hourly maintenance completed: ${job.id}`));
+  hourlyWorker.on('failed', (job, err) => logger.error(`Hourly maintenance failed: ${job.id}, error: ${err.message}`));
+
+  const frequentWorker = new Worker('high-frequency-tasks', async (job) => {
+    await runHighFrequencyTasks();
   }, { connection: redisConnection });
 
   frequentWorker.on('failed', (job, err) => logger.error(`High-frequency task failed: ${err.message}`));
 }
 
-module.exports = { initWorkers };
+// Unified Dual Queue Engine Startup
+function startQueueEngine(redisClient) {
+  if (redisClient) {
+    try {
+      const { Queue } = require('bullmq');
+      initWorkers(redisClient);
+
+      const hourlyQueue = new Queue('hourly-maintenance', { connection: redisClient });
+      const frequentQueue = new Queue('high-frequency-tasks', { connection: redisClient });
+
+      hourlyQueue.add('cleanup-and-billing', {}, { repeat: { pattern: '0 * * * *' } });
+      frequentQueue.add('guard-reminders', {}, { repeat: { every: 30000 } });
+      
+      logger.info('✅ BullMQ Queues and Schedulers initialized over Redis');
+    } catch (err) {
+      logger.warn('⚠️ BullMQ Redis initialization failed, activating in-memory fallback:', err.message);
+      initFallbackWorkers();
+    }
+  } else {
+    logger.info('ℹ️ Redis not detected. Activating Synchronous In-Memory Queue Engine.');
+    initFallbackWorkers();
+  }
+}
+
+module.exports = { initWorkers, initFallbackWorkers, startQueueEngine };

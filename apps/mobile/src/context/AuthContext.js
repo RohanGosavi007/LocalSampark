@@ -50,7 +50,12 @@ export const SecureTokenStorage = {
 // Use env variables for Supabase (fallback to placeholder for now if not set)
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://qahlydtjfypxhumixtwo.supabase.co';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhaGx5ZHRqZnlweGh1bWl4dHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzU3ODksImV4cCI6MjA5ODgxMTc4OX0.evlCQSJYWBxLub9aGBbneP6JHVxJg-zZx8th0TbByio';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase = null;
+try {
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) {
+  console.warn('Supabase client init failed (non-fatal):', e.message);
+}
 
 const AuthContext = createContext();
 
@@ -105,7 +110,13 @@ export function AuthProvider({ children }) {
       }
     };
 
-    restoreSession();
+    // Safety timeout: if restoreSession hangs (e.g. native module issue),
+    // still allow app to render after 5 seconds
+    const safetyTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
+    restoreSession().finally(() => clearTimeout(safetyTimer));
   }, []);
 
   const fetchWallet = async (token) => {
@@ -329,19 +340,24 @@ export function AuthProvider({ children }) {
   };
 
   const initSupabaseRealtime = (userId) => {
-    // Basic example of joining a user-specific room/channel
-    const channel = supabase.channel(`user:${userId}`)
-      .on('broadcast', { event: '*' }, payload => {
-        console.log('Received real-time event:', payload);
-        // Dispatch event globally or handle within specific context
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Connected to Supabase Realtime');
-        }
-      });
-      
-    setSupabaseRealtime(channel);
+    if (!supabase) {
+      console.warn('Supabase not initialized, skipping realtime');
+      return;
+    }
+    try {
+      const channel = supabase.channel(`user:${userId}`)
+        .on('broadcast', { event: '*' }, payload => {
+          console.log('Received real-time event:', payload);
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Connected to Supabase Realtime');
+          }
+        });
+      setSupabaseRealtime(channel);
+    } catch (e) {
+      console.warn('Supabase realtime init failed (non-fatal):', e.message);
+    }
   };
 
   const verifyOtp = async (phone, otp) => {
@@ -416,7 +432,7 @@ export function AuthProvider({ children }) {
       supabaseRealtime,
       supabase
     }}>
-      {!isLoading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

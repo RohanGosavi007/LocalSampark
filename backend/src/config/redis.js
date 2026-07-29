@@ -60,7 +60,21 @@ async function cacheSet(key, value, ttlSeconds = 300) {
   try {
     await redisClient.setEx(key, ttlSeconds, JSON.stringify(value));
   } catch (err) {
-    console.error('Redis cacheSet error:', err.message);
+    console.error('Redis Set Error:', err.message);
+  }
+}
+
+// 10x Scale: Invalidate keys on database mutation
+async function cacheInvalidate(pattern = 'cache:*') {
+  if (!redisClient) return;
+  try {
+    const keys = await redisClient.keys(pattern);
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+      console.log(`🧹 Invalidated ${keys.length} cache keys matching ${pattern}`);
+    }
+  } catch (err) {
+    console.error('Redis Invalidation Error:', err.message);
   }
 }
 
@@ -87,5 +101,6 @@ module.exports = {
   cacheGet,
   cacheSet,
   cacheDel,
-  cacheGetOrSet
+  cacheGetOrSet,
+  cacheInvalidate
 };

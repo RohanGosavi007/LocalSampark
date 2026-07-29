@@ -17,7 +17,21 @@
     "build:admin": "npm run build --workspace=apps/admin",
     "db:migrate": "npm run migrate --workspace=backend",
     "db:seed": "npm run seed --workspace=backend",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "test:unit": "npm run test --workspace=backend -- --testPathIgnorePatterns=setup --forceExit",
+    "test:unit:coverage": "npm run test --workspace=backend -- --coverage --testPathIgnorePatterns=setup",
+    "test:api": "npm run test --workspace=backend -- --testPathPatterns=integration",
+    "test:e2e": "npx playwright test",
+    "test:e2e:web": "npx playwright test --project=web-chromium",
+    "test:e2e:admin": "npx playwright test --project=admin-chromium",
+    "test:e2e:mobile-web": "npx playwright test --project=mobile-chrome",
+    "test:visual": "npx playwright test --project=visual",
+    "test:visual:update": "npx playwright test --project=visual --update-snapshots",
+    "test:a11y": "npx playwright test --project=a11y",
+    "test:api:contract": "npx playwright test --project=api",
+    "test:load": "npm run test:load --workspace=backend",
+    "test:all": "npm run test:unit && npm run test:api && npm run test:e2e:web && npm run test:e2e:admin && npm run test:a11y",
+    "test:report": "npx playwright show-report test-results/html-report"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -26,6 +40,8 @@
     "ajv": "^8.20.0"
   },
   "devDependencies": {
-    "cross-env": "^10.1.0"
+    "@playwright/test": "^1.61.1",
+    "cross-env": "^10.1.0",
+    "playwright": "^1.61.1"
   }
 }

@@ -1,5 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import * as Location from 'expo-location';
+let Location = null;
+try {
+  Location = require('expo-location');
+} catch (e) {
+  console.warn('[ZoneContext] expo-location not available:', e.message);
+}
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { Alert } from 'react-native';

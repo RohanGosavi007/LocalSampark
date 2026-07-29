@@ -1,7 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Search, MapPin, Navigation, Clock, Users, ShieldCheck, Leaf, Star } from 'lucide-react-native';
 import { apiGet } from '../../lib/api';
+
+const RideItem = memo(({ item }) => (
+  <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+    {/* Header */}
+    <View className="flex-row justify-between items-start mb-4">
+      <View className="flex-row items-center flex-1">
+        <View className="w-12 h-12 rounded-full bg-blue-900/50 items-center justify-center border border-blue-500/30">
+          <Text className="text-blue-400 font-bold text-lg">{item.driver.charAt(0)}</Text>
+        </View>
+        <View className="ml-3 flex-1">
+          <View className="flex-row items-center gap-1">
+            <Text className="text-white font-bold text-base">{item.driver}</Text>
+            {item.isVerified && <ShieldCheck size={14} color="#3b82f6" />}
+          </View>
+          <View className="flex-row items-center gap-1 mt-0.5">
+            <Star size={12} color="#fbbf24" fill="#fbbf24" />
+            <Text className="text-slate-400 text-xs">{item.rating}</Text>
+          </View>
+        </View>
+      </View>
+      <Text className="text-emerald-400 font-black text-xl">₹{item.price}</Text>
+    </View>
+
+    {/* Badges */}
+    <View className="flex-row flex-wrap gap-2 mb-4">
+      {item.isWomenOnly && (
+        <View className="bg-pink-500/10 border border-pink-500/30 px-2 py-1 rounded-md flex-row items-center gap-1">
+          <ShieldCheck size={12} color="#ec4899" />
+          <Text className="text-pink-400 text-xs font-bold">Women Only</Text>
+        </View>
+      )}
+      {item.isEV && (
+        <View className="bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-md flex-row items-center gap-1">
+          <Leaf size={12} color="#10b981" />
+          <Text className="text-emerald-400 text-xs font-bold">Green Ride (EV)</Text>
+        </View>
+      )}
+    </View>
+
+    {/* Route */}
+    <View className="mb-4 bg-slate-950 p-3 rounded-xl border border-slate-800">
+      <View className="flex-row items-center">
+        <View className="w-3 h-3 rounded-full bg-blue-500 mr-3" />
+        <Text className="text-slate-200 font-semibold">{item.from}</Text>
+      </View>
+      <View className="w-0.5 h-6 bg-slate-700 ml-1.5 my-1" />
+      <View className="flex-row items-center">
+        <View className="w-3 h-3 rounded-full bg-rose-500 mr-3" />
+        <Text className="text-slate-200 font-semibold">{item.to}</Text>
+      </View>
+    </View>
+
+    {/* Footer */}
+    <View className="flex-row items-center justify-between border-t border-slate-800 pt-4">
+      <View className="flex-row items-center gap-4">
+        <View className="flex-row items-center gap-1.5">
+          <Clock size={16} color="#94a3b8" />
+          <Text className="text-slate-400 text-sm font-semibold">{item.time}</Text>
+        </View>
+        <View className="flex-row items-center gap-1.5">
+          <Users size={16} color="#94a3b8" />
+          <Text className="text-slate-400 text-sm font-semibold">{item.seats} Left</Text>
+        </View>
+      </View>
+      
+      <TouchableOpacity className="bg-blue-600 px-4 py-2 rounded-lg">
+        <Text className="text-white font-bold">Request</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+), (prevProps, nextProps) => prevProps.item.id === nextProps.item.id);
 
 export default function FindRide() {
   const [search, setSearch] = useState('');
@@ -45,84 +117,19 @@ export default function FindRide() {
     loadRides();
   }, []);
 
-  const filteredRides = rides.filter(r => {
-    const matchesSearch = r.from.toLowerCase().includes(search.toLowerCase()) || r.to.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-    if (filter === 'women') return r.isWomenOnly;
-    if (filter === 'green') return r.isEV;
-    return true;
-  });
+  const filteredRides = useMemo(() => {
+    return rides.filter(r => {
+      const matchesSearch = r.from.toLowerCase().includes(search.toLowerCase()) || r.to.toLowerCase().includes(search.toLowerCase());
+      if (!matchesSearch) return false;
+      if (filter === 'women') return r.isWomenOnly;
+      if (filter === 'green') return r.isEV;
+      return true;
+    });
+  }, [rides, search, filter]);
 
-  const renderRide = ({ item }) => (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
-      {/* Header */}
-      <View className="flex-row justify-between items-start mb-4">
-        <View className="flex-row items-center flex-1">
-          <View className="w-12 h-12 rounded-full bg-blue-900/50 items-center justify-center border border-blue-500/30">
-            <Text className="text-blue-400 font-bold text-lg">{item.driver.charAt(0)}</Text>
-          </View>
-          <View className="ml-3 flex-1">
-            <View className="flex-row items-center gap-1">
-              <Text className="text-white font-bold text-base">{item.driver}</Text>
-              {item.isVerified && <ShieldCheck size={14} color="#3b82f6" />}
-            </View>
-            <View className="flex-row items-center gap-1 mt-0.5">
-              <Star size={12} color="#fbbf24" fill="#fbbf24" />
-              <Text className="text-slate-400 text-xs">{item.rating}</Text>
-            </View>
-          </View>
-        </View>
-        <Text className="text-emerald-400 font-black text-xl">₹{item.price}</Text>
-      </View>
-
-      {/* Badges */}
-      <View className="flex-row flex-wrap gap-2 mb-4">
-        {item.isWomenOnly && (
-          <View className="bg-pink-500/10 border border-pink-500/30 px-2 py-1 rounded-md flex-row items-center gap-1">
-            <ShieldCheck size={12} color="#ec4899" />
-            <Text className="text-pink-400 text-xs font-bold">Women Only</Text>
-          </View>
-        )}
-        {item.isEV && (
-          <View className="bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-md flex-row items-center gap-1">
-            <Leaf size={12} color="#10b981" />
-            <Text className="text-emerald-400 text-xs font-bold">Green Ride (EV)</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Route */}
-      <View className="mb-4 bg-slate-950 p-3 rounded-xl border border-slate-800">
-        <View className="flex-row items-center">
-          <View className="w-3 h-3 rounded-full bg-blue-500 mr-3" />
-          <Text className="text-slate-200 font-semibold">{item.from}</Text>
-        </View>
-        <View className="w-0.5 h-6 bg-slate-700 ml-1.5 my-1" />
-        <View className="flex-row items-center">
-          <View className="w-3 h-3 rounded-full bg-rose-500 mr-3" />
-          <Text className="text-slate-200 font-semibold">{item.to}</Text>
-        </View>
-      </View>
-
-      {/* Footer */}
-      <View className="flex-row items-center justify-between border-t border-slate-800 pt-4">
-        <View className="flex-row items-center gap-4">
-          <View className="flex-row items-center gap-1.5">
-            <Clock size={16} color="#94a3b8" />
-            <Text className="text-slate-400 text-sm font-semibold">{item.time}</Text>
-          </View>
-          <View className="flex-row items-center gap-1.5">
-            <Users size={16} color="#94a3b8" />
-            <Text className="text-slate-400 text-sm font-semibold">{item.seats} Left</Text>
-          </View>
-        </View>
-        
-        <TouchableOpacity className="bg-blue-600 px-4 py-2 rounded-lg">
-          <Text className="text-white font-bold">Request</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const renderRide = useCallback(({ item }) => (
+    <RideItem item={item} />
+  ), []);
 
   return (
     <View className="flex-1">
@@ -169,18 +176,21 @@ export default function FindRide() {
       {loading ? (
         <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 40 }} />
       ) : (
-        <FlatList
-          data={filteredRides}
-          keyExtractor={item => item.id}
-          renderItem={renderRide}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-          ListEmptyComponent={
-            <View className="items-center justify-center py-20">
-              <Users size={48} color="#334155" />
-              <Text className="text-slate-500 text-base mt-4 font-semibold text-center">No rides found for your search.</Text>
-            </View>
-          }
-        />
+        <View className="flex-1 w-full">
+          <FlashList
+            data={filteredRides}
+            keyExtractor={item => item.id}
+            renderItem={renderRide}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+            estimatedItemSize={216}
+            ListEmptyComponent={
+              <View className="items-center justify-center py-20">
+                <Users size={48} color="#334155" />
+                <Text className="text-slate-500 text-base mt-4 font-semibold text-center">No rides found for your search.</Text>
+              </View>
+            }
+          />
+        </View>
       )}
     </View>
   );

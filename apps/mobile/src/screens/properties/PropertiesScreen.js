@@ -1,9 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Building, Lock, Phone, MapPin, CheckCircle, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { apiGet } from '../../lib/api';
+
+const PropertyItem = memo(({ item, unlocked, onUnlock }) => (
+  <View className="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-4">
+    {item.is_featured && (
+      <View className="bg-emerald-950 border border-emerald-800 self-start px-3 py-1 rounded-full mb-3 flex-row items-center">
+        <Sparkles color="#34d399" size={12} className="mr-1" />
+        <Text className="text-emerald-400 font-bold text-[10px]">FEATURED DIRECT OWNER</Text>
+      </View>
+    )}
+
+    <Text className="text-white font-black text-lg mb-1">{item.title}</Text>
+    
+    <View className="flex-row items-center mb-3">
+      <MapPin color="#94a3b8" size={14} className="mr-1" />
+      <Text className="text-slate-400 text-xs">{item.location}</Text>
+    </View>
+
+    <View className="flex-row justify-between items-center bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800/80">
+      <View>
+        <Text className="text-slate-400 text-[10px] uppercase font-bold">Monthly Rent</Text>
+        <Text className="text-indigo-400 font-black text-base">{item.rent}</Text>
+      </View>
+      <View>
+        <Text className="text-slate-400 text-[10px] uppercase font-bold">Deposit</Text>
+        <Text className="text-slate-200 font-bold text-xs">{item.deposit}</Text>
+      </View>
+      <View>
+        <Text className="text-slate-400 text-[10px] uppercase font-bold">Specs</Text>
+        <Text className="text-slate-300 font-medium text-xs">{item.specs}</Text>
+      </View>
+    </View>
+
+    {/* Contact Area */}
+    {unlocked ? (
+      <View className="bg-indigo-950/80 border border-indigo-500/50 p-3 rounded-xl flex-row items-center justify-between">
+        <View>
+          <Text className="text-indigo-300 font-bold text-xs">{unlocked.name}</Text>
+          <Text className="text-white font-black text-sm">{unlocked.phone}</Text>
+        </View>
+        <View className="bg-emerald-600 p-2 rounded-full">
+          <CheckCircle color="#fff" size={18} />
+        </View>
+      </View>
+    ) : (
+      <TouchableOpacity
+        onPress={() => onUnlock(item)}
+        activeOpacity={0.8}
+        className="bg-indigo-600 p-3.5 rounded-xl flex-row items-center justify-center border border-indigo-400/30"
+      >
+        <Lock color="#fff" size={16} className="mr-2" />
+        <Text className="text-white font-bold text-xs">Unlock Owner Phone (₹49)</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+), (prevProps, nextProps) => prevProps.item.id === nextProps.item.id && prevProps.unlocked === nextProps.unlocked);
 
 export default function NativepropertiesScreen() {
   const router = useRouter();
@@ -59,7 +115,7 @@ export default function NativepropertiesScreen() {
     return () => { isMounted = false; };
   }, []);
 
-  const handleUnlockLead = (property) => {
+  const handleUnlockLead = useCallback((property) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Unlock Lead Contact',
@@ -83,9 +139,33 @@ export default function NativepropertiesScreen() {
         }
       ]
     );
-  };
+  }, []);
 
-  const filtered = properties.filter(p => selectedFilter === 'All' || p.type === selectedFilter);
+  const filtered = useMemo(() => {
+    return properties.filter(p => selectedFilter === 'All' || p.type === selectedFilter);
+  }, [properties, selectedFilter]);
+
+  const renderItem = useCallback(({ item }) => (
+    <PropertyItem 
+      item={item} 
+      unlocked={unlockedLeads[item.id]} 
+      onUnlock={handleUnlockLead} 
+    />
+  ), [unlockedLeads, handleUnlockLead]);
+
+  const ListHeader = useCallback(() => (
+    <View className="mb-4">
+      {/* Banner */}
+      <View className="bg-gradient-to-r from-indigo-900 to-slate-900 p-5 rounded-3xl mb-6 border border-indigo-500/30">
+        <View className="flex-row items-center mb-2">
+          <Building color="#818cf8" size={24} className="mr-2" />
+          <Text className="text-white text-lg font-black">Pay-Per-Lead Verified</Text>
+        </View>
+        <Text className="text-indigo-200 text-xs leading-5">No brokers. No 1-month brokerage fees. Pay ₹49 to unlock direct owner contact numbers.</Text>
+      </View>
+      <Text className="text-slate-400 font-bold uppercase tracking-wider text-xs">Available Rental Properties ({filtered.length})</Text>
+    </View>
+  ), [filtered.length]);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
@@ -121,77 +201,16 @@ export default function NativepropertiesScreen() {
           <Text className="text-slate-500 mt-4 font-bold text-xs uppercase tracking-widest">Loading Properties...</Text>
         </View>
       ) : (
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-          
-          {/* Banner */}
-          <View className="bg-gradient-to-r from-indigo-900 to-slate-900 p-5 rounded-3xl mb-6 border border-indigo-500/30">
-            <View className="flex-row items-center mb-2">
-              <Building color="#818cf8" size={24} className="mr-2" />
-              <Text className="text-white text-lg font-black">Pay-Per-Lead Verified</Text>
-            </View>
-            <Text className="text-indigo-200 text-xs leading-5">No brokers. No 1-month brokerage fees. Pay ₹49 to unlock direct owner contact numbers.</Text>
-          </View>
-
-          <Text className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-3">Available Rental Properties ({filtered.length})</Text>
-
-          {filtered.map((item) => {
-            const unlocked = unlockedLeads[item.id];
-            return (
-              <View key={item.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-4">
-                {item.is_featured && (
-                  <View className="bg-emerald-950 border border-emerald-800 self-start px-3 py-1 rounded-full mb-3 flex-row items-center">
-                    <Sparkles color="#34d399" size={12} className="mr-1" />
-                    <Text className="text-emerald-400 font-bold text-[10px]">FEATURED DIRECT OWNER</Text>
-                  </View>
-                )}
-
-                <Text className="text-white font-black text-lg mb-1">{item.title}</Text>
-                
-                <View className="flex-row items-center mb-3">
-                  <MapPin color="#94a3b8" size={14} className="mr-1" />
-                  <Text className="text-slate-400 text-xs">{item.location}</Text>
-                </View>
-
-                <View className="flex-row justify-between items-center bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800/80">
-                  <View>
-                    <Text className="text-slate-400 text-[10px] uppercase font-bold">Monthly Rent</Text>
-                    <Text className="text-indigo-400 font-black text-base">{item.rent}</Text>
-                  </View>
-                  <View>
-                    <Text className="text-slate-400 text-[10px] uppercase font-bold">Deposit</Text>
-                    <Text className="text-slate-200 font-bold text-xs">{item.deposit}</Text>
-                  </View>
-                  <View>
-                    <Text className="text-slate-400 text-[10px] uppercase font-bold">Specs</Text>
-                    <Text className="text-slate-300 font-medium text-xs">{item.specs}</Text>
-                  </View>
-                </View>
-
-                {/* Contact Area */}
-                {unlocked ? (
-                  <View className="bg-indigo-950/80 border border-indigo-500/50 p-3 rounded-xl flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-indigo-300 font-bold text-xs">{unlocked.name}</Text>
-                      <Text className="text-white font-black text-sm">{unlocked.phone}</Text>
-                    </View>
-                    <View className="bg-emerald-600 p-2 rounded-full">
-                      <CheckCircle color="#fff" size={18} />
-                    </View>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => handleUnlockLead(item)}
-                    activeOpacity={0.8}
-                    className="bg-indigo-600 p-3.5 rounded-xl flex-row items-center justify-center border border-indigo-400/30"
-                  >
-                    <Lock color="#fff" size={16} className="mr-2" />
-                    <Text className="text-white font-bold text-xs">Unlock Owner Phone (₹49)</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            );
-          })}
-        </ScrollView>
+        <View className="flex-1 w-full">
+          <FlashList
+            data={filtered}
+            keyExtractor={item => item.id}
+            renderItem={renderItem}
+            ListHeaderComponent={ListHeader}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }}
+            estimatedItemSize={206}
+          />
+        </View>
       )}
     </SafeAreaView>
   );

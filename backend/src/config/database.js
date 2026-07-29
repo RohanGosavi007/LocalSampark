@@ -10,11 +10,12 @@ if (process.env.USE_SQLITE === 'true') {
     ? { connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL, max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000, ssl: { rejectUnauthorized: false } }
     : {
         host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432'),
+        // 10x Scale: Route through PgBouncer transaction pool in production
+        port: process.env.NODE_ENV === 'production' ? parseInt(process.env.DB_PORT || '6432') : parseInt(process.env.DB_PORT || '5432'),
         database: process.env.DB_NAME || 'localsampark',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'postgres123',
-        max: 20,
+        max: process.env.NODE_ENV === 'production' ? 100 : 20, // High Node.js side pool limits since PgBouncer handles the DB limits
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
       };

@@ -143,9 +143,9 @@ export default function NativeMarketplaceScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity 
               onPress={() => setSelectedCategory(item)}
-              className={mr-3 px-4 py-2 rounded-full border }
+              className="mr-3 px-4 py-2 rounded-full border"
             >
-              <Text className={ont-bold }>{item}</Text>
+              <Text className="font-bold">{item}</Text>
             </TouchableOpacity>
           )}
         />

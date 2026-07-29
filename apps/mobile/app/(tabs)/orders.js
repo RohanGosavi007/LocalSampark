@@ -1,10 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+
+// Memoized Order Card component
+const OrderCard = React.memo(({ order, activeTab }) => {
+  return (
+    <View style={styles.orderCard}>
+      <View style={styles.orderHeader}>
+        <Text style={styles.orderId}>{order.id}</Text>
+        <View style={styles.typeBadge}>
+          <Text style={styles.typeText}>{order.type}</Text>
+        </View>
+      </View>
+      
+      <Text style={styles.customerName}>{order.customer}</Text>
+      
+      <View style={styles.orderMeta}>
+        <Text style={styles.metaText}>{order.items} Items</Text>
+        <Text style={styles.metaDot}>•</Text>
+        <Text style={styles.metaText}>{order.time}</Text>
+      </View>
+      
+      <View style={styles.orderFooter}>
+        <Text style={styles.amount}>{order.amount}</Text>
+        <View style={styles.actions}>
+          {activeTab === 'new' && (
+            <>
+              <TouchableOpacity style={[styles.actionBtn, styles.declineBtn]}><Text style={styles.actionBtnText}>Decline</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]}><Text style={styles.actionBtnText}>Accept</Text></TouchableOpacity>
+            </>
+          )}
+          {activeTab === 'preparing' && (
+            <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]}><Text style={styles.actionBtnText}>Mark Ready</Text></TouchableOpacity>
+          )}
+          {activeTab === 'ready' && order.type === 'Pickup' && (
+            <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]}><Text style={styles.actionBtnText}>Handed Over</Text></TouchableOpacity>
+          )}
+          {activeTab === 'ready' && order.type === 'Delivery' && (
+            <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn, { backgroundColor: '#f59e0b', borderColor: '#d97706' }]}><Text style={styles.actionBtnText}>Assign Agent</Text></TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}, (prev, next) => prev.order.id === next.order.id && prev.activeTab === next.activeTab);
 
 export default function OrdersScreen() {
   const [activeTab, setActiveTab] = useState('new');
   
-  const mockOrders = {
+  const mockOrders = useMemo(() => ({
     new: [
       { id: 'ORD-8921', customer: 'Priya Sharma', items: 3, amount: '₹450', time: '10 mins ago', type: 'Delivery' },
       { id: 'ORD-8922', customer: 'Rahul Verma', items: 1, amount: '₹120', time: '5 mins ago', type: 'Pickup' }
@@ -16,14 +60,27 @@ export default function OrdersScreen() {
     completed: [
       { id: 'ORD-8910', customer: 'Sneha Gupta', items: 2, amount: '₹340', time: '2 hours ago', type: 'Pickup' }
     ]
-  };
+  }), []);
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'new', label: `New (${mockOrders.new.length})` },
     { id: 'preparing', label: `Cooking (${mockOrders.preparing.length})` },
     { id: 'ready', label: `Ready (${mockOrders.ready.length})` },
     { id: 'completed', label: 'Done' }
-  ];
+  ], [mockOrders]);
+
+  const currentOrders = useMemo(() => mockOrders[activeTab] || [], [mockOrders, activeTab]);
+
+  const renderItem = useCallback(({ item }) => (
+    <OrderCard order={item} activeTab={activeTab} />
+  ), [activeTab]);
+
+  const renderEmptyState = useCallback(() => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyIcon}>📦</Text>
+      <Text style={styles.emptyText}>No orders in this status</Text>
+    </View>
+  ), []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,56 +103,18 @@ export default function OrdersScreen() {
         ))}
       </View>
 
-      {/* Order List */}
-      <ScrollView contentContainerStyle={styles.listContainer}>
-        {mockOrders[activeTab].length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📦</Text>
-            <Text style={styles.emptyText}>No orders in this status</Text>
-          </View>
-        ) : (
-          mockOrders[activeTab].map(order => (
-            <View key={order.id} style={styles.orderCard}>
-              <View style={styles.orderHeader}>
-                <Text style={styles.orderId}>{order.id}</Text>
-                <View style={styles.typeBadge}>
-                  <Text style={styles.typeText}>{order.type}</Text>
-                </View>
-              </View>
-              
-              <Text style={styles.customerName}>{order.customer}</Text>
-              
-              <View style={styles.orderMeta}>
-                <Text style={styles.metaText}>{order.items} Items</Text>
-                <Text style={styles.metaDot}>•</Text>
-                <Text style={styles.metaText}>{order.time}</Text>
-              </View>
-              
-              <View style={styles.orderFooter}>
-                <Text style={styles.amount}>{order.amount}</Text>
-                <View style={styles.actions}>
-                  {activeTab === 'new' && (
-                    <>
-                      <TouchableOpacity style={[styles.actionBtn, styles.declineBtn]}><Text style={styles.actionBtnText}>Decline</Text></TouchableOpacity>
-                      <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]}><Text style={styles.actionBtnText}>Accept</Text></TouchableOpacity>
-                    </>
-                  )}
-                  {activeTab === 'preparing' && (
-                    <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]}><Text style={styles.actionBtnText}>Mark Ready</Text></TouchableOpacity>
-                  )}
-                  {activeTab === 'ready' && order.type === 'Pickup' && (
-                    <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]}><Text style={styles.actionBtnText}>Handed Over</Text></TouchableOpacity>
-                  )}
-                  {activeTab === 'ready' && order.type === 'Delivery' && (
-                    <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn, { backgroundColor: '#f59e0b', borderColor: '#d97706' }]}><Text style={styles.actionBtnText}>Assign Agent</Text></TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
-          ))
-        )}
-        <View style={{height: 100}} />
-      </ScrollView>
+      {/* Order List using FlashList */}
+      <View style={{ flex: 1, paddingHorizontal: 16 }}>
+        <FlashList
+          data={currentOrders}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          estimatedItemSize={140}
+          getItemType={(item) => 'order_card'}
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={{ paddingVertical: 16 }}
+        />
+      </View>
     </SafeAreaView>
   );
 }

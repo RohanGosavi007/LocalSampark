@@ -28,7 +28,7 @@ const SECTION_TABS = [
   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
 ];
 
-export default function AdvancedRestaurantManager({ token, shopId, shop }) {
+export default React.memo(function AdvancedRestaurantManager({ token, shopId, shop }) {
   const [activeSection, setActiveSection] = useState('dashboard');
 
   return (
@@ -72,7 +72,7 @@ export default function AdvancedRestaurantManager({ token, shopId, shop }) {
       {activeSection === 'analytics' && <RestaurantAnalytics token={token} shopId={shopId} />}
     </div>
   );
-}
+});
 
 // ═══════════════════════════════════════════════════════════════════════
 // RESTAURANT DASHBOARD — Live Overview

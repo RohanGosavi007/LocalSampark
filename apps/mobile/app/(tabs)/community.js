@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
 const POSTS = [
   { id: 1, author: 'Rohan Joshi', avatar: '👨‍💼', society: 'Goodwill Woodlands', time: '1 hr ago', type: 'question', content: 'Did anyone else experience a power outage in Phase 2 last night? Any updates from the power department on restoration ETA?', likes: 14, comments: 6, pinned: false },
@@ -68,96 +69,118 @@ export default function CommunityScreen() {
           <Text style={styles.createBtnText}>+ New Post</Text>
         </TouchableOpacity>
       </View>
-      
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
-        {/* Pinned Posts */}
-        {posts.filter(p => p.pinned).map(post => (
-          <View key={post.id} style={[styles.card, { borderColor: '#ef4444', borderWidth: 1, backgroundColor: '#fef2f2' }]}>
-            <View style={styles.cardHeader}>
-              <View style={styles.authorRow}>
-                <Text style={styles.avatar}>{post.avatar}</Text>
-                <View>
-                  <Text style={styles.author}>{post.author}</Text>
-                  <Text style={styles.meta}>{post.society} • {post.time}</Text>
-                </View>
-              </View>
-              <View style={[styles.typeBadge, {backgroundColor: typeConfig[post.type].bg}]}>
-                <Text style={[styles.typeText, {color: typeConfig[post.type].color}]}>📌 PINNED {typeConfig[post.type].label}</Text>
-              </View>
-            </View>
-            <Text style={styles.postContent}>{post.content}</Text>
-          </View>
-        ))}
-
-        {/* Active Polls */}
-        {POLLS.map(poll => (
-          <View key={poll.id} style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#f59e0b' }]}>
-            <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 12}}>
-              <Text style={{fontSize: 20, marginRight: 8}}>📊</Text>
-              <Text style={{color: '#f59e0b', fontWeight: '800', fontSize: 12}}>COMMUNITY POLL</Text>
-            </View>
-            <Text style={styles.postContent}>{poll.q}</Text>
-            
-            {poll.options.map((opt, idx) => {
-              const totalVotes = poll.options.reduce((sum, o) => sum + o.v, 0);
-              const isVotedFor = pollVotes[poll.id] === idx;
-              const hasVoted = pollVotes[poll.id] !== undefined;
-              const percent = hasVoted ? Math.round((opt.v / totalVotes) * 100) : 0;
-
+      <View style={{ flex: 1 }}>
+        <FlashList
+          data={[
+            ...posts.filter(p => p.pinned).map(p => ({ ...p, isPinned: true })),
+            { type: 'polls_header' },
+            ...POLLS.map(p => ({ ...p, isPoll: true })),
+            ...posts.filter(p => !p.pinned)
+          ]}
+          estimatedItemSize={200}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          keyExtractor={(item) => item.isPoll ? `poll-${item.id}` : (item.type === 'polls_header' ? 'polls_header' : `post-${item.id}`)}
+          getItemType={(item) => {
+            if (item.type === 'polls_header') return 'header';
+            if (item.isPoll) return 'poll';
+            if (item.isPinned) return 'pinned_post';
+            return 'post';
+          }}
+          renderItem={({ item }) => {
+            if (item.type === 'polls_header') {
+              return null; // Using this just as a spacer if needed, or we can just render polls directly
+            }
+            if (item.isPoll) {
+              const poll = item;
               return (
-                <TouchableOpacity 
-                  key={idx} 
-                  style={[
-                    styles.pollOption, 
-                    isVotedFor && styles.pollOptionSelected,
-                    hasVoted && { borderColor: 'transparent' }
-                  ]}
-                  onPress={() => handleVote(poll.id, idx)}
-                  disabled={hasVoted}
-                >
-                  {hasVoted && (
-                    <View style={[styles.pollBar, { width: `${percent}%`, backgroundColor: isVotedFor ? '#dcfce7' : '#f1f5f9' }]} />
-                  )}
-                  <View style={styles.pollOptionContent}>
-                    <Text style={[styles.pollOptionText, isVotedFor && styles.pollOptionTextSelected]}>{opt.l}</Text>
-                    {hasVoted && <Text style={styles.pollPercent}>{percent}%</Text>}
+                <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#f59e0b' }]}>
+                  <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 12}}>
+                    <Text style={{fontSize: 20, marginRight: 8}}>📊</Text>
+                    <Text style={{color: '#f59e0b', fontWeight: '800', fontSize: 12}}>COMMUNITY POLL</Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
-            <Text style={styles.pollFooter}>{poll.options.reduce((sum, o) => sum + o.v, 0)} votes total</Text>
-          </View>
-        ))}
+                  <Text style={styles.postContent}>{poll.q}</Text>
+                  
+                  {poll.options.map((opt, idx) => {
+                    const totalVotes = poll.options.reduce((sum, o) => sum + o.v, 0);
+                    const isVotedFor = pollVotes[poll.id] === idx;
+                    const hasVoted = pollVotes[poll.id] !== undefined;
+                    const percent = hasVoted ? Math.round((opt.v / totalVotes) * 100) : 0;
 
-        {/* Regular Feed */}
-        {posts.filter(p => !p.pinned).map(post => (
-          <View key={post.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.authorRow}>
-                <Text style={styles.avatar}>{post.avatar}</Text>
-                <View>
-                  <Text style={styles.author}>{post.author}</Text>
-                  <Text style={styles.meta}>{post.society} • {post.time}</Text>
+                    return (
+                      <TouchableOpacity 
+                        key={idx} 
+                        style={[
+                          styles.pollOption, 
+                          isVotedFor && styles.pollOptionSelected,
+                          hasVoted && { borderColor: 'transparent' }
+                        ]}
+                        onPress={() => handleVote(poll.id, idx)}
+                        disabled={hasVoted}
+                      >
+                        {hasVoted && (
+                          <View style={[styles.pollBar, { width: `${percent}%`, backgroundColor: isVotedFor ? '#dcfce7' : '#f1f5f9' }]} />
+                        )}
+                        <View style={styles.pollOptionContent}>
+                          <Text style={[styles.pollOptionText, isVotedFor && styles.pollOptionTextSelected]}>{opt.l}</Text>
+                          {hasVoted && <Text style={styles.pollPercent}>{percent}%</Text>}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <Text style={styles.pollFooter}>{poll.options.reduce((sum, o) => sum + o.v, 0)} votes total</Text>
+                </View>
+              );
+            }
+            
+            const post = item;
+            if (post.isPinned) {
+              return (
+                <View style={[styles.card, { borderColor: '#ef4444', borderWidth: 1, backgroundColor: '#fef2f2' }]}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.authorRow}>
+                      <Text style={styles.avatar}>{post.avatar}</Text>
+                      <View>
+                        <Text style={styles.author}>{post.author}</Text>
+                        <Text style={styles.meta}>{post.society} • {post.time}</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.typeBadge, {backgroundColor: typeConfig[post.type].bg}]}>
+                      <Text style={[styles.typeText, {color: typeConfig[post.type].color}]}>📌 PINNED {typeConfig[post.type].label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.postContent}>{post.content}</Text>
+                </View>
+              );
+            }
+
+            return (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.authorRow}>
+                    <Text style={styles.avatar}>{post.avatar}</Text>
+                    <View>
+                      <Text style={styles.author}>{post.author}</Text>
+                      <Text style={styles.meta}>{post.society} • {post.time}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.typeBadge, {backgroundColor: typeConfig[post.type].bg}]}>
+                    <Text style={[styles.typeText, {color: typeConfig[post.type].color}]}>{typeConfig[post.type].label}</Text>
+                  </View>
+                </View>
+                <Text style={styles.postContent}>{post.content}</Text>
+                <View style={styles.postFooter}>
+                  <TouchableOpacity style={styles.actionBtn}>
+                    <Text style={styles.actionText}>👍 {post.likes} Likes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn}>
+                    <Text style={styles.actionText}>💬 {post.comments} Comments</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <View style={[styles.typeBadge, {backgroundColor: typeConfig[post.type].bg}]}>
-                <Text style={[styles.typeText, {color: typeConfig[post.type].color}]}>{typeConfig[post.type].label}</Text>
-              </View>
-            </View>
-            <Text style={styles.postContent}>{post.content}</Text>
-            <View style={styles.postFooter}>
-              <TouchableOpacity style={styles.actionBtn}>
-                <Text style={styles.actionText}>👍 {post.likes} Likes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn}>
-                <Text style={styles.actionText}>💬 {post.comments} Comments</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-
-      </ScrollView>
+            );
+          }}
+        />
 
       {/* Create Post Modal */}
       <Modal visible={showCreateModal} animationType="slide" transparent>
@@ -200,6 +223,7 @@ export default function CommunityScreen() {
           </View>
         </View>
       </Modal>
+      </View>
     </SafeAreaView>
   );
 }

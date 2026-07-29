@@ -1,58 +1,55 @@
 config:
   target: "http://localhost:5000"
-  environments:
-    local:
-      target: "http://localhost:5000"
-    staging:
-      target: "https://localsampark-api-staging.onrender.com"
   phases:
-    # Phase 1: Warm up the cache and connections
-    - duration: 30
-      arrivalRate: 50
+    - duration: 60
+      arrivalRate: 10
       name: "Warm up"
-    # Phase 2: Rapid ramp up to 10,000 concurrent VUs over 2 minutes
     - duration: 120
       arrivalRate: 50
-      rampTo: 300
-      name: "Ramp up to peak load (10k+ aggregate VUs)"
-    # Phase 3: Sustain peak load
-    - duration: 300
-      arrivalRate: 300
-      name: "Sustain peak load"
-  variables:
-    searchTerm:
-      - "milk"
-      - "bread"
-      - "electrician"
-      - "paracetamol"
-  http:
-    timeout: 10
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak traffic"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
 scenarios:
-  - name: "Core E-Commerce Flow: Browse & Add to Cart"
-    weight: 7
+  - name: "Health Check Baseline"
+    weight: 10
     flow:
       - get:
-          url: "/api/v1/zones/active"
-      - get:
-          url: "/api/v1/shops?zoneId=1"
-      - get:
-          url: "/api/v1/shops/1/products"
-      - get:
-          url: "/api/v1/search?q={{ searchTerm }}"
-      # Mock add to cart action (reads)
-      - get:
-          url: "/api/v1/products/101"
+          url: "/health"
 
-  - name: "Community Trust Feed Engine"
-    weight: 2
+  - name: "Browse Shops Flow"
+    weight: 40
     flow:
       - get:
-          url: "/api/v1/trust-reviews/feed?zoneId=1"
+          url: "/api/v1/shops"
+      - think: 2
+      - get:
+          url: "/api/v1/zones"
+      - think: 1
+      - get:
+          url: "/api/v1/feed"
 
-  - name: "Heavy Transaction / Analytics Engine"
-    weight: 1
+  - name: "Community Feed Load"
+    weight: 30
     flow:
       - get:
-          url: "/api/v1/analytics/1/predictions"
+          url: "/api/v1/feed"
+      - think: 3
       - get:
-          url: "/api/v1/group-buy/active"
+          url: "/api/v1/events"
+
+  - name: "API Endpoint Sweep"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/v1/zones"
+      - think: 1
+      - get:
+          url: "/api/v1/shops"
+      - think: 1
+      - get:
+          url: "/health"

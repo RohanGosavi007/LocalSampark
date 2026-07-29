@@ -1,23 +1,26 @@
 'use client';
 import React from 'react';
 
-// ─── Lazy-Loaded Visitor View Imports ──────────────────────────────────────────
-const HospitalVisitorView = React.lazy(() => import('./HospitalVisitorView'));
-const RetailVisitorView = React.lazy(() => import('./RetailVisitorView'));
-const TwoWheelerVisitorView = React.lazy(() => import('./TwoWheelerVisitorView'));
-const FourWheelerVisitorView = React.lazy(() => import('./FourWheelerVisitorView'));
-const DoctorVisitorView = React.lazy(() => import('./DoctorVisitorView'));
-const BeautyVisitorView = React.lazy(() => import('./BeautyVisitorView'));
-const HomeServiceVisitorView = React.lazy(() => import('./HomeServiceVisitorView'));
-const ProfessionalVisitorView = React.lazy(() => import('./ProfessionalVisitorView'));
-const EducationEventsVisitorView = React.lazy(() => import('./EducationEventsVisitorView'));
-const RestaurantVisitorView = React.lazy(() => import('./RestaurantVisitorView'));
-const PharmacyVisitorView = React.lazy(() => import('./PharmacyVisitorView'));
-const TiffinCateringVisitorView = React.lazy(() => import('./TiffinCateringVisitorView'));
-const GarageVisitorView = React.lazy(() => import('./GarageVisitorView'));
-const TurfVisitorView = React.lazy(() => import('./TurfVisitorView'));
-const RentalVisitorView = React.lazy(() => import('./RentalVisitorView'));
-const LeadDirectoryVisitorView = React.lazy(() => import('./LeadDirectoryVisitorView'));
+import dynamic from 'next/dynamic';
+
+const loadingFallback = () => <div className="p-8 text-center"><div className="animate-pulse flex flex-col space-y-4"><div className="h-4 bg-slate-800 rounded w-3/4 mx-auto"></div><div className="h-4 bg-slate-800 rounded w-1/2 mx-auto"></div></div></div>;
+
+const HospitalVisitorView = dynamic(() => import('./HospitalVisitorView'), { loading: loadingFallback });
+const RetailVisitorView = dynamic(() => import('./RetailVisitorView'), { loading: loadingFallback });
+const TwoWheelerVisitorView = dynamic(() => import('./TwoWheelerVisitorView'), { loading: loadingFallback });
+const FourWheelerVisitorView = dynamic(() => import('./FourWheelerVisitorView'), { loading: loadingFallback });
+const DoctorVisitorView = dynamic(() => import('./DoctorVisitorView'), { loading: loadingFallback });
+const BeautyVisitorView = dynamic(() => import('./BeautyVisitorView'), { loading: loadingFallback });
+const HomeServiceVisitorView = dynamic(() => import('./HomeServiceVisitorView'), { loading: loadingFallback });
+const ProfessionalVisitorView = dynamic(() => import('./ProfessionalVisitorView'), { loading: loadingFallback });
+const EducationEventsVisitorView = dynamic(() => import('./EducationEventsVisitorView'), { loading: loadingFallback });
+const RestaurantVisitorView = dynamic(() => import('./RestaurantVisitorView'), { loading: loadingFallback });
+const PharmacyVisitorView = dynamic(() => import('./PharmacyVisitorView'), { loading: loadingFallback });
+const TiffinCateringVisitorView = dynamic(() => import('./TiffinCateringVisitorView'), { loading: loadingFallback });
+const GarageVisitorView = dynamic(() => import('./GarageVisitorView'), { loading: loadingFallback });
+const TurfVisitorView = dynamic(() => import('./TurfVisitorView'), { loading: loadingFallback });
+const RentalVisitorView = dynamic(() => import('./RentalVisitorView'), { loading: loadingFallback });
+const LeadDirectoryVisitorView = dynamic(() => import('./LeadDirectoryVisitorView'), { loading: loadingFallback });
 
 // ═══════════════════════════════════════════════════════════════════════
 // VISITOR VIEW ROUTER — Maps 55 categories → correct visitor experience
@@ -137,7 +140,7 @@ const CATEGORY_VIEW_MAP = {
  * @param {function} onBookAppointment - Callback for booking
  * @param {function} onRequestQuote - Callback for quotes
  */
-export default function VisitorViewRouter({
+const VisitorViewRouterComponent = ({
   categorySlug,
   shop,
   services = [],
@@ -147,7 +150,7 @@ export default function VisitorViewRouter({
   onRequestQuote,
   onSubscribe,
   onRequestService,
-}) {
+}) => {
   const viewType = CATEGORY_VIEW_MAP[categorySlug] || 'retail';
 
   const renderView = () => {
@@ -174,7 +177,18 @@ export default function VisitorViewRouter({
       {renderView()}
     </React.Suspense>
   );
-}
+};
+
+// 10x Scale: Strict Component Memoization
+export default React.memo(VisitorViewRouterComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.shop?.id === nextProps.shop?.id &&
+    prevProps.categorySlug === nextProps.categorySlug &&
+    prevProps.services?.length === nextProps.services?.length &&
+    prevProps.products?.length === nextProps.products?.length &&
+    prevProps.staff?.length === nextProps.staff?.length
+  );
+});
 
 /**
  * Get the view type for a category

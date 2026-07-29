@@ -1,0 +1,17 @@
+{
+  "installationFolder": "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\build-android\\react-native-worklets-core\\intermediates\\prefab_package\\release\\prefab",
+  "gradlePath": ":react-native-worklets-core",
+  "packageInfo": {
+    "packageName": "react-native-worklets-core",
+    "packageSchemaVersion": 2,
+    "packageDependencies": [],
+    "modules": [
+      {
+        "moduleName": "rnworklets",
+        "moduleHeaders": "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\build-android\\react-native-worklets-core\\headers\\rnworklets",
+        "moduleExportLibraries": [],
+        "abis": []
+      }
+    ]
+  }
+}

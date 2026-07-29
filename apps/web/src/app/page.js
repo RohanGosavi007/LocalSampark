@@ -21,42 +21,36 @@ const TESTIMONIALS = [
   { name: 'Sunil Deshmukh', role: 'Franchise Partner', text: 'As a franchise partner managing 34 shops, I earned ₹42,600 in April alone.', zone: 'Dhanori' },
 ];
 
+import { StoreIcon, CommunityIcon, DeliveryIcon, ProduceIcon } from './components/ui/RichIcons';
+
 const PILLARS = [
   { 
-    title: 'Community & Forums', icon: MessageSquare, link: '/community', 
-    desc: 'Share local updates, post stories, create polls, and discuss development.', 
-    className: 'bento-col-2 bento-row-2 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 border-indigo-200 dark:border-indigo-800 hover:shadow-[0_8px_30px_rgb(99,102,241,0.2)] hover:-translate-y-2',
-    iconColor: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-100 dark:bg-indigo-900/50'
+    title: 'Community Forums', 
+    iconComp: <CommunityIcon size={48} />, 
+    link: '/community', 
+    desc: 'Share local updates & discuss developments.', 
+    className: 'bento-col-2 bento-row-2 bg-gradient-to-br from-rose-50 to-pink-100 border-rose-200 hover:shadow-[0_8px_30px_rgb(225,29,72,0.2)] hover:-translate-y-2'
   },
   { 
-    title: 'Local Business', icon: Store, link: '/shops', 
-    desc: 'Order direct from neighborhood stores with zero commission.', 
-    className: 'bento-col-2 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/40 dark:to-red-950/40 border-orange-200 dark:border-orange-800 hover:shadow-[0_8px_30px_rgb(249,115,22,0.2)] hover:-translate-y-2',
-    iconColor: 'text-orange-600 dark:text-orange-400', iconBg: 'bg-orange-100 dark:bg-orange-900/50'
+    title: 'Local Shops', 
+    iconComp: <StoreIcon size={48} />, 
+    link: '/shops', 
+    desc: 'Order direct from neighborhood stores instantly.', 
+    className: 'bento-col-2 bg-gradient-to-br from-orange-50 to-amber-100 border-orange-200 hover:shadow-[0_8px_30px_rgb(249,115,22,0.2)] hover:-translate-y-2'
   },
   { 
-    title: 'Gig Economy', icon: Wrench, link: '/jobs', 
-    desc: 'Hire verified local electricians, plumbers, or tutors.', 
-    className: 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/40 border-blue-200 dark:border-blue-800 hover:shadow-[0_8px_30px_rgb(59,130,246,0.2)] hover:-translate-y-2',
-    iconColor: 'text-blue-600 dark:text-blue-400', iconBg: 'bg-blue-100 dark:bg-blue-900/50'
+    title: 'Hyperlocal Delivery', 
+    iconComp: <DeliveryIcon size={48} />, 
+    link: '/download', 
+    desc: '10-minute grocery delivery from your zone.', 
+    className: 'bg-gradient-to-br from-violet-50 to-purple-100 border-violet-200 hover:shadow-[0_8px_30px_rgb(91,33,182,0.2)] hover:-translate-y-2'
   },
   { 
-    title: 'Real Estate Hub', icon: Building2, link: '/properties', 
-    desc: 'Search for rental apartments, PGs, or commercial spaces.', 
-    className: 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border-emerald-200 dark:border-emerald-800 hover:shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:-translate-y-2',
-    iconColor: 'text-emerald-600 dark:text-emerald-400', iconBg: 'bg-emerald-100 dark:bg-emerald-900/50'
-  },
-  { 
-    title: 'Hyperlocal Delivery', icon: Package, link: '/download', 
-    desc: 'Send packages across your zone instantly.', 
-    className: 'bento-col-2 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/40 dark:to-rose-950/40 border-pink-200 dark:border-pink-800 hover:shadow-[0_8px_30px_rgb(236,72,153,0.2)] hover:-translate-y-2',
-    iconColor: 'text-pink-600 dark:text-pink-400', iconBg: 'bg-pink-100 dark:bg-pink-900/50'
-  },
-  { 
-    title: 'Carpool & Travel', icon: Car, link: '/carpool', 
-    desc: 'Share daily rides to IT Parks with verified neighbors.', 
-    className: 'bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/40 dark:to-amber-950/40 border-yellow-200 dark:border-yellow-800 hover:shadow-[0_8px_30px_rgb(234,179,8,0.2)] hover:-translate-y-2',
-    iconColor: 'text-yellow-600 dark:text-yellow-400', iconBg: 'bg-yellow-100 dark:bg-yellow-900/50'
+    title: 'Fresh Produce', 
+    iconComp: <ProduceIcon size={48} />, 
+    link: '/shops?category=fresh', 
+    desc: 'Farm-fresh vegetables direct to door.', 
+    className: 'bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-200 hover:shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:-translate-y-2'
   },
   { 
     title: 'Society Mgmt', icon: Home, link: '/society', 
@@ -410,11 +404,8 @@ export default function HomePage() {
                 { icon: TrendingUp, text: 'Franchise Partner Sunil earned ₹2,400 today', time: '22 min ago', color: 'text-green-500' },
                 { icon: Activity, text: '12 new neighbors joined from Tingre Nagar', time: '30 min ago', color: 'text-pink-500' },
                 { icon: ShoppingBag, text: 'Sunita ordered Fresh Paneer from Sharma Grocery', time: '2 min ago', color: 'text-primary' },
-                { icon: Car, text: 'Rohan shared a ride to Hinjewadi — 2 seats filled', time: '5 min ago', color: 'text-orange-500' },
-                { icon: Truck, text: 'Delivery completed: Golden Crumb Bakery → Ganga Aria', time: '8 min ago', color: 'text-emerald-500' },
-                { icon: Users, text: 'Pooja registered for Neighborhood Clean-Up Drive', time: '12 min ago', color: 'text-purple-500' },
               ].map((item, i) => (
-                <div key={i} className="flex-shrink-0 flex items-center gap-3 glass-card px-5 py-3 rounded-2xl border border-border min-w-[340px]">
+                <div key={i} className="flex items-center gap-3 bg-background border border-border px-5 py-3 rounded-2xl min-w-[280px]">
                   <div className={`w-8 h-8 rounded-xl bg-background-alt flex items-center justify-center ${item.color}`}>
                     <item.icon className="w-4 h-4" />
                   </div>

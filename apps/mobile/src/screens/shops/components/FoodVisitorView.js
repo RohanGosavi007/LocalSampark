@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useCartStore } from '../../../store/cartStore';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader from '../../../components/ui/SkeletonLoader';
 import { Utensils, Plus, Clock } from 'lucide-react-native';
 
 export default function FoodVisitorView({ shop, products = [], loading = false }) {

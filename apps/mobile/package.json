@@ -13,6 +13,7 @@
     "test:e2e:test": "detox test -c android.emu.debug"
   },
   "dependencies": {
+    "@gorhom/bottom-sheet": "^4.6.1",
     "@nozbe/watermelondb": "^0.28.0",
     "@nozbe/with-observables": "^1.6.0",
     "@react-native-async-storage/async-storage": "1.23.1",

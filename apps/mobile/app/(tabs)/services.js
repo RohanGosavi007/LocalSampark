@@ -131,6 +131,7 @@ function ServicesModule() {
         keyExtractor={s => s.id}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        getItemType={(item) => 'service_card'}
         ListEmptyComponent={<Text style={styles.noResults}>No services found matching your criteria</Text>}
         renderItem={({ item: s }) => (
           <View style={styles.serviceCard}>

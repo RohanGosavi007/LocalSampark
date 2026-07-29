@@ -14,17 +14,20 @@ import { API_BASE } from '@/lib/api';
 // What visitors see: services, staff, live wait time, membership plans, book
 // ═══════════════════════════════════════════════════════════════════════
 
-export default function EnhancedSalonVisitorView({ shop, services = [], staff = [], onBookAppointment }) {
+export default React.memo(function EnhancedSalonVisitorView({ shop, services = [], staff = [], onBookAppointment }) {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
   // Group services by category
-  const serviceCategories = {};
-  services.forEach(s => {
-    const cat = s.category || 'General';
-    if (!serviceCategories[cat]) serviceCategories[cat] = [];
-    serviceCategories[cat].push(s);
-  });
+  const serviceCategories = React.useMemo(() => {
+    const categories = {};
+    services.forEach(s => {
+      const cat = s.category || 'General';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(s);
+    });
+    return categories;
+  }, [services]);
 
   return (
     <div className="space-y-8">
@@ -223,4 +226,4 @@ export default function EnhancedSalonVisitorView({ shop, services = [], staff = 
       </AnimatePresence>
     </div>
   );
-}
+});

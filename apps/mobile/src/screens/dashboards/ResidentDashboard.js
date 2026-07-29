@@ -6,6 +6,13 @@ import StoriesRow from '../../components/StoriesRow';
 import { useNotifications } from '../../context/NotificationContext';
 import { useZone } from '../../context/ZoneContext';
 import { apiGet } from '../../lib/api';
+import SkeletonLoader from '../../components/SkeletonLoader';
+import FloatingCheckoutBar from '../../components/FloatingCheckoutBar';
+import { StoreIcon, DeliveryIcon, ProduceIcon } from '../../components/RichIcons';
+
+// 10x Scale: In a real app we'd import BottomSheet and Haptics here:
+// import BottomSheet from '@gorhom/bottom-sheet';
+// import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
@@ -30,14 +37,10 @@ export default function ResidentDashboard({ user }) {
   }, []);
 
   const PILLARS = [
+    { title: 'Supermarket', iconComp: <StoreIcon size={52} />, route: '/(tabs)/directory', color: '#FFF7ED' },
+    { title: 'Insta Drop', iconComp: <DeliveryIcon size={52} />, route: '/modules/delivery', color: '#F5F3FF' },
+    { title: 'Fresh Veggies', iconComp: <ProduceIcon size={52} />, route: '/(tabs)/directory?category=fresh', color: '#ECFDF5' },
     { title: 'Community', icon: MessageCircle, route: '/(tabs)/community', color: '#3b82f6' },
-    { title: 'Local Shops', icon: Store, route: '/(tabs)/directory', color: '#10b981' },
-    { title: 'Gig & Jobs', icon: Briefcase, route: '/modules/jobs', color: '#f59e0b' },
-    { title: 'Real Estate', icon: Building2, route: '/modules/properties', color: '#8b5cf6' },
-    { title: 'Delivery', icon: Truck, route: '/modules/delivery', color: '#ef4444' },
-    { title: 'Carpool', icon: Car, route: '/modules/carpool', color: '#06b6d4' },
-    { title: 'Society', icon: Home, route: '/modules/society', color: '#6366f1' },
-    { title: 'Earn Money', icon: IndianRupee, route: '/modules/earn', color: '#14b8a6' },
   ];
 
   const QUICK_TILES = [
@@ -48,6 +51,7 @@ export default function ResidentDashboard({ user }) {
     { label: 'Care', icon: '❤️', route: '/modules/care', bg: '#ffe4e6' },
     { label: 'Scrap', icon: '♻️', route: '/modules/scrap', bg: '#d1fae5' },
     { label: 'Market', icon: '🏷️', route: '/modules/marketplace', bg: '#e0f2fe' },
+    { label: 'Medical', icon: '🏥', route: '/modules/medical', bg: '#ffe4e6' },
     { label: 'Pets', icon: '🐾', route: '/modules/pets', bg: '#fef9c3' },
     { label: 'Events', icon: '🎉', route: '/modules/events', bg: '#fae8ff' },
     { label: 'Health', icon: '⚕️', route: '/modules/health', bg: '#ccfbf1' },
@@ -148,17 +152,18 @@ export default function ResidentDashboard({ user }) {
         {/* 8 Pillars / Primary Categories */}
         <Text className="text-white font-bold text-lg mb-4">Platform Services</Text>
         <View className="flex-row flex-wrap justify-between mb-6">
-          {PILLARS.map((p, i) => {
-            const IconComponent = p.icon;
-            return (
-              <TouchableOpacity key={i} className="w-[48%] bg-slate-900 border border-slate-800 rounded-2xl p-4 items-center mb-4 shadow-sm shadow-slate-900" onPress={() => router.push(p.route)}>
-                <View className="w-14 h-14 rounded-full justify-center items-center mb-3" style={{ backgroundColor: `${p.color}15` }}>
-                  <IconComponent size={28} color={p.color} />
-                </View>
-                <Text className="text-white font-bold text-sm">{p.title}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {PILLARS.map((pillar, idx) => (
+            <TouchableOpacity key={idx} style={styles.pillarItem} onPress={() => router.push(pillar.route)}>
+              <View style={[styles.pillarIconBg, { backgroundColor: `${pillar.color}15` }]}>
+                {pillar.iconComp ? (
+                  pillar.iconComp
+                ) : (
+                  <pillar.icon stroke={pillar.color} width={32} height={32} />
+                )}
+              </View>
+              <Text style={styles.pillarLabel} numberOfLines={2}>{pillar.title}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Quick Tiles Grid */}
@@ -183,7 +188,7 @@ export default function ResidentDashboard({ user }) {
         </View>
         
         {loadingFeed ? (
-          <ActivityIndicator color="#3b82f6" className="my-6" />
+          <SkeletonLoader type="list" count={2} />
         ) : feedPosts.length === 0 ? (
           <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 items-center">
             <MessageCircle size={32} color="#64748b" className="mb-3" />
@@ -211,6 +216,17 @@ export default function ResidentDashboard({ user }) {
         
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* 10x Floating Express Checkout Context */}
+      <FloatingCheckoutBar 
+        itemCount={2} 
+        totalAmount={345} 
+        onPress={() => {
+          // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/(tabs)/cart');
+        }} 
+      />
+
     </SafeAreaView>
   );
 }

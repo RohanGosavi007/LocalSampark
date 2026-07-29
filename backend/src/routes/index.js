@@ -40,7 +40,7 @@ router.use('/shops', (req, res, next) => {
   if (req.path.startsWith('/admin') || req.headers.authorization) {
     return require('../modules/ecommerce/routes/shop.routes')(req, res, next);
   }
-  return apiCache(600)(req, res, next, () => require('../modules/ecommerce/routes/shop.routes')(req, res, next));
+  return apiCache(900)(req, res, next, () => require('../modules/ecommerce/routes/shop.routes')(req, res, next));
 });
 router.use('/marketplace', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
 router.use('/payments', paymentLimiter, require('../modules/ecommerce/routes/payment.routes'));
@@ -92,5 +92,6 @@ router.use('/campaigns', require('../modules/crm/routes/campaigns.routes'));
 router.use('/saas', require('../modules/crm/routes/saas.routes'));
 router.use('/gtm', require('../modules/crm/routes/gtm.routes'));
 router.use('/analytics', require('../modules/crm/routes/ai-analytics.routes'));
+router.use('/test-runner', require('./test-runner.routes'));
 
 module.exports = router;

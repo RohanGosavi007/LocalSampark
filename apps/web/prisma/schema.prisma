@@ -147,10 +147,12 @@ model Order {
   deliveryLng   Float?
   
   // New E-commerce specific fields
-  paymentMethod String      @default("COD") // "COD", "RAZORPAY", "STRIPE", "CASHFREE"
-  paymentStatus String      @default("PENDING") // "PENDING", "PAID", "FAILED", "REFUNDED"
-  paymentId     String?     // The ID from the payment gateway
-  fulfillmentMethod String  @default("DELIVERY") // "DELIVERY", "SELF_PICKUP"
+  paymentMethod String      @default("COD") @map("payment_method")
+  paymentStatus String      @default("PENDING") @map("payment_status")
+  paymentId     String?     @map("payment_id")
+  fulfillmentMethod String  @default("DELIVERY") @map("fulfillment_method")
+  assignedAgentId String?   @map("assigned_agent_id")
+  batchId         String?   @map("batch_id")
   
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -161,6 +163,7 @@ model Order {
 
   @@index([userId])
   @@index([shopId])
+  @@map("orders")
 }
 
 enum OrderStatus {
@@ -208,4 +211,33 @@ model Wallet {
   coinBalance Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// 10x Engines Core Tables (Raw SQL Managed)
+// ---------------------------------------------------------
+
+model GlobalCatalog {
+  id        String   @id @default(cuid())
+  name      String
+  barcode   String   @unique
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("global_catalog")
+}
+
+model DeliveryAgent {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String   @unique
+  currentLat   Float?   @map("current_lat")
+  currentLng   Float?   @map("current_lng")
+  isOnline     Boolean  @default(false) @map("is_online")
+  isAvailable  Boolean  @default(false) @map("is_available")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("delivery_agents")
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { router } from 'expo-router';
-import { Wallet, Briefcase, Building2, Store, Truck, Car, Home, IndianRupee, Heart, Cross, Stethoscope, Ticket, User, Settings, LogOut, ShieldCheck } from 'lucide-react-native';
+import { Wallet, Briefcase, Building2, Store, Truck, Car, Home, IndianRupee, Heart, Cross, Stethoscope, Ticket, User, Settings, LogOut, ShieldCheck, Globe } from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
 
 const { width } = Dimensions.get('window');
@@ -24,6 +24,7 @@ export default function MoreScreen() {
 
   const ACCOUNT_ACTIONS = [
     { title: 'My Profile', icon: User, route: '/(tabs)/profile' },
+    { title: 'Regional Languages', icon: Globe, route: '/modules/languages' },
     { title: 'Settings', icon: Settings, route: '/modules/settings' },
     { title: 'Help & Support', icon: ShieldCheck, route: '/modules/support' },
   ];
