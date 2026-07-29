@@ -1,5 +1,16 @@
-import { io } from 'socket.io-client';
-import { API_URL } from '../lib/api';
+// Crash-safe socket.io import — socket.io-client is not in package.json
+let io = null;
+let API_URL = '';
+try {
+  io = require('socket.io-client').io;
+} catch (e) {
+  console.warn('[Socket] socket.io-client not available:', e.message);
+}
+try {
+  API_URL = require('../lib/api').API_URL;
+} catch (e) {
+  console.warn('[Socket] api module not available:', e.message);
+}
 
 class SocketService {
   constructor() {
@@ -8,6 +19,11 @@ class SocketService {
   }
 
   connect(shopId) {
+    if (!io) {
+      console.warn('[Socket] socket.io-client not installed, skipping connection');
+      return;
+    }
+
     if (this.socket) {
       if (this.socket.connected) return;
       this.socket.connect();

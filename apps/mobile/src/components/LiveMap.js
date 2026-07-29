@@ -1,13 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
-import * as Location from 'expo-location';
+
+// Crash-safe native module imports with fallbacks
+let MapView = null;
+let Marker = null;
+let UrlTile = null;
+let Location = null;
+
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  UrlTile = maps.UrlTile;
+} catch (e) {
+  console.warn('[LiveMap] react-native-maps not available:', e.message);
+}
+
+try {
+  Location = require('expo-location');
+} catch (e) {
+  console.warn('[LiveMap] expo-location not available:', e.message);
+}
 
 export default function LiveMap({ destinationCoords, onLocationUpdate }) {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
+    if (!Location) {
+      setErrorMsg('Location services not available');
+      return;
+    }
+
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -52,6 +76,20 @@ export default function LiveMap({ destinationCoords, onLocationUpdate }) {
     return <View style={styles.center}><ActivityIndicator size="large" color="#3b82f6" /></View>;
   }
 
+  // If react-native-maps failed to load, show a text-based fallback
+  if (!MapView) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.fallbackTitle}>📍 Live Location</Text>
+        <Text style={styles.fallbackCoords}>
+          Lat: {location.latitude.toFixed(6)}{'\n'}
+          Lng: {location.longitude.toFixed(6)}
+        </Text>
+        <Text style={styles.fallbackNote}>Map view unavailable — native maps module not linked</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <MapView 
@@ -64,21 +102,25 @@ export default function LiveMap({ destinationCoords, onLocationUpdate }) {
         }}
         mapType="none" // Important for OpenStreetMap
       >
-        <UrlTile
-          urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-        />
+        {UrlTile && (
+          <UrlTile
+            urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+            flipY={false}
+          />
+        )}
         
         {/* Agent's Current Location */}
-        <Marker
-          coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-          title="You"
-          pinColor="blue"
-        />
+        {Marker && (
+          <Marker
+            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+            title="You"
+            pinColor="blue"
+          />
+        )}
 
         {/* Destination Location */}
-        {destinationCoords && (
+        {destinationCoords && Marker && (
           <Marker
             coordinate={destinationCoords}
             title="Destination"
@@ -111,5 +153,24 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     textAlign: 'center',
     padding: 20
-  }
+  },
+  fallbackTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  fallbackCoords: {
+    fontSize: 14,
+    color: '#3b82f6',
+    textAlign: 'center',
+    marginBottom: 12,
+    fontFamily: 'monospace',
+  },
+  fallbackNote: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
 });

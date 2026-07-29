@@ -4,10 +4,9 @@ import { View, StyleSheet, Text } from 'react-native';
 // import LottieView from 'lottie-react-native';
 
 export default function AnimatedLoader({ message = "Loading...", type = "cart" }) {
-  // Placeholder for the actual Lottie JSON paths
-  const lottieSource = type === 'delivery' 
-    ? require('../../assets/animations/scooter.json') 
-    : require('../../assets/animations/cart.json');
+  // Lottie source removed — animation JSON assets don't exist yet.
+  // When Lottie is integrated, add animation JSONs to assets/animations/ first
+  // and install lottie-react-native: `npx expo install lottie-react-native`
 
   return (
     <View style={styles.container}>
