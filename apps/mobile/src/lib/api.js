@@ -2,18 +2,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { SecureTokenStorage } from '../context/AuthContext';
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = __DEV__;
 
-// Helper to determine base URL
-// Note: Android Emulator uses 10.0.2.2 to access the host machine's localhost (5000)
-// Physical devices use the local network IP (e.g. 192.168.1.7).
+// ── Production URL Lock ─────────────────────────────────────────────────
+// In release builds (__DEV__ === false), ALWAYS use the live production
+// API. This prevents any development/staging URL from leaking into the
+// final APK. In dev, use emulator-safe localhost or explicit env override.
+const PRODUCTION_API = 'https://localsampark-api.onrender.com/api/v1';
+
 const fallbackUrl = isDev 
   ? 'http://10.0.2.2:5000/api/v1' 
-  : 'https://localsampark-api.onrender.com/api/v1';
+  : PRODUCTION_API;
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 
-                (isDev ? Constants.expoConfig?.extra?.API_URL_DEV : Constants.expoConfig?.extra?.API_URL_PROD) || 
-                fallbackUrl;
+export const API_URL = isDev
+  ? (process.env.EXPO_PUBLIC_API_URL || 
+     Constants.expoConfig?.extra?.API_URL_DEV || 
+     fallbackUrl)
+  : PRODUCTION_API;  // Release: ALWAYS production, no overrides
 
 export const API_BASE = API_URL;
 
@@ -30,7 +35,9 @@ export class ApiError extends Error {
 }
 
 /**
- * Retrieve authorization headers with stored JWT token
+ * Retrieve authorization headers with stored JWT token.
+ * Includes Cache-Control: no-cache to force the Android network stack
+ * to always fetch fresh data from the backend.
  */
 export async function getAuthHeaders() {
   const token = await SecureTokenStorage.getToken('authToken');
@@ -38,6 +45,8 @@ export async function getAuthHeaders() {
     'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
   };
 }
 

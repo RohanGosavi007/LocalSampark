@@ -94,3 +94,34 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# ══════════════════════════════════════════════════════════════════════
+# Hermes Engine (critical for release builds)
+# ══════════════════════════════════════════════════════════════════════
+-keep class com.facebook.hermes.** { *; }
+-dontwarn com.facebook.hermes.**
+
+# ══════════════════════════════════════════════════════════════════════
+# AsyncStorage & SecureStore — used for session persistence
+# ══════════════════════════════════════════════════════════════════════
+-keep class com.reactnativecommunity.asyncstorage.** { *; }
+
+# ══════════════════════════════════════════════════════════════════════
+# SoLoader — required for native library loading on app startup
+# ══════════════════════════════════════════════════════════════════════
+-keep class com.facebook.soloader.** { *; }
+-dontwarn com.facebook.soloader.**
+
+# ══════════════════════════════════════════════════════════════════════
+# React Native Networking (Fetch API bridge)
+# ══════════════════════════════════════════════════════════════════════
+-keep class com.facebook.react.modules.network.** { *; }
+
+# ══════════════════════════════════════════════════════════════════════
+# Prevent R8 from removing annotations used by Kotlin serialization
+# ══════════════════════════════════════════════════════════════════════
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
