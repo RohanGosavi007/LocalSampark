@@ -60,6 +60,7 @@
 # ══════════════════════════════════════════════════════════════════════
 -keep class com.stripe.** { *; }
 -keep class com.reactnativestripesdk.** { *; }
+-dontwarn com.stripe.android.pushProvisioning.**
 
 # ══════════════════════════════════════════════════════════════════════
 # Razorpay (react-native-razorpay)
