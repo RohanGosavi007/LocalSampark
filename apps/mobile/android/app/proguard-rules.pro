@@ -86,3 +86,11 @@
 -keep interface * { *; }
 
 # Add any project specific keep options here:
+
+# ══════════════════════════════════════════════════════════════════════
+# Supabase & Firebase
+# ══════════════════════════════════════════════════════════════════════
+-keep class io.supabase.** { *; }
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**

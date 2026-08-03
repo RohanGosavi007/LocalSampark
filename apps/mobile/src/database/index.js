@@ -12,10 +12,8 @@ try {
 
   const adapter = new SQLiteAdapter({
     schema,
-    // Disable JSI in release builds — JSI requires TurboModules which may
-    // not be fully linked on all devices; falling back to the bridge adapter
-    // is slower but never crashes.
-    jsi: false,
+    // Enable JSI for maximum performance.
+    jsi: true,
     onSetUpError: error => {
       console.error('WatermelonDB setup failed:', error);
     }
