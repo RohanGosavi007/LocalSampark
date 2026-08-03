@@ -10,7 +10,7 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { loginWithDevPreset, API_URL } = useAuth();
+  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp } = useAuth();
 
   const handleSendOtp = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
@@ -19,17 +19,14 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const data = await apiPost('/auth/send-otp', { phoneNumber });
-      if (data && (data.success || !data.message || data.message.includes('success'))) {
+      const data = await sendOtp(phoneNumber);
+      if (data) {
         setOtpSent(true);
-        Alert.alert('OTP Sent', 'An OTP has been sent to your number.');
-      } else {
-        // Fallback for dev mode
-        setOtpSent(true);
+        Alert.alert('OTP Sent', data.mock ? 'Test OTP sent: 123456' : 'An OTP has been sent to your mobile number.');
       }
     } catch (err) {
-      console.warn('API unreachable, falling back to mock OTP sent state');
-      setOtpSent(true); // Allow entering mock OTP
+      console.warn('sendOtp failed, enabling OTP entry fallback');
+      setOtpSent(true);
     } finally {
       setLoading(false);
     }
@@ -41,12 +38,21 @@ export default function LoginScreen() {
       return;
     }
     setLoading(true);
-    // Use the auth context login logic but pass the real phone and OTP
-    // Defaulting role to 'user' for real numbers, website handles the real role
-    const success = await loginWithDevPreset('user', phoneNumber, otp);
-    setLoading(false);
-    if (success) {
-      router.replace('/(tabs)');
+    try {
+      const success = await verifyOtp(phoneNumber, otp);
+      if (success) {
+        router.replace('/(tabs)');
+      }
+    } catch (err) {
+      console.warn('verifyOtp error, attempting fallback preset verify', err.message);
+      const devSuccess = await loginWithDevPreset('user', phoneNumber, otp);
+      if (devSuccess) {
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert('Verification Failed', err.message || 'Invalid OTP code.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

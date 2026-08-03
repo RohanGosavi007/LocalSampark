@@ -11,38 +11,39 @@ import { createClient } from '@supabase/supabase-js';
 export const SecureTokenStorage = {
   async setToken(key, value) {
     try {
-      if (Platform.OS === 'web') {
-        // SecureStore is not available on web, fallback to AsyncStorage
-        await AsyncStorage.setItem(key, value);
-      } else {
-        await SecureStore.setItemAsync(key, value);
+      if (Platform.OS !== 'web') {
+        await SecureStore.setItemAsync(key, value).catch(e => {
+          console.warn(`SecureStore.setItemAsync failed for ${key}:`, e.message);
+        });
       }
     } catch (e) {
-      console.warn(`SecureStore.setItem failed for ${key}, falling back to AsyncStorage`, e.message);
-      await AsyncStorage.setItem(key, value);
+      console.warn(`SecureStore error for ${key}:`, e.message);
+    } finally {
+      // Always store in AsyncStorage as fail-safe fallback
+      await AsyncStorage.setItem(`sec_${key}`, value);
     }
   },
   async getToken(key) {
     try {
-      if (Platform.OS === 'web') {
-        return await AsyncStorage.getItem(key);
+      if (Platform.OS !== 'web') {
+        const secureVal = await SecureStore.getItemAsync(key).catch(() => null);
+        if (secureVal) return secureVal;
       }
-      return await SecureStore.getItemAsync(key);
     } catch (e) {
-      console.warn(`SecureStore.getItem failed for ${key}, falling back to AsyncStorage`, e.message);
-      return await AsyncStorage.getItem(key);
+      console.warn(`SecureStore getItem error for ${key}:`, e.message);
     }
+    // Fallback to AsyncStorage
+    return await AsyncStorage.getItem(`sec_${key}`);
   },
   async deleteToken(key) {
     try {
-      if (Platform.OS === 'web') {
-        await AsyncStorage.removeItem(key);
-      } else {
-        await SecureStore.deleteItemAsync(key);
+      if (Platform.OS !== 'web') {
+        await SecureStore.deleteItemAsync(key).catch(() => null);
       }
     } catch (e) {
-      console.warn(`SecureStore.deleteItem failed for ${key}`, e.message);
-      await AsyncStorage.removeItem(key);
+      console.warn(`SecureStore deleteItem error for ${key}:`, e.message);
+    } finally {
+      await AsyncStorage.removeItem(`sec_${key}`);
     }
   }
 };
