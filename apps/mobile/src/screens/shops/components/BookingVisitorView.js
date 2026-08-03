@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity , StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Calendar, Clock, Plus } from 'lucide-react-native';
 
@@ -9,37 +9,37 @@ export default function BookingVisitorView({ shop }) {
   };
 
   return (
-    <ScrollView className="flex-1 bg-slate-950">
-      <View className="p-5 bg-slate-900 border-b border-slate-800">
-        <Text className="text-2xl font-black text-white">{shop?.name || 'City Clinic'}</Text>
-        <Text className="text-slate-400 font-semibold text-xs mt-1">Healthcare & Appointments</Text>
+    <ScrollView style={s.s0}>
+      <View style={s.s1}>
+        <Text style={s.s2}>{shop?.name || 'City Clinic'}</Text>
+        <Text style={s.s3}>Healthcare & Appointments</Text>
       </View>
       
-      <View className="m-4 bg-sky-500/10 border border-sky-500/30 rounded-3xl p-5 items-center">
-        <Text className="text-xs font-black text-sky-400 mb-3 tracking-widest uppercase">LIVE TOKEN TRACKER</Text>
-        <View className="flex-row w-full justify-around items-center">
-          <View className="items-center">
-            <Text className="text-4xl font-black text-sky-400">#18</Text>
-            <Text className="text-xs text-slate-400 font-medium mt-1">Currently Serving</Text>
+      <View style={s.s4}>
+        <Text style={s.s5}>LIVE TOKEN TRACKER</Text>
+        <View style={s.s6}>
+          <View style={s.s7}>
+            <Text style={s.s8}>#18</Text>
+            <Text style={s.s9}>Currently Serving</Text>
           </View>
-          <View className="w-px h-10 bg-sky-500/30" />
-          <View className="items-center">
-            <Text className="text-4xl font-black text-sky-400">12m</Text>
-            <Text className="text-xs text-slate-400 font-medium mt-1">Est. Wait Time</Text>
+          <View style={s.s10} />
+          <View style={s.s11}>
+            <Text style={s.s12}>12m</Text>
+            <Text style={s.s13}>Est. Wait Time</Text>
           </View>
         </View>
       </View>
 
-      <View className="p-4">
-        <Text className="text-white font-bold text-lg mb-4">Book Appointment</Text>
+      <View style={s.s14}>
+        <Text style={s.s15}>Book Appointment</Text>
         {['General Checkup', 'Dental Cleaning', 'Consultation'].map((service, idx) => (
-          <View key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-3 flex-row items-center justify-between">
+          <View key={idx} style={s.s16}>
             <View>
-              <Text className="font-bold text-white text-base">{service}</Text>
-              <Text className="text-sky-400 font-bold text-xs mt-0.5">₹500</Text>
+              <Text style={s.s17}>{service}</Text>
+              <Text style={s.s18}>₹500</Text>
             </View>
-            <TouchableOpacity className="bg-sky-500 px-5 py-2.5 rounded-xl items-center active:bg-sky-400" onPress={handleBook}>
-              <Text className="text-slate-950 font-black text-xs">BOOK</Text>
+            <TouchableOpacity style={s.s19} onPress={handleBook}>
+              <Text style={s.s20}>BOOK</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -47,3 +47,27 @@ export default function BookingVisitorView({ shop }) {
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { padding: 20, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
+  s2: { fontSize: 24, fontWeight: '900', color: '#ffffff' },
+  s3: { color: '#94a3b8', fontWeight: '600', fontSize: 12, marginTop: 4 },
+  s4: { margin: 16, backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 1, borderColor: 'rgba(14,165,233,0.3)', borderRadius: 24, padding: 20, alignItems: 'center' },
+  s5: { fontSize: 12, fontWeight: '900', color: '#38bdf8', marginBottom: 12, letterSpacing: 2, textTransform: 'uppercase' },
+  s6: { flexDirection: 'row', width: '100%', justifyContent: 'space-around', alignItems: 'center' },
+  s7: { alignItems: 'center' },
+  s8: { fontSize: 36, fontWeight: '900', color: '#38bdf8' },
+  s9: { fontSize: 12, color: '#94a3b8', fontWeight: '500', marginTop: 4 },
+  s10: { width: 1, height: 40, backgroundColor: 'rgba(14,165,233,0.3)' },
+  s11: { alignItems: 'center' },
+  s12: { fontSize: 36, fontWeight: '900', color: '#38bdf8' },
+  s13: { fontSize: 12, color: '#94a3b8', fontWeight: '500', marginTop: 4 },
+  s14: { padding: 16 },
+  s15: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  s16: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 16, borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  s17: { fontWeight: '700', color: '#ffffff', fontSize: 16 },
+  s18: { color: '#38bdf8', fontWeight: '700', fontSize: 12, marginTop: 2 },
+  s19: { backgroundColor: '#0ea5e9', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
+  s20: { color: '#020617', fontWeight: '900', fontSize: 12 },
+});

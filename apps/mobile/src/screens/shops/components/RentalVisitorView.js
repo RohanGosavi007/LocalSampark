@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity , StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Car, KeyRound } from 'lucide-react-native';
 
@@ -9,31 +9,31 @@ export default function RentalVisitorView({ shop }) {
   };
 
   return (
-    <ScrollView className="flex-1 bg-slate-950">
-      <View className="p-5 bg-slate-900 border-b border-slate-800">
-        <Text className="text-2xl font-black text-white">{shop?.name || 'Kisan Tractors & Tools'}</Text>
-        <Text className="text-slate-400 font-semibold text-xs mt-1">Fleet & Heavy Equipment</Text>
+    <ScrollView style={s.s0}>
+      <View style={s.s1}>
+        <Text style={s.s2}>{shop?.name || 'Kisan Tractors & Tools'}</Text>
+        <Text style={s.s3}>Fleet & Heavy Equipment</Text>
       </View>
 
-      <View className="p-4">
-        <Text className="text-white font-bold text-lg mb-4">Available Equipment</Text>
+      <View style={s.s4}>
+        <Text style={s.s5}>Available Equipment</Text>
         {['Mahindra Tractor', 'JCB Excavator', 'Water Tanker'].map((item, idx) => (
-          <View key={idx} className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl mb-3 flex-row items-center">
-            <View className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-800 items-center justify-center mr-3">
+          <View key={idx} style={s.s6}>
+            <View style={s.s7}>
               <Car size={24} color="#64748b" />
             </View>
-            <View className="flex-1">
-              <Text className="font-bold text-white text-base mb-0.5">{item}</Text>
-              <Text className="text-emerald-400 font-black text-sm mb-1">₹500 / hr</Text>
-              <View className="bg-emerald-500/10 border border-emerald-500/30 self-start px-2 py-0.5 rounded-md">
-                <Text className="text-emerald-400 text-[10px] font-bold">Available Now</Text>
+            <View style={s.s8}>
+              <Text style={s.s9}>{item}</Text>
+              <Text style={s.s10}>₹500 / hr</Text>
+              <View style={s.s11}>
+                <Text style={s.s12}>Available Now</Text>
               </View>
             </View>
             <TouchableOpacity 
-              className="bg-emerald-600 px-4 py-2.5 rounded-xl items-center active:bg-emerald-500" 
+              style={s.s13} 
               onPress={handleRent}
             >
-              <Text className="text-white font-black text-xs">RENT</Text>
+              <Text style={s.s14}>RENT</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -41,3 +41,21 @@ export default function RentalVisitorView({ shop }) {
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { padding: 20, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
+  s2: { fontSize: 24, fontWeight: '900', color: '#ffffff' },
+  s3: { color: '#94a3b8', fontWeight: '600', fontSize: 12, marginTop: 4 },
+  s4: { padding: 16 },
+  s5: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  s6: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 14, borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+  s7: { width: 64, height: 64, borderRadius: 12, backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  s8: { flex: 1 },
+  s9: { fontWeight: '700', color: '#ffffff', fontSize: 16, marginBottom: 2 },
+  s10: { color: '#34d399', fontWeight: '900', fontSize: 14, marginBottom: 4 },
+  s11: { backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  s12: { color: '#34d399', fontSize: 10, fontWeight: '700' },
+  s13: { backgroundColor: '#059669', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
+  s14: { color: '#ffffff', fontWeight: '900', fontSize: 12 },
+});

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { Briefcase, Target, Users, IndianRupee, Store, CheckCircle2, ChevronRight, FileText } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -18,74 +18,80 @@ export default function FieldDashboard({ user }) {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-slate-950" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-      {/* Header */}
-      <View className="mb-6 mt-2">
-        <View className="flex-row items-center mb-1">
-          <Briefcase color="#14b8a6" size={24} className="mr-2" />
-          <Text className="text-2xl font-black text-white">Field Agent CRM</Text>
-        </View>
-        <Text className="text-slate-400 font-semibold text-sm">Welcome back, {user?.name || 'Agent'}</Text>
+    <ScrollView style={s.container} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+      <View style={{ marginBottom: 24, marginTop: 8 }}>
+        <View style={s.headerLeft}><Briefcase color="#14b8a6" size={24} style={{ marginRight: 8 }} /><Text style={s.headerTitle}>Field Agent CRM</Text></View>
+        <Text style={s.headerSubtitle}>Welcome back, {user?.name || 'Agent'}</Text>
       </View>
 
       {/* Target Progress */}
-      <View className="bg-gradient-to-r from-teal-900 to-emerald-950 p-6 rounded-3xl mb-6 border border-teal-500/30 shadow-lg shadow-teal-900/50">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-teal-200/80 font-bold text-sm uppercase tracking-wider">Weekly Target</Text>
-          <Target size={20} color="#5eead4" />
-        </View>
-        <View className="flex-row items-end mb-2">
-          <Text className="text-white text-4xl font-black">12</Text>
-          <Text className="text-teal-200 font-semibold text-base mb-1 ml-1">/ 15 Shops</Text>
-        </View>
-        <View className="h-2 bg-teal-950 rounded-full overflow-hidden">
-          <View className="h-full bg-teal-400" style={{ width: '80%' }} />
-        </View>
-        <Text className="text-teal-400 text-xs font-semibold mt-2">Just 3 more to earn ₹500 bonus!</Text>
+      <View style={s.targetCard}>
+        <View style={s.targetHeader}><Text style={s.targetLabel}>Weekly Target</Text><Target size={20} color="#5eead4" /></View>
+        <View style={s.targetValueRow}><Text style={s.targetBigValue}>12</Text><Text style={s.targetSuffix}>/ 15 Shops</Text></View>
+        <View style={s.progressBar}><View style={[s.progressFill, { width: '80%' }]} /></View>
+        <Text style={s.targetHint}>Just 3 more to earn ₹500 bonus!</Text>
       </View>
 
-      {/* Stats Grid */}
-      <View className="flex-row flex-wrap justify-between mb-6">
-        {stats.map((s, i) => {
-          const IconComponent = s.icon;
+      <View style={s.statsGrid}>
+        {stats.map((st, i) => {
+          const IconComp = st.icon;
           return (
-            <View key={i} className="w-[48%] bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-4">
-              <View className="w-10 h-10 rounded-full items-center justify-center mb-3" style={{ backgroundColor: `${s.color}20` }}>
-                <IconComponent size={20} color={s.color} />
-              </View>
-              <Text className="text-white text-2xl font-black mb-1">{s.value}</Text>
-              <Text className="text-slate-400 text-xs font-bold">{s.label}</Text>
+            <View key={i} style={s.statCard}>
+              <View style={[s.statIconBg, { backgroundColor: `${st.color}20` }]}><IconComp size={20} color={st.color} /></View>
+              <Text style={s.statValue}>{st.value}</Text>
+              <Text style={s.statLabel}>{st.label}</Text>
             </View>
           );
         })}
       </View>
 
-      <TouchableOpacity className="bg-teal-600 p-4 rounded-xl flex-row items-center justify-center mb-6">
-        <Store color="#fff" size={20} className="mr-2" />
-        <Text className="text-white font-black text-base">Onboard New Shop</Text>
-      </TouchableOpacity>
+      <TouchableOpacity style={s.onboardBtn}><Store color="#fff" size={20} style={{ marginRight: 8 }} /><Text style={s.onboardBtnText}>Onboard New Shop</Text></TouchableOpacity>
 
-      {/* Recent Activity */}
-      <View className="mb-6">
-        <Text className="text-white font-bold text-lg mb-4">Recent Onboards</Text>
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-2">
+      <View style={{ marginBottom: 24 }}>
+        <Text style={s.sectionTitle}>Recent Onboards</Text>
+        <View style={s.listContainer}>
           {recentOnboards.map((shop, idx) => (
-            <View key={shop.id} className={`p-3 flex-row items-center justify-between ${idx !== recentOnboards.length - 1 ? 'border-b border-slate-800' : ''}`}>
-              <View className="flex-row items-center flex-1">
-                <View className="w-10 h-10 bg-blue-500/10 rounded-full items-center justify-center mr-3">
-                  <CheckCircle2 size={20} color={shop.status.includes('Verified') ? '#10b981' : '#f59e0b'} />
-                </View>
-                <View>
-                  <Text className="text-white font-bold text-base mb-0.5">{shop.name}</Text>
-                  <Text className="text-slate-400 text-xs">{shop.type} • {shop.status}</Text>
-                </View>
+            <View key={shop.id} style={[s.listItem, idx !== recentOnboards.length - 1 && s.listBorder]}>
+              <View style={s.listLeft}>
+                <View style={s.listIcon}><CheckCircle2 size={20} color={shop.status.includes('Verified') ? '#10b981' : '#f59e0b'} /></View>
+                <View><Text style={s.listTitle}>{shop.name}</Text><Text style={s.listMeta}>{shop.type} • {shop.status}</Text></View>
               </View>
               <ChevronRight size={16} color="#64748b" />
             </View>
           ))}
         </View>
       </View>
-      
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#020617' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: '#ffffff' },
+  headerSubtitle: { color: '#94a3b8', fontWeight: '600', fontSize: 14 },
+  targetCard: { backgroundColor: '#134e4a', padding: 24, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(20,184,166,0.3)' },
+  targetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  targetLabel: { color: 'rgba(153,246,228,0.8)', fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 1 },
+  targetValueRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 8 },
+  targetBigValue: { color: '#ffffff', fontSize: 40, fontWeight: '900' },
+  targetSuffix: { color: '#99f6e4', fontWeight: '600', fontSize: 16, marginBottom: 4, marginLeft: 4 },
+  progressBar: { height: 8, backgroundColor: '#042f2e', borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#2dd4bf', borderRadius: 4 },
+  targetHint: { color: '#2dd4bf', fontSize: 12, fontWeight: '600', marginTop: 8 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
+  statCard: { width: '48%', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 16, borderRadius: 16, marginBottom: 16 },
+  statIconBg: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  statValue: { color: '#ffffff', fontSize: 24, fontWeight: '900', marginBottom: 4 },
+  statLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '700' },
+  onboardBtn: { backgroundColor: '#0d9488', padding: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  onboardBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16 },
+  sectionTitle: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  listContainer: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 8 },
+  listItem: { padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  listBorder: { borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+  listLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  listIcon: { width: 40, height: 40, backgroundColor: 'rgba(59,130,246,0.1)', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  listTitle: { color: '#ffffff', fontWeight: '700', fontSize: 16, marginBottom: 2 },
+  listMeta: { color: '#94a3b8', fontSize: 12 },
+});

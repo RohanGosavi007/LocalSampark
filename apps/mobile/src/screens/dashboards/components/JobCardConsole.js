@@ -1,61 +1,36 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Plus, Wrench, CheckCircle, Clock } from 'lucide-react-native';
+let Haptics = null;
+try { Haptics = require('expo-haptics'); } catch (e) {}
 
 export default function JobCardConsole({ themeColor = '#eab308' }) {
-  const handleAction = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  const handleAction = () => { if (Haptics) { try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch(e) {} } };
 
   return (
-    <View className="flex-1 mt-4">
-      <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-lg font-black text-white">Active Repairs</Text>
-        <TouchableOpacity 
-          className="bg-amber-500 px-4 py-2 rounded-xl flex-row items-center active:bg-amber-400" 
-          onPress={handleAction}
-        >
-          <Plus size={16} color="#000" className="mr-1" />
-          <Text className="text-slate-950 font-black text-xs">New Job</Text>
-        </TouchableOpacity>
+    <View style={s.root}>
+      <View style={s.headerRow}>
+        <Text style={s.title}>Active Repairs</Text>
+        <TouchableOpacity style={s.newBtn} onPress={handleAction}><Plus size={16} color="#000" style={{ marginRight: 4 }} /><Text style={s.newBtnText}>New Job</Text></TouchableOpacity>
       </View>
-      
-      <View className="gap-4">
+      <View style={{ gap: 16 }}>
         {[1, 2].map((job) => (
-          <View key={job} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm shadow-slate-900">
-            <View className="flex-row justify-between items-start mb-4">
-              <View>
-                <Text className="font-black text-white text-base">JC-204{job}</Text>
-                <Text className="text-xs text-slate-400 font-medium mt-0.5">Maruti Swift • MH12 AB 1234</Text>
-              </View>
-              <View className="bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg">
-                <Text className="text-amber-400 font-bold text-xs">In Progress</Text>
-              </View>
+          <View key={job} style={s.jobCard}>
+            <View style={s.jobHeader}>
+              <View><Text style={s.jobId}>JC-204{job}</Text><Text style={s.jobMeta}>Maruti Swift • MH12 AB 1234</Text></View>
+              <View style={s.statusBadge}><Text style={s.statusText}>In Progress</Text></View>
             </View>
-            
-            <View className="flex-row justify-between mb-5 bg-slate-950 p-3 rounded-xl border border-slate-800/60">
+            <View style={s.progressRow}>
               {['Check', 'Repair', 'Wash', 'Ready'].map((step, idx) => (
-                <View key={step} className="items-center">
-                  <View className={`w-3 h-3 rounded-full mb-1.5 ${idx < 2 ? 'bg-amber-400' : 'bg-slate-800'}`} />
-                  <Text className="text-[10px] text-slate-400 font-bold">{step}</Text>
+                <View key={step} style={s.stepItem}>
+                  <View style={[s.stepDot, { backgroundColor: idx < 2 ? '#fbbf24' : '#1e293b' }]} />
+                  <Text style={s.stepLabel}>{step}</Text>
                 </View>
               ))}
             </View>
-
-            <View className="flex-row gap-3">
-              <TouchableOpacity 
-                className="flex-1 py-3 rounded-xl border border-slate-800 bg-slate-950 items-center active:bg-slate-800" 
-                onPress={handleAction}
-              >
-                <Text className="text-slate-300 font-bold text-xs">Add Parts</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                className="flex-1 py-3 rounded-xl bg-amber-500 items-center active:bg-amber-400" 
-                onPress={handleAction}
-              >
-                <Text className="text-slate-950 font-black text-xs">Update Status</Text>
-              </TouchableOpacity>
+            <View style={s.actionRow}>
+              <TouchableOpacity style={s.partsBtn} onPress={handleAction}><Text style={s.partsBtnText}>Add Parts</Text></TouchableOpacity>
+              <TouchableOpacity style={s.updateBtn} onPress={handleAction}><Text style={s.updateBtnText}>Update Status</Text></TouchableOpacity>
             </View>
           </View>
         ))}
@@ -63,3 +38,26 @@ export default function JobCardConsole({ themeColor = '#eab308' }) {
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  root: { flex: 1, marginTop: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: '900', color: '#ffffff' },
+  newBtn: { backgroundColor: '#eab308', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, flexDirection: 'row', alignItems: 'center' },
+  newBtnText: { color: '#020617', fontWeight: '900', fontSize: 12 },
+  jobCard: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16 },
+  jobHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  jobId: { fontWeight: '900', color: '#ffffff', fontSize: 16 },
+  jobMeta: { fontSize: 12, color: '#94a3b8', fontWeight: '500', marginTop: 2 },
+  statusBadge: { backgroundColor: 'rgba(234,179,8,0.1)', borderWidth: 1, borderColor: 'rgba(234,179,8,0.3)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  statusText: { color: '#fbbf24', fontWeight: '700', fontSize: 12 },
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, backgroundColor: '#020617', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(30,41,59,0.6)' },
+  stepItem: { alignItems: 'center' },
+  stepDot: { width: 12, height: 12, borderRadius: 6, marginBottom: 6 },
+  stepLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '700' },
+  actionRow: { flexDirection: 'row', gap: 12 },
+  partsBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1e293b', backgroundColor: '#020617', alignItems: 'center' },
+  partsBtnText: { color: '#cbd5e1', fontWeight: '700', fontSize: 12 },
+  updateBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#eab308', alignItems: 'center' },
+  updateBtnText: { color: '#020617', fontWeight: '900', fontSize: 12 },
+});

@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc', padding: 20 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#fbbf24', marginBottom: 20 },
   card: { backgroundColor: '#ffffff', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#e2e8f0' },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#e2e8f0', marginBottom: 10 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 10 },
   balance: { fontSize: 36, fontWeight: 'bold', color: '#fbbf24', marginBottom: 5 },
   subBalance: { color: '#34d399', fontSize: 14, fontWeight: '600', marginBottom: 20 },
   redeemBtn: { backgroundColor: '#f59e0b', padding: 12, borderRadius: 10, alignItems: 'center' },

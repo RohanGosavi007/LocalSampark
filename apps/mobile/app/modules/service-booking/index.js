@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { loadWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
 
 // Mock Bookings
 const MOCK_BOOKINGS = [
@@ -12,16 +14,17 @@ const MOCK_BOOKINGS = [
 ];
 
 export default function ServiceBookingsScreen() {
-  const [activeTab, setActiveTab] = useState('Active'); // Active, Completed, Cancelled
+  const [activeTab, setActiveTab] = useState('Active');
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setBookings(MOCK_BOOKINGS);
+    const load = async () => {
+      await loadWithFallback('/services/bookings', MOCK_BOOKINGS, setBookings, setIsDemo);
       setLoading(false);
-    }, 800);
+    };
+    load();
   }, []);
 
   const getStatusColor = (status) => {

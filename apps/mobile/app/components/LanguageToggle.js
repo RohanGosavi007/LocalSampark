@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from '../../src/context/LanguageContext';
 
 export default function LanguageToggle() {
   const { lang, changeLanguage } = useLanguage();

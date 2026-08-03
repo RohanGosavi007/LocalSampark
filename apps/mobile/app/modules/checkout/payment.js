@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   activeMethod: { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)' },
   methodIcon: { fontSize: 28, marginRight: 16 },
   methodInfo: { flex: 1 },
-  methodTitle: { color: '#e2e8f0', fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  methodTitle: { color: '#0f172a', fontSize: 16, fontWeight: '600', marginBottom: 4 },
   methodDesc: { color: '#64748b', fontSize: 13 },
   
   radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },

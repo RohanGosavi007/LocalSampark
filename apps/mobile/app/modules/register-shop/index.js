@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { postWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
 
 export default function RegisterShopScreen() {
   const [form, setForm] = useState({ 
     name: '', owner: '', category: '', shopType: 'retail', 
     phone: '', address: '', initialItemName: '', initialItemPriceOrRole: '' 
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   const up = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.phone || !form.address) {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
-    Alert.alert('Success', 'Your shop registration request has been submitted for verification. Our team will contact you shortly.');
+    setSubmitting(true);
+    const mockRes = { success: true, message: 'Shop registered successfully', shop_id: `SHOP-${Date.now()}` };
+    const { data, isDemo: demo } = await postWithFallback('/shops', form, mockRes);
+    setSubmitting(false);
+    setIsDemo(demo);
+    Alert.alert('Success', `Your shop registration request has been submitted for verification.${demo ? '\n\n🔧 (Demo Mode)' : ''} Our team will contact you shortly.`);
     setTimeout(() => router.back(), 1500);
   };
 

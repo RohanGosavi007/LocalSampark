@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   meta: { color: '#94a3b8', fontSize: 12 },
   typeTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   typeText: { fontSize: 10, fontWeight: 'bold' },
-  postContent: { color: '#e2e8f0', fontSize: 15, lineHeight: 22, marginBottom: 15 },
+  postContent: { color: '#1e293b', fontSize: 15, lineHeight: 22, marginBottom: 15 },
   postFooter: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#1e293b', paddingTop: 15 },
   actionBtn: { flex: 1, alignItems: 'center' },
   actionText: { color: '#94a3b8', fontWeight: 'bold' },

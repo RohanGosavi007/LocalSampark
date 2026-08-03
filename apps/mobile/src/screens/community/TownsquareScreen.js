@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, Alert , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, MessageSquare, AlertTriangle, HelpCircle, Send, Heart } from 'lucide-react-native';
 import { apiGet } from '../../lib/api';
@@ -47,47 +47,47 @@ export default function NativeTownsquareScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
-      <View className="flex-row items-center justify-between p-4 border-b border-slate-800">
-        <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 bg-slate-900 rounded-full items-center justify-center">
+    <SafeAreaView style={s.s0}>
+      <View style={s.s1}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s2}>
           <ChevronLeft color="#f8fafc" size={20} />
         </TouchableOpacity>
-        <Text className="text-white font-bold text-lg">Townsquare Feed</Text>
-        <View className="w-10" />
+        <Text style={s.s3}>Townsquare Feed</Text>
+        <View style={s.s4} />
       </View>
 
       {/* Post Composer */}
-      <View className="p-4 bg-slate-900 border-b border-slate-800 flex-row gap-2 items-center">
+      <View style={s.s5}>
         <TextInput
           value={newPostContent}
           onChangeText={setNewPostContent}
           placeholder="Share an alert or ask neighbors..."
           placeholderTextColor="#64748b"
-          className="flex-1 bg-slate-950 text-white p-3 rounded-2xl border border-slate-800 text-sm"
+          style={s.s6}
         />
-        <TouchableOpacity onPress={handleCreatePost} className="bg-indigo-600 p-3 rounded-2xl items-center justify-center">
+        <TouchableOpacity onPress={handleCreatePost} style={s.s7}>
           <Send color="#ffffff" size={18} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1 p-4">
+      <ScrollView style={s.s8}>
         {loading ? (
           <ActivityIndicator color="#6366f1" />
         ) : (
           posts.map(p => (
-            <View key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-3">
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-indigo-400 font-bold text-sm">{p.author_name}</Text>
-                <View className={`px-2 py-0.5 rounded-full border ${p.category === 'alert' ? 'bg-red-950 border-red-800' : 'bg-slate-800 border-slate-700'}`}>
-                  <Text className={`text-[10px] font-bold uppercase ${p.category === 'alert' ? 'text-red-400' : 'text-slate-300'}`}>{p.category}</Text>
+            <View key={p.id} style={s.s9}>
+              <View style={s.s10}>
+                <Text style={s.s11}>{p.author_name}</Text>
+                <View style={[s.s17, p.category === 'alert' ? s.s18 : s.s19]}>
+                  <Text style={[s.s20, p.category === 'alert' ? s.s21 : s.s22]}>{p.category}</Text>
                 </View>
               </View>
-              <Text className="text-slate-200 text-sm mb-3 leading-5">{p.content}</Text>
-              <View className="flex-row items-center justify-between border-t border-slate-800/80 pt-2">
-                <Text className="text-slate-500 text-[10px]">{p.created_at || 'Recently'}</Text>
-                <TouchableOpacity className="flex-row items-center gap-1">
+              <Text style={s.s12}>{p.content}</Text>
+              <View style={s.s13}>
+                <Text style={s.s14}>{p.created_at || 'Recently'}</Text>
+                <TouchableOpacity style={s.s15}>
                   <Heart color="#64748b" size={14} />
-                  <Text className="text-slate-400 text-xs">Like</Text>
+                  <Text style={s.s16}>Like</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -97,3 +97,29 @@ export default function NativeTownsquareScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderColor: '#1e293b' },
+  s2: { width: 40, height: 40, backgroundColor: '#0f172a', borderRadius: 9999, alignItems: 'center', justifyContent: 'center' },
+  s3: { color: '#ffffff', fontWeight: '700', fontSize: 18 },
+  s4: { width: 40 },
+  s5: { padding: 16, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b', flexDirection: 'row', gap: 8, alignItems: 'center' },
+  s6: { flex: 1, backgroundColor: '#020617', color: '#ffffff', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#1e293b', fontSize: 14 },
+  s7: { backgroundColor: '#4f46e5', padding: 12, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  s8: { flex: 1, padding: 16 },
+  s9: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 12 },
+  s10: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  s11: { color: '#818cf8', fontWeight: '700', fontSize: 14 },
+  s12: { color: '#e2e8f0', fontSize: 14, marginBottom: 12, lineHeight: 5 },
+  s13: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderColor: 'rgba(30,41,59,0.8)', paddingTop: 8 },
+  s14: { color: '#64748b', fontSize: 10 },
+  s15: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  s16: { color: '#94a3b8', fontSize: 12 },
+  s17: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, borderWidth: 1 },
+  s18: { backgroundColor: '#450a0a', borderColor: '#991b1b' },
+  s19: { backgroundColor: '#1e293b', borderColor: '#334155' },
+  s20: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  s21: { color: '#f87171' },
+  s22: { color: '#cbd5e1' },
+});

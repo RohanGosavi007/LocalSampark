@@ -1,75 +1,75 @@
 import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView , StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Search, MapPin, Navigation, Clock, Users, ShieldCheck, Leaf, Star } from 'lucide-react-native';
 import { apiGet } from '../../lib/api';
 
 const RideItem = memo(({ item }) => (
-  <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+  <View style={s.s0}>
     {/* Header */}
-    <View className="flex-row justify-between items-start mb-4">
-      <View className="flex-row items-center flex-1">
-        <View className="w-12 h-12 rounded-full bg-blue-900/50 items-center justify-center border border-blue-500/30">
-          <Text className="text-blue-400 font-bold text-lg">{item.driver.charAt(0)}</Text>
+    <View style={s.s1}>
+      <View style={s.s2}>
+        <View style={s.s3}>
+          <Text style={s.s4}>{item.driver.charAt(0)}</Text>
         </View>
-        <View className="ml-3 flex-1">
-          <View className="flex-row items-center gap-1">
-            <Text className="text-white font-bold text-base">{item.driver}</Text>
+        <View style={s.s5}>
+          <View style={s.s6}>
+            <Text style={s.s7}>{item.driver}</Text>
             {item.isVerified && <ShieldCheck size={14} color="#3b82f6" />}
           </View>
-          <View className="flex-row items-center gap-1 mt-0.5">
+          <View style={s.s8}>
             <Star size={12} color="#fbbf24" fill="#fbbf24" />
-            <Text className="text-slate-400 text-xs">{item.rating}</Text>
+            <Text style={s.s9}>{item.rating}</Text>
           </View>
         </View>
       </View>
-      <Text className="text-emerald-400 font-black text-xl">₹{item.price}</Text>
+      <Text style={s.s10}>₹{item.price}</Text>
     </View>
 
     {/* Badges */}
-    <View className="flex-row flex-wrap gap-2 mb-4">
+    <View style={s.s11}>
       {item.isWomenOnly && (
-        <View className="bg-pink-500/10 border border-pink-500/30 px-2 py-1 rounded-md flex-row items-center gap-1">
+        <View style={s.s12}>
           <ShieldCheck size={12} color="#ec4899" />
-          <Text className="text-pink-400 text-xs font-bold">Women Only</Text>
+          <Text style={s.s13}>Women Only</Text>
         </View>
       )}
       {item.isEV && (
-        <View className="bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-md flex-row items-center gap-1">
+        <View style={s.s14}>
           <Leaf size={12} color="#10b981" />
-          <Text className="text-emerald-400 text-xs font-bold">Green Ride (EV)</Text>
+          <Text style={s.s15}>Green Ride (EV)</Text>
         </View>
       )}
     </View>
 
     {/* Route */}
-    <View className="mb-4 bg-slate-950 p-3 rounded-xl border border-slate-800">
-      <View className="flex-row items-center">
-        <View className="w-3 h-3 rounded-full bg-blue-500 mr-3" />
-        <Text className="text-slate-200 font-semibold">{item.from}</Text>
+    <View style={s.s16}>
+      <View style={s.s17}>
+        <View style={s.s18} />
+        <Text style={s.s19}>{item.from}</Text>
       </View>
-      <View className="w-0.5 h-6 bg-slate-700 ml-1.5 my-1" />
-      <View className="flex-row items-center">
-        <View className="w-3 h-3 rounded-full bg-rose-500 mr-3" />
-        <Text className="text-slate-200 font-semibold">{item.to}</Text>
+      <View style={s.s20} />
+      <View style={s.s21}>
+        <View style={s.s22} />
+        <Text style={s.s23}>{item.to}</Text>
       </View>
     </View>
 
     {/* Footer */}
-    <View className="flex-row items-center justify-between border-t border-slate-800 pt-4">
-      <View className="flex-row items-center gap-4">
-        <View className="flex-row items-center gap-1.5">
+    <View style={s.s24}>
+      <View style={s.s25}>
+        <View style={s.s26}>
           <Clock size={16} color="#94a3b8" />
-          <Text className="text-slate-400 text-sm font-semibold">{item.time}</Text>
+          <Text style={s.s27}>{item.time}</Text>
         </View>
-        <View className="flex-row items-center gap-1.5">
+        <View style={s.s28}>
           <Users size={16} color="#94a3b8" />
-          <Text className="text-slate-400 text-sm font-semibold">{item.seats} Left</Text>
+          <Text style={s.s29}>{item.seats} Left</Text>
         </View>
       </View>
       
-      <TouchableOpacity className="bg-blue-600 px-4 py-2 rounded-lg">
-        <Text className="text-white font-bold">Request</Text>
+      <TouchableOpacity style={s.s30}>
+        <Text style={s.s31}>Request</Text>
       </TouchableOpacity>
     </View>
   </View>
@@ -132,13 +132,13 @@ export default function FindRide() {
   ), []);
 
   return (
-    <View className="flex-1">
+    <View style={s.s32}>
       {/* Search Bar */}
-      <View className="p-4 border-b border-slate-900">
-        <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-xl px-4 h-12">
+      <View style={s.s33}>
+        <View style={s.s34}>
           <Search size={20} color="#64748b" />
           <TextInput 
-            className="flex-1 ml-3 text-white text-base"
+            style={s.s35}
             placeholder="Where are you going?"
             placeholderTextColor="#64748b"
             value={search}
@@ -149,26 +149,26 @@ export default function FindRide() {
 
       {/* Filters */}
       <View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-3 border-b border-slate-900" contentContainerStyle={{ paddingRight: 24, gap: 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.s36} contentContainerStyle={{ paddingRight: 24, gap: 10 }}>
           <TouchableOpacity 
             onPress={() => setFilter('all')}
-            className={`px-4 py-2 rounded-full border ${filter === 'all' ? 'bg-blue-600 border-blue-500' : 'bg-slate-900 border-slate-800'}`}
+            style={[s.s40, filter === 'all' ? s.s41 : s.s42]}
           >
-            <Text className={`font-bold ${filter === 'all' ? 'text-white' : 'text-slate-400'}`}>All Rides</Text>
+            <Text style={[s.s43, filter === 'all' ? s.s44 : s.s45]}>All Rides</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => setFilter('women')}
-            className={`px-4 py-2 rounded-full border flex-row items-center gap-2 ${filter === 'women' ? 'bg-pink-600 border-pink-500' : 'bg-slate-900 border-slate-800'}`}
+            style={[s.s46, filter === 'women' ? s.s47 : s.s48]}
           >
             <ShieldCheck size={14} color={filter === 'women' ? '#fff' : '#94a3b8'} />
-            <Text className={`font-bold ${filter === 'women' ? 'text-white' : 'text-slate-400'}`}>Women Only</Text>
+            <Text style={[s.s49, filter === 'women' ? s.s50 : s.s51]}>Women Only</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => setFilter('green')}
-            className={`px-4 py-2 rounded-full border flex-row items-center gap-2 ${filter === 'green' ? 'bg-emerald-600 border-emerald-500' : 'bg-slate-900 border-slate-800'}`}
+            style={[s.s52, filter === 'green' ? s.s53 : s.s54]}
           >
             <Leaf size={14} color={filter === 'green' ? '#fff' : '#94a3b8'} />
-            <Text className={`font-bold ${filter === 'green' ? 'text-white' : 'text-slate-400'}`}>Green (EV)</Text>
+            <Text style={[s.s55, filter === 'green' ? s.s56 : s.s57]}>Green (EV)</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -176,7 +176,7 @@ export default function FindRide() {
       {loading ? (
         <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 40 }} />
       ) : (
-        <View className="flex-1 w-full">
+        <View style={s.s37}>
           <FlashList
             data={filteredRides}
             keyExtractor={item => item.id}
@@ -184,9 +184,9 @@ export default function FindRide() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
             estimatedItemSize={216}
             ListEmptyComponent={
-              <View className="items-center justify-center py-20">
+              <View style={s.s38}>
                 <Users size={48} color="#334155" />
-                <Text className="text-slate-500 text-base mt-4 font-semibold text-center">No rides found for your search.</Text>
+                <Text style={s.s39}>No rides found for your search.</Text>
               </View>
             }
           />
@@ -195,3 +195,64 @@ export default function FindRide() {
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 16 },
+  s1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  s2: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  s3: { width: 48, height: 48, borderRadius: 9999, backgroundColor: 'rgba(30,58,95,0.5)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
+  s4: { color: '#60a5fa', fontWeight: '700', fontSize: 18 },
+  s5: { marginLeft: 12, flex: 1 },
+  s6: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  s7: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  s8: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  s9: { color: '#94a3b8', fontSize: 12 },
+  s10: { color: '#34d399', fontWeight: '900', fontSize: 20 },
+  s11: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  s12: { backgroundColor: 'rgba(236,72,153,0.1)', borderWidth: 1, borderColor: 'rgba(236,72,153,0.3)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  s13: { color: '#f472b6', fontSize: 12, fontWeight: '700' },
+  s14: { backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  s15: { color: '#34d399', fontSize: 12, fontWeight: '700' },
+  s16: { marginBottom: 16, backgroundColor: '#020617', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1e293b' },
+  s17: { flexDirection: 'row', alignItems: 'center' },
+  s18: { width: 12, height: 12, borderRadius: 9999, backgroundColor: '#3b82f6', marginRight: 12 },
+  s19: { color: '#e2e8f0', fontWeight: '600' },
+  s20: { width: 2, height: 24, backgroundColor: '#334155', marginLeft: 6, marginVertical: 4 },
+  s21: { flexDirection: 'row', alignItems: 'center' },
+  s22: { width: 12, height: 12, borderRadius: 9999, backgroundColor: '#f43f5e', marginRight: 12 },
+  s23: { color: '#e2e8f0', fontWeight: '600' },
+  s24: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderColor: '#1e293b', paddingTop: 16 },
+  s25: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  s26: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  s27: { color: '#94a3b8', fontSize: 14, fontWeight: '600' },
+  s28: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  s29: { color: '#94a3b8', fontSize: 14, fontWeight: '600' },
+  s30: { backgroundColor: '#2563eb', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  s31: { color: '#ffffff', fontWeight: '700' },
+  s32: { flex: 1 },
+  s33: { padding: 16, borderBottomWidth: 1, borderColor: '#0f172a' },
+  s34: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, height: 48 },
+  s35: { flex: 1, marginLeft: 12, color: '#ffffff', fontSize: 16 },
+  s36: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: '#0f172a' },
+  s37: { flex: 1, width: '100%' },
+  s38: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  s39: { color: '#64748b', fontSize: 16, marginTop: 16, fontWeight: '600', textAlign: 'center' },
+  s40: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, borderWidth: 1 },
+  s41: { backgroundColor: '#2563eb', borderColor: '#3b82f6' },
+  s42: { backgroundColor: '#0f172a', borderColor: '#1e293b' },
+  s43: { fontWeight: '700' },
+  s44: { color: '#ffffff' },
+  s45: { color: '#94a3b8' },
+  s46: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  s47: { backgroundColor: '#db2777', borderColor: '#ec4899' },
+  s48: { backgroundColor: '#0f172a', borderColor: '#1e293b' },
+  s49: { fontWeight: '700' },
+  s50: { color: '#ffffff' },
+  s51: { color: '#94a3b8' },
+  s52: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  s53: { backgroundColor: '#059669', borderColor: '#10b981' },
+  s54: { backgroundColor: '#0f172a', borderColor: '#1e293b' },
+  s55: { fontWeight: '700' },
+  s56: { color: '#ffffff' },
+  s57: { color: '#94a3b8' },
+});

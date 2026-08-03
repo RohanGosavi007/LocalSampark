@@ -1,290 +1,128 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  RefreshControl, 
-  TextInput, 
-  Alert,
-  Platform 
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, Alert, Platform, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useAppStore } from '../store/useAppStore';
 import { apiGet, apiPost } from '../lib/api';
-import { 
-  TrendingUp, 
-  ShoppingBag, 
-  Plus, 
-  RefreshCw, 
-  Users, 
-  AlertTriangle,
-  ArrowRight,
-  Database
-} from 'lucide-react-native';
+import { TrendingUp, ShoppingBag, Plus, RefreshCw, Users, AlertTriangle, ArrowRight, Database } from 'lucide-react-native';
 
-/**
- * A comprehensive dashboard template illustrating how to connect
- * live database metrics, handle roles, submit data directly to the Express backend,
- * and synchronize client state locally with Zustand.
- */
 export default function DashboardNativeTemplate() {
   const { user, authToken } = useAuth();
   const { shops, setShops } = useAppStore();
-  
-  // Local state
-  const [metrics, setMetrics] = useState({
-    totalUsers: 0,
-    activeShops: 0,
-    revenueToday: '0.00',
-    pendingApprovals: 0
-  });
+  const [metrics, setMetrics] = useState({ totalUsers: 0, activeShops: 0, revenueToday: '0.00', pendingApprovals: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [newShopName, setNewShopName] = useState('');
   const [newShopCategory, setNewShopCategory] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // 1. Fetch data from shared backend database via API
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Fetch live analytics metrics
-      // In production, endpoints map to backend Express routes connected to PostgreSQL
-      const metricsData = await apiGet('/dashboard/metrics').catch(() => ({
-        totalUsers: 1420,
-        activeShops: 38,
-        revenueToday: '4,850.00',
-        pendingApprovals: 3
-      }));
+      const metricsData = await apiGet('/dashboard/metrics').catch(() => ({ totalUsers: 1420, activeShops: 38, revenueToday: '4,850.00', pendingApprovals: 3 }));
       setMetrics(metricsData);
-
-      // Fetch active record listings
       const shopsData = await apiGet('/shops').catch(() => [
         { id: 1, name: 'Sharma Kirana Store', category: 'Grocery', status: 'Approved' },
         { id: 2, name: 'Metro Electronics', category: 'Retail', status: 'Approved' },
         { id: 3, name: 'Quick Fix Plumbers', category: 'Service', status: 'Pending' }
       ]);
-      
-      // Synchronize in-memory global state using Zustand
       setShops(shopsData);
     } catch (error) {
       console.error('[Dashboard fetch error]', error);
-      Alert.alert('Data Sync Error', 'Could not sync with live database. Running on cached/local offline state.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      Alert.alert('Data Sync Error', 'Could not sync with live database.');
+    } finally { setLoading(false); setRefreshing(false); }
   }, [setShops]);
 
-  // Initial load
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+  const onRefresh = () => { setRefreshing(true); fetchDashboardData(); };
 
-  // Handle Pull-to-Refresh
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchDashboardData();
-  };
-
-  // 2. Submit Data & Instantly Sync States (Web & Mobile)
   const handleCreateShop = async () => {
-    if (!newShopName.trim() || !newShopCategory.trim()) {
-      Alert.alert('Validation Error', 'Please enter shop name and category.');
-      return;
-    }
-
+    if (!newShopName.trim() || !newShopCategory.trim()) { Alert.alert('Validation Error', 'Please enter shop name and category.'); return; }
     setSubmitting(true);
     try {
-      const payload = {
-        name: newShopName,
-        category: newShopCategory,
-        ownerId: user?.id,
-        status: 'pending' // requires moderator approval
-      };
-
-      // Post record to backend
-      const result = await apiPost('/shops', payload);
-      
-      Alert.alert('Submission Successful', `Your shop "${result.name || newShopName}" was created and synced to the database.`);
-      
-      // Reset form
-      setNewShopName('');
-      setNewShopCategory('');
-      
-      // Refresh metrics and listings instantly
-      fetchDashboardData();
-    } catch (error) {
-      console.error('[Data submission error]', error);
-      Alert.alert('Database Sync Failure', error.message || 'Failed to submit form to database.');
-    } finally {
-      setSubmitting(false);
-    }
+      const result = await apiPost('/shops', { name: newShopName, category: newShopCategory, ownerId: user?.id, status: 'pending' });
+      Alert.alert('Submission Successful', `Your shop "${result.name || newShopName}" was created.`);
+      setNewShopName(''); setNewShopCategory(''); fetchDashboardData();
+    } catch (error) { Alert.alert('Database Sync Failure', error.message || 'Failed to submit.'); }
+    finally { setSubmitting(false); }
   };
 
   if (loading && !refreshing) {
     return (
-      <View className="flex-1 justify-center items-center bg-slate-950">
+      <View style={s.loadingView}>
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-slate-400 mt-4 text-sm font-medium">Connecting to Shared Database...</Text>
+        <Text style={s.loadingText}>Connecting to Shared Database...</Text>
       </View>
     );
   }
 
+  const metricCards = [
+    { label: 'Revenue (Today)', value: `₹${metrics.revenueToday}`, icon: TrendingUp, color: '#3b82f6', hint: 'Live from PG Database', hintColor: '#10b981' },
+    { label: 'Active Businesses', value: `${metrics.activeShops}`, icon: ShoppingBag, color: '#10b981', hint: 'Updated instantly', hintColor: '#64748b' },
+    { label: 'Registered Users', value: `${metrics.totalUsers}`, icon: Users, color: '#8b5cf6', hint: 'Unified User Base', hintColor: '#a855f7' },
+    { label: 'Pending Tasks', value: `${metrics.pendingApprovals}`, icon: AlertTriangle, color: '#f59e0b', hint: 'Requires Moderator', hintColor: '#f59e0b' },
+  ];
+
   return (
-    <ScrollView 
-      className="flex-1 bg-slate-950"
-      contentContainerStyle={{ paddingBottom: 40 }}
-      refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh} 
-          tintColor="#3b82f6" 
-          colors={['#3b82f6']} 
-        />
-      }
-    >
-      {/* DB Connection Status Indicator */}
-      <View className="flex-row items-center justify-between bg-slate-900 px-4 py-2 border-b border-slate-800">
-        <View className="flex-row items-center">
-          <Database size={14} color="#10b981" />
-          <Text className="text-emerald-400 text-xs font-semibold ml-1">SHARED DB: CONNECTED</Text>
-        </View>
-        <Text className="text-slate-400 text-xs">Role: {user?.role || 'Guest'}</Text>
+    <ScrollView style={s.container} contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" colors={['#3b82f6']} />}>
+      {/* DB Status */}
+      <View style={s.dbStatusBar}>
+        <View style={s.dbStatusLeft}><Database size={14} color="#10b981" /><Text style={s.dbStatusText}>SHARED DB: CONNECTED</Text></View>
+        <Text style={s.dbRoleText}>Role: {user?.role || 'Guest'}</Text>
       </View>
 
-      {/* Hero Welcome banner */}
-      <View className="p-5 bg-gradient-to-r from-blue-900 to-indigo-900 rounded-b-3xl mb-6 shadow-lg border-b border-slate-800">
-        <Text className="text-white text-lg font-normal">Welcome back,</Text>
-        <Text className="text-white text-2xl font-bold mt-1">{user?.name || 'Local Resident'}</Text>
-        <Text className="text-blue-200 text-xs mt-2">
-          Shared Database Status: Active & Synced with Web Client
-        </Text>
+      {/* Welcome */}
+      <View style={s.welcomeCard}>
+        <Text style={s.welcomeLabel}>Welcome back,</Text>
+        <Text style={s.welcomeName}>{user?.name || 'Local Resident'}</Text>
+        <Text style={s.welcomeHint}>Shared Database Status: Active & Synced</Text>
       </View>
 
-      {/* METRICS DASHBOARD SECTION */}
-      <View className="px-4 mb-6">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-white text-base font-bold">Key Performance Metrics</Text>
-          <TouchableOpacity onPress={onRefresh} className="flex-row items-center">
-            <RefreshCw size={14} color="#3b82f6" />
-            <Text className="text-blue-500 text-xs font-semibold ml-1">Sync</Text>
-          </TouchableOpacity>
+      {/* Metrics */}
+      <View style={s.section}>
+        <View style={s.sectionHeader}>
+          <Text style={s.sectionTitle}>Key Performance Metrics</Text>
+          <TouchableOpacity onPress={onRefresh} style={s.syncBtn}><RefreshCw size={14} color="#3b82f6" /><Text style={s.syncText}>Sync</Text></TouchableOpacity>
         </View>
-
-        {/* 2x2 Grid of Metrics Cards */}
-        <View className="flex-row flex-wrap justify-between">
-          {/* Card 1: Revenue */}
-          <View className="w-[48%] bg-slate-900 p-4 rounded-2xl mb-4 border border-slate-800 shadow">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-slate-400 text-xs font-medium">Revenue (Today)</Text>
-              <TrendingUp size={16} color="#3b82f6" />
-            </View>
-            <Text className="text-white text-lg font-bold">₹{metrics.revenueToday}</Text>
-            <Text className="text-emerald-500 text-[10px] mt-1">Live from PG Database</Text>
-          </View>
-
-          {/* Card 2: Active Shops */}
-          <View className="w-[48%] bg-slate-900 p-4 rounded-2xl mb-4 border border-slate-800 shadow">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-slate-400 text-xs font-medium">Active Businesses</Text>
-              <ShoppingBag size={16} color="#10b981" />
-            </View>
-            <Text className="text-white text-lg font-bold">{metrics.activeShops}</Text>
-            <Text className="text-slate-500 text-[10px] mt-1">Updated instantly</Text>
-          </View>
-
-          {/* Card 3: Total Users */}
-          <View className="w-[48%] bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-slate-400 text-xs font-medium">Registered Users</Text>
-              <Users size={16} color="#8b5cf6" />
-            </View>
-            <Text className="text-white text-lg font-bold">{metrics.totalUsers}</Text>
-            <Text className="text-purple-400 text-[10px] mt-1">Unified User Base</Text>
-          </View>
-
-          {/* Card 4: Pending Actions */}
-          <View className="w-[48%] bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-slate-400 text-xs font-medium">Pending Tasks</Text>
-              <AlertTriangle size={16} color="#f59e0b" />
-            </View>
-            <Text className="text-white text-lg font-bold">{metrics.pendingApprovals}</Text>
-            <Text className="text-amber-500 text-[10px] mt-1">Requires Moderator</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* DATA SUBMISSION FORM SECTION */}
-      <View className="px-4 mb-6">
-        <View className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-          <Text className="text-white text-base font-bold mb-1">Add Business Listing</Text>
-          <Text className="text-slate-400 text-xs mb-4">
-            Submitting here writes directly to PostgreSQL and triggers an immediate web view update.
-          </Text>
-
-          <Text className="text-slate-300 text-xs font-semibold mb-2">Business / Shop Name</Text>
-          <TextInput 
-            className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white mb-3 text-sm focus:border-blue-500"
-            placeholder="e.g. New Deluxe Sweets"
-            placeholderTextColor="#475569"
-            value={newShopName}
-            onChangeText={setNewShopName}
-          />
-
-          <Text className="text-slate-300 text-xs font-semibold mb-2">Business Category</Text>
-          <TextInput 
-            className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white mb-4 text-sm focus:border-blue-500"
-            placeholder="e.g. Bakery / Grocery / Services"
-            placeholderTextColor="#475569"
-            value={newShopCategory}
-            onChangeText={setNewShopCategory}
-          />
-
-          <TouchableOpacity 
-            onPress={handleCreateShop}
-            disabled={submitting}
-            className={`flex-row justify-center items-center py-3.5 rounded-xl ${submitting ? 'bg-blue-800' : 'bg-blue-600'}`}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Plus size={16} color="#fff" className="mr-2" />
-                <Text className="text-white text-sm font-semibold ml-1">Submit to Shared Database</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* DYNAMIC LISTINGS FROM POSTGRESQL */}
-      <View className="px-4">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-white text-base font-bold">Synced Directory Listings</Text>
-          <Text className="text-slate-500 text-xs">Total: {shops.length}</Text>
-        </View>
-
-        {shops.map((shop) => (
-          <View 
-            key={shop.id}
-            className="bg-slate-900 p-4 rounded-xl mb-3 border border-slate-800 flex-row justify-between items-center shadow-sm"
-          >
-            <View>
-              <Text className="text-white text-sm font-bold">{shop.name}</Text>
-              <Text className="text-slate-400 text-xs mt-1">{shop.category}</Text>
-            </View>
-            <View className="flex-row items-center">
-              <View className={`px-2.5 py-1 rounded-full ${shop.status === 'Approved' ? 'bg-emerald-950 border border-emerald-800' : 'bg-amber-950 border border-amber-800'}`}>
-                <Text className={`text-[10px] font-bold ${shop.status === 'Approved' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {shop.status || 'Pending'}
-                </Text>
+        <View style={s.metricsGrid}>
+          {metricCards.map((m, i) => {
+            const IconComp = m.icon;
+            return (
+              <View key={i} style={s.metricCard}>
+                <View style={s.metricHeader}><Text style={s.metricLabel}>{m.label}</Text><IconComp size={16} color={m.color} /></View>
+                <Text style={s.metricValue}>{m.value}</Text>
+                <Text style={[s.metricHint, { color: m.hintColor }]}>{m.hint}</Text>
               </View>
-              <ArrowRight size={14} color="#475569" className="ml-3" />
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Form */}
+      <View style={s.section}>
+        <View style={s.formCard}>
+          <Text style={s.formTitle}>Add Business Listing</Text>
+          <Text style={s.formSubtitle}>Submitting writes directly to PostgreSQL.</Text>
+          <Text style={s.fieldLabel}>Business / Shop Name</Text>
+          <TextInput style={s.input} placeholder="e.g. New Deluxe Sweets" placeholderTextColor="#475569" value={newShopName} onChangeText={setNewShopName} />
+          <Text style={s.fieldLabel}>Business Category</Text>
+          <TextInput style={s.input} placeholder="e.g. Bakery / Grocery / Services" placeholderTextColor="#475569" value={newShopCategory} onChangeText={setNewShopCategory} />
+          <TouchableOpacity onPress={handleCreateShop} disabled={submitting} style={[s.submitBtn, submitting && { backgroundColor: '#1e40af' }]}>
+            {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Plus size={16} color="#fff" /><Text style={s.submitText}>Submit to Shared Database</Text></>}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Listings */}
+      <View style={s.section}>
+        <View style={s.sectionHeader}><Text style={s.sectionTitle}>Synced Directory Listings</Text><Text style={s.countText}>Total: {shops.length}</Text></View>
+        {shops.map((shop) => (
+          <View key={shop.id} style={s.shopCard}>
+            <View><Text style={s.shopName}>{shop.name}</Text><Text style={s.shopCategory}>{shop.category}</Text></View>
+            <View style={s.shopRight}>
+              <View style={[s.statusBadge, { backgroundColor: shop.status === 'Approved' ? '#022c22' : '#451a03', borderColor: shop.status === 'Approved' ? '#065f46' : '#78350f' }]}>
+                <Text style={[s.statusText, { color: shop.status === 'Approved' ? '#34d399' : '#fbbf24' }]}>{shop.status || 'Pending'}</Text>
+              </View>
+              <ArrowRight size={14} color="#475569" style={{ marginLeft: 12 }} />
             </View>
           </View>
         ))}
@@ -292,3 +130,42 @@ export default function DashboardNativeTemplate() {
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#020617' },
+  loadingView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#020617' },
+  loadingText: { color: '#94a3b8', marginTop: 16, fontSize: 14, fontWeight: '500' },
+  dbStatusBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0f172a', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+  dbStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dbStatusText: { color: '#34d399', fontSize: 12, fontWeight: '600' },
+  dbRoleText: { color: '#94a3b8', fontSize: 12 },
+  welcomeCard: { padding: 20, backgroundColor: '#1e3a5f', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, marginBottom: 24, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+  welcomeLabel: { color: '#ffffff', fontSize: 18, fontWeight: '400' },
+  welcomeName: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginTop: 4 },
+  welcomeHint: { color: '#bfdbfe', fontSize: 12, marginTop: 8 },
+  section: { paddingHorizontal: 16, marginBottom: 24 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  syncText: { color: '#3b82f6', fontSize: 12, fontWeight: '600' },
+  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  metricCard: { width: '48%', backgroundColor: '#0f172a', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#1e293b' },
+  metricHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  metricLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '500' },
+  metricValue: { color: '#ffffff', fontSize: 18, fontWeight: '700' },
+  metricHint: { fontSize: 10, marginTop: 4 },
+  formCard: { backgroundColor: '#0f172a', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#1e293b' },
+  formTitle: { color: '#ffffff', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  formSubtitle: { color: '#94a3b8', fontSize: 12, marginBottom: 16 },
+  fieldLabel: { color: '#cbd5e1', fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  input: { backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, color: '#ffffff', marginBottom: 12, fontSize: 14 },
+  submitBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#2563eb', gap: 8 },
+  submitText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
+  countText: { color: '#64748b', fontSize: 12 },
+  shopCard: { backgroundColor: '#0f172a', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#1e293b', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  shopName: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
+  shopCategory: { color: '#94a3b8', fontSize: 12, marginTop: 4 },
+  shopRight: { flexDirection: 'row', alignItems: 'center' },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  statusText: { fontSize: 10, fontWeight: '700' },
+});

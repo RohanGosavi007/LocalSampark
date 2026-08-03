@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   detailCol: { flex: 1 },
   detailLabel: { color: '#64748b', fontSize: 12, textTransform: 'uppercase', marginBottom: 4 },
-  detailValue: { color: '#e2e8f0', fontSize: 15, fontWeight: 'bold' },
+  detailValue: { color: '#0f172a', fontSize: 15, fontWeight: 'bold' },
   
   qrSection: { padding: 24, alignItems: 'center', backgroundColor: '#f8fafc' },
   qrLabel: { color: '#64748b', fontSize: 13, marginBottom: 16 },

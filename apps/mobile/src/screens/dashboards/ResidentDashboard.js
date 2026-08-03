@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, SafeAreaView, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Bell, MapPin, Search, ChevronDown, MessageCircle, Store, Briefcase, Building2, Truck, Car, Home, IndianRupee, AlertTriangle, Cross, ShoppingBag, Droplet, Wallet, ShieldCheck, Heart, User } from 'lucide-react-native';
+import { Bell, MapPin, Search, ChevronDown, MessageCircle, Store, Briefcase, Building2, Truck, Car, Home, IndianRupee, AlertTriangle, ShoppingBag, Droplet, Wallet, ShieldCheck, Heart, User } from 'lucide-react-native';
 import StoriesRow from '../../components/StoriesRow';
 import { useNotifications } from '../../context/NotificationContext';
 import { useZone } from '../../context/ZoneContext';
@@ -9,16 +9,14 @@ import { apiGet } from '../../lib/api';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import FloatingCheckoutBar from '../../components/FloatingCheckoutBar';
 import { StoreIcon, DeliveryIcon, ProduceIcon } from '../../components/RichIcons';
-
-// 10x Scale: In a real app we'd import BottomSheet and Haptics here:
-// import BottomSheet from '@gorhom/bottom-sheet';
-// import * as Haptics from 'expo-haptics';
+import { useCartStore } from '../../store/cartStore';
 
 const { width } = Dimensions.get('window');
 
 export default function ResidentDashboard({ user }) {
   const { unreadCount } = useNotifications();
   const { activeZone } = useZone();
+  const { getItemCount, getCartTotal } = useCartStore();
   const [feedPosts, setFeedPosts] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
 
@@ -66,36 +64,27 @@ export default function ResidentDashboard({ user }) {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={s.container}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="flex-row justify-between items-center mb-6 mt-2">
+        <View style={s.headerRow}>
           <View>
-            <Text className="text-white text-2xl font-black mb-1">Hello, {user?.name || 'Resident'}</Text>
-            <TouchableOpacity 
-              className="flex-row items-center bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full self-start"
-              onPress={() => router.push('/modules/zone-selector')}
-            >
-              <MapPin size={12} color="#10b981" className="mr-1.5" />
-              <Text className="text-slate-300 font-bold text-xs">{activeZone?.name || 'Select Zone'}</Text>
-              <ChevronDown size={12} color="#64748b" className="ml-1.5" />
+            <Text style={s.greeting}>Hello, {user?.name || 'Resident'}</Text>
+            <TouchableOpacity style={s.zonePill} onPress={() => router.push('/modules/zone-selector')}>
+              <MapPin size={12} color="#10b981" />
+              <Text style={s.zoneText}>{activeZone?.name || 'Select Zone'}</Text>
+              <ChevronDown size={12} color="#64748b" />
             </TouchableOpacity>
           </View>
-          <View className="flex-row gap-3">
-            <TouchableOpacity 
-              className="w-11 h-11 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
-              onPress={() => router.push('/modules/wallet')}
-            >
+          <View style={s.headerIcons}>
+            <TouchableOpacity style={s.headerBtn} onPress={() => router.push('/modules/wallet')}>
               <Wallet size={20} color="#e2e8f0" />
             </TouchableOpacity>
-            <TouchableOpacity 
-              className="relative w-11 h-11 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
-              onPress={() => router.push('/modules/notifications')}
-            >
+            <TouchableOpacity style={s.headerBtn} onPress={() => router.push('/modules/notifications')}>
               <Bell size={20} color="#e2e8f0" />
               {unreadCount > 0 && (
-                <View className="absolute top-0 right-0 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-slate-950">
-                  <Text className="text-white text-[10px] font-black">{unreadCount}</Text>
+                <View style={s.badge}>
+                  <Text style={s.badgeText}>{unreadCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -103,130 +92,155 @@ export default function ResidentDashboard({ user }) {
         </View>
 
         {/* Search */}
-        <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 mb-6 shadow-sm shadow-slate-900">
-          <Search size={20} color="#94a3b8" className="mr-3" />
-          <TextInput 
-            placeholder="Search shops, plumbers, community..." 
-            placeholderTextColor="#64748b"
-            className="flex-1 text-white font-medium text-sm"
-          />
-        </View>
+        <TouchableOpacity style={s.searchBar} onPress={() => router.push('/search')} activeOpacity={0.7}>
+          <Search size={20} color="#94a3b8" />
+          <Text style={[s.searchInput, { color: '#64748b' }]}>Search shops, plumbers, community...</Text>
+        </TouchableOpacity>
 
         {/* Stories */}
-        <View className="mb-6">
-          <Text className="text-white font-bold text-lg mb-4">Neighborhood Stories</Text>
+        <View style={{ marginBottom: 24 }}>
+          <Text style={s.sectionTitle}>Neighborhood Stories</Text>
           <StoriesRow />
         </View>
-        
+
         {/* Urgent Actions Banner */}
-        <View className="flex-row justify-between mb-8 gap-3">
-          <TouchableOpacity 
-            className="flex-1 bg-red-950/40 border border-red-900/50 p-4 rounded-2xl items-center shadow-lg shadow-red-900/20"
-            onPress={() => router.push('/modules/sos')}
-          >
-            <View className="w-12 h-12 bg-red-500/20 rounded-full items-center justify-center mb-2">
+        <View style={s.urgentRow}>
+          <TouchableOpacity style={[s.urgentCard, { backgroundColor: 'rgba(127, 29, 29, 0.4)', borderColor: 'rgba(127, 29, 29, 0.5)' }]} onPress={() => router.push('/modules/sos')}>
+            <View style={[s.urgentIcon, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
               <AlertTriangle size={24} color="#ef4444" />
             </View>
-            <Text className="text-red-400 font-bold text-xs mt-1">SOS Alert</Text>
+            <Text style={[s.urgentLabel, { color: '#f87171' }]}>SOS Alert</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            className="flex-1 bg-blue-950/40 border border-blue-900/50 p-4 rounded-2xl items-center shadow-lg shadow-blue-900/20"
-            onPress={() => router.push('/modules/pharmacy')}
-          >
-            <View className="w-12 h-12 bg-blue-500/20 rounded-full items-center justify-center mb-2">
-              <Cross size={24} color="#3b82f6" />
+          <TouchableOpacity style={[s.urgentCard, { backgroundColor: 'rgba(30, 58, 138, 0.4)', borderColor: 'rgba(30, 58, 138, 0.5)' }]} onPress={() => router.push('/modules/pharmacy')}>
+            <View style={[s.urgentIcon, { backgroundColor: 'rgba(59, 130, 246, 0.2)' }]}>
+              <ShieldCheck size={24} color="#3b82f6" />
             </View>
-            <Text className="text-blue-400 font-bold text-xs mt-1">Pharmacy</Text>
+            <Text style={[s.urgentLabel, { color: '#60a5fa' }]}>Pharmacy</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            className="flex-1 bg-emerald-950/40 border border-emerald-900/50 p-4 rounded-2xl items-center shadow-lg shadow-emerald-900/20"
-            onPress={() => router.push('/(tabs)/directory')}
-          >
-            <View className="w-12 h-12 bg-emerald-500/20 rounded-full items-center justify-center mb-2">
+          <TouchableOpacity style={[s.urgentCard, { backgroundColor: 'rgba(6, 78, 59, 0.4)', borderColor: 'rgba(6, 78, 59, 0.5)' }]} onPress={() => router.push('/(tabs)/directory')}>
+            <View style={[s.urgentIcon, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
               <ShoppingBag size={24} color="#10b981" />
             </View>
-            <Text className="text-emerald-400 font-bold text-xs mt-1">Groceries</Text>
+            <Text style={[s.urgentLabel, { color: '#34d399' }]}>Groceries</Text>
           </TouchableOpacity>
         </View>
 
         {/* 8 Pillars / Primary Categories */}
-        <Text className="text-white font-bold text-lg mb-4">Platform Services</Text>
-        <View className="flex-row flex-wrap justify-between mb-6">
+        <Text style={s.sectionTitle}>Platform Services</Text>
+        <View style={s.pillarsGrid}>
           {PILLARS.map((pillar, idx) => (
-            <TouchableOpacity key={idx} style={styles.pillarItem} onPress={() => router.push(pillar.route)}>
-              <View style={[styles.pillarIconBg, { backgroundColor: `${pillar.color}15` }]}>
+            <TouchableOpacity key={idx} style={s.pillarItem} onPress={() => router.push(pillar.route)}>
+              <View style={[s.pillarIconBg, { backgroundColor: `${pillar.color}15` }]}>
                 {pillar.iconComp ? (
                   pillar.iconComp
                 ) : (
                   <pillar.icon stroke={pillar.color} width={32} height={32} />
                 )}
               </View>
-              <Text style={styles.pillarLabel} numberOfLines={2}>{pillar.title}</Text>
+              <Text style={s.pillarLabel} numberOfLines={2}>{pillar.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Quick Tiles Grid */}
-        <Text className="text-white font-bold text-lg mb-4">Explore More</Text>
-        <View className="flex-row flex-wrap mb-6 bg-slate-900 border border-slate-800 rounded-3xl p-4 pb-0 shadow-sm shadow-slate-900">
+        <Text style={s.sectionTitle}>Explore More</Text>
+        <View style={s.tilesContainer}>
           {QUICK_TILES.map((t, i) => (
-            <TouchableOpacity key={i} className="w-[25%] items-center mb-5" onPress={() => router.push(t.route)}>
-              <View className="w-12 h-12 rounded-[18px] justify-center items-center mb-2" style={{ backgroundColor: t.bg + '20' }}>
-                <Text className="text-2xl">{t.icon}</Text>
+            <TouchableOpacity key={i} style={s.tileItem} onPress={() => router.push(t.route)}>
+              <View style={[s.tileIconBg, { backgroundColor: t.bg + '20' }]}>
+                <Text style={{ fontSize: 24 }}>{t.icon}</Text>
               </View>
-              <Text className="text-slate-400 font-bold text-[10px] text-center">{t.label}</Text>
+              <Text style={s.tileLabel}>{t.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Community Feed Preview */}
-        <View className="flex-row justify-between items-center mb-4 mt-2">
-          <Text className="text-white font-bold text-lg">Townsquare Feed</Text>
+        <View style={s.feedHeader}>
+          <Text style={s.sectionTitle}>Townsquare Feed</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/community')}>
-            <Text className="text-blue-400 font-bold text-xs">View All</Text>
+            <Text style={s.viewAll}>View All</Text>
           </TouchableOpacity>
         </View>
-        
+
         {loadingFeed ? (
           <SkeletonLoader type="list" count={2} />
         ) : feedPosts.length === 0 ? (
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 items-center">
-            <MessageCircle size={32} color="#64748b" className="mb-3" />
-            <Text className="text-slate-400 font-semibold text-sm">No stories in your area yet.</Text>
+          <View style={s.emptyFeed}>
+            <MessageCircle size={32} color="#64748b" />
+            <Text style={s.emptyText}>No stories in your area yet.</Text>
           </View>
         ) : feedPosts.map(post => (
-          <View key={post.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 shadow-sm shadow-slate-900">
-            <View className="flex-row items-center mb-3">
-              <View className="w-10 h-10 rounded-full bg-blue-600 justify-center items-center mr-3">
-                <Text className="text-white font-black text-base">{post.author_name?.charAt(0) || post.full_name?.charAt(0) || 'U'}</Text>
+          <View key={post.id} style={s.feedCard}>
+            <View style={s.feedAuthorRow}>
+              <View style={s.feedAvatar}>
+                <Text style={s.feedAvatarText}>{post.author_name?.charAt(0) || post.full_name?.charAt(0) || 'U'}</Text>
               </View>
               <View>
-                <Text className="text-white font-bold text-sm">{post.author_name || post.full_name}</Text>
-                <Text className="text-slate-400 text-[10px]">{post.time || new Date(post.created_at).toLocaleDateString()}</Text>
+                <Text style={s.feedAuthorName}>{post.author_name || post.full_name}</Text>
+                <Text style={s.feedTime}>{post.time || new Date(post.created_at).toLocaleDateString()}</Text>
               </View>
             </View>
-            <Text className="text-slate-300 font-medium text-sm leading-5 mb-4">{post.content}</Text>
-            <View className="flex-row justify-between border-t border-slate-800 pt-3 mt-1">
-              <TouchableOpacity className="flex-row items-center"><Text className="text-slate-400 font-bold text-xs">❤️ {post.likes || 0} Likes</Text></TouchableOpacity>
-              <TouchableOpacity className="flex-row items-center"><Text className="text-slate-400 font-bold text-xs">💬 {post.comments || 0} Comments</Text></TouchableOpacity>
-              <TouchableOpacity className="flex-row items-center"><Text className="text-blue-400 font-bold text-xs">🔗 Share</Text></TouchableOpacity>
+            <Text style={s.feedContent}>{post.content}</Text>
+            <View style={s.feedActions}>
+              <TouchableOpacity><Text style={s.feedAction}>❤️ {post.likes || 0} Likes</Text></TouchableOpacity>
+              <TouchableOpacity><Text style={s.feedAction}>💬 {post.comments || 0} Comments</Text></TouchableOpacity>
+              <TouchableOpacity><Text style={[s.feedAction, { color: '#60a5fa' }]}>🔗 Share</Text></TouchableOpacity>
             </View>
           </View>
         ))}
-        
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* 10x Floating Express Checkout Context */}
-      <FloatingCheckoutBar 
-        itemCount={2} 
-        totalAmount={345} 
-        onPress={() => {
-          // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/(tabs)/cart');
-        }} 
-      />
-
+      {/* Floating Express Checkout */}
+      {getItemCount() > 0 && (
+        <FloatingCheckoutBar
+          itemCount={getItemCount()}
+          totalAmount={getCartTotal()}
+          onPress={() => router.push('/modules/checkout')}
+        />
+      )}
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#020617' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, marginTop: 8 },
+  greeting: { color: '#ffffff', fontSize: 24, fontWeight: '900', marginBottom: 4 },
+  zonePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'flex-start', gap: 6 },
+  zoneText: { color: '#cbd5e1', fontWeight: '700', fontSize: 12 },
+  headerIcons: { flexDirection: 'row', gap: 12 },
+  headerBtn: { width: 44, height: 44, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#ef4444', width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#020617' },
+  badgeText: { color: '#ffffff', fontSize: 10, fontWeight: '900' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 24, gap: 12 },
+  searchInput: { flex: 1, color: '#ffffff', fontWeight: '500', fontSize: 14 },
+  sectionTitle: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  urgentRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, gap: 12 },
+  urgentCard: { flex: 1, borderWidth: 1, padding: 16, borderRadius: 16, alignItems: 'center' },
+  urgentIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  urgentLabel: { fontWeight: '700', fontSize: 12, marginTop: 4 },
+  pillarsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
+  pillarItem: { width: (width - 48) / 4, alignItems: 'center', marginBottom: 16 },
+  pillarIconBg: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  pillarLabel: { color: '#94a3b8', fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  tilesContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 24, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 24, padding: 16 },
+  tileItem: { width: '25%', alignItems: 'center', marginBottom: 20 },
+  tileIconBg: { width: 48, height: 48, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  tileLabel: { color: '#94a3b8', fontWeight: '700', fontSize: 10, textAlign: 'center' },
+  feedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
+  viewAll: { color: '#60a5fa', fontWeight: '700', fontSize: 12 },
+  emptyFeed: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 24, alignItems: 'center', gap: 12 },
+  emptyText: { color: '#94a3b8', fontWeight: '600', fontSize: 14 },
+  feedCard: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 16 },
+  feedAuthorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  feedAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2563eb', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  feedAvatarText: { color: '#ffffff', fontWeight: '900', fontSize: 16 },
+  feedAuthorName: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
+  feedTime: { color: '#94a3b8', fontSize: 10 },
+  feedContent: { color: '#cbd5e1', fontWeight: '500', fontSize: 14, lineHeight: 20, marginBottom: 16 },
+  feedActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#1e293b', paddingTop: 12, marginTop: 4 },
+  feedAction: { color: '#94a3b8', fontWeight: '700', fontSize: 12 },
+});

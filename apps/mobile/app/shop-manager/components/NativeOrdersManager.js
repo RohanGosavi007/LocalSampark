@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, LayoutAnimation, UIManager, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, LayoutAnimation, UIManager, Platform , StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Package, CheckCircle2, XCircle, Truck, Search, Bell, MapPin, Phone, CreditCard, MessageCircle, ChevronDown, ChevronUp, Timer, ArrowRight } from 'lucide-react-native';
 import { apiGet, apiPut } from '../../../src/lib/api';
@@ -92,7 +92,7 @@ export default function NativeOrdersManager() {
   };
 
   const renderStatusTabs = () => (
-    <View className="mb-4">
+    <View style={s.s0}>
       <FlashList estimatedItemSize={100}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -107,10 +107,10 @@ export default function NativeOrdersManager() {
             <TouchableOpacity
               onPress={() => setActiveTab(item)}
               style={{ backgroundColor: isActive ? config.bg : 'transparent', borderColor: isActive ? config.color : '#334155' }}
-              className={`flex-row items-center mr-3 px-4 py-2.5 rounded-xl border ${isActive ? '' : 'bg-slate-800'}`}
+              style={[s.s40, !(isActive) && s.s41]}
             >
               <Icon size={14} color={isActive ? config.color : '#94a3b8'} style={{ marginRight: 6 }} />
-              <Text style={{ color: isActive ? config.color : '#94a3b8' }} className="font-bold text-sm">
+              <Text style={{ color: isActive ? config.color : '#94a3b8' }} style={s.s1}>
                 {config.label}
               </Text>
             </TouchableOpacity>
@@ -128,85 +128,85 @@ export default function NativeOrdersManager() {
     try { orderItems = JSON.parse(item.items || '[]'); } catch (e) {}
 
     return (
-      <View style={{ borderColor: `${config.color}30` }} className="bg-slate-900 border rounded-2xl mx-4 mb-4 overflow-hidden">
+      <View style={{ borderColor: `${config.color}30` }} style={s.s2}>
         {/* Header */}
-        <TouchableOpacity onPress={() => toggleExpand(item.id)} className="p-4 flex-row justify-between items-center bg-slate-900">
-          <View className="flex-row items-center flex-1">
-            <View style={{ backgroundColor: config.bg }} className="w-10 h-10 rounded-xl items-center justify-center mr-3">
+        <TouchableOpacity onPress={() => toggleExpand(item.id)} style={s.s3}>
+          <View style={s.s4}>
+            <View style={{ backgroundColor: config.bg }} style={s.s5}>
               <Icon size={20} color={config.color} />
             </View>
             <View>
-              <View className="flex-row items-center mb-1">
-                <Text className="text-white font-bold text-sm mr-2">#{item.id?.substring(0,8).toUpperCase()}</Text>
-                <View style={{ backgroundColor: config.bg }} className="px-2 py-0.5 rounded flex-row items-center">
-                  <Text style={{ color: config.color }} className="text-[10px] font-bold">
+              <View style={s.s6}>
+                <Text style={s.s7}>#{item.id?.substring(0,8).toUpperCase()}</Text>
+                <View style={{ backgroundColor: config.bg }} style={s.s8}>
+                  <Text style={{ color: config.color }} style={s.s9}>
                     {item.order_type === 'dine_in' ? '🍽️ Dine-in' : item.delivery_type === 'delivery' ? '🚴 Delivery' : '🏃 Pickup'}
                   </Text>
                 </View>
               </View>
-              <Text className="text-slate-400 text-xs">{item.customer_name || 'Walk-in'} • {formatTimeSince(item.created_at)}</Text>
+              <Text style={s.s10}>{item.customer_name || 'Walk-in'} • {formatTimeSince(item.created_at)}</Text>
             </View>
           </View>
-          <View className="items-end justify-center">
-            <Text className="text-white font-black text-lg mb-1">₹{item.total_amount || 0}</Text>
+          <View style={s.s11}>
+            <Text style={s.s12}>₹{item.total_amount || 0}</Text>
             {isExpanded ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
           </View>
         </TouchableOpacity>
 
         {/* Expanded Content */}
         {isExpanded && (
-          <View className="px-4 pb-4 border-t border-slate-800/50 pt-3">
-            <Text className="text-slate-500 text-[10px] font-bold uppercase mb-2">Order Items</Text>
+          <View style={s.s13}>
+            <Text style={s.s14}>Order Items</Text>
             {orderItems.map((prod, i) => (
-              <View key={i} className="flex-row justify-between items-center py-1.5 border-b border-slate-800/30">
-                <Text className="text-slate-300 text-xs flex-1 pr-2">{prod.quantity || 1}x {prod.name || prod.product_name || 'Item'}</Text>
-                <Text className="text-slate-400 text-xs font-medium">₹{prod.price || 0}</Text>
+              <View key={i} style={s.s15}>
+                <Text style={s.s16}>{prod.quantity || 1}x {prod.name || prod.product_name || 'Item'}</Text>
+                <Text style={s.s17}>₹{prod.price || 0}</Text>
               </View>
             ))}
 
             {item.special_instructions && (
-              <View className="mt-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
-                <Text className="text-amber-500 text-[10px] font-bold uppercase mb-1">Special Instructions</Text>
-                <Text className="text-amber-400/80 text-xs">{item.special_instructions}</Text>
+              <View style={s.s18}>
+                <Text style={s.s19}>Special Instructions</Text>
+                <Text style={s.s20}>{item.special_instructions}</Text>
               </View>
             )}
 
-            <View className="mt-3 space-y-2">
+            <View style={s.s21}>
               {item.delivery_address && (
-                <View className="flex-row items-start mb-2">
+                <View style={s.s22}>
                   <MapPin size={14} color="#3b82f6" style={{ marginTop: 2, marginRight: 6 }} />
-                  <Text className="text-slate-400 text-xs flex-1">{item.delivery_address}</Text>
+                  <Text style={s.s23}>{item.delivery_address}</Text>
                 </View>
               )}
               {item.customer_phone && (
-                <View className="flex-row items-center mb-2">
+                <View style={s.s24}>
                   <Phone size={14} color="#22c55e" style={{ marginRight: 6 }} />
-                  <Text className="text-green-500 font-medium text-xs">{item.customer_phone}</Text>
+                  <Text style={s.s25}>{item.customer_phone}</Text>
                 </View>
               )}
-              <View className="flex-row items-center">
+              <View style={s.s26}>
                 <CreditCard size={14} color="#a855f7" style={{ marginRight: 6 }} />
-                <Text className="text-slate-400 text-xs capitalize">{item.payment_method || 'COD'} • {item.payment_status || 'Pending'}</Text>
+                <Text style={s.s27}>{item.payment_method || 'COD'} • {item.payment_status || 'Pending'}</Text>
               </View>
             </View>
 
             {/* Action Buttons */}
-            <View className="flex-row mt-4 space-x-2">
+            <View style={s.s28}>
               {item.status === 'pending' && (
                 <TouchableOpacity
                   onPress={() => handleReject(item.id)}
-                  className="flex-1 py-3 items-center justify-center rounded-xl border border-red-500/30 mr-2"
+                  style={s.s29}
                 >
-                  <Text className="text-red-500 font-bold text-sm">Reject</Text>
+                  <Text style={s.s30}>Reject</Text>
                 </TouchableOpacity>
               )}
               {config.action && (
                 <TouchableOpacity
                   onPress={() => handleStatusUpdate(item.id, config.nextStatus)}
                   style={{ backgroundColor: config.color }}
-                  className="flex-1 py-3 flex-row items-center justify-center rounded-xl"
+                  style={s.s31}
                 >
-                  <Text className="text-white font-bold text-sm mr-2">{config.action}</Text>
+                  <Text style={s.s32}>{config.action}</Text>
                   <ArrowRight size={16} color="#fff" />
                 </TouchableOpacity>
               )}
@@ -218,32 +218,32 @@ export default function NativeOrdersManager() {
   };
 
   return (
-    <View className="flex-1">
+    <View style={s.s33}>
       {renderStatusTabs()}
       
       {/* Search Bar */}
-      <View className="px-4 mb-4">
-        <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5">
+      <View style={s.s34}>
+        <View style={s.s35}>
           <Search size={18} color="#64748b" />
           <TextInput
             placeholder="Search by order ID, name, phone..."
             placeholderTextColor="#64748b"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            className="flex-1 text-white ml-2 text-sm"
+            style={s.s36}
           />
         </View>
       </View>
 
       {/* List */}
       {loading ? (
-        <View className="flex-1 justify-center items-center py-20">
+        <View style={s.s37}>
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : filteredOrders.length === 0 ? (
-        <View className="items-center justify-center py-20 mx-4 border border-dashed border-slate-800 rounded-2xl">
-          <Package size={48} color="#475569" className="mb-4" />
-          <Text className="text-slate-500 font-bold text-lg">No {ORDER_STATUS_CONFIG[activeTab]?.label} orders</Text>
+        <View style={s.s38}>
+          <Package size={48} color="#475569" />
+          <Text style={s.s39}>No {ORDER_STATUS_CONFIG[activeTab]?.label} orders</Text>
         </View>
       ) : (
         <FlashList estimatedItemSize={100}
@@ -259,3 +259,48 @@ export default function NativeOrdersManager() {
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { marginBottom: 16 },
+  s1: { fontWeight: '700', fontSize: 14 },
+  s2: { backgroundColor: '#0f172a', borderWidth: 1, borderRadius: 16, marginHorizontal: 16, marginBottom: 16, overflow: 'hidden' },
+  s3: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a' },
+  s4: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  s5: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  s6: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  s7: { color: '#ffffff', fontWeight: '700', fontSize: 14, marginRight: 8 },
+  s8: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, flexDirection: 'row', alignItems: 'center' },
+  s9: { fontSize: 10, fontWeight: '700' },
+  s10: { color: '#94a3b8', fontSize: 12 },
+  s11: { alignItems: 'flex-end', justifyContent: 'center' },
+  s12: { color: '#ffffff', fontWeight: '900', fontSize: 18, marginBottom: 4 },
+  s13: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderColor: 'rgba(30,41,59,0.5)', paddingTop: 12 },
+  s14: { color: '#64748b', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8 },
+  s15: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderColor: 'rgba(30,41,59,0.3)' },
+  s16: { color: '#cbd5e1', fontSize: 12, flex: 1, paddingRight: 8 },
+  s17: { color: '#94a3b8', fontSize: 12, fontWeight: '500' },
+  s18: { marginTop: 12, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.2)', padding: 12, borderRadius: 12 },
+  s19: { color: '#f59e0b', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
+  s20: { color: 'rgba(251,191,36,0.8)', fontSize: 12 },
+  s21: { marginTop: 12, gap: 8 },
+  s22: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  s23: { color: '#94a3b8', fontSize: 12, flex: 1 },
+  s24: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  s25: { color: '#22c55e', fontWeight: '500', fontSize: 12 },
+  s26: { flexDirection: 'row', alignItems: 'center' },
+  s27: { color: '#94a3b8', fontSize: 12, textTransform: 'capitalize' },
+  s28: { flexDirection: 'row', marginTop: 16, gap: 8 },
+  s29: { flex: 1, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', marginRight: 8 },
+  s30: { color: '#ef4444', fontWeight: '700', fontSize: 14 },
+  s31: { flex: 1, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  s32: { color: '#ffffff', fontWeight: '700', fontSize: 14, marginRight: 8 },
+  s33: { flex: 1 },
+  s34: { paddingHorizontal: 16, marginBottom: 16 },
+  s35: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  s36: { flex: 1, color: '#ffffff', marginLeft: 8, fontSize: 14 },
+  s37: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 },
+  s38: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, marginHorizontal: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: '#1e293b', borderRadius: 16 },
+  s39: { color: '#64748b', fontWeight: '700', fontSize: 18 },
+  s40: { flexDirection: 'row', alignItems: 'center', marginRight: 12, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
+  s41: { backgroundColor: '#1e293b' },
+});

@@ -18,12 +18,38 @@ import HomeServiceManager from './components/HomeServiceManager';
 import ProfessionalManager from './components/ProfessionalManager';
 import EducationEventsManager from './components/EducationEventsManager';
 import CampaignBuilder from './components/CampaignBuilder';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../../src/context/LanguageContext';
 import LanguageToggle from '../../components/LanguageToggle';
+import { fetchWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
+
+// Mock Shop Data matching Web Structure (fallback when API offline)
+const MOCK_SHOP = {
+  id: 1,
+  name: 'Sample Shop Native',
+  category_id: 'cat_040',
+  category_details: {
+    slug: 'hospitals-opd-clinics',
+    business_model: 'appointment'
+  },
+  tier: 'big_hospital'
+};
 
 export default function ShopDashboardScreen() {
   const router = useRouter();
   const { t } = useLanguage();
+  const [shop, setShop] = useState(MOCK_SHOP);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    // Fetch real shop data
+    const loadShop = async () => {
+      const { data, isDemo: demo } = await fetchWithFallback('/shops/my-shop', MOCK_SHOP);
+      if (data) setShop(data.shop || data);
+      setIsDemo(demo);
+    };
+    loadShop();
+  }, []);
 
   useEffect(() => {
     // Setup Push Notifications
@@ -55,17 +81,6 @@ export default function ShopDashboardScreen() {
     return () => subscription.remove();
   }, []);
 
-  // Mock Shop Data matching Web Structure
-  const shop = {
-    id: 1,
-    name: 'Sample Shop Native',
-    category_id: 'cat_040',
-    category_details: {
-      slug: 'hospitals-opd-clinics',
-      business_model: 'appointment'
-    },
-    tier: 'big_hospital' // Mock tier
-  };
 
   const [activeTab, setActiveTab] = useState('dashboard');
 

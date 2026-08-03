@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Switch, ActivityIndicator, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, Switch, ActivityIndicator, ScrollView, RefreshControl, TouchableOpacity , StyleSheet } from 'react-native';
 import { Settings, Bell, CreditCard, Clock, Shield, AlertCircle, ChevronRight, Store } from 'lucide-react-native';
 import { apiGet } from '../../../src/lib/api';
 import { useAppStore } from '../../../src/store/useAppStore';
@@ -39,17 +39,17 @@ export default function NativeSettingsManager() {
   }, [fetchSettings]);
 
   const renderSectionHeader = (title, Icon) => (
-    <View className="flex-row items-center px-4 pt-6 pb-2">
+    <View style={s.s0}>
       <Icon size={16} color="#3b82f6" style={{ marginRight: 8 }} />
-      <Text className="text-blue-400 font-bold text-xs uppercase tracking-wider">{title}</Text>
+      <Text style={s.s1}>{title}</Text>
     </View>
   );
 
   const renderToggleRow = (label, description, key, defaultValue = false) => (
-    <View className="flex-row items-center justify-between px-4 py-4 bg-slate-900 border-b border-slate-800">
-      <View className="flex-1 pr-4">
-        <Text className="text-white font-medium text-base mb-1">{label}</Text>
-        <Text className="text-slate-500 text-xs leading-tight">{description}</Text>
+    <View style={s.s2}>
+      <View style={s.s3}>
+        <Text style={s.s4}>{label}</Text>
+        <Text style={s.s5}>{description}</Text>
       </View>
       <Switch
         trackColor={{ false: '#334155', true: '#3b82f6' }}
@@ -62,10 +62,10 @@ export default function NativeSettingsManager() {
   );
 
   const renderActionRow = (label, value) => (
-    <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 bg-slate-900 border-b border-slate-800">
-      <Text className="text-white font-medium text-base">{label}</Text>
-      <View className="flex-row items-center">
-        <Text className="text-slate-400 text-sm mr-2">{value}</Text>
+    <TouchableOpacity style={s.s6}>
+      <Text style={s.s7}>{label}</Text>
+      <View style={s.s8}>
+        <Text style={s.s9}>{value}</Text>
         <ChevronRight size={16} color="#64748b" />
       </View>
     </TouchableOpacity>
@@ -73,22 +73,22 @@ export default function NativeSettingsManager() {
 
   if (!shopId && !loading) {
     return (
-      <View className="flex-1 items-center justify-center p-6">
-        <AlertCircle size={48} color="#f59e0b" className="mb-4" />
-        <Text className="text-white font-bold text-lg text-center">Shop ID Missing</Text>
+      <View style={s.s10}>
+        <AlertCircle size={48} color="#f59e0b" />
+        <Text style={s.s11}>Shop ID Missing</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1">
+    <View style={s.s12}>
       {loading ? (
-        <View className="flex-1 justify-center items-center py-20">
+        <View style={s.s13}>
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : (
         <ScrollView 
-          className="flex-1"
+          style={s.s14}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchSettings(true)} tintColor="#3b82f6" />}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
@@ -108,9 +108,9 @@ export default function NativeSettingsManager() {
           {renderActionRow('Payout Account', settings.payout_account ? '•••• ' + settings.payout_account.slice(-4) : 'Setup required')}
           {renderToggleRow('Cash on Delivery', 'Allow customers to pay on delivery.', 'cod_enabled', true)}
 
-          <View className="mt-8 px-4 pb-10">
-            <TouchableOpacity className="py-4 border border-red-500/30 bg-red-500/10 rounded-xl items-center">
-              <Text className="text-red-500 font-bold">Temporarily Close Shop</Text>
+          <View style={s.s15}>
+            <TouchableOpacity style={s.s16}>
+              <Text style={s.s17}>Temporarily Close Shop</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -118,3 +118,24 @@ export default function NativeSettingsManager() {
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 24, paddingBottom: 8 },
+  s1: { color: '#60a5fa', fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  s2: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
+  s3: { flex: 1, paddingRight: 16 },
+  s4: { color: '#ffffff', fontWeight: '500', fontSize: 16, marginBottom: 4 },
+  s5: { color: '#64748b', fontSize: 12, lineHeight: 1.25 },
+  s6: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
+  s7: { color: '#ffffff', fontWeight: '500', fontSize: 16 },
+  s8: { flexDirection: 'row', alignItems: 'center' },
+  s9: { color: '#94a3b8', fontSize: 14, marginRight: 8 },
+  s10: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  s11: { color: '#ffffff', fontWeight: '700', fontSize: 18, textAlign: 'center' },
+  s12: { flex: 1 },
+  s13: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 },
+  s14: { flex: 1 },
+  s15: { marginTop: 32, paddingHorizontal: 16, paddingBottom: 40 },
+  s16: { paddingVertical: 16, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: 12, alignItems: 'center' },
+  s17: { color: '#ef4444', fontWeight: '700' },
+});

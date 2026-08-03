@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl , StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Users, Phone, Mail, Edit2, Shield, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { apiGet } from '../../../src/lib/api';
@@ -39,39 +39,39 @@ export default function NativeStaffManager() {
     
     // Provide fallback icon based on role if no profile image
     return (
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mx-4 mb-4">
-        <View className="flex-row items-center mb-3">
-          <View className="w-12 h-12 bg-slate-800 rounded-full mr-4 items-center justify-center border border-slate-700">
+      <View style={s.s0}>
+        <View style={s.s1}>
+          <View style={s.s2}>
             <Users size={20} color="#94a3b8" />
           </View>
-          <View className="flex-1">
-            <Text className="text-white font-bold text-base">{item.name || 'Staff Member'}</Text>
-            <View className="flex-row items-center mt-1 space-x-2">
-              <View className="bg-blue-500/20 px-2 py-0.5 rounded mr-2 flex-row items-center border border-blue-500/30">
+          <View style={s.s3}>
+            <Text style={s.s4}>{item.name || 'Staff Member'}</Text>
+            <View style={s.s5}>
+              <View style={s.s6}>
                 <Shield size={10} color="#3b82f6" style={{ marginRight: 4 }} />
-                <Text className="text-blue-400 text-[10px] font-bold uppercase">{item.role || 'Employee'}</Text>
+                <Text style={s.s7}>{item.role || 'Employee'}</Text>
               </View>
-              <View className={`flex-row items-center px-2 py-0.5 rounded ${isActive ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+              <View style={[s.s20, isActive ? s.s21 : s.s22]}>
                 {isActive ? <CheckCircle2 size={10} color="#34d399" style={{ marginRight: 4 }} /> : <AlertCircle size={10} color="#f87171" style={{ marginRight: 4 }} />}
-                <Text className={`text-[10px] font-bold ${isActive ? 'text-emerald-400' : 'text-red-400'}`}>
+                <Text style={[s.s23, isActive ? s.s24 : s.s25]}>
                   {isActive ? 'Active' : 'Inactive'}
                 </Text>
               </View>
             </View>
           </View>
-          <TouchableOpacity className="p-2 bg-slate-800 rounded-lg">
+          <TouchableOpacity style={s.s8}>
             <Edit2 size={16} color="#94a3b8" />
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row items-center justify-between border-t border-slate-800/50 pt-3">
-          <View className="flex-row items-center flex-1">
+        <View style={s.s9}>
+          <View style={s.s10}>
             <Phone size={14} color="#64748b" style={{ marginRight: 6 }} />
-            <Text className="text-slate-400 text-xs font-medium">{item.phone || 'No Phone'}</Text>
+            <Text style={s.s11}>{item.phone || 'No Phone'}</Text>
           </View>
-          <View className="flex-row items-center flex-1 justify-end">
+          <View style={s.s12}>
             <Mail size={14} color="#64748b" style={{ marginRight: 6 }} />
-            <Text className="text-slate-400 text-xs font-medium" numberOfLines={1}>{item.email || 'No Email'}</Text>
+            <Text style={s.s13} numberOfLines={1}>{item.email || 'No Email'}</Text>
           </View>
         </View>
       </View>
@@ -80,23 +80,23 @@ export default function NativeStaffManager() {
 
   if (!shopId && !loading) {
     return (
-      <View className="flex-1 items-center justify-center p-6">
-        <AlertCircle size={48} color="#f59e0b" className="mb-4" />
-        <Text className="text-white font-bold text-lg text-center">Shop ID Missing</Text>
+      <View style={s.s14}>
+        <AlertCircle size={48} color="#f59e0b" />
+        <Text style={s.s15}>Shop ID Missing</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 pt-2">
+    <View style={s.s16}>
       {loading ? (
-        <View className="flex-1 justify-center items-center py-20">
+        <View style={s.s17}>
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : staff.length === 0 ? (
-        <View className="items-center justify-center py-20 mx-4 border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
-          <Users size={48} color="#475569" className="mb-4" />
-          <Text className="text-slate-500 font-bold text-lg">No staff members found</Text>
+        <View style={s.s18}>
+          <Users size={48} color="#475569" />
+          <Text style={s.s19}>No staff members found</Text>
         </View>
       ) : (
         <FlashList estimatedItemSize={100}
@@ -112,3 +112,32 @@ export default function NativeStaffManager() {
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginHorizontal: 16, marginBottom: 16 },
+  s1: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  s2: { width: 48, height: 48, backgroundColor: '#1e293b', borderRadius: 9999, marginRight: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#334155' },
+  s3: { flex: 1 },
+  s4: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  s5: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8 },
+  s6: { backgroundColor: 'rgba(59,130,246,0.2)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginRight: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
+  s7: { color: '#60a5fa', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  s8: { padding: 8, backgroundColor: '#1e293b', borderRadius: 8 },
+  s9: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderColor: 'rgba(30,41,59,0.5)', paddingTop: 12 },
+  s10: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  s11: { color: '#94a3b8', fontSize: 12, fontWeight: '500' },
+  s12: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'flex-end' },
+  s13: { color: '#94a3b8', fontSize: 12, fontWeight: '500' },
+  s14: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  s15: { color: '#ffffff', fontWeight: '700', fontSize: 18, textAlign: 'center' },
+  s16: { flex: 1, paddingTop: 8 },
+  s17: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 },
+  s18: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, marginHorizontal: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: '#1e293b', borderRadius: 16, backgroundColor: 'rgba(15,23,42,0.5)' },
+  s19: { color: '#64748b', fontWeight: '700', fontSize: 18 },
+  s20: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  s21: { backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
+  s22: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' },
+  s23: { fontSize: 10, fontWeight: '700' },
+  s24: { color: '#34d399' },
+  s25: { color: '#f87171' },
+});

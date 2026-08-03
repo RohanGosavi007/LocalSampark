@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { withRoleGuard } from '../../../src/utils/permissions';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import { loadWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
 
 const PLANS = [
   { id: 'milk', name: 'Fresh Buffalo Milk (1L)', category: 'Dairy & Essentials', provider: 'Sharma Dairy & Farms', price: '₹68/day', billing: 'Daily Auto-Debit', schedule: 'Every morning (6:00 AM)', rating: '4.8 ★', icon: '🥛' },
@@ -13,6 +15,12 @@ const PLANS = [
 function SubscriptionsModule() {
   const [subscribedIds, setSubscribedIds] = useState(['milk']);
   const [walletBalance, setWalletBalance] = useState(1420);
+  const [plans, setPlans] = useState(PLANS);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    loadWithFallback('/subscriptions', PLANS, setPlans, setIsDemo);
+  }, []);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [activePlan, setActivePlan] = useState(null);
 

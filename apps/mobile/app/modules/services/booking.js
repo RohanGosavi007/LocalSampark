@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   backBtnIcon: { color: '#0f172a', fontSize: 24 },
   
   scrollContent: { padding: 16 },
-  sectionTitle: { color: '#e2e8f0', fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
+  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
   divider: { height: 1, backgroundColor: '#ffffff', marginVertical: 24 },
   
   staffContainer: { flexDirection: 'row', paddingBottom: 8 },
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   slotBtn: { width: '31%', backgroundColor: '#ffffff', paddingVertical: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#ffffff' },
   slotBtnDisabled: { opacity: 0.4, backgroundColor: '#f8fafc' },
   slotBtnActive: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  slotText: { color: '#e2e8f0', fontSize: 13, fontWeight: '600' },
+  slotText: { color: '#334155', fontSize: 13, fontWeight: '600' },
   slotTextDisabled: { color: '#64748b' },
   slotTextActive: { color: '#0f172a', fontWeight: 'bold' },
   

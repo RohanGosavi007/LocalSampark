@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import NetInfo from '@react-native-community/netinfo';
-import { OfflineQueueService } from '../../../services/OfflineQueueService';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { Camera, Search, ShoppingBag, Minus, Plus } from 'lucide-react-native';
+
+let Haptics = null;
+try { Haptics = require('expo-haptics'); } catch (e) {}
+let NetInfo = null;
+try { NetInfo = require('@react-native-community/netinfo').default; } catch (e) {}
 
 export default function RetailPOS({ themeColor = '#10b981' }) {
   const [items, setItems] = React.useState([
@@ -14,71 +16,54 @@ export default function RetailPOS({ themeColor = '#10b981' }) {
   const [isOffline, setIsOffline] = React.useState(false);
 
   React.useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsOffline(!(state.isConnected && state.isInternetReachable));
-    });
-    return () => unsubscribe();
+    let unsubscribe;
+    if (NetInfo) { unsubscribe = NetInfo.addEventListener(state => { setIsOffline(!(state.isConnected && state.isInternetReachable)); }); }
+    return () => unsubscribe?.();
   }, []);
 
   const handleAction = async (item) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Optimistic Update
-    setItems(prev => prev.map(p => 
-      p.id === item.id ? { ...p, stock: Math.max(0, p.stock - 1) } : p
-    ));
-
-    // Offline Queue
-    try {
-      if (isOffline) {
-        await OfflineQueueService.enqueue(`/api/v1/shops/inventory/decrement`, 'POST', { productId: item.id });
-      }
-    } catch (e) {
-      console.log('Error queueing:', e);
-    }
+    if (Haptics) { try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch(e) {} }
+    setItems(prev => prev.map(p => p.id === item.id ? { ...p, stock: Math.max(0, p.stock - 1) } : p));
   };
 
   return (
-    <View className="flex-1 mt-4">
-      <Text className="text-lg font-black text-white mb-4">Smart POS & Inventory</Text>
-      
-      <TouchableOpacity className="h-24 bg-slate-900 border-2 border-dashed border-slate-800 rounded-2xl justify-center items-center mb-4 active:opacity-80">
-        <Camera size={28} color="#94a3b8" className="mb-1" />
-        <Text className="text-slate-400 font-bold text-xs">Tap to scan barcode</Text>
-      </TouchableOpacity>
-      
-      <View className="flex-row gap-2 mb-6">
-        <View className="flex-1 flex-row items-center bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl">
-          <Search size={18} color="#64748b" className="mr-2" />
-          <TextInput 
-            placeholder="Search products..."
-            placeholderTextColor="#64748b"
-            className="flex-1 text-white font-medium text-sm"
-          />
-        </View>
-        <TouchableOpacity className="bg-emerald-600 px-5 justify-center rounded-xl items-center">
-          <Text className="text-white font-black text-xs">Search</Text>
-        </TouchableOpacity>
+    <View style={s.root}>
+      <Text style={s.title}>Smart POS & Inventory</Text>
+      <TouchableOpacity style={s.scanArea}><Camera size={28} color="#94a3b8" style={{ marginBottom: 4 }} /><Text style={s.scanText}>Tap to scan barcode</Text></TouchableOpacity>
+      <View style={s.searchRow}>
+        <View style={s.searchBox}><Search size={18} color="#64748b" style={{ marginRight: 8 }} /><TextInput placeholder="Search products..." placeholderTextColor="#64748b" style={s.searchInput} /></View>
+        <TouchableOpacity style={s.searchBtn}><Text style={s.searchBtnText}>Search</Text></TouchableOpacity>
       </View>
-
-      <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">Quick Add Items</Text>
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-2">
+      <Text style={s.sectionLabel}>Quick Add Items</Text>
+      <View style={s.listContainer}>
         {items.map((item, idx) => (
-          <View key={item.id} className={`flex-row justify-between items-center p-3 ${idx !== items.length - 1 ? 'border-b border-slate-800' : ''}`}>
-            <View className="flex-1 mr-2">
-              <Text className="text-white font-bold text-sm mb-0.5">{item.name}</Text>
-              <Text className="text-slate-400 text-xs font-medium">Stock: <Text className="text-emerald-400 font-bold">{item.stock}</Text> units left</Text>
-            </View>
-            <TouchableOpacity 
-              className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 rounded-lg flex-row items-center active:bg-emerald-500/20"
-              onPress={() => handleAction(item)}
-            >
-              <Minus size={14} color="#10b981" className="mr-1" />
-              <Text className="text-emerald-400 font-black text-xs">SELL</Text>
-            </TouchableOpacity>
+          <View key={item.id} style={[s.listItem, idx !== items.length - 1 && s.listBorder]}>
+            <View style={{ flex: 1, marginRight: 8 }}><Text style={s.itemName}>{item.name}</Text><Text style={s.itemStock}>Stock: <Text style={s.stockCount}>{item.stock}</Text> units left</Text></View>
+            <TouchableOpacity style={s.sellBtn} onPress={() => handleAction(item)}><Minus size={14} color="#10b981" style={{ marginRight: 4 }} /><Text style={s.sellBtnText}>SELL</Text></TouchableOpacity>
           </View>
         ))}
       </View>
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  root: { flex: 1, marginTop: 16 },
+  title: { fontSize: 18, fontWeight: '900', color: '#ffffff', marginBottom: 16 },
+  scanArea: { height: 96, backgroundColor: '#0f172a', borderWidth: 2, borderStyle: 'dashed', borderColor: '#1e293b', borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  scanText: { color: '#94a3b8', fontWeight: '700', fontSize: 12 },
+  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12 },
+  searchInput: { flex: 1, color: '#ffffff', fontWeight: '500', fontSize: 14 },
+  searchBtn: { backgroundColor: '#059669', paddingHorizontal: 20, justifyContent: 'center', borderRadius: 12, alignItems: 'center' },
+  searchBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 12 },
+  sectionLabel: { color: '#94a3b8', fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  listContainer: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 8 },
+  listItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 },
+  listBorder: { borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+  itemName: { color: '#ffffff', fontWeight: '700', fontSize: 14, marginBottom: 2 },
+  itemStock: { color: '#94a3b8', fontSize: 12, fontWeight: '500' },
+  stockCount: { color: '#34d399', fontWeight: '700' },
+  sellBtn: { backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  sellBtnText: { color: '#34d399', fontWeight: '900', fontSize: 12 },
+});

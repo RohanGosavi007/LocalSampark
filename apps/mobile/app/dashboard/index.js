@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 
@@ -10,13 +10,13 @@ export default function DashboardScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={s.s0}>
       {/* Custom Header */}
-      <View className="flex-row items-center p-4 border-b border-slate-800 bg-slate-900">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-800 rounded-full">
+      <View style={s.s1}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s2}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold capitalize">Dashboard</Text>
+        <Text style={s.s3}>Dashboard</Text>
       </View>
 
       {/* Render the new fully native, database-connected dashboard template */}
@@ -24,3 +24,10 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#1e293b', backgroundColor: '#0f172a' },
+  s2: { marginRight: 16, padding: 8, backgroundColor: '#1e293b', borderRadius: 9999 },
+  s3: { color: '#ffffff', fontSize: 20, fontWeight: '700', textTransform: 'capitalize' },
+});

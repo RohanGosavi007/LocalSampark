@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { withRoleGuard } from '../../../src/utils/permissions';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
+import { loadWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
 
 const VETS = [
   { name: "Dr. Anand's Pet Clinic", spec: 'All Pets', dist: '0.9 km', phone: '+91 9876577710', timing: 'Daily 9AM–8PM', icon: '🏥' },
@@ -25,8 +27,13 @@ const SERVICES = [
 function PetsModule() {
   const [activeTab, setActiveTab] = useState('alerts');
   const [alerts, setAlerts] = useState(INITIAL_LOST);
+  const [isDemo, setIsDemo] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ type: 'lost', name: '', species: 'Dog', breed: '', color: '', area: '', contact: '', reward: '' });
+
+  useEffect(() => {
+    loadWithFallback('/pets', INITIAL_LOST, setAlerts, setIsDemo);
+  }, []);
 
   const handlePost = () => {
     if (!form.name || !form.contact) {

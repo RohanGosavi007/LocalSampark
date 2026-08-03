@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl , StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Calendar, Clock, User, CheckCircle2, AlertCircle, RefreshCcw } from 'lucide-react-native';
@@ -74,58 +74,58 @@ export default function NativeServiceBookingScreen() {
   };
 
   const renderBooking = ({ item }) => (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-4 shadow-md mx-4">
-      <View className="flex-row items-start justify-between mb-4">
-        <View className="flex-1 pr-2">
-          <View className="flex-row items-center gap-2 mb-2 flex-wrap">
-            <View className="bg-slate-800 px-2 py-1 rounded-md border border-slate-700">
-              <Text className="text-[10px] font-bold text-slate-400 uppercase">ID: {item.id?.substring(0,8) || 'Mock'}</Text>
+    <View style={s.s0}>
+      <View style={s.s1}>
+        <View style={s.s2}>
+          <View style={s.s3}>
+            <View style={s.s4}>
+              <Text style={s.s5}>ID: {item.id?.substring(0,8) || 'Mock'}</Text>
             </View>
-            <View className={`flex-row items-center gap-1 px-2.5 py-1 rounded-full border ${getStatusColor(item.status)}`}>
+            <View style={s.s28}>
               {getStatusIcon(item.status)}
-              <Text className={`text-[10px] font-bold capitalize ${getStatusColor(item.status).split(' ')[0]}`}>
+              <Text style={s.s29}>
                 {item.status || 'Pending'}
               </Text>
             </View>
           </View>
-          <Text className="text-lg font-black text-white">{item.service_name || 'Service Booking'}</Text>
+          <Text style={s.s6}>{item.service_name || 'Service Booking'}</Text>
         </View>
-        <View className="items-end">
-          <Text className="text-xl font-black text-blue-400">₹{item.price || 0}</Text>
+        <View style={s.s7}>
+          <Text style={s.s8}>₹{item.price || 0}</Text>
         </View>
       </View>
 
-      <View className="flex-row items-center gap-4 pt-4 border-t border-slate-800 flex-wrap">
-        <View className="flex-row items-center gap-2">
+      <View style={s.s9}>
+        <View style={s.s10}>
           <Calendar size={14} color="#64748b" />
-          <Text className="text-xs font-medium text-slate-300">{formatTime(item.scheduled_time).split(',')[0]}</Text>
+          <Text style={s.s11}>{formatTime(item.scheduled_time).split(',')[0]}</Text>
         </View>
-        <View className="flex-row items-center gap-2">
+        <View style={s.s12}>
           <Clock size={14} color="#64748b" />
-          <Text className="text-xs font-medium text-slate-300">{formatTime(item.scheduled_time).split(',')[1]?.trim() || 'TBD'}</Text>
+          <Text style={s.s13}>{formatTime(item.scheduled_time).split(',')[1]?.trim() || 'TBD'}</Text>
         </View>
-        <View className="flex-row items-center gap-2">
+        <View style={s.s14}>
           <User size={14} color="#64748b" />
-          <Text className="text-xs font-medium text-slate-300" numberOfLines={1}>{item.provider || 'Provider Assigned Soon'}</Text>
+          <Text style={s.s15} numberOfLines={1}>{item.provider || 'Provider Assigned Soon'}</Text>
         </View>
       </View>
     </View>
   );
 
   const renderHeader = () => (
-    <View className="px-4 py-6">
-      <Text className="text-3xl font-black text-white mb-2">My Bookings</Text>
-      <Text className="text-slate-400 mb-6">Track and manage your upcoming and past service requests.</Text>
+    <View style={s.s16}>
+      <Text style={s.s17}>My Bookings</Text>
+      <Text style={s.s18}>Track and manage your upcoming and past service requests.</Text>
 
       {/* Segmented Tabs */}
-      <View className="flex-row bg-slate-900 border border-slate-800 rounded-xl p-1 mb-2">
+      <View style={s.s19}>
         {['Active', 'Completed', 'Cancelled'].map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === tab ? 'bg-blue-600' : 'bg-transparent'}`}
+            style={[s.s30, activeTab === tab ? s.s31 : s.s32]}
           >
-            <Text className={`text-sm font-bold ${activeTab === tab ? 'text-white' : 'text-slate-400'}`}>
+            <Text style={[s.s33, activeTab === tab ? s.s34 : s.s35]}>
               {tab}
             </Text>
           </TouchableOpacity>
@@ -135,16 +135,16 @@ export default function NativeServiceBookingScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
-      <View className="flex-row items-center p-4 border-b border-slate-800 bg-slate-900">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-800 rounded-full">
+    <SafeAreaView style={s.s20}>
+      <View style={s.s21}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s22}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold capitalize">Service Booking</Text>
+        <Text style={s.s23}>Service Booking</Text>
       </View>
 
       {loading ? (
-        <View className="flex-1 justify-center items-center">
+        <View style={s.s24}>
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
       ) : (
@@ -158,10 +158,10 @@ export default function NativeServiceBookingScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" colors={["#3b82f6"]} />
           }
           ListEmptyComponent={
-            <View className="py-20 items-center justify-center mx-4 bg-slate-900/50 rounded-2xl border border-dashed border-slate-700 mt-4">
+            <View style={s.s25}>
               <Calendar size={48} color="#475569" style={{ marginBottom: 16 }} />
-              <Text className="text-lg font-bold text-white mb-2">No {activeTab.toLowerCase()} bookings</Text>
-              <Text className="text-slate-400 text-sm">You don't have any bookings in this category.</Text>
+              <Text style={s.s26}>No {activeTab.toLowerCase()} bookings</Text>
+              <Text style={s.s27}>You don't have any bookings in this category.</Text>
             </View>
           }
         />
@@ -169,3 +169,42 @@ export default function NativeServiceBookingScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 20, marginBottom: 16, marginHorizontal: 16 },
+  s1: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
+  s2: { flex: 1, paddingRight: 8 },
+  s3: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' },
+  s4: { backgroundColor: '#1e293b', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#334155' },
+  s5: { fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' },
+  s6: { fontSize: 18, fontWeight: '900', color: '#ffffff' },
+  s7: { alignItems: 'flex-end' },
+  s8: { fontSize: 20, fontWeight: '900', color: '#60a5fa' },
+  s9: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 16, borderTopWidth: 1, borderColor: '#1e293b', flexWrap: 'wrap' },
+  s10: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  s11: { fontSize: 12, fontWeight: '500', color: '#cbd5e1' },
+  s12: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  s13: { fontSize: 12, fontWeight: '500', color: '#cbd5e1' },
+  s14: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  s15: { fontSize: 12, fontWeight: '500', color: '#cbd5e1' },
+  s16: { paddingHorizontal: 16, paddingVertical: 24 },
+  s17: { fontSize: 30, fontWeight: '900', color: '#ffffff', marginBottom: 8 },
+  s18: { color: '#94a3b8', marginBottom: 24 },
+  s19: { flexDirection: 'row', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, padding: 4, marginBottom: 8 },
+  s20: { flex: 1, backgroundColor: '#020617' },
+  s21: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#1e293b', backgroundColor: '#0f172a' },
+  s22: { marginRight: 16, padding: 8, backgroundColor: '#1e293b', borderRadius: 9999 },
+  s23: { color: '#ffffff', fontSize: 20, fontWeight: '700', textTransform: 'capitalize' },
+  s24: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  s25: { paddingVertical: 80, alignItems: 'center', justifyContent: 'center', marginHorizontal: 16, backgroundColor: 'rgba(15,23,42,0.5)', borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: '#334155', marginTop: 16 },
+  s26: { fontSize: 18, fontWeight: '700', color: '#ffffff', marginBottom: 8 },
+  s27: { color: '#94a3b8', fontSize: 14 },
+  s28: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9999, borderWidth: 1 },
+  s29: { fontSize: 10, fontWeight: '700', textTransform: 'capitalize' },
+  s30: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  s31: { backgroundColor: '#2563eb' },
+  s32: { backgroundColor: 'transparent' },
+  s33: { fontSize: 14, fontWeight: '700' },
+  s34: { color: '#ffffff' },
+  s35: { color: '#94a3b8' },
+});

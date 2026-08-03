@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { fetchWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
 
 export default function PharmacyScreen() {
-  const [activeTab, setActiveTab] = useState('medicines'); // medicines, prescription, pharmacies
+  const [activeTab, setActiveTab] = useState('medicines');
   const [searchQuery, setSearchQuery] = useState('');
   const [prescriptionImage, setPrescriptionImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { isDemo: demo } = await fetchWithFallback('/shops?category=Pharmacy', []);
+      setIsDemo(demo);
+    };
+    load();
+  }, []);
 
   const categories = [
     { id: '1', name: 'Fever & Pain', icon: 'thermometer-outline', color: '#ef4444' },

@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import { loadWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
+
+const MOCK_PROMOS = [
+  { id: 1, title: 'Weekend Sale 20% OFF', code: 'WEEKEND20', status: 'Active' },
+  { id: 2, title: 'Buy 1 Get 1 Free', code: 'BOGO', status: 'Expired' }
+];
 
 export default function PromotionsScreen() {
-  const [promotions, setPromotions] = useState([
-    { id: 1, title: 'Weekend Sale 20% OFF', code: 'WEEKEND20', status: 'Active' },
-    { id: 2, title: 'Buy 1 Get 1 Free', code: 'BOGO', status: 'Expired' }
-  ]);
+  const [promotions, setPromotions] = useState(MOCK_PROMOS);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    loadWithFallback('/shops/promotions', MOCK_PROMOS, setPromotions, setIsDemo);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

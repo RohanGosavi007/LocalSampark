@@ -2,25 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import { fetchWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
+
+const MOCK_SERVICE = {
+  id: 'srv-1',
+  title: 'Premium Deep Home Cleaning',
+  provider: 'Shine & Clean Solutions',
+  provider_rating: 4.8,
+  reviews: 124,
+  price: '₹1,500',
+  duration: '4-5 Hours',
+  description: 'Complete deep cleaning of your home including floors, windows, bathrooms, kitchen, and dusting of all furniture. We use eco-friendly chemicals safe for pets and children.',
+  includes: ['Floor Scrubbing', 'Bathroom Deep Clean', 'Kitchen Degreasing', 'Window Cleaning'],
+  image: 'https://via.placeholder.com/400x250/e2e8f0/64748b?text=Service+Image'
+};
 
 export default function ServiceDetailScreen() {
   const { slug } = useLocalSearchParams();
   const [service, setService] = useState(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    // Mock service detail data
-    setService({
-      id: slug || 'srv-1',
-      title: 'Premium Deep Home Cleaning',
-      provider: 'Shine & Clean Solutions',
-      provider_rating: 4.8,
-      reviews: 124,
-      price: '₹1,500',
-      duration: '4-5 Hours',
-      description: 'Complete deep cleaning of your home including floors, windows, bathrooms, kitchen, and dusting of all furniture. We use eco-friendly chemicals safe for pets and children.',
-      includes: ['Floor Scrubbing', 'Bathroom Deep Clean', 'Kitchen Degreasing', 'Window Cleaning'],
-      image: 'https://via.placeholder.com/400x250/e2e8f0/64748b?text=Service+Image'
-    });
+    const load = async () => {
+      const { data, isDemo: demo } = await fetchWithFallback(`/services/${slug || 'srv-1'}`, { ...MOCK_SERVICE, id: slug || 'srv-1' });
+      setService(data);
+      setIsDemo(demo);
+    };
+    load();
   }, [slug]);
 
   if (!service) return null;

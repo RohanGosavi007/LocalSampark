@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { apiGet, apiPost } from '../../../src/lib/api';
+import { loadWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
 
 
 const CATEGORIES = ['All', 'Electronics', 'Furniture', 'Home Appliances', 'Sports', 'Books', 'Clothing', 'Vehicles', 'Kitchen'];
 
-const ITEMS = [
+const MOCK_ITEMS = [
   { id: 1, title: 'Hero Bicycle (24T) — Barely Used', price: 3500, category: 'Sports', condition: 'Good', icon: '🚲', seller: 'Rahul K.', zone: 'Dhanori', time: '2 hrs ago', views: 42 },
   { id: 2, title: 'Wooden Study Table + Ergonomic Chair', price: 2200, category: 'Furniture', condition: 'Like New', icon: '🪑', seller: 'Meera S.', zone: 'Viman Nagar', time: '5 hrs ago', views: 28 },
   { id: 3, title: 'Sony ExtraBass Bluetooth Speaker', price: 1500, category: 'Electronics', condition: 'Fair', icon: '🔊', seller: 'Amit P.', zone: 'Dhanori', time: '1 day ago', views: 71 },
@@ -23,6 +25,8 @@ export default function MarketplaceScreen() {
   const [selectedCat, setSelectedCat] = useState('All');
   const [searchQ, setSearchQ] = useState('');
   const [showForm, setShowForm] = useState(false);
+
+
   
   const [formData, setFormData] = useState({ title: '', price: '', category: 'Electronics', condition: 'Good', desc: '', phone: '' });
 
@@ -40,7 +44,7 @@ export default function MarketplaceScreen() {
       setItems(Array.isArray(data) ? data : (data.rows || []));
     } catch (err) {
       console.warn("Failed to fetch marketplace items", err);
-      setItems(ITEMS); // Fallback to mock on fail
+      setItems(MOCK_ITEMS); // Fallback to mock on fail
     } finally {
       setLoading(false);
     }

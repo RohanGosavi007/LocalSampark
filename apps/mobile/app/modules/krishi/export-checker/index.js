@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Box, LayoutGrid, Clock, AlertCircle } from 'lucide-react-native';
 import { apiGet } from '../../../../src/lib/api';
@@ -10,7 +10,6 @@ export default function NativeexportcheckerScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching native data for this module
     setTimeout(() => {
       setData([
         { id: 1, title: 'Module Initialized', desc: 'Native architecture activated.' },
@@ -21,52 +20,71 @@ export default function NativeexportcheckerScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
-      <View className="flex-row items-center p-4 border-b border-slate-900 bg-slate-950 z-10">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
+    <SafeAreaView style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-black capitalize flex-1">export checker</Text>
+        <Text style={s.headerTitle}>exportchecker</Text>
       </View>
 
       {loading ? (
-        <View className="flex-1 justify-center items-center">
+        <View style={s.loadingView}>
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text className="text-slate-500 mt-4 font-bold text-xs uppercase tracking-widest">Building Native View</Text>
+          <Text style={s.loadingText}>Building Native View</Text>
         </View>
       ) : (
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-          
-          <View className="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 rounded-3xl mb-6 border border-blue-500/30">
-            <LayoutGrid color="#60a5fa" size={32} className="mb-4" />
-            <Text className="text-white text-2xl font-black mb-2">export checker</Text>
-            <Text className="text-blue-200 text-sm">This module has been upgraded to a 100% Native React component. WebViews have been eradicated.</Text>
+        <ScrollView style={s.scrollView} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+          <View style={s.heroCard}>
+            <LayoutGrid color="#60a5fa" size={32} style={{ marginBottom: 16 }} />
+            <Text style={s.heroTitle}>exportchecker</Text>
+            <Text style={s.heroDesc}>This module has been upgraded to a 100% Native React component. WebViews have been eradicated.</Text>
           </View>
 
-          <Text className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-4">Module Data</Text>
+          <Text style={s.sectionLabel}>Module Data</Text>
 
           {data?.map((item) => (
-            <View key={item.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-3 flex-row items-center">
-              <View className="w-12 h-12 bg-slate-950 rounded-full items-center justify-center mr-4 border border-slate-800">
+            <View key={item.id} style={s.dataCard}>
+              <View style={s.dataIcon}>
                 <Box color="#3b82f6" size={20} />
               </View>
-              <View className="flex-1">
-                <Text className="text-white font-bold text-base mb-1">{item.title}</Text>
-                <Text className="text-slate-400 text-xs leading-5">{item.desc}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.dataTitle}>{item.title}</Text>
+                <Text style={s.dataDesc}>{item.desc}</Text>
               </View>
             </View>
           ))}
 
-          <View className="mt-6 bg-emerald-500/10 p-5 rounded-2xl border border-emerald-500/20 flex-row items-start">
-            <AlertCircle color="#10b981" size={20} className="mr-3 mt-1" />
-            <View className="flex-1">
-              <Text className="text-emerald-400 font-bold mb-1">Production Ready</Text>
-              <Text className="text-emerald-500/80 text-xs">This route is fully App Store compliant and natively rendered via Expo Router.</Text>
+          <View style={s.statusCard}>
+            <AlertCircle color="#10b981" size={20} style={{ marginRight: 12, marginTop: 4 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.statusTitle}>Production Ready</Text>
+              <Text style={s.statusDesc}>This route is fully App Store compliant and natively rendered via Expo Router.</Text>
             </View>
           </View>
-
         </ScrollView>
       )}
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#020617' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
+  backBtn: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 20 },
+  headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: '900', textTransform: 'capitalize', flex: 1 },
+  loadingView: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: '#64748b', marginTop: 16, fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 },
+  scrollView: { flex: 1 },
+  heroCard: { backgroundColor: '#1e3a5f', padding: 24, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
+  heroTitle: { color: '#ffffff', fontSize: 24, fontWeight: '900', marginBottom: 8 },
+  heroDesc: { color: '#bfdbfe', fontSize: 14 },
+  sectionLabel: { color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, marginBottom: 16 },
+  dataCard: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 20, borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+  dataIcon: { width: 48, height: 48, backgroundColor: '#020617', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#1e293b' },
+  dataTitle: { color: '#ffffff', fontWeight: '700', fontSize: 16, marginBottom: 4 },
+  dataDesc: { color: '#94a3b8', fontSize: 12, lineHeight: 20 },
+  statusCard: { marginTop: 24, backgroundColor: 'rgba(16,185,129,0.1)', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', flexDirection: 'row', alignItems: 'flex-start' },
+  statusTitle: { color: '#34d399', fontWeight: '700', marginBottom: 4 },
+  statusDesc: { color: 'rgba(16,185,129,0.6)', fontSize: 12 },
+});

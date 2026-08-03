@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator , StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AuthContext } from '../../src/context/AuthContext';
@@ -69,7 +69,7 @@ export default function TrackingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center">
+      <SafeAreaView style={s.s0}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </SafeAreaView>
     );
@@ -85,53 +85,53 @@ export default function TrackingScreen() {
   const currentStepIndex = steps.findIndex(s => s.id === order?.status);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
-      <View className="flex-row items-center p-4 border-b border-slate-800 bg-slate-900">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-800 rounded-full">
+    <SafeAreaView style={s.s1}>
+      <View style={s.s2}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s3}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold">Track Order</Text>
+        <Text style={s.s4}>Track Order</Text>
       </View>
 
-      <ScrollView className="flex-1 p-4">
+      <ScrollView style={s.s5}>
         
         {/* Header Info */}
-        <View className="flex-row justify-between items-center mb-6">
+        <View style={s.s6}>
           <View>
-            <Text className="text-white text-2xl font-black mb-1">#{order?.id}</Text>
-            <Text className="text-slate-400 font-medium">ETA: {order?.eta}</Text>
+            <Text style={s.s7}>#{order?.id}</Text>
+            <Text style={s.s8}>ETA: {order?.eta}</Text>
           </View>
-          <View className="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30">
-            <Text className="text-blue-400 font-bold">Live Tracking Active</Text>
+          <View style={s.s9}>
+            <Text style={s.s10}>Live Tracking Active</Text>
           </View>
         </View>
 
         {/* Status Timeline */}
-        <View className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-lg mb-6">
-          <View className="flex-row items-center mb-6">
-            <Navigation color="#3b82f6" size={20} className="mr-2" />
-            <Text className="text-white font-bold text-lg">Order Status</Text>
+        <View style={s.s11}>
+          <View style={s.s12}>
+            <Navigation color="#3b82f6" size={20} />
+            <Text style={s.s13}>Order Status</Text>
           </View>
           
-          <View className="pl-2">
+          <View style={s.s14}>
             {steps.map((step, idx) => {
               const isActive = idx <= currentStepIndex;
               const isCurrent = idx === currentStepIndex;
               const Icon = step.icon;
               
               return (
-                <View key={step.id} className="flex-row items-start mb-6 last:mb-0">
-                  <View className="items-center mr-4">
-                    <View className={`w-8 h-8 rounded-full items-center justify-center border-2 ${isActive ? 'bg-blue-600 border-blue-500' : 'bg-slate-800 border-slate-700'}`}>
+                <View key={step.id} style={s.s15}>
+                  <View style={s.s16}>
+                    <View style={[s.s31, isActive ? s.s32 : s.s33]}>
                       <Icon color={isActive ? "#fff" : "#475569"} size={16} />
                     </View>
                     {idx < steps.length - 1 && (
-                      <View className={`w-0.5 h-8 mt-2 ${isActive ? 'bg-blue-600' : 'bg-slate-800'}`} />
+                      <View style={[s.s34, isActive ? s.s35 : s.s36]} />
                     )}
                   </View>
-                  <View className={`flex-1 p-3 rounded-xl border ${isCurrent ? 'bg-blue-600/10 border-blue-500/50' : isActive ? 'bg-slate-800 border-slate-700' : 'bg-slate-900 border-transparent'}`}>
-                    <Text className={`font-bold text-base ${isActive ? 'text-white' : 'text-slate-500'}`}>{step.label}</Text>
-                    {isCurrent && <Text className="text-blue-400 text-xs font-bold mt-1">Currently in progress</Text>}
+                  <View style={[s.s37, isCurrent ? 'bg-blue-600/10 border-blue-500/50' : isActive ? s.s38 : s.s39]}>
+                    <Text style={[s.s40, isActive ? s.s41 : s.s42]}>{step.label}</Text>
+                    {isCurrent && <Text style={s.s17}>Currently in progress</Text>}
                   </View>
                 </View>
               );
@@ -141,28 +141,28 @@ export default function TrackingScreen() {
 
         {/* Delivery PIN */}
         {order?.delivery_type === 'delivery' && (order?.status === 'out_for_delivery' || order?.status === 'packing') && (
-          <View className="bg-amber-500 p-6 rounded-3xl shadow-lg mb-6">
-            <Text className="text-amber-950 font-bold text-lg mb-1">Delivery PIN</Text>
-            <Text className="text-amber-900 text-sm mb-4">Share this with the agent to receive your order.</Text>
-            <View className="bg-white/30 p-4 rounded-xl items-center">
-              <Text className="text-amber-950 font-black text-3xl tracking-[8px] ml-2">{order.tracking_otp}</Text>
+          <View style={s.s18}>
+            <Text style={s.s19}>Delivery PIN</Text>
+            <Text style={s.s20}>Share this with the agent to receive your order.</Text>
+            <View style={s.s21}>
+              <Text style={s.s22}>{order.tracking_otp}</Text>
             </View>
           </View>
         )}
 
         {/* Driver Details */}
         {order?.driver && order?.status === 'out_for_delivery' && (
-          <View className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-lg mb-6 flex-row items-center">
-            <Image source={order.driver.image } className="w-16 h-16 rounded-full mr-4 border-2 border-blue-500"  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
-            <View className="flex-1">
-              <Text className="text-white font-bold text-lg">{order.driver.name}</Text>
-              <Text className="text-slate-400 text-sm mb-1">{order.driver.vehicle}</Text>
-              <View className="flex-row items-center bg-amber-500/10 px-2 py-1 rounded-lg self-start">
-                <Star color="#f59e0b" size={12} fill="#f59e0b" className="mr-1" />
-                <Text className="text-amber-500 font-bold text-xs">{order.driver.rating}</Text>
+          <View style={s.s23}>
+            <Image source={order.driver.image } style={s.s24}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
+            <View style={s.s25}>
+              <Text style={s.s26}>{order.driver.name}</Text>
+              <Text style={s.s27}>{order.driver.vehicle}</Text>
+              <View style={s.s28}>
+                <Star color="#f59e0b" size={12} fill="#f59e0b" />
+                <Text style={s.s29}>{order.driver.rating}</Text>
               </View>
             </View>
-            <TouchableOpacity className="bg-blue-600/20 p-4 rounded-full border border-blue-500/30">
+            <TouchableOpacity style={s.s30}>
               <PhoneCall color="#3b82f6" size={20} />
             </TouchableOpacity>
           </View>
@@ -172,3 +172,49 @@ export default function TrackingScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617', justifyContent: 'center', alignItems: 'center' },
+  s1: { flex: 1, backgroundColor: '#020617' },
+  s2: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#1e293b', backgroundColor: '#0f172a' },
+  s3: { marginRight: 16, padding: 8, backgroundColor: '#1e293b', borderRadius: 9999 },
+  s4: { color: '#ffffff', fontSize: 20, fontWeight: '700' },
+  s5: { flex: 1, padding: 16 },
+  s6: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  s7: { color: '#ffffff', fontSize: 24, fontWeight: '900', marginBottom: 4 },
+  s8: { color: '#94a3b8', fontWeight: '500' },
+  s9: { backgroundColor: 'rgba(37,99,235,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
+  s10: { color: '#60a5fa', fontWeight: '700' },
+  s11: { backgroundColor: '#0f172a', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#1e293b', marginBottom: 24 },
+  s12: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  s13: { color: '#ffffff', fontWeight: '700', fontSize: 18 },
+  s14: { paddingLeft: 8 },
+  s15: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
+  s16: { alignItems: 'center', marginRight: 16 },
+  s17: { color: '#60a5fa', fontSize: 12, fontWeight: '700', marginTop: 4 },
+  s18: { backgroundColor: '#f59e0b', padding: 24, borderRadius: 24, marginBottom: 24 },
+  s19: { color: '#451a03', fontWeight: '700', fontSize: 18, marginBottom: 4 },
+  s20: { color: '#78350f', fontSize: 14, marginBottom: 16 },
+  s21: { backgroundColor: 'rgba(255,255,255,0.3)', padding: 16, borderRadius: 12, alignItems: 'center' },
+  s22: { color: '#451a03', fontWeight: '900', fontSize: 30, letterSpacing: 8, marginLeft: 8 },
+  s23: { backgroundColor: '#0f172a', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#1e293b', marginBottom: 24, flexDirection: 'row', alignItems: 'center' },
+  s24: { width: 64, height: 64, borderRadius: 9999, marginRight: 16, borderWidth: 2, borderColor: '#3b82f6' },
+  s25: { flex: 1 },
+  s26: { color: '#ffffff', fontWeight: '700', fontSize: 18 },
+  s27: { color: '#94a3b8', fontSize: 14, marginBottom: 4 },
+  s28: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  s29: { color: '#f59e0b', fontWeight: '700', fontSize: 12 },
+  s30: { backgroundColor: 'rgba(37,99,235,0.2)', padding: 16, borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
+  s31: { width: 32, height: 32, borderRadius: 9999, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  s32: { backgroundColor: '#2563eb', borderColor: '#3b82f6' },
+  s33: { backgroundColor: '#1e293b', borderColor: '#334155' },
+  s34: { width: 2, height: 32, marginTop: 8 },
+  s35: { backgroundColor: '#2563eb' },
+  s36: { backgroundColor: '#1e293b' },
+  s37: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1 },
+  s38: { backgroundColor: '#1e293b', borderColor: '#334155' },
+  s39: { backgroundColor: '#0f172a', borderColor: 'transparent' },
+  s40: { fontWeight: '700', fontSize: 16 },
+  s41: { color: '#ffffff' },
+  s42: { color: '#64748b' },
+});

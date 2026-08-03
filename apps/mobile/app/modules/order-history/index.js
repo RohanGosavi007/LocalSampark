@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { loadWithFallback } from '../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../src/components/DemoBadge';
+import SkeletonLoader from '../../../src/components/SkeletonLoader';
 
 const MOCK_ORDERS = [
   { id: 'ORD-5481', shop: 'Sharma Grocery & Daily Needs', amount: '₹340', date: 'Today, 2:30 PM', status: 'Delivered', type: 'delivery', items: 'Milk, Atta, Bread' },
@@ -9,6 +12,22 @@ const MOCK_ORDERS = [
 ];
 
 export default function OrderHistoryScreen() {
+  const [orders, setOrders] = useState([]);
+  const [isDemo, setIsDemo] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      await loadWithFallback('/orders', MOCK_ORDERS, setOrders, setIsDemo);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  if (loading) {
+    return <SafeAreaView style={styles.container}><SkeletonLoader type="list" count={3} /></SafeAreaView>;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>

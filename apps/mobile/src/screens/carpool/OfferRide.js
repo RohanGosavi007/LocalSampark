@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch , StyleSheet } from 'react-native';
 import { MapPin, Navigation, Calendar, Clock, Users, IndianRupee, Car, ShieldCheck, Leaf } from 'lucide-react-native';
 import { apiPost } from '../../lib/api';
 
@@ -38,17 +38,17 @@ export default function OfferRide() {
   };
 
   return (
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+    <ScrollView style={s.s0} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
       
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
-        <Text className="text-white font-bold text-lg mb-4">Route Details</Text>
+      <View style={s.s1}>
+        <Text style={s.s2}>Route Details</Text>
         
-        <View className="mb-4">
-          <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Leaving from *</Text>
-          <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-4 h-12">
+        <View style={s.s3}>
+          <Text style={s.s4}>Leaving from *</Text>
+          <View style={s.s5}>
             <MapPin size={20} color="#64748b" />
             <TextInput
-              className="flex-1 ml-3 text-white text-base"
+              style={s.s6}
               placeholder="E.g., Hinjewadi Phase 1"
               placeholderTextColor="#475569"
               value={formData.fromLocation}
@@ -57,12 +57,12 @@ export default function OfferRide() {
           </View>
         </View>
 
-        <View className="mb-2">
-          <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Going to *</Text>
-          <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-4 h-12">
+        <View style={s.s7}>
+          <Text style={s.s8}>Going to *</Text>
+          <View style={s.s9}>
             <Navigation size={20} color="#64748b" />
             <TextInput
-              className="flex-1 ml-3 text-white text-base"
+              style={s.s10}
               placeholder="E.g., Pune Station"
               placeholderTextColor="#475569"
               value={formData.toLocation}
@@ -72,16 +72,16 @@ export default function OfferRide() {
         </View>
       </View>
 
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
-        <Text className="text-white font-bold text-lg mb-4">Schedule & Capacity</Text>
+      <View style={s.s11}>
+        <Text style={s.s12}>Schedule & Capacity</Text>
         
-        <View className="flex-row gap-3 mb-4">
-          <View className="flex-1">
-            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Date *</Text>
-            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+        <View style={s.s13}>
+          <View style={s.s14}>
+            <Text style={s.s15}>Date *</Text>
+            <View style={s.s16}>
               <Calendar size={18} color="#64748b" />
               <TextInput
-                className="flex-1 ml-2 text-white text-base"
+                style={s.s17}
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor="#475569"
                 value={formData.departureDate}
@@ -90,12 +90,12 @@ export default function OfferRide() {
             </View>
           </View>
 
-          <View className="flex-1">
-            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Time *</Text>
-            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+          <View style={s.s18}>
+            <Text style={s.s19}>Time *</Text>
+            <View style={s.s20}>
               <Clock size={18} color="#64748b" />
               <TextInput
-                className="flex-1 ml-2 text-white text-base"
+                style={s.s21}
                 placeholder="HH:MM AM"
                 placeholderTextColor="#475569"
                 value={formData.departureTime}
@@ -105,13 +105,13 @@ export default function OfferRide() {
           </View>
         </View>
 
-        <View className="flex-row gap-3 mb-2">
-          <View className="flex-1">
-            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Seats *</Text>
-            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+        <View style={s.s22}>
+          <View style={s.s23}>
+            <Text style={s.s24}>Seats *</Text>
+            <View style={s.s25}>
               <Users size={18} color="#64748b" />
               <TextInput
-                className="flex-1 ml-2 text-white text-base"
+                style={s.s26}
                 keyboardType="numeric"
                 value={formData.totalSeats}
                 onChangeText={t => setFormData({ ...formData, totalSeats: t })}
@@ -119,12 +119,12 @@ export default function OfferRide() {
             </View>
           </View>
 
-          <View className="flex-1">
-            <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Price / Seat *</Text>
-            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 h-12">
+          <View style={s.s27}>
+            <Text style={s.s28}>Price / Seat *</Text>
+            <View style={s.s29}>
               <IndianRupee size={18} color="#64748b" />
               <TextInput
-                className="flex-1 ml-2 text-white text-base"
+                style={s.s30}
                 keyboardType="numeric"
                 value={formData.pricePerSeat}
                 onChangeText={t => setFormData({ ...formData, pricePerSeat: t })}
@@ -134,15 +134,15 @@ export default function OfferRide() {
         </View>
       </View>
 
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
-        <Text className="text-white font-bold text-lg mb-4">Vehicle Details</Text>
+      <View style={s.s31}>
+        <Text style={s.s32}>Vehicle Details</Text>
         
-        <View className="mb-4">
-          <Text className="text-slate-400 font-semibold mb-2 ml-1 text-sm">Vehicle Number</Text>
-          <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-4 h-12">
+        <View style={s.s33}>
+          <Text style={s.s34}>Vehicle Number</Text>
+          <View style={s.s35}>
             <Car size={20} color="#64748b" />
             <TextInput
-              className="flex-1 ml-3 text-white text-base"
+              style={s.s36}
               placeholder="E.g. MH 12 AB 1234"
               placeholderTextColor="#475569"
               value={formData.vehicleNumber}
@@ -151,14 +151,14 @@ export default function OfferRide() {
           </View>
         </View>
 
-        <View className="flex-row items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 mb-3">
-          <View className="flex-row items-center gap-3">
-            <View className="w-10 h-10 rounded-full bg-pink-500/10 items-center justify-center">
+        <View style={s.s37}>
+          <View style={s.s38}>
+            <View style={s.s39}>
               <ShieldCheck size={20} color="#ec4899" />
             </View>
             <View>
-              <Text className="text-white font-bold">Women Only Ride</Text>
-              <Text className="text-slate-400 text-xs">Visible only to female users</Text>
+              <Text style={s.s40}>Women Only Ride</Text>
+              <Text style={s.s41}>Visible only to female users</Text>
             </View>
           </View>
           <Switch 
@@ -169,14 +169,14 @@ export default function OfferRide() {
           />
         </View>
 
-        <View className="flex-row items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <View className="flex-row items-center gap-3">
-            <View className="w-10 h-10 rounded-full bg-emerald-500/10 items-center justify-center">
+        <View style={s.s42}>
+          <View style={s.s43}>
+            <View style={s.s44}>
               <Leaf size={20} color="#10b981" />
             </View>
             <View>
-              <Text className="text-white font-bold">Green Ride (EV)</Text>
-              <Text className="text-slate-400 text-xs">I am driving an Electric Vehicle</Text>
+              <Text style={s.s45}>Green Ride (EV)</Text>
+              <Text style={s.s46}>I am driving an Electric Vehicle</Text>
             </View>
           </View>
           <Switch 
@@ -189,13 +189,65 @@ export default function OfferRide() {
       </View>
 
       <TouchableOpacity 
-        className="bg-indigo-600 py-4 rounded-xl items-center flex-row justify-center gap-2 mb-8"
+        style={s.s47}
         onPress={handleSubmit}
       >
         <Car size={20} color="#fff" />
-        <Text className="text-white font-black text-lg">Publish Ride</Text>
+        <Text style={s.s48}>Publish Ride</Text>
       </TouchableOpacity>
 
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1 },
+  s1: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 16 },
+  s2: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  s3: { marginBottom: 16 },
+  s4: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s5: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, height: 48 },
+  s6: { flex: 1, marginLeft: 12, color: '#ffffff', fontSize: 16 },
+  s7: { marginBottom: 8 },
+  s8: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s9: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, height: 48 },
+  s10: { flex: 1, marginLeft: 12, color: '#ffffff', fontSize: 16 },
+  s11: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 16 },
+  s12: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  s13: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  s14: { flex: 1 },
+  s15: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s16: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 12, height: 48 },
+  s17: { flex: 1, marginLeft: 8, color: '#ffffff', fontSize: 16 },
+  s18: { flex: 1 },
+  s19: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s20: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 12, height: 48 },
+  s21: { flex: 1, marginLeft: 8, color: '#ffffff', fontSize: 16 },
+  s22: { flexDirection: 'row', gap: 12, marginBottom: 8 },
+  s23: { flex: 1 },
+  s24: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s25: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 12, height: 48 },
+  s26: { flex: 1, marginLeft: 8, color: '#ffffff', fontSize: 16 },
+  s27: { flex: 1 },
+  s28: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s29: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 12, height: 48 },
+  s30: { flex: 1, marginLeft: 8, color: '#ffffff', fontSize: 16 },
+  s31: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 16 },
+  s32: { color: '#ffffff', fontWeight: '700', fontSize: 18, marginBottom: 16 },
+  s33: { marginBottom: 16 },
+  s34: { color: '#94a3b8', fontWeight: '600', marginBottom: 8, marginLeft: 4, fontSize: 14 },
+  s35: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, height: 48 },
+  s36: { flex: 1, marginLeft: 12, color: '#ffffff', fontSize: 16 },
+  s37: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#020617', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1e293b', marginBottom: 12 },
+  s38: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  s39: { width: 40, height: 40, borderRadius: 9999, backgroundColor: 'rgba(236,72,153,0.1)', alignItems: 'center', justifyContent: 'center' },
+  s40: { color: '#ffffff', fontWeight: '700' },
+  s41: { color: '#94a3b8', fontSize: 12 },
+  s42: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#020617', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1e293b' },
+  s43: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  s44: { width: 40, height: 40, borderRadius: 9999, backgroundColor: 'rgba(16,185,129,0.1)', alignItems: 'center', justifyContent: 'center' },
+  s45: { color: '#ffffff', fontWeight: '700' },
+  s46: { color: '#94a3b8', fontSize: 12 },
+  s47: { backgroundColor: '#4f46e5', paddingVertical: 16, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 32 },
+  s48: { color: '#ffffff', fontWeight: '900', fontSize: 18 },
+});

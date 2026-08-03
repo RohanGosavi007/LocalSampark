@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Stethoscope, PhoneCall, HeartPulse, Pill, Calendar, Clock, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -92,15 +92,15 @@ export default function NativemedicalScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={s.s0}>
       {/* Top Header */}
-      <View className="flex-row items-center p-4 border-b border-slate-900 bg-slate-950 z-10">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
+      <View style={s.s1}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s2}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-white text-xl font-black">Medical & Healthcare</Text>
-          <Text className="text-slate-400 text-xs">24x7 Dhanori Doctor Consultations & Pharmacy</Text>
+        <View style={s.s3}>
+          <Text style={s.s4}>Medical & Healthcare</Text>
+          <Text style={s.s5}>24x7 Dhanori Doctor Consultations & Pharmacy</Text>
         </View>
       </View>
 
@@ -108,97 +108,97 @@ export default function NativemedicalScreen() {
       <TouchableOpacity
         onPress={handleTriggerSOS}
         activeOpacity={0.8}
-        className="mx-4 mt-3 p-4 bg-rose-950 border border-rose-600/50 rounded-2xl flex-row items-center justify-between"
+        style={s.s6}
       >
-        <View className="flex-row items-center flex-1 mr-2">
-          <View className="w-10 h-10 bg-rose-600 rounded-full items-center justify-center mr-3">
+        <View style={s.s7}>
+          <View style={s.s8}>
             <HeartPulse color="#fff" size={22} />
           </View>
-          <View className="flex-1">
-            <Text className="text-white font-black text-sm">24x7 EMERGENCY AMBULANCE</Text>
-            <Text className="text-rose-200 text-xs">Tap for instant 4-min local dispatch</Text>
+          <View style={s.s9}>
+            <Text style={s.s10}>24x7 EMERGENCY AMBULANCE</Text>
+            <Text style={s.s11}>Tap for instant 4-min local dispatch</Text>
           </View>
         </View>
-        <View className="bg-rose-600 px-3 py-1.5 rounded-xl">
-          <Text className="text-white font-black text-xs">SOS</Text>
+        <View style={s.s12}>
+          <Text style={s.s13}>SOS</Text>
         </View>
       </TouchableOpacity>
 
       {/* Navigation Sub-Tabs */}
-      <View className="flex-row p-4 gap-2">
+      <View style={s.s14}>
         <TouchableOpacity
           onPress={() => { setActiveTab('doctors'); Haptics.selectionAsync(); }}
-          className={`flex-1 py-2.5 rounded-xl border items-center flex-row justify-center ${activeTab === 'doctors' ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-900 border-slate-800'}`}
+          style={[s.s46, activeTab === 'doctors' ? s.s47 : s.s48]}
         >
-          <Stethoscope color="#fff" size={16} className="mr-2" />
-          <Text className="text-white font-bold text-xs">Find Doctors</Text>
+          <Stethoscope color="#fff" size={16} style={s.s15} />
+          <Text style={s.s16}>Find Doctors</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => { setActiveTab('pharmacy'); Haptics.selectionAsync(); }}
-          className={`flex-1 py-2.5 rounded-xl border items-center flex-row justify-center ${activeTab === 'pharmacy' ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-900 border-slate-800'}`}
+          style={[s.s49, activeTab === 'pharmacy' ? s.s50 : s.s51]}
         >
-          <Pill color="#fff" size={16} className="mr-2" />
-          <Text className="text-white font-bold text-xs">Order Medicine</Text>
+          <Pill color="#fff" size={16} style={s.s17} />
+          <Text style={s.s18}>Order Medicine</Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
-        <View className="flex-1 justify-center items-center">
+        <View style={s.s19}>
           <ActivityIndicator size="large" color="#e11d48" />
-          <Text className="text-slate-500 mt-4 font-bold text-xs uppercase tracking-widest">Loading Medical Network...</Text>
+          <Text style={s.s20}>Loading Medical Network...</Text>
         </View>
       ) : (
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        <ScrollView style={s.s21} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
           {activeTab === 'doctors' ? (
             <View>
-              <Text className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-3">Available Doctors in Dhanori ({doctors.length})</Text>
+              <Text style={s.s22}>Available Doctors in Dhanori ({doctors.length})</Text>
 
               {doctors.map((doc) => (
-                <View key={doc.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-4">
-                  <View className="flex-row justify-between items-start mb-2">
-                    <View className="flex-1">
-                      <Text className="text-white font-black text-lg">{doc.name}</Text>
-                      <Text className="text-indigo-400 font-bold text-xs mb-1">{doc.specialty}</Text>
-                      <Text className="text-slate-400 text-xs">{doc.experience}</Text>
+                <View key={doc.id} style={s.s23}>
+                  <View style={s.s24}>
+                    <View style={s.s25}>
+                      <Text style={s.s26}>{doc.name}</Text>
+                      <Text style={s.s27}>{doc.specialty}</Text>
+                      <Text style={s.s28}>{doc.experience}</Text>
                     </View>
-                    <View className="bg-amber-950/80 border border-amber-500/40 px-2.5 py-1 rounded-lg">
-                      <Text className="text-amber-400 font-black text-xs">{doc.rating}</Text>
+                    <View style={s.s29}>
+                      <Text style={s.s30}>{doc.rating}</Text>
                     </View>
                   </View>
 
-                  <View className="flex-row items-center mb-2">
-                    <MapPin color="#64748b" size={14} className="mr-1" />
-                    <Text className="text-slate-400 text-xs">{doc.clinic}</Text>
+                  <View style={s.s31}>
+                    <MapPin color="#64748b" size={14} />
+                    <Text style={s.s32}>{doc.clinic}</Text>
                   </View>
 
-                  <View className="flex-row items-center mb-4">
-                    <Clock color="#34d399" size={14} className="mr-1" />
-                    <Text className="text-emerald-400 text-xs font-semibold">{doc.available}</Text>
+                  <View style={s.s33}>
+                    <Clock color="#34d399" size={14} />
+                    <Text style={s.s34}>{doc.available}</Text>
                   </View>
 
-                  <View className="flex-row items-center justify-between pt-3 border-t border-slate-800">
-                    <Text className="text-white font-black text-base">{doc.fee} <Text className="text-slate-400 text-xs font-normal">consultation</Text></Text>
+                  <View style={s.s35}>
+                    <Text style={s.s36}>{doc.fee} <Text style={s.s37}>consultation</Text></Text>
                     <TouchableOpacity
                       onPress={() => handleBookAppointment(doc)}
-                      className="bg-indigo-600 px-4 py-2.5 rounded-xl border border-indigo-400/30 flex-row items-center"
+                      style={s.s38}
                     >
-                      <Calendar color="#fff" size={14} className="mr-1.5" />
-                      <Text className="text-white font-bold text-xs">Book Slot</Text>
+                      <Calendar color="#fff" size={14} />
+                      <Text style={s.s39}>Book Slot</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               ))}
             </View>
           ) : (
-            <View className="bg-slate-900 border border-slate-800 p-6 rounded-2xl items-center text-center">
-              <Pill color="#a78bfa" size={40} className="mb-3" />
-              <Text className="text-white font-black text-lg mb-2">Local Pharmacy Delivery</Text>
-              <Text className="text-slate-400 text-xs text-center mb-4 leading-5">Upload your prescription or order over-the-counter medicines directly from verified Dhanori chemists with 30-min doorstep delivery.</Text>
+            <View style={s.s40}>
+              <Pill color="#a78bfa" size={40} style={s.s41} />
+              <Text style={s.s42}>Local Pharmacy Delivery</Text>
+              <Text style={s.s43}>Upload your prescription or order over-the-counter medicines directly from verified Dhanori chemists with 30-min doorstep delivery.</Text>
               <TouchableOpacity
                 onPress={() => Alert.alert('Prescription Upload', 'Select prescription image from camera roll.')}
-                className="bg-purple-600 px-6 py-3 rounded-xl border border-purple-400/30"
+                style={s.s44}
               >
-                <Text className="text-white font-bold text-xs">📷 Upload Prescription</Text>
+                <Text style={s.s45}>📷 Upload Prescription</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -207,3 +207,58 @@ export default function NativemedicalScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
+  s2: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 9999 },
+  s3: { flex: 1 },
+  s4: { color: '#ffffff', fontSize: 20, fontWeight: '900' },
+  s5: { color: '#94a3b8', fontSize: 12 },
+  s6: { marginHorizontal: 16, marginTop: 12, padding: 16, backgroundColor: '#4c0519', borderWidth: 1, borderColor: 'rgba(225,29,72,0.5)', borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  s7: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 },
+  s8: { width: 40, height: 40, backgroundColor: '#e11d48', borderRadius: 9999, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  s9: { flex: 1 },
+  s10: { color: '#ffffff', fontWeight: '900', fontSize: 14 },
+  s11: { color: '#fecdd3', fontSize: 12 },
+  s12: { backgroundColor: '#e11d48', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  s13: { color: '#ffffff', fontWeight: '900', fontSize: 12 },
+  s14: { flexDirection: 'row', padding: 16, gap: 8 },
+  s15: { marginRight: 8 },
+  s16: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
+  s17: { marginRight: 8 },
+  s18: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
+  s19: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  s20: { color: '#64748b', marginTop: 16, fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 },
+  s21: { flex: 1 },
+  s22: { color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, marginBottom: 12 },
+  s23: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 20, borderRadius: 16, marginBottom: 16 },
+  s24: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+  s25: { flex: 1 },
+  s26: { color: '#ffffff', fontWeight: '900', fontSize: 18 },
+  s27: { color: '#818cf8', fontWeight: '700', fontSize: 12, marginBottom: 4 },
+  s28: { color: '#94a3b8', fontSize: 12 },
+  s29: { backgroundColor: 'rgba(69,26,3,0.8)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.4)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  s30: { color: '#fbbf24', fontWeight: '900', fontSize: 12 },
+  s31: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  s32: { color: '#94a3b8', fontSize: 12 },
+  s33: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  s34: { color: '#34d399', fontSize: 12, fontWeight: '600' },
+  s35: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderColor: '#1e293b' },
+  s36: { color: '#ffffff', fontWeight: '900', fontSize: 16 },
+  s37: { color: '#94a3b8', fontSize: 12, fontWeight: '400' },
+  s38: { backgroundColor: '#4f46e5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(129,140,248,0.3)', flexDirection: 'row', alignItems: 'center' },
+  s39: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
+  s40: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 24, borderRadius: 16, alignItems: 'center', textAlign: 'center' },
+  s41: { marginBottom: 12 },
+  s42: { color: '#ffffff', fontWeight: '900', fontSize: 18, marginBottom: 8 },
+  s43: { color: '#94a3b8', fontSize: 12, textAlign: 'center', marginBottom: 16, lineHeight: 5 },
+  s44: { backgroundColor: '#9333ea', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,132,252,0.3)' },
+  s45: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
+  s46: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+  s47: { backgroundColor: '#4f46e5', borderColor: '#6366f1' },
+  s48: { backgroundColor: '#0f172a', borderColor: '#1e293b' },
+  s49: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+  s50: { backgroundColor: '#4f46e5', borderColor: '#6366f1' },
+  s51: { backgroundColor: '#0f172a', borderColor: '#1e293b' },
+});

@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Image as ImageIcon, MapPin, Send, AlertTriangle } from 'lucide-react-native';
 import { apiPost } from '../../src/lib/api';
@@ -43,37 +43,37 @@ export default function NativeStoryCreateScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={s.s0}>
       {/* Header */}
-      <View className="flex-row items-center justify-between p-4 border-b border-slate-900 bg-slate-950 z-10">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
+      <View style={s.s1}>
+        <View style={s.s2}>
+          <TouchableOpacity onPress={() => router.back()} style={s.s3}>
             <ChevronLeft color="#fff" size={24} />
           </TouchableOpacity>
-          <Text className="text-white text-xl font-black">Create Post</Text>
+          <Text style={s.s4}>Create Post</Text>
         </View>
         <TouchableOpacity 
           onPress={handlePost} 
           disabled={loading || !content.trim()}
-          className={`px-5 py-2 rounded-full flex-row items-center ${content.trim() ? 'bg-blue-600' : 'bg-slate-800'}`}
+          style={[s.s18, content.trim() ? s.s19 : s.s20]}
         >
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Text className={`font-bold mr-2 ${content.trim() ? 'text-white' : 'text-slate-500'}`}>Post</Text>
+              <Text style={[s.s21, content.trim() ? s.s22 : s.s23]}>Post</Text>
               <Send size={16} color={content.trim() ? '#fff' : '#64748b'} />
             </>
           )}
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.s5}>
+        <ScrollView style={s.s6} showsVerticalScrollIndicator={false}>
           
           {/* Post Types */}
-          <Text className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-3 ml-1">Post Type</Text>
-          <View className="flex-row gap-3 mb-6">
+          <Text style={s.s7}>Post Type</Text>
+          <View style={s.s8}>
             {['NEWS', 'ALERT', 'HELP'].map((t) => {
               const isActive = type === t;
               let activeColor = 'bg-blue-600 border-blue-500';
@@ -84,9 +84,9 @@ export default function NativeStoryCreateScreen() {
                 <TouchableOpacity
                   key={t}
                   onPress={() => setType(t)}
-                  className={`px-4 py-2 rounded-full border ${isActive ? activeColor : 'bg-slate-900 border-slate-800'}`}
+                  style={s.s24}
                 >
-                  <Text className={`font-bold ${isActive ? (t === 'HELP' ? 'text-white' : 'text-white') : 'text-slate-400'}`}>
+                  <Text style={s.s25}>
                     {t === 'ALERT' && '🚨 '}{t === 'HELP' && '✋ '}{t === 'NEWS' && '📰 '}{t}
                   </Text>
                 </TouchableOpacity>
@@ -95,7 +95,7 @@ export default function NativeStoryCreateScreen() {
           </View>
 
           {/* Editor */}
-          <View className={`bg-slate-900 border rounded-3xl p-4 shadow-sm mb-4 ${type === 'ALERT' ? 'border-red-500/30' : 'border-slate-800'}`}>
+          <View style={[s.s26, type === 'ALERT' ? s.s27 : s.s28]}>
             <TextInput
               placeholder="What's happening in your neighborhood?"
               placeholderTextColor="#475569"
@@ -104,27 +104,27 @@ export default function NativeStoryCreateScreen() {
               textAlignVertical="top"
               value={content}
               onChangeText={setContent}
-              className="text-white text-lg min-h-[150px]"
+              style={s.s9}
             />
             
             {/* Attachment Bar */}
-            <View className="flex-row items-center border-t border-slate-800 pt-4 mt-2">
-              <TouchableOpacity className="p-3 bg-slate-800 rounded-full mr-3 border border-slate-700">
+            <View style={s.s10}>
+              <TouchableOpacity style={s.s11}>
                 <ImageIcon color="#3b82f6" size={20} />
               </TouchableOpacity>
-              <TouchableOpacity className="p-3 bg-slate-800 rounded-full border border-slate-700">
+              <TouchableOpacity style={s.s12}>
                 <MapPin color="#10b981" size={20} />
               </TouchableOpacity>
-              <Text className="text-slate-500 text-xs ml-auto">Public to Dhanori</Text>
+              <Text style={s.s13}>Public to Dhanori</Text>
             </View>
           </View>
 
           {type === 'ALERT' && (
-            <View className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex-row items-start">
-              <AlertTriangle color="#ef4444" size={20} className="mr-3 mt-0.5" />
-              <View className="flex-1">
-                <Text className="text-red-400 font-bold mb-1">Emergency Alert</Text>
-                <Text className="text-red-300 text-sm">Alerts notify nearby verified residents instantly. Misuse of the alert system may result in account suspension.</Text>
+            <View style={s.s14}>
+              <AlertTriangle color="#ef4444" size={20} />
+              <View style={s.s15}>
+                <Text style={s.s16}>Emergency Alert</Text>
+                <Text style={s.s17}>Alerts notify nearby verified residents instantly. Misuse of the alert system may result in account suspension.</Text>
               </View>
             </View>
           )}
@@ -134,3 +134,35 @@ export default function NativeStoryCreateScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
+  s2: { flexDirection: 'row', alignItems: 'center' },
+  s3: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 9999 },
+  s4: { color: '#ffffff', fontSize: 20, fontWeight: '900' },
+  s5: { flex: 1 },
+  s6: { flex: 1, padding: 16 },
+  s7: { color: '#94a3b8', fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12, marginLeft: 4 },
+  s8: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  s9: { color: '#ffffff', fontSize: 18, minHeight: 150 },
+  s10: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#1e293b', paddingTop: 16, marginTop: 8 },
+  s11: { padding: 12, backgroundColor: '#1e293b', borderRadius: 9999, marginRight: 12, borderWidth: 1, borderColor: '#334155' },
+  s12: { padding: 12, backgroundColor: '#1e293b', borderRadius: 9999, borderWidth: 1, borderColor: '#334155' },
+  s13: { color: '#64748b', fontSize: 12, marginLeft: 'auto' },
+  s14: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'flex-start' },
+  s15: { flex: 1 },
+  s16: { color: '#f87171', fontWeight: '700', marginBottom: 4 },
+  s17: { color: '#fca5a5', fontSize: 14 },
+  s18: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 9999, flexDirection: 'row', alignItems: 'center' },
+  s19: { backgroundColor: '#2563eb' },
+  s20: { backgroundColor: '#1e293b' },
+  s21: { fontWeight: '700', marginRight: 8 },
+  s22: { color: '#ffffff' },
+  s23: { color: '#64748b' },
+  s24: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, borderWidth: 1 },
+  s25: { fontWeight: '700' },
+  s26: { backgroundColor: '#0f172a', borderWidth: 1, borderRadius: 24, padding: 16, marginBottom: 16 },
+  s27: { borderColor: 'rgba(239,68,68,0.3)' },
+  s28: { borderColor: '#1e293b' },
+});

@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { fetchWithFallback } from '../../../../src/utils/mockDataHelper';
+import DemoBadge from '../../../../src/components/DemoBadge';
 
 import HospitalVisitorView from './components/HospitalVisitorView';
 import TwoWheelerVisitorView from './components/TwoWheelerVisitorView';
@@ -13,22 +15,35 @@ import HomeServiceVisitorView from './components/HomeServiceVisitorView';
 import ProfessionalVisitorView from './components/ProfessionalVisitorView';
 import EducationEventsVisitorView from './components/EducationEventsVisitorView';
 
+const MOCK_SHOP = {
+  id: 1,
+  name: 'Sample Shop Native',
+  address: '123 Native Street, Mobile City',
+  category_id: 'cat_040',
+  category_details: {
+    name: 'Hospitals & OPD',
+    slug: 'hospitals-opd-clinics',
+    business_model: 'appointment',
+    icon: '🏨'
+  }
+};
+
 export default function ShopDetailScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const [shop, setShop] = useState(MOCK_SHOP);
+  const [isDemo, setIsDemo] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Mock Shop Data matching Web Structure
-  const shop = {
-    id: 1,
-    name: 'Sample Shop Native',
-    address: '123 Native Street, Mobile City',
-    category_id: 'cat_040',
-    category_details: {
-      name: 'Hospitals & OPD',
-      slug: 'hospitals-opd-clinics',
-      business_model: 'appointment',
-      icon: '🏨'
-    }
-  };
+  useEffect(() => {
+    const load = async () => {
+      const { data, isDemo: demo } = await fetchWithFallback(`/shops/${id || 1}`, MOCK_SHOP);
+      if (data) setShop(data.shop || data);
+      setIsDemo(demo);
+      setLoading(false);
+    };
+    load();
+  }, [id]);
 
   const catId = parseInt(shop.category_id.replace('cat_', ''), 10);
   const bm = shop.category_details?.business_model;

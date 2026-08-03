@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useNotifications } from '../../../src/context/NotificationContext';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../../src/context/LanguageContext';
 
 export default function NotificationsScreen() {
   const router = useRouter();

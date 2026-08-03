@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, WifiOff, CloudOff, RefreshCw, Clock } from 'lucide-react-native';
 import NetInfo from '@react-native-community/netinfo';
@@ -45,45 +45,45 @@ export default function NativeofflineScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
-      <View className="flex-row items-center p-4 border-b border-slate-900 bg-slate-950 z-10">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
+    <SafeAreaView style={s.s0}>
+      <View style={s.s1}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s2}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-black capitalize flex-1">Offline Sync</Text>
+        <Text style={s.s3}>Offline Sync</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+      <ScrollView style={s.s4} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
         
-        <View className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 rounded-3xl mb-6 border border-slate-700 items-center">
-          {isOnline ? <RefreshCw color="#34d399" size={48} className="mb-4" /> : <WifiOff color="#ef4444" size={48} className="mb-4" />}
-          <Text className="text-white text-2xl font-black mb-2">{isOnline ? 'Online' : 'You are Offline'}</Text>
-          <Text className="text-slate-400 text-sm text-center">
+        <View style={s.s5}>
+          {isOnline ? <RefreshCw color="#34d399" size={48} style={s.s6} /> : <WifiOff color="#ef4444" size={48} />}
+          <Text style={s.s7}>{isOnline ? 'Online' : 'You are Offline'}</Text>
+          <Text style={s.s8}>
             {isOnline 
               ? 'You are back online. Pending actions will sync automatically.' 
               : 'You are disconnected. Actions will be saved and synced later.'}
           </Text>
         </View>
 
-        <Text className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-4">
+        <Text style={s.s9}>
           Pending Actions ({queueCount})
         </Text>
 
         {queueItems.length === 0 ? (
-          <View className="p-8 items-center">
+          <View style={s.s10}>
             <CloudOff color="#475569" size={32} />
-            <Text className="text-slate-500 mt-4 font-bold text-center">No pending actions.</Text>
+            <Text style={s.s11}>No pending actions.</Text>
           </View>
         ) : (
           queueItems.map((item) => (
-            <View key={item.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-3 flex-row items-center">
-              <View className="w-12 h-12 bg-slate-950 rounded-full items-center justify-center mr-4 border border-slate-800">
+            <View key={item.id} style={s.s12}>
+              <View style={s.s13}>
                 <Clock color="#f59e0b" size={20} />
               </View>
-              <View className="flex-1">
-                <Text className="text-white font-bold text-base mb-1">{item.method} Request</Text>
-                <Text className="text-slate-400 text-xs leading-5" numberOfLines={1}>{item.url}</Text>
-                <Text className="text-slate-500 text-[10px] mt-1">{item.createdAt.toLocaleString()}</Text>
+              <View style={s.s14}>
+                <Text style={s.s15}>{item.method} Request</Text>
+                <Text style={s.s16} numberOfLines={1}>{item.url}</Text>
+                <Text style={s.s17}>{item.createdAt.toLocaleString()}</Text>
               </View>
             </View>
           ))
@@ -93,10 +93,10 @@ export default function NativeofflineScreen() {
           <TouchableOpacity 
             onPress={handleSync}
             disabled={syncing || !isOnline}
-            className={`mt-6 p-4 rounded-2xl flex-row justify-center items-center ${isOnline ? 'bg-blue-600' : 'bg-slate-800'}`}
+            style={[s.s20, isOnline ? s.s21 : s.s22]}
           >
-            {syncing ? <ActivityIndicator color="#fff" className="mr-2" /> : <RefreshCw color="#fff" size={20} className="mr-2" />}
-            <Text className={`font-bold ${isOnline ? 'text-white' : 'text-slate-500'}`}>
+            {syncing ? <ActivityIndicator color="#fff" style={s.s18} /> : <RefreshCw color="#fff" size={20} style={s.s19} />}
+            <Text style={[s.s23, isOnline ? s.s24 : s.s25]}>
               {syncing ? 'Syncing...' : 'Force Sync Now'}
             </Text>
           </TouchableOpacity>
@@ -106,3 +106,32 @@ export default function NativeofflineScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { flex: 1, backgroundColor: '#020617' },
+  s1: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
+  s2: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 9999 },
+  s3: { color: '#ffffff', fontSize: 20, fontWeight: '900', textTransform: 'capitalize', flex: 1 },
+  s4: { flex: 1 },
+  s5: { padding: 24, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: '#334155', alignItems: 'center' },
+  s6: { marginBottom: 16 },
+  s7: { color: '#ffffff', fontSize: 24, fontWeight: '900', marginBottom: 8 },
+  s8: { color: '#94a3b8', fontSize: 14, textAlign: 'center' },
+  s9: { color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, marginBottom: 16 },
+  s10: { padding: 32, alignItems: 'center' },
+  s11: { color: '#64748b', marginTop: 16, fontWeight: '700', textAlign: 'center' },
+  s12: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 20, borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+  s13: { width: 48, height: 48, backgroundColor: '#020617', borderRadius: 9999, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#1e293b' },
+  s14: { flex: 1 },
+  s15: { color: '#ffffff', fontWeight: '700', fontSize: 16, marginBottom: 4 },
+  s16: { color: '#94a3b8', fontSize: 12, lineHeight: 5 },
+  s17: { color: '#64748b', fontSize: 10, marginTop: 4 },
+  s18: { marginRight: 8 },
+  s19: { marginRight: 8 },
+  s20: { marginTop: 24, padding: 16, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  s21: { backgroundColor: '#2563eb' },
+  s22: { backgroundColor: '#1e293b' },
+  s23: { fontWeight: '700' },
+  s24: { color: '#ffffff' },
+  s25: { color: '#64748b' },
+});

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Building, MapPin, Users, Hash, CheckCircle2 } from 'lucide-react-native';
 import { apiPost } from '../../src/lib/api';
@@ -43,8 +43,8 @@ export default function NativeSocietyRegistrationScreen() {
   };
 
   const InputField = ({ icon: Icon, placeholder, value, onChangeText, keyboardType = 'default', multiline = false }) => (
-    <View className="mb-4">
-      <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-xl px-4 py-1 shadow-sm">
+    <View style={s.s0}>
+      <View style={s.s1}>
         <Icon size={20} color="#64748b" />
         <TextInput
           placeholder={placeholder}
@@ -54,48 +54,48 @@ export default function NativeSocietyRegistrationScreen() {
           keyboardType={keyboardType}
           multiline={multiline}
           textAlignVertical={multiline ? 'top' : 'center'}
-          className={`flex-1 text-white ml-3 text-base ${multiline ? 'min-h-[80px] py-3' : 'py-4'}`}
+          style={[s.s22, multiline ? s.s23 : s.s24]}
         />
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={s.s2}>
       {/* Header */}
-      <View className="flex-row items-center p-4 border-b border-slate-900 z-10">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
+      <View style={s.s3}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s4}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-black flex-1">Register Society</Text>
+        <Text style={s.s5}>Register Society</Text>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.s6}>
         {registered ? (
-          <View className="flex-1 items-center justify-center p-6">
-            <View className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/30 rounded-full items-center justify-center mb-6">
+          <View style={s.s7}>
+            <View style={s.s8}>
               <CheckCircle2 size={48} color="#34d399" />
             </View>
-            <Text className="text-3xl font-black text-white mb-2 text-center">Registration Submitted!</Text>
-            <Text className="text-slate-400 text-center mb-8 text-base">
+            <Text style={s.s9}>Registration Submitted!</Text>
+            <Text style={s.s10}>
               Your society has been registered. Our administration team will verify the details shortly.
             </Text>
             <TouchableOpacity 
               onPress={() => router.replace('/society')}
-              className="bg-blue-600 px-8 py-4 rounded-xl shadow-lg shadow-blue-900 w-full items-center"
+              style={s.s11}
             >
-              <Text className="text-white font-bold text-lg">Go to Dashboard</Text>
+              <Text style={s.s12}>Go to Dashboard</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+          <ScrollView style={s.s13} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
             
-            <View className="mb-8">
-              <Text className="text-3xl font-black text-white mb-2">Join the Network</Text>
-              <Text className="text-slate-400">Onboard your building/society to manage visitors, notices, and community boards digitally.</Text>
+            <View style={s.s14}>
+              <Text style={s.s15}>Join the Network</Text>
+              <Text style={s.s16}>Onboard your building/society to manage visitors, notices, and community boards digitally.</Text>
             </View>
 
-            <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 ml-1">Building Details</Text>
+            <Text style={s.s17}>Building Details</Text>
             
             <InputField 
               icon={Building} 
@@ -112,8 +112,8 @@ export default function NativeSocietyRegistrationScreen() {
               multiline={true}
             />
 
-            <View className="flex-row gap-4 mb-2">
-              <View className="flex-1">
+            <View style={s.s18}>
+              <View style={s.s19}>
                 <InputField 
                   icon={Hash} 
                   placeholder="Total Flats *" 
@@ -124,7 +124,7 @@ export default function NativeSocietyRegistrationScreen() {
               </View>
             </View>
 
-            <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 ml-1 mt-4">Committee (Optional)</Text>
+            <Text style={s.s20}>Committee (Optional)</Text>
             
             <InputField 
               icon={Users} 
@@ -136,12 +136,12 @@ export default function NativeSocietyRegistrationScreen() {
             <TouchableOpacity 
               onPress={handleRegister}
               disabled={loading}
-              className={`mt-6 py-4 rounded-2xl items-center shadow-lg flex-row justify-center ${loading ? 'bg-blue-800' : 'bg-blue-600 shadow-blue-900/50'}`}
+              style={[s.s25, loading ? s.s26 : s.s27]}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-white font-bold text-lg">Submit Registration</Text>
+                <Text style={s.s21}>Submit Registration</Text>
               )}
             </TouchableOpacity>
 
@@ -151,3 +151,34 @@ export default function NativeSocietyRegistrationScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { marginBottom: 16 },
+  s1: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 4 },
+  s2: { flex: 1, backgroundColor: '#020617' },
+  s3: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#0f172a', zIndex: 10 },
+  s4: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 9999 },
+  s5: { color: '#ffffff', fontSize: 20, fontWeight: '900', flex: 1 },
+  s6: { flex: 1 },
+  s7: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  s8: { width: 96, height: 96, backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 9999, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  s9: { fontSize: 30, fontWeight: '900', color: '#ffffff', marginBottom: 8, textAlign: 'center' },
+  s10: { color: '#94a3b8', textAlign: 'center', marginBottom: 32, fontSize: 16 },
+  s11: { backgroundColor: '#2563eb', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12, width: '100%', alignItems: 'center' },
+  s12: { color: '#ffffff', fontWeight: '700', fontSize: 18 },
+  s13: { flex: 1, padding: 24 },
+  s14: { marginBottom: 32 },
+  s15: { fontSize: 30, fontWeight: '900', color: '#ffffff', marginBottom: 8 },
+  s16: { color: '#94a3b8' },
+  s17: { color: '#94a3b8', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12, marginLeft: 4 },
+  s18: { flexDirection: 'row', gap: 16, marginBottom: 8 },
+  s19: { flex: 1 },
+  s20: { color: '#94a3b8', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12, marginLeft: 4, marginTop: 16 },
+  s21: { color: '#ffffff', fontWeight: '700', fontSize: 18 },
+  s22: { flex: 1, color: '#ffffff', marginLeft: 12, fontSize: 16 },
+  s23: { minHeight: 80, paddingVertical: 12 },
+  s24: { paddingVertical: 16 },
+  s25: { marginTop: 24, paddingVertical: 16, borderRadius: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+  s26: { backgroundColor: '#1e40af' },
+  s27: { backgroundColor: '#2563eb' },
+});

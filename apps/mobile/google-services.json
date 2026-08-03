@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1234567890",
-    "project_id": "dummy-project",
-    "storage_bucket": "dummy-project.appspot.com"
+    "project_number": "562733195763",
+    "project_id": "local-sampark",
+    "storage_bucket": "local-sampark.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1234567890:android:abcdef123456",
+        "mobilesdk_app_id": "1:562733195763:android:e2679c9e39241965717286",
         "android_client_info": {
-          "package_name": "in.localsampark.app"
+          "package_name": "com.localsampark.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "dummy-api-key"
+          "current_key": "AIzaSyB89ULnwjEXM9NUi60U0xIK9G7yrCOXxfs"
         }
       ],
       "services": {
@@ -26,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1234567890:android:abcdef123456",
+        "mobilesdk_app_id": "1:562733195763:android:e2679c9e39241965717286",
         "android_client_info": {
-          "package_name": "com.localsampark.app"
+          "package_name": "in.localsampark.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "dummy-api-key"
+          "current_key": "AIzaSyB89ULnwjEXM9NUi60U0xIK9G7yrCOXxfs"
         }
       ],
       "services": {

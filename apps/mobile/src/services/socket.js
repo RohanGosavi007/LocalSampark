@@ -1,21 +1,24 @@
-// Crash-safe socket.io import — socket.io-client is not in package.json
+/**
+ * Socket.io Service — Real-time communication with the backend
+ * Handles: live order updates, new order alerts, delivery tracking, chat
+ */
+import { API_URL } from '../lib/api';
+
 let io = null;
-let API_URL = '';
 try {
   io = require('socket.io-client').io;
 } catch (e) {
   console.warn('[Socket] socket.io-client not available:', e.message);
 }
-try {
-  API_URL = require('../lib/api').API_URL;
-} catch (e) {
-  console.warn('[Socket] api module not available:', e.message);
-}
+
+// Extract base URL (remove /api/v1 suffix for socket connection)
+const SOCKET_URL = API_URL ? API_URL.replace(/\/api\/v\d+\/?$/, '') : 'http://localhost:5000';
 
 class SocketService {
   constructor() {
     this.socket = null;
     this.connected = false;
+    this.listeners = new Map();
   }
 
   connect(shopId) {
@@ -28,22 +31,29 @@ class SocketService {
       if (this.socket.connected) return;
       this.socket.connect();
     } else {
-      this.socket = io(API_URL || 'http://localhost:5000', {
+      this.socket = io(SOCKET_URL, {
         transports: ['websocket'],
         autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
       });
 
       this.socket.on('connect', () => {
         this.connected = true;
-        console.log('[Socket.io] Connected on Mobile');
+        console.log('[Socket.io] Connected on Mobile to', SOCKET_URL);
         if (shopId) {
           this.joinShop(shopId);
         }
       });
 
-      this.socket.on('disconnect', () => {
+      this.socket.on('disconnect', (reason) => {
         this.connected = false;
-        console.log('[Socket.io] Disconnected on Mobile');
+        console.log('[Socket.io] Disconnected on Mobile:', reason);
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.warn('[Socket.io] Connection error:', error.message);
       });
     }
   }
@@ -54,9 +64,16 @@ class SocketService {
     }
   }
 
+  joinUser(userId) {
+    if (this.socket && this.connected) {
+      this.socket.emit('join_user_room', userId);
+    }
+  }
+
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
+      this.connected = false;
     }
   }
 
@@ -69,6 +86,12 @@ class SocketService {
   off(event, callback) {
     if (this.socket) {
       this.socket.off(event, callback);
+    }
+  }
+
+  emit(event, data) {
+    if (this.socket && this.connected) {
+      this.socket.emit(event, data);
     }
   }
 }

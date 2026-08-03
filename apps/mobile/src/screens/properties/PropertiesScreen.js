@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert , StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Building, Lock, Phone, MapPin, CheckCircle, Sparkles } from 'lucide-react-native';
@@ -7,44 +7,44 @@ import * as Haptics from 'expo-haptics';
 import { apiGet } from '../../lib/api';
 
 const PropertyItem = memo(({ item, unlocked, onUnlock }) => (
-  <View className="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-4">
+  <View style={s.s0}>
     {item.is_featured && (
-      <View className="bg-emerald-950 border border-emerald-800 self-start px-3 py-1 rounded-full mb-3 flex-row items-center">
-        <Sparkles color="#34d399" size={12} className="mr-1" />
-        <Text className="text-emerald-400 font-bold text-[10px]">FEATURED DIRECT OWNER</Text>
+      <View style={s.s1}>
+        <Sparkles color="#34d399" size={12} />
+        <Text style={s.s2}>FEATURED DIRECT OWNER</Text>
       </View>
     )}
 
-    <Text className="text-white font-black text-lg mb-1">{item.title}</Text>
+    <Text style={s.s3}>{item.title}</Text>
     
-    <View className="flex-row items-center mb-3">
-      <MapPin color="#94a3b8" size={14} className="mr-1" />
-      <Text className="text-slate-400 text-xs">{item.location}</Text>
+    <View style={s.s4}>
+      <MapPin color="#94a3b8" size={14} />
+      <Text style={s.s5}>{item.location}</Text>
     </View>
 
-    <View className="flex-row justify-between items-center bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800/80">
+    <View style={s.s6}>
       <View>
-        <Text className="text-slate-400 text-[10px] uppercase font-bold">Monthly Rent</Text>
-        <Text className="text-indigo-400 font-black text-base">{item.rent}</Text>
+        <Text style={s.s7}>Monthly Rent</Text>
+        <Text style={s.s8}>{item.rent}</Text>
       </View>
       <View>
-        <Text className="text-slate-400 text-[10px] uppercase font-bold">Deposit</Text>
-        <Text className="text-slate-200 font-bold text-xs">{item.deposit}</Text>
+        <Text style={s.s9}>Deposit</Text>
+        <Text style={s.s10}>{item.deposit}</Text>
       </View>
       <View>
-        <Text className="text-slate-400 text-[10px] uppercase font-bold">Specs</Text>
-        <Text className="text-slate-300 font-medium text-xs">{item.specs}</Text>
+        <Text style={s.s11}>Specs</Text>
+        <Text style={s.s12}>{item.specs}</Text>
       </View>
     </View>
 
     {/* Contact Area */}
     {unlocked ? (
-      <View className="bg-indigo-950/80 border border-indigo-500/50 p-3 rounded-xl flex-row items-center justify-between">
+      <View style={s.s13}>
         <View>
-          <Text className="text-indigo-300 font-bold text-xs">{unlocked.name}</Text>
-          <Text className="text-white font-black text-sm">{unlocked.phone}</Text>
+          <Text style={s.s14}>{unlocked.name}</Text>
+          <Text style={s.s15}>{unlocked.phone}</Text>
         </View>
-        <View className="bg-emerald-600 p-2 rounded-full">
+        <View style={s.s16}>
           <CheckCircle color="#fff" size={18} />
         </View>
       </View>
@@ -52,10 +52,10 @@ const PropertyItem = memo(({ item, unlocked, onUnlock }) => (
       <TouchableOpacity
         onPress={() => onUnlock(item)}
         activeOpacity={0.8}
-        className="bg-indigo-600 p-3.5 rounded-xl flex-row items-center justify-center border border-indigo-400/30"
+        style={s.s17}
       >
-        <Lock color="#fff" size={16} className="mr-2" />
-        <Text className="text-white font-bold text-xs">Unlock Owner Phone (₹49)</Text>
+        <Lock color="#fff" size={16} />
+        <Text style={s.s18}>Unlock Owner Phone (₹49)</Text>
       </TouchableOpacity>
     )}
   </View>
@@ -154,54 +154,54 @@ export default function NativepropertiesScreen() {
   ), [unlockedLeads, handleUnlockLead]);
 
   const ListHeader = useCallback(() => (
-    <View className="mb-4">
+    <View style={s.s19}>
       {/* Banner */}
-      <View className="bg-gradient-to-r from-indigo-900 to-slate-900 p-5 rounded-3xl mb-6 border border-indigo-500/30">
-        <View className="flex-row items-center mb-2">
-          <Building color="#818cf8" size={24} className="mr-2" />
-          <Text className="text-white text-lg font-black">Pay-Per-Lead Verified</Text>
+      <View style={s.s20}>
+        <View style={s.s21}>
+          <Building color="#818cf8" size={24} />
+          <Text style={s.s22}>Pay-Per-Lead Verified</Text>
         </View>
-        <Text className="text-indigo-200 text-xs leading-5">No brokers. No 1-month brokerage fees. Pay ₹49 to unlock direct owner contact numbers.</Text>
+        <Text style={s.s23}>No brokers. No 1-month brokerage fees. Pay ₹49 to unlock direct owner contact numbers.</Text>
       </View>
-      <Text className="text-slate-400 font-bold uppercase tracking-wider text-xs">Available Rental Properties ({filtered.length})</Text>
+      <Text style={s.s24}>Available Rental Properties ({filtered.length})</Text>
     </View>
   ), [filtered.length]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={s.s25}>
       {/* Top Header */}
-      <View className="flex-row items-center p-4 border-b border-slate-900 bg-slate-950 z-10">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-900 border border-slate-800 rounded-full">
+      <View style={s.s26}>
+        <TouchableOpacity onPress={() => router.back()} style={s.s27}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-white text-xl font-black">Zero-Broker Real Estate</Text>
-          <Text className="text-slate-400 text-xs">Direct Owner Rentals & Sales in Dhanori</Text>
+        <View style={s.s28}>
+          <Text style={s.s29}>Zero-Broker Real Estate</Text>
+          <Text style={s.s30}>Direct Owner Rentals & Sales in Dhanori</Text>
         </View>
       </View>
 
       {/* Category Pills */}
-      <View className="py-3 px-4 bg-slate-900 border-b border-slate-800">
+      <View style={s.s31}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {['All', '2 BHK', '3 BHK', 'PG', 'Commercial'].map(filter => (
             <TouchableOpacity
               key={filter}
               onPress={() => { setSelectedFilter(filter); Haptics.selectionAsync(); }}
-              className={`px-4 py-2 rounded-full mr-2 border ${selectedFilter === filter ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-950 border-slate-800'}`}
+              style={[s.s35, selectedFilter === filter ? s.s36 : s.s37]}
             >
-              <Text className={`text-xs font-bold ${selectedFilter === filter ? 'text-white' : 'text-slate-400'}`}>{filter}</Text>
+              <Text style={[s.s38, selectedFilter === filter ? s.s39 : s.s40]}>{filter}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
       {loading ? (
-        <View className="flex-1 justify-center items-center">
+        <View style={s.s32}>
           <ActivityIndicator size="large" color="#6366f1" />
-          <Text className="text-slate-500 mt-4 font-bold text-xs uppercase tracking-widest">Loading Properties...</Text>
+          <Text style={s.s33}>Loading Properties...</Text>
         </View>
       ) : (
-        <View className="flex-1 w-full">
+        <View style={s.s34}>
           <FlashList
             data={filtered}
             keyExtractor={item => item.id}
@@ -215,3 +215,47 @@ export default function NativepropertiesScreen() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  s0: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 20, borderRadius: 16, marginBottom: 16 },
+  s1: { backgroundColor: '#022c22', borderWidth: 1, borderColor: '#065f46', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 9999, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+  s2: { color: '#34d399', fontWeight: '700', fontSize: 10 },
+  s3: { color: '#ffffff', fontWeight: '900', fontSize: 18, marginBottom: 4 },
+  s4: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  s5: { color: '#94a3b8', fontSize: 12 },
+  s6: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#020617', padding: 12, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(30,41,59,0.8)' },
+  s7: { color: '#94a3b8', fontSize: 10, textTransform: 'uppercase', fontWeight: '700' },
+  s8: { color: '#818cf8', fontWeight: '900', fontSize: 16 },
+  s9: { color: '#94a3b8', fontSize: 10, textTransform: 'uppercase', fontWeight: '700' },
+  s10: { color: '#e2e8f0', fontWeight: '700', fontSize: 12 },
+  s11: { color: '#94a3b8', fontSize: 10, textTransform: 'uppercase', fontWeight: '700' },
+  s12: { color: '#cbd5e1', fontWeight: '500', fontSize: 12 },
+  s13: { backgroundColor: 'rgba(30,27,75,0.8)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.5)', padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  s14: { color: '#a5b4fc', fontWeight: '700', fontSize: 12 },
+  s15: { color: '#ffffff', fontWeight: '900', fontSize: 14 },
+  s16: { backgroundColor: '#059669', padding: 8, borderRadius: 9999 },
+  s17: { backgroundColor: '#4f46e5', padding: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(129,140,248,0.3)' },
+  s18: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
+  s19: { marginBottom: 16 },
+  s20: { padding: 20, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(99,102,241,0.3)' },
+  s21: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  s22: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
+  s23: { color: '#c7d2fe', fontSize: 12, lineHeight: 5 },
+  s24: { color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 },
+  s25: { flex: 1, backgroundColor: '#020617' },
+  s26: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
+  s27: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 9999 },
+  s28: { flex: 1 },
+  s29: { color: '#ffffff', fontSize: 20, fontWeight: '900' },
+  s30: { color: '#94a3b8', fontSize: 12 },
+  s31: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
+  s32: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  s33: { color: '#64748b', marginTop: 16, fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 },
+  s34: { flex: 1, width: '100%' },
+  s35: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, marginRight: 8, borderWidth: 1 },
+  s36: { backgroundColor: '#4f46e5', borderColor: '#6366f1' },
+  s37: { backgroundColor: '#020617', borderColor: '#1e293b' },
+  s38: { fontSize: 12, fontWeight: '700' },
+  s39: { color: '#ffffff' },
+  s40: { color: '#94a3b8' },
+});
