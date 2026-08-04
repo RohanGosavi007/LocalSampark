@@ -329,4 +329,8 @@ if (process.env.NODE_ENV !== 'test') {
 
 module.exports = { app, server };
 
-// force restart
+// force restart// restart nodemon
+// restart nodemon again
+// restart nodemon cache removal
+// restart nodemon cache removal 2
+// restart nodemon for cache

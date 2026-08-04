@@ -35,13 +35,12 @@ router.use('/volunteer', require('../modules/community/routes/volunteer.routes')
 router.use('/donations', require('../modules/community/routes/donations.routes'));
 router.use('/society-management', require('../modules/community/routes/society-visitor.routes'));
 
-// ─── E-COMMERCE DOMAIN ────────────────────────────────────
 router.use('/shops', (req, res, next) => {
-  if (req.path.startsWith('/admin') || req.headers.authorization) {
-    return require('../modules/ecommerce/routes/shop.routes')(req, res, next);
+  if (req.path.startsWith('/admin') || req.headers.authorization || req.method !== 'GET') {
+    return next();
   }
-  return apiCache(900)(req, res, next, () => require('../modules/ecommerce/routes/shop.routes')(req, res, next));
-});
+  return apiCache(900)(req, res, next);
+}, require('../modules/ecommerce/routes/shop.routes'));
 router.use('/marketplace', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
 router.use('/payments', paymentLimiter, require('../modules/ecommerce/routes/payment.routes'));
 router.use('/subscriptions', require('../modules/ecommerce/routes/subscription.routes'));

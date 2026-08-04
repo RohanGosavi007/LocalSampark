@@ -1,0 +1,398 @@
+{
+  "_meta": {
+    "phase": 4,
+    "version": "1.0.0",
+    "generatedAt": "2026-08-04T06:20:00.000Z",
+    "description": "Community ecosystem: 1 housing society, 2 SOS alerts, 6 community posts (all types), 4 help desk tickets, 8 notification templates, and notification logs. Edge cases: flagged post, escalated SOS, SLA-breached ticket.",
+    "crossReferences": {
+      "users": "seeds/users.json",
+      "territories": "seeds/territories.json"
+    }
+  },
+  "societies": [
+    {
+      "id": "soc_kalyani_heights_01",
+      "name": "Kalyani Heights Co-op Housing Society",
+      "slug": "kalyani-heights-kothrud",
+      "address": {
+        "line1": "Kalyani Heights",
+        "line2": "Near Dahanukar Colony",
+        "landmark": "Opposite Cummins College",
+        "ward": "Karve Nagar",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5025, "longitude": 73.8110 }
+      },
+      "zoneId": "zone_kothrud",
+      "wardId": "ward_kothrud_01",
+      "adminUserIds": ["usr_society_admin_01"],
+      "totalMembers": 84,
+      "totalUnits": 120,
+      "amenities": ["Gymnasium", "Swimming Pool", "Children's Play Area", "CCTV Security", "Power Backup", "EV Charging", "Rainwater Harvesting", "Community Hall"],
+      "monthlyMaintenancePaise": 350000,
+      "maintenanceFormatted": "₹3,500.00",
+      "emergencyContacts": [
+        { "name": "Meera Deshpande", "role": "Secretary", "phoneNumber": "+919876001122", "isAvailable24x7": false },
+        { "name": "Pune Fire Brigade", "role": "Fire", "phoneNumber": "101", "isAvailable24x7": true },
+        { "name": "Kothrud Police Station", "role": "Police", "phoneNumber": "020-25437100", "isAvailable24x7": true },
+        { "name": "Sahyadri Hospital", "role": "Medical", "phoneNumber": "020-30617777", "isAvailable24x7": true },
+        { "name": "PMC Water Complaint", "role": "Water Supply", "phoneNumber": "020-25501276", "isAvailable24x7": false }
+      ],
+      "gateEntryEnabled": true,
+      "visitorManagementEnabled": true,
+      "createdAt": "2025-08-01T10:00:00.000Z",
+      "updatedAt": "2026-08-04T04:00:00.000Z"
+    }
+  ],
+  "sosAlerts": [
+    {
+      "id": "sos_medical_01",
+      "triggeredBy": "usr_consumer_01",
+      "triggerType": "MEDICAL",
+      "status": "RESOLVED",
+      "location": { "latitude": 18.5023, "longitude": 73.8112, "accuracyMeters": 5 },
+      "locationAddress": "Flat 302, Kalyani Heights, Karve Nagar, Pune 411038",
+      "audioRecordingUrl": "https://cdn.localsampark.in/sos/sos_medical_01_audio.webm",
+      "photoUrls": [],
+      "description": "Elderly father (72) experiencing chest pain and difficulty breathing. Need ambulance immediately.",
+      "notifiedResponderIds": ["usr_volunteer_01", "usr_society_admin_01"],
+      "acknowledgedBy": "usr_volunteer_01",
+      "acknowledgedAt": "2026-08-03T14:02:30.000Z",
+      "policeNotified": false,
+      "ambulanceNotified": true,
+      "fireNotified": false,
+      "resolvedAt": "2026-08-03T14:45:00.000Z",
+      "resolutionNotes": "Ambulance arrived in 12 minutes. Patient stabilized and transported to Sahyadri Hospital. Diagnosed as angina — not heart attack. Discharged next day.",
+      "statusHistory": [
+        { "from": "TRIGGERED", "to": "ACKNOWLEDGED", "changedAt": "2026-08-03T14:02:30.000Z", "changedBy": "usr_volunteer_01", "notes": "Rahul Thorat acknowledged — running to Flat 302" },
+        { "from": "ACKNOWLEDGED", "to": "RESPONDER_ON_SITE", "changedAt": "2026-08-03T14:05:00.000Z", "changedBy": "usr_volunteer_01", "notes": "On site. Patient conscious. Ambulance ETA 8 min." },
+        { "from": "RESPONDER_ON_SITE", "to": "RESOLVED", "changedAt": "2026-08-03T14:45:00.000Z", "changedBy": "usr_society_admin_01", "notes": "Patient handed to paramedics. Family in ambulance." }
+      ],
+      "createdAt": "2026-08-03T14:00:00.000Z",
+      "updatedAt": "2026-08-03T14:45:00.000Z"
+    },
+    {
+      "id": "sos_flood_01",
+      "triggeredBy": "usr_farmer_01",
+      "triggerType": "FLOOD",
+      "status": "ESCALATED",
+      "location": { "latitude": 18.1480, "longitude": 74.5920, "accuracyMeters": 50 },
+      "locationAddress": "Kale Farm, Katewadi, Tal. Baramati, Dist. Pune",
+      "photoUrls": [
+        "https://cdn.localsampark.in/sos/sos_flood_01_photo1.webp",
+        "https://cdn.localsampark.in/sos/sos_flood_01_photo2.webp"
+      ],
+      "description": "Nira canal overflowing. Water entering sugarcane field. 3 cattle stuck in waterlogged area. Need rescue team.",
+      "notifiedResponderIds": ["usr_field_agent_01"],
+      "acknowledgedBy": "usr_field_agent_01",
+      "acknowledgedAt": "2026-08-05T07:15:00.000Z",
+      "policeNotified": true,
+      "ambulanceNotified": false,
+      "fireNotified": true,
+      "statusHistory": [
+        { "from": "TRIGGERED", "to": "ACKNOWLEDGED", "changedAt": "2026-08-05T07:15:00.000Z", "changedBy": "usr_field_agent_01", "notes": "Amit Shinde acknowledged. Contacting NDRF helpline." },
+        { "from": "ACKNOWLEDGED", "to": "ESCALATED", "changedAt": "2026-08-05T07:30:00.000Z", "changedBy": "usr_super_admin_01", "notes": "Escalated to District Collector office. NDRF team dispatched from Pune. ETA 2 hours." }
+      ],
+      "createdAt": "2026-08-05T07:00:00.000Z",
+      "updatedAt": "2026-08-05T07:30:00.000Z"
+    }
+  ],
+  "communityPosts": [
+    {
+      "id": "post_announcement_01",
+      "authorId": "usr_society_admin_01",
+      "zoneId": "zone_kothrud",
+      "societyId": "soc_kalyani_heights_01",
+      "type": "ANNOUNCEMENT",
+      "status": "PUBLISHED",
+      "title": "Water Supply Disruption – Aug 5-6",
+      "body": "PMC has informed that water supply to Karve Nagar area will be disrupted on Aug 5-6 (Tuesday-Wednesday) due to pipeline repair work near Vanaz corner. Please store adequate water. Tanker has been arranged for emergency supply – contact security desk.",
+      "imageUrls": [],
+      "likeCount": 34, "commentCount": 12, "shareCount": 5, "viewCount": 78,
+      "flagCount": 0, "flagReasons": [],
+      "isPinned": true, "isAnonymous": false,
+      "createdAt": "2026-08-03T18:00:00.000Z", "updatedAt": "2026-08-03T18:00:00.000Z"
+    },
+    {
+      "id": "post_event_01",
+      "authorId": "usr_volunteer_01",
+      "zoneId": "zone_shivajinagar",
+      "type": "EVENT",
+      "status": "PUBLISHED",
+      "title": "Weekend Tree Plantation Drive – Sambhaji Park",
+      "body": "Join us this Sunday (Aug 10) for a community tree plantation drive at Sambhaji Park. We'll plant 50 saplings of native species (Neem, Peepal, Banyan). Refreshments provided. Bring your own gardening gloves!",
+      "imageUrls": ["https://cdn.localsampark.in/posts/tree_drive_banner.webp"],
+      "eventDate": "2026-08-10",
+      "eventTime": "07:00-10:00",
+      "eventLocation": "Sambhaji Park, JM Road, Shivajinagar",
+      "eventRsvpCount": 23,
+      "likeCount": 45, "commentCount": 8, "shareCount": 15, "viewCount": 156,
+      "flagCount": 0, "flagReasons": [],
+      "isPinned": false, "isAnonymous": false,
+      "createdAt": "2026-08-02T10:00:00.000Z", "updatedAt": "2026-08-04T04:00:00.000Z"
+    },
+    {
+      "id": "post_poll_01",
+      "authorId": "usr_society_admin_01",
+      "zoneId": "zone_kothrud",
+      "societyId": "soc_kalyani_heights_01",
+      "type": "POLL",
+      "status": "PUBLISHED",
+      "title": "Should we install EV charging stations in the parking?",
+      "body": "We've received quotes from 2 vendors. Installation cost will be ₹2,50,000 (one-time) from maintenance fund. Usage will be pay-per-charge. Please vote.",
+      "imageUrls": [],
+      "pollOptions": [
+        { "optionId": "poll_01_yes", "text": "Yes – install ASAP", "voteCount": 42 },
+        { "optionId": "poll_01_later", "text": "Yes, but next year", "voteCount": 18 },
+        { "optionId": "poll_01_no", "text": "No – not needed yet", "voteCount": 12 },
+        { "optionId": "poll_01_more_info", "text": "Need more details", "voteCount": 8 }
+      ],
+      "pollEndsAt": "2026-08-10T23:59:59.000Z",
+      "likeCount": 15, "commentCount": 22, "shareCount": 3, "viewCount": 80,
+      "flagCount": 0, "flagReasons": [],
+      "isPinned": true, "isAnonymous": false,
+      "createdAt": "2026-08-01T10:00:00.000Z", "updatedAt": "2026-08-04T04:00:00.000Z"
+    },
+    {
+      "id": "post_complaint_01",
+      "authorId": "usr_consumer_01",
+      "zoneId": "zone_kothrud",
+      "societyId": "soc_kalyani_heights_01",
+      "type": "COMPLAINT",
+      "status": "PUBLISHED",
+      "title": "Stray dogs aggressive near Gate 2 – Safety concern",
+      "body": "For the past week, a pack of 4-5 stray dogs near Gate 2 have been barking aggressively at residents, especially children returning from school. One child was chased yesterday. Can we contact PMC Animal Control?",
+      "imageUrls": ["https://cdn.localsampark.in/posts/stray_dogs_gate2.webp"],
+      "likeCount": 28, "commentCount": 15, "shareCount": 7, "viewCount": 65,
+      "flagCount": 0, "flagReasons": [],
+      "isPinned": false, "isAnonymous": false,
+      "createdAt": "2026-08-02T17:00:00.000Z", "updatedAt": "2026-08-03T10:00:00.000Z"
+    },
+    {
+      "id": "post_lost_found_01",
+      "authorId": "usr_consumer_01",
+      "zoneId": "zone_kothrud",
+      "type": "LOST_AND_FOUND",
+      "status": "PUBLISHED",
+      "title": "FOUND: Gold earring near Dahanukar Colony bus stop",
+      "body": "Found a gold earring (small jhumka style) near the Dahanukar Colony bus stop this morning around 7:30 AM. DM me with a description to claim. Will hold for 7 days.",
+      "imageUrls": ["https://cdn.localsampark.in/posts/found_earring.webp"],
+      "likeCount": 12, "commentCount": 4, "shareCount": 8, "viewCount": 89,
+      "flagCount": 0, "flagReasons": [],
+      "isPinned": false, "isAnonymous": false,
+      "createdAt": "2026-08-04T04:00:00.000Z", "updatedAt": "2026-08-04T04:00:00.000Z"
+    },
+    {
+      "id": "post_flagged_01",
+      "authorId": "usr_suspended_merchant_01",
+      "zoneId": "zone_hadapsar",
+      "type": "MARKETPLACE",
+      "status": "FLAGGED",
+      "title": "iPhone 15 Pro Max for sale – ₹45,000 only!!",
+      "body": "Brand new sealed iPhone 15 Pro Max. No bill. Cash only. Meet at Hadapsar market yard. DM fast.",
+      "imageUrls": ["https://cdn.localsampark.in/posts/suspicious_iphone.webp"],
+      "likeCount": 3, "commentCount": 7, "shareCount": 0, "viewCount": 45,
+      "flagCount": 5,
+      "flagReasons": ["Suspicious pricing", "No bill = possibly stolen", "Seller is suspended merchant", "Cash only deal", "Too good to be true"],
+      "moderatedBy": "usr_super_admin_01",
+      "moderatedAt": "2026-08-03T16:00:00.000Z",
+      "moderationAction": "Post hidden pending review. User already under FRAUD-2026-0042 investigation.",
+      "isPinned": false, "isAnonymous": false,
+      "createdAt": "2026-08-03T12:00:00.000Z", "updatedAt": "2026-08-03T16:00:00.000Z"
+    }
+  ],
+  "supportTickets": [
+    {
+      "id": "ticket_001",
+      "userId": "usr_consumer_01",
+      "assignedAgentId": "usr_super_admin_01",
+      "category": "DELIVERY_ISSUE",
+      "priority": "HIGH",
+      "status": "RESOLVED",
+      "subject": "Order delivered to wrong address",
+      "description": "My order #ord_20260801_005 from Patil Kirana was delivered to Flat 301 instead of Flat 302. The neighbor kept it but some items are missing (1L milk, curd).",
+      "attachmentUrls": ["https://cdn.localsampark.in/tickets/ticket_001_photo.webp"],
+      "relatedOrderId": "ord_20260801_005",
+      "messages": [
+        { "messageId": "msg_001_01", "senderId": "usr_consumer_01", "senderType": "USER", "body": "My order was delivered to the wrong flat. Missing items: Chitale milk 1L and Amul curd.", "attachmentUrls": [], "createdAt": "2026-08-01T19:00:00.000Z" },
+        { "messageId": "msg_001_02", "senderId": "SYSTEM", "senderType": "SYSTEM", "body": "Ticket assigned to support agent. Expected response within 4 hours (Gold SLA).", "attachmentUrls": [], "createdAt": "2026-08-01T19:00:05.000Z" },
+        { "messageId": "msg_001_03", "senderId": "usr_super_admin_01", "senderType": "AGENT", "body": "Hi Priya, apologies for the inconvenience. We've confirmed with the delivery runner (Vikram). Refund of ₹88 has been credited to your cashback wallet. We'll retrain the runner on address verification.", "attachmentUrls": [], "createdAt": "2026-08-01T20:30:00.000Z" },
+        { "messageId": "msg_001_04", "senderId": "usr_consumer_01", "senderType": "USER", "body": "Thank you! Received the refund. Appreciate the quick resolution.", "attachmentUrls": [], "createdAt": "2026-08-01T21:00:00.000Z" }
+      ],
+      "slaResponseDueAt": "2026-08-01T23:00:00.000Z",
+      "slaResolutionDueAt": "2026-08-02T19:00:00.000Z",
+      "firstResponseAt": "2026-08-01T20:30:00.000Z",
+      "resolvedAt": "2026-08-01T21:00:00.000Z",
+      "slaBreached": false,
+      "csatRating": 5,
+      "csatComment": "Very quick response and resolution!",
+      "createdAt": "2026-08-01T19:00:00.000Z",
+      "updatedAt": "2026-08-01T21:00:00.000Z",
+      "closedAt": "2026-08-01T21:00:00.000Z"
+    },
+    {
+      "id": "ticket_002",
+      "userId": "usr_runner_04",
+      "assignedAgentId": "usr_super_admin_01",
+      "category": "PAYMENT_REFUND",
+      "priority": "HIGH",
+      "status": "IN_PROGRESS",
+      "subject": "Weekly payout failed – UPI timeout",
+      "description": "My weekly payout of ₹5,000 failed on Aug 2. Error says UPI timeout. I need this money urgently for rent. Please process manually.",
+      "attachmentUrls": [],
+      "relatedPaymentId": "pay_runner_04_failed",
+      "messages": [
+        { "messageId": "msg_002_01", "senderId": "usr_runner_04", "senderType": "USER", "body": "Payout failed. Error: UPI timeout. Please retry.", "attachmentUrls": [], "createdAt": "2026-08-02T19:00:00.000Z" },
+        { "messageId": "msg_002_02", "senderId": "usr_super_admin_01", "senderType": "AGENT", "body": "Hi Vikram, we see the failure (ref: pay_runner_04_failed). Retrying via NEFT now. Should reflect in 2-4 hours.", "attachmentUrls": [], "createdAt": "2026-08-03T06:30:00.000Z" }
+      ],
+      "slaResponseDueAt": "2026-08-02T23:00:00.000Z",
+      "slaResolutionDueAt": "2026-08-03T19:00:00.000Z",
+      "firstResponseAt": "2026-08-03T06:30:00.000Z",
+      "slaBreached": true,
+      "createdAt": "2026-08-02T19:00:00.000Z",
+      "updatedAt": "2026-08-03T06:30:00.000Z"
+    },
+    {
+      "id": "ticket_003",
+      "userId": "usr_farmer_01",
+      "category": "APP_BUG",
+      "priority": "MEDIUM",
+      "status": "OPEN",
+      "subject": "App crashes when viewing APMC rates on Android 11",
+      "description": "When I open the Mandi Rates page, the app shows loading for 5 seconds then crashes. Happens every time. Phone: Redmi 9A, Android 11, App v6.0.3. Tried reinstalling.",
+      "attachmentUrls": ["https://cdn.localsampark.in/tickets/ticket_003_screenshot.webp"],
+      "messages": [
+        { "messageId": "msg_003_01", "senderId": "usr_farmer_01", "senderType": "USER", "body": "App crash on Mandi Rates page. Please fix.", "attachmentUrls": ["https://cdn.localsampark.in/tickets/ticket_003_screenshot.webp"], "createdAt": "2026-08-03T07:00:00.000Z" }
+      ],
+      "slaResponseDueAt": "2026-08-03T09:00:00.000Z",
+      "slaResolutionDueAt": "2026-08-04T07:00:00.000Z",
+      "slaBreached": true,
+      "createdAt": "2026-08-03T07:00:00.000Z",
+      "updatedAt": "2026-08-03T07:00:00.000Z"
+    },
+    {
+      "id": "ticket_004",
+      "userId": "usr_shop_owner_01",
+      "assignedAgentId": "usr_franchise_01",
+      "category": "MERCHANT_SUPPORT",
+      "priority": "LOW",
+      "status": "WAITING_ON_USER",
+      "subject": "How to enable subscription box feature?",
+      "description": "I want to offer weekly grocery subscription boxes but can't find the option in my shop dashboard. Is it available on Gold plan?",
+      "attachmentUrls": [],
+      "messages": [
+        { "messageId": "msg_004_01", "senderId": "usr_shop_owner_01", "senderType": "USER", "body": "Where is the subscription box feature in the dashboard?", "attachmentUrls": [], "createdAt": "2026-08-04T03:00:00.000Z" },
+        { "messageId": "msg_004_02", "senderId": "usr_franchise_01", "senderType": "AGENT", "body": "Hi Rajesh! Yes, subscription boxes are available on Gold plan. Go to Shop Dashboard > Products > Subscription Boxes > Create New. You'll need to set up at least 3 items and a delivery schedule. I've attached a guide. Let me know if you need help.", "attachmentUrls": ["https://cdn.localsampark.in/docs/subscription_box_guide.pdf"], "createdAt": "2026-08-04T04:00:00.000Z" }
+      ],
+      "slaResponseDueAt": "2026-08-07T03:00:00.000Z",
+      "slaResolutionDueAt": "2026-08-11T03:00:00.000Z",
+      "firstResponseAt": "2026-08-04T04:00:00.000Z",
+      "slaBreached": false,
+      "createdAt": "2026-08-04T03:00:00.000Z",
+      "updatedAt": "2026-08-04T04:00:00.000Z"
+    }
+  ],
+  "notificationTemplates": [
+    {
+      "id": "ntpl_order_placed",
+      "name": "Order Placed Confirmation",
+      "channel": "PUSH",
+      "priority": "NORMAL",
+      "titleTemplate": "Order Confirmed! 🎉",
+      "bodyTemplate": "Your order #{{orderId}} from {{shopName}} has been placed. Estimated delivery: {{eta}} minutes.",
+      "bodyTemplateMarathi": "तुमची ऑर्डर #{{orderId}} {{shopName}} कडून प्लेस झाली. अंदाजित डिलिव्हरी: {{eta}} मिनिटे.",
+      "actionUrl": "/orders/{{orderId}}",
+      "targetRoles": ["CONSUMER"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_sos_triggered",
+      "name": "SOS Alert – Nearby Emergency",
+      "channel": "PUSH",
+      "priority": "URGENT",
+      "titleTemplate": "🚨 SOS Emergency Near You!",
+      "bodyTemplate": "{{userName}} has triggered a {{sosType}} SOS at {{location}}. Tap to respond or call emergency services.",
+      "bodyTemplateMarathi": "🚨 {{userName}} ने {{location}} येथे {{sosType}} SOS ट्रिगर केला. प्रतिसाद देण्यासाठी टॅप करा.",
+      "actionUrl": "/sos/{{sosId}}",
+      "targetRoles": ["VOLUNTEER", "SOCIETY_ADMIN", "FIELD_AGENT"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_payout_success",
+      "name": "Payout Successful",
+      "channel": "SMS",
+      "priority": "HIGH",
+      "titleTemplate": "Payout Received",
+      "bodyTemplate": "₹{{amount}} has been credited to your bank account ({{bankName}} XXXX{{last4}}). Ref: {{refNumber}}. – LocalSampark",
+      "bodyTemplateMarathi": "₹{{amount}} तुमच्या बँक खात्यात ({{bankName}} XXXX{{last4}}) जमा झाले. संदर्भ: {{refNumber}}. – लोकलसंपर्क",
+      "targetRoles": ["SHOP_OWNER", "DELIVERY_RUNNER", "SERVICE_PROVIDER", "FRANCHISE_PARTNER"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_weather_alert",
+      "name": "Weather Alert for Farmers",
+      "channel": "WHATSAPP",
+      "priority": "HIGH",
+      "titleTemplate": "⛈️ Weather Alert – {{alertTitle}}",
+      "bodyTemplate": "{{alertDescription}}\n\nAdvisory:\n{{advisory}}\n\nValid: {{validFrom}} to {{validUntil}}\nSource: {{source}}",
+      "bodyTemplateMarathi": "{{alertDescriptionMarathi}}\n\nसल्ला:\n{{advisoryMarathi}}\n\nवैध: {{validFrom}} ते {{validUntil}}",
+      "targetRoles": ["FARMER"],
+      "targetZoneIds": ["zone_baramati_rural"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_kyc_reminder",
+      "name": "KYC Document Reminder",
+      "channel": "PUSH",
+      "priority": "NORMAL",
+      "titleTemplate": "Complete your KYC to unlock all features",
+      "bodyTemplate": "Hi {{firstName}}, your {{documentType}} verification is pending. Complete KYC to start accepting orders and earning.",
+      "actionUrl": "/profile/kyc",
+      "targetRoles": ["SHOP_OWNER", "DELIVERY_RUNNER", "SERVICE_PROVIDER", "FARMER"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_subscription_expiry",
+      "name": "Subscription Expiry Warning",
+      "channel": "EMAIL",
+      "priority": "NORMAL",
+      "titleTemplate": "Your {{planName}} plan expires in {{daysLeft}} days",
+      "bodyTemplate": "Hi {{firstName}},\n\nYour {{planName}} subscription will expire on {{expiryDate}}. Renew now to keep your premium features.\n\nCurrent plan benefits:\n{{featureList}}\n\nRenew at: {{renewUrl}}",
+      "targetRoles": ["SHOP_OWNER", "CONSUMER", "FARMER"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_mandi_rate_update",
+      "name": "Daily Mandi Rate Update",
+      "channel": "WHATSAPP",
+      "priority": "NORMAL",
+      "titleTemplate": "📊 Today's Mandi Rates – {{mandiName}}",
+      "bodyTemplate": "{{commodity}} ({{variety}})\nMin: ₹{{minPrice}}/q | Max: ₹{{maxPrice}}/q | Modal: ₹{{modalPrice}}/q\nTrend: {{trend}} ({{changePercent}}%)\n\nView all rates in app →",
+      "bodyTemplateMarathi": "{{commodityMarathi}} ({{variety}})\nकमी: ₹{{minPrice}}/क्विं | जास्त: ₹{{maxPrice}}/क्विं | मोडल: ₹{{modalPrice}}/क्विं\nकल: {{trend}} ({{changePercent}}%)",
+      "targetRoles": ["FARMER"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ntpl_new_booking",
+      "name": "New Service Booking",
+      "channel": "PUSH",
+      "priority": "HIGH",
+      "titleTemplate": "New booking request! 📋",
+      "bodyTemplate": "{{consumerName}} has requested {{serviceName}} on {{date}} at {{time}}. Location: {{address}}. Tap to accept or decline.",
+      "bodyTemplateMarathi": "{{consumerName}} ने {{date}} रोजी {{time}} वाजता {{serviceName}} ची विनंती केली. ठिकाण: {{address}}. स्वीकारण्यासाठी टॅप करा.",
+      "actionUrl": "/bookings/{{bookingId}}",
+      "targetRoles": ["SERVICE_PROVIDER"],
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}

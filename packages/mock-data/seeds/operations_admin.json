@@ -1,0 +1,321 @@
+{
+  "_meta": {
+    "phase": 5,
+    "version": "1.0.0",
+    "generatedAt": "2026-08-04T06:20:00.000Z",
+    "description": "Operations data: 4 orders (DELIVERED, OUT_FOR_DELIVERY, CANCELLED, FAILED), 2 delivery trackings with GPS trails, 10 audit log entries, 5 zone analytics snapshots, and system config flags. All cross-reference Phase 1-4 IDs.",
+    "crossReferences": {
+      "users": "seeds/users.json",
+      "shops": "seeds/shops_directory.json",
+      "products": "seeds/catalogs_services.json",
+      "wallets": "seeds/wallets.json",
+      "territories": "seeds/territories.json"
+    }
+  },
+  "orders": [
+    {
+      "id": "ord_20260803_001",
+      "consumerId": "usr_consumer_01",
+      "shopId": "shop_patil_kirana_01",
+      "runnerId": "usr_runner_04",
+      "status": "DELIVERED",
+      "orderType": "DELIVERY",
+      "items": [
+        { "productId": "prod_pk_001", "productName": "Chitale Full Cream Milk", "variantId": "prod_pk_001_v2", "variantLabel": "1 Litre", "quantity": 2, "unitPricePaise": 5800, "totalPricePaise": 11600, "totalPriceFormatted": "₹116.00" },
+        { "productId": "prod_pk_002", "productName": "India Gate Basmati Rice – 5kg", "quantity": 1, "unitPricePaise": 55000, "totalPricePaise": 55000, "totalPriceFormatted": "₹550.00" },
+        { "productId": "prod_pk_003", "productName": "Haldiram's Aloo Bhujia – 200g", "quantity": 3, "unitPricePaise": 6000, "totalPricePaise": 18000, "totalPriceFormatted": "₹180.00" }
+      ],
+      "totalItemsPaise": 84600,
+      "totalItemsFormatted": "₹846.00",
+      "deliveryFeePaise": 0,
+      "packagingFeePaise": 1000,
+      "platformFeePaise": 500,
+      "taxPaise": 4230,
+      "discountPaise": 5000,
+      "cashbackAppliedPaise": 0,
+      "grandTotalPaise": 85330,
+      "grandTotalFormatted": "₹853.30",
+      "paymentMethod": "UPI",
+      "paymentStatus": "CAPTURED",
+      "paymentGatewayTxnId": "pay_MOCK_rz_20260803_001",
+      "deliveryAddress": {
+        "line1": "Flat 302, Kalyani Heights",
+        "line2": "Near Dahanukar Colony",
+        "landmark": "Opposite Cummins College",
+        "ward": "Karve Nagar",
+        "city": "Pune",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5023, "longitude": 73.8112 }
+      },
+      "deliveryInstructions": "Ring doorbell twice. If no answer, leave with neighbour in 301.",
+      "estimatedDeliveryMinutes": 28,
+      "actualDeliveryMinutes": 24,
+      "consumerRating": 5,
+      "consumerReview": "Fresh items, fast delivery! Vikram was very polite.",
+      "statusHistory": [
+        { "from": "CART", "to": "PLACED", "changedAt": "2026-08-03T18:30:00.000Z", "changedBy": "usr_consumer_01" },
+        { "from": "PLACED", "to": "CONFIRMED", "changedAt": "2026-08-03T18:31:00.000Z", "changedBy": "usr_shop_owner_01" },
+        { "from": "CONFIRMED", "to": "PREPARING", "changedAt": "2026-08-03T18:32:00.000Z", "changedBy": "usr_shop_owner_01" },
+        { "from": "PREPARING", "to": "READY_FOR_PICKUP", "changedAt": "2026-08-03T18:45:00.000Z", "changedBy": "usr_shop_owner_01" },
+        { "from": "READY_FOR_PICKUP", "to": "PICKED_UP", "changedAt": "2026-08-03T18:50:00.000Z", "changedBy": "usr_runner_04" },
+        { "from": "PICKED_UP", "to": "OUT_FOR_DELIVERY", "changedAt": "2026-08-03T18:50:30.000Z", "changedBy": "usr_runner_04" },
+        { "from": "OUT_FOR_DELIVERY", "to": "DELIVERED", "changedAt": "2026-08-03T18:58:00.000Z", "changedBy": "usr_runner_04" }
+      ],
+      "placedAt": "2026-08-03T18:30:00.000Z",
+      "confirmedAt": "2026-08-03T18:31:00.000Z",
+      "preparedAt": "2026-08-03T18:45:00.000Z",
+      "pickedUpAt": "2026-08-03T18:50:00.000Z",
+      "deliveredAt": "2026-08-03T18:58:00.000Z",
+      "createdAt": "2026-08-03T18:25:00.000Z",
+      "updatedAt": "2026-08-03T19:30:00.000Z"
+    },
+    {
+      "id": "ord_20260804_002",
+      "consumerId": "usr_consumer_01",
+      "shopId": "shop_tandoori_nights_01",
+      "runnerId": "usr_runner_04",
+      "status": "OUT_FOR_DELIVERY",
+      "orderType": "DELIVERY",
+      "items": [
+        { "productId": "prod_tn_001", "productName": "Hyderabadi Chicken Dum Biryani", "variantId": "prod_tn_001_full", "variantLabel": "Full (2 persons)", "quantity": 1, "unitPricePaise": 32000, "totalPricePaise": 32000, "totalPriceFormatted": "₹320.00", "specialInstructions": "Extra raita please" },
+        { "productId": "prod_tn_002", "productName": "Malai Paneer Tikka", "quantity": 1, "unitPricePaise": 25000, "totalPricePaise": 25000, "totalPriceFormatted": "₹250.00" }
+      ],
+      "totalItemsPaise": 57000,
+      "totalItemsFormatted": "₹570.00",
+      "deliveryFeePaise": 4000,
+      "packagingFeePaise": 2000,
+      "platformFeePaise": 500,
+      "taxPaise": 2850,
+      "discountPaise": 0,
+      "cashbackAppliedPaise": 5000,
+      "grandTotalPaise": 61350,
+      "grandTotalFormatted": "₹613.50",
+      "paymentMethod": "WALLET_BALANCE",
+      "paymentStatus": "CAPTURED",
+      "deliveryAddress": {
+        "line1": "Flat 302, Kalyani Heights",
+        "city": "Pune",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5023, "longitude": 73.8112 }
+      },
+      "estimatedDeliveryMinutes": 45,
+      "statusHistory": [
+        { "from": "CART", "to": "PLACED", "changedAt": "2026-08-04T04:30:00.000Z", "changedBy": "usr_consumer_01" },
+        { "from": "PLACED", "to": "CONFIRMED", "changedAt": "2026-08-04T04:32:00.000Z", "changedBy": "SYSTEM" },
+        { "from": "CONFIRMED", "to": "PREPARING", "changedAt": "2026-08-04T04:35:00.000Z", "changedBy": "SYSTEM" },
+        { "from": "PREPARING", "to": "READY_FOR_PICKUP", "changedAt": "2026-08-04T05:00:00.000Z", "changedBy": "SYSTEM" },
+        { "from": "READY_FOR_PICKUP", "to": "PICKED_UP", "changedAt": "2026-08-04T05:05:00.000Z", "changedBy": "usr_runner_04" },
+        { "from": "PICKED_UP", "to": "OUT_FOR_DELIVERY", "changedAt": "2026-08-04T05:05:30.000Z", "changedBy": "usr_runner_04" }
+      ],
+      "placedAt": "2026-08-04T04:30:00.000Z",
+      "confirmedAt": "2026-08-04T04:32:00.000Z",
+      "preparedAt": "2026-08-04T05:00:00.000Z",
+      "pickedUpAt": "2026-08-04T05:05:00.000Z",
+      "createdAt": "2026-08-04T04:25:00.000Z",
+      "updatedAt": "2026-08-04T05:10:00.000Z"
+    },
+    {
+      "id": "ord_20260802_003",
+      "consumerId": "usr_legacy_consumer_01",
+      "shopId": "shop_patil_kirana_01",
+      "status": "CANCELLED",
+      "orderType": "DELIVERY",
+      "items": [
+        { "productId": "prod_pk_001", "productName": "Chitale Full Cream Milk", "variantId": "prod_pk_001_v1", "variantLabel": "500ml", "quantity": 4, "unitPricePaise": 3000, "totalPricePaise": 12000, "totalPriceFormatted": "₹120.00" }
+      ],
+      "totalItemsPaise": 12000,
+      "totalItemsFormatted": "₹120.00",
+      "deliveryFeePaise": 2000,
+      "packagingFeePaise": 500,
+      "platformFeePaise": 500,
+      "taxPaise": 0,
+      "discountPaise": 0,
+      "cashbackAppliedPaise": 0,
+      "grandTotalPaise": 15000,
+      "grandTotalFormatted": "₹150.00",
+      "paymentMethod": "COD",
+      "paymentStatus": "PENDING",
+      "deliveryAddress": {
+        "line1": "Near Wakad Bridge",
+        "city": "Pune",
+        "pincode": "411057",
+        "geoPoint": { "latitude": 18.5995, "longitude": 73.7620 }
+      },
+      "estimatedDeliveryMinutes": 40,
+      "statusHistory": [
+        { "from": "CART", "to": "PLACED", "changedAt": "2026-08-02T10:00:00.000Z", "changedBy": "usr_legacy_consumer_01" },
+        { "from": "PLACED", "to": "CONFIRMED", "changedAt": "2026-08-02T10:05:00.000Z", "changedBy": "usr_shop_owner_01" },
+        { "from": "CONFIRMED", "to": "CANCELLED", "changedAt": "2026-08-02T10:15:00.000Z", "changedBy": "usr_legacy_consumer_01", "reason": "Changed my mind. Will buy from local shop." }
+      ],
+      "placedAt": "2026-08-02T10:00:00.000Z",
+      "confirmedAt": "2026-08-02T10:05:00.000Z",
+      "cancelledAt": "2026-08-02T10:15:00.000Z",
+      "cancellationReason": "Changed my mind. Will buy from local shop.",
+      "createdAt": "2026-08-02T09:55:00.000Z",
+      "updatedAt": "2026-08-02T10:15:00.000Z"
+    },
+    {
+      "id": "ord_20260801_004",
+      "consumerId": "usr_consumer_01",
+      "shopId": "shop_sai_pharmacy_01",
+      "status": "FAILED",
+      "orderType": "DELIVERY",
+      "items": [
+        { "productId": "prod_sp_001", "productName": "Azithromycin 500mg (Strip of 3)", "quantity": 1, "unitPricePaise": 10800, "totalPricePaise": 10800, "totalPriceFormatted": "₹108.00" }
+      ],
+      "totalItemsPaise": 10800,
+      "totalItemsFormatted": "₹108.00",
+      "deliveryFeePaise": 0,
+      "packagingFeePaise": 0,
+      "platformFeePaise": 500,
+      "taxPaise": 1296,
+      "discountPaise": 0,
+      "cashbackAppliedPaise": 0,
+      "grandTotalPaise": 12596,
+      "grandTotalFormatted": "₹125.96",
+      "paymentMethod": "UPI",
+      "paymentStatus": "FAILED",
+      "deliveryAddress": {
+        "line1": "Flat 302, Kalyani Heights",
+        "city": "Pune",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5023, "longitude": 73.8112 }
+      },
+      "estimatedDeliveryMinutes": 20,
+      "statusHistory": [
+        { "from": "CART", "to": "PLACED", "changedAt": "2026-08-01T09:00:00.000Z", "changedBy": "usr_consumer_01" },
+        { "from": "PLACED", "to": "FAILED", "changedAt": "2026-08-01T09:00:30.000Z", "changedBy": "SYSTEM", "reason": "Prescription required for Schedule H drug. No prescription uploaded." }
+      ],
+      "placedAt": "2026-08-01T09:00:00.000Z",
+      "cancelledAt": "2026-08-01T09:00:30.000Z",
+      "cancellationReason": "Prescription required for Schedule H drug. No prescription uploaded.",
+      "createdAt": "2026-08-01T08:55:00.000Z",
+      "updatedAt": "2026-08-01T09:00:30.000Z"
+    }
+  ],
+  "deliveryTrackings": [
+    {
+      "id": "del_track_001",
+      "orderId": "ord_20260803_001",
+      "runnerId": "usr_runner_04",
+      "status": "DELIVERED",
+      "pickupLocation": { "latitude": 18.5065, "longitude": 73.8045 },
+      "dropLocation": { "latitude": 18.5023, "longitude": 73.8112 },
+      "distanceKm": 2.3,
+      "estimatedTimeMinutes": 12,
+      "currentLocation": { "latitude": 18.5023, "longitude": 73.8112 },
+      "gpsTrail": [
+        { "latitude": 18.5065, "longitude": 73.8045, "speedKmh": 0, "heading": 0, "accuracyMeters": 5, "batteryPercent": 78, "capturedAt": "2026-08-03T18:50:00.000Z" },
+        { "latitude": 18.5060, "longitude": 73.8055, "speedKmh": 22, "heading": 135, "accuracyMeters": 8, "batteryPercent": 77, "capturedAt": "2026-08-03T18:51:00.000Z" },
+        { "latitude": 18.5055, "longitude": 73.8065, "speedKmh": 28, "heading": 140, "accuracyMeters": 6, "batteryPercent": 77, "capturedAt": "2026-08-03T18:52:00.000Z" },
+        { "latitude": 18.5048, "longitude": 73.8078, "speedKmh": 32, "heading": 150, "accuracyMeters": 5, "batteryPercent": 76, "capturedAt": "2026-08-03T18:53:00.000Z" },
+        { "latitude": 18.5040, "longitude": 73.8090, "speedKmh": 25, "heading": 145, "accuracyMeters": 7, "batteryPercent": 76, "capturedAt": "2026-08-03T18:54:00.000Z" },
+        { "latitude": 18.5035, "longitude": 73.8098, "speedKmh": 18, "heading": 130, "accuracyMeters": 5, "batteryPercent": 75, "capturedAt": "2026-08-03T18:55:00.000Z" },
+        { "latitude": 18.5028, "longitude": 73.8105, "speedKmh": 10, "heading": 120, "accuracyMeters": 5, "batteryPercent": 75, "capturedAt": "2026-08-03T18:56:00.000Z" },
+        { "latitude": 18.5023, "longitude": 73.8112, "speedKmh": 0, "heading": 0, "accuracyMeters": 4, "batteryPercent": 74, "capturedAt": "2026-08-03T18:58:00.000Z" }
+      ],
+      "deliveryOtp": "4287",
+      "otpVerified": true,
+      "deliveryPhotoUrl": "https://cdn.localsampark.in/deliveries/del_track_001_proof.webp",
+      "assignedAt": "2026-08-03T18:46:00.000Z",
+      "pickedUpAt": "2026-08-03T18:50:00.000Z",
+      "deliveredAt": "2026-08-03T18:58:00.000Z"
+    },
+    {
+      "id": "del_track_002",
+      "orderId": "ord_20260804_002",
+      "runnerId": "usr_runner_04",
+      "status": "IN_TRANSIT",
+      "pickupLocation": { "latitude": 18.5625, "longitude": 73.9175 },
+      "dropLocation": { "latitude": 18.5023, "longitude": 73.8112 },
+      "distanceKm": 12.8,
+      "estimatedTimeMinutes": 35,
+      "currentLocation": { "latitude": 18.5350, "longitude": 73.8650 },
+      "gpsTrail": [
+        { "latitude": 18.5625, "longitude": 73.9175, "speedKmh": 0, "heading": 0, "accuracyMeters": 5, "batteryPercent": 62, "capturedAt": "2026-08-04T05:05:00.000Z" },
+        { "latitude": 18.5600, "longitude": 73.9100, "speedKmh": 35, "heading": 250, "accuracyMeters": 8, "batteryPercent": 61, "capturedAt": "2026-08-04T05:07:00.000Z" },
+        { "latitude": 18.5520, "longitude": 73.8950, "speedKmh": 42, "heading": 240, "accuracyMeters": 6, "batteryPercent": 60, "capturedAt": "2026-08-04T05:10:00.000Z" },
+        { "latitude": 18.5450, "longitude": 73.8800, "speedKmh": 38, "heading": 235, "accuracyMeters": 7, "batteryPercent": 59, "capturedAt": "2026-08-04T05:15:00.000Z" },
+        { "latitude": 18.5350, "longitude": 73.8650, "speedKmh": 30, "heading": 230, "accuracyMeters": 10, "batteryPercent": 58, "capturedAt": "2026-08-04T05:20:00.000Z" }
+      ],
+      "deliveryOtp": "7391",
+      "otpVerified": false,
+      "assignedAt": "2026-08-04T05:02:00.000Z",
+      "pickedUpAt": "2026-08-04T05:05:00.000Z"
+    }
+  ],
+  "auditLog": [
+    { "id": "audit_001", "action": "USER_LOGIN", "actorId": "usr_super_admin_01", "actorRole": "SUPER_ADMIN", "description": "Admin login from web dashboard", "ipAddress": "10.0.0.1", "userAgent": "Chrome/126.0 Windows", "createdAt": "2026-08-04T05:30:00.000Z" },
+    { "id": "audit_002", "action": "KYC_REJECTED", "actorId": "usr_super_admin_01", "actorRole": "SUPER_ADMIN", "targetId": "usr_suspended_merchant_01", "targetType": "USER", "description": "KYC rejected: Aadhaar document appears tampered. Face mismatch with selfie.", "ipAddress": "10.0.0.1", "createdAt": "2026-07-20T14:00:00.000Z" },
+    { "id": "audit_003", "action": "ACCOUNT_SUSPENDED", "actorId": "usr_super_admin_01", "actorRole": "SUPER_ADMIN", "targetId": "usr_suspended_merchant_01", "targetType": "USER", "description": "Account suspended pending fraud investigation FRAUD-2026-0042.", "ipAddress": "10.0.0.1", "createdAt": "2026-07-20T14:05:00.000Z" },
+    { "id": "audit_004", "action": "FRAUD_FLAGGED", "actorId": "SYSTEM", "actorRole": "SYSTEM", "targetId": "usr_suspended_merchant_01", "targetType": "USER", "description": "Auto-fraud detection: GST number mismatch + document tampering score 0.92.", "metadata": { "fraudScore": 0.92, "signals": ["gst_mismatch", "doc_tamper", "ip_anomaly"] }, "ipAddress": "0.0.0.0", "createdAt": "2026-07-20T13:55:00.000Z" },
+    { "id": "audit_005", "action": "ORDER_PLACED", "actorId": "usr_consumer_01", "actorRole": "CONSUMER", "targetId": "ord_20260803_001", "targetType": "ORDER", "description": "Order placed: 3 items from Patil Kirana Store. Total: ₹853.30", "ipAddress": "103.21.58.92", "createdAt": "2026-08-03T18:30:00.000Z" },
+    { "id": "audit_006", "action": "PAYOUT_FAILED", "actorId": "SYSTEM", "actorRole": "SYSTEM", "targetId": "pay_runner_04_failed", "targetType": "PAYOUT", "description": "UPI payout ₹5,000 failed for usr_runner_04. Error: GATEWAY_TIMEOUT U69.", "ipAddress": "0.0.0.0", "createdAt": "2026-08-02T18:28:30.000Z" },
+    { "id": "audit_007", "action": "ZONE_STATUS_CHANGED", "actorId": "usr_super_admin_01", "actorRole": "SUPER_ADMIN", "targetId": "zone_deccan_decommissioned", "targetType": "ZONE", "description": "Zone status: ACTIVE → DECOMMISSIONED. Merged into zone_shivajinagar.", "ipAddress": "10.0.0.1", "createdAt": "2026-06-01T10:00:00.000Z" },
+    { "id": "audit_008", "action": "SOS_TRIGGERED", "actorId": "usr_consumer_01", "actorRole": "CONSUMER", "targetId": "sos_medical_01", "targetType": "SOS", "description": "Medical SOS triggered at Flat 302, Kalyani Heights. Chest pain emergency.", "ipAddress": "103.21.58.92", "geoPoint": { "latitude": 18.5023, "longitude": 73.8112 }, "createdAt": "2026-08-03T14:00:00.000Z" },
+    { "id": "audit_009", "action": "CONFIG_UPDATED", "actorId": "usr_super_admin_01", "actorRole": "SUPER_ADMIN", "targetId": "cfg_default_commission", "targetType": "CONFIG", "description": "Default commission rate changed: 15% → 12.5%", "metadata": { "oldValue": 15, "newValue": 12.5 }, "ipAddress": "10.0.0.1", "createdAt": "2026-07-01T10:00:00.000Z" },
+    { "id": "audit_010", "action": "ZONE_CREATED", "actorId": "usr_super_admin_01", "actorRole": "SUPER_ADMIN", "targetId": "zone_baramati_rural", "targetType": "ZONE", "description": "New zone created: Baramati Rural (PILOT). Offline mode enabled.", "ipAddress": "10.0.0.1", "createdAt": "2026-06-01T07:00:00.000Z" }
+  ],
+  "zoneAnalytics": [
+    {
+      "zoneId": "zone_kothrud", "zoneName": "Kothrud", "periodStart": "2026-07-01", "periodEnd": "2026-07-31",
+      "gmvPaise": 1245000000, "gmvFormatted": "₹1,24,50,000", "gmvGrowthPercent": 12.5,
+      "totalOrders": 8450, "ordersGrowthPercent": 8.2, "avgOrderValuePaise": 147337,
+      "totalUsers": 3200, "newUsersThisPeriod": 180, "activeUsersThisPeriod": 2100,
+      "totalMerchants": 45, "activeMerchants": 38,
+      "totalRunners": 12, "activeRunners": 10, "avgDeliveryMinutes": 22,
+      "commissionEarnedPaise": 155625000, "subscriptionRevenuePaise": 4499400, "deliveryFeesCollectedPaise": 16900000,
+      "avgRating": 4.5, "cancellationRate": 3.2, "returnRate": 1.1, "sosCount": 1, "ticketCount": 12
+    },
+    {
+      "zoneId": "zone_viman_nagar", "zoneName": "Viman Nagar", "periodStart": "2026-07-01", "periodEnd": "2026-07-31",
+      "gmvPaise": 980000000, "gmvFormatted": "₹98,00,000", "gmvGrowthPercent": 18.3,
+      "totalOrders": 6200, "ordersGrowthPercent": 15.1, "avgOrderValuePaise": 158064,
+      "totalUsers": 2800, "newUsersThisPeriod": 320, "activeUsersThisPeriod": 1950,
+      "totalMerchants": 38, "activeMerchants": 32,
+      "totalRunners": 8, "activeRunners": 7, "avgDeliveryMinutes": 26,
+      "commissionEarnedPaise": 122500000, "subscriptionRevenuePaise": 3599400, "deliveryFeesCollectedPaise": 12400000,
+      "avgRating": 4.3, "cancellationRate": 4.1, "returnRate": 1.8, "sosCount": 0, "ticketCount": 8
+    },
+    {
+      "zoneId": "zone_hadapsar", "zoneName": "Hadapsar", "periodStart": "2026-07-01", "periodEnd": "2026-07-31",
+      "gmvPaise": 756000000, "gmvFormatted": "₹75,60,000", "gmvGrowthPercent": 6.8,
+      "totalOrders": 5100, "ordersGrowthPercent": 4.5, "avgOrderValuePaise": 148235,
+      "totalUsers": 2200, "newUsersThisPeriod": 95, "activeUsersThisPeriod": 1400,
+      "totalMerchants": 32, "activeMerchants": 24,
+      "totalRunners": 6, "activeRunners": 5, "avgDeliveryMinutes": 28,
+      "commissionEarnedPaise": 94500000, "subscriptionRevenuePaise": 2699400, "deliveryFeesCollectedPaise": 10200000,
+      "avgRating": 4.1, "cancellationRate": 5.5, "returnRate": 2.3, "sosCount": 0, "ticketCount": 15
+    },
+    {
+      "zoneId": "zone_shivajinagar", "zoneName": "Shivajinagar", "periodStart": "2026-07-01", "periodEnd": "2026-07-31",
+      "gmvPaise": 567000000, "gmvFormatted": "₹56,70,000", "gmvGrowthPercent": 9.1,
+      "totalOrders": 3800, "ordersGrowthPercent": 7.3, "avgOrderValuePaise": 149210,
+      "totalUsers": 1800, "newUsersThisPeriod": 110, "activeUsersThisPeriod": 1200,
+      "totalMerchants": 28, "activeMerchants": 22,
+      "totalRunners": 5, "activeRunners": 4, "avgDeliveryMinutes": 20,
+      "commissionEarnedPaise": 70875000, "subscriptionRevenuePaise": 1799400, "deliveryFeesCollectedPaise": 7600000,
+      "avgRating": 4.4, "cancellationRate": 3.8, "returnRate": 1.5, "sosCount": 1, "ticketCount": 6
+    },
+    {
+      "zoneId": "zone_baramati_rural", "zoneName": "Baramati Rural (PILOT)", "periodStart": "2026-07-01", "periodEnd": "2026-07-31",
+      "gmvPaise": 12500000, "gmvFormatted": "₹1,25,000", "gmvGrowthPercent": 0,
+      "totalOrders": 85, "ordersGrowthPercent": 0, "avgOrderValuePaise": 147058,
+      "totalUsers": 45, "newUsersThisPeriod": 45, "activeUsersThisPeriod": 28,
+      "totalMerchants": 3, "activeMerchants": 1,
+      "totalRunners": 1, "activeRunners": 1, "avgDeliveryMinutes": 55,
+      "commissionEarnedPaise": 1562500, "subscriptionRevenuePaise": 0, "deliveryFeesCollectedPaise": 850000,
+      "avgRating": 3.8, "cancellationRate": 8.2, "returnRate": 4.7, "sosCount": 1, "ticketCount": 3
+    }
+  ],
+  "systemConfig": [
+    { "key": "cfg_default_commission", "value": 12.5, "category": "finance", "description": "Default platform commission percentage on orders", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-07-01T10:00:00.000Z" },
+    { "key": "cfg_max_delivery_radius_km", "value": 15, "category": "operations", "description": "Maximum delivery radius in km from shop location", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-01-01T10:00:00.000Z" },
+    { "key": "cfg_sos_auto_police_notify", "value": true, "category": "safety", "description": "Automatically notify police for CRIME and DOMESTIC_VIOLENCE SOS types", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-03-15T10:00:00.000Z" },
+    { "key": "cfg_maintenance_mode", "value": false, "category": "system", "description": "Global maintenance mode flag — disables all consumer-facing features", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-08-01T02:00:00.000Z" },
+    { "key": "cfg_min_payout_paise", "value": 50000, "category": "finance", "description": "Minimum payout threshold in paise (₹500)", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-01-01T10:00:00.000Z" },
+    { "key": "cfg_surge_multiplier_max", "value": 2.5, "category": "pricing", "description": "Maximum surge price multiplier during peak hours/bad weather", "requiredRole": "FRANCHISE_PARTNER", "lastModifiedBy": "usr_franchise_01", "lastModifiedAt": "2026-06-15T10:00:00.000Z" },
+    { "key": "cfg_offline_sync_interval_ms", "value": 30000, "category": "mobile", "description": "Offline data sync interval in milliseconds for rural zones", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-06-01T10:00:00.000Z" },
+    { "key": "cfg_ar_tryon_enabled", "value": true, "category": "features", "description": "Global toggle for AR Virtual Try-On feature", "requiredRole": "SUPER_ADMIN", "lastModifiedBy": "usr_super_admin_01", "lastModifiedAt": "2026-05-01T10:00:00.000Z" }
+  ]
+}

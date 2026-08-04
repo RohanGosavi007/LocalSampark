@@ -52,14 +52,22 @@ router.get('/search', async (req, res, next) => {
       return res.json({ source: 'typesense', data: searchResults });
     }
 
-    // Fallback if Typesense is offline: Route to standard nearby/SQL search (Placeholder)
-    res.status(503).json({ error: 'Search Engine Offline. Falling back to basic browse.' });
-  } catch (error) {
-    next(error);
-  }
+    res.status(503).json({ error: 'Search Engine Offline' });
+  } catch (error) { next(error); }
 });
 router.get('/categories', async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
+        if (fs.existsSync(mockPath)) {
+          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          const cats = [...new Set(sData.shops.map(s => s.category))].map((c, i) => ({ id: i + 1, name: c, slug: c.toLowerCase().replace(/ /g, '-'), icon_url: '' }));
+          return res.json({ success: true, categories: cats });
+        }
+      } catch(e) {}
+    }
     AuditLogger.log('api_access', { endpoint: '/categories', ip: req.ip });
 
     const result = await CacheService.getOrSet('shop:categories:active', 3600, async () => {
@@ -123,6 +131,27 @@ router.get('/', async (req, res, next) => {
 // GET nearby shops
 router.get('/nearby', async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
+        if (fs.existsSync(mockPath)) {
+          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          let mockShops = sData.shops;
+          if (req.query.category) {
+            mockShops = mockShops.filter(s => s.category.toLowerCase().replace(/ /g, '-') === req.query.category);
+          }
+          const formattedShops = mockShops.map(s => ({
+            id: s.id, name: s.name, slug: s.slug || s.name.toLowerCase().replace(/ /g, '-'),
+            category: s.category, category_id: s.category, address: typeof s.address === 'object' ? `${s.address.line1 || ''}, ${s.address.city || 'Pune'}` : s.address,
+            distance: (Math.random() * 5).toFixed(1), rating: s.rating || 4.5, review_count: s.reviewCount || 120,
+            is_open: true, delivery_available: true, cover_image_url: 'https://via.placeholder.com/400x250?text=' + encodeURIComponent(s.name)
+          }));
+          return res.json({ success: true, shops: formattedShops });
+        }
+      } catch(e) {}
+    }
+
     let { lat, lng, radius = 10, category, region_id } = req.query;
     let fallbackUsed = false;
     

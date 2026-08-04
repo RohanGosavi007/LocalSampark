@@ -1,0 +1,131 @@
+{
+  "_meta": {
+    "phase": 2,
+    "version": "1.0.0",
+    "generatedAt": "2026-08-04T06:00:00.000Z",
+    "description": "Weekly time-slot scheduling matrices for service providers. Shows slot-level granularity with BOOKED, AVAILABLE, BREAK, BUFFER, and EMERGENCY_HOLD states.",
+    "crossReferences": {
+      "users": "seeds/users.json",
+      "serviceListings": "seeds/catalogs_services.json"
+    }
+  },
+  "weeklySchedules": [
+    {
+      "providerId": "usr_service_provider_01",
+      "providerName": "Sunita Deshpande – Electrician / Salon",
+      "weekStartDate": "2026-08-04",
+      "weekEndDate": "2026-08-10",
+      "days": [
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "MONDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": true,
+          "slots": [
+            { "slotId": "slot_sp01_mon_0900", "startTime": "09:00", "endTime": "10:00", "status": "BOOKED", "bookingId": "bkg_20260804_001", "consumerName": "Priya Kulkarni", "serviceLocation": { "latitude": 18.5023, "longitude": 73.8112 } },
+            { "slotId": "slot_sp01_mon_1000", "startTime": "10:00", "endTime": "10:15", "status": "BUFFER", "travelTimeFromPreviousMinutes": 12 },
+            { "slotId": "slot_sp01_mon_1015", "startTime": "10:15", "endTime": "11:30", "status": "BOOKED", "bookingId": "bkg_20260804_002", "consumerName": "Meera Deshpande", "serviceLocation": { "latitude": 18.5028, "longitude": 73.8108 } },
+            { "slotId": "slot_sp01_mon_1130", "startTime": "11:30", "endTime": "12:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_mon_1200", "startTime": "12:00", "endTime": "13:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_mon_1300", "startTime": "13:00", "endTime": "15:00", "status": "BREAK" },
+            { "slotId": "slot_sp01_mon_1500", "startTime": "15:00", "endTime": "16:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_mon_1600", "startTime": "16:00", "endTime": "17:30", "status": "BOOKED", "bookingId": "bkg_20260804_003", "consumerName": "Rahul Thorat", "serviceLocation": { "latitude": 18.5290, "longitude": 73.8470 } },
+            { "slotId": "slot_sp01_mon_1730", "startTime": "17:30", "endTime": "18:00", "status": "BUFFER", "travelTimeFromPreviousMinutes": 25 },
+            { "slotId": "slot_sp01_mon_1800", "startTime": "18:00", "endTime": "19:00", "status": "AVAILABLE" }
+          ]
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "TUESDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": true,
+          "slots": [
+            { "slotId": "slot_sp01_tue_0900", "startTime": "09:00", "endTime": "10:30", "status": "BOOKED", "bookingId": "bkg_20260805_001", "consumerName": "Sneha Joshi", "serviceLocation": { "latitude": 18.5280, "longitude": 73.8400 } },
+            { "slotId": "slot_sp01_tue_1030", "startTime": "10:30", "endTime": "11:00", "status": "BUFFER", "travelTimeFromPreviousMinutes": 20 },
+            { "slotId": "slot_sp01_tue_1100", "startTime": "11:00", "endTime": "12:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_tue_1200", "startTime": "12:00", "endTime": "13:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_tue_1300", "startTime": "13:00", "endTime": "15:00", "status": "BREAK" },
+            { "slotId": "slot_sp01_tue_1500", "startTime": "15:00", "endTime": "16:00", "status": "EMERGENCY_HOLD" },
+            { "slotId": "slot_sp01_tue_1600", "startTime": "16:00", "endTime": "17:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_tue_1700", "startTime": "17:00", "endTime": "18:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_tue_1800", "startTime": "18:00", "endTime": "19:00", "status": "AVAILABLE" }
+          ]
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "WEDNESDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": true,
+          "slots": [
+            { "slotId": "slot_sp01_wed_0900", "startTime": "09:00", "endTime": "10:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1000", "startTime": "10:00", "endTime": "11:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1100", "startTime": "11:00", "endTime": "12:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1200", "startTime": "12:00", "endTime": "13:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1300", "startTime": "13:00", "endTime": "15:00", "status": "BREAK" },
+            { "slotId": "slot_sp01_wed_1500", "startTime": "15:00", "endTime": "16:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1600", "startTime": "16:00", "endTime": "17:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1700", "startTime": "17:00", "endTime": "18:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_wed_1800", "startTime": "18:00", "endTime": "19:00", "status": "AVAILABLE" }
+          ]
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "THURSDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": true,
+          "slots": [
+            { "slotId": "slot_sp01_thu_0900", "startTime": "09:00", "endTime": "11:00", "status": "BOOKED", "bookingId": "bkg_20260807_001", "consumerName": "Amit Shinde", "serviceLocation": { "latitude": 18.5050, "longitude": 73.9350 } },
+            { "slotId": "slot_sp01_thu_1100", "startTime": "11:00", "endTime": "11:30", "status": "BUFFER", "travelTimeFromPreviousMinutes": 30 },
+            { "slotId": "slot_sp01_thu_1130", "startTime": "11:30", "endTime": "13:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_thu_1300", "startTime": "13:00", "endTime": "15:00", "status": "BREAK" },
+            { "slotId": "slot_sp01_thu_1500", "startTime": "15:00", "endTime": "16:30", "status": "BOOKED", "bookingId": "bkg_20260807_002", "consumerName": "Priya Kulkarni", "serviceLocation": { "latitude": 18.5023, "longitude": 73.8112 } },
+            { "slotId": "slot_sp01_thu_1630", "startTime": "16:30", "endTime": "17:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_thu_1700", "startTime": "17:00", "endTime": "18:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_thu_1800", "startTime": "18:00", "endTime": "19:00", "status": "AVAILABLE" }
+          ]
+        },
+        {
+          "date": "2026-08-08",
+          "dayOfWeek": "FRIDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": true,
+          "slots": [
+            { "slotId": "slot_sp01_fri_0900", "startTime": "09:00", "endTime": "10:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_fri_1000", "startTime": "10:00", "endTime": "11:00", "status": "BLOCKED" },
+            { "slotId": "slot_sp01_fri_1100", "startTime": "11:00", "endTime": "12:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_fri_1200", "startTime": "12:00", "endTime": "13:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_fri_1300", "startTime": "13:00", "endTime": "15:00", "status": "BREAK" },
+            { "slotId": "slot_sp01_fri_1500", "startTime": "15:00", "endTime": "16:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_fri_1600", "startTime": "16:00", "endTime": "17:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_fri_1700", "startTime": "17:00", "endTime": "18:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_fri_1800", "startTime": "18:00", "endTime": "19:00", "status": "AVAILABLE" }
+          ],
+          "dayNotes": "10:00 slot blocked — personal appointment"
+        },
+        {
+          "date": "2026-08-09",
+          "dayOfWeek": "SATURDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": true,
+          "slots": [
+            { "slotId": "slot_sp01_sat_1000", "startTime": "10:00", "endTime": "11:00", "status": "BOOKED", "bookingId": "bkg_20260809_001", "consumerName": "Anita Bhosle", "serviceLocation": { "latitude": 18.5995, "longitude": 73.7620 } },
+            { "slotId": "slot_sp01_sat_1100", "startTime": "11:00", "endTime": "12:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_sat_1200", "startTime": "12:00", "endTime": "13:00", "status": "AVAILABLE" },
+            { "slotId": "slot_sp01_sat_1300", "startTime": "13:00", "endTime": "14:00", "status": "AVAILABLE" }
+          ]
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "SUNDAY",
+          "providerId": "usr_service_provider_01",
+          "isWorkingDay": false,
+          "slots": [],
+          "dayNotes": "Weekly off"
+        }
+      ],
+      "totalAvailableSlots": 27,
+      "totalBookedSlots": 7,
+      "utilizationPercent": 26
+    }
+  ]
+}

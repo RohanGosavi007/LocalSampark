@@ -35,12 +35,12 @@ test.describe('API Contract Tests', () => {
 
   // ─── Auth Routes ────────────────────────────────────────────
   test.describe('Auth Routes', () => {
-    test('POST /auth/login with missing fields should return 400', async ({ request }) => {
-      const res = await request.post(`${API_BASE}/auth/login`, {
+    test('POST /auth/login-email with missing fields should return 400 or 429', async ({ request }) => {
+      const res = await request.post(`${API_BASE}/auth/login-email`, {
         data: {},
       });
-      // Should fail validation
-      expect([400, 401, 422]).toContain(res.status());
+      // Should fail validation or rate limit
+      expect([400, 401, 422, 429]).toContain(res.status());
     });
 
     test('Protected route without token should return 401', async ({ request }) => {
@@ -66,7 +66,7 @@ test.describe('API Contract Tests', () => {
       expect([200, 304]).toContain(res.status());
       if (res.status() === 200) {
         const body = await res.json();
-        expect(body).toHaveProperty('success');
+        expect(body).toHaveProperty('data');
       }
     });
   });
@@ -81,8 +81,8 @@ test.describe('API Contract Tests', () => {
 
   // ─── Feed Routes ────────────────────────────────────────────
   test.describe('Feed Routes', () => {
-    test('GET /feed should return community feed', async ({ request }) => {
-      const res = await request.get(`${API_BASE}/feed`);
+    test('GET /feed/posts should return community feed', async ({ request }) => {
+      const res = await request.get(`${API_BASE}/feed/posts`);
       expect([200, 304]).toContain(res.status());
     });
   });

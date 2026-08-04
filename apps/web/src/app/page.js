@@ -92,7 +92,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30" ref={containerRef}>
+    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30 overflow-x-hidden" ref={containerRef}>
       <Header />
 
       <main className="flex-1">

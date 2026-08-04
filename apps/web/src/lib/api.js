@@ -5,8 +5,9 @@
  * All pages and components should import from here instead of hardcoding URLs.
  */
 
-// Base API URL — uses environment variable in production, falls back to localhost for dev
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localsampark-api.onrender.com';
+// Base API URL — uses environment variable, falls back to localhost:5000 in dev, or render in prod
+const isDev = process.env.NODE_ENV !== 'production';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || (isDev ? 'http://localhost:5000' : 'https://localsampark-api.onrender.com');
 export const API_BASE = `${API_URL}/api/v1`;
 
 /**

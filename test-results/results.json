@@ -2,12 +2,12 @@
   "config": {
     "argv": [
       "C:\\Program Files\\nodejs\\node.exe",
-      "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\node_modules\\@playwright\\test\\cli.js",
+      "E:\\localsampark 03-08-2026\\localsampark 03-08-2026\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "--project=api"
+      "tests/e2e/api/contract.spec.js"
     ],
-    "configFile": "C:\\localsampark 24-07-2026\\localsampark 24-07-2026\\localsampark 23-07-2026\\localsampark 23-07-2026\\playwright.config.js",
-    "rootDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e",
+    "configFile": "E:\\localsampark 03-08-2026\\localsampark 03-08-2026\\playwright.config.js",
+    "rootDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": true,
@@ -17,17 +17,21 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 2
+    },
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "web-chromium",
         "name": "web-chromium",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/web",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/web",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -35,13 +39,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "web-firefox",
         "name": "web-firefox",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/web",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/web",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -49,13 +55,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "web-webkit",
         "name": "web-webkit",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/web",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/web",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -63,13 +71,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "admin-chromium",
         "name": "admin-chromium",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/admin",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/admin",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -77,13 +87,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "mobile-chrome",
         "name": "mobile-chrome",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/web",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/web",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -91,13 +103,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "mobile-safari",
         "name": "mobile-safari",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/web",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/web",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -105,13 +119,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "visual",
         "name": "visual",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/visual",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/visual",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -119,13 +135,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "api",
         "name": "api",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/api",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/api",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -133,13 +151,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/test-results",
+        "outputDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 2
+        },
         "id": "a11y",
         "name": "a11y",
-        "testDir": "C:/localsampark 24-07-2026/localsampark 24-07-2026/localsampark 23-07-2026/localsampark 23-07-2026/tests/e2e/accessibility",
+        "testDir": "E:/localsampark 03-08-2026/localsampark 03-08-2026/tests/e2e/accessibility",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -176,20 +196,582 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.61.1",
-    "workers": 4,
+    "workers": 2,
     "webServer": null
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: Process from config.webServer exited early.",
-      "stack": "Error: Process from config.webServer exited early."
+      "title": "api\\contract.spec.js",
+      "file": "api/contract.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "API Contract Tests",
+          "file": "api/contract.spec.js",
+          "line": 12,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Health & Metrics",
+              "file": "api/contract.spec.js",
+              "line": 15,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "GET /health should return system status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 89,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.594Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-ed295cecce8cff849cf9",
+                  "file": "api/contract.spec.js",
+                  "line": 16,
+                  "column": 5
+                },
+                {
+                  "title": "GET /metrics should return Prometheus-format metrics",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 165,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.637Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-afc7e6b1e27f33b145e7",
+                  "file": "api/contract.spec.js",
+                  "line": 27,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Auth Routes",
+              "file": "api/contract.spec.js",
+              "line": 37,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "POST /auth/login-email with missing fields should return 400 or 429",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 18,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.774Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-c75e07678354cd71bf87",
+                  "file": "api/contract.spec.js",
+                  "line": 38,
+                  "column": 5
+                },
+                {
+                  "title": "Protected route without token should return 401",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 28,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.822Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-65e010823c875940c916",
+                  "file": "api/contract.spec.js",
+                  "line": 46,
+                  "column": 5
+                },
+                {
+                  "title": "Protected route with invalid token should return 401",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 16,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.881Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-c82ad58435a35badbd2b",
+                  "file": "api/contract.spec.js",
+                  "line": 53,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Shop Routes",
+              "file": "api/contract.spec.js",
+              "line": 62,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "GET /shops should return a list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 23,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.891Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-8c33763e7b4019b5b4d6",
+                  "file": "api/contract.spec.js",
+                  "line": 63,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Zone Routes",
+              "file": "api/contract.spec.js",
+              "line": 75,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "GET /zones should return zones list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 16,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.929Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-21977a9e22469391788a",
+                  "file": "api/contract.spec.js",
+                  "line": 76,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Feed Routes",
+              "file": "api/contract.spec.js",
+              "line": 83,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "GET /feed/posts should return community feed",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 37,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:19.946Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-e9c2ebce4c75b8c7447b",
+                  "file": "api/contract.spec.js",
+                  "line": 84,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Admin Routes",
+              "file": "api/contract.spec.js",
+              "line": 91,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "GET /admin/dashboard without admin token should return 401/403",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 15,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:20.000Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-8b531dd297f2cbbcfaab",
+                  "file": "api/contract.spec.js",
+                  "line": 92,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Payment Webhooks",
+              "file": "api/contract.spec.js",
+              "line": 99,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "POST /payments/webhook/razorpay with invalid signature should return 400",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 17,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:20.015Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-a79c33a9a761be205754",
+                  "file": "api/contract.spec.js",
+                  "line": 100,
+                  "column": 5
+                },
+                {
+                  "title": "POST /payments/webhook/unknown-provider should handle gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 16,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:20.062Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-72bd2e292036e726c002",
+                  "file": "api/contract.spec.js",
+                  "line": 111,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Rate Limiting",
+              "file": "api/contract.spec.js",
+              "line": 122,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should enforce rate limits on auth endpoints",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 122,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:20.067Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-466f6d86114b2cd30ea5",
+                  "file": "api/contract.spec.js",
+                  "line": 123,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Error Handling",
+              "file": "api/contract.spec.js",
+              "line": 142,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should return 404 for unknown API routes",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 14,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:20.166Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-c3f2acbdf2a9d01b7a78",
+                  "file": "api/contract.spec.js",
+                  "line": 143,
+                  "column": 5
+                },
+                {
+                  "title": "should return JSON error for unknown routes",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "api",
+                      "projectName": "api",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 17,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-08-04T05:30:20.207Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "b7d722044703359ef7e1-057f21889be206396277",
+                  "file": "api/contract.spec.js",
+                  "line": 148,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2026-07-25T04:11:03.499Z",
-    "duration": 16291.064,
-    "expected": 0,
+    "startTime": "2026-08-04T05:30:18.391Z",
+    "duration": 1908.9599999999998,
+    "expected": 14,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -1,0 +1,1063 @@
+{
+  "_meta": {
+    "phase": 1,
+    "version": "1.0.0",
+    "generatedAt": "2026-08-04T05:30:00.000Z",
+    "description": "10 deeply populated user entities across all roles. 15% edge-case entities included (suspended, unverified, banned, zero-balance, legacy-migrated).",
+    "idPrefix": "usr_",
+    "crossReferences": {
+      "territories": "seeds/territories.json",
+      "wallets": "seeds/wallets.json"
+    }
+  },
+  "users": [
+    {
+      "id": "usr_consumer_01",
+      "displayName": "Priya Kulkarni",
+      "firstName": "Priya",
+      "lastName": "Kulkarni",
+      "phoneNumber": "+919876543210",
+      "email": "priya.kulkarni@gmail.com",
+      "gender": "FEMALE",
+      "dateOfBirth": "1994-06-15",
+      "preferredLanguage": "en",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_consumer_01.webp",
+      "roles": ["CONSUMER"],
+      "primaryRole": "CONSUMER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "234567891234",
+          "maskedNumber": "XXXX XXXX 1234",
+          "isVerified": true,
+          "verifiedAt": "2025-04-10T10:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_consumer_01_aadhaar.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP", "GOOGLE_OAUTH"],
+      "lastLoginAt": "2026-08-04T04:15:00.000Z",
+      "lastLoginIp": "103.21.58.92",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Flat 302, Kalyani Heights",
+        "line2": "Near Dahanukar Colony",
+        "landmark": "Opposite Cummins College",
+        "ward": "Karve Nagar",
+        "city": "Pune",
+        "taluka": "Haveli",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5023, "longitude": 73.8112, "accuracyMeters": 12 }
+      },
+      "homeZoneId": "zone_kothrud",
+      "homeTerritoryId": "dist_pune",
+      "consumerProfile": {
+        "preferredCategories": ["grocery", "pharmacy", "restaurant"],
+        "defaultDeliveryAddress": {
+          "line1": "Flat 302, Kalyani Heights",
+          "line2": "Near Dahanukar Colony",
+          "landmark": "Opposite Cummins College",
+          "ward": "Karve Nagar",
+          "city": "Pune",
+          "taluka": "Haveli",
+          "district": "Pune",
+          "state": "Maharashtra",
+          "pincode": "411038",
+          "geoPoint": { "latitude": 18.5023, "longitude": 73.8112 }
+        },
+        "loyaltyTier": "GOLD",
+        "totalOrdersPlaced": 142,
+        "totalSpentPaise": 8756000,
+        "referralCode": "PRIYA2025K",
+        "referredByUserId": null
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_priya_01",
+          "platform": "ANDROID",
+          "osVersion": "14",
+          "appVersion": "6.2.1",
+          "fcmToken": "dKx9z...mock_fcm_token_priya",
+          "lastPushDeliveredAt": "2026-08-04T03:30:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": false,
+        "emailEnabled": true,
+        "whatsappEnabled": true,
+        "quietHoursStart": "23:00",
+        "quietHoursEnd": "07:00",
+        "mutedCategories": ["promotions"]
+      },
+      "createdAt": "2025-03-20T14:00:00.000Z",
+      "updatedAt": "2026-08-04T04:15:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_shop_owner_01",
+      "displayName": "Rajesh Patil - Patil Kirana Store",
+      "firstName": "Rajesh",
+      "lastName": "Patil",
+      "phoneNumber": "+919823456789",
+      "email": "rajesh.patil.kirana@gmail.com",
+      "gender": "MALE",
+      "dateOfBirth": "1982-11-22",
+      "preferredLanguage": "mr",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_shop_owner_01.webp",
+      "roles": ["SHOP_OWNER", "CONSUMER"],
+      "primaryRole": "SHOP_OWNER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "987654321012",
+          "maskedNumber": "XXXX XXXX 1012",
+          "isVerified": true,
+          "verifiedAt": "2025-02-15T11:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_shop_owner_01_aadhaar.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "GST_CERTIFICATE",
+          "documentNumber": "27AABCP1234C1ZV",
+          "maskedNumber": "27AABCPXXXXC1ZV",
+          "isVerified": true,
+          "verifiedAt": "2025-02-20T14:30:00.000Z",
+          "expiresAt": "2028-03-31T23:59:59.000Z",
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_shop_owner_01_gst.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "SHOP_LICENSE",
+          "documentNumber": "PMC/SL/2024/4567",
+          "maskedNumber": "PMC/SL/2024/XXXX",
+          "isVerified": true,
+          "verifiedAt": "2025-02-22T09:00:00.000Z",
+          "expiresAt": "2027-12-31T23:59:59.000Z",
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_shop_owner_01_license.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP"],
+      "lastLoginAt": "2026-08-04T05:00:00.000Z",
+      "lastLoginIp": "103.21.58.104",
+      "twoFactorEnabled": true,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Shop No. 7, Ground Floor",
+        "line2": "Mahatma Society, Kothrud",
+        "landmark": "Near MIT College Gate",
+        "ward": "Paud Road",
+        "city": "Pune",
+        "taluka": "Haveli",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5065, "longitude": 73.8045, "accuracyMeters": 5 }
+      },
+      "homeZoneId": "zone_kothrud",
+      "homeTerritoryId": "dist_pune",
+      "shopOwnerProfile": {
+        "shopIds": ["shop_patil_kirana_01"],
+        "gstNumber": "27AABCP1234C1ZV",
+        "fssaiNumber": "11525038000123",
+        "businessType": "SOLE_PROPRIETOR",
+        "bankAccount": {
+          "accountHolderName": "Rajesh Vilas Patil",
+          "bankName": "Bank of Maharashtra",
+          "ifscCode": "MAHB0000123",
+          "maskedAccountNumber": "XXXX1234",
+          "accountType": "CURRENT",
+          "isVerified": true,
+          "upiId": "rajesh.patil@bom"
+        },
+        "commissionTier": "GOLD",
+        "monthlyGmvPaise": 234500000
+      },
+      "consumerProfile": {
+        "preferredCategories": ["electronics", "office-supplies"],
+        "loyaltyTier": "SILVER",
+        "totalOrdersPlaced": 18,
+        "totalSpentPaise": 1250000,
+        "referralCode": "RAJESHP2025",
+        "referredByUserId": null
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_rajesh_01",
+          "platform": "ANDROID",
+          "osVersion": "13",
+          "appVersion": "6.2.0",
+          "fcmToken": "cPq7a...mock_fcm_token_rajesh",
+          "lastPushDeliveredAt": "2026-08-04T04:50:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": false,
+        "whatsappEnabled": true,
+        "mutedCategories": []
+      },
+      "createdAt": "2025-02-10T10:00:00.000Z",
+      "updatedAt": "2026-08-04T05:00:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_runner_04",
+      "displayName": "Vikram Jadhav",
+      "firstName": "Vikram",
+      "lastName": "Jadhav",
+      "phoneNumber": "+919765432109",
+      "email": null,
+      "gender": "MALE",
+      "dateOfBirth": "1998-03-08",
+      "preferredLanguage": "mr",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_runner_04.webp",
+      "roles": ["DELIVERY_RUNNER"],
+      "primaryRole": "DELIVERY_RUNNER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "456789012345",
+          "maskedNumber": "XXXX XXXX 2345",
+          "isVerified": true,
+          "verifiedAt": "2025-05-01T12:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_runner_04_aadhaar.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "DRIVING_LICENSE",
+          "documentNumber": "MH12-2020-0045678",
+          "maskedNumber": "MH12-XXXX-XXXX678",
+          "isVerified": true,
+          "verifiedAt": "2025-05-02T10:00:00.000Z",
+          "expiresAt": "2030-03-07T23:59:59.000Z",
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_runner_04_dl.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP"],
+      "lastLoginAt": "2026-08-04T05:25:00.000Z",
+      "lastLoginIp": "49.36.12.88",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Room 12, Jadhav Wada",
+        "line2": "Sinhagad Road, Vadgaon Budruk",
+        "landmark": "Near Rajaram Bridge",
+        "city": "Pune",
+        "taluka": "Haveli",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411041",
+        "geoPoint": { "latitude": 18.4850, "longitude": 73.8200 }
+      },
+      "homeZoneId": "zone_kothrud",
+      "homeTerritoryId": "dist_pune",
+      "deliveryRunnerProfile": {
+        "vehicleType": "MOTORCYCLE",
+        "vehicleRegistration": "MH12 AB 4567",
+        "currentZoneId": "zone_viman_nagar",
+        "isOnline": true,
+        "lastKnownLocation": { "latitude": 18.5691, "longitude": 73.9155, "accuracyMeters": 8, "capturedAt": "2026-08-04T05:29:30.000Z" },
+        "totalDeliveries": 1847,
+        "avgRating": 4.7,
+        "safetyTrainingCompleted": true,
+        "equipmentDepositPaise": 200000
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_vikram_01",
+          "platform": "ANDROID",
+          "osVersion": "12",
+          "appVersion": "6.2.1",
+          "fcmToken": "eRt3k...mock_fcm_token_vikram",
+          "lastPushDeliveredAt": "2026-08-04T05:20:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": false,
+        "whatsappEnabled": false,
+        "mutedCategories": []
+      },
+      "createdAt": "2025-04-25T08:00:00.000Z",
+      "updatedAt": "2026-08-04T05:29:30.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_service_provider_01",
+      "displayName": "Sunita Deshpande – Electrician",
+      "firstName": "Sunita",
+      "lastName": "Deshpande",
+      "phoneNumber": "+919112233445",
+      "email": "sunita.electrician@localsampark.in",
+      "gender": "FEMALE",
+      "dateOfBirth": "1990-01-25",
+      "preferredLanguage": "mr",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_service_provider_01.webp",
+      "roles": ["SERVICE_PROVIDER", "CONSUMER"],
+      "primaryRole": "SERVICE_PROVIDER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "567890123456",
+          "maskedNumber": "XXXX XXXX 3456",
+          "isVerified": true,
+          "verifiedAt": "2025-06-10T09:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_sp_01_aadhaar.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP"],
+      "lastLoginAt": "2026-08-03T18:30:00.000Z",
+      "lastLoginIp": "103.21.58.115",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "23, Shastri Nagar",
+        "line2": null,
+        "landmark": "Behind Garware College",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411004",
+        "geoPoint": { "latitude": 18.5185, "longitude": 73.8390 }
+      },
+      "homeZoneId": "zone_shivajinagar",
+      "homeTerritoryId": "dist_pune",
+      "serviceProviderProfile": {
+        "serviceCategories": ["electrical", "home-wiring", "fan-installation", "appliance-repair"],
+        "experienceYears": 8,
+        "certifications": ["ITI Electrician", "Maharashtra State Wireman License"],
+        "availabilitySlots": {
+          "monday":    [{ "startTime": "09:00", "endTime": "13:00" }, { "startTime": "15:00", "endTime": "19:00" }],
+          "tuesday":   [{ "startTime": "09:00", "endTime": "13:00" }, { "startTime": "15:00", "endTime": "19:00" }],
+          "wednesday": [{ "startTime": "09:00", "endTime": "13:00" }, { "startTime": "15:00", "endTime": "19:00" }],
+          "thursday":  [{ "startTime": "09:00", "endTime": "13:00" }, { "startTime": "15:00", "endTime": "19:00" }],
+          "friday":    [{ "startTime": "09:00", "endTime": "13:00" }, { "startTime": "15:00", "endTime": "19:00" }],
+          "saturday":  [{ "startTime": "10:00", "endTime": "14:00" }],
+          "sunday":    []
+        },
+        "avgRating": 4.8,
+        "totalJobsCompleted": 412,
+        "serviceRadiusKm": 8.0
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_sunita_01",
+          "platform": "ANDROID",
+          "osVersion": "13",
+          "appVersion": "6.1.9",
+          "fcmToken": "gHk2m...mock_fcm_token_sunita",
+          "lastPushDeliveredAt": "2026-08-03T17:45:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": false,
+        "whatsappEnabled": true,
+        "mutedCategories": []
+      },
+      "createdAt": "2025-06-05T10:00:00.000Z",
+      "updatedAt": "2026-08-03T18:30:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_field_agent_01",
+      "displayName": "Amit Shinde",
+      "firstName": "Amit",
+      "lastName": "Shinde",
+      "phoneNumber": "+919922334455",
+      "email": "amit.shinde@localsampark.in",
+      "gender": "MALE",
+      "dateOfBirth": "1995-09-14",
+      "preferredLanguage": "hi",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_field_agent_01.webp",
+      "roles": ["FIELD_AGENT"],
+      "primaryRole": "FIELD_AGENT",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "678901234567",
+          "maskedNumber": "XXXX XXXX 4567",
+          "isVerified": true,
+          "verifiedAt": "2025-07-01T10:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_fa_01_aadhaar.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "PAN",
+          "documentNumber": "ABCDS1234F",
+          "maskedNumber": "ABCDSXXXXF",
+          "isVerified": true,
+          "verifiedAt": "2025-07-01T10:30:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_fa_01_pan.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["EMAIL_PASSWORD", "PHONE_OTP"],
+      "lastLoginAt": "2026-08-04T04:00:00.000Z",
+      "lastLoginIp": "49.36.14.22",
+      "twoFactorEnabled": true,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "B-44, Shivaji Housing Society",
+        "line2": "Hadapsar Industrial Estate",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411013",
+        "geoPoint": { "latitude": 18.5050, "longitude": 73.9350 }
+      },
+      "homeZoneId": "zone_hadapsar",
+      "homeTerritoryId": "dist_pune",
+      "fieldAgentProfile": {
+        "assignedTerritoryIds": ["zone_hadapsar", "zone_viman_nagar"],
+        "onboardedMerchants": 87,
+        "monthlyTargetMerchants": 15,
+        "currentMonthOnboarded": 9,
+        "incentiveSlabId": "slab_field_gold"
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_amit_01",
+          "platform": "ANDROID",
+          "osVersion": "14",
+          "appVersion": "6.2.1",
+          "fcmToken": "hJl4n...mock_fcm_token_amit",
+          "lastPushDeliveredAt": "2026-08-04T03:55:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": false,
+        "emailEnabled": true,
+        "whatsappEnabled": true,
+        "mutedCategories": []
+      },
+      "createdAt": "2025-06-28T09:00:00.000Z",
+      "updatedAt": "2026-08-04T04:00:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_franchise_01",
+      "displayName": "Sneha Joshi – Pune West Franchise",
+      "firstName": "Sneha",
+      "lastName": "Joshi",
+      "phoneNumber": "+919988776655",
+      "email": "sneha.joshi@localsampark.in",
+      "gender": "FEMALE",
+      "dateOfBirth": "1985-12-03",
+      "preferredLanguage": "en",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_franchise_01.webp",
+      "roles": ["FRANCHISE_PARTNER", "CONSUMER"],
+      "primaryRole": "FRANCHISE_PARTNER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "789012345678",
+          "maskedNumber": "XXXX XXXX 5678",
+          "isVerified": true,
+          "verifiedAt": "2024-12-20T10:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_franchise_01_aadhaar.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "PAN",
+          "documentNumber": "BCDEJ5678G",
+          "maskedNumber": "BCDEJXXXXG",
+          "isVerified": true,
+          "verifiedAt": "2024-12-20T10:30:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_franchise_01_pan.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["EMAIL_PASSWORD", "GOOGLE_OAUTH"],
+      "lastLoginAt": "2026-08-04T03:00:00.000Z",
+      "lastLoginIp": "103.21.58.200",
+      "twoFactorEnabled": true,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Office 501, Panchsheel Towers",
+        "line2": "FC Road, Shivajinagar",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411004",
+        "geoPoint": { "latitude": 18.5280, "longitude": 73.8400 }
+      },
+      "homeZoneId": "zone_shivajinagar",
+      "homeTerritoryId": "dist_pune",
+      "franchisePartnerProfile": {
+        "franchiseTerritoryIds": ["zone_kothrud", "zone_shivajinagar", "zone_hadapsar", "zone_viman_nagar"],
+        "investmentTier": "PREMIUM",
+        "monthlyRevenuePaise": 1875000000,
+        "teamSize": 12,
+        "contractStartDate": "2025-01-01",
+        "contractEndDate": "2027-12-31"
+      },
+      "devices": [
+        {
+          "deviceId": "dev_web_sneha_01",
+          "platform": "WEB",
+          "osVersion": "Chrome 126",
+          "appVersion": "6.2.1",
+          "fcmToken": null,
+          "lastPushDeliveredAt": null,
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": false,
+        "smsEnabled": false,
+        "emailEnabled": true,
+        "whatsappEnabled": true,
+        "mutedCategories": []
+      },
+      "createdAt": "2024-12-15T10:00:00.000Z",
+      "updatedAt": "2026-08-04T03:00:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_super_admin_01",
+      "displayName": "Rohan Gosavi – System Admin",
+      "firstName": "Rohan",
+      "lastName": "Gosavi",
+      "phoneNumber": "+919800000001",
+      "email": "rohan@localsampark.in",
+      "gender": "MALE",
+      "dateOfBirth": "1992-07-20",
+      "preferredLanguage": "en",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_super_admin_01.webp",
+      "roles": ["SUPER_ADMIN"],
+      "primaryRole": "SUPER_ADMIN",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [],
+      "authProviders": ["EMAIL_PASSWORD", "BIOMETRIC"],
+      "lastLoginAt": "2026-08-04T05:30:00.000Z",
+      "lastLoginIp": "10.0.0.1",
+      "twoFactorEnabled": true,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "LocalSampark HQ",
+        "line2": "Baner Road",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411045",
+        "geoPoint": { "latitude": 18.5590, "longitude": 73.7790 }
+      },
+      "homeZoneId": "zone_kothrud",
+      "homeTerritoryId": "dist_pune",
+      "devices": [
+        {
+          "deviceId": "dev_web_rohan_01",
+          "platform": "WEB",
+          "osVersion": "Chrome 126",
+          "appVersion": "6.2.1",
+          "fcmToken": null,
+          "lastPushDeliveredAt": null,
+          "hasUnsyncedData": false
+        },
+        {
+          "deviceId": "dev_android_rohan_01",
+          "platform": "ANDROID",
+          "osVersion": "15",
+          "appVersion": "6.2.1",
+          "fcmToken": "mNp8q...mock_fcm_token_rohan",
+          "lastPushDeliveredAt": "2026-08-04T05:25:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": true,
+        "whatsappEnabled": true,
+        "mutedCategories": []
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2026-08-04T05:30:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_farmer_01",
+      "displayName": "Baban Kale",
+      "firstName": "Baban",
+      "lastName": "Kale",
+      "phoneNumber": "+919421567890",
+      "email": null,
+      "gender": "MALE",
+      "dateOfBirth": "1970-04-12",
+      "preferredLanguage": "mr",
+      "avatarUrl": null,
+      "roles": ["FARMER", "CONSUMER"],
+      "primaryRole": "FARMER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "DOCUMENTS_UPLOADED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "890123456789",
+          "maskedNumber": "XXXX XXXX 6789",
+          "isVerified": false,
+          "verifiedAt": null,
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_farmer_01_aadhaar.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "VOTER_ID",
+          "documentNumber": "MH/04/098/765432",
+          "maskedNumber": "MH/04/098/XXXXXX",
+          "isVerified": false,
+          "verifiedAt": null,
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_farmer_01_voter.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP"],
+      "lastLoginAt": "2026-08-02T07:00:00.000Z",
+      "lastLoginIp": "117.194.12.34",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "At Post Katewadi",
+        "line2": "Tal. Baramati",
+        "landmark": "Near Gram Panchayat Office",
+        "city": "Baramati",
+        "taluka": "Baramati",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "413102",
+        "geoPoint": { "latitude": 18.1480, "longitude": 74.5920, "accuracyMeters": 50 }
+      },
+      "homeZoneId": "zone_baramati_rural",
+      "homeTerritoryId": "dist_baramati",
+      "farmerProfile": {
+        "farmSizeAcres": 6.5,
+        "primaryCrops": ["sugarcane", "pomegranate", "onion", "soybean"],
+        "landRecordIds": ["712_brm_2024_0045"],
+        "irrigationType": "BOREWELL",
+        "soilType": "Black Cotton (Regur)",
+        "isOrganicCertified": false
+      },
+      "consumerProfile": {
+        "preferredCategories": ["seeds", "fertilizer", "farm-equipment"],
+        "loyaltyTier": "BRONZE",
+        "totalOrdersPlaced": 5,
+        "totalSpentPaise": 125000,
+        "referralCode": "BABAN2026B",
+        "referredByUserId": null
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_baban_01",
+          "platform": "ANDROID",
+          "osVersion": "11",
+          "appVersion": "6.0.3",
+          "fcmToken": "pQr5s...mock_fcm_token_baban",
+          "lastPushDeliveredAt": "2026-08-01T06:00:00.000Z",
+          "hasUnsyncedData": true
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": false,
+        "whatsappEnabled": true,
+        "quietHoursStart": "21:00",
+        "quietHoursEnd": "06:00",
+        "mutedCategories": []
+      },
+      "createdAt": "2026-06-10T07:00:00.000Z",
+      "updatedAt": "2026-08-02T07:00:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_suspended_merchant_01",
+      "displayName": "Deepak Mane – [SUSPENDED]",
+      "firstName": "Deepak",
+      "lastName": "Mane",
+      "phoneNumber": "+919555666777",
+      "email": "deepak.mane@email.com",
+      "gender": "MALE",
+      "dateOfBirth": "1988-08-30",
+      "preferredLanguage": "mr",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_suspended_merchant_01.webp",
+      "roles": ["SHOP_OWNER"],
+      "primaryRole": "SHOP_OWNER",
+      "accountStatus": "SUSPENDED",
+      "kycStatus": "REJECTED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "111222333444",
+          "maskedNumber": "XXXX XXXX 3444",
+          "isVerified": false,
+          "verifiedAt": null,
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_susp_01_aadhaar.enc",
+          "rejectionReason": "Document appears tampered. Face mismatch with selfie verification."
+        },
+        {
+          "documentType": "GST_CERTIFICATE",
+          "documentNumber": "27AABCM9999Z1ZZ",
+          "maskedNumber": "27AABCMXXXXZ1ZZ",
+          "isVerified": false,
+          "verifiedAt": null,
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_susp_01_gst.enc",
+          "rejectionReason": "GST number does not match registered entity name."
+        }
+      ],
+      "authProviders": ["PHONE_OTP"],
+      "lastLoginAt": "2026-07-15T12:00:00.000Z",
+      "lastLoginIp": "103.99.88.77",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 5,
+      "primaryAddress": {
+        "line1": "Shop 3, Market Yard",
+        "line2": "Hadapsar",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411028",
+        "geoPoint": { "latitude": 18.5010, "longitude": 73.9280 }
+      },
+      "homeZoneId": "zone_hadapsar",
+      "homeTerritoryId": "dist_pune",
+      "shopOwnerProfile": {
+        "shopIds": ["shop_mane_suspended_01"],
+        "gstNumber": "27AABCM9999Z1ZZ",
+        "fssaiNumber": null,
+        "businessType": "SOLE_PROPRIETOR",
+        "bankAccount": {
+          "accountHolderName": "Deepak Mane",
+          "bankName": "State Bank of India",
+          "ifscCode": "SBIN0001234",
+          "maskedAccountNumber": "XXXX5678",
+          "accountType": "SAVINGS",
+          "isVerified": false,
+          "upiId": null
+        },
+        "commissionTier": "STANDARD",
+        "monthlyGmvPaise": 0
+      },
+      "devices": [],
+      "notificationPreferences": {
+        "pushEnabled": false,
+        "smsEnabled": false,
+        "emailEnabled": false,
+        "whatsappEnabled": false,
+        "mutedCategories": []
+      },
+      "createdAt": "2026-05-01T10:00:00.000Z",
+      "updatedAt": "2026-07-20T14:00:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": true,
+      "communityStrikeCount": 3
+    },
+    {
+      "id": "usr_legacy_consumer_01",
+      "displayName": "Anita Bhosle",
+      "firstName": "Anita",
+      "lastName": "Bhosle",
+      "phoneNumber": "+919333444555",
+      "email": null,
+      "gender": "FEMALE",
+      "dateOfBirth": null,
+      "preferredLanguage": "mr",
+      "avatarUrl": null,
+      "roles": ["CONSUMER"],
+      "primaryRole": "CONSUMER",
+      "accountStatus": "DORMANT",
+      "kycStatus": "NOT_STARTED",
+      "kycDocuments": [],
+      "authProviders": ["PHONE_OTP"],
+      "lastLoginAt": "2025-11-02T09:00:00.000Z",
+      "lastLoginIp": "117.194.55.66",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Near Wakad Bridge",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411057",
+        "geoPoint": { "latitude": 18.5995, "longitude": 73.7620, "accuracyMeters": 200 }
+      },
+      "homeZoneId": "zone_wakad",
+      "homeTerritoryId": "dist_pune",
+      "consumerProfile": {
+        "preferredCategories": [],
+        "loyaltyTier": "BRONZE",
+        "totalOrdersPlaced": 2,
+        "totalSpentPaise": 45000,
+        "referralCode": "ANITA2025W",
+        "referredByUserId": "usr_consumer_01"
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_anita_01",
+          "platform": "ANDROID",
+          "osVersion": "10",
+          "appVersion": "4.1.0",
+          "fcmToken": null,
+          "lastPushDeliveredAt": "2025-10-30T12:00:00.000Z",
+          "hasUnsyncedData": true
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": false,
+        "whatsappEnabled": false,
+        "mutedCategories": []
+      },
+      "createdAt": "2024-06-15T10:00:00.000Z",
+      "updatedAt": "2025-11-02T09:00:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": true,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_society_admin_01",
+      "displayName": "Meera Deshpande – Kalyani Heights Secretary",
+      "firstName": "Meera",
+      "lastName": "Deshpande",
+      "phoneNumber": "+919876001122",
+      "email": "meera.deshpande@kalyaniheights.co.in",
+      "gender": "FEMALE",
+      "dateOfBirth": "1978-05-18",
+      "preferredLanguage": "mr",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_society_admin_01.webp",
+      "roles": ["SOCIETY_ADMIN", "CONSUMER"],
+      "primaryRole": "SOCIETY_ADMIN",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "345678901234",
+          "maskedNumber": "XXXX XXXX 1234",
+          "isVerified": true,
+          "verifiedAt": "2025-08-10T10:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_sa_01_aadhaar.enc",
+          "rejectionReason": null
+        },
+        {
+          "documentType": "PAN",
+          "documentNumber": "CDEFM1234H",
+          "maskedNumber": "CDEFMXXXXH",
+          "isVerified": true,
+          "verifiedAt": "2025-08-10T10:30:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_sa_01_pan.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP", "EMAIL_PASSWORD"],
+      "lastLoginAt": "2026-08-04T04:30:00.000Z",
+      "lastLoginIp": "103.21.58.140",
+      "twoFactorEnabled": true,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Flat 501, Kalyani Heights",
+        "line2": "Near Dahanukar Colony",
+        "landmark": "Opposite Cummins College",
+        "ward": "Karve Nagar",
+        "city": "Pune",
+        "taluka": "Haveli",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411038",
+        "geoPoint": { "latitude": 18.5028, "longitude": 73.8108, "accuracyMeters": 8 }
+      },
+      "homeZoneId": "zone_kothrud",
+      "homeTerritoryId": "dist_pune",
+      "consumerProfile": {
+        "preferredCategories": ["grocery", "home-maintenance"],
+        "loyaltyTier": "SILVER",
+        "totalOrdersPlaced": 34,
+        "totalSpentPaise": 2450000,
+        "referralCode": "MEERA2025K",
+        "referredByUserId": null
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_meera_01",
+          "platform": "ANDROID",
+          "osVersion": "13",
+          "appVersion": "6.2.1",
+          "fcmToken": "xYz7a...mock_fcm_token_meera",
+          "lastPushDeliveredAt": "2026-08-04T04:00:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": true,
+        "emailEnabled": true,
+        "whatsappEnabled": true,
+        "mutedCategories": []
+      },
+      "createdAt": "2025-08-01T10:00:00.000Z",
+      "updatedAt": "2026-08-04T04:30:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    },
+    {
+      "id": "usr_volunteer_01",
+      "displayName": "Rahul Thorat – Community Volunteer",
+      "firstName": "Rahul",
+      "lastName": "Thorat",
+      "phoneNumber": "+919654321098",
+      "email": "rahul.thorat@gmail.com",
+      "gender": "MALE",
+      "dateOfBirth": "2001-02-14",
+      "preferredLanguage": "hi",
+      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_volunteer_01.webp",
+      "roles": ["VOLUNTEER", "CONSUMER"],
+      "primaryRole": "VOLUNTEER",
+      "accountStatus": "ACTIVE",
+      "kycStatus": "VERIFIED",
+      "kycDocuments": [
+        {
+          "documentType": "AADHAAR",
+          "documentNumber": "901234567890",
+          "maskedNumber": "XXXX XXXX 7890",
+          "isVerified": true,
+          "verifiedAt": "2026-03-20T09:00:00.000Z",
+          "expiresAt": null,
+          "documentUrl": "https://cdn.localsampark.in/kyc/usr_vol_01_aadhaar.enc",
+          "rejectionReason": null
+        }
+      ],
+      "authProviders": ["PHONE_OTP", "GOOGLE_OAUTH"],
+      "lastLoginAt": "2026-08-04T03:45:00.000Z",
+      "lastLoginIp": "49.36.15.77",
+      "twoFactorEnabled": false,
+      "failedLoginAttempts": 0,
+      "primaryAddress": {
+        "line1": "Room 8, Sahyadri Hostel",
+        "line2": "COEP Campus, Shivajinagar",
+        "landmark": "Near Sambhaji Park",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411005",
+        "geoPoint": { "latitude": 18.5290, "longitude": 73.8470 }
+      },
+      "homeZoneId": "zone_shivajinagar",
+      "homeTerritoryId": "dist_pune",
+      "consumerProfile": {
+        "preferredCategories": ["food", "stationery"],
+        "loyaltyTier": "BRONZE",
+        "totalOrdersPlaced": 8,
+        "totalSpentPaise": 345000,
+        "referralCode": "RAHUL2026S",
+        "referredByUserId": "usr_consumer_01"
+      },
+      "devices": [
+        {
+          "deviceId": "dev_android_rahul_01",
+          "platform": "ANDROID",
+          "osVersion": "14",
+          "appVersion": "6.2.1",
+          "fcmToken": "aBc4d...mock_fcm_token_rahul",
+          "lastPushDeliveredAt": "2026-08-04T03:30:00.000Z",
+          "hasUnsyncedData": false
+        }
+      ],
+      "notificationPreferences": {
+        "pushEnabled": true,
+        "smsEnabled": false,
+        "emailEnabled": true,
+        "whatsappEnabled": true,
+        "mutedCategories": ["promotions"]
+      },
+      "createdAt": "2026-03-15T12:00:00.000Z",
+      "updatedAt": "2026-08-04T03:45:00.000Z",
+      "deletedAt": null,
+      "isLegacyMigrated": false,
+      "isTestAccount": false,
+      "hasCommunityStrikes": false,
+      "communityStrikeCount": 0
+    }
+  ]
+}

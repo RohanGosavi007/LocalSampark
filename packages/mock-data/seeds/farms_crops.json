@@ -1,0 +1,128 @@
+{
+  "_meta": {
+    "phase": 3,
+    "version": "1.0.0",
+    "generatedAt": "2026-08-04T06:00:00.000Z",
+    "description": "Baban Kale's 6.5-acre farm in Baramati with 4 active crops, crop rotation history, and latest soil analysis report.",
+    "crossReferences": {
+      "users": "seeds/users.json (usr_farmer_01)",
+      "territories": "seeds/territories.json (zone_baramati_rural)"
+    }
+  },
+  "farms": [
+    {
+      "id": "farm_kale_01",
+      "ownerId": "usr_farmer_01",
+      "zoneId": "zone_baramati_rural",
+      "name": "Kale Family Farm – Katewadi",
+      "farmSizeAcres": 6.5,
+      "farmSizeHectares": 2.63,
+      "soilType": "BLACK_COTTON",
+      "irrigationType": "BOREWELL",
+      "isOrganicCertified": false,
+      "centerPoint": { "latitude": 18.1480, "longitude": 74.5920, "accuracyMeters": 50 },
+      "boundaryPolygon": [
+        [74.5900, 18.1470],
+        [74.5940, 18.1470],
+        [74.5940, 18.1490],
+        [74.5900, 18.1490],
+        [74.5900, 18.1470]
+      ],
+      "landRecordIds": ["712_brm_2024_0045"],
+      "surveyNumber": "45/1A",
+      "gramPanchayat": "Katewadi",
+      "taluka": "Baramati",
+      "district": "Pune",
+      "hasFencing": true,
+      "hasElectricity": true,
+      "hasRoadAccess": true,
+      "storageCapacityQuintal": 50,
+      "waterSourceDetails": "2 borewells (220ft, 180ft). Avg yield: 3 inches/hour. Connected to Nira Left Bank Canal (seasonal).",
+      "activeCrops": [
+        {
+          "cropId": "crop_sugarcane_01",
+          "cropName": "Sugarcane",
+          "cropNameMarathi": "ऊस",
+          "variety": "Co 86032 (Kumbhi)",
+          "season": "PERENNIAL",
+          "status": "VEGETATIVE",
+          "plotAreaAcres": 2.5,
+          "sowingDate": "2026-02-15",
+          "expectedHarvestDate": "2027-01-15",
+          "expectedYieldQuintalPerAcre": 45,
+          "ndviHealthScore": 0.78,
+          "activeAlerts": ["Early shoot borer detected in NE section"]
+        },
+        {
+          "cropId": "crop_pomegranate_01",
+          "cropName": "Pomegranate",
+          "cropNameMarathi": "डाळिंब",
+          "variety": "Bhagwa",
+          "season": "PERENNIAL",
+          "status": "FRUITING",
+          "plotAreaAcres": 1.5,
+          "sowingDate": "2024-06-01",
+          "expectedHarvestDate": "2026-09-15",
+          "expectedYieldQuintalPerAcre": 8,
+          "ndviHealthScore": 0.82,
+          "activeAlerts": []
+        },
+        {
+          "cropId": "crop_onion_01",
+          "cropName": "Onion (Kharif)",
+          "cropNameMarathi": "कांदा (खरीप)",
+          "variety": "N-53",
+          "season": "KHARIF",
+          "status": "GERMINATION",
+          "plotAreaAcres": 1.5,
+          "sowingDate": "2026-07-20",
+          "expectedHarvestDate": "2026-11-10",
+          "expectedYieldQuintalPerAcre": 12,
+          "ndviHealthScore": 0.45,
+          "activeAlerts": ["Thrips infestation risk — spray advisory issued"]
+        },
+        {
+          "cropId": "crop_soybean_01",
+          "cropName": "Soybean",
+          "cropNameMarathi": "सोयाबीन",
+          "variety": "JS-335",
+          "season": "KHARIF",
+          "status": "FLOWERING",
+          "plotAreaAcres": 1.0,
+          "sowingDate": "2026-06-25",
+          "expectedHarvestDate": "2026-10-20",
+          "expectedYieldQuintalPerAcre": 10,
+          "ndviHealthScore": 0.71,
+          "activeAlerts": []
+        }
+      ],
+      "cropHistory": [
+        { "cropName": "Onion (Rabi)", "season": "RABI", "year": 2025, "yieldQuintalPerAcre": 14, "revenueEarnedPaise": 42000000 },
+        { "cropName": "Soybean", "season": "KHARIF", "year": 2025, "yieldQuintalPerAcre": 9, "revenueEarnedPaise": 18000000 },
+        { "cropName": "Wheat", "season": "RABI", "year": 2024, "yieldQuintalPerAcre": 18, "revenueEarnedPaise": 27000000 },
+        { "cropName": "Gram (Harbhara)", "season": "RABI", "year": 2024, "yieldQuintalPerAcre": 8, "revenueEarnedPaise": 16000000 },
+        { "cropName": "Sugarcane", "season": "PERENNIAL", "year": 2024, "yieldQuintalPerAcre": 42, "revenueEarnedPaise": 94500000 }
+      ],
+      "latestSoilReport": {
+        "reportId": "soil_kale_2026_01",
+        "testedAt": "2026-06-15T10:00:00.000Z",
+        "labName": "Krishi Vigyan Kendra – Baramati",
+        "phLevel": 7.2,
+        "organicCarbonPercent": 0.58,
+        "nitrogenKgPerHa": 210,
+        "phosphorusKgPerHa": 18,
+        "potassiumKgPerHa": 245,
+        "ecDsPerM": 0.32,
+        "deficiencies": ["Phosphorus (Low)", "Organic Carbon (Below threshold)"],
+        "recommendations": [
+          "Apply 50 kg/acre Single Super Phosphate before sowing",
+          "Add 2 tonnes/acre FYM or vermicompost to improve organic carbon",
+          "Maintain soil pH — no lime needed",
+          "Consider green manuring with dhaincha before next Rabi season"
+        ]
+      },
+      "createdAt": "2026-06-10T07:00:00.000Z",
+      "updatedAt": "2026-08-04T05:00:00.000Z"
+    }
+  ]
+}

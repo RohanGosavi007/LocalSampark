@@ -149,7 +149,7 @@ export default function LoginPage() {
           
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🏘️</span>
-            <h2 style={{ fontSize: '1.75rem', marginTop: '1rem' }}>Welcome to LocalSampark</h2>
+            <h1 style={{ fontSize: '1.75rem', marginTop: '1rem', fontWeight: 700 }}>Welcome to LocalSampark</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Neighborhood Doorstep Super-App</p>
           </div>
 

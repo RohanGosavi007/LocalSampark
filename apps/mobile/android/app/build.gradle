@@ -180,3 +180,24 @@ dependencies {
 }
 
 apply plugin: 'com.google.gms.google-services'
+
+// --- CUSTOM ASSET BUNDLING OVERRIDE ---
+// Force Gradle to invalidate the JS bundling cache on every build,
+// guaranteeing that the latest JS UI assets are bundled.
+project.afterEvaluate {
+    def assetsDir = file("$projectDir/src/main/assets")
+    
+    tasks.register("createAssetsDir") {
+        doLast {
+            if (!assetsDir.exists()) {
+                assetsDir.mkdirs()
+            }
+        }
+    }
+
+    tasks.matching { it.name.matches("createBundle.*JsAndAssets") }.configureEach { task ->
+        task.dependsOn("createAssetsDir")
+        // Aggressressively disable caching so JS is rebundled on every release compile
+        task.outputs.upToDateWhen { false }
+    }
+}

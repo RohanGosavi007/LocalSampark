@@ -27,6 +27,7 @@ router.get('/', async (req, res, next) => {
 // GET /api/v1/zones/hierarchy
 router.get('/hierarchy', async (req, res, next) => {
   try {
+
     const regions = await query(`
       SELECT r.*, 
              (SELECT config_value FROM admin_config WHERE config_key = 'territory_features_' || r.id) as features_json

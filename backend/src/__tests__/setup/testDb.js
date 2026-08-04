@@ -207,6 +207,60 @@ async function setupTestDb() {
     )
   `);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS regions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      state TEXT,
+      district TEXT,
+      city TEXT,
+      pincode TEXT,
+      latitude REAL,
+      longitude REAL,
+      radius_km REAL,
+      is_active INTEGER DEFAULT 1
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS admin_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      config_key TEXT UNIQUE,
+      config_value TEXT
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS society_guard_reminders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      society_id INTEGER,
+      guard_id INTEGER,
+      created_by INTEGER,
+      title TEXT,
+      description TEXT,
+      reminder_time DATETIME,
+      priority TEXT,
+      is_recurring INTEGER DEFAULT 0,
+      recurrence_pattern TEXT,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS shop_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      slug TEXT,
+      business_model TEXT,
+      commission_percent REAL,
+      convenience_fee REAL,
+      is_active INTEGER DEFAULT 1,
+      display_order INTEGER
+    )
+  `);
+
   console.log('✅ Test database initialized');
 }
 
@@ -271,6 +325,21 @@ async function seedTestData() {
   await query(
     `INSERT OR IGNORE INTO loyalty_wallets (user_id, total_coins)
      SELECT id, 500 FROM users WHERE phone_number = '9999900001'`
+  );
+
+  await query(
+    `INSERT OR IGNORE INTO regions (id, name, state, district, city, pincode, latitude, longitude)
+     VALUES (1, 'Viman Nagar', 'Maharashtra', 'Pune', 'Pune', '411014', 18.5679, 73.9143)`
+  );
+
+  await query(
+    `INSERT OR IGNORE INTO admin_config (config_key, config_value)
+     VALUES ('territory_features_1', '{"delivery": true}')`
+  );
+
+  await query(
+    `INSERT OR IGNORE INTO shop_categories (id, name, slug, business_model, is_active)
+     VALUES (1, 'Grocery', 'grocery', 'product', 1)`
   );
 
   console.log('✅ Test data seeded');

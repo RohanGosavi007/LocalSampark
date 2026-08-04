@@ -39,6 +39,7 @@ export default function ShopsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [activeStory, setActiveStory] = useState(null);
   const [workerFilteredShops, setWorkerFilteredShops] = useState(null);
+  const [categoryCounts, setCategoryCounts] = useState({});
 
   // 10x Scale: Web Worker Engine for Off-Thread Filtering
   useEffect(() => {
