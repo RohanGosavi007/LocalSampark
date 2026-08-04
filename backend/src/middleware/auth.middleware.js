@@ -163,7 +163,10 @@ const ROLES = {
   SOCIETY_GUARD: 'society_guard',
   MODERATOR: 'moderator',
   ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin'
+  SUPER_ADMIN: 'super_admin',
+  // Phase 6: Enterprise RBAC roles
+  DISTRICT_MANAGER: 'district_manager',
+  TERRITORY_FRANCHISE: 'territory_franchise'
 };
 
 const hasAccess = (allowedRoles) => {

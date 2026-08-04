@@ -3,6 +3,81 @@ const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const spatialRepo = require('../../../repositories/spatial.repository');
+const territoryValidator = require('../../../validators/territory.validator');
+
+// GET /api/v1/zones/resolve?lat=X&lng=Y — PiP territory resolution
+router.get('/resolve', async (req, res, next) => {
+  try {
+    const { lat, lng, pincode } = req.query;
+
+    // Option 1: Resolve by pincode (fast, no spatial calc)
+    if (pincode) {
+      const territory = await spatialRepo.territoryByPincode(pincode);
+      if (territory) {
+        return res.json({
+          success: true,
+          outOfBounds: false,
+          territory: {
+            id: territory.id,
+            name: territory.name,
+            pincode: territory.pincode,
+            district: territory.district_name,
+            taluka: territory.taluka_name,
+            state: territory.state_name,
+            centroid: { lat: territory.centroid_lat, lng: territory.centroid_lng }
+          }
+        });
+      }
+      return res.json({ success: true, outOfBounds: true, message: 'No territory found for this pincode.' });
+    }
+
+    // Option 2: Resolve by GPS coordinates (spatial PiP)
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'Provide lat & lng, or pincode.' });
+    }
+
+    const territory = await spatialRepo.pointInTerritory(parseFloat(lat), parseFloat(lng));
+
+    if (territory) {
+      return res.json({
+        success: true,
+        outOfBounds: false,
+        territory: {
+          id: territory.id,
+          name: territory.name,
+          pincode: territory.pincode,
+          district: territory.district_name,
+          taluka: territory.taluka_name,
+          state: territory.state_name,
+          centroid: { lat: territory.centroid_lat, lng: territory.centroid_lng }
+        }
+      });
+    }
+
+    // Out of bounds — return nearest for suggestion
+    const nearest = await spatialRepo.nearestTerritory(parseFloat(lat), parseFloat(lng));
+    res.json({
+      success: true,
+      outOfBounds: true,
+      message: 'Your location is outside any serviceable territory.',
+      nearest: nearest ? {
+        id: nearest.id,
+        name: nearest.name,
+        pincode: nearest.pincode,
+        distance_km: nearest.distance_km
+      } : null
+    });
+  } catch (error) { next(error); }
+});
+
+// GET /api/v1/zones/hierarchy/v2 — 4-tier hierarchy
+router.get('/hierarchy/v2', async (req, res, next) => {
+  try {
+    const hierarchy = await spatialRepo.getFullHierarchy();
+    res.json({ success: true, data: hierarchy });
+  } catch (error) { next(error); }
+});
 
 // GET /api/v1/zones - List all active zones
 router.get('/', async (req, res, next) => {

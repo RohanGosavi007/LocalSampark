@@ -41,13 +41,26 @@ export class ApiError extends Error {
  */
 export async function getAuthHeaders() {
   const token = await SecureTokenStorage.getToken('authToken');
-  return {
+  // Territory-scoped routing: inject territory ID from Zustand store
+  let territoryId = null;
+  try {
+    const { useTerritoryStore } = require('../store/useTerritoryStore');
+    territoryId = useTerritoryStore.getState().territoryId;
+  } catch (e) { /* store not available */ }
+
+  const headers = {
     'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
   };
+
+  if (territoryId) {
+    headers['X-Territory-ID'] = territoryId;
+  }
+
+  return headers;
 }
 
 /**

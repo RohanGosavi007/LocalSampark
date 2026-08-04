@@ -137,6 +137,14 @@ const errorStyles = StyleSheet.create({
   message: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 22 },
 });
 
+// Territory store — restore saved territory on app boot
+let useTerritoryStoreRestore = null;
+try {
+  useTerritoryStoreRestore = require('../src/store/useTerritoryStore').useTerritoryStore;
+} catch (e) {
+  console.warn('[_layout] useTerritoryStore import failed:', e.message);
+}
+
 export default function RootLayout() {
   useEffect(() => {
     // Force-hide native splash screen immediately on mount using multiple methods
@@ -155,6 +163,15 @@ export default function RootLayout() {
     const timer = setTimeout(() => {
       dismissSplash();
     }, 300);
+
+    // Initialize territory store — restore saved territory from AsyncStorage
+    try {
+      if (useTerritoryStoreRestore) {
+        useTerritoryStoreRestore.getState().restore();
+      }
+    } catch (err) {
+      console.warn('TerritoryStore restore failed (non-fatal):', err.message);
+    }
 
     // Initialize offline queue (optional)
     try {
@@ -209,6 +226,7 @@ export default function RootLayout() {
                         <Stack.Screen name="modules" options={{ headerShown: false }} />
                         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
                         <Stack.Screen name="search" options={{ headerShown: false }} />
+                        <Stack.Screen name="location-select" options={{ presentation: 'modal', headerShown: false }} />
                         <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
                       </Stack>
                     </LanguageProvider>

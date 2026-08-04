@@ -53,6 +53,7 @@ router.use('/checkout', paymentLimiter, require('../modules/ecommerce/routes/che
 router.use('/addresses', require('../modules/ecommerce/routes/addresses.routes'));
 router.use('/group-buy', require('../modules/ecommerce/routes/group-buying.routes'));
 router.use('/trust-reviews', require('../modules/ecommerce/routes/trust-reviews.routes'));
+router.use('/categories', require('../modules/ecommerce/routes/category-matrix.routes'));
 
 // ─── SERVICES DOMAIN ──────────────────────────────────────
 router.use('/jobs', require('../modules/services/routes/jobs.routes'));

@@ -16,10 +16,16 @@ export const API_BASE = `${API_URL}/api/v1`;
  */
 export function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '';
-  return {
+  const territoryId = typeof window !== 'undefined' ? localStorage.getItem('territoryId') : '';
+  const headers = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
+  // Territory-scoped routing: inject on every request
+  if (territoryId) {
+    headers['X-Territory-ID'] = territoryId;
+  }
+  return headers;
 }
 
 /**

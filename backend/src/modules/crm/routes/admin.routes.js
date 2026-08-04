@@ -901,4 +901,59 @@ router.get('/properties', authenticate, requireAdmin, async (req, res, next) => 
   } catch (error) { next(error); }
 });
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 6: Territory Assignment Endpoints (RBAC Hard Partitioning)
+// ═══════════════════════════════════════════════════════════════════════
+
+// POST /admin/assign-territory — SuperAdmin assigns territory to user
+router.post('/assign-territory', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { userId, territoryId, districtId, role } = req.body;
+    if (!userId || (!territoryId && !districtId)) {
+      return res.status(400).json({ error: 'userId and (territoryId or districtId) required.' });
+    }
+
+    const id = crypto.randomUUID();
+    await query(
+      `INSERT INTO admin_territory_assignments (id, user_id, territory_id, district_id, role, assigned_by, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, 1)`,
+      [id, userId, territoryId || null, districtId || null, role || 'territory_franchise', req.user.id]
+    );
+
+    res.json({ success: true, message: 'Territory assigned successfully.', id });
+  } catch (error) {
+    if (error.message && error.message.includes('UNIQUE')) {
+      return res.status(409).json({ error: 'User is already assigned to this territory.' });
+    }
+    next(error);
+  }
+});
+
+// GET /admin/territory-assignments — List all assignments
+router.get('/territory-assignments', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const result = await query(`
+      SELECT ata.*, u.full_name as user_name, u.phone_number as user_phone,
+             t.name as territory_name, t.pincode as territory_pincode,
+             ld.name as district_name
+      FROM admin_territory_assignments ata
+      JOIN users u ON ata.user_id = u.id
+      LEFT JOIN territories t ON ata.territory_id = t.id
+      LEFT JOIN location_districts ld ON ata.district_id = ld.id
+      WHERE ata.is_active = 1
+      ORDER BY ata.created_at DESC
+    `);
+    res.json({ success: true, data: result.rows || result });
+  } catch (error) { next(error); }
+});
+
+// DELETE /admin/territory-assignments/:id — Remove assignment
+router.delete('/territory-assignments/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    await query('UPDATE admin_territory_assignments SET is_active = 0 WHERE id = $1', [req.params.id]);
+    res.json({ success: true, message: 'Assignment removed.' });
+  } catch (error) { next(error); }
+});
+
 module.exports = router;

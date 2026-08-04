@@ -8,11 +8,13 @@ try {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { Alert } from 'react-native';
+import { useTerritoryStore } from '../store/useTerritoryStore';
 
 const ZoneContext = createContext();
 
 export function ZoneProvider({ children }) {
   const { authToken, API_URL, user } = useAuth();
+  const { territoryId, lockTerritory, isLocked } = useTerritoryStore();
   
   const [activeZone, setActiveZone] = useState(null);
   const [savedZones, setSavedZones] = useState([]);
@@ -40,15 +42,20 @@ export function ZoneProvider({ children }) {
     if (authToken && user) {
       loadUserZones();
     } else {
-      // If no user, try to load a public active zone from storage, or fallback to GPS
       restorePublicZone();
     }
   }, [authToken, user, API_URL]);
 
+  // Sync territory store with active zone
+  useEffect(() => {
+    if (territoryId && !activeZone) {
+      fetchZoneDetails(territoryId);
+    }
+  }, [territoryId]);
+
   const loadUserZones = async () => {
     setIsLoading(true);
     try {
-      // Fetch user's saved zones
       const res = await fetch(`${API_URL}/users/saved-zones`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
@@ -57,12 +64,13 @@ export function ZoneProvider({ children }) {
         setSavedZones(data.data);
       }
 
-      // Check if user has an active zone on their profile
       if (user.active_zone_id || user.region_id) {
         const zoneId = user.active_zone_id || user.region_id;
         await fetchZoneDetails(zoneId);
+      } else if (isLocked && territoryId) {
+        // Use territory store if user has no zone but has locked territory
+        await fetchZoneDetails(territoryId);
       } else {
-        // Fallback to AsyncStorage
         await restorePublicZone();
       }
     } catch (err) {
@@ -90,17 +98,16 @@ export function ZoneProvider({ children }) {
       const stored = await AsyncStorage.getItem('activeZone');
       if (stored) {
         setActiveZone(JSON.parse(stored));
-      } else {
-        // No stored zone, ask for GPS
-        // await detectLocation(); // DISABLED: Aggressive prompt causes permission race condition / crash on Android.
       }
     } catch (e) {
       console.warn('AsyncStorage error in ZoneContext:', e);
     }
+    setIsLoading(false);
   };
 
   const detectLocation = async () => {
     try {
+      if (!Location) return;
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission to access location was denied');
@@ -109,14 +116,28 @@ export function ZoneProvider({ children }) {
 
       const location = await Location.getCurrentPositionAsync({});
       
-      const res = await fetch(`${API_URL}/zones/nearby?lat=${location.coords.latitude}&lng=${location.coords.longitude}&limit=1`);
+      // Use the new /zones/resolve endpoint for PiP lookup
+      const res = await fetch(`${API_URL}/zones/resolve?lat=${location.coords.latitude}&lng=${location.coords.longitude}`);
       const data = await res.json();
       
-      if (data.success && data.data.length > 0) {
-        const nearest = data.data[0];
-        await switchZone(nearest.id, nearest);
+      if (data.success && !data.outOfBounds && data.territory) {
+        // Lock territory in Zustand store
+        await lockTerritory(data.territory);
+        // Set active zone for backward compat
+        const zoneData = { id: data.territory.id, name: data.territory.name, pincode: data.territory.pincode, district: data.territory.district };
+        setActiveZone(zoneData);
+        await AsyncStorage.setItem('activeZone', JSON.stringify(zoneData));
       } else {
-        Alert.alert('No nearby zones found for your location.');
+        // Try legacy nearby endpoint
+        const legacyRes = await fetch(`${API_URL}/zones/nearby?lat=${location.coords.latitude}&lng=${location.coords.longitude}&limit=1`);
+        const legacyData = await legacyRes.json();
+        
+        if (legacyData.success && legacyData.data.length > 0) {
+          const nearest = legacyData.data[0];
+          await switchZone(nearest.id, nearest);
+        } else {
+          Alert.alert('No nearby zones found for your location.');
+        }
       }
     } catch (err) {
       console.warn('Location detection failed:', err);
@@ -127,7 +148,6 @@ export function ZoneProvider({ children }) {
     try {
       let selectedZone = predefinedZone;
       
-      // If we don't have the full object, find it from allZones or fetch it
       if (!selectedZone) {
         selectedZone = allZones.find(z => z.id === zoneId);
         if (!selectedZone) {
@@ -141,7 +161,16 @@ export function ZoneProvider({ children }) {
         setActiveZone(selectedZone);
         await AsyncStorage.setItem('activeZone', JSON.stringify(selectedZone));
         
-        // If logged in, update backend
+        // Sync to territory store
+        if (selectedZone.id) {
+          await lockTerritory({
+            id: selectedZone.id,
+            name: selectedZone.name,
+            pincode: selectedZone.pincode || selectedZone.pin || '',
+            district: selectedZone.district || '',
+          });
+        }
+        
         if (authToken) {
           await fetch(`${API_URL}/users/zone`, {
             method: 'PUT',
@@ -175,7 +204,7 @@ export function ZoneProvider({ children }) {
           });
           const data = await res.json();
           if (data.success) {
-              loadUserZones(); // Refresh the list
+              loadUserZones();
               Alert.alert('Success', 'Zone saved successfully.');
           } else {
               Alert.alert('Error', data.error || 'Failed to save zone.');
@@ -193,7 +222,10 @@ export function ZoneProvider({ children }) {
       isLoading,
       switchZone,
       detectLocation,
-      saveZone
+      saveZone,
+      // Territory routing state (from Zustand)
+      territoryId,
+      isLocked
     }}>
       {children}
     </ZoneContext.Provider>
