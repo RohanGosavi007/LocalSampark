@@ -3,6 +3,58 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
+let DevLoginScreen = () => null;
+if (__DEV__) {
+  try { DevLoginScreen = require('../src/components/DevLoginScreen').default; } catch (e) {}
+}
+
+function DynamicNavigator() {
+  const useAuth = require('../src/context/AuthContext').useAuth;
+  const { user } = useAuth();
+  const role = user?.role || 'CUSTOMER';
+
+  if (role.startsWith('VENDOR')) {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="shop-dashboard" />
+        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="modules" />
+      </Stack>
+    );
+  }
+  if (role === 'DELIVERY') {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="delivery-dashboard" />
+        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+      </Stack>
+    );
+  }
+  if (role === 'ADMIN') {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(admin)" />
+        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+      </Stack>
+    );
+  }
+
+  // Default fallback (CUSTOMER)
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="register" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="modules" />
+      <Stack.Screen name="search" />
+      <Stack.Screen name="location-select" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="onboarding-tutorial" />
+    </Stack>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // CRASH-SAFE NATIVE MODULE IMPORTS
 // Every native module is wrapped in try-catch with a fallback.
@@ -217,18 +269,8 @@ export default function RootLayout() {
                   <NotificationProvider>
                     <LanguageProvider>
                       <StatusBar style="auto" />
-                      <Stack screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name="index" options={{ headerShown: false }} />
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-                        <Stack.Screen name="register" options={{ presentation: 'modal' }} />
-                        <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
-                        <Stack.Screen name="modules" options={{ headerShown: false }} />
-                        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-                        <Stack.Screen name="search" options={{ headerShown: false }} />
-                        <Stack.Screen name="location-select" options={{ presentation: 'modal', headerShown: false }} />
-                        <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
-                      </Stack>
+                      <DynamicNavigator />
+                      <DevLoginScreen />
                     </LanguageProvider>
                   </NotificationProvider>
                 </OrderRingerProvider>

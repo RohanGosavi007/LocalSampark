@@ -3,6 +3,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { Text, Platform, View } from 'react-native';
 import { getTabsForRole, ROLES, ROLE_ICONS } from '../../src/utils/permissions';
 import RoleSwitcher from '../../src/components/RoleSwitcher';
+import AnimatedBottomTabs from '../../src/navigation/AnimatedBottomTabs';
 
 export default function TabLayout() {
   const { user, activeRole } = useAuth();
@@ -18,23 +19,9 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
+        tabBar={(props) => <AnimatedBottomTabs {...props} />}
         screenOptions={{
           headerShown: false,
-          tabBarStyle: {
-            backgroundColor: '#ffffff', // Premium dark card color
-            borderTopColor: '#ffffff',
-            height: Platform.OS === 'ios' ? 80 : 65,
-            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-            paddingTop: 10,
-            elevation: 8,
-          },
-          tabBarActiveTintColor: '#3b82f6',
-          tabBarInactiveTintColor: '#64748b',
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '700',
-            marginTop: 2,
-          }
         }}
       >
         {/* We map over the configured tabs for this role */}

@@ -63,6 +63,7 @@ databases:
     region: singapore
     plan: starter
 
+
   # 5. Frontend Web App
   - type: web
     name: localsampark-web

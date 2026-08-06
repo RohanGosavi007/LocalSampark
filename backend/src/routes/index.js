@@ -21,6 +21,11 @@ router.use('/webhooks', require('../modules/core/routes/webhooks.routes'));
 router.use('/token-queue', require('../modules/core/routes/token-queue.routes'));
 
 // ─── COMMUNITY DOMAIN ─────────────────────────────────────
+// [PHASE 3 AUDIT]: The Community domain (feed, townsquare, events, societies, etc.) 
+// relies on legacy SQLite tables that were intentionally dropped from the Phase 1 
+// Prisma PostgreSQL schema to focus on Hyperlocal E-commerce.
+// These routes are temporarily disabled to prevent unhandled SQL crashes.
+/*
 router.use('/feed', apiCache(300), require('../modules/community/routes/feed.routes'));
 router.use('/chat', require('../modules/community/routes/chat.routes'));
 router.use('/societies', require('../modules/community/routes/society.routes'));
@@ -34,6 +39,16 @@ router.use('/community-hub', apiCache(300), require('../modules/community/routes
 router.use('/volunteer', require('../modules/community/routes/volunteer.routes'));
 router.use('/donations', require('../modules/community/routes/donations.routes'));
 router.use('/society-management', require('../modules/community/routes/society-visitor.routes'));
+*/
+
+// Safe fallback for mobile app backwards compatibility
+router.use(['/feed', '/chat', '/societies', '/events', '/pets', '/stories', '/society-admin', '/townsquare', '/scrap', '/community-hub', '/volunteer', '/donations', '/society-management'], (req, res) => {
+    res.status(501).json({ success: false, error: 'Community features are temporarily disabled pending database migration.' });
+});
+
+// ─── UNIFIED SUPER-APP CONTRACTS (Phase 3 & Hyperlocal Optimization) ────────────────
+router.use('/shops/pincode', require('../modules/ecommerce/routes/pincode-directory.routes'));
+router.use('/', require('../modules/ecommerce/routes/unified-superapp.routes'));
 
 router.use('/shops', (req, res, next) => {
   if (req.path.startsWith('/admin') || req.headers.authorization || req.method !== 'GET') {

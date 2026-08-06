@@ -1,0 +1,536 @@
+// ═══════════════════════════════════════════════════════════════════════
+// LocalSampark Super-App — Prisma ORM Schema
+// ═══════════════════════════════════════════════════════════════════════
+// Provider: SQLite (dev/demo) → PostgreSQL (production)
+// Architecture: 12 Models, 8 Enums, State Machines for Order & Appointment
+// ═══════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PRISMA_DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// REGION — Geographic hierarchy (Pune pilot)
+// ─────────────────────────────────────────────────────────────────────
+
+model Region {
+  id        String   @id @default(cuid())
+  name      String
+  city      String
+  state     String
+  country   String   @default("India")
+  latitude  Float
+  longitude Float
+  radiusKm  Float    @default(10.0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  shops Shop[]
+  users User[]
+
+  @@map("regions")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// USER — Customers, Merchants, Runners, Admins
+// ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  phone       String   @unique
+  name        String?
+  email       String?  @unique
+  // ENUM LIMITATION: Prisma + SQLite does not support native enums.
+  // We enforce strict UserRole (CUSTOMER, VENDOR, DELIVERY, ADMIN) via application logic & verifyRole middleware.
+  role        String   @default("CUSTOMER")
+  avatarUrl   String?
+  isVerified  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  regionId    String?
+  region      Region?  @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Token Security (Session Invalidation)
+  tokenVersion Int     @default(0)
+
+  // Relations
+  addresses            Address[]
+  ownedShops           Shop[]              @relation("ShopOwner")
+  orders               Order[]
+  appointments         Appointment[]
+  cartItems            CartItem[]
+  deliveryRuns         DeliveryRoute[]     @relation("DeliveryRunner")
+  auditLogs            AuditLog[]          @relation("AuditPerformer")
+  shopOwnerProfile     ShopOwnerProfile?   @relation("ShopOwnerProfile")
+  deliveryAgentProfile DeliveryAgentProfile? @relation("DeliveryAgentProfile")
+
+  @@index([regionId])
+  @@index([role])
+  @@map("users")
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag       String   @default("Home") // Home, Office, Other
+  line1     String
+  line2     String?
+  landmark  String?
+  locality  String
+  city      String   @default("Pune")
+  state     String   @default("Maharashtra")
+  pincode   String
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// CATEGORY — 66 shop categories with PRODUCT/APPOINTMENT/HYBRID type
+// ─────────────────────────────────────────────────────────────────────
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  slug         String   @unique
+  categoryType String   // ShopCategoryType: PRODUCT, APPOINTMENT, HYBRID
+  description  String?
+  iconUrl      String?
+  bannerUrl    String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  shops Shop[]
+
+  @@index([categoryType])
+  @@index([isActive, displayOrder])
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SHOP — Core shop entity linked to category
+// ─────────────────────────────────────────────────────────────────────
+
+model Shop {
+  id                    String   @id @default(cuid())
+  name                  String
+  slug                  String   @unique
+  description           String?
+  categoryId            String
+  category              Category @relation(fields: [categoryId], references: [id])
+  categoryType          String   // Denormalized from Category for query performance: PRODUCT, APPOINTMENT, HYBRID
+  ownerId               String
+  owner                 User     @relation("ShopOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  regionId              String?
+  region                Region?  @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  status                String   @default("ACTIVE") // ShopStatus: ACTIVE, INACTIVE, PENDING, SUSPENDED
+  phoneNumber           String?
+  whatsappNumber        String?
+  email                 String?
+  addressLine1          String?
+  addressLine2          String?
+  landmark              String?
+  locality              String?
+  city                  String   @default("Pune")
+  state                 String   @default("Maharashtra")
+  pincode               String?
+  latitude              Float?
+  longitude             Float?
+  coverageRadiusKm      Float    @default(5.0)
+  logoUrl               String?
+  bannerUrl             String?
+  galleryUrls           String?  // JSON string array: '["url1","url2"]'
+  rating                Float    @default(4.5)
+  totalRatings          Int      @default(0)
+  commissionPercent     Float    @default(10.0)
+  isVerified            Boolean  @default(true)
+  isFeatured            Boolean  @default(false)
+  isPremium             Boolean  @default(false)
+  deliveryAvailable     Boolean  @default(true)
+  pickupAvailable       Boolean  @default(true)
+  estimatedDeliveryTime String?  @default("30-45 mins")
+  operatingHours        String?  // JSON: '{"MONDAY":{"isOpen":true,"open":"09:00","close":"21:00"},...}'
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  products     Product[]
+  serviceSlots ServiceSlot[]
+  orders       Order[]
+  appointments Appointment[]
+
+  @@index([categoryId])
+  @@index([categoryType])
+  @@index([ownerId])
+  @@index([regionId])
+  @@index([status])
+  @@index([pincode])
+  @@index([pincode, status, categoryId])
+  @@index([pincode, status, categoryType])
+  @@index([latitude, longitude])
+  @@map("shops")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// PRODUCT — Physical items for PRODUCT and HYBRID shops
+// ─────────────────────────────────────────────────────────────────────
+
+model Product {
+  id               String   @id @default(cuid())
+  shopId           String
+  shop             Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name             String
+  slug             String
+  description      String?
+  categoryPath     String?  // JSON: '["Dairy","Milk"]'
+  brand            String?
+  barcode          String?
+  hsnCode          String?
+  pricePaise       Int      // Selling price in paise (₹30.00 = 3000)
+  mrpPaise         Int      // MRP in paise
+  costPricePaise   Int?     // Cost price for margin calculation
+  discountPercent  Float    @default(0)
+  gstPercent       Float    @default(0)
+  unit             String   @default("piece") // kg, g, ml, L, piece, pack, strip, bottle
+  quantityPerUnit  Float    @default(1)
+  stockQuantity    Int      @default(100)
+  lowStockThreshold Int     @default(10)
+  maxOrderQuantity Int      @default(10)
+  imageUrls        String?  // JSON string array
+  thumbnailUrl     String?
+  dietaryTags      String?  // JSON: '["VEG","GLUTEN_FREE"]'
+  searchKeywords   String?  // JSON string array
+  isActive         Boolean  @default(true)
+  isCustomizable   Boolean  @default(false)
+  popularityScore  Int      @default(50)
+  displayOrder     Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@index([shopId])
+  @@index([shopId, isActive])
+  @@index([barcode])
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SERVICE SLOT — Time-based booking slots for APPOINTMENT and HYBRID shops
+// ─────────────────────────────────────────────────────────────────────
+
+model ServiceSlot {
+  id              String   @id @default(cuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  serviceName     String   // e.g., "Haircut", "General Checkup", "AC Service"
+  serviceCategory String?  // Sub-category within the shop
+  providerName    String   // e.g., "Dr. Priya Kulkarni", "Sunita Deshpande"
+  providerRole    String?  // e.g., "Senior Stylist", "General Physician"
+  date            DateTime // The calendar date for this slot
+  startTime       String   // "09:00" (24h format)
+  endTime         String   // "09:30"
+  durationMinutes Int      @default(30)
+  pricePaise      Int      @default(0) // Service price in paise
+  status          String   @default("AVAILABLE") // SlotStatus: AVAILABLE, BOOKED, BREAK, BUFFER, BLOCKED
+  maxCapacity     Int      @default(1) // For group classes (yoga, etc.)
+  currentBookings Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  appointments Appointment[]
+
+  @@index([shopId])
+  @@index([shopId, date])
+  @@index([shopId, date, status])
+  @@map("service_slots")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ORDER — Product orders with explicit state machine
+// ─────────────────────────────────────────────────────────────────────
+// State Machine:
+//   PENDING → ACCEPTED → PREPARING → OUT_FOR_DELIVERY → DELIVERED
+//   PENDING → CANCELLED
+//   ACCEPTED → CANCELLED
+//   DELIVERED → REFUNDED
+// ─────────────────────────────────────────────────────────────────────
+
+model Order {
+  id                String   @id @default(cuid())
+  orderNumber       String   @unique // Human-readable: LS-20260805-0001
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shopId            String
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  deliveryAddressId String?
+  deliveryAddress   Address? @relation(fields: [deliveryAddressId], references: [id], onDelete: SetNull)
+
+  // State Machine
+  status            String   @default("PENDING") // OrderStatus: PENDING, ACCEPTED, PREPARING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, REFUNDED
+
+  // Financial
+  subtotalPaise     Int      @default(0)
+  deliveryFeePaise  Int      @default(0)
+  platformFeePaise  Int      @default(0)
+  discountPaise     Int      @default(0)
+  taxPaise          Int      @default(0)
+  totalAmountPaise  Int      @default(0)
+
+  // Payment
+  paymentMethod     String   @default("COD") // PaymentMethod: COD, UPI, CARD, WALLET, NET_BANKING
+  paymentStatus     String   @default("PENDING") // PaymentStatus: PENDING, PAID, FAILED, REFUNDED
+  paymentId         String?  // Gateway reference ID
+
+  // Fulfillment
+  fulfillmentMethod String   @default("DELIVERY") // DELIVERY, PICKUP
+  specialInstructions String?
+
+  // Timestamps
+  acceptedAt        DateTime?
+  preparingAt       DateTime?
+  outForDeliveryAt  DateTime?
+  deliveredAt       DateTime?
+  cancelledAt       DateTime?
+  cancellationReason String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  items         OrderItem[]
+  deliveryRoute DeliveryRoute?
+
+  @@index([userId])
+  @@index([shopId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName     String  // Snapshot at purchase time
+  quantity        Int
+  pricePaise      Int     // Price per unit at time of purchase
+  totalPaise      Int     // quantity * pricePaise
+  createdAt       DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// APPOINTMENT — Service bookings with explicit state machine
+// ─────────────────────────────────────────────────────────────────────
+// State Machine:
+//   REQUESTED → CONFIRMED → IN_PROGRESS → COMPLETED
+//   REQUESTED → CANCELLED
+//   CONFIRMED → CANCELLED
+//   CONFIRMED → NO_SHOW
+// ─────────────────────────────────────────────────────────────────────
+
+model Appointment {
+  id                String   @id @default(cuid())
+  bookingNumber     String   @unique // Human-readable: LS-BK-20260805-0001
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shopId            String
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  serviceSlotId     String
+  serviceSlot       ServiceSlot @relation(fields: [serviceSlotId], references: [id], onDelete: Restrict)
+
+  // State Machine
+  status            String   @default("REQUESTED") // AppointmentStatus: REQUESTED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
+
+  // Details
+  serviceName       String   // Snapshot of the service name
+  providerName      String   // Snapshot of the provider name
+  scheduledDate     DateTime
+  scheduledTime     String   // "09:00"
+  durationMinutes   Int
+  pricePaise        Int      @default(0)
+
+  // Payment
+  paymentMethod     String   @default("COD")
+  paymentStatus     String   @default("PENDING")
+  paymentId         String?
+
+  // Notes
+  customerNotes     String?
+  providerNotes     String?
+
+  // Timestamps
+  confirmedAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancellationReason String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([shopId])
+  @@index([serviceSlotId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("appointments")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// DELIVERY ROUTE — Tracking for product order deliveries
+// ─────────────────────────────────────────────────────────────────────
+
+model DeliveryRoute {
+  id               String   @id @default(cuid())
+  orderId          String   @unique
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  runnerId         String?
+  runner           User?    @relation("DeliveryRunner", fields: [runnerId], references: [id])
+  status           String   @default("PENDING") // PENDING, ASSIGNED, PICKED_UP, IN_TRANSIT, DELIVERED, FAILED
+  pickupLatitude   Float?
+  pickupLongitude  Float?
+  dropLatitude     Float?
+  dropLongitude    Float?
+  currentLatitude  Float?
+  currentLongitude Float?
+  distanceKm       Float?
+  estimatedMinutes Int?
+  pickedUpAt       DateTime?
+  deliveredAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([runnerId])
+  @@index([status])
+  @@map("delivery_routes")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// AUDIT LOG — Full lifecycle event tracking
+// ─────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  entityType   String   // "Order", "Appointment", "Shop", "Product", etc.
+  entityId     String
+  action       String   // "STATUS_CHANGE", "CREATE", "UPDATE", "DELETE"
+  oldValue     String?  // JSON snapshot of previous state
+  newValue     String?  // JSON snapshot of new state
+  performedBy  String?
+  performer    User?    @relation("AuditPerformer", fields: [performedBy], references: [id])
+  ipAddress    String?
+  userAgent    String?
+  metadata     String?  // Additional JSON context
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([performedBy])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SHOP OWNER PROFILE — Extended vendor data bridging User ↔ Shop
+// ─────────────────────────────────────────────────────────────────────
+
+model ShopOwnerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation("ShopOwnerProfile", fields: [userId], references: [id], onDelete: Cascade)
+  shopId          String
+  subRole         String   @default("VENDOR_OWNER") // VENDOR_OWNER | VENDOR_STAFF
+  gstNumber       String?
+  panNumber       String?
+  bankAccountName String?
+  bankAccountNo   String?
+  bankIfsc        String?
+  upiId           String?
+  onboardedAt     DateTime @default(now())
+  isKycVerified   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([shopId])
+  @@map("shop_owner_profiles")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// DELIVERY AGENT PROFILE — Extended delivery runner data
+// ─────────────────────────────────────────────────────────────────────
+
+model DeliveryAgentProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation("DeliveryAgentProfile", fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType       String   @default("BIKE") // BIKE, SCOOTER, BICYCLE, CAR
+  vehicleNumber     String?
+  licenseNumber     String?
+  isAvailable       Boolean  @default(true)
+  currentLatitude   Float?
+  currentLongitude  Float?
+  totalDeliveries   Int      @default(0)
+  averageRating     Float    @default(5.0)
+  maxRadiusKm       Float    @default(10.0)
+  onboardedAt       DateTime @default(now())
+  isKycVerified     Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isAvailable])
+  @@map("delivery_agent_profiles")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// CART — User shopping cart
+// ─────────────────────────────────────────────────────────────────────
+
+model CartItem {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId       String?
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity        Int      @default(1)
+  customOptions   String?  // JSON string for variants/modifiers
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([productId])
+  @@map("cart_items")
+}

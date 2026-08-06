@@ -180,48 +180,28 @@ export default function DirectoryScreen() {
   const [filteredShops, setFilteredShops] = useState([]);
   const [isFiltering, setIsFiltering] = useState(false);
 
-  // 10x Scale: Time-Slicing Heavy Array Operations
+  // 10x Scale: Rely entirely on backend API filtering instead of blocking JS thread
   useEffect(() => {
     setIsFiltering(true);
-    let isCancelled = false;
+    let filteredResults = [...shops];
     
-    // Chunking function to avoid blocking JS Thread
-    const processInChunks = (items, processChunk, onComplete, chunkSize = 50) => {
-      let index = 0;
-      let results = [];
-      const nextChunk = () => {
-        if (isCancelled) return;
-        const chunk = items.slice(index, index + chunkSize);
-        if (chunk.length === 0) {
-          onComplete(results);
-          return;
-        }
-        results = results.concat(processChunk(chunk));
-        index += chunkSize;
-        requestAnimationFrame(nextChunk);
-      };
-      requestAnimationFrame(nextChunk);
-    };
-
-    processInChunks(shops, (chunk) => {
-      return chunk.filter(shop => {
+    // Fallback client-side filtering ONLY for DEMO SHOPS (since API is empty)
+    if (shops === DEMO_SHOPS) {
+      filteredResults = filteredResults.filter(shop => {
         const matchesCategory = selectedCategory === 'All Categories' || shop.category === selectedCategory || shop.category_name === selectedCategory;
         const matchesSearch = (shop.name || '').toLowerCase().includes((searchTerm || '').toLowerCase());
         const matchesTopRated = !topRatedOnly || (shop.rating && shop.rating >= 4.0);
         const matchesDelivery = !deliveryOnly || shop.has_delivery;
         return matchesCategory && matchesSearch && matchesTopRated && matchesDelivery;
       });
-    }, (filteredResults) => {
-      if (isCancelled) return;
+
       if (sortBy === 'rating') filteredResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       if (sortBy === 'name') filteredResults.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       if (sortBy === 'distance') filteredResults.sort((a, b) => (a.distance || 999) - (b.distance || 999));
-      if (sortBy === 'newest') filteredResults.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-      setFilteredShops(filteredResults);
-      setIsFiltering(false);
-    }, 50); // 50 items per frame
-
-    return () => { isCancelled = true; };
+    }
+    
+    setFilteredShops(filteredResults);
+    setIsFiltering(false);
   }, [shops, selectedCategory, searchTerm, topRatedOnly, deliveryOnly, sortBy]);
 
   return (

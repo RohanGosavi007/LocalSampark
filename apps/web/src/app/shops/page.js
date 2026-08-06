@@ -78,26 +78,36 @@ export default function ShopsPage() {
   useEffect(() => {
     if (!isLocationReady) return;
     
-    if (location?.lat && location?.lng) {
-      fetchShops(location.lat, location.lng, selectedCategory);
+    const cat = categories.find(c => c.slug === selectedCategory);
+    if (location?.pincode) {
+      fetchShops(location.lat, location.lng, location.pincode, selectedCategory, cat?.id);
+    } else if (location?.lat && location?.lng) {
+      fetchShops(location.lat, location.lng, null, selectedCategory, cat?.id);
     } else {
-      fetchShops(null, null, selectedCategory);
+      fetchShops(null, null, null, selectedCategory, cat?.id);
       setLocationError(true);
     }
-  }, [selectedCategory, location, isLocationReady]);
+  }, [selectedCategory, location, isLocationReady, categories, fetchShops]);
 
-  const fetchShops = useCallback((lat, lng, catSlug) => {
+  const fetchShops = useCallback((lat, lng, pincode, catSlug, catId) => {
     setLoading(true);
-    let url = new URL(`${API_URL}/api/v1/shops/nearby`);
-    setHighlights([]);
+    let url;
+    if (pincode) {
+      url = new URL(`${API_URL}/api/v1/shops/pincode/${pincode}`);
+      if (catId) url.searchParams.append('category_id', catId);
+      url.searchParams.append('limit', '100'); // Fetch enough for local UI filters
+    } else {
+      url = new URL(`${API_URL}/api/v1/shops/nearby`);
+      if (lat && lng) {
+          url.searchParams.append('lat', lat);
+          url.searchParams.append('lng', lng);
+      }
+      if (catSlug) {
+          url.searchParams.append('category', catSlug);
+      }
+    }
     
-    if (lat && lng) {
-        url.searchParams.append('lat', lat);
-        url.searchParams.append('lng', lng);
-    }
-    if (catSlug) {
-        url.searchParams.append('category', catSlug);
-    }
+    setHighlights([]);
 
     fetch(url)
       .then(res => res.json())
@@ -107,7 +117,9 @@ export default function ShopsPage() {
         if (data.shops && !catSlug) {
            const counts = {};
            data.shops.forEach(s => {
-               counts[s.category_id] = (counts[s.category_id] || 0) + 1;
+               // support both snake_case and camelCase from APIs
+               const cId = s.category_id || s.categoryId;
+               counts[cId] = (counts[cId] || 0) + 1;
            });
            setCategoryCounts(counts);
         }
@@ -128,56 +140,35 @@ export default function ShopsPage() {
   const [filteredShops, setFilteredShops] = useState([]);
   const [isFiltering, setIsFiltering] = useState(false);
 
-  // Time-Sliced Execution: Break heavy filtering jobs into time slices
+  // Replaced Time-Sliced Execution with Web Worker rendering to unblock UI thread
   useEffect(() => {
     setIsFiltering(true);
-    let isCancelled = false;
+    let source = workerFilteredShops || shops;
     
-    const processChunk = (chunk) => {
-      return chunk.filter(shop => {
-        const matchesSearch = shop.name.toLowerCase().includes((searchTerm || '').toLowerCase());
-        const matchesDelivery = filterDelivery ? shop.delivery_available === 1 : true;
+    if (source && source.length > 0) {
+      let final = source.filter(shop => {
+        const matchesDelivery = filterDelivery ? (shop.delivery_available === 1 || shop.deliveryAvailable) : true;
         const matchesTopRated = filterTopRated ? (shop.rating >= 4.0) : true;
+        // If worker hasn't run yet, apply search locally
+        const matchesSearch = workerFilteredShops ? true : shop.name.toLowerCase().includes((searchTerm || '').toLowerCase());
         return matchesSearch && matchesDelivery && matchesTopRated;
       });
-    };
-
-    const runTimeSlicing = (items, chunkSize = 50) => {
-      let index = 0;
-      let results = [];
-      
-      const nextChunk = () => {
-        if (isCancelled) return;
-        const chunk = items.slice(index, index + chunkSize);
-        if (chunk.length === 0) {
-          setFilteredShops(results);
-          setIsFiltering(false);
-          return;
-        }
-        results = results.concat(processChunk(chunk));
-        index += chunkSize;
-        requestAnimationFrame(nextChunk);
-      };
-      
-      requestAnimationFrame(nextChunk);
-    };
-
-    if (shops.length > 0) {
-      runTimeSlicing(shops);
+      setFilteredShops(final);
     } else {
       setFilteredShops([]);
-      setIsFiltering(false);
     }
-
-    return () => { isCancelled = true; };
-  }, [shops, searchTerm, filterDelivery, filterTopRated]);
+    setIsFiltering(false);
+  }, [shops, workerFilteredShops, filterDelivery, filterTopRated, searchTerm]);
 
   const sortedShops = useMemo(() => {
     return [...filteredShops].sort((a, b) => {
-      if (a.is_premium && !b.is_premium) return -1;
-      if (!a.is_premium && b.is_premium) return 1;
+      const aPrem = a.is_premium || a.isPremium;
+      const bPrem = b.is_premium || b.isPremium;
+      if (aPrem && !bPrem) return -1;
+      if (!aPrem && bPrem) return 1;
+      
       if (sortBy === 'distance') return (a.distance_km || 0) - (b.distance_km || 0);
-      if (sortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+      if (sortBy === 'newest') return new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt);
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
       return 0;
     });
@@ -394,7 +385,7 @@ export default function ShopsPage() {
                   <ShopCard
                     key={shop.id}
                     shop={shop}
-                    category={categoriesMap[shop.category_id]}
+                    category={categoriesMap[shop.category_id || shop.categoryId] || shop.category}
                     index={i}
                     onQuickView={handleQuickView}
                   />

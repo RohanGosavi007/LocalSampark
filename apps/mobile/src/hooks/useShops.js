@@ -3,21 +3,21 @@ import { apiGet } from '../lib/api';
 import { prefetchImages } from '../utils/imageOptimization';
 import { useTerritoryStore } from '../store/useTerritoryStore';
 
-export const useShops = ({ zoneId, category, lat, lng }) => {
+export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
   const { territoryId } = useTerritoryStore();
   // Use territory ID for scoping, fall back to zoneId for backward compat
   const effectiveZone = territoryId || zoneId;
 
   return useQuery({
-    queryKey: ['shops', effectiveZone, category, lat, lng],
+    queryKey: ['shops', effectiveZone, category, lat, lng, pincode],
     queryFn: async () => {
-      let url = lat && lng ? `/shops/nearby` : `/shops`;
+      let url = pincode ? `/shops/pincode/${pincode}` : (lat && lng ? `/shops/nearby` : `/shops`);
       const params = [];
       if (effectiveZone) params.push(`zone=${effectiveZone}`);
       if (effectiveZone) params.push(`territory_id=${effectiveZone}`);
-      if (category) params.push(`category=${category}`);
-      if (lat) params.push(`lat=${lat}`);
-      if (lng) params.push(`lng=${lng}`);
+      if (category) params.push(`category_id=${category}`);
+      if (lat && !pincode) params.push(`lat=${lat}`);
+      if (lng && !pincode) params.push(`lng=${lng}`);
       
       if (params.length > 0) {
         url += `?${params.join('&')}`;

@@ -2,62 +2,74 @@
 // Shared theme constants for consistent styling across all 66 modules
 
 export const COLORS = {
-  // Primary palette
-  primary: '#6366f1',
-  primaryHover: '#4f46e5',
-  primaryLight: '#eef2ff',
-  primaryGlass: 'rgba(99, 102, 241, 0.1)',
+  // Vibrant Primary palette (Swiggy-style)
+  primary: '#F05A28', 
+  primaryHover: '#E04A1B',
+  primaryLight: '#FFEDF1',
+  primaryGlass: 'rgba(240, 90, 40, 0.1)',
 
-  // Secondary palette
-  secondary: '#f97316',
-  secondaryHover: '#ea580c',
-  secondaryLight: '#fff7ed',
-  secondaryGlass: 'rgba(249, 115, 22, 0.1)',
-
-  // Accent
-  accent: '#10b981',
-  accentLight: '#ecfdf5',
+  // Secondary
+  secondary: '#10b981', // Blinkit green for secondary elements
+  secondaryHover: '#059669',
+  secondaryLight: '#ecfdf5',
+  secondaryGlass: 'rgba(16, 185, 129, 0.1)',
 
   // Backgrounds
-  background: '#f0f4ff',
-  backgroundAlt: '#ffffff',
-  cardBg: '#ffffff',
+  background: '#F8F9FA', // Breathable off-white
+  backgroundAlt: '#FFFFFF',
+  cardBg: '#FFFFFF',
 
   // Text
-  text: '#0f172a',
-  textMuted: '#64748b',
-  textLight: '#94a3b8',
+  text: '#1C1C1E',
+  textMuted: '#8E8E93',
+  textLight: '#C7C7CC',
 
   // Borders
-  border: '#e2e8f0',
-  borderLight: '#f1f5f9',
+  border: '#E5E5EA',
+  borderLight: '#F2F2F7',
 
-  // Status colors
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
+  // Semantic Status colors
+  success: '#34C759',
+  warning: '#FF9500',
+  error: '#FF3B30',
   info: '#3b82f6',
-
-  // Dark mode
-  dark: {
-    background: '#0f0f23',
-    backgroundAlt: '#1a1a2e',
-    cardBg: '#1a1a2e',
-    text: '#f1f5f9',
-    textMuted: '#94a3b8',
-    border: '#2d2d44',
-  },
+  
+  // NOTE: Dark mode has been explicitly stripped out to enforce the vibrant high-conversion UI.
 };
 
 export const SPACING = {
   xs: 4,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 32,
-  '4xl': 40,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  '2xl': 40,
+  '3xl': 48,
+  '4xl': 56,
+};
+
+export const TYPOGRAPHY = {
+  fontFamily: {
+    regular: 'System', 
+    bold: 'System', 
+    semiBold: 'System',
+  },
+  sizes: {
+    h1: 32,
+    h2: 24,
+    h3: 20,
+    body: 16,
+    subtext: 14,
+    caption: 12,
+  },
+  lineHeights: {
+    h1: 40,
+    h2: 32,
+    h3: 28,
+    body: 24,
+    subtext: 20,
+    caption: 16,
+  },
 };
 
 export const FONT_SIZES = {
@@ -73,42 +85,43 @@ export const FONT_SIZES = {
 };
 
 export const BORDER_RADIUS = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 24,
+  sm: 4,
+  md: 12, // standard cards
+  lg: 24, // bottom sheets
+  xl: 32,
+  '2xl': 40,
+  pill: 999,
   full: 9999,
 };
 
 export const SHADOWS = {
   sm: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   md: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
   },
   lg: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
-    elevation: 6,
+    elevation: 8,
   },
   glow: {
-    shadowColor: '#6366f1',
+    shadowColor: '#F05A28',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 6,
   },
 };
 

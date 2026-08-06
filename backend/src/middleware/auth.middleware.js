@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { queryOne } = require('../config/database');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // Verify JWT token middleware
 const authenticate = async (req, res, next) => {
@@ -13,20 +14,15 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Fetch user from database
-    const user = await queryOne(
-      `SELECT id, phone_number, full_name, role, avatar_url, bio,
-       region_id, is_active, is_verified, language_preference, email
-       FROM users WHERE id = $1`,
-      [decoded.userId]
-    );
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
 
     if (!user) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    // Removed is_banned check as it does not exist in schema
-
-    if (!user.is_active) {
+    if (!user.isActive) {
       return res.status(403).json({ error: 'Account is deactivated.' });
     }
 
@@ -50,7 +46,9 @@ const optionalAuth = async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await queryOne('SELECT id, phone_number, full_name, role FROM users WHERE id = $1 AND (is_active = true OR is_active = 1)', [decoded.userId]);
+      const user = await prisma.user.findFirst({
+        where: { id: decoded.userId, isActive: true }
+      });
       req.user = user || null;
     }
   } catch {
@@ -66,26 +64,14 @@ const requireAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // Try finding admin role in admin_roles table
     let adminRole = null;
-    try {
-      adminRole = await queryOne(
-        'SELECT id, role, region_id, permissions FROM admin_roles WHERE user_id = $1 AND is_active = true',
-        [req.user.id]
-      );
-    } catch (e) {
-      console.warn('Fallback: admin_roles table query failed, checking users table role directly.', e.message);
-    }
-
-    // Fallback: If no entry in admin_roles, check if user.role itself is admin/super_admin
-    if (!adminRole) {
-      if (req.user.role === 'admin' || req.user.role === 'super_admin' || req.user.user_type === 'admin') {
-        adminRole = {
-          role: req.user.role || 'admin',
-          region_id: req.user.region_id || null,
-          permissions: '{"all": true}'
-        };
-      }
+    // Check if user.role itself is admin/super_admin
+    if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
+      adminRole = {
+        role: req.user.role,
+        regionId: req.user.regionId || null,
+        permissions: '{"all": true}'
+      };
     }
 
     if (!adminRole) {
@@ -105,7 +91,7 @@ const requireRole = (...roles) => {
     if (!req.adminRole) {
       return res.status(403).json({ error: 'Admin access required.' });
     }
-    if (!roles.includes(req.adminRole.role) && req.adminRole.role !== 'super_admin') {
+    if (!roles.includes(req.adminRole.role) && req.adminRole.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: `Required role: ${roles.join(' or ')}` });
     }
     next();
@@ -113,15 +99,22 @@ const requireRole = (...roles) => {
 };
 
 // Generate tokens
-function generateTokens(userId) {
+function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
+  const payload = {
+    userId,
+    role: role || 'CUSTOMER',
+    tokenVersion,
+    ...extraPayload
+  };
+
   const accessToken = jwt.sign(
-    { userId },
+    payload,
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 
   const refreshToken = jwt.sign(
-    { userId },
+    { userId, tokenVersion },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
   );
@@ -129,9 +122,57 @@ function generateTokens(userId) {
   return { accessToken, refreshToken };
 }
 
+// Phase 1: verifyRole Middleware for strict access control + Token Versioning
+const verifyRole = (allowedRoles) => {
+  return async (req, res, next) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: 'Access denied. No token provided.' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      const userRole = decoded.role;
+      if (!userRole) {
+        return res.status(403).json({ success: false, error: 'Token missing role context.' });
+      }
+
+      // Token Versioning strict check
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { tokenVersion: true }
+      });
+      
+      if (!user || user.tokenVersion !== decoded.tokenVersion) {
+        return res.status(401).json({ success: false, error: 'Session invalidated. Please login again.' });
+      }
+
+      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+        req.user = decoded;
+        return next();
+      }
+
+      // Check granular roles
+      if (!allowedRoles.includes(userRole)) {
+        return res.status(403).json({ success: false, error: `Forbidden: Requires ${allowedRoles.join(' or ')}` });
+      }
+
+      req.user = decoded;
+      next();
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ success: false, error: 'Token expired. Please refresh.' });
+      }
+      return res.status(401).json({ success: false, error: 'Invalid token.' });
+    }
+  };
+};
+
 // Require Territory Admin role
 const requireTerritory = (req, res, next) => {
-  const allowedRoles = ['territory_admin', 'area_agent', 'admin', 'super_admin'];
+  const allowedRoles = ['TERRITORY_ADMIN', 'AREA_AGENT', 'ADMIN', 'SUPER_ADMIN'];
   const role = req.adminRole?.role || req.user?.role;
   if (!role || !allowedRoles.includes(role)) {
     return res.status(403).json({ error: 'Territory Admin access required.' });
@@ -141,7 +182,7 @@ const requireTerritory = (req, res, next) => {
 
 // Require Area Agent (multi-zone admin) role or higher
 const requireAreaAgent = (req, res, next) => {
-  const allowedRoles = ['area_agent', 'admin', 'super_admin'];
+  const allowedRoles = ['AREA_AGENT', 'ADMIN', 'SUPER_ADMIN'];
   const role = req.adminRole?.role || req.user?.role;
   if (!role || !allowedRoles.includes(role)) {
     return res.status(403).json({ error: 'Area Agent or Super Admin access required.' });
@@ -150,23 +191,23 @@ const requireAreaAgent = (req, res, next) => {
 };
 
 const ROLES = {
-  USER: 'user',
-  SHOP_OWNER: 'shop_owner',
-  DELIVERY_AGENT: 'delivery_agent',
-  SERVICE_PROVIDER: 'service_provider',
-  FIELD_AGENT: 'field_agent',
-  SECURITY_GUARD: 'security_guard',
-  AREA_AGENT: 'area_agent',
-  TERRITORY_ADMIN: 'territory_admin',
-  FRANCHISE_OWNER: 'franchise_owner',
-  SOCIETY_ADMIN: 'society_admin',
-  SOCIETY_GUARD: 'society_guard',
-  MODERATOR: 'moderator',
-  ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin',
+  USER: 'CUSTOMER',
+  SHOP_OWNER: 'VENDOR',
+  DELIVERY_AGENT: 'DELIVERY',
+  SERVICE_PROVIDER: 'VENDOR',
+  FIELD_AGENT: 'FIELD_AGENT',
+  SECURITY_GUARD: 'SECURITY_GUARD',
+  AREA_AGENT: 'AREA_AGENT',
+  TERRITORY_ADMIN: 'TERRITORY_ADMIN',
+  FRANCHISE_OWNER: 'FRANCHISE_OWNER',
+  SOCIETY_ADMIN: 'SOCIETY_ADMIN',
+  SOCIETY_GUARD: 'SOCIETY_GUARD',
+  MODERATOR: 'MODERATOR',
+  ADMIN: 'ADMIN',
+  SUPER_ADMIN: 'SUPER_ADMIN',
   // Phase 6: Enterprise RBAC roles
-  DISTRICT_MANAGER: 'district_manager',
-  TERRITORY_FRANCHISE: 'territory_franchise'
+  DISTRICT_MANAGER: 'DISTRICT_MANAGER',
+  TERRITORY_FRANCHISE: 'TERRITORY_FRANCHISE'
 };
 
 const hasAccess = (allowedRoles) => {
@@ -198,26 +239,27 @@ const enforceMultiTenancy = async (req, res, next) => {
       return next();
     }
 
-    if (req.user.role === ROLES.SHOP_OWNER) {
-      // Find the shop owned by this user
-      const shop = await queryOne('SELECT id, crm_tier, is_locked FROM local_shops WHERE owner_id = $1 LIMIT 1', [req.user.id]);
+    if (req.user.role === ROLES.SHOP_OWNER || req.user.role === 'VENDOR' || req.user.role === 'VENDOR_OWNER' || req.user.role === 'VENDOR_STAFF') {
+      const shop = await prisma.shop.findFirst({
+        where: { ownerId: req.user.userId || req.user.id }
+      });
       
       if (!shop) {
         return res.status(403).json({ error: 'No shop associated with this account' });
       }
 
-      if (shop.is_locked) {
+      if (shop.status === 'SUSPENDED') {
         return res.status(403).json({ error: 'Shop is locked due to billing or policy violation' });
       }
 
-      // Inject shop context into the request
-      req.shopId = shop.id;
-      req.crmTier = shop.crm_tier || 'free';
+      // Inject strict shop context into the request
+      req.tenantShopId = shop.id;
+      req.crmTier = shop.isPremium ? 'premium' : 'free';
 
-      // If the route provided a shopId explicitly (in params or body), ensure it matches
+      // Strict enforcement: if route provided a shopId explicitly, ensure it matches tenant
       const targetShopId = req.params.shopId || req.body.shopId || req.query.shopId;
-      if (targetShopId && targetShopId !== req.shopId) {
-        return res.status(403).json({ error: 'Tenant Mismatch: Access Denied' });
+      if (targetShopId && targetShopId !== req.tenantShopId) {
+        return res.status(403).json({ error: 'Tenant Mismatch: Access Denied to requested shopId' });
       }
 
       return next();
@@ -240,5 +282,6 @@ module.exports = {
   generateTokens,
   ROLES,
   hasAccess,
-  enforceMultiTenancy
+  enforceMultiTenancy,
+  verifyRole
 };

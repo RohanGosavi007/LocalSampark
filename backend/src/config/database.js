@@ -14,7 +14,7 @@ if (process.env.USE_SQLITE === 'true') {
         port: process.env.NODE_ENV === 'production' ? parseInt(process.env.DB_PORT || '6432') : parseInt(process.env.DB_PORT || '5432'),
         database: process.env.DB_NAME || 'localsampark',
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgres123',
+        password: process.env.DB_PASSWORD || '',
         max: process.env.NODE_ENV === 'production' ? 100 : 20, // High Node.js side pool limits since PgBouncer handles the DB limits
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,

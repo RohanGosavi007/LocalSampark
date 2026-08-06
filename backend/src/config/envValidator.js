@@ -13,7 +13,8 @@ const REQUIRED_PRODUCTION_VARS = [
   'REDIS_HOST',
   'ALLOWED_ORIGINS',
   'RAZORPAY_KEY_ID',
-  'FIREBASE_PROJECT_ID'
+  'FIREBASE_PROJECT_ID',
+  'SENTRY_DSN'
 ];
 
 const RECOMMENDED_VARS = [
@@ -35,9 +36,13 @@ function validateEnv() {
 
   // Always check critical vars
   const missingCritical = [];
+  const placeholderCritical = [];
   REQUIRED_ENV_VARS.forEach((key) => {
-    if (!process.env[key] || process.env[key].trim() === '') {
+    const val = process.env[key];
+    if (!val || val.trim() === '') {
       missingCritical.push(key);
+    } else if (val.includes('REPLACE_ME') || val.includes('SECURE')) {
+      placeholderCritical.push(key);
     }
   });
 
@@ -45,6 +50,12 @@ function validateEnv() {
     console.error('❌ CRITICAL: Missing required environment variables:');
     missingCritical.forEach(key => console.error(`  - ${key}`));
     if (isProduction) process.exit(1);
+  }
+
+  if (isProduction && placeholderCritical.length > 0) {
+    console.error('❌ CRITICAL: Placeholder secrets found in production:');
+    placeholderCritical.forEach(key => console.error(`  - ${key}`));
+    process.exit(1);
   }
 
   if (isProduction) {

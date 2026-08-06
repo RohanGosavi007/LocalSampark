@@ -9,6 +9,9 @@ import {
   MessageSquare, Wallet, Gift, Crown, Building, ShoppingBag, Package, Dog, Calendar, Heart, Trash2, Activity, Stethoscope, Menu, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
+
+const AccountDropdown = dynamic(() => import('./AccountDropdown'), { ssr: false });
 
 export default function Header() {
   const { user, activeRole, assignedRoles, switchRole, logout, mockLogin } = useAuth();
@@ -228,6 +231,11 @@ export default function Header() {
               </a>
             </>
           )}
+
+          <div className="w-px h-5 bg-border mx-1"></div>
+          <a href="/investor-demo" className="text-emerald-500 font-bold text-sm hover:underline transition-colors flex items-center gap-1">
+            Investor Demo
+          </a>
         </div>
       );
   };
@@ -391,55 +399,7 @@ export default function Header() {
                 )}
               </AnimatePresence>
 
-              <div 
-                className="relative"
-                onMouseEnter={() => setActiveDropdown('account')}
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-border/40 hover:bg-border transition-colors border border-border">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary text-white flex items-center justify-center text-xs font-bold">
-                    {user.name ? user.name[0].toUpperCase() : 'U'}
-                  </div>
-                  <ChevronDown className="w-3 h-3 text-text-muted" />
-                </button>
-
-                <AnimatePresence>
-                  {activeDropdown === 'account' && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full right-0 mt-2 w-56 glass-card p-2 rounded-xl shadow-2xl z-50"
-                    >
-                      <div className="p-3 border-b border-border mb-2">
-                        <p className="text-sm font-semibold truncate">{user.name || 'User'}</p>
-                        <p className="text-xs text-text-muted truncate">{user.phone || user.email}</p>
-                      </div>
-                      
-                      {assignedRoles.map((role, index) => (
-                        <button 
-                          key={`${role}-${index}`}
-                          onClick={() => { switchRole(role); setActiveDropdown(null); window.location.href = getRoleRoute(role); }}
-                          className={`w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${activeRole === role ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-border/40'}`}
-                        >
-                          {activeRole === role && <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>}
-                          {formatRole(role)}
-                        </button>
-                      ))}
-                      
-                      <div className="h-px bg-border my-2" />
-                      <a href="/wallet" className="w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 hover:bg-border/40 transition-colors text-text-muted"><Wallet className="w-4 h-4"/> Wallet</a>
-                      <a href="/rewards" className="w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 hover:bg-border/40 transition-colors text-text-muted"><Gift className="w-4 h-4"/> Rewards</a>
-                      <a href="/premium" className="w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 hover:bg-border/40 transition-colors text-yellow-500 font-medium"><Crown className="w-4 h-4"/> Premium</a>
-                      <a href="/profile" className="w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 hover:bg-border/40 transition-colors text-text-muted mt-1"><Settings className="w-4 h-4"/> Settings</a>
-                      <button 
-                        onClick={async () => { await logout(); window.location.href = '/'; }}
-                        className="w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 hover:bg-red-500/10 text-red-500 transition-colors mt-1"
-                      >
-                        <LogOut className="w-4 h-4"/> Sign Out
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <AccountDropdown />
             </div>
           ) : (
             <div className="flex items-center gap-2">

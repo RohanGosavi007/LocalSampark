@@ -93,7 +93,12 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin && process.env.NODE_ENV !== 'production') return callback(null, true);
     // Allow requests with no origin for mobile apps, rely on JWT for security
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.warn(`CORS: Request with missing origin blocked/allowed depending on policy (Likely Mobile Client)`);
+      }
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -115,13 +120,15 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.use(compression());
 // app.use(xss()); // Removed due to IncomingMessage crash
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
-const { rateLimiter } = require('./middleware/rateLimit.middleware');
+const { rateLimiter, ddosProtector } = require('./middleware/rateLimit.middleware');
+app.use(ddosProtector);
 app.use(rateLimiter);
+const { auditLogger } = require('./middleware/audit.middleware');
+app.use(auditLogger);
 
 // ─── SAFE XSS SANITIZATION (Express 5 Compatible) ─────────────
 const sanitizeData = (data) => {
@@ -310,6 +317,17 @@ process.on('SIGTERM', async () => {
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at: ' + promise + ' reason: ' + reason);
+  // Trigger a graceful shutdown in production
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('Initiating graceful shutdown due to unhandled promise rejection');
+    server.close(() => {
+      if (pool && typeof pool.end === 'function') pool.end();
+      if (redisClient && typeof redisClient.quit === 'function') redisClient.quit();
+      process.exit(1);
+    });
+    // Force shutdown after 10 seconds if graceful shutdown fails
+    setTimeout(() => process.exit(1), 10000).unref();
+  }
 });
 
 process.on('uncaughtException', (error) => {
@@ -328,9 +346,3 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 module.exports = { app, server };
-
-// force restart// restart nodemon
-// restart nodemon again
-// restart nodemon cache removal
-// restart nodemon cache removal 2
-// restart nodemon for cache

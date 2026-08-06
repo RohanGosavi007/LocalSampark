@@ -8,6 +8,7 @@ import { SocketProvider } from '../context/SocketContext';
 import { LanguageProvider } from './components/LanguageToggle';
 import { ToastProvider } from './components/ui/Toast';
 import ServiceWorkerRegistrar from './components/ServiceWorkerRegistrar';
+import DevLoginScreen from '../components/DevLoginScreen';
 import QueryProvider from './components/QueryProvider';
 
 const jsonLd = {
@@ -103,6 +104,7 @@ export default function RootLayout({ children }) {
           </AuthProvider>
         </LanguageProvider>
         </QueryProvider>
+        <DevLoginScreen />
       </body>
     </html>
   );

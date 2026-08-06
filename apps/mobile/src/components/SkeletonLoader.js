@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Dimensions } from 'react-native';
+import { theme } from '../theme/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -15,12 +16,12 @@ export default function SkeletonLoader({ type = 'bento', count = 4 }) {
       Animated.sequence([
         Animated.timing(animatedValue, {
           toValue: 1,
-          duration: 1000,
+          duration: 800,
           useNativeDriver: true,
         }),
         Animated.timing(animatedValue, {
           toValue: 0,
-          duration: 1000,
+          duration: 800,
           useNativeDriver: true,
         }),
       ])
@@ -63,17 +64,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   bentoCard: {
     width: (width / 2) - 24,
     height: 120,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 16,
-    marginBottom: 16,
+    backgroundColor: theme.colors.border,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.lg,
   },
   listContainer: {
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   listItem: {
     flexDirection: 'row',
@@ -84,22 +85,22 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#E2E8F0',
-    marginRight: 16,
+    backgroundColor: theme.colors.border,
+    marginRight: theme.spacing.lg,
   },
   textContainer: {
     flex: 1,
   },
   titleLine: {
     height: 20,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.colors.border,
     borderRadius: 4,
     marginBottom: 8,
     width: '70%',
   },
   subLine: {
     height: 14,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.colors.border,
     borderRadius: 4,
     width: '40%',
   },

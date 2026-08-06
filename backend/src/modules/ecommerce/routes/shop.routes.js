@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { authenticate } = require('../../../middleware/auth.middleware');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
@@ -86,40 +88,36 @@ router.get('/', async (req, res, next) => {
   try {
     const { limit = 20, cursor, search = '', status } = req.query;
     
-    let shopsQuery = "SELECT * FROM local_shops WHERE 1=1";
-    const params = [];
-    let paramIdx = 1;
-
-    // 10x Scale: Cursor-Based Pagination (Replaces OFFSET)
-    if (cursor) {
-        shopsQuery += ` AND id < $${paramIdx}`;
-        params.push(cursor);
-        paramIdx++;
-    }
-
-    if (search) {
-        shopsQuery += ` AND (name ILIKE $${paramIdx} OR description ILIKE $${paramIdx})`;
-        params.push(`%${search}%`);
-        paramIdx++;
-    }
-
-    if (status) {
-        shopsQuery += ` AND approval_status = $${paramIdx}`;
-        params.push(status);
-        paramIdx++;
-    }
-
-    shopsQuery += ` ORDER BY id DESC LIMIT $${paramIdx}`;
-    params.push(parseInt(limit));
-
-    let shops = await query(shopsQuery, params);
-    const shopRows = shops.rows || shops;
+    let where = {};
     
-    // Determine the next cursor
-    const nextCursor = shopRows.length > 0 ? shopRows[shopRows.length - 1].id : null;
+    if (search) {
+        where.OR = [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } }
+        ];
+    }
+    
+    if (status) {
+        where.approvalStatus = status;
+    }
+    
+    const queryOpts = {
+        where,
+        take: parseInt(limit),
+        orderBy: { id: 'desc' }
+    };
+    
+    if (cursor) {
+        queryOpts.cursor = { id: cursor };
+        queryOpts.skip = 1;
+    }
+    
+    const shops = await prisma.shop.findMany(queryOpts);
+    
+    const nextCursor = shops.length === parseInt(limit) ? shops[shops.length - 1].id : null;
 
     res.json({
-        data: shopRows,
+        data: shops,
         nextCursor,
         limit: parseInt(limit)
     });
@@ -131,28 +129,7 @@ router.get('/', async (req, res, next) => {
 // GET nearby shops
 router.get('/nearby', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        const fs = require('fs'); const path = require('path');
-        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
-        if (fs.existsSync(mockPath)) {
-          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
-          let mockShops = sData.shops;
-          if (req.query.category) {
-            mockShops = mockShops.filter(s => s.category.toLowerCase().replace(/ /g, '-') === req.query.category);
-          }
-          const formattedShops = mockShops.map(s => ({
-            id: s.id, name: s.name, slug: s.slug || s.name.toLowerCase().replace(/ /g, '-'),
-            category: s.category, category_id: s.category, address: typeof s.address === 'object' ? `${s.address.line1 || ''}, ${s.address.city || 'Pune'}` : s.address,
-            distance: (Math.random() * 5).toFixed(1), rating: s.rating || 4.5, review_count: s.reviewCount || 120,
-            is_open: true, delivery_available: true, cover_image_url: 'https://via.placeholder.com/400x250?text=' + encodeURIComponent(s.name)
-          }));
-          return res.json({ success: true, shops: formattedShops });
-        }
-      } catch(e) {}
-    }
-
-    let { lat, lng, radius = 10, category, region_id } = req.query;
+    let { lat, lng, radius = 10, category, region_id, topRated, deliveryOnly, sortBy } = req.query;
     let fallbackUsed = false;
     
     // IP Fallback logic
@@ -162,111 +139,83 @@ router.get('/nearby', async (req, res, next) => {
         fallbackUsed = true;
     }
     
-    let shopsQuery = "";
-    const params = [];
-    let paramIdx = 1;
-
-    let shopsWithDistance = [];
-
-    if (process.env.USE_SQLITE === 'true') {
-        const userLat = parseFloat(lat);
-        const userLng = parseFloat(lng);
-        const searchRadius = parseFloat(radius);
-
-        // Bounding Box calculation for indexed B-Tree scanning
-        const latDelta = searchRadius / 111.045;
-        const lngDelta = searchRadius / (111.045 * Math.cos(userLat * (Math.PI / 180)));
-
-        const minLat = userLat - latDelta;
-        const maxLat = userLat + latDelta;
-        const minLng = userLng - lngDelta;
-        const maxLng = userLng + lngDelta;
-
-        shopsQuery = `
-          SELECT * FROM local_shops 
-          WHERE is_active = 1 
-            AND approval_status = 'approved'
-            AND latitude BETWEEN $${paramIdx++} AND $${paramIdx++}
-            AND longitude BETWEEN $${paramIdx++} AND $${paramIdx++}
-        `;
-        params.push(minLat, maxLat, minLng, maxLng);
-
-        if (category) {
-            shopsQuery += ` AND category_id = (SELECT id FROM shop_categories WHERE slug = $${paramIdx++})`;
-            params.push(category);
-        }
-        if (region_id) {
-            shopsQuery += ` AND region_id = $${paramIdx++}`;
-            params.push(region_id);
-        }
-        
-        let shops = await query(shopsQuery, params);
-        shops = shops.rows || shops;
-
-        // Apply fine-grained Haversine math ONLY to pre-filtered bounding box candidates
-        shopsWithDistance = shops.map(shop => {
-            const dist = getDistanceFromLatLonInKm(userLat, userLng, shop.latitude, shop.longitude);
-            return { ...shop, distance_km: parseFloat(dist.toFixed(2)) };
-        });
-
-        if (!region_id) {
-            shopsWithDistance = shopsWithDistance.filter(shop => shop.distance_km <= searchRadius);
-        }
-        
-        shopsWithDistance.sort((a, b) => a.distance_km - b.distance_km);
-    } else {
-        // Optimized PostgreSQL Geospatial Search using earthdistance and GiST
-        shopsQuery = `
-            SELECT *,
-            earth_distance(ll_to_earth($1, $2), ll_to_earth(latitude, longitude)) / 1000 AS distance_km
-            FROM local_shops
-            WHERE is_active = 1 AND approval_status = 'approved'
-        `;
-        params.push(parseFloat(lat), parseFloat(lng));
-        paramIdx = 3;
-
-        if (category) {
-            shopsQuery += ` AND category_id = (SELECT id FROM shop_categories WHERE slug = $${paramIdx++})`;
-            params.push(category);
-        }
-
-        if (region_id) {
-            shopsQuery += ` AND region_id = $${paramIdx++}`;
-            params.push(region_id);
-        } else {
-            // Filter by radius in DB using bounding box operator <@> for fast GiST index seek
-            // earth_box takes earth point and radius in meters
-            shopsQuery += ` AND ll_to_earth(latitude, longitude) <@ earth_box(ll_to_earth($1, $2), $${paramIdx++} * 1000)`;
-            params.push(radius);
-        }
-        
-        // Sort by distance (KNN)
-        shopsQuery += ` ORDER BY ll_to_earth(latitude, longitude) <-> ll_to_earth($1, $2) ASC LIMIT 200`;
-        
-        let shops = await query(shopsQuery, params);
-        shopsWithDistance = shops.rows || shops;
-        shopsWithDistance = shopsWithDistance.map(shop => ({ ...shop, distance_km: parseFloat((shop.distance_km || 0).toFixed(2)) }));
+    // Check Redis cache first if no specific filters that change frequently
+    const cacheKey = `shops:nearby:${Math.round(lat*100)}:${Math.round(lng*100)}:${radius}:${category||'all'}:${region_id||'all'}:${topRated||'f'}:${deliveryOnly||'f'}:${sortBy||'distance'}`;
+    const cached = await CacheService.get(cacheKey);
+    if (cached) {
+        return res.json({ shops: cached, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id, source: 'cache' });
     }
 
-    // Calculate AdBid/Score for featured shops
-    shopsWithDistance = shopsWithDistance.map(shop => {
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const radKm = parseFloat(radius);
+
+    // Build Prisma raw query
+    let conditions = ["isActive = true", "approvalStatus = 'approved'"];
+    if (category) {
+        conditions.push(`categoryId = (SELECT id FROM shop_categories WHERE slug = '${category}' LIMIT 1)`);
+    }
+    if (region_id) {
+        conditions.push(`regionId = '${region_id}'`);
+    } else {
+        conditions.push(`ll_to_earth(latitude, longitude) <@ earth_box(ll_to_earth(${userLat}, ${userLng}), ${radKm} * 1000)`);
+    }
+    
+    if (topRated === 'true') {
+        conditions.push(`rating >= 4.0`);
+    }
+    if (deliveryOnly === 'true') {
+        conditions.push(`deliveryAvailable = true`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    
+    let orderClause = `ORDER BY distance_km ASC`;
+    if (sortBy === 'rating') {
+        orderClause = `ORDER BY rating DESC NULLS LAST, distance_km ASC`;
+    } else if (sortBy === 'newest') {
+        orderClause = `ORDER BY createdAt DESC, distance_km ASC`;
+    } else if (sortBy === 'name') {
+        orderClause = `ORDER BY name ASC, distance_km ASC`;
+    }
+
+    const rawQuery = `
+        SELECT *,
+        earth_distance(ll_to_earth(${userLat}, ${userLng}), ll_to_earth(latitude, longitude)) / 1000 AS distance_km
+        FROM shops
+        ${whereClause}
+        ${orderClause}
+        LIMIT 200
+    `;
+
+    const shopsWithDistance = await prisma.$queryRawUnsafe(rawQuery);
+
+    // Calculate AdBid/Score for featured shops and sort if sortBy is not explicitly overriding
+    let processedShops = shopsWithDistance.map(shop => {
         let adScore = 0;
-        if (shop.is_featured) {
+        if (shop.isFeatured) {
             const rating = shop.rating || 4.5;
-            // Base formula: 60% Ad Bid presence + 30% Rating + 10% Distance Proximity
-            adScore = (10 * 0.6) + (rating * 0.3) + ((1 / (shop.distance_km + 0.1)) * 0.1);
+            adScore = (10 * 0.6) + (rating * 0.3) + ((1 / ((shop.distance_km||0) + 0.1)) * 0.1);
         }
-        return { ...shop, ad_score: Math.round(adScore * 100) / 100 };
+        return { 
+            ...shop, 
+            distance_km: parseFloat((shop.distance_km || 0).toFixed(2)),
+            ad_score: Math.round(adScore * 100) / 100 
+        };
     });
 
-    // Sort priority: 1. Premium Shops (SaaS), 2. High AdScore (Boosted), 3. Distance
-    shopsWithDistance.sort((a, b) => {
-        if (b.is_premium !== a.is_premium) return b.is_premium - a.is_premium;
-        if (b.ad_score !== a.ad_score) return b.ad_score - a.ad_score;
-        return a.distance_km - b.distance_km;
-    });
+    if (!sortBy || sortBy === 'distance') {
+        // Sort priority: 1. Premium Shops (SaaS), 2. High AdScore (Boosted), 3. Distance
+        processedShops.sort((a, b) => {
+            if (b.isPremium !== a.isPremium) return (b.isPremium ? 1 : 0) - (a.isPremium ? 1 : 0);
+            if (b.ad_score !== a.ad_score) return b.ad_score - a.ad_score;
+            return a.distance_km - b.distance_km;
+        });
+    }
     
-    res.json({ shops: shopsWithDistance, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
+    await CacheService.set(cacheKey, processedShops, 300); // 5 minute cache
+
+    res.json({ shops: processedShops, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
   } catch (error) {
     next(error);
   }

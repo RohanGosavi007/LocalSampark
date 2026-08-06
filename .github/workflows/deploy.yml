@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Render)
 
 on:
   push:
@@ -9,6 +9,25 @@ on:
 jobs:
   test-and-lint:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: localsampark_admin
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: localsampark
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
     steps:
       - uses: actions/checkout@v3
 
@@ -20,41 +39,26 @@ jobs:
       - name: Install Root Dependencies
         run: npm ci || npm install
 
-      - name: Test Backend
+      - name: Run Backend Tests
+        env:
+          DATABASE_URL: postgresql://localsampark_admin:testpassword@localhost:5432/localsampark
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret
         run: |
           cd backend
           npm install
+          npx prisma generate
+          npx prisma migrate dev --name init
           npm test --if-present
 
-  build-and-deploy:
+  deploy-to-render:
     needs: test-and-lint
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Build Docker Images
-        run: docker-compose build
-
-      - name: Setup SSH for Deployment
-        # You'll need to configure these secrets in your repository settings
+      - name: Trigger Render Deploy Hook
         run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          cat >>~/.ssh/config <<END
-          Host production-server
-            HostName ${{ secrets.SERVER_IP }}
-            User ${{ secrets.SERVER_USER }}
-            IdentityFile ~/.ssh/deploy_key
-            StrictHostKeyChecking no
-          END
-
-      - name: Deploy to Server
-        run: |
-          # Copy updated files
-          scp -r docker-compose.yml nginx.conf backend apps/web production-server:~/localsampark/
-          
-          # Execute deploy commands
-          ssh production-server "cd ~/localsampark && docker-compose down && docker-compose up -d --build"
+          # Trigger deployment to Render
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          echo "Deployment triggered on Render!"

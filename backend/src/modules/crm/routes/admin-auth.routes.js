@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const { query, queryOne } = require('../../../config/database');
 const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const { v4: uuidv4 } = require('uuid');
+const { generateTokens } = require('../../../middleware/auth.middleware');
 
 // Default dev PIN for bootstrapping (will be bcrypt-compared)
 const DEV_DEFAULT_PIN = '123456';
@@ -100,10 +101,11 @@ router.post('/login', authLimiter, async (req, res, next) => {
     const roleString = adminRole ? adminRole.role : user.role;
     const regionId = adminRole ? adminRole.region_id : user.region_id;
 
-    const accessToken = jwt.sign(
-      { userId: user.id, role: roleString, regionId, isAdminSession: true },
-      process.env.JWT_SECRET || 'dev_secret_key',
-      { expiresIn: '30m' } // Shorter expiry for admin sessions
+    const { accessToken } = generateTokens(
+      user.id, 
+      roleString, 
+      user.token_version || 0,
+      { regionId, isAdminSession: true }
     );
 
     // Session log

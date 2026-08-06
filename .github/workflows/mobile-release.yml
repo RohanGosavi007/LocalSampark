@@ -1,0 +1,40 @@
+name: Mobile Release (Android)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install Dependencies
+        run: |
+          cd apps/mobile
+          npm ci || npm install
+
+      - name: Build Android APK
+        run: |
+          cd apps/mobile
+          eas build --platform android --profile production --non-interactive
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release
+          path: apps/mobile/build/

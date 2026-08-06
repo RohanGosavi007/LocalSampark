@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { getVisitorView } from '../../../src/config/visitor-config';
 import { apiGet } from '../../../src/lib/api';
+import SkeletonLoader from '../../../src/components/SkeletonLoader';
 
 // Import all visitor views
 import RetailVisitorView from './RetailVisitorView';
@@ -64,8 +65,8 @@ export default function ShopDetailRouter() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' }}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+        <SkeletonLoader type="list" count={4} />
       </View>
     );
   }

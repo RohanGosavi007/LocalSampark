@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { query, queryOne } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const { authenticate, generateTokens } = require('../../../middleware/auth.middleware');
 const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
@@ -87,7 +88,7 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
     }
 
     // Check if user exists
-    let user = await queryOne('SELECT * FROM users WHERE phone_number = $1', [phoneNumber]);
+    let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
 
     if (!user) {
       // Create user
@@ -105,28 +106,22 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
       }
 
       const id = crypto.randomUUID();
-      user = await queryOne(
-        `INSERT INTO users (id, phone_number, full_name, region_id, role) 
-         VALUES ($1, $2, $3, $4, 'user') 
-         RETURNING *`,
-        [id, phoneNumber, fullName, assignedRegionId]
-      );
-
-      // Create wallet
-      await query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0.00)', [user.id]);
+      user = await prisma.user.create({
+        data: {
+          phone: phoneNumber,
+          name: fullName,
+          regionId: assignedRegionId,
+          role: 'CUSTOMER'
+        }
+      });
     }
 
     // Generate JWT tokens
-    const accessToken = jwt.sign(
-      { userId: user.id, role: user.role, regionId: user.region_id },
-      process.env.JWT_SECRET || 'dev_secret_key',
-      { expiresIn: '1d' }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_REFRESH_SECRET || 'dev_refresh_key',
-      { expiresIn: '7d' }
+    const { accessToken, refreshToken } = generateTokens(
+      user.id, 
+      user.role, 
+      user.tokenVersion || 0,
+      { regionId: user.regionId }
     );
 
     res.json({
@@ -153,7 +148,7 @@ router.post('/firebase-login', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Firebase token does not contain a verified phone number' });
     }
 
-    let user = await queryOne('SELECT * FROM users WHERE phone_number = $1', [phoneNumber]);
+    let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
 
     if (!user) {
       if (!fullName) {
@@ -170,26 +165,21 @@ router.post('/firebase-login', authLimiter, async (req, res, next) => {
       }
 
       const id = crypto.randomUUID();
-      user = await queryOne(
-        `INSERT INTO users (id, phone_number, full_name, region_id, role, auth_method) 
-         VALUES ($1, $2, $3, $4, 'user', 'firebase') 
-         RETURNING *`,
-        [id, phoneNumber, fullName, assignedRegionId]
-      );
-
-      await query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0.00)', [user.id]);
+      user = await prisma.user.create({
+        data: {
+          phone: phoneNumber,
+          name: fullName,
+          regionId: assignedRegionId,
+          role: 'CUSTOMER'
+        }
+      });
     }
 
-    const accessToken = jwt.sign(
-      { userId: user.id, role: user.role, regionId: user.region_id },
-      process.env.JWT_SECRET || 'dev_secret_key',
-      { expiresIn: '1d' }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_REFRESH_SECRET || 'dev_refresh_key',
-      { expiresIn: '7d' }
+    const { accessToken, refreshToken } = generateTokens(
+      user.id, 
+      user.role, 
+      user.tokenVersion || 0,
+      { regionId: user.regionId }
     );
 
     res.json({ registered: true, user, accessToken, refreshToken });
@@ -210,15 +200,16 @@ router.post('/refresh-token', async (req, res, next) => {
         return res.status(401).json({ error: 'Invalid or expired refresh token' });
       }
 
-      const user = await queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const accessToken = jwt.sign(
-        { userId: user.id, role: user.role, regionId: user.region_id },
-        process.env.JWT_SECRET || 'dev_secret_key',
-        { expiresIn: '1d' }
+      const { accessToken } = generateTokens(
+        user.id, 
+        user.role, 
+        user.tokenVersion || 0,
+        { regionId: user.regionId }
       );
 
       res.json({ accessToken });
@@ -387,16 +378,11 @@ router.post('/login-email',
     }
 
     // Generate JWT tokens
-    const accessToken = jwt.sign(
-      { userId: user.id, role: user.role, regionId: user.region_id },
-      process.env.JWT_SECRET || 'dev_secret_key',
-      { expiresIn: '1d' }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_REFRESH_SECRET || 'dev_refresh_key',
-      { expiresIn: '7d' }
+    const { accessToken, refreshToken } = generateTokens(
+      user.id, 
+      user.role, 
+      user.token_version || 0,
+      { regionId: user.region_id }
     );
 
     res.json({
@@ -503,10 +489,11 @@ router.put('/switch-role', authenticate, async (req, res, next) => {
     await query('UPDATE users SET role = $1 WHERE id = $2', [targetRole, req.user.id]);
 
     // Issue new token with updated role
-    const accessToken = jwt.sign(
-      { userId: user.id, role: targetRole, regionId: user.region_id },
-      process.env.JWT_SECRET || 'dev_secret_key',
-      { expiresIn: '1d' }
+    const { accessToken } = generateTokens(
+      user.id, 
+      targetRole, 
+      user.token_version || 0,
+      { regionId: user.region_id }
     );
 
     res.json({ success: true, accessToken, role: targetRole, message: `Switched to ${targetRole}` });

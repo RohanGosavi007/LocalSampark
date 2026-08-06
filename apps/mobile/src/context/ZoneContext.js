@@ -5,7 +5,6 @@ try {
 } catch (e) {
   console.warn('[ZoneContext] expo-location not available:', e.message);
 }
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { Alert } from 'react-native';
 import { useTerritoryStore } from '../store/useTerritoryStore';
@@ -14,9 +13,16 @@ const ZoneContext = createContext();
 
 export function ZoneProvider({ children }) {
   const { authToken, API_URL, user } = useAuth();
-  const { territoryId, lockTerritory, isLocked } = useTerritoryStore();
+  const { territoryId, territoryName, pincode, districtName, lockTerritory, isLocked, isLoading: isTerritoryLoading } = useTerritoryStore();
   
-  const [activeZone, setActiveZone] = useState(null);
+  // Synthesize activeZone from Zustand store to maintain backward compatibility for UI components
+  const activeZone = territoryId ? {
+    id: territoryId,
+    name: territoryName,
+    pincode: pincode,
+    district: districtName
+  } : null;
+
   const [savedZones, setSavedZones] = useState([]);
   const [allZones, setAllZones] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,17 +47,10 @@ export function ZoneProvider({ children }) {
   useEffect(() => {
     if (authToken && user) {
       loadUserZones();
-    } else {
-      restorePublicZone();
+    } else if (!isTerritoryLoading) {
+      setIsLoading(false);
     }
-  }, [authToken, user, API_URL]);
-
-  // Sync territory store with active zone
-  useEffect(() => {
-    if (territoryId && !activeZone) {
-      fetchZoneDetails(territoryId);
-    }
-  }, [territoryId]);
+  }, [authToken, user, API_URL, isTerritoryLoading]);
 
   const loadUserZones = async () => {
     setIsLoading(true);
@@ -66,12 +65,9 @@ export function ZoneProvider({ children }) {
 
       if (user.active_zone_id || user.region_id) {
         const zoneId = user.active_zone_id || user.region_id;
-        await fetchZoneDetails(zoneId);
-      } else if (isLocked && territoryId) {
-        // Use territory store if user has no zone but has locked territory
-        await fetchZoneDetails(territoryId);
-      } else {
-        await restorePublicZone();
+        if (zoneId !== territoryId) {
+          await fetchZoneDetails(zoneId);
+        }
       }
     } catch (err) {
       console.error('Failed to load user zones:', err);
@@ -85,24 +81,16 @@ export function ZoneProvider({ children }) {
       const res = await fetch(`${API_URL}/zones/${zoneId}`);
       const data = await res.json();
       if (data.success) {
-        setActiveZone(data.data);
-        await AsyncStorage.setItem('activeZone', JSON.stringify(data.data));
+        await lockTerritory({
+            id: data.data.id,
+            name: data.data.name,
+            pincode: data.data.pincode || data.data.pin || '',
+            district: data.data.district || '',
+        });
       }
     } catch (err) {
       console.warn('Failed to fetch zone details:', err);
     }
-  };
-
-  const restorePublicZone = async () => {
-    try {
-      const stored = await AsyncStorage.getItem('activeZone');
-      if (stored) {
-        setActiveZone(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.warn('AsyncStorage error in ZoneContext:', e);
-    }
-    setIsLoading(false);
   };
 
   const detectLocation = async () => {
@@ -116,19 +104,12 @@ export function ZoneProvider({ children }) {
 
       const location = await Location.getCurrentPositionAsync({});
       
-      // Use the new /zones/resolve endpoint for PiP lookup
       const res = await fetch(`${API_URL}/zones/resolve?lat=${location.coords.latitude}&lng=${location.coords.longitude}`);
       const data = await res.json();
       
       if (data.success && !data.outOfBounds && data.territory) {
-        // Lock territory in Zustand store
         await lockTerritory(data.territory);
-        // Set active zone for backward compat
-        const zoneData = { id: data.territory.id, name: data.territory.name, pincode: data.territory.pincode, district: data.territory.district };
-        setActiveZone(zoneData);
-        await AsyncStorage.setItem('activeZone', JSON.stringify(zoneData));
       } else {
-        // Try legacy nearby endpoint
         const legacyRes = await fetch(`${API_URL}/zones/nearby?lat=${location.coords.latitude}&lng=${location.coords.longitude}&limit=1`);
         const legacyData = await legacyRes.json();
         
@@ -158,10 +139,6 @@ export function ZoneProvider({ children }) {
       }
       
       if (selectedZone) {
-        setActiveZone(selectedZone);
-        await AsyncStorage.setItem('activeZone', JSON.stringify(selectedZone));
-        
-        // Sync to territory store
         if (selectedZone.id) {
           await lockTerritory({
             id: selectedZone.id,
@@ -223,7 +200,6 @@ export function ZoneProvider({ children }) {
       switchZone,
       detectLocation,
       saveZone,
-      // Territory routing state (from Zustand)
       territoryId,
       isLocked
     }}>
