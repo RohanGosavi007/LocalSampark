@@ -108,7 +108,7 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin) || (origin && origin.endsWith('.onrender.com'))) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
