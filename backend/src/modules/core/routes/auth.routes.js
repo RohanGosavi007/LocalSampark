@@ -9,9 +9,9 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { cacheSet, cacheGet, cacheDel, redisClient } = require('../../../config/redis');
 const crypto = require('crypto');
-const { generateOTP, sendOTP } = require('../../../services/sms.service');
-const { sendEmail } = require('../../../services/email.service');
-const { verifyFirebaseToken } = require('../../../services/firebase.service');
+const { generateOTP, sendOTP } = require('../services/sms.service');
+const { sendEmail } = require('../services/email.service');
+const { verifyFirebaseToken } = require('../services/firebase.service');
 const { v4: uuidv4 } = require('uuid');
 
 // In-memory OTP store for simplicity in dev mode (use Redis in prod)
