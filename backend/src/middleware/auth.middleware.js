@@ -1,6 +1,14 @@
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
+let _prisma = null;
+const getPrisma = () => {
+  if (process.env.USE_SQLITE === 'true') return null;
+  if (!_prisma) {
+    const { PrismaClient } = require('@prisma/client');
+    _prisma = new PrismaClient();
+  }
+  return _prisma;
+};
 
 // Verify JWT token middleware
 const authenticate = async (req, res, next) => {
@@ -13,13 +21,12 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch user from database
     let user = null;
     if (process.env.USE_SQLITE === 'true') {
       const { queryOne } = require('../config/database.sqlite');
       user = await queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId]);
     } else {
-      user = await prisma.user.findUnique({
+      user = await getPrisma().user.findUnique({
         where: { id: decoded.userId }
       });
     }
@@ -58,7 +65,7 @@ const optionalAuth = async (req, res, next) => {
         const { queryOne } = require('../config/database.sqlite');
         user = await queryOne('SELECT * FROM users WHERE id = $1 AND is_active = 1', [decoded.userId]);
       } else {
-        user = await prisma.user.findFirst({
+        user = await getPrisma().user.findFirst({
           where: { id: decoded.userId, isActive: true }
         });
       }
@@ -113,6 +120,9 @@ const requireRole = (...roles) => {
 
 // Generate tokens
 function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
+  const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_change_in_prod';
+  const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret;
+
   const payload = {
     userId,
     role: role || 'CUSTOMER',
@@ -122,13 +132,13 @@ function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
 
   const accessToken = jwt.sign(
     payload,
-    process.env.JWT_SECRET,
+    jwtSecret,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 
   const refreshToken = jwt.sign(
     { userId, tokenVersion },
-    process.env.JWT_REFRESH_SECRET,
+    jwtRefreshSecret,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
   );
 
@@ -158,7 +168,7 @@ const verifyRole = (allowedRoles) => {
         const { queryOne } = require('../config/database.sqlite');
         user = await queryOne('SELECT token_version as tokenVersion FROM users WHERE id = $1', [decoded.userId]);
       } else {
-        user = await prisma.user.findUnique({
+        user = await getPrisma().user.findUnique({
           where: { id: decoded.userId },
           select: { tokenVersion: true }
         });
@@ -259,9 +269,15 @@ const enforceMultiTenancy = async (req, res, next) => {
     }
 
     if (req.user.role === ROLES.SHOP_OWNER || req.user.role === 'VENDOR' || req.user.role === 'VENDOR_OWNER' || req.user.role === 'VENDOR_STAFF') {
-      const shop = await prisma.shop.findFirst({
-        where: { ownerId: req.user.userId || req.user.id }
-      });
+      let shop = null;
+      if (process.env.USE_SQLITE === 'true') {
+        const { queryOne } = require('../config/database.sqlite');
+        shop = await queryOne('SELECT * FROM shops WHERE owner_id = $1', [req.user.userId || req.user.id]);
+      } else {
+        shop = await getPrisma().shop.findFirst({
+          where: { ownerId: req.user.userId || req.user.id }
+        });
+      }
       
       if (!shop) {
         return res.status(403).json({ error: 'No shop associated with this account' });
