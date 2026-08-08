@@ -221,6 +221,15 @@ app.get('/metrics', (req, res) => {
 });
 
 // ─── API ROUTES ─────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "LocalSampark API Backend is live and running perfectly! 🚀",
+    health_check: "/health",
+    api_endpoint: "/api/v1"
+  });
+});
+
 const API_PREFIX = '/api/v1';
 
 app.use(API_PREFIX, apiRouter);
