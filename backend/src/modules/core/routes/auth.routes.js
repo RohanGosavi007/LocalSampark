@@ -3,15 +3,15 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { authenticate, generateTokens } = require('../../../../middleware/auth.middleware');
-const { authLimiter } = require('../../../../middleware/rateLimit.middleware');
+const { authenticate, generateTokens } = require('../../../middleware/auth.middleware');
+const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
-const { cacheSet, cacheGet, cacheDel, redisClient } = require('../../../../config/redis');
+const { cacheSet, cacheGet, cacheDel, redisClient } = require('../../../config/redis');
 const crypto = require('crypto');
-const { generateOTP, sendOTP } = require('../../../../services/sms.service');
-const { sendEmail } = require('../../../../services/email.service');
-const { verifyFirebaseToken } = require('../../../../services/firebase.service');
+const { generateOTP, sendOTP } = require('../../../services/sms.service');
+const { sendEmail } = require('../../../services/email.service');
+const { verifyFirebaseToken } = require('../../../services/firebase.service');
 const { v4: uuidv4 } = require('uuid');
 
 // In-memory OTP store for simplicity in dev mode (use Redis in prod)
