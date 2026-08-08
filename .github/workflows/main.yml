@@ -11,12 +11,13 @@ jobs:
     name: Lint, Type-Check, Unit Tests, and Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: 'npm'
 
       - name: Install Dependencies
         run: |
@@ -24,6 +25,9 @@ jobs:
           cd ../../backend && npm ci || npm install
 
       - name: Backend - Lint & Test
+        env:
+          USE_SQLITE: true
+          JWT_SECRET: "test-secret"
         run: |
           cd backend
           npm run lint --if-present

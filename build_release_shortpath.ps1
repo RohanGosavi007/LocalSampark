@@ -1,4 +1,4 @@
-$src = "e:\localsampark 27-07-2026\localsampark 27-07-2026"
+$src = "e:\localsampark 04-08-2026\localsampark 04-08-2026"
 $dst = "E:\ls_build_temp"
 
 Write-Host "========================================="
@@ -6,11 +6,12 @@ Write-Host "  LocalSampark Release APK Build Script"
 Write-Host "========================================="
 
 Write-Host "`n[1/8] Creating destination directory..."
+$env:PATH = "C:\Windows\System32;C:\Program Files\nodejs;" + $env:PATH
 New-Item -ItemType Directory -Force -Path $dst | Out-Null
 
 Write-Host "[2/8] Copying project files (excluding .gradle, .idea, .git, node_modules, dist, build-android)..."
-node fast_copy.js
-if ($LASTEXITCODE -ne 0) { Write-Error "Node copy failed"; exit 1 }
+robocopy $src $dst /MIR /XD .gradle .idea .git node_modules dist build-android build /XF *.log | Out-Null
+if ($LASTEXITCODE -ge 8) { Write-Error "Robocopy failed"; exit 1 }
 Write-Host "[3/8] Cleaning old Gradle build caches..."
 Remove-Item -Recurse -Force "$dst\apps\mobile\android\.gradle" -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force "$dst\apps\mobile\android\app\build" -ErrorAction SilentlyContinue

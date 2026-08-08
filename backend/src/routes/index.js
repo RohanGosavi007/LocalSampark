@@ -25,7 +25,6 @@ router.use('/token-queue', require('../modules/core/routes/token-queue.routes'))
 // relies on legacy SQLite tables that were intentionally dropped from the Phase 1 
 // Prisma PostgreSQL schema to focus on Hyperlocal E-commerce.
 // These routes are temporarily disabled to prevent unhandled SQL crashes.
-/*
 router.use('/feed', apiCache(300), require('../modules/community/routes/feed.routes'));
 router.use('/chat', require('../modules/community/routes/chat.routes'));
 router.use('/societies', require('../modules/community/routes/society.routes'));
@@ -39,16 +38,21 @@ router.use('/community-hub', apiCache(300), require('../modules/community/routes
 router.use('/volunteer', require('../modules/community/routes/volunteer.routes'));
 router.use('/donations', require('../modules/community/routes/donations.routes'));
 router.use('/society-management', require('../modules/community/routes/society-visitor.routes'));
-*/
 
-// Safe fallback for mobile app backwards compatibility
-router.use(['/feed', '/chat', '/societies', '/events', '/pets', '/stories', '/society-admin', '/townsquare', '/scrap', '/community-hub', '/volunteer', '/donations', '/society-management'], (req, res) => {
-    res.status(501).json({ success: false, error: 'Community features are temporarily disabled pending database migration.' });
-});
+// NEW Phase 2-12 society routes (To be implemented)
+router.use('/society-preapproval', require('../modules/community/routes/visitor-preapproval.routes'));
+router.use('/society-billing', require('../modules/community/routes/billing-engine.routes'));
+router.use('/society-guard', require('../modules/community/routes/guard-operations.routes'));
+router.use('/society-move', require('../modules/community/routes/move-management.routes'));
+router.use('/society-erp', require('../modules/community/routes/society-erp.routes'));
+router.use('/society-forum', require('../modules/community/routes/community-forum.routes'));
+router.use('/society-messaging', require('../modules/community/routes/private-messaging.routes'));
+router.use('/society-shifts', require('../modules/community/routes/guard-shifts.routes'));
+router.use('/society-compliance', require('../modules/community/routes/society-compliance.routes'));
+router.use('/society-analytics', require('../modules/community/routes/society-analytics.routes'));
 
 // ─── UNIFIED SUPER-APP CONTRACTS (Phase 3 & Hyperlocal Optimization) ────────────────
 router.use('/shops/pincode', require('../modules/ecommerce/routes/pincode-directory.routes'));
-router.use('/', require('../modules/ecommerce/routes/unified-superapp.routes'));
 
 router.use('/shops', (req, res, next) => {
   if (req.path.startsWith('/admin') || req.headers.authorization || req.method !== 'GET') {
@@ -56,6 +60,8 @@ router.use('/shops', (req, res, next) => {
   }
   return apiCache(900)(req, res, next);
 }, require('../modules/ecommerce/routes/shop.routes'));
+
+router.use('/', require('../modules/ecommerce/routes/unified-superapp.routes'));
 router.use('/marketplace', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
 router.use('/payments', paymentLimiter, require('../modules/ecommerce/routes/payment.routes'));
 router.use('/subscriptions', require('../modules/ecommerce/routes/subscription.routes'));

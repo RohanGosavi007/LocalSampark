@@ -55,15 +55,6 @@ services:
     region: singapore
     plan: starter
 
-databases:
-  # 4. Core PostgreSQL Database
-  - name: localsampark-db
-    databaseName: localsampark
-    user: localsampark_admin
-    region: singapore
-    plan: starter
-
-
   # 5. Frontend Web App
   - type: web
     name: localsampark-web
@@ -81,3 +72,11 @@ databases:
           name: localsampark-api
           property: envVars.RENDER_EXTERNAL_URL
     autoDeploy: false
+
+databases:
+  # 4. Core PostgreSQL Database
+  - name: localsampark-db
+    databaseName: localsampark
+    user: localsampark_admin
+    region: singapore
+    plan: starter

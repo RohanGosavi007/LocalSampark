@@ -29,12 +29,13 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install Root Dependencies
         run: npm ci || npm install
@@ -54,6 +55,7 @@ jobs:
   deploy-to-render:
     needs: test-and-lint
     runs-on: ubuntu-latest
+    environment: production
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -62,3 +64,9 @@ jobs:
           # Trigger deployment to Render
           curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           echo "Deployment triggered on Render!"
+
+      - name: Wait for Deployment & Health Check
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 60
+          curl -f https://localsampark-api.onrender.com/health || echo "Health check failed or deployment still in progress"

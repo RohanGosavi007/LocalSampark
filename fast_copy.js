@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const src = 'E:\\localsampark 27-07-2026\\localsampark 27-07-2026';
+const src = 'e:\\localsampark 04-08-2026\\localsampark 04-08-2026';
 const dest = 'E:\\ls_build_temp';
 
 console.log('Starting fast copy using Node.js...');

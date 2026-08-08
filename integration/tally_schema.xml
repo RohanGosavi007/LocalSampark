@@ -1,0 +1,15 @@
+<TDL>
+  <!-- LocalSampark Tally ERP 9 / Prime Integration XML Stub -->
+  <Form Name="LocalSamparkMaintenanceImport">
+    <Part>
+      <Line>Import Bills</Line>
+    </Part>
+  </Form>
+  <Collection Name="LocalSamparkBills">
+    <Type>Voucher</Type>
+    <Method>VoucherType</Method>
+    <Method>VoucherNumber</Method>
+    <Method>Amount</Method>
+  </Collection>
+  <!-- More TDL definitions would go here for custom mapping -->
+</TDL>

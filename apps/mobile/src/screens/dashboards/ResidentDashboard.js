@@ -13,7 +13,7 @@ import HomeHeader from '../../components/HomeHeader';
 import PromoCarousel from '../../components/PromoCarousel';
 import ShopByCategory from '../../components/ShopByCategory';
 import TrendingHighlights from '../../components/TrendingHighlights';
-import { theme } from '../../theme/theme';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../../theme/theme';
 
 const { width } = Dimensions.get('window');
 

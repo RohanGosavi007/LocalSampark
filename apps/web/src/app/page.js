@@ -1,78 +1,197 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import FloatingDevDock from './components/FloatingDevDock';
+import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, Store, Wrench, Building2, Package, Car, 
   Home, HandCoins, ArrowRight, ShieldCheck, Zap, HeartHandshake, Map,
   Download, UserPlus, ShoppingBag, Truck, Activity, MapPin, Users,
-  Clock, CheckCircle, Star, TrendingUp, Smartphone
+  Clock, CheckCircle, Star, TrendingUp, Smartphone, Sparkles, Leaf,
+  ChevronRight, Eye
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './components/ui/Card';
 import { Badge } from './components/ui/Badge';
 import { Button } from './components/ui/Button';
 import { cn } from './components/ui/Button';
-import { GlassIcon } from './components/ui/GlassIcon';
+import { StoreIcon, CommunityIcon, DeliveryIcon, ProduceIcon } from './components/ui/RichIcons';
+
+// ── Data ──────────────────────────────────────────────────────
 
 const TESTIMONIALS = [
-  { name: 'Sunita Bhosale', role: 'Housewife', text: 'I ordered vegetables from Sharma Grocery at 8 AM and they arrived by 9:15 AM — fresher than any big app!', zone: 'Dhanori' },
-  { name: 'Rohan Patil', role: 'Delivery Runner', text: 'I make ₹14,000 extra every month just working 3 hours after my main job.', zone: 'Viman Nagar' },
-  { name: 'Sunil Deshmukh', role: 'Franchise Partner', text: 'As a franchise partner managing 34 shops, I earned ₹42,600 in April alone.', zone: 'Dhanori' },
+  { name: 'Sunita Bhosale', role: 'Housewife', text: 'I ordered vegetables from Sharma Grocery at 8 AM and they arrived by 9:15 AM — fresher than any big app!', zone: 'Dhanori', rating: 5 },
+  { name: 'Rohan Patil', role: 'Delivery Runner', text: 'I make ₹14,000 extra every month just working 3 hours after my main job.', zone: 'Viman Nagar', rating: 5 },
+  { name: 'Sunil Deshmukh', role: 'Franchise Partner', text: 'As a franchise partner managing 34 shops, I earned ₹42,600 in April alone.', zone: 'Dhanori', rating: 5 },
 ];
-
-import { StoreIcon, CommunityIcon, DeliveryIcon, ProduceIcon } from './components/ui/RichIcons';
 
 const PILLARS = [
   { 
     title: 'Community Forums', 
     iconComp: <CommunityIcon size={48} />, 
     link: '/community', 
-    desc: 'Share local updates & discuss developments.', 
-    className: 'bento-col-2 bento-row-2 bg-gradient-to-br from-rose-50 to-pink-100 border-rose-200 hover:shadow-[0_8px_30px_rgb(225,29,72,0.2)] hover:-translate-y-2'
+    desc: 'Share local updates & discuss developments with your neighbors.',
+    badge: '💬 12k+ Posts',
+    gradient: 'from-rose-500/20 via-pink-500/10 to-transparent',
+    borderHover: 'hover:border-rose-500/40',
+    span: 'col-span-2 row-span-2',
   },
   { 
     title: 'Local Shops', 
     iconComp: <StoreIcon size={48} />, 
     link: '/shops', 
-    desc: 'Order direct from neighborhood stores instantly.', 
-    className: 'bento-col-2 bg-gradient-to-br from-orange-50 to-amber-100 border-orange-200 hover:shadow-[0_8px_30px_rgb(249,115,22,0.2)] hover:-translate-y-2'
+    desc: 'Order direct from neighborhood stores instantly.',
+    badge: '⭐ Top Rated',
+    gradient: 'from-orange-500/20 via-amber-500/10 to-transparent',
+    borderHover: 'hover:border-orange-500/40',
+    span: 'col-span-2',
   },
   { 
     title: 'Hyperlocal Delivery', 
     iconComp: <DeliveryIcon size={48} />, 
     link: '/download', 
-    desc: '10-minute grocery delivery from your zone.', 
-    className: 'bg-gradient-to-br from-violet-50 to-purple-100 border-violet-200 hover:shadow-[0_8px_30px_rgb(91,33,182,0.2)] hover:-translate-y-2'
+    desc: '10-minute grocery delivery from your zone.',
+    badge: '⚡ 10-Min',
+    gradient: 'from-violet-500/20 via-purple-500/10 to-transparent',
+    borderHover: 'hover:border-violet-500/40',
+    span: '',
   },
   { 
     title: 'Fresh Produce', 
     iconComp: <ProduceIcon size={48} />, 
     link: '/shops?category=fresh', 
-    desc: 'Farm-fresh vegetables direct to door.', 
-    className: 'bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-200 hover:shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:-translate-y-2'
+    desc: 'Farm-fresh vegetables direct to door.',
+    badge: '🌿 Organic',
+    gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+    borderHover: 'hover:border-emerald-500/40',
+    span: '',
   },
   { 
-    title: 'Society Mgmt', icon: Home, link: '/society', 
-    desc: 'Digital visitor passes, notices, and maintenance.', 
-    className: 'bg-gradient-to-br from-violet-50 to-fuchsia-50 dark:from-violet-950/40 dark:to-fuchsia-950/40 border-violet-200 dark:border-violet-800 hover:shadow-[0_8px_30px_rgb(139,92,246,0.2)] hover:-translate-y-2',
-    iconColor: 'text-violet-600 dark:text-violet-400', iconBg: 'bg-violet-100 dark:bg-violet-900/50'
+    title: 'Society Mgmt', 
+    icon: Home, 
+    link: '/society', 
+    desc: 'Digital visitor passes, notices, and maintenance.',
+    badge: '🏘️ Smart',
+    gradient: 'from-indigo-500/20 via-blue-500/10 to-transparent',
+    borderHover: 'hover:border-indigo-500/40',
+    span: '',
   },
   { 
-    title: 'Earn & Franchise', icon: HandCoins, link: '/earn', 
-    desc: 'Become a partner and build recurring income.', 
-    className: 'bento-col-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border-green-200 dark:border-green-800 hover:shadow-[0_8px_30px_rgb(34,197,94,0.2)] hover:-translate-y-2',
-    iconColor: 'text-green-600 dark:text-green-400', iconBg: 'bg-green-100 dark:bg-green-900/50'
+    title: 'Earn & Franchise', 
+    icon: HandCoins, 
+    link: '/earn', 
+    desc: 'Become a partner and build recurring income.',
+    badge: '💰 ₹42k/mo',
+    gradient: 'from-green-500/20 via-emerald-500/10 to-transparent',
+    borderHover: 'hover:border-green-500/40',
+    span: 'col-span-2',
   },
 ];
 
+const LIVE_ITEMS = [
+  { icon: ShoppingBag, text: 'Sunita ordered Fresh Paneer from Sharma Grocery', time: '2 min ago', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  { icon: Car, text: 'Rohan shared a ride to Hinjewadi — 2 seats filled', time: '5 min ago', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { icon: Truck, text: 'Delivery completed: Golden Crumb Bakery → Ganga Aria', time: '8 min ago', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  { icon: Users, text: 'Pooja registered for Neighborhood Clean-Up Drive', time: '12 min ago', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  { icon: Star, text: 'Priya rated Dhanori Auto Washers ★★★★★', time: '15 min ago', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  { icon: CheckCircle, text: 'Plumber dispatched to Pride Aashiyana B-wing', time: '18 min ago', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  { icon: TrendingUp, text: 'Franchise Partner Sunil earned ₹2,400 today', time: '22 min ago', color: 'text-green-400', bg: 'bg-green-500/10' },
+  { icon: Activity, text: '12 new neighbors joined from Tingre Nagar', time: '30 min ago', color: 'text-pink-400', bg: 'bg-pink-500/10' },
+];
+
+const ZONES = [
+  { zone: 'Dhanori', neighbors: '5,200+', shops: 142, status: 'Live', color: 'from-emerald-500 to-teal-500', statusColor: 'bg-green-500' },
+  { zone: 'Viman Nagar', neighbors: '3,100+', shops: 98, status: 'Live', color: 'from-orange-500 to-amber-500', statusColor: 'bg-green-500' },
+  { zone: 'Tingre Nagar', neighbors: '1,800+', shops: 56, status: 'Live', color: 'from-purple-500 to-pink-500', statusColor: 'bg-green-500' },
+  { zone: 'Kharadi', neighbors: '1,200+', shops: 34, status: 'Launching', color: 'from-blue-500 to-cyan-500', statusColor: 'bg-amber-500' },
+  { zone: 'Bhairav Nagar', neighbors: '900+', shops: 28, status: 'Live', color: 'from-emerald-500 to-teal-500', statusColor: 'bg-green-500' },
+  { zone: 'Lohegaon', neighbors: '450+', shops: 12, status: 'Coming Soon', color: 'from-rose-500 to-red-500', statusColor: 'bg-gray-400' },
+];
+
+// ── 3D Tilt Card Component ──────────────────────────────────
+
+function BentoCard({ pillar, index }) {
+  const cardRef = useRef(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), { stiffness: 300, damping: 30 });
+
+  const handleMouseMove = useCallback((e) => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(x);
+    mouseY.set(y);
+  }, [mouseX, mouseY]);
+
+  const handleMouseLeave = useCallback(() => {
+    mouseX.set(0);
+    mouseY.set(0);
+  }, [mouseX, mouseY]);
+
+  const IconComp = pillar.icon;
+
+  return (
+    <motion.a
+      ref={cardRef}
+      href={pillar.link}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, delay: index * 0.08 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+      className={cn(
+        "glass-card-v2-light group cursor-pointer block relative p-6 lg:p-8",
+        "hover:scale-[1.02] transition-all duration-300",
+        pillar.span,
+        pillar.borderHover
+      )}
+    >
+      {/* Background gradient overlay */}
+      <div className={`absolute inset-0 rounded-[inherit] bg-gradient-to-br ${pillar.gradient} opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
+      
+      {/* Badge pill */}
+      {pillar.badge && (
+        <div className="absolute top-4 right-4 badge-pill-glow bg-white/80 text-[10px] text-text font-black z-10">
+          {pillar.badge}
+        </div>
+      )}
+
+      <div className="relative z-10" style={{ transform: 'translateZ(20px)' }}>
+        {/* Icon */}
+        <div className="mb-5">
+          {pillar.iconComp || (
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center glow-ring">
+              <IconComp className="w-7 h-7 text-primary" />
+            </div>
+          )}
+        </div>
+
+        <h3 className="text-xl font-heading font-bold mb-2 text-text group-hover:text-primary transition-colors">
+          {pillar.title}
+        </h3>
+        <p className="text-sm text-text-muted leading-relaxed flex-1">{pillar.desc}</p>
+        
+        <div className="mt-5 flex items-center text-sm font-semibold text-primary opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          Explore <ArrowRight className="w-4 h-4 ml-1" />
+        </div>
+      </div>
+    </motion.a>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
+
 export default function HomePage() {
   const [stats, setStats] = useState({ neighbors: 1000, shops: 50, gigs: 10, commission: 5000 });
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -80,28 +199,26 @@ export default function HomePage() {
         neighbors: prev.neighbors < 12450 ? prev.neighbors + 230 : 12450,
         shops: prev.shops < 347 ? prev.shops + 7 : 347,
         gigs: prev.gigs < 78 ? prev.gigs + 2 : 78,
-        commission: prev.commission < 120000 ? prev.commission + 2500 : 120000
+        commission: prev.commission < 120000 ? prev.commission + 2500 : 120000,
       }));
     }, 50);
-
-    const testimonialInterval = setInterval(() => {
-      setActiveTestimonial(prev => (prev + 1) % TESTIMONIALS.length);
-    }, 5000);
-
-    return () => { clearInterval(interval); clearInterval(testimonialInterval); };
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30 overflow-x-hidden" ref={containerRef}>
+    <div className="min-h-screen flex flex-col bg-background mesh-gradient-bg selection:bg-primary/30 overflow-x-hidden" ref={containerRef}>
       <Header />
 
       <main className="flex-1">
-        {/* ── HERO ───────────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            HERO SECTION — Spatial Design with Mesh Gradient
+           ══════════════════════════════════════════════════════════ */}
         <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-          {/* Animated Background Gradients */}
+          {/* Animated mesh gradient orbs */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
             <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-blobBounce" />
-            <div className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-secondary/20 blur-[120px] animate-blobBounce" style={{ animationDelay: '2s' }} />
+            <div className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-secondary/15 blur-[120px] animate-blobBounce" style={{ animationDelay: '2s' }} />
+            <div className="absolute bottom-[10%] left-[30%] w-[30%] h-[30%] rounded-full bg-violet-500/10 blur-[100px] animate-blobBounce" style={{ animationDelay: '5s' }} />
           </div>
 
           <div className="container relative z-10">
@@ -113,16 +230,16 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="max-w-2xl"
-                style={{ y, opacity }}
+                style={{ y: heroY, opacity: heroOpacity }}
               >
-                <Badge variant="success" pulse className="mb-6 px-4 py-1.5 text-sm">
-                  <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                <Badge variant="success" pulse className="mb-6 px-4 py-1.5 text-sm shimmer-hover">
+                  <span className="status-dot-live mr-2"></span>
                   Pilot Live in Dhanori, Pune
                 </Badge>
                 
                 <h1 className="text-5xl lg:text-7xl font-heading font-black tracking-tight leading-[1.1] mb-6 text-text">
                   Your Neighborhood, <br/>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-500 to-secondary animate-shimmer bg-[length:200%_auto]">
+                  <span className="gradient-text-v2">
                     Connected.
                   </span>
                 </h1>
@@ -132,7 +249,7 @@ export default function HomePage() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                  <Button asChild size="lg" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-1">
+                  <Button asChild size="lg" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-1 shimmer-hover">
                     <a href="/download">Download the App</a>
                   </Button>
                   <Button asChild size="lg" variant="secondary" icon={Store} className="w-full sm:w-auto hover:-translate-y-1">
@@ -159,21 +276,21 @@ export default function HomePage() {
                 </div>
               </motion.div>
 
-              {/* Hero Visual — App Feature Showcase */}
+              {/* Hero Visual — 3D App Feature Showcase */}
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1, delay: 0.2 }}
-                className="relative h-[400px] lg:h-[600px] w-full rounded-3xl overflow-hidden border border-border/30"
+                className="relative h-[400px] lg:h-[600px] w-full rounded-3xl overflow-hidden"
               >
                 {/* Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 rounded-3xl" />
                 <div className="absolute top-[20%] left-[30%] w-[200px] h-[200px] rounded-full bg-primary/20 blur-[80px]" />
                 <div className="absolute bottom-[20%] right-[20%] w-[200px] h-[200px] rounded-full bg-secondary/20 blur-[80px]" />
                 
                 {/* Central Phone Mockup */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[220px] h-[420px] bg-background-alt rounded-[2rem] border-2 border-border/50 shadow-2xl shadow-primary/10 overflow-hidden">
+                  <div className="w-[220px] h-[420px] glass-card-v2-light rounded-[2rem] border-2 border-white/30 shadow-2xl overflow-hidden">
                     {/* Phone Header */}
                     <div className="bg-gradient-to-r from-primary to-indigo-500 p-4 pb-8 text-white">
                       <div className="flex items-center justify-between mb-3">
@@ -207,7 +324,7 @@ export default function HomePage() {
                 {/* Floating Cards */}
                 <motion.div 
                   animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-10 right-10 bg-background-alt/90 backdrop-blur-xl p-3 flex items-center gap-3 rounded-2xl shadow-2xl border border-border/30"
+                  className="absolute top-10 right-10 glass-card-v2-light p-3 flex items-center gap-3 rounded-2xl shadow-2xl"
                 >
                   <div className="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center"><ShieldCheck className="w-5 h-5"/></div>
                   <div>
@@ -218,7 +335,7 @@ export default function HomePage() {
 
                 <motion.div 
                   animate={{ y: [10, -10, 10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute bottom-10 left-10 bg-background-alt/90 backdrop-blur-xl p-3 flex items-center gap-3 rounded-2xl shadow-2xl border border-border/30"
+                  className="absolute bottom-10 left-10 glass-card-v2-light p-3 flex items-center gap-3 rounded-2xl shadow-2xl"
                 >
                   <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center"><Zap className="w-5 h-5"/></div>
                   <div>
@@ -229,7 +346,7 @@ export default function HomePage() {
 
                 <motion.div 
                   animate={{ x: [-8, 8, -8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-[50%] right-6 bg-background-alt/90 backdrop-blur-xl p-3 flex items-center gap-3 rounded-2xl shadow-2xl border border-border/30"
+                  className="absolute top-[50%] right-6 glass-card-v2-light p-3 flex items-center gap-3 rounded-2xl shadow-2xl"
                 >
                   <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center"><Star className="w-5 h-5"/></div>
                   <div>
@@ -243,7 +360,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── STATS TICKER ──────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            STATS TICKER — Animated Counter
+           ══════════════════════════════════════════════════════════ */}
         <section className="py-10 border-y border-border bg-background-alt/50 backdrop-blur-sm relative z-20">
           <div className="container">
             <div className="flex flex-wrap justify-center lg:justify-between items-center gap-8 text-center">
@@ -261,7 +380,7 @@ export default function HomePage() {
                   transition={{ delay: i * 0.1 }}
                   className="flex-1 min-w-[150px]"
                 >
-                  <h3 className="text-4xl lg:text-5xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-1">{s.val}</h3>
+                  <h3 className="text-4xl lg:text-5xl font-heading font-black gradient-text-v2 mb-1">{s.val}</h3>
                   <p className="text-sm text-text-muted font-medium uppercase tracking-wider">{s.label}</p>
                 </motion.div>
               ))}
@@ -269,54 +388,39 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── 8 PILLARS (BENTO GRID) ─────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            3D BENTO GRID — 8 Pillars with Tilt Effect
+           ══════════════════════════════════════════════════════════ */}
         <section className="py-24 relative" id="features">
           <div className="container">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4">Platform Architecture</Badge>
-              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">The 8 Pillars of LocalSampark</h2>
+              <Badge variant="outline" className="mb-4">
+                <Sparkles className="w-3 h-3 mr-1" /> Platform Architecture
+              </Badge>
+              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">
+                The 8 Pillars of <span className="gradient-text-v2">LocalSampark</span>
+              </h2>
               <p className="text-lg text-text-muted">Everything your community needs, unified under a single platform to boost local trade and strengthen social bonds.</p>
             </div>
             
-            <div className="bento-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1200px' }}>
               {PILLARS.map((pillar, i) => (
-                <motion.a 
-                  key={i} 
-                  href={pillar.link}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.5, delay: i * 0.05 }}
-                  className={cn(
-                    "bento-item glass-card card-3d group cursor-pointer border",
-                    pillar.className
-                  )}
-                >
-                  <GlassIcon 
-                    icon={pillar.icon} 
-                    className="mb-6" 
-                    bgClass={pillar.iconBg || "bg-white/5"} 
-                    borderClass="border-white/20 dark:border-white/10" 
-                    colorClass={pillar.iconColor || "text-text"}
-                  />
-                  <h3 className="text-xl font-heading font-bold mb-2 text-text group-hover:text-primary transition-colors">{pillar.title}</h3>
-                  <p className="text-sm text-text-muted leading-relaxed flex-1">{pillar.desc}</p>
-                  
-                  <div className={`mt-6 flex items-center text-sm font-semibold opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${pillar.iconColor || 'text-primary'}`}>
-                    Explore <ArrowRight className="w-4 h-4 ml-1" />
-                  </div>
-                </motion.a>
+                <BentoCard key={i} pillar={pillar} index={i} />
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── TESTIMONIALS ──────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            TESTIMONIALS — "What Pune Says" with Levitate Effect
+           ══════════════════════════════════════════════════════════ */}
         <section className="py-24 bg-background-alt border-y border-border overflow-hidden">
           <div className="container relative">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <Badge variant="secondary" className="mb-4">Real Voices</Badge>
-              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">What Pune Says</h2>
+              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">
+                What Pune <span className="gradient-text-warm">Says</span>
+              </h2>
               <p className="text-lg text-text-muted">Real residents, shop owners, and earners from Dhanori and beyond.</p>
             </div>
 
@@ -328,13 +432,27 @@ export default function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="glass-card p-8 relative group hover:-translate-y-2 transition-all duration-300"
+                  className={`glass-card-v2-light p-8 relative group hover:-translate-y-3 transition-all duration-500 levitate levitate-delay-${i + 1}`}
                 >
-                  <div className="absolute top-4 right-6 text-6xl font-serif text-primary/10 group-hover:text-primary/20 transition-colors">"</div>
+                  {/* Quote watermark */}
+                  <div className="absolute top-3 right-5 text-7xl font-serif text-primary/8 group-hover:text-primary/15 transition-colors select-none pointer-events-none">"</div>
+                  
+                  {/* Stars */}
+                  <div className="flex gap-0.5 mb-4">
+                    {[...Array(t.rating)].map((_, si) => (
+                      <Star key={si} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    ))}
+                  </div>
+
                   <p className="text-lg font-medium italic text-text mb-6 relative z-10 leading-relaxed">"{t.text}"</p>
+                  
                   <div className="flex items-center gap-4 mt-auto">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white font-bold shadow-md">
-                      {t.name.charAt(0)}
+                    {/* 3D Avatar ring with status */}
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/50">
+                        {t.name.charAt(0)}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white" />
                     </div>
                     <div>
                       <p className="font-bold text-text">{t.name}</p>
@@ -347,7 +465,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── HOW IT WORKS ────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            HOW IT WORKS — Step Timeline
+           ══════════════════════════════════════════════════════════ */}
         <section className="py-24 bg-background overflow-hidden">
           <div className="container">
             <div className="text-center max-w-2xl mx-auto mb-16">
@@ -369,7 +489,7 @@ export default function HomePage() {
                 <motion.a href={step.link} key={step.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}
                   className="relative z-10 text-center group block cursor-pointer"
                 >
-                  <div className={`w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center text-white shadow-lg mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-300`}>
+                  <div className={`w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center text-white shadow-lg mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-300 glow-ring`}>
                     <step.icon className="w-10 h-10" />
                   </div>
                   <div className="absolute top-9 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-background border-4 border-primary shadow-lg z-20 hidden md:flex items-center justify-center">
@@ -383,35 +503,33 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── LIVE ACTIVITY FEED ──────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            LIVE ACTIVITY MARQUEE — Infinite Ticker with Glass Pills
+           ══════════════════════════════════════════════════════════ */}
         <section className="py-12 bg-background-alt border-y border-border overflow-hidden">
           <div className="container mb-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-bold font-heading text-accent uppercase tracking-widest">Live Activity</span>
+              <span className="status-dot-live" />
+              <span className="text-xs font-bold font-heading text-primary uppercase tracking-widest">Live Activity</span>
             </div>
             <p className="text-sm text-text-muted">Real-time activity across the LocalSampark network</p>
           </div>
-          <div className="relative">
-            <div className="flex gap-6 animate-ticker">
-              {[
-                { icon: ShoppingBag, text: 'Sunita ordered Fresh Paneer from Sharma Grocery', time: '2 min ago', color: 'text-primary' },
-                { icon: Car, text: 'Rohan shared a ride to Hinjewadi — 2 seats filled', time: '5 min ago', color: 'text-orange-500' },
-                { icon: Truck, text: 'Delivery completed: Golden Crumb Bakery → Ganga Aria', time: '8 min ago', color: 'text-emerald-500' },
-                { icon: Users, text: 'Pooja registered for Neighborhood Clean-Up Drive', time: '12 min ago', color: 'text-purple-500' },
-                { icon: Star, text: 'Priya rated Dhanori Auto Washers ★★★★★', time: '15 min ago', color: 'text-amber-500' },
-                { icon: CheckCircle, text: 'Plumber dispatched to Pride Aashiyana B-wing', time: '18 min ago', color: 'text-blue-500' },
-                { icon: TrendingUp, text: 'Franchise Partner Sunil earned ₹2,400 today', time: '22 min ago', color: 'text-green-500' },
-                { icon: Activity, text: '12 new neighbors joined from Tingre Nagar', time: '30 min ago', color: 'text-pink-500' },
-                { icon: ShoppingBag, text: 'Sunita ordered Fresh Paneer from Sharma Grocery', time: '2 min ago', color: 'text-primary' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 bg-background border border-border px-5 py-3 rounded-2xl min-w-[280px]">
-                  <div className={`w-8 h-8 rounded-xl bg-background-alt flex items-center justify-center ${item.color}`}>
-                    <item.icon className="w-4 h-4" />
+          
+          {/* Infinite Marquee */}
+          <div className="marquee-container">
+            <div className="marquee-content">
+              {/* Duplicate items for seamless loop */}
+              {[...LIVE_ITEMS, ...LIVE_ITEMS].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 glass-card-v2-light px-5 py-3 rounded-2xl min-w-[300px] border border-border/50">
+                  <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center ${item.color} shrink-0`}>
+                    <item.icon className="w-4.5 h-4.5" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-text truncate">{item.text}</p>
-                    <p className="text-[10px] text-text-muted flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {item.time}</p>
+                    <p className="text-[10px] text-text-muted flex items-center gap-1">
+                      <span className="status-dot-live" style={{ width: 4, height: 4 }} />
+                      {item.time}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -419,29 +537,26 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── ZONE MAP ────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════
+            ACTIVE ZONES — 3D Interactive Zone Cards
+           ══════════════════════════════════════════════════════════ */}
         <section className="py-24 bg-background overflow-hidden">
           <div className="container">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <Badge variant="secondary" className="mb-4">Growing Network</Badge>
-              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">Active Zones</h2>
+              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">
+                Active <span className="gradient-text-v2">Zones</span>
+              </h2>
               <p className="text-lg text-text-muted">LocalSampark is expanding across Pune — one neighborhood at a time.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                { zone: 'Dhanori', neighbors: '5,200+', shops: 142, status: 'Live', color: 'from-primary to-indigo-500', statusColor: 'bg-green-500' },
-                { zone: 'Viman Nagar', neighbors: '3,100+', shops: 98, status: 'Live', color: 'from-orange-500 to-amber-500', statusColor: 'bg-green-500' },
-                { zone: 'Tingre Nagar', neighbors: '1,800+', shops: 56, status: 'Live', color: 'from-purple-500 to-pink-500', statusColor: 'bg-green-500' },
-                { zone: 'Kharadi', neighbors: '1,200+', shops: 34, status: 'Launching', color: 'from-blue-500 to-cyan-500', statusColor: 'bg-amber-500' },
-                { zone: 'Bhairav Nagar', neighbors: '900+', shops: 28, status: 'Live', color: 'from-emerald-500 to-teal-500', statusColor: 'bg-green-500' },
-                { zone: 'Lohegaon', neighbors: '450+', shops: 12, status: 'Coming Soon', color: 'from-rose-500 to-red-500', statusColor: 'bg-gray-400' },
-              ].map((z, i) => (
+              {ZONES.map((z, i) => (
                 <motion.div key={z.zone} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                  className="glass-card rounded-2xl border border-border p-6 group hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 transition-all duration-300"
+                  className="glass-card-v2-light rounded-2xl border border-border p-6 group hover:-translate-y-3 hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${z.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform`}>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${z.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform glow-ring`}>
                       <MapPin className="w-6 h-6" />
                     </div>
                     <span className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${z.statusColor === 'bg-green-500' ? 'bg-green-500/10 text-green-600' : z.statusColor === 'bg-amber-500' ? 'bg-amber-500/10 text-amber-600' : 'bg-gray-400/10 text-gray-500'}`}>
@@ -450,6 +565,18 @@ export default function HomePage() {
                     </span>
                   </div>
                   <h3 className="text-xl font-heading font-black text-text mb-3">{z.zone}</h3>
+                  
+                  {/* Activity bar */}
+                  <div className="w-full h-1.5 bg-border/50 rounded-full mb-4 overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${Math.min(parseInt(z.neighbors) / 60, 100)}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      className={`h-full rounded-full bg-gradient-to-r ${z.color}`}
+                    />
+                  </div>
+
                   <div className="flex items-center gap-6">
                     <div>
                       <p className="text-lg font-heading font-black text-primary">{z.neighbors}</p>
@@ -461,37 +588,47 @@ export default function HomePage() {
                       <p className="text-[10px] text-text-muted uppercase tracking-wider">Shops</p>
                     </div>
                   </div>
+
+                  <Button variant="ghost" size="sm" className="mt-4 w-full opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                    <a href={`/shops?zone=${z.zone.toLowerCase().replace(' ', '-')}`}>
+                      <Eye className="w-4 h-4 mr-1" /> Explore Zone
+                    </a>
+                  </Button>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── CTA BANNER ────────────────────────────────────── */}
-        <section className="py-32 relative overflow-hidden">
+        {/* ══════════════════════════════════════════════════════════
+            CTA BANNER — 3D Glass with Shimmer Download Button
+           ══════════════════════════════════════════════════════════ */}
+        <section className="py-32 relative overflow-hidden isolate">
           {/* Animated Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-secondary -z-20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-secondary -z-10" />
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 -z-10 mix-blend-overlay" />
+          <div className="absolute top-[20%] left-[10%] w-[300px] h-[300px] rounded-full bg-white/10 blur-[100px] animate-blobBounce -z-10" />
+          <div className="absolute bottom-[10%] right-[15%] w-[250px] h-[250px] rounded-full bg-indigo-500/20 blur-[80px] animate-blobBounce -z-10" style={{ animationDelay: '3s' }} />
           
           <div className="container relative z-10">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="glass-card bg-white/10 backdrop-blur-2xl border-white/20 shadow-2xl p-12 lg:p-20 text-center max-w-5xl mx-auto rounded-3xl"
+              className="glass-card-v2 p-12 lg:p-20 text-center max-w-5xl mx-auto rounded-3xl"
             >
-              <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md shadow-inner">
+              <div className="w-20 h-20 mx-auto bg-white/10 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md glow-ring border border-white/20">
                 <Map className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-4xl lg:text-6xl font-heading font-black text-white mb-6 tracking-tight leading-tight">
                 Join the Dhanori Movement
               </h2>
-              <p className="text-xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+              <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
                 Over 12,450 neighbors already connected. Download LocalSampark and transform how your community shops, talks, and earns together.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 hover:-translate-y-1 shadow-xl text-lg px-8">
+                <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 hover:-translate-y-1 shadow-xl text-lg px-8 shimmer-hover">
                   <a href="/download">Download Now — It's Free</a>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:border-white text-lg px-8 backdrop-blur-sm">
@@ -504,6 +641,7 @@ export default function HomePage() {
 
       </main>
       <Footer />
+      <FloatingDevDock />
     </div>
   );
 }

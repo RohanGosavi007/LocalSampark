@@ -871,3 +871,308 @@ body.dark-mode .form-input,
   .glass-card { background: white; border: 1px solid #ccc; box-shadow: none; }
 }
 
+/* ============================================================
+   SPATIAL DESIGN SYSTEM v2.0 — 3D Glassmorphism & Mesh Gradients
+   ============================================================ */
+
+/* ── Mesh Gradient Variables ── */
+:root {
+  --mesh-1: #0F172A;
+  --mesh-2: #1E1B4B;
+  --mesh-3: #064E3B;
+  --mesh-4: #7C2D12;
+  --mesh-5: #78350F;
+}
+
+/* ── Animated Mesh Gradient Background ── */
+.mesh-gradient-bg {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(249, 115, 22, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    var(--background);
+  background-size: 200% 200%;
+  animation: meshShift 20s ease-in-out infinite;
+}
+
+.mesh-gradient-dark {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.20) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(225, 29, 72, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 30%, rgba(245, 158, 11, 0.10) 0%, transparent 50%),
+    #060b18;
+  background-size: 200% 200%;
+  animation: meshShift 20s ease-in-out infinite;
+}
+
+/* ── Glass Card V2 — Extreme Glassmorphism ── */
+.glass-card-v2 {
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 20px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-v2::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.03) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-card-v2:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 25px 60px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Light mode glass card variant */
+.glass-card-v2-light {
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  background: rgba(255, 255, 255, 0.70);
+  border: 1px solid rgba(255, 255, 255, 0.80);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 40px -10px rgba(0, 0, 0, 0.08),
+    0 4px 6px -1px rgba(0, 0, 0, 0.04);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-v2-light:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--primary);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 20px 50px -12px var(--glow-color),
+    0 8px 12px -2px rgba(0, 0, 0, 0.06);
+  transform: translateY(-3px);
+}
+
+/* ── Gradient Text V2 — Vibrant Emerald→Indigo→Violet ── */
+.gradient-text-v2 {
+  background: linear-gradient(135deg, #10B981 0%, #6366F1 50%, #8B5CF6 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #EC4899 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Gradient Border ── */
+.border-gradient {
+  position: relative;
+  border: 1px solid transparent;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.border-gradient-primary {
+  background-image:
+    linear-gradient(var(--background), var(--background)),
+    linear-gradient(135deg, var(--primary), #6366F1, var(--secondary));
+}
+
+/* ── Levitate Animation — Subtle floating for testimonial cards ── */
+.levitate {
+  animation: levitate 6s ease-in-out infinite;
+}
+.levitate-delay-1 { animation-delay: 1s; }
+.levitate-delay-2 { animation-delay: 2s; }
+.levitate-delay-3 { animation-delay: 3s; }
+
+/* ── Shimmer Hover Effect — Shine sweep on buttons ── */
+.shimmer-hover {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+.shimmer-hover:hover::after {
+  left: 100%;
+}
+
+/* ── 3D Tilt Perspective Container ── */
+.tilt-3d {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.tilt-3d-child {
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  backface-visibility: hidden;
+}
+
+/* ── Glow Ring — Animated glow for icon containers ── */
+.glow-ring {
+  position: relative;
+}
+.glow-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, var(--primary), #8B5CF6, var(--secondary), var(--primary));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+  filter: blur(12px);
+}
+.glow-ring:hover::after {
+  opacity: 0.6;
+}
+
+/* ── 3D Icon Container ── */
+.icon-3d {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.icon-3d::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Infinite Marquee ── */
+.marquee-container {
+  overflow: hidden;
+  width: 100%;
+}
+
+.marquee-content {
+  display: flex;
+  gap: 1.5rem;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+
+.marquee-content:hover {
+  animation-play-state: paused;
+}
+
+/* ── Active Badge Pill ── */
+.badge-pill-glow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ── Status Dot — Pulsing green ── */
+.status-dot-live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  position: relative;
+}
+.status-dot-live::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: #10B981;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Floating Dock (macOS-style) ── */
+.floating-dock {
+  backdrop-filter: blur(40px) saturate(2);
+  -webkit-backdrop-filter: blur(40px) saturate(2);
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 25px 60px -15px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: var(--transition);
+}
+
+.floating-dock-item {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-dock-item:hover {
+  transform: scale(1.3) translateY(-8px);
+}
+
+/* ── Mesh Gradient Keyframes ── */
+@keyframes meshShift {
+  0% { background-position: 0% 0%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes levitate {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-8px) rotate(0.5deg); }
+  75% { transform: translateY(-4px) rotate(-0.5deg); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}

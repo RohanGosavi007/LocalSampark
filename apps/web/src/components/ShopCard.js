@@ -29,10 +29,19 @@ const ShopCardComponent = ({ shop, category, index, onQuickView }) => {
       )}
 
       <div className="h-48 bg-background relative overflow-hidden flex items-center justify-center">
-        {shop.photo_urls && shop.photo_urls !== '[]' && !shop.photo_urls.includes('[') ? (
+        {shop.photo_urls && shop.photo_urls !== '[]' && shop.photo_urls !== 'null' ? (
           <img
-            src={JSON.parse(shop.photo_urls)[0]}
-            alt={shop.name}
+            src={
+              (() => {
+                try {
+                  const parsed = JSON.parse(shop.photo_urls);
+                  return Array.isArray(parsed) ? parsed[0] : parsed;
+                } catch (e) {
+                  return shop.photo_urls;
+                }
+              })()
+            }
+            alt={shop.name || 'Shop'}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />

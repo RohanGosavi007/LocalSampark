@@ -5,9 +5,9 @@ import { useCartStore } from '../../../src/store/cartStore';
 import { postWithFallback } from '../../../src/utils/mockDataHelper';
 import DemoBadge from '../../../src/components/DemoBadge';
 import { useAuth } from '../../../src/context/AuthContext';
-import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../../theme';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../theme';
 import { ShieldCheck, Clock, MapPin, ChevronRight, CheckCircle2 } from 'lucide-react-native';
-import BouncyButton from '../../../../src/components/BouncyButton';
+import BouncyButton from '../../../src/components/BouncyButton';
 
 export default function CheckoutScreen() {
   const { user } = useAuth();

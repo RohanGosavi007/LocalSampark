@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 import VisitorLayout from './components/VisitorLayout';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../../theme';
-import BouncyButton from '../../../../src/components/BouncyButton';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../theme';
+import BouncyButton from '../../../src/components/BouncyButton';
 
 const MOCK_PRODUCTS = [
   { 

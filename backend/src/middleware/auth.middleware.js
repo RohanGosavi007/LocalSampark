@@ -14,15 +14,21 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Fetch user from database
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
+    let user = null;
+    if (process.env.USE_SQLITE === 'true') {
+      const { queryOne } = require('../config/database.sqlite');
+      user = await queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+    } else {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.userId }
+      });
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    if (!user.isActive) {
+    if (user.isActive === false || user.is_active === 0) {
       return res.status(403).json({ error: 'Account is deactivated.' });
     }
 
@@ -46,9 +52,16 @@ const optionalAuth = async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await prisma.user.findFirst({
-        where: { id: decoded.userId, isActive: true }
-      });
+      
+      let user = null;
+      if (process.env.USE_SQLITE === 'true') {
+        const { queryOne } = require('../config/database.sqlite');
+        user = await queryOne('SELECT * FROM users WHERE id = $1 AND is_active = 1', [decoded.userId]);
+      } else {
+        user = await prisma.user.findFirst({
+          where: { id: decoded.userId, isActive: true }
+        });
+      }
       req.user = user || null;
     }
   } catch {
@@ -140,10 +153,16 @@ const verifyRole = (allowedRoles) => {
       }
 
       // Token Versioning strict check
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { tokenVersion: true }
-      });
+      let user = null;
+      if (process.env.USE_SQLITE === 'true') {
+        const { queryOne } = require('../config/database.sqlite');
+        user = await queryOne('SELECT token_version as tokenVersion FROM users WHERE id = $1', [decoded.userId]);
+      } else {
+        user = await prisma.user.findUnique({
+          where: { id: decoded.userId },
+          select: { tokenVersion: true }
+        });
+      }
       
       if (!user || user.tokenVersion !== decoded.tokenVersion) {
         return res.status(401).json({ success: false, error: 'Session invalidated. Please login again.' });

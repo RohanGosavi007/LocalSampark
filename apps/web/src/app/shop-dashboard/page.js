@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { useAuthStore } from '@/store/authStore';
+import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 // Archetype Dashboards (Phase 2)
@@ -17,17 +17,21 @@ import AIInsightsWidget from './components/AIInsightsWidget';
 import AudioNotifier from '@/components/ui/AudioNotifier';
 import { io } from 'socket.io-client';
 
+import Link from 'next/link';
+import { Settings } from 'lucide-react';
+
 export default function ShopDashboardPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, token, loading } = useAuth();
+  const isAuthenticated = !!token;
   const router = useRouter();
   const [hasNewOrder, setHasNewOrder] = useState(false);
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router]);
 
   useEffect(() => {
     if (user?.shop_id) {
@@ -85,7 +89,7 @@ export default function ShopDashboardPage() {
     }
   };
 
-  if (!isAuthenticated) return null; // Wait for redirect
+  if (loading || !isAuthenticated) return null; // Wait for redirect
 
   return (
     <div className="min-h-screen bg-section-alt flex flex-col font-sans" data-theme="light" data-category={config.theme}>
@@ -95,6 +99,13 @@ export default function ShopDashboardPage() {
       <AudioNotifier playSound={hasNewOrder} />
       
       <main className="flex-1 py-8 lg:py-12">
+        <div className="container max-w-[1400px] mb-8 flex justify-end">
+          <Link href={`/shop-manager/${activeCategory}`} className="btn btn-primary flex items-center gap-2 shadow-lg">
+            <Settings className="w-5 h-5" />
+            Complete Shop Management
+          </Link>
+        </div>
+        
         <div className="container max-w-[1400px] mb-12">
           <AIInsightsWidget shopId={user?.shop_id || 1} />
           <div className="mt-8">

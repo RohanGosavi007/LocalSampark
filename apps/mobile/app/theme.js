@@ -1,5 +1,6 @@
 // LocalSampark Mobile Design Tokens
 // Shared theme constants for consistent styling across all 66 modules
+// Spatial Design System v2.0 — Unified with Web Design Language
 
 export const COLORS = {
   // Vibrant Primary palette (Swiggy-style)
@@ -9,13 +10,13 @@ export const COLORS = {
   primaryGlass: 'rgba(240, 90, 40, 0.1)',
 
   // Secondary
-  secondary: '#10b981', // Blinkit green for secondary elements
+  secondary: '#10b981',
   secondaryHover: '#059669',
   secondaryLight: '#ecfdf5',
   secondaryGlass: 'rgba(16, 185, 129, 0.1)',
 
   // Backgrounds
-  background: '#F8F9FA', // Breathable off-white
+  background: '#F8F9FA',
   backgroundAlt: '#FFFFFF',
   cardBg: '#FFFFFF',
 
@@ -33,8 +34,89 @@ export const COLORS = {
   warning: '#FF9500',
   error: '#FF3B30',
   info: '#3b82f6',
+};
+
+// Dark-mode-first surfaces for the spatial design language
+export const DARK_COLORS = {
+  background: '#060b18',
+  backgroundAlt: '#0d1526',
+  surface: 'rgba(13, 21, 38, 0.85)',
+  surfaceGlass: 'rgba(255, 255, 255, 0.04)',
+  text: '#f1f5f9',
+  textMuted: '#94a3b8',
+  border: '#1e2d4a',
+  borderGlass: 'rgba(255, 255, 255, 0.08)',
+};
+
+// Mesh gradient color arrays for LinearGradient
+export const GRADIENTS = {
+  meshDark: ['#0F172A', '#1E1B4B', '#064E3B'],
+  meshVibrant: ['#0F172A', '#312E81', '#065F46', '#0F172A'],
+  meshWarm: ['#1a0a2e', '#16213e', '#0f3460'],
+  heroLight: ['#e0e7ff', '#f0fdf4', '#ffffff'],
+
+  primary: ['#F05A28', '#f97316', '#ea580c'],
+  primaryGlow: ['#F05A28', '#f59e0b'],
+  success: ['#10B981', '#059669'],
+  violet: ['#8B5CF6', '#6366F1', '#4F46E5'],
+  rose: ['#EC4899', '#E11D48'],
+  indigo: ['#6366F1', '#4F46E5'],
   
-  // NOTE: Dark mode has been explicitly stripped out to enforce the vibrant high-conversion UI.
+  glassOverlay: ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)'],
+  glassShine: ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0)', 'rgba(255,255,255,0.04)'],
+};
+
+// Pre-built glass card style objects
+export const GLASS = {
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderWidth: 1,
+    borderRadius: 24,
+  },
+  cardLight: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderColor: 'rgba(255, 255, 255, 0.90)',
+    borderWidth: 1,
+    borderRadius: 24,
+  },
+  surface: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  dock: {
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderWidth: 1,
+    borderRadius: 28,
+  },
+};
+
+// Colored glow shadow presets
+export const SPATIAL = {
+  glowPrimary: {
+    shadowColor: '#F05A28',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  glowViolet: {
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  glowSuccess: {
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
+  },
 };
 
 export const SPACING = {
@@ -86,8 +168,8 @@ export const FONT_SIZES = {
 
 export const BORDER_RADIUS = {
   sm: 4,
-  md: 12, // standard cards
-  lg: 24, // bottom sheets
+  md: 12,
+  lg: 24,
   xl: 32,
   '2xl': 40,
   pill: 999,
@@ -195,6 +277,12 @@ export const COMMON_STYLES = {
     color: COLORS.text,
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
+  },
+  // Glass card style for spatial UI
+  glassCard: {
+    ...GLASS.card,
+    padding: SPACING.lg,
+    ...SPATIAL.glowViolet,
   },
   input: {
     backgroundColor: COLORS.backgroundAlt,

@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Animated, Alert, Image as RNImage } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert, Image as RNImage, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import Animated, { 
+  useSharedValue, useAnimatedStyle, withSpring, withTiming, withDelay,
+  withRepeat, withSequence, interpolate, Extrapolation, FadeIn, FadeInDown, FadeInUp,
+  SlideInRight
+} from 'react-native-reanimated';
 
 // Crash-safe native module imports with fallbacks
 let ExpoImage;
 try {
   ExpoImage = require('expo-image').Image;
 } catch (e) {
-  console.warn('[index] expo-image not available, using RN Image:', e.message);
   ExpoImage = RNImage;
 }
 
@@ -16,163 +20,243 @@ let LinearGradient;
 try {
   LinearGradient = require('expo-linear-gradient').LinearGradient;
 } catch (e) {
-  console.warn('[index] expo-linear-gradient not available, using View fallback:', e.message);
-  LinearGradient = ({ children, style, ...rest }) => <View style={[style, { backgroundColor: '#e0e7ff' }]}>{children}</View>;
+  LinearGradient = ({ children, style }) => <View style={[style, { backgroundColor: '#0F172A' }]}>{children}</View>;
+}
+
+let Haptics;
+try {
+  Haptics = require('expo-haptics');
+} catch (e) {
+  Haptics = { impactAsync: () => {}, ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' }, notificationAsync: () => {}, NotificationFeedbackType: { Success: 'success' } };
 }
 
 const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 56) / 2;
 
 const PILLARS = [
-  { title: 'Community & Forums', icon: '💬', desc: 'Share local updates & stories.', color: '#fef08a' },
-  { title: 'Local Business', icon: '🛒', desc: 'Order direct from neighborhood stores.', color: '#bbf7d0' },
-  { title: 'Gig Economy & Jobs', icon: '🔧', desc: 'Hire verified local electricians & plumbers.', color: '#bfdbfe' },
-  { title: 'Real Estate Hub', icon: '🏢', desc: 'Search for rental apartments without brokers.', color: '#fbcfe8' },
-  { title: 'Hyperlocal Delivery', icon: '📦', desc: 'Send packages across your zone instantly.', color: '#fed7aa' },
-  { title: 'Carpool & Travel', icon: '🚗', desc: 'Share daily rides to IT Parks.', color: '#ddd6fe' },
-  { title: 'Society Management', icon: '🏘️', desc: 'Digital visitor gate passes & maintenance.', color: '#a7f3d0' },
-  { title: 'Krishi Hub', icon: '🌾', desc: '120+ farming & agriculture services.', color: '#d9f99d' },
-  { title: 'Earn & Franchise', icon: '💸', desc: 'Become a franchise partner and earn.', color: '#fef9c3' },
+  { title: 'Community', icon: '💬', desc: 'Share local updates & stories.', gradient: ['#EC4899', '#8B5CF6'], route: '/community' },
+  { title: 'Local Shops', icon: '🛒', desc: 'Order from neighborhood stores.', gradient: ['#F97316', '#F59E0B'], route: '/shops' },
+  { title: 'Gig & Jobs', icon: '🔧', desc: 'Hire verified local services.', gradient: ['#3B82F6', '#06B6D4'], route: '/jobs' },
+  { title: 'Real Estate', icon: '🏢', desc: 'Search rentals without brokers.', gradient: ['#EC4899', '#F43F5E'], route: '/properties' },
+  { title: 'Delivery', icon: '📦', desc: 'Send packages across your zone.', gradient: ['#8B5CF6', '#6366F1'], route: '/delivery' },
+  { title: 'Carpool', icon: '🚗', desc: 'Share rides to IT Parks.', gradient: ['#10B981', '#059669'], route: '/carpool' },
+  { title: 'Society Mgmt', icon: '🏘️', desc: 'Digital gate passes & notices.', gradient: ['#6366F1', '#4F46E5'], route: '/society' },
+  { title: 'Krishi Hub', icon: '🌾', desc: '120+ agriculture services.', gradient: ['#84CC16', '#22C55E'], route: '/modules/krishi' },
+  { title: 'Earn & Franchise', icon: '💸', desc: 'Become a partner and earn.', gradient: ['#F59E0B', '#EF4444'], route: '/earn' },
 ];
 
-// Safe navigation wrapper — catches and shows any navigation error
 const safeNavigate = (path) => {
   try {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(path);
   } catch (err) {
     Alert.alert('Navigation Error', `Failed to open ${path}: ${err.message}`);
   }
 };
 
-export default function WelcomeScreen() {
-  const [stats, setStats] = useState({ neighbors: 1000, shops: 50, gigs: 10 });
-  const fadeAnim = useState(new Animated.Value(0))[0];
+// ── Glass Pillar Card with Reanimated ──
+function PillarCard({ pillar, index }) {
+  const scale = useSharedValue(1);
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
-    const interval = setInterval(() => {
-      setStats(prev => {
-        if (prev.neighbors >= 12450 && prev.shops >= 347 && prev.gigs >= 78) {
-          clearInterval(interval);
-          return prev;
-        }
-        return {
-          neighbors: prev.neighbors < 12450 ? prev.neighbors + 430 : 12450,
-          shops: prev.shops < 347 ? prev.shops + 12 : 347,
-          gigs: prev.gigs < 78 ? prev.gigs + 3 : 78,
-        };
-      });
-    }, 50);
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, { stiffness: 400, damping: 15 });
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { stiffness: 300, damping: 10 });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* HERO SECTION WITH VIBRANT GRADIENT */}
-        <Animated.View style={[styles.heroContainer, { opacity: fadeAnim }]}>
+    <Animated.View 
+      entering={FadeInUp.delay(index * 80).springify().damping(15)}
+      style={[animatedStyle]}
+    >
+      <TouchableOpacity
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => safeNavigate(pillar.route)}
+        activeOpacity={0.9}
+        style={styles.pillarCard}
+      >
+        {/* Glass background */}
+        <View style={styles.pillarCardInner}>
+          {/* Gradient icon container */}
           <LinearGradient
-            colors={['#e0e7ff', '#f0fdf4', '#ffffff']}
-            style={styles.heroGradient}
+            colors={pillar.gradient}
+            style={styles.iconGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>📍 Pilot Live in Dhanori, Pune</Text>
-            </View>
-            
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <ExpoImage source={require('../assets/icon.png')} style={{ width: 100, height: 100, resizeMode: 'contain' }} />
-            </View>
-            
-            <Text style={styles.heroTitle}>
-              Your Neighborhood,{'\n'}
-              <Text style={styles.heroHighlight}>Connected.</Text>
-            </Text>
-            
-            <Text style={styles.heroDesc}>
-              LocalSampark is India's most comprehensive hyper-local super-app. Connect with neighbors, find service providers, shop from local stores, and earn money.
-            </Text>
-
-            <View style={styles.ctaGroup}>
-              <TouchableOpacity onPress={() => safeNavigate('/login')} activeOpacity={0.8}>
-                <LinearGradient
-                  colors={['#ec4899', '#8b5cf6', '#3b82f6']}
-                  style={styles.primaryBtn}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Text style={styles.primaryBtnText}>📱 Get Started / Login</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-              
-              <View style={styles.secondaryCtaGroup}>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={() => safeNavigate('/modules/krishi')}>
-                  <Text style={styles.secondaryBtnText}>🌾 Krishi Hub</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={() => safeNavigate('/modules/franchise')}>
-                  <Text style={styles.secondaryBtnText}>🤝 Franchise</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            {/* Glass shine overlay */}
+            <View style={styles.iconShine} />
+            <Text style={styles.pillarIcon}>{pillar.icon}</Text>
           </LinearGradient>
+          
+          <Text style={styles.pillarTitle}>{pillar.title}</Text>
+          <Text style={styles.pillarDesc}>{pillar.desc}</Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ── Animated Stat Counter ──
+function AnimatedStat({ icon, targetValue, label, delay = 0 }) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const interval = setInterval(() => {
+        setValue(prev => {
+          if (prev >= targetValue) {
+            clearInterval(interval);
+            return targetValue;
+          }
+          const step = Math.ceil(targetValue / 25);
+          return Math.min(prev + step, targetValue);
+        });
+      }, 40);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [targetValue, delay]);
+
+  return (
+    <Animated.View entering={FadeInDown.delay(delay).springify()} style={styles.statItem}>
+      <Text style={styles.statIcon}>{icon}</Text>
+      <Text style={styles.statValue}>{value.toLocaleString()}+</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+export default function WelcomeScreen() {
+  const heroFloat = useSharedValue(0);
+
+  useEffect(() => {
+    heroFloat.value = withRepeat(
+      withSequence(
+        withTiming(-8, { duration: 2000 }),
+        withTiming(0, { duration: 2000 })
+      ),
+      -1, true
+    );
+  }, []);
+
+  const heroFloatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: heroFloat.value }],
+  }));
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="light" />
+      
+      {/* Full-screen mesh gradient background */}
+      <LinearGradient
+        colors={['#0F172A', '#1E1B4B', '#064E3B', '#0F172A']}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* ── HERO SECTION ── */}
+        <Animated.View entering={FadeIn.duration(800)} style={styles.heroContainer}>
+          {/* Live badge */}
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveBadgeText}>📍 Pilot Live in Dhanori, Pune</Text>
+          </View>
+          
+          {/* App icon with float animation */}
+          <Animated.View style={[{ alignItems: 'center', marginBottom: 20 }, heroFloatStyle]}>
+            <View style={styles.appIconGlow}>
+              <ExpoImage source={require('../assets/icon.png')} style={styles.appIcon} />
+            </View>
+          </Animated.View>
+          
+          <Text style={styles.heroTitle}>
+            Your Neighborhood,{'\n'}
+            <Text style={styles.heroGradientText}>Connected.</Text>
+          </Text>
+          
+          <Text style={styles.heroDesc}>
+            India's most comprehensive hyper-local super-app. Connect, shop, earn — all within your zone.
+          </Text>
+
+          {/* CTA Buttons */}
+          <View style={styles.ctaGroup}>
+            <TouchableOpacity 
+              onPress={() => safeNavigate('/login')} 
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#ec4899', '#8b5cf6', '#3b82f6']}
+                style={styles.primaryBtn}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <View style={styles.btnShine} />
+                <Text style={styles.primaryBtnText}>📱 Get Started / Login</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <View style={styles.secondaryCtaGroup}>
+              <TouchableOpacity 
+                style={styles.glassBtn} 
+                onPress={() => safeNavigate('/modules/krishi')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.glassBtnText}>🌾 Krishi Hub</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.glassBtn} 
+                onPress={() => safeNavigate('/modules/franchise')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.glassBtnText}>🤝 Franchise</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </Animated.View>
 
-        {/* STATS BAR */}
+        {/* ── STATS BAR ── */}
         <View style={styles.statsBar}>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>👥</Text>
-            <Text style={styles.statValue}>{stats.neighbors.toLocaleString()}+</Text>
-            <Text style={styles.statLabel}>Active Neighbors</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>🏪</Text>
-            <Text style={styles.statValue}>{stats.shops}+</Text>
-            <Text style={styles.statLabel}>Local Shops</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>⚡</Text>
-            <Text style={styles.statValue}>{stats.gigs}+</Text>
-            <Text style={styles.statLabel}>On-Demand Gigs</Text>
-          </View>
+          <AnimatedStat icon="👥" targetValue={12450} label="Neighbors" delay={200} />
+          <View style={styles.statDivider} />
+          <AnimatedStat icon="🏪" targetValue={347} label="Local Shops" delay={400} />
+          <View style={styles.statDivider} />
+          <AnimatedStat icon="⚡" targetValue={78} label="Gigs" delay={600} />
         </View>
 
-        {/* PILLARS GRID */}
+        {/* ── PILLARS GRID ── */}
         <View style={styles.pillarsSection}>
-          <View style={styles.badgeContainer}>
+          <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.sectionHeader}>
             <LinearGradient
-              colors={['#3b82f6', '#8b5cf6']}
-              style={styles.darkBadge}
+              colors={['#6366F1', '#8B5CF6']}
+              style={styles.sectionBadge}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.darkBadgeText}>Platform Architecture</Text>
+              <Text style={styles.sectionBadgeText}>✨ Platform Architecture</Text>
             </LinearGradient>
-          </View>
-          <Text style={styles.sectionTitle}>8 Pillars of LocalSampark</Text>
-          <Text style={styles.sectionDesc}>Everything your community needs, unified under a single colourful platform.</Text>
+            <Text style={styles.sectionTitle}>8 Pillars of LocalSampark</Text>
+            <Text style={styles.sectionDesc}>Everything your community needs, unified under one platform.</Text>
+          </Animated.View>
           
           <View style={styles.gridContainer}>
             {PILLARS.map((pillar, idx) => (
-              <View key={idx} style={styles.pillarCard}>
-                <View style={[styles.iconContainer, { backgroundColor: pillar.color }]}>
-                  <Text style={styles.pillarIcon}>{pillar.icon}</Text>
-                </View>
-                <Text style={styles.pillarTitle}>{pillar.title}</Text>
-                <Text style={styles.pillarDesc}>{pillar.desc}</Text>
-              </View>
+              <PillarCard key={idx} pillar={pillar} index={idx} />
             ))}
           </View>
         </View>
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,65 +265,108 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0F172A',
   },
   scrollContent: {
     paddingBottom: 40,
   },
+
+  // ── Hero ──
   heroContainer: {
-    width: '100%',
-  },
-  heroGradient: {
     paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 40,
-    alignItems: 'flex-start',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingBottom: 32,
   },
-  badge: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    marginBottom: 24,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+    marginBottom: 28,
+    alignSelf: 'flex-start',
   },
-  badgeText: {
-    color: '#3b82f6',
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 8,
+  },
+  liveBadgeText: {
+    color: '#A5B4FC',
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  appIconGlow: {
+    width: 100,
+    height: 100,
+    borderRadius: 28,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
+      },
+      android: { elevation: 12 },
+    }),
+  },
+  appIcon: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
   },
   heroTitle: {
     fontSize: 42,
     fontWeight: '900',
-    color: '#0f172a',
+    color: '#F1F5F9',
     lineHeight: 48,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  heroHighlight: {
-    color: '#ec4899',
+  heroGradientText: {
+    color: '#818CF8',
   },
   heroDesc: {
     fontSize: 15,
-    color: '#475569',
+    color: '#94A3B8',
     lineHeight: 24,
-    marginBottom: 40,
+    marginBottom: 32,
   },
+
+  // ── CTA ──
   ctaGroup: {
     width: '100%',
-    gap: 16,
+    gap: 14,
   },
   primaryBtn: {
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
-    shadowColor: '#ec4899',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#8B5CF6',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: { elevation: 10 },
+    }),
+  },
+  btnShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderBottomLeftRadius: 100,
+    borderBottomRightRadius: 100,
   },
   primaryBtnText: {
     color: '#ffffff',
@@ -249,126 +376,147 @@ const styles = StyleSheet.create({
   secondaryCtaGroup: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
   },
-  secondaryBtn: {
+  glassBtn: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: 'rgba(255, 255, 255, 0.10)',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  secondaryBtnText: {
-    color: '#3b82f6',
+  glassBtnText: {
+    color: '#E2E8F0',
     fontSize: 14,
     fontWeight: 'bold',
   },
-  
+
+  // ── Stats ──
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    backgroundColor: '#ffffff',
-    marginTop: 10,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
   statIcon: {
-    fontSize: 28,
-    marginBottom: 8,
+    fontSize: 24,
+    marginBottom: 6,
   },
   statValue: {
-    color: '#8b5cf6',
-    fontSize: 26,
+    color: '#818CF8',
+    fontSize: 22,
     fontWeight: '900',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
-    color: '#64748b',
-    fontSize: 12,
+    color: '#64748B',
+    fontSize: 10,
     fontWeight: '700',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
 
+  // ── Pillars ──
   pillarsSection: {
-    paddingHorizontal: 24,
-    paddingTop: 30,
+    paddingHorizontal: 16,
+    paddingTop: 36,
   },
-  badgeContainer: {
+  sectionHeader: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 28,
   },
-  darkBadge: {
+  sectionBadge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    marginBottom: 14,
   },
-  darkBadgeText: {
+  sectionBadgeText: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: 'bold',
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#F1F5F9',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sectionDesc: {
-    color: '#64748b',
+    color: '#94A3B8',
     textAlign: 'center',
     fontSize: 14,
-    marginBottom: 40,
     paddingHorizontal: 20,
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 12,
   },
   pillarCard: {
-    width: (width - 64) / 2,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    width: CARD_WIDTH,
+    marginBottom: 4,
   },
-  iconContainer: {
+  pillarCardInner: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 22,
+    padding: 18,
+    minHeight: 160,
+  },
+  iconGradient: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
+    overflow: 'hidden',
+  },
+  iconShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
   },
   pillarIcon: {
-    fontSize: 24,
+    fontSize: 22,
   },
   pillarTitle: {
-    color: '#0f172a',
+    color: '#F1F5F9',
     fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '800',
+    marginBottom: 6,
   },
   pillarDesc: {
-    color: '#64748b',
-    fontSize: 13,
-    lineHeight: 18,
-  }
+    color: '#94A3B8',
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });

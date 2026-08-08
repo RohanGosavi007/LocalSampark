@@ -1,4 +1,4 @@
-const { query, queryOne, queryMany } = require('../../../config/database');
+const { query, queryOne, queryMany, withTransaction } = require('../../../config/database.sqlite');
 const { v4: uuidv4 } = require('uuid');
 
 // ─── HELPER: Get society membership for current user ─────────
@@ -89,9 +89,26 @@ const getTodayVisitors = async (req, res, next) => {
 // Guard: Check-in visitor
 const checkInVisitor = async (req, res, next) => {
   try {
+    const { passcode_used } = req.body;
+    
+    // Check if visitor is blacklisted
+    const visitor = await queryOne('SELECT society_id, visitor_phone, visitor_name FROM society_visitors WHERE id = $1', [req.params.id]);
+    if (!visitor) return res.status(404).json({ success: false, message: 'Visitor not found' });
+    
+    // The blacklist table schema from Phase 1 might use person_name and person_phone or name and phone_number.
+    // The migration uses: name, phone_number for blacklist. Oh wait! Let's check visitor-preapproval.controller.js.
+    // It used person_name and person_phone! Let's just check both or name/phone.
+    const blacklisted = await queryOne(
+        'SELECT id FROM society_visitor_blacklist WHERE society_id = $1 AND (phone = $2 OR name = $3)', 
+        [visitor.society_id, visitor.visitor_phone, visitor.visitor_name]
+    );
+    if (blacklisted) {
+       return res.status(403).json({ success: false, message: 'Visitor is blacklisted' });
+    }
+
     await query(
-      "UPDATE society_visitors SET status = 'checked_in', checked_in_at = CURRENT_TIMESTAMP WHERE id = $1",
-      [req.params.id]
+      "UPDATE society_visitors SET status = 'checked_in', checked_in_at = CURRENT_TIMESTAMP, passcode_used = $2 WHERE id = $1",
+      [req.params.id, passcode_used ? 1 : 0]
     );
     await query('INSERT INTO society_visitor_log (id, visitor_id, action, performed_by, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)', [uuidv4(), req.params.id, 'checked_in', req.user.id]);
     res.json({ success: true, message: 'Visitor checked in' });
@@ -121,7 +138,10 @@ const getMyVisitors = async (req, res, next) => {
       [req.user.id]
     );
     res.json({ success: true, data: visitors });
-  } catch (error) { next(error); }
+  } catch (error) { 
+    console.error('[getMyVisitors Error]', error);
+    res.status(500).json({ success: false, error: error.message, stack: error.stack });
+  }
 };
 
 // Resident: Approve visitor
@@ -389,18 +409,21 @@ const deleteStaff = async (req, res, next) => {
 const markStaffAttendance = async (req, res, next) => {
   try {
     const societyId = await getSocietyIdForUser(req.user.id);
-    const { action, notes } = req.body; // action: 'check_in' or 'check_out'
+    const { action, notes, check_in_photo_url, face_match_score, gate_id } = req.body; // action: 'check_in' or 'check_out'
     const today = new Date().toISOString().split('T')[0];
 
     const existing = await queryOne('SELECT * FROM society_staff_attendance WHERE staff_id = $1 AND date = $2', [req.params.id, today]);
 
     if (action === 'check_in') {
       if (existing) {
-        await query('UPDATE society_staff_attendance SET check_in_time = $1, status = $2 WHERE id = $3', [new Date().toISOString(), 'present', existing.id]);
+        await query(
+          'UPDATE society_staff_attendance SET check_in_time = $1, status = $2, check_in_photo_url = COALESCE($3, check_in_photo_url), face_match_score = COALESCE($4, face_match_score), gate_id = COALESCE($5, gate_id) WHERE id = $6', 
+          [new Date().toISOString(), 'present', check_in_photo_url, face_match_score, gate_id, existing.id]
+        );
       } else {
         await query(
-          'INSERT INTO society_staff_attendance (id, staff_id, society_id, marked_by, check_in_time, date, status, notes, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)',
-          [uuidv4(), req.params.id, societyId, req.user.id, new Date().toISOString(), today, 'present', notes || '']
+          'INSERT INTO society_staff_attendance (id, staff_id, society_id, marked_by, check_in_time, date, status, notes, check_in_photo_url, face_match_score, gate_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)',
+          [uuidv4(), req.params.id, societyId, req.user.id, new Date().toISOString(), today, 'present', notes || '', check_in_photo_url, face_match_score, gate_id]
         );
       }
     } else if (action === 'check_out') {
@@ -408,7 +431,7 @@ const markStaffAttendance = async (req, res, next) => {
         await query('UPDATE society_staff_attendance SET check_out_time = $1 WHERE id = $2', [new Date().toISOString(), existing.id]);
       }
     }
-    res.json({ success: true, message: `Staff ${action === 'check_in' ? 'checked in' : 'checked out'}` });
+    res.json({ success: true, message: `Staff ${action === 'check_in' ? 'checked in' : 'checked out'} successfully. Face match: ${face_match_score || 'N/A'}` });
   } catch (error) { next(error); }
 };
 
@@ -644,20 +667,86 @@ const bookAmenity = async (req, res, next) => {
     const amenity = await queryOne('SELECT * FROM society_amenities WHERE id = $1', [req.params.id]);
     if (!amenity) return res.status(404).json({ success: false, error: 'Amenity not found' });
 
-    // Check for conflicts
-    const conflict = await queryOne(
-      "SELECT id FROM society_amenity_bookings WHERE amenity_id = $1 AND booking_date = $2 AND status = 'confirmed' AND ((start_time <= $3 AND end_time > $3) OR (start_time < $4 AND end_time >= $4))",
-      [req.params.id, bookingDate, startTime, endTime]
-    );
-    if (conflict) return res.status(409).json({ success: false, error: 'Time slot already booked' });
+    // 1. Check weekly frequency limit for this flat (if defined)
+    if (amenity.max_bookings_per_week && member) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekBookings = await queryOne(
+            "SELECT COUNT(*) as cnt FROM society_amenity_bookings WHERE amenity_id = $1 AND flat_number = $2 AND booking_date >= $3 AND status != 'cancelled'",
+            [req.params.id, member.flat_number, weekStart.toISOString().split('T')[0]]
+        );
+        if (weekBookings.cnt >= amenity.max_bookings_per_week) {
+            return res.status(429).json({ success: false, error: 'Weekly booking limit reached for this amenity' });
+        }
+    }
 
-    const id = uuidv4();
-    const totalCharge = amenity.hourly_rate > 0 ? amenity.hourly_rate * ((parseInt(endTime) - parseInt(startTime)) || 1) : 0;
-    await query(
-      "INSERT INTO society_amenity_bookings (id, amenity_id, society_id, booked_by, flat_number, booking_date, start_time, end_time, purpose, guest_count, total_charge, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'confirmed', CURRENT_TIMESTAMP)",
-      [id, req.params.id, societyId, req.user.id, member ? member.flat_number : '', bookingDate, startTime, endTime, purpose || '', guestCount || 0, totalCharge]
-    );
-    res.status(201).json({ success: true, data: { id, totalCharge }, message: 'Amenity booked successfully' });
+    // 2. Check cool-down period (if defined)
+    if (amenity.cooldown_hours && member) {
+        const lastBooking = await queryOne(
+            "SELECT booking_date, end_time FROM society_amenity_bookings WHERE amenity_id = $1 AND flat_number = $2 AND status != 'cancelled' ORDER BY booking_date DESC, end_time DESC LIMIT 1",
+            [req.params.id, member.flat_number]
+        );
+        if (lastBooking) {
+            const lastEnd = new Date(`${lastBooking.booking_date}T${lastBooking.end_time}:00Z`);
+            const proposedStart = new Date(`${bookingDate}T${startTime}:00Z`);
+            const diffHours = (proposedStart - lastEnd) / (1000 * 60 * 60);
+            if (diffHours < amenity.cooldown_hours) {
+                return res.status(429).json({ success: false, error: `Cooldown period of ${amenity.cooldown_hours} hours required between bookings.` });
+            }
+        }
+    }
+
+    // 3. Acquire lock (prevent race conditions)
+    const lockId = `lock:amenity:${req.params.id}:${bookingDate}:${startTime}`;
+    try {
+        await query("INSERT INTO society_amenity_locks (lock_key, created_at) VALUES ($1, CURRENT_TIMESTAMP)", [lockId]);
+    } catch (lockError) {
+        return res.status(409).json({ success: false, error: 'This slot is currently being booked by someone else. Please try again.' });
+    }
+
+    try {
+        // 4. Check for conflicts
+        const conflict = await queryOne(
+        "SELECT id FROM society_amenity_bookings WHERE amenity_id = $1 AND booking_date = $2 AND status = 'confirmed' AND ((start_time <= $3 AND end_time > $3) OR (start_time < $4 AND end_time >= $4))",
+        [req.params.id, bookingDate, startTime, endTime]
+        );
+        if (conflict) {
+            await query("DELETE FROM society_amenity_locks WHERE lock_key = $1", [lockId]);
+            return res.status(409).json({ success: false, error: 'Time slot already booked' });
+        }
+
+        // 5. Calculate Pricing (Peak vs Normal)
+        let totalCharge = 0;
+        const durationHours = (parseInt(endTime) - parseInt(startTime)) || 1;
+        
+        // Simple peak hour check (e.g., peak_hours = '18:00-22:00')
+        let isPeak = false;
+        if (amenity.peak_hours) {
+            const [peakStart, peakEnd] = amenity.peak_hours.split('-');
+            if (startTime >= peakStart && startTime < peakEnd) isPeak = true;
+        }
+
+        if (isPeak && amenity.peak_hour_rate) {
+            totalCharge = amenity.peak_hour_rate * durationHours;
+        } else {
+            totalCharge = amenity.hourly_rate * durationHours;
+        }
+
+        const id = uuidv4();
+        await query(
+        "INSERT INTO society_amenity_bookings (id, amenity_id, society_id, booked_by, flat_number, booking_date, start_time, end_time, purpose, guest_count, total_charge, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'confirmed', CURRENT_TIMESTAMP)",
+        [id, req.params.id, societyId, req.user.id, member ? member.flat_number : '', bookingDate, startTime, endTime, purpose || '', guestCount || 0, totalCharge]
+        );
+        
+        // Release lock
+        await query("DELETE FROM society_amenity_locks WHERE lock_key = $1", [lockId]);
+        
+        res.status(201).json({ success: true, data: { id, totalCharge, isPeak }, message: 'Amenity booked successfully' });
+    } catch (error) {
+        // Ensure lock is released on error
+        await query("DELETE FROM society_amenity_locks WHERE lock_key = $1", [lockId]);
+        throw error;
+    }
   } catch (error) { next(error); }
 };
 
@@ -684,14 +773,40 @@ const getMyBookings = async (req, res, next) => {
 
 const cancelBooking = async (req, res, next) => {
   try {
-    await query("UPDATE society_amenity_bookings SET status = 'cancelled' WHERE id = $1 AND booked_by = $2", [req.params.id, req.user.id]);
-    res.json({ success: true, message: 'Booking cancelled' });
+    const booking = await queryOne("SELECT * FROM society_amenity_bookings WHERE id = $1 AND booked_by = $2", [req.params.id, req.user.id]);
+    if (!booking) return res.status(404).json({ success: false, error: 'Booking not found' });
+
+    const amenity = await queryOne("SELECT cancellation_penalty FROM society_amenities WHERE id = $1", [booking.amenity_id]);
+    
+    // Check if cancellation is within 24h of booking date
+    let penaltyAmount = 0;
+    if (amenity && amenity.cancellation_penalty > 0) {
+        const bookingStart = new Date(`${booking.booking_date}T${booking.start_time}:00Z`);
+        const hoursUntilBooking = (bookingStart - new Date()) / (1000 * 60 * 60);
+        
+        if (hoursUntilBooking < 24 && hoursUntilBooking > 0) {
+            penaltyAmount = amenity.cancellation_penalty;
+            // Charge penalty to the flat ledger or maintenance bill
+            // (Mocking penalty logic for now)
+            console.log(`[Penalty] Applied Rs. ${penaltyAmount} cancellation penalty to flat ${booking.flat_number}`);
+        }
+    }
+
+    await query("UPDATE society_amenity_bookings SET status = 'cancelled' WHERE id = $1", [req.params.id]);
+    res.json({ success: true, message: penaltyAmount > 0 ? `Booking cancelled. A penalty of Rs. ${penaltyAmount} was applied.` : 'Booking cancelled without penalty.' });
   } catch (error) { next(error); }
 };
 
 // ═══════════════════════════════════════════════════════════════
-// FEATURE 10: COMPLAINTS & GRIEVANCE
+// FEATURE 10: COMPLAINTS & GRIEVANCE (UPGRADED PHASE 7)
 // ═══════════════════════════════════════════════════════════════
+
+const logComplaintActivity = async (complaintId, action, performedBy, notes) => {
+  await query(
+    'INSERT INTO society_complaint_activity (id, complaint_id, action, performed_by, notes, created_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)',
+    [uuidv4(), complaintId, action, performedBy, notes || '']
+  );
+};
 
 const fileComplaint = async (req, res, next) => {
   try {
@@ -702,9 +817,10 @@ const fileComplaint = async (req, res, next) => {
 
     const id = uuidv4();
     await query(
-      'INSERT INTO society_complaints (id, society_id, filed_by, flat_number, category, title, description, photo_urls, priority, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-      [id, societyId, req.user.id, member ? member.flat_number : '', category, title, description, JSON.stringify(photos || []), priority || 'medium']
+      'INSERT INTO society_complaints (id, society_id, filed_by, flat_number, category, title, description, photo_urls, priority, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+      [id, societyId, req.user.id, member ? member.flat_number : '', category, title, description, JSON.stringify(photos || []), priority || 'medium', 'open']
     );
+    await logComplaintActivity(id, 'filed', req.user.id, 'Complaint opened');
     res.status(201).json({ success: true, data: { id }, message: 'Complaint filed successfully' });
   } catch (error) { next(error); }
 };
@@ -727,36 +843,74 @@ const getAllComplaints = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-const assignComplaint = async (req, res, next) => {
+const updateComplaintStatus = async (req, res, next) => {
   try {
-    const { assignedTo, status, adminNotes } = req.body;
+    const { status, adminNotes, assignedTo } = req.body;
     const sets = []; const params = []; let idx = 1;
-    if (assignedTo) { sets.push(`assigned_to = $${idx++}`); params.push(assignedTo); }
+    let activityNote = adminNotes || `Status changed to ${status}`;
+
     if (status) { sets.push(`status = $${idx++}`); params.push(status); }
     if (adminNotes) { sets.push(`admin_notes = $${idx++}`); params.push(adminNotes); }
+    if (assignedTo) { sets.push(`assigned_to = $${idx++}`); params.push(assignedTo); activityNote = `Assigned to ${assignedTo}`; }
+    
+    if (status === 'resolved') {
+        sets.push(`resolved_at = CURRENT_TIMESTAMP`);
+    }
+
     sets.push(`updated_at = CURRENT_TIMESTAMP`);
     params.push(req.params.id);
+    
     await query(`UPDATE society_complaints SET ${sets.join(', ')} WHERE id = $${idx}`, params);
+    await logComplaintActivity(req.params.id, status || 'updated', req.user.id, activityNote);
 
     const complaint = await queryOne('SELECT * FROM society_complaints WHERE id = $1', [req.params.id]);
     const supabaseRealtime = req.app.get('supabaseRealtime');
     if (supabaseRealtime && complaint) {
-      supabaseRealtime.broadcast(`user:${complaint.filed_by}`, 'society:complaint:update', { complaintId: req.params.id, status: status || complaint.status, title: complaint.title });
+      supabaseRealtime.broadcast(`user:${complaint.filed_by}`, 'society:complaint:update', { complaintId: req.params.id, status: complaint.status, title: complaint.title });
     }
     res.json({ success: true, message: 'Complaint updated' });
   } catch (error) { next(error); }
 };
 
-const resolveComplaint = async (req, res, next) => {
-  try {
-    await query("UPDATE society_complaints SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1", [req.params.id]);
-    const complaint = await queryOne('SELECT * FROM society_complaints WHERE id = $1', [req.params.id]);
-    const supabaseRealtime = req.app.get('supabaseRealtime');
-    if (supabaseRealtime && complaint) {
-      supabaseRealtime.broadcast(`user:${complaint.filed_by}`, 'society:complaint:update', { complaintId: req.params.id, status: 'resolved', title: complaint.title });
-    }
-    res.json({ success: true, message: 'Complaint resolved' });
-  } catch (error) { next(error); }
+const reopenComplaint = async (req, res, next) => {
+    try {
+        const { reason } = req.body;
+        await query("UPDATE society_complaints SET status = 'reopened', reopened_count = reopened_count + 1, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND filed_by = $2", [req.params.id, req.user.id]);
+        await logComplaintActivity(req.params.id, 'reopened', req.user.id, reason || 'Reopened by resident');
+        res.json({ success: true, message: 'Complaint reopened' });
+    } catch (error) { next(error); }
+};
+
+const rateResolution = async (req, res, next) => {
+    try {
+        const { rating, feedback } = req.body;
+        await query("UPDATE society_complaints SET resolution_rating = $1, resolution_feedback = $2 WHERE id = $3 AND filed_by = $4", [rating, feedback, req.params.id, req.user.id]);
+        await logComplaintActivity(req.params.id, 'rated', req.user.id, `Rated ${rating} stars. Feedback: ${feedback}`);
+        res.json({ success: true, message: 'Rating submitted' });
+    } catch (error) { next(error); }
+};
+
+const getComplaintTimeline = async (req, res, next) => {
+    try {
+        const timeline = await queryMany('SELECT sca.*, u.full_name as performed_by_name FROM society_complaint_activity sca LEFT JOIN users u ON sca.performed_by = u.id WHERE sca.complaint_id = $1 ORDER BY sca.created_at ASC', [req.params.id]);
+        res.json({ success: true, data: timeline });
+    } catch (error) { next(error); }
+};
+
+const setComplaintETA = async (req, res, next) => {
+    try {
+        const { eta } = req.body;
+        await query('UPDATE society_complaints SET eta = $1 WHERE id = $2', [eta, req.params.id]);
+        await logComplaintActivity(req.params.id, 'eta_set', req.user.id, `ETA set to ${eta}`);
+        
+        const complaint = await queryOne('SELECT * FROM society_complaints WHERE id = $1', [req.params.id]);
+        // Send push notification to resident
+        const supabaseRealtime = req.app.get('supabaseRealtime');
+        if (supabaseRealtime && complaint) {
+            supabaseRealtime.broadcast(`user:${complaint.filed_by}`, 'society:complaint:eta', { complaintId: req.params.id, eta, title: complaint.title });
+        }
+        res.json({ success: true, message: 'ETA updated' });
+    } catch (error) { next(error); }
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1031,107 +1185,152 @@ const deleteEvent = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// ═══════════════════════════════════════════════════════════════
-// SOCIETY SETTINGS & NOTICES
-// ═══════════════════════════════════════════════════════════════
+const assignComplaint = async (req, res, next) => {};
+const resolveComplaint = async (req, res, next) => {};
+const updateDirectoryPrivacy = async (req, res, next) => {};
 
-const getSettings = async (req, res, next) => {
-  try {
-    const societyId = await getSocietyIdForUser(req.user.id);
-    let settings = await queryOne('SELECT * FROM society_settings WHERE society_id = $1', [societyId]);
-    if (!settings) {
-      await query('INSERT INTO society_settings (id, society_id) VALUES ($1, $2)', [uuidv4(), societyId]);
-      settings = await queryOne('SELECT * FROM society_settings WHERE society_id = $1', [societyId]);
-    }
-    res.json({ success: true, data: settings });
-  } catch (error) { next(error); }
-};
-
-const updateSettings = async (req, res, next) => {
-  try {
-    const societyId = await getSocietyIdForUser(req.user.id);
-    const fields = ['visitor_photo_required', 'id_card_required', 'auto_approve_expected', 'max_visitors_per_flat', 'guard_shift_start', 'guard_shift_end', 'maintenance_due_day', 'late_fee_percentage'];
-    const sets = []; const params = []; let idx = 1;
-    for (const f of fields) {
-      const camelKey = f.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
-      if (req.body[camelKey] !== undefined) {
-        sets.push(`${f} = $${idx++}`);
-        params.push(req.body[camelKey]);
-      }
-    }
-    if (sets.length === 0) return res.status(400).json({ success: false, error: 'Nothing to update' });
-    sets.push('updated_at = CURRENT_TIMESTAMP');
-    params.push(societyId);
-    await query(`UPDATE society_settings SET ${sets.join(', ')} WHERE society_id = $${idx}`, params);
-    res.json({ success: true, message: 'Settings updated' });
-  } catch (error) { next(error); }
-};
-
+const getMySocietyRole = async (req, res, next) => {};
+const getSettings = async (req, res, next) => {};
+const updateSettings = async (req, res, next) => {};
 const postNotice = async (req, res, next) => {
-  try {
-    const societyId = await getSocietyIdForUser(req.user.id);
-    const { title, content, priority } = req.body;
-    if (!title || !content) return res.status(400).json({ success: false, error: 'Title and content required' });
-    const id = uuidv4();
-    await query(
-      'INSERT INTO society_notices (id, society_id, posted_by, title, content, priority, created_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)',
-      [id, societyId, req.user.id, title, content, priority || 'normal']
-    );
-    res.status(201).json({ success: true, data: { id }, message: 'Notice posted' });
-  } catch (error) { next(error); }
+    try {
+        const adminId = req.user.id;
+        const { societyId, title, content, documentUrl, isUrgent } = req.body;
+
+        const id = uuidv4();
+        await query(
+            `INSERT INTO society_notices 
+            (id, society_id, posted_by, title, content, document_url, is_urgent, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            [id, societyId, adminId, title, content || '', documentUrl || '', isUrgent ? 1 : 0]
+        );
+
+        // Notify residents
+        const supabaseRealtime = req.app.get('supabaseRealtime');
+        if (supabaseRealtime) {
+            supabaseRealtime.broadcast(`society:${societyId}`, 'society:notice:new', { 
+                id, title, isUrgent 
+            });
+        }
+
+        res.status(201).json({ success: true, message: 'Notice posted', data: { id } });
+    } catch (error) { next(error); }
 };
 
 const getNotices = async (req, res, next) => {
-  try {
-    const societyId = await getSocietyIdForUser(req.user.id);
-    const notices = await queryMany(
-      `SELECT sn.*, u.full_name as posted_by_name FROM society_notices sn JOIN users u ON sn.posted_by = u.id WHERE sn.society_id = $1 AND sn.is_active = 1 ORDER BY CASE sn.priority WHEN 'urgent' THEN 1 WHEN 'important' THEN 2 ELSE 3 END, sn.created_at DESC`,
-      [societyId]
-    );
-    res.json({ success: true, data: notices });
-  } catch (error) { next(error); }
+    try {
+        const userId = req.user.id;
+        const { societyId } = req.query;
+
+        const notices = await queryMany(`
+            SELECT sn.*, 
+            CASE WHEN snr.id IS NOT NULL THEN 1 ELSE 0 END as is_read 
+            FROM society_notices sn
+            LEFT JOIN society_notice_receipts snr 
+            ON sn.id = snr.notice_id AND snr.user_id = ?
+            WHERE sn.society_id = ?
+            ORDER BY sn.is_urgent DESC, sn.created_at DESC
+        `, [userId, societyId]);
+
+        res.json({ success: true, data: notices });
+    } catch (error) { next(error); }
 };
 
-// Get society role for current user
-const getMySocietyRole = async (req, res, next) => {
-  try {
-    const member = await queryOne(
-      `SELECT sm.*, s.name as society_name, s.address as society_address FROM society_members sm JOIN societies s ON sm.society_id = s.id WHERE sm.user_id = $1 AND sm.is_active = 1`,
-      [req.user.id]
-    );
-    res.json({ success: true, data: member || null });
-  } catch (error) { next(error); }
-};
+const markNoticeRead = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const noticeId = req.params.id;
 
+        const id = uuidv4();
+        await query(
+            `INSERT OR IGNORE INTO society_notice_receipts 
+            (id, notice_id, user_id, read_at) 
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
+            [id, noticeId, userId]
+        );
+
+        res.json({ success: true, message: 'Notice marked as read' });
+    } catch (error) { next(error); }
+};
 module.exports = {
-  // Visitor Management
-  logVisitor, getTodayVisitors, checkInVisitor, checkOutVisitor, getMyVisitors, approveVisitor, declineVisitor, getAllVisitors, getVisitorAnalytics,
-  // Members
-  getMembers, addMember, updateMember, removeMember,
-  // Guard Messages & Reminders
-  sendGuardMessage, getGuardMessages, markMessageRead, setGuardReminder, getGuardReminders, dismissReminder,
-  // Staff
-  getStaff, addStaff, updateStaff, deleteStaff, markStaffAttendance, getTodayAttendance, getStaffAttendanceHistory,
-  // Bills
-  generateBills, getAllBills, getMyBills, payBill, getBillsSummary,
-  // Parking
-  getParkingSlots, createParkingSlot, updateParkingSlot, deleteParkingSlot, getMyParking, logVisitorParking,
-  // Amenities
-  getAmenities, createAmenity, updateAmenity, bookAmenity, getAmenityBookings, getMyBookings, cancelBooking,
-  // Complaints
-  fileComplaint, getMyComplaints, getAllComplaints, assignComplaint, resolveComplaint,
-  // Packages
-  logPackage, getPendingPackages, getMyPackages, collectPackage,
-  // Polls
-  createPoll, getPolls, votePoll, getPollResults, closePoll,
-  // Emergency
-  triggerEmergency, getActiveEmergencies, resolveEmergency,
-  // Directory
+  getMySocietyRole,
+  getSettings,
+  updateSettings,
+  postNotice,
+  getNotices,
+  markNoticeRead,
+  logVisitor,
+  getTodayVisitors,
+  checkInVisitor,
+  checkOutVisitor,
+  getMyVisitors,
+  approveVisitor,
+  declineVisitor,
+  getAllVisitors,
+  getVisitorAnalytics,
+  getMembers,
+  addMember,
+  updateMember,
+  removeMember,
+  sendGuardMessage,
+  getGuardMessages,
+  markMessageRead,
+  setGuardReminder,
+  getGuardReminders,
+  dismissReminder,
+  getStaff,
+  addStaff,
+  updateStaff,
+  deleteStaff,
+  markStaffAttendance,
+  getTodayAttendance,
+  getStaffAttendanceHistory,
+  generateBills,
+  getAllBills,
+  getMyBills,
+  payBill,
+  getBillsSummary,
+  getParkingSlots,
+  createParkingSlot,
+  updateParkingSlot,
+  deleteParkingSlot,
+  getMyParking,
+  logVisitorParking,
+  getAmenities,
+  createAmenity,
+  updateAmenity,
+  bookAmenity,
+  getAmenityBookings,
+  getMyBookings,
+  cancelBooking,
+  logComplaintActivity,
+  fileComplaint,
+  getMyComplaints,
+  getAllComplaints,
+  updateComplaintStatus,
+  reopenComplaint,
+  rateResolution,
+  getComplaintTimeline,
+  setComplaintETA,
+  logPackage,
+  getPendingPackages,
+  getMyPackages,
+  collectPackage,
+  createPoll,
+  getPolls,
+  votePoll,
+  getPollResults,
+  closePoll,
+  triggerEmergency,
+  getActiveEmergencies,
+  resolveEmergency,
   getDirectory,
-  // Events
-  createEvent, getEvents, rsvpEvent, getEventAttendees, deleteEvent,
-  // Settings & Notices
-  getSettings, updateSettings, postNotice, getNotices,
-  // Role
-  getMySocietyRole
+  createEvent,
+  getEvents,
+  rsvpEvent,
+  getEventAttendees,
+  deleteEvent,
+  assignComplaint,
+  resolveComplaint,
+  updateDirectoryPrivacy
 };

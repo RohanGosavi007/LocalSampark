@@ -44,6 +44,7 @@ export default function ShopsPage() {
   // 10x Scale: Web Worker Engine for Off-Thread Filtering
   useEffect(() => {
     if (typeof window !== 'undefined' && shops.length > 0) {
+      setWorkerFilteredShops(null);
       const worker = new Worker(new URL('../../workers/search.worker.js', import.meta.url));
       
       worker.onmessage = (e) => {
@@ -60,34 +61,10 @@ export default function ShopsPage() {
       });
 
       return () => worker.terminate();
+    } else {
+      setWorkerFilteredShops(null);
     }
   }, [shops, searchTerm, selectedCategory]);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/v1/shops/categories`)
-      .then(res => res.json())
-      .then(data => setCategories(Array.isArray(data) ? data : (data.categories || [])))
-      .catch(console.error);
-
-    fetch(`${API_URL}/api/v1/shops/nearby`)
-      .then(res => res.json())
-      .then(data => setFlashSales(Array.isArray(data.shops) ? data.shops : []))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    if (!isLocationReady) return;
-    
-    const cat = categories.find(c => c.slug === selectedCategory);
-    if (location?.pincode) {
-      fetchShops(location.lat, location.lng, location.pincode, selectedCategory, cat?.id);
-    } else if (location?.lat && location?.lng) {
-      fetchShops(location.lat, location.lng, null, selectedCategory, cat?.id);
-    } else {
-      fetchShops(null, null, null, selectedCategory, cat?.id);
-      setLocationError(true);
-    }
-  }, [selectedCategory, location, isLocationReady, categories, fetchShops]);
 
   const fetchShops = useCallback((lat, lng, pincode, catSlug, catId) => {
     setLoading(true);
@@ -133,6 +110,34 @@ export default function ShopsPage() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/shops/categories`)
+      .then(res => res.json())
+      .then(data => setCategories(Array.isArray(data) ? data : (data.categories || [])))
+      .catch(console.error);
+
+    fetch(`${API_URL}/api/v1/shops/nearby`)
+      .then(res => res.json())
+      .then(data => setFlashSales(Array.isArray(data.shops) ? data.shops : []))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!isLocationReady) return;
+    
+    const cat = categories.find(c => c.slug === selectedCategory);
+    if (location?.pincode) {
+      fetchShops(location.lat, location.lng, location.pincode, selectedCategory, cat?.id);
+    } else if (location?.lat && location?.lng) {
+      fetchShops(location.lat, location.lng, null, selectedCategory, cat?.id);
+    } else {
+      fetchShops(null, null, null, selectedCategory, cat?.id);
+      setLocationError(true);
+    }
+  }, [selectedCategory, location, isLocationReady, categories, fetchShops]);
+
+
+
   const handleQuickView = useCallback((shop) => {
     setQuickViewShop(shop);
   }, []);
@@ -150,7 +155,7 @@ export default function ShopsPage() {
         const matchesDelivery = filterDelivery ? (shop.delivery_available === 1 || shop.deliveryAvailable) : true;
         const matchesTopRated = filterTopRated ? (shop.rating >= 4.0) : true;
         // If worker hasn't run yet, apply search locally
-        const matchesSearch = workerFilteredShops ? true : shop.name.toLowerCase().includes((searchTerm || '').toLowerCase());
+        const matchesSearch = workerFilteredShops ? true : (shop.name || '').toLowerCase().includes((searchTerm || '').toLowerCase());
         return matchesSearch && matchesDelivery && matchesTopRated;
       });
       setFilteredShops(final);
@@ -466,8 +471,17 @@ export default function ShopsPage() {
               className="bg-card-bg w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-border"
             >
               <div className="h-48 relative bg-background">
-                 {quickViewShop.photo_urls && quickViewShop.photo_urls !== '[]' && !quickViewShop.photo_urls.includes('[') ? (
-                    <img src={JSON.parse(quickViewShop.photo_urls)[0]} alt={quickViewShop.name} className="w-full h-full object-cover" />
+                 {quickViewShop.photo_urls && quickViewShop.photo_urls !== '[]' && quickViewShop.photo_urls !== 'null' ? (
+                    <img src={
+                      (() => {
+                        try {
+                          const parsed = JSON.parse(quickViewShop.photo_urls);
+                          return Array.isArray(parsed) ? parsed[0] : parsed;
+                        } catch (e) {
+                          return quickViewShop.photo_urls;
+                        }
+                      })()
+                    } alt={quickViewShop.name || 'Shop'} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-primary/5">
                       <Store className="w-20 h-20 text-primary/30" />

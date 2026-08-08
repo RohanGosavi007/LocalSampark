@@ -11,7 +11,7 @@ import ShopManagerRouter from '../components/ShopManagerRouter';
 import { API_BASE } from '@/lib/api';
 
 export default function ShopManagerDashboard({ params }) {
-  const { category } = React.use(params);
+  const { category } = params;
   const [shop, setShop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

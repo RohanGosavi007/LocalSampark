@@ -123,6 +123,11 @@ export default function SocietyPage() {
   const [activeTab, setActiveTab] = useState('visitors');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ─── Doorbell / Emergency / Reminder Modals ─────────────
   const [doorbellData, setDoorbellData] = useState(null);
@@ -155,7 +160,7 @@ export default function SocietyPage() {
 
   // ─── Bills ────────────────────────────────────────────────
   const [bills, setBills] = useState([]);
-  const [billForm, setBillForm] = useState({ month: new Date().toISOString().substring(0, 7), baseAmount: '', waterCharges: '0', parkingCharges: '0', otherCharges: '0', dueDate: '' });
+  const [billForm, setBillForm] = useState({ month: '', baseAmount: '', waterCharges: '0', parkingCharges: '0', otherCharges: '0', dueDate: '' });
   const [billSummary, setBillSummary] = useState(null);
 
   // ─── Parking ──────────────────────────────────────────────
@@ -200,24 +205,56 @@ export default function SocietyPage() {
   // ─── Settings ─────────────────────────────────────────────
   const [settings, setSettings] = useState({});
 
+  // ─── Analytics Dashboard ──────────────────────────────────
+  const [dashboardData, setDashboardData] = useState(null);
+
+  // ─── AGM & Budget ─────────────────────────────────────────
+  const [agmData, setAgmData] = useState([]);
+  const [budgetList, setBudgetList] = useState([]);
+
+  // ─── Forum & Shifts ───────────────────────────────────────
+  const [forumTopics, setForumTopics] = useState([]);
+  const [shiftsList, setShiftsList] = useState([]);
+
+  // ─── Ratings, Intercom & Audits ───────────────────────────
+  const [auditsList, setAuditsList] = useState([]);
+  const [ratingsList, setRatingsList] = useState([]);
+  const [intercomLogs, setIntercomLogs] = useState([]);
+
+  // ─── Document Templates ───────────────────────────────────
+  const [templatesList, setTemplatesList] = useState([
+    { id: 'noc-bank', name: 'Bank Loan NOC', description: 'No Objection Certificate for Bank Home Loan', type: 'financial' },
+    { id: 'noc-passport', name: 'Passport Address Proof NOC', description: 'Address verification for passport renewal', type: 'identity' },
+    { id: 'noc-tenant', name: 'Tenant Move-In Agreement NOC', description: 'Mandatory NOC for new tenants', type: 'residential' },
+    { id: 'noc-renovation', name: 'Flat Renovation Permission', description: 'Permission for internal flat renovation', type: 'maintenance' }
+  ]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+
   // ─── Flash message ────────────────────────────────────────
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
 
   // ─── Tab definitions per role ─────────────────────────────
   const tabsByRole = {
     admin: [
+      { id: 'dashboard', icon: '📊', label: 'Dashboard' },
       { id: 'visitors', icon: '👥', label: 'Visitors' }, { id: 'members', icon: '🏠', label: 'Members' },
       { id: 'staff', icon: '🧹', label: 'Staff' }, { id: 'bills', icon: '💰', label: 'Bills' },
       { id: 'parking', icon: '🅿️', label: 'Parking' }, { id: 'amenities', icon: '🏊', label: 'Amenities' },
       { id: 'complaints', icon: '📋', label: 'Complaints' }, { id: 'packages', icon: '📦', label: 'Packages' },
       { id: 'polls', icon: '🗳️', label: 'Polls' }, { id: 'emergency', icon: '🚨', label: 'Emergency' },
       { id: 'directory', icon: '📞', label: 'Directory' }, { id: 'events', icon: '📅', label: 'Events' },
-      { id: 'notices', icon: '📝', label: 'Notices' }, { id: 'settings', icon: '⚙️', label: 'Settings' }
+      { id: 'notices', icon: '📝', label: 'Notices' }, 
+      { id: 'forum', icon: '🗣️', label: 'Forum' }, { id: 'shifts', icon: '⏰', label: 'Shifts' },
+      { id: 'ratings', icon: '⭐', label: 'Ratings' }, { id: 'intercom', icon: '📞', label: 'Intercom' },
+      { id: 'agm', icon: '🏛️', label: 'AGM' }, { id: 'budget', icon: '📈', label: 'Budget' },
+      { id: 'audits', icon: '🧯', label: 'Audits' }, { id: 'templates', icon: '📄', label: 'Templates' },
+      { id: 'settings', icon: '⚙️', label: 'Settings' }
     ],
     guard: [
       { id: 'visitors', icon: '👥', label: 'Visitors' }, { id: 'staff', icon: '🧹', label: 'Staff' },
       { id: 'packages', icon: '📦', label: 'Packages' }, { id: 'parking', icon: '🅿️', label: 'Parking' },
       { id: 'messages', icon: '💬', label: 'Messages' }, { id: 'reminders', icon: '⏰', label: 'Reminders' },
+      { id: 'shifts', icon: '⏰', label: 'Shifts' }, { id: 'intercom', icon: '📞', label: 'Intercom' },
       { id: 'emergency', icon: '🚨', label: 'Emergency' }, { id: 'directory', icon: '📞', label: 'Directory' },
       { id: 'notices', icon: '📝', label: 'Notices' }
     ],
@@ -227,6 +264,9 @@ export default function SocietyPage() {
       { id: 'packages', icon: '📦', label: 'Packages' }, { id: 'parking', icon: '🅿️', label: 'Parking' },
       { id: 'polls', icon: '🗳️', label: 'Polls' }, { id: 'staff', icon: '🧹', label: 'Staff' },
       { id: 'messages', icon: '💬', label: 'Guard Msg' }, { id: 'reminders', icon: '⏰', label: 'Reminders' },
+      { id: 'forum', icon: '🗣️', label: 'Forum' }, { id: 'ratings', icon: '⭐', label: 'Ratings' },
+      { id: 'intercom', icon: '📞', label: 'Intercom' }, { id: 'agm', icon: '🏛️', label: 'AGM' },
+      { id: 'templates', icon: '📄', label: 'Docs' },
       { id: 'emergency', icon: '🚨', label: 'Emergency' }, { id: 'directory', icon: '📞', label: 'Directory' },
       { id: 'events', icon: '📅', label: 'Events' }, { id: 'notices', icon: '📝', label: 'Notices' }
     ]
@@ -275,6 +315,30 @@ export default function SocietyPage() {
         setNotices(d.data || []); 
       }
       else if (tab === 'settings') { const r = await api('/settings'); setSettings(r.data || {}); }
+      else if (tab === 'dashboard' && societyRole === 'admin') {
+        const r = await api('/society-analytics/dashboard');
+        if (r.success) setDashboardData(r.data);
+      }
+      else if (tab === 'agm') {
+        const r = await api('/society-compliance/agm');
+        if (r.success) setAgmData(r.data || []);
+      }
+      else if (tab === 'budget') {
+        const r = await api('/society-compliance/budget');
+        if (r.success) setBudgetList(r.data || []);
+      }
+      else if (tab === 'forum') {
+        const r = await api('/society-forum/topic');
+        if (r.success) setForumTopics(r.data || []);
+      }
+      else if (tab === 'shifts') {
+        const r = await api('/society-shifts/roster');
+        if (r.success) setShiftsList(r.data || []);
+      }
+      else if (tab === 'audits') {
+        const r = await api('/society-compliance/audit');
+        if (r.success) setAuditsList(r.data || []);
+      }
     } catch (e) {
       // Load error handled silently
     }
@@ -1034,6 +1098,341 @@ export default function SocietyPage() {
     </div>
   );
 
+  // ─── DASHBOARD TAB ────────────────────────────────────────
+  const renderDashboard = () => (
+    <div>
+      <div className="glass-card" style={{marginBottom:'2rem', background: 'linear-gradient(135deg, var(--primary), #818cf8)', color: '#fff', border: 'none'}}>
+        <h3 style={{fontFamily:'var(--font-heading)',fontSize:'1.5rem',marginBottom:'0.5rem',color:'#fff'}}>📊 Admin Analytics Dashboard</h3>
+        <p style={{opacity: 0.9}}>Real-time overview of LocalSampark society metrics.</p>
+      </div>
+      
+      {dashboardData ? (
+        <div style={styles.statsGrid}>
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👥</div>
+            <div className="stat-chip-value" style={{ fontSize: '2rem' }}>{dashboardData.visitorsToday}</div>
+            <div className="stat-chip-label" style={{ fontSize: '0.9rem' }}>Visitors Today</div>
+          </div>
+          
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🚨</div>
+            <div className="stat-chip-value" style={{ fontSize: '2rem', color: dashboardData.openComplaints > 0 ? '#ef4444' : 'var(--text)' }}>{dashboardData.openComplaints}</div>
+            <div className="stat-chip-label" style={{ fontSize: '0.9rem' }}>Open Complaints</div>
+          </div>
+
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏊</div>
+            <div className="stat-chip-value" style={{ fontSize: '2rem' }}>{dashboardData.activeBookings}</div>
+            <div className="stat-chip-label" style={{ fontSize: '0.9rem' }}>Active Amenities Bookings</div>
+          </div>
+        </div>
+      ) : (
+        <div className="glass-card" style={{textAlign: 'center', padding: '3rem'}}>
+          <p style={{color: 'var(--text-muted)'}}>Loading dashboard data...</p>
+        </div>
+      )}
+
+      {dashboardData && (
+        <div className="glass-card" style={{ marginTop: '2rem' }}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontSize:'1.2rem',marginBottom:'1.5rem'}}>💰 Financial Overview (Current Year)</h3>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Allocated Budget</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>₹{(dashboardData.budget?.allocated || 0).toLocaleString()}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Spent Amount</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ef4444' }}>₹{(dashboardData.budget?.spent || 0).toLocaleString()}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Remaining</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)' }}>₹{((dashboardData.budget?.allocated || 0) - (dashboardData.budget?.spent || 0)).toLocaleString()}</div>
+            </div>
+          </div>
+          <div style={{ width: '100%', height: '12px', background: 'var(--border)', borderRadius: '6px', marginTop: '1.5rem', overflow: 'hidden', display: 'flex' }}>
+             <div style={{ width: `${(dashboardData.budget?.allocated || 1) > 0 ? ((dashboardData.budget?.spent || 0) / (dashboardData.budget?.allocated || 1)) * 100 : 0}%`, background: '#ef4444', height: '100%' }}></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ─── AGM TAB ──────────────────────────────────────────────
+  const renderAGM = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.8rem'}}>🏛️ AGM & Meetings</h2>
+        {societyRole === 'admin' && <button className="primary-btn">Schedule Meeting</button>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {agmData.length === 0 ? <p style={{color:'var(--text-muted)'}}>No upcoming meetings scheduled.</p> : 
+          agmData.map(agm => (
+            <div key={agm.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{agm.title}</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>📅 {new Date(agm.meeting_date).toLocaleString()} | 📍 {agm.location}</p>
+                <p style={{ fontSize: '0.95rem' }}>{agm.agenda}</p>
+              </div>
+              <span className="badge badge-primary" style={{ padding: '0.5rem 1rem' }}>{agm.status}</span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+
+  // ─── BUDGET TAB ───────────────────────────────────────────
+  const renderBudget = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.8rem'}}>📈 Society Budget</h2>
+        {societyRole === 'admin' && <button className="primary-btn">Allocate Budget</button>}
+      </div>
+      
+      <div className="table-responsive">
+        <table className="glass-table">
+          <thead>
+            <tr>
+              <th>Financial Year</th>
+              <th>Category</th>
+              <th>Allocated (₹)</th>
+              <th>Spent (₹)</th>
+              <th>Remaining (₹)</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            {budgetList.length === 0 ? (
+              <tr><td colSpan="6" style={{textAlign:'center', padding:'2rem'}}>No budget data found</td></tr>
+            ) : (
+              budgetList.map(b => (
+                <tr key={b.id}>
+                  <td>{b.financial_year}</td>
+                  <td><strong>{b.category}</strong></td>
+                  <td style={{color: '#10b981'}}>₹{b.allocated_amount.toLocaleString()}</td>
+                  <td style={{color: '#ef4444'}}>₹{b.spent_amount.toLocaleString()}</td>
+                  <td>₹{(b.allocated_amount - b.spent_amount).toLocaleString()}</td>
+                  <td style={{width: '200px'}}>
+                    <div style={{ width: '100%', height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(100, (b.spent_amount / b.allocated_amount) * 100)}%`, background: '#ef4444', height: '100%' }}></div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // ─── FORUM TAB ────────────────────────────────────────────
+  const renderForum = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.8rem'}}>🗣️ Community Forum</h2>
+        <button className="primary-btn">Start New Topic</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {forumTopics.length === 0 ? <p style={{color:'var(--text-muted)'}}>No topics in the forum yet.</p> : 
+          forumTopics.map(topic => (
+            <div key={topic.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: '2rem', padding: '0.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                {topic.category === 'Announcement' ? '📢' : '💬'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.2rem', margin: 0 }}>{topic.title}</h3>
+                  {topic.is_pinned === 1 && <span className="badge" style={{background:'#f59e0b', color:'#fff'}}>Pinned</span>}
+                  {topic.is_locked === 1 && <span className="badge" style={{background:'#ef4444', color:'#fff'}}>Locked</span>}
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <span className="badge badge-primary">{topic.category}</span> • Posted {new Date(topic.created_at).toLocaleDateString()} • {topic.view_count} views
+                </p>
+                <p style={{ fontSize: '0.95rem' }}>{topic.content}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+
+  // ─── SHIFTS TAB ───────────────────────────────────────────
+  const renderShifts = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.8rem'}}>⏰ Guard Shifts Roster</h2>
+        {societyRole === 'admin' && <button className="primary-btn">Assign Shift</button>}
+      </div>
+      
+      <div className="table-responsive">
+        <table className="glass-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Guard Name</th>
+              <th>Shift Type</th>
+              <th>Timings</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shiftsList.length === 0 ? (
+              <tr><td colSpan="5" style={{textAlign:'center', padding:'2rem'}}>No shifts assigned for this period</td></tr>
+            ) : (
+              shiftsList.map(s => (
+                <tr key={s.id}>
+                  <td>{new Date(s.shift_date).toLocaleDateString()}</td>
+                  <td>
+                    <div style={{fontWeight: 600}}>{s.guard_name || 'Guard User'}</div>
+                    <div style={{fontSize: '0.85rem', color:'var(--text-muted)'}}>{s.phone_number}</div>
+                  </td>
+                  <td>
+                    <span className="badge badge-primary">{s.shift_type}</span>
+                  </td>
+                  <td>{s.start_time} - {s.end_time}</td>
+                  <td>
+                    {s.check_in_time ? (
+                      <span style={{color: '#10b981', fontWeight: 600}}>✓ Checked In</span>
+                    ) : (
+                      <span style={{color: 'var(--text-muted)'}}>Pending</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // ─── RATINGS TAB ──────────────────────────────────────────
+  const renderRatings = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.8rem'}}>⭐ Staff & Guard Ratings</h2>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        {ratingsList.map(r => (
+          <div key={r.id} className="glass-card" style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{r.target_name}</div>
+              <div style={{ color: '#fbbf24', fontSize: '1.2rem' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
+            </div>
+            <span className="badge badge-primary" style={{ marginBottom: '1rem' }}>{r.target_type}</span>
+            <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.95rem' }}>"{r.feedback}"</p>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // ─── INTERCOM TAB ─────────────────────────────────────────
+  const renderIntercom = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.8rem'}}>📞 Digital SIP Intercom Logs</h2>
+      </div>
+      <div className="table-responsive">
+        <table className="glass-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Caller</th>
+              <th>Destination Flat</th>
+              <th>Duration</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {intercomLogs.map(log => (
+              <tr key={log.id}>
+                <td>{new Date(log.time).toLocaleString()}</td>
+                <td>{log.caller}</td>
+                <td><strong>{log.flat}</strong></td>
+                <td>{log.duration}</td>
+                <td>
+                  <span style={{ color: log.status === 'completed' ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                    {log.status === 'completed' ? '✓ Completed' : '✗ Missed'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // ─── AUDITS TAB ───────────────────────────────────────────
+  const renderAudits = () => (
+    <div className="glass-card">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
+        <h3 style={{fontFamily:'var(--font-heading)',fontSize:'1.3rem'}}>🧯 Safety & Facility Audits</h3>
+        {societyRole === 'admin' && <button className="btn btn-primary" style={{padding:'0.4rem 1rem'}}>+ New Audit</button>}
+      </div>
+      <table style={styles.table}>
+        <thead><tr><th style={styles.th}>Category</th><th style={styles.th}>Auditor</th><th style={styles.th}>Date</th><th style={styles.th}>Status</th><th style={styles.th}>Issues Found</th><th style={styles.th}>Actions</th></tr></thead>
+        <tbody>
+          {auditsList.map(a => (
+            <tr key={a.id}>
+              <td style={{...styles.td,...styles.tdFirst}}><strong>{a.category?.replace('_',' ')}</strong></td>
+              <td style={styles.td}>{a.auditor_name}</td>
+              <td style={styles.td}>{new Date(a.audit_date).toLocaleDateString()}</td>
+              <td style={styles.td}><span style={styles.statusBadge(a.compliance_status)}>{a.compliance_status}</span></td>
+              <td style={styles.td}>{a.issues_found > 0 ? <span style={{color:'#ef4444',fontWeight:'bold'}}>{a.issues_found} issues</span> : <span style={{color:'#10b981'}}>None</span>}</td>
+              <td style={{...styles.td,...styles.tdLast}}><button className="btn" style={{padding:'0.3rem 0.8rem',fontSize:'0.8rem',background:'rgba(255,255,255,0.1)',color:'#fff'}}>View Report</button></td>
+            </tr>
+          ))}
+          {auditsList.length === 0 && <tr><td colSpan="6" style={{...styles.td,...styles.tdFirst,...styles.tdLast,textAlign:'center'}}>No audits found</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // ─── DOCUMENT TEMPLATES TAB ───────────────────────────────
+  const renderTemplates = () => (
+    <div className="glass-card">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
+        <div>
+          <h3 style={{fontFamily:'var(--font-heading)',fontSize:'1.3rem'}}>📄 Document Templates & NOCs</h3>
+          <p style={{fontSize:'0.9rem',opacity:0.8}}>Automated official society letters and certificates</p>
+        </div>
+      </div>
+      
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))',gap:'1rem'}}>
+        {templatesList.map(t => (
+          <div key={t.id} style={{background:'rgba(255,255,255,0.05)',padding:'1.5rem',borderRadius:'var(--radius-sm)',border:'1px solid rgba(255,255,255,0.1)',transition:'transform 0.2s',cursor:'pointer'}} onClick={() => setSelectedTemplate(t)} onMouseOver={e=>e.currentTarget.style.transform='translateY(-5px)'} onMouseOut={e=>e.currentTarget.style.transform='none'}>
+            <div style={{fontSize:'2rem',marginBottom:'1rem'}}>{t.type==='financial'?'🏦':t.type==='identity'?'🛂':t.type==='residential'?'🏠':'🛠️'}</div>
+            <h4 style={{fontSize:'1.1rem',marginBottom:'0.5rem',fontFamily:'var(--font-heading)'}}>{t.name}</h4>
+            <p style={{fontSize:'0.85rem',opacity:0.7,marginBottom:'1.5rem'}}>{t.description}</p>
+            <button className="btn btn-primary" style={{width:'100%',padding:'0.5rem'}}>Generate NOC</button>
+          </div>
+        ))}
+      </div>
+
+      {selectedTemplate && (
+        <div style={styles.emergencyOverlay}>
+          <div style={{...styles.modal,maxWidth:'500px'}}>
+            <h2 style={{fontFamily:'var(--font-heading)',fontSize:'1.5rem',marginBottom:'0.5rem',color:'var(--primary)'}}>Generate {selectedTemplate.name}</h2>
+            <p style={{opacity:0.8,marginBottom:'1.5rem',fontSize:'0.9rem'}}>This will automatically fill the template with your registered details and the society's official letterhead.</p>
+            <div className="form-group">
+              <label className="form-label">Purpose of Issue (Required)</label>
+              <textarea className="form-input" rows="3" placeholder="State the reason for requesting this document..."></textarea>
+            </div>
+            <div style={{display:'flex',gap:'1rem',marginTop:'2rem'}}>
+              <button className="btn btn-primary" style={{flex:1}} onClick={()=>{flash('✅ Document Generated & Emailed to you!');setSelectedTemplate(null);}}>Generate & Download</button>
+              <button className="btn" style={{flex:1,background:'rgba(255,255,255,0.1)',color:'#fff'}} onClick={()=>setSelectedTemplate(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // ─── Tab Content Router ───────────────────────────────────
   const renderTabContent = () => {
     switch(activeTab) {
@@ -1053,6 +1452,16 @@ export default function SocietyPage() {
       case 'events': return renderEvents();
       case 'notices': return renderNotices();
       case 'settings': return renderSettings();
+      // New Phase features
+      case 'dashboard': return renderDashboard();
+      case 'forum': return renderForum();
+      case 'shifts': return renderShifts();
+      case 'ratings': return renderRatings();
+      case 'intercom': return renderIntercom();
+      case 'agm': return renderAGM();
+      case 'budget': return renderBudget();
+      case 'audits': return renderAudits();
+      case 'templates': return renderTemplates();
       default: return null;
     }
   };
@@ -1129,9 +1538,31 @@ export default function SocietyPage() {
   // ═══════════════════════════════════════════════════════════
   // MAIN RENDER
   // ═══════════════════════════════════════════════════════════
+  if (!mounted) {
+    return (
+      <div style={styles.page}>
+        <div className="container">
+          {/* Header */}
+          <div style={styles.header} className="animate-fade-in">
+            <span className="section-tag">🏢 SOCIETY MANAGEMENT</span>
+            <h1 style={{fontFamily:'var(--font-heading)',fontSize:'2.5rem',marginBottom:'0.5rem'}}>
+              <span className="gradient-text">Society Management Platform</span>
+            </h1>
+            <p className="text-muted" style={{maxWidth:'600px',margin:'0 auto'}}>
+              Complete society management — visitors, bills, complaints, amenities, and more
+            </p>
+          </div>
+          <div style={{textAlign:'center',padding:'4rem'}}>
+            <div style={{display:'inline-block',width:'32px',height:'32px',border:'3px solid var(--border)',borderTopColor:'var(--primary)',borderRadius:'50%',animation:'spinSlow 0.8s linear infinite'}} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.page}>
-      <div className="container">
+      <div className="container" suppressHydrationWarning>
         {/* Header */}
         <div style={styles.header} className="animate-fade-in">
           <span className="section-tag">🏢 SOCIETY MANAGEMENT</span>
@@ -1151,18 +1582,18 @@ export default function SocietyPage() {
         )}
 
         {/* Role Selector */}
-        <div style={styles.roleBar}>
+        <div style={styles.roleBar} suppressHydrationWarning>
           {[{id:'admin',icon:'👑',label:'Society Admin'},{id:'guard',icon:'🛡️',label:'Security Guard'},{id:'resident',icon:'🏠',label:'Resident'}].map(r=>(
-            <button key={r.id} style={styles.roleBtn(societyRole===r.id)} onClick={()=>setSocietyRole(r.id)}>
+            <button key={r.id} suppressHydrationWarning style={styles.roleBtn(societyRole===r.id)} onClick={()=>setSocietyRole(r.id)}>
               {r.icon} {r.label}
             </button>
           ))}
         </div>
 
         {/* Tab Navigation */}
-        <div style={styles.tabs}>
+        <div style={styles.tabs} suppressHydrationWarning>
           {(tabsByRole[societyRole]||[]).map(t=>(
-            <button key={t.id} style={styles.tab(activeTab===t.id)} onClick={()=>setActiveTab(t.id)}>
+            <button key={t.id} suppressHydrationWarning style={styles.tab(activeTab===t.id)} onClick={()=>setActiveTab(t.id)}>
               {t.icon} {t.label}
             </button>
           ))}

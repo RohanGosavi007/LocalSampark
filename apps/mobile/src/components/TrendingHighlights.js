@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { theme } from '../theme/theme';
 import { Plus } from 'lucide-react-native';
-import BouncyButton from '../BouncyButton';
+import BouncyButton from './BouncyButton';
 
 const TRENDING = [
   { id: '1', title: 'Farm Fresh Tomatoes', price: '₹45/kg', time: '10 MINS', image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400&h=400' },

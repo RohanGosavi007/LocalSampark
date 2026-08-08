@@ -14,11 +14,16 @@ const fallbackUrl = isDev
   ? 'http://10.0.2.2:5000/api/v1' 
   : PRODUCTION_API;
 
-export const API_URL = isDev
-  ? (process.env.EXPO_PUBLIC_API_URL || 
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 
      Constants.expoConfig?.extra?.API_URL_DEV || 
-     fallbackUrl)
-  : PRODUCTION_API;  // Release: ALWAYS production, no overrides
+     fallbackUrl;
+     
+// TEMPORARILY DISABLED PRODUCTION LOCK FOR LOCAL APK TESTING:
+// export const API_URL = isDev
+//   ? (process.env.EXPO_PUBLIC_API_URL || 
+//      Constants.expoConfig?.extra?.API_URL_DEV || 
+//      fallbackUrl)
+//   : PRODUCTION_API;  // Release: ALWAYS production, no overrides
 
 export const API_BASE = API_URL;
 
@@ -54,6 +59,7 @@ export async function getAuthHeaders() {
     'Accept': 'application/json',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
+    'ngrok-skip-browser-warning': 'true' // Bypass ngrok security screen for live API testing
   };
 
   if (territoryId) {

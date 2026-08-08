@@ -80,6 +80,7 @@ async function connectDB() {
           console.error('❌ SQLite connection failed:', err.message);
           reject(err);
         } else {
+          db.run("PRAGMA journal_mode = WAL;", () => {});
           db.run("ALTER TABLE local_shops ADD COLUMN is_featured INTEGER DEFAULT 0", () => {});
           db.run("ALTER TABLE local_shops ADD COLUMN rating REAL DEFAULT 4.5", () => {});
           db.run("ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL DEFAULT NULL", () => {
@@ -218,3 +219,5 @@ module.exports = {
   withTransaction,
   transaction
 };
+
+// Trigger nodemon restart

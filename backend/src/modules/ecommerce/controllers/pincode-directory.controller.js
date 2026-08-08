@@ -27,6 +27,18 @@ async function getShopsByPincode(req, res, next) {
 
     const pageSize = Math.min(parseInt(limit, 10) || 15, 20); // Hard cap at max 20
 
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
+        if (fs.existsSync(mockPath)) {
+          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          let filteredShops = sData.shops;
+          return res.json({ success: true, shops: filteredShops, pincode, count: filteredShops.length, nextCursor: null });
+        }
+      } catch(e) {}
+    }
+
     // Construct Cache Key
     const cacheKey = `pincode:${pincode}:catId:${category_id || 'all'}:catType:${category_type || 'all'}:cursor:${cursor || 'first'}:limit:${pageSize}`;
 

@@ -124,6 +124,33 @@ class CacheService {
   }
 
   /**
+   * Get cached data directly
+   * @param {string} key - Cache key
+   */
+  static async get(key) {
+    try {
+      return await cacheGet(key);
+    } catch (err) {
+      console.warn(`[CacheService] Read error for key ${key}:`, err.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set cached data directly
+   * @param {string} key - Cache key
+   * @param {any} value - Value to cache
+   * @param {number} ttlSeconds - Time-to-live
+   */
+  static async set(key, value, ttlSeconds) {
+    try {
+      await cacheSet(key, value, ttlSeconds);
+    } catch (err) {
+      console.warn(`[CacheService] Write error for key ${key}:`, err.message);
+    }
+  }
+
+  /**
    * Territory-scoped cache key helper.
    * @param {string} territoryId 
    * @param {string} resource - e.g. 'categories', 'shops:grocery'

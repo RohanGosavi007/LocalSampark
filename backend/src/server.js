@@ -57,6 +57,14 @@ app.set('io', io); // Make io accessible in route handlers via req.app.get('io')
 // Import Supabase Realtime Service
 const supabaseRealtime = require('./modules/core/services/supabaseRealtime.service');
 
+// ─── TELEMETRY & LOGGING ────────────────────────────────────
+const logger = require('./config/logger');
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  logger.info('✅ Sentry Error-Tracking SDK initialized successfully (Production)');
+} else {
+  logger.info('Sentry Error-Tracking SDK initialized successfully (Staging)');
+}
+
 // ─── MIDDLEWARE ──────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
@@ -153,14 +161,6 @@ app.use((req, res, next) => {
 // Serve static files (uploads)
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
-// ─── TELEMETRY & LOGGING ────────────────────────────────────
-const logger = require('./config/logger');
-if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
-  logger.info('✅ Sentry Error-Tracking SDK initialized successfully (Production)');
-} else {
-  logger.info('Sentry Error-Tracking SDK initialized successfully (Staging)');
-}
-
 // ─── HEALTH CHECK & METRICS ─────────────────────────────────
 app.get('/health', async (req, res) => {
   const memoryUsage = process.memoryUsage();
@@ -248,6 +248,9 @@ async function startServer() {
     await connectDB();
     if (process.env.USE_SQLITE === 'true' || process.env.NODE_ENV === 'test') {
       logger.info('✅ SQLite connected for testing/development');
+      // Auto-heal schema gaps
+      const { fixSchemaGaps } = require('./scripts/fix_schema_gaps');
+      await fixSchemaGaps();
     } else {
       logger.info('✅ PostgreSQL connected');
     }
@@ -327,6 +330,8 @@ process.on('unhandledRejection', (reason, promise) => {
     });
     // Force shutdown after 10 seconds if graceful shutdown fails
     setTimeout(() => process.exit(1), 10000).unref();
+  } else {
+    logger.error('Unhandled Rejection swallowed (Development mode)');
   }
 });
 
@@ -342,6 +347,12 @@ if (process.env.NODE_ENV !== 'test') {
   startServer().then(() => {
     initPaymentWorker();
     initEventWorker();
+    // Initialize node-cron jobs
+    require('./jobs/billing-automation.job');
+    require('./jobs/overstay-monitor.job');
+    require('./jobs/complaint-escalation.job');
+    require('./jobs/lease-expiry-reminder.job');
+    require('./jobs/amc-expiry-alert.job');
   });
 }
 

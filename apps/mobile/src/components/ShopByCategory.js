@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { theme } from '../theme/theme';
-import BouncyButton from '../BouncyButton';
+import BouncyButton from './BouncyButton';
 
 const CATEGORIES = [
   { id: '1', name: 'Grocery', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082008.png' },

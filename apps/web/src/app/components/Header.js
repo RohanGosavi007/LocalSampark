@@ -78,6 +78,9 @@ export default function Header() {
       case 'shop_owner': return '/shop-dashboard';
       case 'delivery_agent': return '/delivery-dashboard';
       case 'service_provider': return '/service-dashboard';
+      case 'society_admin': return '/society-admin-dashboard';
+      case 'security_guard': return '/security-dashboard';
+      case 'moderator': return '/moderator-dashboard';
       default: return '/dashboard';
     }
   };
@@ -89,17 +92,21 @@ export default function Header() {
 
   // Render navigation mega-menus
   const renderNavigation = () => {
+    const isStaffRole = ['society_admin', 'security_guard', 'moderator', 'super_admin', 'admin', 'territory_admin', 'area_agent', 'field_agent', 'delivery_agent', 'service_provider', 'shop_owner'].includes(activeRole);
+
     return (
-      <div className="hidden lg:flex items-center gap-6 relative">
+      <div className="hidden 2xl:flex items-center gap-6 relative">
           <a href="/features" className="text-text font-medium text-sm hover:text-primary transition-colors">Features</a>
           <a href="/jobs" className="text-text font-medium text-sm hover:text-primary transition-colors">Jobs</a>
           <a href="/franchise" className="text-text font-medium text-sm hover:text-primary transition-colors">Franchise</a>
           
-          <div 
-            className="relative" 
-            onMouseEnter={() => setActiveDropdown('services')} 
-            onMouseLeave={() => setActiveDropdown(null)}
-          >
+          {!isStaffRole && (
+            <React.Fragment>
+              <div 
+                className="relative" 
+                onMouseEnter={() => setActiveDropdown('services')} 
+                onMouseLeave={() => setActiveDropdown(null)}
+              >
             <button className="flex items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
               Services <ChevronDown className="w-4 h-4" />
             </button>
@@ -222,6 +229,8 @@ export default function Header() {
               )}
             </AnimatePresence>
           </div>
+            </React.Fragment>
+          )}
           
           {user && (
             <>
@@ -242,7 +251,7 @@ export default function Header() {
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'backdrop-blur-xl bg-nav-bg shadow-sm' : 'bg-transparent'}`}>
-      <div className="container mx-auto px-4 lg:px-8 py-3 lg:py-4 flex items-center justify-between gap-4">
+      <div className="container mx-auto px-4 2xl:px-8 py-3 2xl:py-4 flex items-center justify-between gap-4">
         
         {/* Logo */}
         <a href="/" className="flex items-center group">
@@ -305,8 +314,8 @@ export default function Header() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2 lg:gap-4">
-          <a href="/krishi" className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-600 font-semibold text-sm hover:bg-green-500/20 transition-colors">
+        <div className="flex items-center gap-2 2xl:gap-4 shrink-0">
+          <a href="/krishi" className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-600 font-semibold text-sm hover:bg-green-500/20 transition-colors">
             <Leaf className="w-4 h-4" /> {t('nav_krishi')}
           </a>
 
@@ -314,34 +323,7 @@ export default function Header() {
 
           <LanguageToggle />
 
-          <div 
-            className="relative hidden lg:block"
-            onMouseEnter={() => setActiveDropdown('mock-login')}
-            onMouseLeave={() => setActiveDropdown(null)}
-          >
-            <button className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors" title="Dev Login">
-              <Settings className="w-4 h-4" />
-            </button>
-            <AnimatePresence>
-              {activeDropdown === 'mock-login' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full right-0 mt-2 w-48 glass-card p-2 rounded-xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto custom-scrollbar"
-                >
-                  <p className="text-xs font-semibold text-text-muted px-2 py-1 uppercase tracking-wider">Dev Login</p>
-                  {['user', 'resident_member', 'society_admin', 'security_guard', 'shop_owner', 'service_provider', 'delivery_agent', 'field_agent', 'area_agent', 'territory_admin', 'moderator', 'super_admin'].map((role, index) => (
-                    <button 
-                      key={`${role}-${index}`}
-                      onClick={() => { mockLogin(role); window.location.href = getRoleRoute(role); }}
-                      className="w-full text-left p-2 rounded-lg text-sm hover:bg-border/40 transition-colors"
-                    >
-                      {formatRole(role)}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Dev Quick Login moved to FloatingDevDock component */}
 
           <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors">
             {darkMode ? '☀️' : '🌙'}
@@ -412,7 +394,7 @@ export default function Header() {
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="lg:hidden p-2 text-text-muted hover:text-text focus:outline-none"
+            className="2xl:hidden p-2 text-text-muted hover:text-text focus:outline-none"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -427,7 +409,7 @@ export default function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: '100vh' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden fixed inset-0 top-[72px] bg-background z-40 overflow-y-auto"
+            className="2xl:hidden fixed inset-0 top-[72px] bg-background z-40 overflow-y-auto"
           >
             <div className="p-4 flex flex-col gap-6">
               {/* Mobile Search & Location */}
@@ -443,13 +425,36 @@ export default function Header() {
               </div>
 
               {/* Mobile Nav Links */}
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Platform</p>
-                <a href="/features" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Features</a>
-                <a href="/jobs" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Jobs & Gigs</a>
-                <a href="/franchise" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Franchise (500 Territories)</a>
-                <a href="/services" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">All Services</a>
-                <a href="/community" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Community Hub</a>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Platform</p>
+                  <a href="/shops" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Shops Directory</a>
+                  <a href="/features" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Features</a>
+                  <a href="/jobs" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Jobs & Gigs</a>
+                  <a href="/franchise" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Franchise (500 Territories)</a>
+                  <a href="/services" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">All Services</a>
+                  <a href="/investor-demo" className="p-3 font-semibold text-emerald-500 hover:bg-border/40 rounded-xl">Investor Demo</a>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Community</p>
+                  <a href="/townsquare" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Townsquare Feed</a>
+                  <a href="/events" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Local Events</a>
+                  <a href="/volunteer" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Volunteer & CSR</a>
+                  <a href="/donations" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Charity & Relief</a>
+                  {activeRole === 'resident_member' && (
+                    <a href="/society" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Society Hub</a>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Utilities</p>
+                  <a href="/subscriptions" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Subscriptions</a>
+                  <a href="/bills" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Bills & Payments</a>
+                  <a href="/health" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Health & Wellness</a>
+                  <a href="/care" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Home & Elder Care</a>
+                  <a href="/medical" className="p-3 font-semibold text-red-500 hover:bg-red-500/10 rounded-xl">Medical & Blood Bank</a>
+                </div>
               </div>
 
               {/* Mobile Dev Login */}

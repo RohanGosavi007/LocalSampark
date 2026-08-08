@@ -138,6 +138,22 @@ router.get('/nearby', async (req, res, next) => {
         lng = 73.8987;
         fallbackUsed = true;
     }
+
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
+        if (fs.existsSync(mockPath)) {
+          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          let filteredShops = sData.shops;
+          if (category && category !== 'all') {
+             const catSlug = category.toLowerCase().replace(/ /g, '-');
+             filteredShops = filteredShops.filter(s => s.category.toLowerCase().replace(/ /g, '-') === catSlug);
+          }
+          return res.json({ shops: filteredShops, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
+        }
+      } catch(e) {}
+    }
     
     // Check Redis cache first if no specific filters that change frequently
     const cacheKey = `shops:nearby:${Math.round(lat*100)}:${Math.round(lng*100)}:${radius}:${category||'all'}:${region_id||'all'}:${topRated||'f'}:${deliveryOnly||'f'}:${sortBy||'distance'}`;
@@ -273,6 +289,21 @@ router.get('/my-shop', authenticate, async (req, res, next) => {
 // GET /:id details
 router.get('/:id', async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
+        if (fs.existsSync(mockPath)) {
+          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          let mockShop = sData.shops.find(s => s.id === req.params.id || s.slug === req.params.id);
+          if (mockShop) {
+            // Fake category details to match UI expectation
+            mockShop.category_details = { name: mockShop.category, business_model: 'hybrid', slug: mockShop.category.toLowerCase().replace(/ /g, '-') };
+            return res.json(mockShop);
+          }
+        }
+      } catch(e) {}
+    }
     const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [req.params.id]);
     if (!shop) return res.status(404).json({ error: 'Shop not found' });
     
@@ -311,6 +342,26 @@ router.post('/register', authenticate, async (req, res, next) => {
 // --- PRODUCTS ---
 router.get('/:id/products', async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/catalogs_services.json');
+        if (fs.existsSync(mockPath)) {
+          const catData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          let shopProducts = (catData.products || []).filter(p => p.shopId === req.params.id);
+          if (shopProducts.length === 0) shopProducts = (catData.products || []).slice(0, 10);
+          return res.json(shopProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: p.sellingPricePaise ? (p.sellingPricePaise / 100) : (p.price || 0),
+            image_url: (p.imageUrls && p.imageUrls[0]) || p.thumbnailUrl,
+            stock_quantity: p.stockQuantity || 10
+          })));
+        }
+      } catch(e) {}
+      return res.json([]);
+    }
     const products = await query('SELECT * FROM shop_products WHERE shop_id = $1 AND is_available = true', [req.params.id]);
     res.json(products.rows || products);
   } catch (error) {
@@ -334,6 +385,26 @@ router.post('/:id/products', authenticate, async (req, res, next) => {
 // --- SERVICES ---
 router.get('/:id/services', async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fs = require('fs'); const path = require('path');
+        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/catalogs_services.json');
+        if (fs.existsSync(mockPath)) {
+          const catData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
+          let shopServices = (catData.serviceListings || []).filter(s => s.shopId === req.params.id);
+          if (shopServices.length === 0) shopServices = (catData.serviceListings || []).slice(0, 5);
+          return res.json(shopServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            duration_minutes: s.durationMinutes || 30,
+            price: s.pricePaise ? (s.pricePaise / 100) : 0,
+            is_free_for_premium: s.isFreeForPremium ? 1 : 0
+          })));
+        }
+      } catch(e) {}
+      return res.json([]);
+    }
     const services = await query('SELECT * FROM shop_services WHERE shop_id = $1 AND is_available = 1 ORDER BY display_order ASC', [req.params.id]);
     res.json(services.rows || services);
   } catch (error) {
@@ -357,6 +428,12 @@ router.post('/:id/services', authenticate, async (req, res, next) => {
 // --- STAFF ---
 router.get('/:id/staff', async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      return res.json([
+        { id: 'stf1', name: 'Ramesh Kumar', role: 'Senior Stylist', specialization: 'Hair & Beard', experience_years: 5, avg_rating: 4.8 },
+        { id: 'stf2', name: 'Priya Sharma', role: 'Therapist', specialization: 'Spa & Skin Care', experience_years: 3, avg_rating: 4.9 }
+      ]);
+    }
     const staff = await query('SELECT * FROM shop_staff WHERE shop_id = $1 AND is_active = true', [req.params.id]);
     res.json(staff.rows || staff);
   } catch (error) {
@@ -379,6 +456,14 @@ router.post('/:id/staff', authenticate, async (req, res, next) => {
 
 router.get('/:id/staff/:sid/slots', async (req, res, next) => {
     try {
+        if (process.env.NODE_ENV !== 'production') {
+            return res.json({ slots: [
+                { time: '10:00 AM', surgeMultiplier: 1.0 },
+                { time: '11:00 AM', surgeMultiplier: 1.0 },
+                { time: '02:00 PM', surgeMultiplier: 1.2 },
+                { time: '04:00 PM', surgeMultiplier: 1.0 }
+            ]});
+        }
         const { date } = req.query; // "YYYY-MM-DD"
         if (!date) return res.status(400).json({error: "Date required"});
         const dayOfWeek = new Date(date).getDay();

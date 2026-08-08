@@ -61,19 +61,23 @@ router.post('/send-otp', authLimiter, async (req, res, next) => {
 
 router.post('/verify-otp', authLimiter, async (req, res, next) => {
   try {
-    const { phoneNumber, otp, fullName, regionId, pincode } = req.body;
+    const { phoneNumber, otp, fullName, regionId, pincode, method } = req.body;
     if (!phoneNumber || !otp) {
       return res.status(400).json({ error: 'Phone number and OTP are required' });
     }
 
+    const isWhatsapp = method === 'whatsapp';
+    const redisKey = isWhatsapp ? `whatsapp_otp:${phoneNumber}` : `otp:${phoneNumber}`;
+    const tempStoreKey = isWhatsapp ? `whatsapp_${phoneNumber}` : phoneNumber;
+
     let record;
     if (redisClient) {
-      const storedOtp = await cacheGet(`otp:${phoneNumber}`);
+      const storedOtp = await cacheGet(redisKey);
       if (storedOtp) {
         record = { otp: storedOtp, expiresAt: Date.now() + 100000 }; // Fake expiry for logic below
       }
     } else {
-      record = tempOtpStore.get(phoneNumber);
+      record = tempOtpStore.get(tempStoreKey);
     }
 
     if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
@@ -82,38 +86,72 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
 
     // Clear OTP
     if (redisClient) {
-      await cacheDel(`otp:${phoneNumber}`);
+      await cacheDel(redisKey);
     } else {
-      tempOtpStore.delete(phoneNumber);
+      tempOtpStore.delete(tempStoreKey);
     }
 
     // Check if user exists
-    let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
+    let user;
+    try {
+      user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
 
-    if (!user) {
-      // Create user
-      if (!fullName) {
-        return res.status(200).json({
-          registered: false,
-          message: 'OTP verified. Profile registration required.'
+      if (!user) {
+        // Create user
+        if (!fullName) {
+          return res.status(200).json({
+            registered: false,
+            message: 'OTP verified. Profile registration required.'
+          });
+        }
+
+        let assignedRegionId = regionId || null;
+        if (!assignedRegionId && pincode) {
+          try {
+            const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
+            if (matchedRegion) assignedRegionId = matchedRegion.id;
+          } catch(e) {}
+        }
+
+        const id = crypto.randomUUID();
+        user = await prisma.user.create({
+          data: {
+            phone: phoneNumber,
+            name: fullName,
+            regionId: assignedRegionId,
+            role: 'CUSTOMER'
+          }
         });
       }
-
-      let assignedRegionId = regionId || null;
-      if (!assignedRegionId && pincode) {
-        const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
-        if (matchedRegion) assignedRegionId = matchedRegion.id;
-      }
-
-      const id = crypto.randomUUID();
-      user = await prisma.user.create({
-        data: {
+    } catch (dbError) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('⚠️ DB Error in verify-otp, falling back to mock user.');
+        // Create a mock user for dev preset logins based on the phone number
+        const roleMap = {
+          '+919000000001': 'user',
+          '+919000000002': 'resident_member',
+          '+919000000003': 'society_admin',
+          '+919000000004': 'security_guard',
+          '+919000000005': 'shop_owner',
+          '+919000000006': 'service_provider',
+          '+919000000007': 'delivery_agent',
+          '+919000000008': 'field_agent',
+          '+919000000009': 'area_agent',
+          '+919000000010': 'territory_admin',
+          '+919000000011': 'moderator',
+          '+919000000012': 'super_admin'
+        };
+        const mockRole = roleMap[phoneNumber] || 'CUSTOMER';
+        user = {
+          id: `mock-user-${Date.now()}`,
           phone: phoneNumber,
-          name: fullName,
-          regionId: assignedRegionId,
-          role: 'CUSTOMER'
-        }
-      });
+          name: fullName || `Demo ${mockRole}`,
+          role: mockRole,
+          regionId: regionId || 'zone_kothrud'
+        };
+      } else {
+        throw dbError;
+      }
     }
 
     // Generate JWT tokens
@@ -160,7 +198,7 @@ router.post('/firebase-login', authLimiter, async (req, res, next) => {
 
       let assignedRegionId = regionId || null;
       if (!assignedRegionId && pincode) {
-        const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
+        const matchedRegion = await prisma.region.findFirst({ where: { pincode } });
         if (matchedRegion) assignedRegionId = matchedRegion.id;
       }
 
@@ -266,7 +304,7 @@ router.post('/register-email',
 
     const { email, password, fullName, regionId, pincode } = req.body;
 
-    const existingUser = await queryOne('SELECT * FROM users WHERE email = $1', [email]);
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email already exists' });
     }
@@ -278,28 +316,43 @@ router.post('/register-email',
     
     let assignedRegionId = regionId || null;
     if (!assignedRegionId && pincode) {
-      const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
+      const matchedRegion = await prisma.region.findFirst({ where: { pincode } });
       if (matchedRegion) assignedRegionId = matchedRegion.id;
     }
 
-    const id = crypto.randomUUID();
-    const user = await queryOne(
-      `INSERT INTO users (id, phone_number, email, full_name, role, password_hash, auth_method, email_verified, region_id) 
-       VALUES ($1, $2, $3, $4, 'user', $5, 'email', 0, $6) 
-       RETURNING *`,
-      [id, dummyPhone, email, fullName, passwordHash, assignedRegionId]
-    );
+    const user = await prisma.user.create({
+      data: {
+        id: crypto.randomUUID(),
+        phone: dummyPhone,
+        email: email,
+        name: fullName,
+        role: 'CUSTOMER',
+        passwordHash: passwordHash,
+        authMethod: 'email',
+        emailVerified: false,
+        regionId: assignedRegionId
+      }
+    });
 
     // Create wallet
-    await query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0.00)', [user.id]);
+    await prisma.wallet.create({
+      data: {
+        userId: user.id,
+        balance: 0.00
+      }
+    });
 
     // Send email verification link token
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    await query(
-      `INSERT INTO email_verification_tokens (id, user_id, token, expires_at, used)
-       VALUES ($1, $2, $3, $4, 0)`,
-      [uuidv4(), user.id, token, new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()]
-    );
+    await prisma.emailVerificationToken.create({
+      data: {
+        id: uuidv4(),
+        userId: user.id,
+        token: token,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        used: false
+      }
+    });
 
     const verifyLink = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/v1/auth/verify-email?token=${token}`;
     
@@ -331,17 +384,26 @@ router.get('/verify-email', async (req, res, next) => {
       return res.status(400).send('<h1>Error: Verification token is missing</h1>');
     }
 
-    const tokenRecord = await queryOne(
-      'SELECT * FROM email_verification_tokens WHERE token = $1 AND used = 0',
-      [token]
-    );
+    const tokenRecord = await prisma.emailVerificationToken.findFirst({
+      where: {
+        token: token,
+        used: false
+      }
+    });
 
-    if (!tokenRecord || new Date(tokenRecord.expires_at) < new Date()) {
+    if (!tokenRecord || new Date(tokenRecord.expiresAt) < new Date()) {
       return res.status(400).send('<h1>Error: Invalid or expired verification token</h1>');
     }
 
-    await query('UPDATE email_verification_tokens SET used = 1 WHERE id = $1', [tokenRecord.id]);
-    await query('UPDATE users SET email_verified = 1 WHERE id = $1', [tokenRecord.user_id]);
+    await prisma.emailVerificationToken.update({
+      where: { id: tokenRecord.id },
+      data: { used: true }
+    });
+
+    await prisma.user.update({
+      where: { id: tokenRecord.userId },
+      data: { emailVerified: true }
+    });
 
     res.send('<h1>Email Verified Successfully!</h1><p>You can now close this window and log in to LocalSampark.</p>');
   } catch (error) {
@@ -363,17 +425,17 @@ router.post('/login-email',
 
     const { email, password } = req.body;
 
-    const user = await queryOne('SELECT * FROM users WHERE email = $1', [email]);
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const isValid = await bcrypt.compare(password, user.password_hash);
+    const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    if (!user.email_verified) {
+    if (!user.emailVerified) {
       return res.status(403).json({ error: 'Please verify your email before logging in.' });
     }
 
@@ -381,8 +443,8 @@ router.post('/login-email',
     const { accessToken, refreshToken } = generateTokens(
       user.id, 
       user.role, 
-      user.token_version || 0,
-      { regionId: user.region_id }
+      user.tokenVersion || 0,
+      { regionId: user.regionId }
     );
 
     res.json({
@@ -404,17 +466,21 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const user = await queryOne('SELECT * FROM users WHERE email = $1', [email]);
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ error: 'No user registered with this email address' });
     }
 
     const token = Math.random().toString(36).substring(2, 15);
-    await query(
-      `INSERT INTO password_reset_tokens (id, user_id, token, expires_at, used)
-       VALUES ($1, $2, $3, $4, 0)`,
-      [uuidv4(), user.id, token, new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString()]
-    );
+    await prisma.passwordResetToken.create({
+      data: {
+        id: uuidv4(),
+        userId: user.id,
+        token: token,
+        expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000),
+        used: false
+      }
+    });
 
     // Instead of a direct link, the frontend should handle this token if it's a SPA. But for now we send the token.
     await sendEmail(
@@ -444,18 +510,26 @@ router.post('/reset-password', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Reset token and new password are required' });
     }
 
-    const tokenRecord = await queryOne(
-      'SELECT * FROM password_reset_tokens WHERE token = $1 AND used = 0',
-      [token]
-    );
+    const tokenRecord = await prisma.passwordResetToken.findFirst({
+      where: {
+        token: token,
+        used: false
+      }
+    });
 
-    if (!tokenRecord || new Date(tokenRecord.expires_at) < new Date()) {
+    if (!tokenRecord || new Date(tokenRecord.expiresAt) < new Date()) {
       return res.status(400).json({ error: 'Invalid or expired password reset token' });
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await query('UPDATE password_reset_tokens SET used = 1 WHERE id = $1', [tokenRecord.id]);
-    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, tokenRecord.user_id]);
+    await prisma.passwordResetToken.update({
+      where: { id: tokenRecord.id },
+      data: { used: true }
+    });
+    await prisma.user.update({
+      where: { id: tokenRecord.userId },
+      data: { passwordHash: passwordHash }
+    });
 
     res.json({
       success: true,
@@ -475,25 +549,28 @@ router.put('/switch-role', authenticate, async (req, res, next) => {
     // Validate if user has permission to switch to this role
     // In a fully built permission matrix, we would query user_roles table.
     // For now, we allow switching to 'user' unconditionally, or check if they own a shop.
-    const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     
     if (targetRole !== 'user') {
       if (targetRole === 'shop_owner') {
-        const shop = await queryOne('SELECT id FROM local_shops WHERE owner_id = $1', [req.user.id]);
+        const shop = await prisma.localShop.findFirst({ where: { ownerId: req.user.id } });
         if (!shop) return res.status(403).json({ error: 'You do not own any shops' });
       }
       // Add other role validation as needed...
     }
 
     // Update their active role
-    await query('UPDATE users SET role = $1 WHERE id = $2', [targetRole, req.user.id]);
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { role: targetRole }
+    });
 
     // Issue new token with updated role
     const { accessToken } = generateTokens(
       user.id, 
       targetRole, 
-      user.token_version || 0,
-      { regionId: user.region_id }
+      user.tokenVersion || 0,
+      { regionId: user.regionId }
     );
 
     res.json({ success: true, accessToken, role: targetRole, message: `Switched to ${targetRole}` });

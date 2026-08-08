@@ -15,7 +15,8 @@ self.onmessage = function (e) {
         (item.description && item.description.toLowerCase().includes(q)) ||
         (item.tags && item.tags.some(t => t.toLowerCase().includes(q)));
 
-      const matchCategory = !category || category === 'all' || item.category === category;
+      const itemCatSlug = item.category ? item.category.toLowerCase().replace(/ /g, '-') : '';
+      const matchCategory = !category || category === 'all' || item.category === category || itemCatSlug === category || String(item.category_id) === String(category) || String(item.categoryId) === String(category);
 
       return matchQuery && matchCategory;
     });

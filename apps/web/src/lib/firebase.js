@@ -21,17 +21,22 @@ export const auth = getAuth(app);
 export function setupRecaptcha(containerId = 'recaptcha-container') {
   if (typeof window === 'undefined') return null;
 
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      size: 'invisible',
-      callback: (response) => {
-        // reCAPTCHA solved - allow signInWithPhoneNumber
-      },
-      'expired-callback': () => {
-        // Response expired. Ask user to solve reCAPTCHA again.
-      }
-    });
+  if (window.recaptchaVerifier) {
+    try {
+      window.recaptchaVerifier.clear();
+    } catch (e) {}
+    window.recaptchaVerifier = null;
   }
+
+  window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+    size: 'invisible',
+    callback: (response) => {
+      // reCAPTCHA solved - allow signInWithPhoneNumber
+    },
+    'expired-callback': () => {
+      // Response expired. Ask user to solve reCAPTCHA again.
+    }
+  });
 
   return window.recaptchaVerifier;
 }

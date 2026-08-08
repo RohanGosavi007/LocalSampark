@@ -7,7 +7,7 @@ import Footer from '../components/Footer';
 export default function LoginPage() {
   const { sendOtp, verifyOtp, loginEmail, registerEmail, error: authError } = useAuth();
   
-  const [method, setMethod] = useState('phone'); // phone, whatsapp, email, register
+  const [method, setMethod] = useState('firebase'); // firebase, phone, whatsapp, email, register
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1); // 1 = input credentials, 2 = verify OTP, 3 = register profile
@@ -27,10 +27,24 @@ export default function LoginPage() {
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!phoneNumber) return;
+
+    let formattedPhone = phoneNumber.replace(/\s+/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      // If it's just 10 digits, add +91. If it already starts with 91, add +.
+      if (formattedPhone.length === 10) {
+        formattedPhone = '+91' + formattedPhone;
+      } else if (formattedPhone.startsWith('91') && formattedPhone.length === 12) {
+        formattedPhone = '+' + formattedPhone;
+      } else {
+        formattedPhone = '+91' + formattedPhone; // default fallback
+      }
+      setPhoneNumber(formattedPhone);
+    }
+
     setLoading(true);
     setMessage('');
     try {
-      const data = await sendOtp(phoneNumber, method);
+      const data = await sendOtp(formattedPhone, method);
       setStep(2);
       setMessage(`🔐 Verification code sent successfully! ${data.otp ? `[DEV: ${data.otp}]` : ''}`);
     } catch (err) {
@@ -46,7 +60,7 @@ export default function LoginPage() {
     setLoading(true);
     setMessage('');
     try {
-      const data = await verifyOtp(phoneNumber, otp, fullName, regionId);
+      const data = await verifyOtp(phoneNumber, otp, fullName, regionId, method);
       if (!data.registered) {
         setIsNewUser(true);
         setStep(3);
@@ -123,7 +137,7 @@ export default function LoginPage() {
       // Send & verify automatically for dev speed
       const sendRes = await sendOtp(phone, 'phone');
       const devOtp = sendRes.otp || '123456';
-      await verifyOtp(phone, devOtp);
+      await verifyOtp(phone, devOtp, '', '', 'phone');
       
       let redirectUrl = '/dashboard';
       if (role === 'super_admin' || role === 'admin') redirectUrl = '/admin-dashboard';
@@ -132,6 +146,9 @@ export default function LoginPage() {
       else if (role === 'shop_owner') redirectUrl = '/shop-dashboard';
       else if (role === 'delivery_agent') redirectUrl = '/delivery-dashboard';
       else if (role === 'service_provider') redirectUrl = '/service-dashboard';
+      else if (role === 'society_admin') redirectUrl = '/society-admin-dashboard';
+      else if (role === 'security_guard') redirectUrl = '/security-dashboard';
+      else if (role === 'moderator') redirectUrl = '/moderator-dashboard';
 
       window.location.href = redirectUrl;
     } catch (err) {
@@ -162,7 +179,7 @@ export default function LoginPage() {
           {/* Tab Selection */}
           {step === 1 && (
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: 'var(--background)', padding: '0.35rem', borderRadius: '0.5rem' }}>
-              {['phone', 'whatsapp', 'email', 'register'].map((t) => (
+              {['firebase', 'phone', 'whatsapp', 'email'].map((t) => (
                 <button
                   key={t}
                   onClick={() => setMethod(t)}
@@ -171,8 +188,8 @@ export default function LoginPage() {
                     padding: '0.5rem',
                     borderRadius: '0.35rem',
                     border: 'none',
-                    background: method === t ? 'var(--primary)' : 'transparent',
-                    color: method === t ? 'white' : 'var(--text-muted)',
+                    background: (method === t || (t === 'email' && method === 'register')) ? 'var(--primary)' : 'transparent',
+                    color: (method === t || (t === 'email' && method === 'register')) ? 'white' : 'var(--text-muted)',
                     fontSize: '0.8rem',
                     fontWeight: 700,
                     textTransform: 'capitalize',
@@ -185,8 +202,11 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Firebase Recaptcha Container */}
+          <div id="recaptcha-container"></div>
+
           {/* Form Step 1: Input Details */}
-          {step === 1 && (method === 'phone' || method === 'whatsapp') && (
+          {step === 1 && (method === 'firebase' || method === 'phone' || method === 'whatsapp') && (
             <form onSubmit={handleSendOtp}>
               <div className="form-group">
                 <label className="form-label">Phone Number</label>
@@ -200,7 +220,7 @@ export default function LoginPage() {
                 />
               </div>
               <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%' }}>
-                {loading ? 'Sending...' : `Send OTP via ${method === 'whatsapp' ? 'WhatsApp' : 'SMS'}`}
+                {loading ? 'Sending...' : `Send OTP via ${method === 'whatsapp' ? 'WhatsApp' : method === 'firebase' ? 'Firebase' : 'SMS'}`}
               </button>
             </form>
           )}
@@ -232,6 +252,12 @@ export default function LoginPage() {
               <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%' }}>
                 {loading ? 'Logging in...' : 'Verify & Login'}
               </button>
+              <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Don't have an account? </span>
+                <button type="button" onClick={() => setMethod('register')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  Sign up
+                </button>
+              </div>
             </form>
           )}
 
@@ -273,6 +299,12 @@ export default function LoginPage() {
               <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%' }}>
                 {loading ? 'Creating Account...' : 'Register Profile'}
               </button>
+              <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Already have an account? </span>
+                <button type="button" onClick={() => setMethod('email')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  Log in
+                </button>
+              </div>
             </form>
           )}
 

@@ -131,9 +131,9 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
             {SERVICES.slice(0, 3).map((s, i) => {
-              const IconComp = SERVICE_ICON_MAP[s.id] || Sparkles;
+              const IconComp = SERVICE_ICON_MAP[s.value] || Sparkles;
               return (
-                <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                <motion.div key={s.value} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                   className="glass-card rounded-2xl border border-border p-6 flex flex-col justify-between group hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 transition-all duration-300"
                 >
                   <div>

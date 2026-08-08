@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../../middleware/auth.middleware');
-const { queryOne } = require('../../../config/database');
+const { queryOne } = require('../../../config/database.sqlite');
 const ctrl = require('../controllers/society-visitor.controller');
 
 // ─── SOCIETY ROLE MIDDLEWARE ────────────────────────────────
@@ -22,6 +22,7 @@ const requireSocietyRole = (...roles) => {
       req.societyMember = member;
       next();
     } catch (error) {
+      console.error('[requireSocietyRole Error]', error);
       next(error);
     }
   };
@@ -97,8 +98,11 @@ router.put('/bookings/:id/cancel', authenticate, requireSocietyRole('resident'),
 router.post('/complaints', authenticate, requireSocietyRole('resident'), ctrl.fileComplaint);
 router.get('/my-complaints', authenticate, requireSocietyRole('resident'), ctrl.getMyComplaints);
 router.get('/complaints/all', authenticate, requireSocietyRole('admin'), ctrl.getAllComplaints);
-router.put('/complaints/:id/assign', authenticate, requireSocietyRole('admin'), ctrl.assignComplaint);
-router.put('/complaints/:id/resolve', authenticate, requireSocietyRole('admin'), ctrl.resolveComplaint);
+router.put('/complaints/:id/status', authenticate, requireSocietyRole('admin'), ctrl.updateComplaintStatus);
+router.post('/complaints/:id/reopen', authenticate, requireSocietyRole('resident'), ctrl.reopenComplaint);
+router.post('/complaints/:id/rate', authenticate, requireSocietyRole('resident'), ctrl.rateResolution);
+router.get('/complaints/:id/timeline', authenticate, requireMember, ctrl.getComplaintTimeline);
+router.put('/complaints/:id/eta', authenticate, requireSocietyRole('admin'), ctrl.setComplaintETA);
 
 // ─── PACKAGES (Feature 11) ─────────────────────────────────
 router.post('/packages', authenticate, requireSocietyRole('guard'), ctrl.logPackage);
@@ -120,6 +124,7 @@ router.put('/emergency/:id/resolve', authenticate, requireSocietyRole('admin', '
 
 // ─── DIRECTORY (Feature 14) ────────────────────────────────
 router.get('/directory', authenticate, requireMember, ctrl.getDirectory);
+router.put('/directory/privacy', authenticate, requireMember, ctrl.updateDirectoryPrivacy);
 
 // ─── EVENTS (Feature 15) ───────────────────────────────────
 router.post('/events', authenticate, requireSocietyRole('admin'), ctrl.createEvent);
@@ -133,5 +138,15 @@ router.get('/settings', authenticate, requireSocietyRole('admin'), ctrl.getSetti
 router.put('/settings', authenticate, requireSocietyRole('admin'), ctrl.updateSettings);
 router.post('/notices', authenticate, requireSocietyRole('admin'), ctrl.postNotice);
 router.get('/notices', authenticate, requireMember, ctrl.getNotices);
+router.post('/notices/:id/read', authenticate, requireMember, ctrl.markNoticeRead);
+
+// ─── AMENITY BOOKINGS (Phase 8) ────────────────────────────
+router.get('/amenities', authenticate, requireMember, ctrl.getAmenities);
+router.post('/amenities', authenticate, requireSocietyRole('admin'), ctrl.createAmenity);
+router.put('/amenities/:id', authenticate, requireSocietyRole('admin'), ctrl.updateAmenity);
+router.post('/amenities/:id/book', authenticate, requireMember, ctrl.bookAmenity);
+router.get('/amenities/:id/bookings', authenticate, requireMember, ctrl.getAmenityBookings);
+router.get('/amenities/my-bookings', authenticate, requireMember, ctrl.getMyBookings);
+router.post('/amenities/bookings/:id/cancel', authenticate, requireMember, ctrl.cancelBooking);
 
 module.exports = router;

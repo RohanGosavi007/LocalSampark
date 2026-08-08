@@ -44,6 +44,14 @@ export default function ShopDetailPage() {
   const [infoTab, setInfoTab] = useState('reviews');
   const [newQuestion, setNewQuestion] = useState('');
 
+  // Service Booking State
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [timeSlot, setTimeSlot] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
   // Global Cart
   const { items: cart, addItem, removeItem, updateQuantity, getCartTotal, openCart } = useCartStore();
   
@@ -132,7 +140,7 @@ export default function ShopDetailPage() {
       return price;
   };
 
-  const totalCheckoutAmount = cartTotal + getServiceFinalPrice();
+  const totalCheckoutAmount = cartSubtotal + getServiceFinalPrice();
 
   const handleWhatsAppContact = (type) => {
     const msg = "Hi, I have an inquiry about your shop on LocalSampark.";
@@ -203,7 +211,12 @@ export default function ShopDetailPage() {
               <Badge variant="primary" className="mb-3">{shop.category_details?.name}</Badge>
               <h1 className="text-3xl lg:text-4xl font-heading font-black mb-2 text-text">{shop.name}</h1>
               <p className="text-text-muted mb-6 flex items-center gap-2 font-medium">
-                  <MapPin className="w-4 h-4" /> {shop.address}
+                  <MapPin className="w-4 h-4 shrink-0" /> 
+                  <span className="line-clamp-1">
+                      {typeof shop.address === 'object' 
+                          ? [shop.address.line1, shop.address.line2, shop.address.city].filter(Boolean).join(', ') 
+                          : shop.address}
+                  </span>
               </p>
               
               <div className="flex flex-wrap gap-3">

@@ -40,6 +40,13 @@ const searchSyncWorker = new Worker('search-sync', async (job) => {
     host: REDIS_HOST,
     port: REDIS_PORT,
     password: process.env.REDIS_PASSWORD || undefined,
+    maxRetriesPerRequest: null,
+    retryStrategy: function (times) {
+      if (times > 3) {
+        return null; // Stop retrying after 3 times to prevent spam
+      }
+      return Math.min(times * 50, 2000);
+    }
   }
 });
 
