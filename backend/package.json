@@ -54,7 +54,8 @@
     "swagger-ui-express": "^5.0.1",
     "typesense": "^3.0.6",
     "uuid": "^11.1.1",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "ws": "^8.17.1"
   },
   "devDependencies": {
     "artillery": "^2.0.12",
