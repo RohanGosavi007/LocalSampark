@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
     "test": "jest --coverage",
-    "test:load": "artillery run load-tests/critical-flow.yml"
+    "test:load": "artillery run load-tests/critical-flow.yml",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",

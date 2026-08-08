@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis').default;
 const { redisClient } = require('../config/redis');
 
@@ -35,7 +35,7 @@ const roleBasedRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: (req, res) => getLimitForRole(req),
   message: { error: 'Too many requests. Please try again later.' },
-  keyGenerator: (req) => req.user ? req.user.userId : req.ip.replace(/:/g, '_'),
+  keyGenerator: (req, res) => req.user ? req.user.userId : ipKeyGenerator(req, res),
   skip: (req) => req.path === '/health',
   store: getStore('rl:api:'),
 });
@@ -79,7 +79,7 @@ const ddosProtector = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 1000, // Very high threshold
   message: { error: 'IP Temporarily Banned due to suspicious activity.' },
-  keyGenerator: (req) => req.ip.replace(/:/g, '_'),
+  keyGenerator: (req, res) => ipKeyGenerator(req, res),
   store: getStore('rl:ddos:'),
   handler: (req, res, next, options) => {
     console.warn(`[DDOS WARNING] IP Banned: ${req.ip}`);
