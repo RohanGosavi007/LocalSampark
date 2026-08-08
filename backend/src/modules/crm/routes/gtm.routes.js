@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
-const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
-const FeatureFlagService = require('../../../services/FeatureFlagService');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate, requireAdmin } = require('../../../../middleware/auth.middleware');
+const FeatureFlagService = require('../../../../services/FeatureFlagService');
 
 // GET /api/v1/gtm/features - Public evaluation for mobile app / frontend
 router.get('/features', async (req, res, next) => {

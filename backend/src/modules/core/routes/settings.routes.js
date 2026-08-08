@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../config/database');
-const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
+const { pool } = require('../../../../config/database');
+const { authenticate, requireAdmin } = require('../../../../middleware/auth.middleware');
 
 // GET /api/v1/settings/theme
 // Publicly accessible to fetch global theme

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
-// const rbacController = require('../../../../controllers/rbac.controller');
+const { authenticate, requireAdmin } = require('../../../../middleware/auth.middleware');
+// const rbacController = require('../../../../../controllers/rbac.controller');
 
 // Mock data for RBAC
 const mockRoles = [

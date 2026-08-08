@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne, withTransaction } = require('../../../config/database');
-const { authenticate, enforceMultiTenancy, requireAdmin } = require('../../../middleware/auth.middleware');
+const { query, queryOne, withTransaction } = require('../../../../config/database');
+const { authenticate, enforceMultiTenancy, requireAdmin } = require('../../../../middleware/auth.middleware');
 const crypto = require('crypto');
 
 // GET /plans - List available SaaS tiers (Public/Authenticated)

@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../config/database');
-const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
-const { requirePermission } = require('../../../middleware/rbac.middleware');
-const apiCache = require('../../../middleware/cache.middleware');
-const { cacheDel } = require('../../../config/redis');
-const { calculateRevenueSplits, getFranchises, updateFranchiseSplit, getPendingPayouts, getDashboardStats, getRevenueChart } = require('../controllers/admin-revenue.controller');
-const { getPendingApprovals, updateApprovalStatus } = require('../controllers/admin-approvals.controller');
-const { getRevenueModels, updateSubscriptionPlan, updateLoyaltyTier, updateConfig } = require('../controllers/admin-revenue-models.controller');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate, requireAdmin } = require('../../../../middleware/auth.middleware');
+const { requirePermission } = require('../../../../middleware/rbac.middleware');
+const apiCache = require('../../../../middleware/cache.middleware');
+const { cacheDel } = require('../../../../config/redis');
+const { calculateRevenueSplits, getFranchises, updateFranchiseSplit, getPendingPayouts, getDashboardStats, getRevenueChart } = require('../../../../controllers/admin-revenue.controller');
+const { getPendingApprovals, updateApprovalStatus } = require('../../../../controllers/admin-approvals.controller');
+const { getRevenueModels, updateSubscriptionPlan, updateLoyaltyTier, updateConfig } = require('../../../../controllers/admin-revenue-models.controller');
 
 
 router.get('/config', authenticate, requireAdmin, apiCache(300), async (req, res, next) => {

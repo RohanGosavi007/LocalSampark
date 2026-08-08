@@ -8,7 +8,7 @@ const {
   processCheckout,
   processBooking,
   updateOrderStatus,
-} = require('../controllers/unified-superapp.controller');
+} = require('../../../../controllers/unified-superapp.controller');
 
 // ── GET /api/shops/:id (Unified dynamic payload for Web & Mobile)
 router.get('/shops/:id', getShopById);

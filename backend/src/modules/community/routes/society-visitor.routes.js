@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../middleware/auth.middleware');
-const { queryOne } = require('../../../config/database.sqlite');
-const ctrl = require('../controllers/society-visitor.controller');
+const { authenticate } = require('../../../../middleware/auth.middleware');
+const { queryOne } = require('../../../../config/database.sqlite');
+const ctrl = require('../../../../controllers/society-visitor.controller');
 
 // ─── SOCIETY ROLE MIDDLEWARE ────────────────────────────────
 // Checks user's role in society_members table
@@ -139,14 +139,5 @@ router.put('/settings', authenticate, requireSocietyRole('admin'), ctrl.updateSe
 router.post('/notices', authenticate, requireSocietyRole('admin'), ctrl.postNotice);
 router.get('/notices', authenticate, requireMember, ctrl.getNotices);
 router.post('/notices/:id/read', authenticate, requireMember, ctrl.markNoticeRead);
-
-// ─── AMENITY BOOKINGS (Phase 8) ────────────────────────────
-router.get('/amenities', authenticate, requireMember, ctrl.getAmenities);
-router.post('/amenities', authenticate, requireSocietyRole('admin'), ctrl.createAmenity);
-router.put('/amenities/:id', authenticate, requireSocietyRole('admin'), ctrl.updateAmenity);
-router.post('/amenities/:id/book', authenticate, requireMember, ctrl.bookAmenity);
-router.get('/amenities/:id/bookings', authenticate, requireMember, ctrl.getAmenityBookings);
-router.get('/amenities/my-bookings', authenticate, requireMember, ctrl.getMyBookings);
-router.post('/amenities/bookings/:id/cancel', authenticate, requireMember, ctrl.cancelBooking);
 
 module.exports = router;

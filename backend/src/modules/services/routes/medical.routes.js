@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne, withTransaction } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne, withTransaction } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 const crypto = require('crypto');
 
 // GET /doctors - Search doctors dynamically

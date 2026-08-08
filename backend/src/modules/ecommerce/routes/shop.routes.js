@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
+const { query, queryOne } = require('../../../../config/database');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const { autoCreateShopDelivery } = require('../../services/controllers/delivery.controller');
+const { autoCreateShopDelivery } = require('../../../services/controllers/delivery.controller');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mockkey',
@@ -29,9 +29,9 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 }
 function deg2rad(deg) { return deg * (Math.PI / 180) }
 
-const CacheService = require('../../../services/cache.service');
-const AuditLogger = require('../../../services/audit.logger');
-const SearchEngine = require('../../../services/search.engine');
+const CacheService = require('../../../../services/cache.service');
+const AuditLogger = require('../../../../services/audit.logger');
+const SearchEngine = require('../../../../services/search.engine');
 
 // GET /search via Typesense AI Search Engine
 router.get('/search', async (req, res, next) => {
@@ -848,9 +848,9 @@ router.post('/cart/batch-checkout', authenticate, async (req, res, next) => {
 // ENHANCED SHOP MANAGEMENT ROUTES (v2)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const { requireShopOwner, requireOrderAccess, requireAppointmentAccess } = require('../../../middleware/shop-owner.middleware');
-const shopMgmt = require('../controllers/shop-management.controller');
-const { upload, recordUpload } = require('../../core/services/upload.service');
+const { requireShopOwner, requireOrderAccess, requireAppointmentAccess } = require('../../../../middleware/shop-owner.middleware');
+const shopMgmt = require('../../../../controllers/shop-management.controller');
+const { upload, recordUpload } = require('../../../core/services/upload.service');
 
 // ─── SHOP OWNER DASHBOARD ──────────────────────────────────────────
 router.get('/my-shop/dashboard', authenticate, requireShopOwner, shopMgmt.getShopDashboard);

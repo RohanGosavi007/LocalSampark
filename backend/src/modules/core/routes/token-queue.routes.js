@@ -4,8 +4,8 @@
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../config/database');
-const { authenticate, hasAccess, ROLES } = require('../../../middleware/auth.middleware');
+const { query } = require('../../../../config/database');
+const { authenticate, hasAccess, ROLES } = require('../../../../middleware/auth.middleware');
 
 // ── GET /api/v1/token-queue/:shopId — Get current queue state ──
 router.get('/:shopId', async (req, res, next) => {

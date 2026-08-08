@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
-const { authenticate, optionalAuth } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate, optionalAuth } = require('../../../../middleware/auth.middleware');
 
 router.get('/posts', optionalAuth, async (req, res, next) => {
   try {

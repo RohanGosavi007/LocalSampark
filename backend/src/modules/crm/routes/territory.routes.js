@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 const { v4: uuidv4 } = require('uuid');
-const { getRevenueModels, updateConfig } = require('../controllers/admin-revenue-models.controller');
+const { getRevenueModels, updateConfig } = require('../../../../controllers/admin-revenue-models.controller');
 
 // Middlewares helper to enforce territory access
 const requireTerritoryAdmin = (req, res, next) => {

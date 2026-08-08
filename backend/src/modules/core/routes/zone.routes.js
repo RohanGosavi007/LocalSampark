@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 const crypto = require('crypto');
-const spatialRepo = require('../../../repositories/spatial.repository');
-const territoryValidator = require('../../../validators/territory.validator');
+const spatialRepo = require('../../../../repositories/spatial.repository');
+const territoryValidator = require('../../../../validators/territory.validator');
 
 // GET /api/v1/zones/resolve?lat=X&lng=Y — PiP territory resolution
 router.get('/resolve', async (req, res, next) => {

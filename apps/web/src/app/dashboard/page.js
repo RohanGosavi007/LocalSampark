@@ -15,6 +15,8 @@ import {
   Clock, MapPin, Briefcase, CheckCircle, Eye, ArrowRight, Sparkles
 } from 'lucide-react';
 import StoriesRow from '../components/StoriesRow';
+import WebRTCIntercom from '../components/WebRTCIntercom';
+import { useAuth } from '@/context/AuthContext';
 
 // Map service IDs to lucide icons
 const SERVICE_ICON_MAP = {
@@ -57,6 +59,7 @@ const FEED_ICON_MAP = {
 };
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('feed');
   const [selectedService, setSelectedService] = useState(null);
   const [requestSent, setRequestSent] = useState(false);
@@ -384,6 +387,7 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
+      <WebRTCIntercom flatNumber={user?.flatNumber || "A-101"} />
       <Footer />
     </div>
   );

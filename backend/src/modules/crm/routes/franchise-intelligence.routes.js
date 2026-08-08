@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, requireRole } = require('../../../middleware/auth.middleware');
-const pool = require('../../../config/database');
+const { authenticate, requireRole } = require('../../../../middleware/auth.middleware');
+const pool = require('../../../../config/database');
 
 // GET /api/v1/franchise-intelligence/:zoneId/health-scores - Merchant health scoring
 router.get('/:zoneId/health-scores', authenticate, requireRole('franchise'), async (req, res) => {

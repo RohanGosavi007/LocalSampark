@@ -4,8 +4,8 @@
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // ── GET /api/v1/fleet-assets/:shopId — Get all assets ──
 router.get('/:shopId', authenticate, async (req, res) => {

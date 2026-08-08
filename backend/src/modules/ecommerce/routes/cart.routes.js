@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const prisma = require('../../../../prisma/client');
-const { optionalAuth } = require('../../../middleware/auth.middleware');
+const prisma = require('../../../../../prisma/client');
+const { optionalAuth } = require('../../../../middleware/auth.middleware');
 
 // GET Cart Items
 router.get('/', optionalAuth, async (req, res, next) => {

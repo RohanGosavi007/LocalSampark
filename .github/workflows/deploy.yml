@@ -68,5 +68,17 @@ jobs:
       - name: Wait for Deployment & Health Check
         run: |
           echo "Waiting for deployment to complete..."
-          sleep 60
-          curl -f https://localsampark-api.onrender.com/health || echo "Health check failed or deployment still in progress"
+          # Polling loop for zero downtime deployment verification
+          max_retries=15
+          wait_time=20
+          for i in $(seq 1 $max_retries); do
+            echo "Health check attempt $i of $max_retries..."
+            if curl -f --silent https://localsampark-api.onrender.com/health; then
+              echo -e "\n✅ Deployment healthy and live!"
+              exit 0
+            fi
+            echo "Not ready yet. Waiting $wait_time seconds..."
+            sleep $wait_time
+          done
+          echo "❌ Deployment health check timed out after $(($max_retries * $wait_time)) seconds!"
+          exit 1

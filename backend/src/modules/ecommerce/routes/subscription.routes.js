@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // GET all subscription plans
 router.get('/plans', async (req, res, next) => {

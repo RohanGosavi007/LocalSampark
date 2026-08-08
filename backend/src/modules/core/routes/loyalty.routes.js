@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const loyaltyController = require('../controllers/loyalty.controller');
-// const { authenticate } = require('../../../middleware/auth.middleware');
+const loyaltyController = require('../../../../controllers/loyalty.controller');
+// const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // GET user loyalty balance and transaction history
 router.get('/balance', loyaltyController.getLoyaltyBalance); // add authenticate in production

@@ -25,7 +25,7 @@ async function runPurge(isDryRun = true) {
       'DELETE FROM notifications;',
       
       // Delete dummy users
-      "DELETE FROM users WHERE LOWER(name) LIKE '%test%' OR LOWER(name) LIKE '%dummy%' OR LOWER(name) LIKE '%sample%';",
+      "DELETE FROM users WHERE LOWER(full_name) LIKE '%test%' OR LOWER(full_name) LIKE '%dummy%' OR LOWER(full_name) LIKE '%sample%';",
       
       // Delete OTP records
       'DELETE FROM otps;'

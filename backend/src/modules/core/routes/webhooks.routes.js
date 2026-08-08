@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const Stripe = require('stripe');
-const { query } = require('../../../config/database');
+const { query } = require('../../../../config/database');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
 
 // Stripe webhook requires raw body

@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { query, queryOne } = require('../../../config/database');
-const { authLimiter } = require('../../../middleware/rateLimit.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authLimiter } = require('../../../../middleware/rateLimit.middleware');
 const { v4: uuidv4 } = require('uuid');
-const { generateTokens } = require('../../../middleware/auth.middleware');
+const { generateTokens } = require('../../../../middleware/auth.middleware');
 
 // Default dev PIN for bootstrapping (will be bcrypt-compared)
 const DEV_DEFAULT_PIN = '123456';

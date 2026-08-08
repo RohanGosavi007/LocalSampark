@@ -5,9 +5,9 @@
  */
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
-const { authenticate, requireAdmin, ROLES } = require('../../../middleware/auth.middleware');
-const CacheService = require('../../../services/cache.service');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate, requireAdmin, ROLES } = require('../../../../middleware/auth.middleware');
+const CacheService = require('../../../../services/cache.service');
 const { v4: uuidv4 } = require('uuid');
 
 /**

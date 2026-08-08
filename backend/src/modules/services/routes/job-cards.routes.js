@@ -4,8 +4,8 @@
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // ── GET /api/v1/job-cards/:shopId — Get all job cards for a shop ──
 router.get('/:shopId', authenticate, async (req, res, next) => {

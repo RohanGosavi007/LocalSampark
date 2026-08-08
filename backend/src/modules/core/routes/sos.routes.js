@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const sosController = require('../controllers/sos.controller');
-const { authenticate, requireRole, requireAdmin } = require('../../../middleware/auth.middleware');
+const sosController = require('../../../../controllers/sos.controller');
+const { authenticate, requireRole, requireAdmin } = require('../../../../middleware/auth.middleware');
 
 // Trigger an SOS Alert
 router.post('/trigger', authenticate, sosController.triggerSOS);

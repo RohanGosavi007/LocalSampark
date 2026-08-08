@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne, queryMany } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne, queryMany } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 const crypto = require('crypto');
 
 router.get('/skills', async (req, res, next) => {

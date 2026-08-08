@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const db = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // List properties
 router.post('/properties', authenticate, async (req, res, next) => {

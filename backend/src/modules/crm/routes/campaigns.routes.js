@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../middleware/auth.middleware');
-const pool = require('../../../config/database');
-const { query, queryOne } = require('../../../config/database');
-const { getGeoTargetedAds } = require('../../../services/AdService');
+const { authenticate } = require('../../../../middleware/auth.middleware');
+const pool = require('../../../../config/database');
+const { query, queryOne } = require('../../../../config/database');
+const { getGeoTargetedAds } = require('../../../../services/AdService');
 const crypto = require('crypto');
 
 // GET /api/v1/campaigns/geo-feed - Fetch active targeted ads based on lat/lng & radius

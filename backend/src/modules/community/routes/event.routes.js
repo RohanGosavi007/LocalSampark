@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 router.get('/', async (req, res, next) => {
   try {

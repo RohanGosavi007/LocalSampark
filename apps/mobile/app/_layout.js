@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import WebRTCIntercomMobile from '../src/components/WebRTCIntercomMobile';
 
 let DevLoginScreen = () => null;
 if (__DEV__) {
@@ -15,11 +16,13 @@ function DynamicNavigator() {
 
   if (role.startsWith('VENDOR')) {
     return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="shop-dashboard" />
-        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="modules" />
-      </Stack>
+      <>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="shop-dashboard" />
+          <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="modules" />
+        </Stack>
+      </>
     );
   }
   if (role === 'DELIVERY') {
@@ -41,17 +44,20 @@ function DynamicNavigator() {
 
   // Default fallback (CUSTOMER)
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="register" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="modules" />
-      <Stack.Screen name="search" />
-      <Stack.Screen name="location-select" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="onboarding-tutorial" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="register" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="modules" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="location-select" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="onboarding-tutorial" />
+      </Stack>
+      <WebRTCIntercomMobile flatNumber={user?.flatNumber || "A-101"} isGuard={role === 'GUARD'} />
+    </>
   );
 }
 

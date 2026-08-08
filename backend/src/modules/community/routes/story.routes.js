@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // GET nearby stories
 router.get('/', authenticate, async (req, res, next) => {

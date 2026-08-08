@@ -24,6 +24,14 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('apps/mobile/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install Dependencies
         run: |
           cd apps/mobile

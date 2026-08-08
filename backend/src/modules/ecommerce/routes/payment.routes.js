@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const PaymentGatewayEngine = require('../../../services/payment.gateway');
-const { query } = require('../../../config/database');
+const PaymentGatewayEngine = require('../../../../services/payment.gateway');
+const { query } = require('../../../../config/database');
 
 // Webhook Handler for Payment Callbacks (Razorpay/Cashfree)
 router.post('/webhook/:provider', express.raw({ type: 'application/json' }), async (req, res) => {

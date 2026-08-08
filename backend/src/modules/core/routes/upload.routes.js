@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 const API_URL = process.env.API_URL || 'http://localhost:5000';
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { query } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // GET /overview - Aggregate GMV, lead counts, and top active sectors by territory
 router.get('/overview', authenticate, async (req, res, next) => {

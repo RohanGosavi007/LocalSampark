@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const db = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
 
 // Pre-approve visitor
 router.post('/visitors', authenticate, async (req, res, next) => {

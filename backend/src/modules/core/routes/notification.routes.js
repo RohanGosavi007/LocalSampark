@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../middleware/auth.middleware');
-const { query, queryOne } = require('../../../config/database');
-const { sendPushNotification, sendTopicPush } = require('../../../config/firebase');
+const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../../config/database');
+const { sendPushNotification, sendTopicPush } = require('../../../../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 
 // Get user's notifications

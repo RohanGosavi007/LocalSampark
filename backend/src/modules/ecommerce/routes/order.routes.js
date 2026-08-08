@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne, transaction } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
-const { sendNewOrderNotification, sendOrderConfirmation } = require('../../core/services/email.service');
+const { query, queryOne, transaction } = require('../../../../config/database');
+const { authenticate } = require('../../../../middleware/auth.middleware');
+const { sendNewOrderNotification, sendOrderConfirmation } = require('../../../core/services/email.service');
 
 
 // Validate Coupon
