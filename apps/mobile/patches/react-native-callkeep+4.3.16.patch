@@ -1,0 +1,54 @@
+diff --git a/node_modules/react-native-callkeep/android/.gradle/9.2.0/checksums/checksums.lock b/node_modules/react-native-callkeep/android/.gradle/9.2.0/checksums/checksums.lock
+new file mode 100644
+index 0000000..04f7969
+Binary files /dev/null and b/node_modules/react-native-callkeep/android/.gradle/9.2.0/checksums/checksums.lock differ
+diff --git a/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileChanges/last-build.bin b/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileChanges/last-build.bin
+new file mode 100644
+index 0000000..f76dd23
+Binary files /dev/null and b/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileChanges/last-build.bin differ
+diff --git a/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileHashes/fileHashes.bin b/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileHashes/fileHashes.bin
+new file mode 100644
+index 0000000..52a21f9
+Binary files /dev/null and b/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileHashes/fileHashes.bin differ
+diff --git a/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileHashes/fileHashes.lock b/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileHashes/fileHashes.lock
+new file mode 100644
+index 0000000..b6f3adf
+Binary files /dev/null and b/node_modules/react-native-callkeep/android/.gradle/9.2.0/fileHashes/fileHashes.lock differ
+diff --git a/node_modules/react-native-callkeep/android/.gradle/9.2.0/gc.properties b/node_modules/react-native-callkeep/android/.gradle/9.2.0/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-callkeep/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/react-native-callkeep/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..660adad
+Binary files /dev/null and b/node_modules/react-native-callkeep/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/react-native-callkeep/android/.gradle/buildOutputCleanup/cache.properties b/node_modules/react-native-callkeep/android/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..c04ab47
+--- /dev/null
++++ b/node_modules/react-native-callkeep/android/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Sat Aug 08 15:55:09 IST 2026
++gradle.version=9.2.0
+diff --git a/node_modules/react-native-callkeep/android/.gradle/vcs-1/gc.properties b/node_modules/react-native-callkeep/android/.gradle/vcs-1/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-callkeep/android/src/main/java/io/wazo/callkeep/RNCallKeepModule.java b/node_modules/react-native-callkeep/android/src/main/java/io/wazo/callkeep/RNCallKeepModule.java
+index 025480a..dcfdd60 100644
+--- a/node_modules/react-native-callkeep/android/src/main/java/io/wazo/callkeep/RNCallKeepModule.java
++++ b/node_modules/react-native-callkeep/android/src/main/java/io/wazo/callkeep/RNCallKeepModule.java
+@@ -434,7 +434,6 @@ public class RNCallKeepModule extends ReactContextBaseJavaModule implements Life
+         this.hasListeners = false;
+     }
+ 
+-    @ReactMethod
+     public void displayIncomingCall(String uuid, String number, String callerName) {
+         this.displayIncomingCall(uuid, number, callerName, false, null);
+     }
+@@ -483,7 +482,6 @@ public class RNCallKeepModule extends ReactContextBaseJavaModule implements Life
+         conn.onAnswer();
+     }
+ 
+-    @ReactMethod
+     public void startCall(String uuid, String number, String callerName) {
+         this.startCall(uuid, number, callerName, false, null);
+     }
