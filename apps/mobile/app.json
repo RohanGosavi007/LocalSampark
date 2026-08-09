@@ -20,7 +20,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
       "bundleIdentifier": "in.localsampark.app",
@@ -64,7 +70,12 @@
     ],
     "extra": {
       "API_URL_DEV": "http://192.168.1.7:5000/api/v1",
-      "API_URL_PROD": "https://localsampark-api.onrender.com/api/v1"
-    }
+      "API_URL_PROD": "https://localsampark-api.onrender.com/api/v1",
+      "router": {},
+      "eas": {
+        "projectId": "44fa4239-afc4-4135-bfca-22dd924e16c6"
+      }
+    },
+    "owner": "local-sampark"
   }
 }
