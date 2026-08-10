@@ -72,8 +72,14 @@ async function getShopDashboard(req, res, next) {
       prisma.appointment.count({ where: { shopId, scheduledDate: todayStart } }),
       prisma.appointment.count({ where: { shopId, status: { in: ['REQUESTED', 'CONFIRMED'] } } }),
       prisma.product.count({ where: { shopId, isAvailable: true } }),
-      prisma.serviceSlot.count({ where: { shopId, isAvailable: true } })
+      prisma.serviceSlot.count({ where: { shopId, status: 'AVAILABLE' } })
     ]);
+
+    const products = await prisma.product.findMany({ where: { shopId } });
+    const serviceSlots = await prisma.serviceSlot.findMany({ where: { shopId } });
+
+    shop.products = products;
+    shop.serviceSlots = serviceSlots;
 
     // Calculate revenue (paise to rupees)
     const revenueTotal = (revenueTotalAgg._sum.totalAmountPaise || 0) / 100;
@@ -330,6 +336,53 @@ async function getShopAppointments(req, res, next) {
 // SECTION 4: PRODUCT & INVENTORY MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════
 
+async function toggleLiveVisibility(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { isLive } = req.body;
+    
+    if (typeof isLive !== 'boolean') {
+      return res.status(400).json({ error: 'isLive must be a boolean' });
+    }
+
+    const updatedShop = await prisma.shop.update({
+      where: { id: shop.id },
+      data: { isLive }
+    });
+
+    res.json({ success: true, isLive: updatedShop.isLive, message: `Shop is now ${updatedShop.isLive ? 'Live' : 'Offline'}` });
+  } catch (error) { next(error); }
+}
+
+async function addProduct(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { name, slug, price, description, masterCategoryId, imageUrl, stockQuantity } = req.body;
+
+    // Pillar 1: Strict Product-Category Isolation
+    if (masterCategoryId && masterCategoryId !== shop.categoryId) {
+      return res.status(403).json({ error: 'Isolation Error: Product does not belong to your Shop Category Master Catalog.' });
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        shopId: shop.id,
+        name,
+        slug: slug || name.toLowerCase().replace(/ /g, '-'),
+        pricePaise: Math.round((price || 0) * 100),
+        mrpPaise: Math.round((price || 0) * 100),
+        description,
+        masterCategoryId: masterCategoryId || shop.categoryId,
+        imageUrls: imageUrl ? `["${imageUrl}"]` : undefined,
+        stockQuantity: stockQuantity || 100,
+        isActive: true
+      }
+    });
+
+    res.status(201).json({ success: true, product });
+  } catch (error) { next(error); }
+}
+
 async function updateProduct(req, res, next) {
   try {
     const { productId } = req.params;
@@ -373,6 +426,54 @@ async function deleteProduct(req, res, next) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// SECTION 4.5: SERVICE SLOT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════
+
+async function addServiceSlot(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { serviceName, providerName, durationMinutes, price } = req.body;
+
+    if (!serviceName) {
+      return res.status(400).json({ error: 'serviceName is required' });
+    }
+
+    // Since this is a template slot, we'll create it for a generic future date 
+    // or just today, with available status.
+    // In a real system we would create a recurring schedule, but for now
+    // creating a single slot represents the "service" in the catalog.
+    const slot = await prisma.serviceSlot.create({
+      data: {
+        shopId: shop.id,
+        serviceName,
+        providerName: providerName || 'General',
+        durationMinutes: parseInt(durationMinutes) || 30,
+        pricePaise: price ? Math.round(parseFloat(price) * 100) : 0,
+        date: new Date(),
+        startTime: '09:00',
+        endTime: '17:00',
+        status: 'AVAILABLE'
+      }
+    });
+
+    res.status(201).json({ success: true, slot });
+  } catch (error) { next(error); }
+}
+
+async function deleteServiceSlot(req, res, next) {
+  try {
+    const { slotId } = req.params;
+    const shop = req.shop;
+    
+    const slot = await prisma.serviceSlot.findFirst({ where: { id: slotId, shopId: shop.id } });
+    if (!slot) return res.status(404).json({ error: 'Slot not found' });
+
+    await prisma.serviceSlot.delete({ where: { id: slotId } });
+
+    res.json({ success: true, message: 'Slot deleted' });
+  } catch (error) { next(error); }
+}
+
 // SECTION 5: STAFF MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -712,16 +813,31 @@ async function createKDSTicket(req, res, next) {
     const shop = req.shop;
     const { orderId, items, specialInstructions, priority, assignedStation, estimatedPrepMinutes } = req.body;
 
-    const countResult = await queryOne('SELECT COUNT(*) as c FROM kds_tickets WHERE shop_id = $1 AND DATE(created_at) = DATE(CURRENT_TIMESTAMP)', [shop.id]);
-    const ticketNumber = parseInt(countResult?.c || 0) + 1;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    const id = crypto.randomUUID();
-    const ticket = await queryOne(
-      `INSERT INTO kds_tickets (id, shop_id, order_id, ticket_number, items, special_instructions, priority, assigned_station, estimated_prep_minutes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [id, shop.id, orderId, ticketNumber, JSON.stringify(items || []),
-       specialInstructions || '', priority || 'normal', assignedStation || '', estimatedPrepMinutes || 15]
-    );
+    const countResult = await prisma.kDSTicket.count({
+      where: {
+        shopId: shop.id,
+        createdAt: { gte: todayStart }
+      }
+    });
+    
+    const ticketNumber = countResult + 1;
+
+    const ticket = await prisma.kDSTicket.create({
+      data: {
+        shopId: shop.id,
+        orderId: orderId || undefined,
+        ticketNumber,
+        items: JSON.stringify(items || []),
+        specialInstructions: specialInstructions || '',
+        priority: priority || 'normal',
+        assignedStation: assignedStation || '',
+        estimatedPrepMinutes: estimatedPrepMinutes || 15,
+        status: 'pending'
+      }
+    });
 
     // Emit to KDS displays
     notificationService.emitKDSUpdate(shop.id, ticket);
@@ -1007,8 +1123,10 @@ module.exports = {
   updateOrderStatus, getShopOrders,
   // Appointments
   updateAppointmentStatus, getShopAppointments,
-  // Products
-  updateProduct, deleteProduct,
+  // Products & Visibility
+  toggleLiveVisibility, addProduct, updateProduct, deleteProduct,
+  // Services
+  addServiceSlot, deleteServiceSlot,
   // Staff
   updateStaff, updateStaffAvailability,
   // Disputes & Returns

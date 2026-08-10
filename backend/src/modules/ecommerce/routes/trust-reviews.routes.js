@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../../middleware/auth.middleware');
-const pool = require('../../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const pool = require('../../../config/database');
 
 // POST /api/v1/trust-reviews/:shopId - Upload video review
 router.post('/:shopId', authenticate, async (req, res) => {

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../../config/database');
+const { query, queryOne } = require('../../../config/database');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { authenticate } = require('../../../middleware/auth.middleware');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const { autoCreateShopDelivery } = require('../../../services/controllers/delivery.controller');
+const { autoCreateShopDelivery } = require('../../services/controllers/delivery.controller');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mockkey',
@@ -29,9 +29,9 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 }
 function deg2rad(deg) { return deg * (Math.PI / 180) }
 
-const CacheService = require('../../../../services/cache.service');
-const AuditLogger = require('../../../../services/audit.logger');
-const SearchEngine = require('../../../../services/search.engine');
+const CacheService = require('../../../services/cache.service');
+const AuditLogger = require('../../../services/audit.logger');
+const SearchEngine = require('../../../services/search.engine');
 
 // GET /search via Typesense AI Search Engine
 router.get('/search', async (req, res, next) => {
@@ -129,7 +129,7 @@ router.get('/', async (req, res, next) => {
 // GET nearby shops
 router.get('/nearby', async (req, res, next) => {
   try {
-    let { lat, lng, radius = 10, category, region_id, topRated, deliveryOnly, sortBy } = req.query;
+    let { lat, lng, radius = 10, pincode, category, region_id, topRated, deliveryOnly, sortBy } = req.query;
     let fallbackUsed = false;
     
     // IP Fallback logic
@@ -167,16 +167,22 @@ router.get('/nearby', async (req, res, next) => {
     const radKm = parseFloat(radius);
 
     // Build Prisma raw query
-    let conditions = ["isActive = true", "approvalStatus = 'approved'"];
+    let conditions = ["status = 'ACTIVE'", '"isLive" = true'];
     if (category) {
-        conditions.push(`categoryId = (SELECT id FROM shop_categories WHERE slug = '${category}' LIMIT 1)`);
+        conditions.push(`categoryId = (SELECT id FROM categories WHERE slug = '${category}' LIMIT 1)`);
     }
     if (region_id) {
         conditions.push(`regionId = '${region_id}'`);
-    } else {
-        conditions.push(`ll_to_earth(latitude, longitude) <@ earth_box(ll_to_earth(${userLat}, ${userLng}), ${radKm} * 1000)`);
+    }
+
+    // Pillar 5: Strict Geo-Fencing & Pincode Mapping
+    if (pincode) {
+        conditions.push(`pincode = '${pincode}'`);
     }
     
+    // Distance must be strictly within the Shop's own defined coverageRadiusKm
+    conditions.push(`(earth_distance(ll_to_earth(${userLat}, ${userLng}), ll_to_earth(latitude, longitude)) / 1000) <= "coverageRadiusKm"`);
+
     if (topRated === 'true') {
         conditions.push(`rating >= 4.0`);
     }
@@ -510,30 +516,31 @@ router.get('/:id/staff/:sid/slots', async (req, res, next) => {
 // --- APPOINTMENTS & ORDERS ---
 router.post('/:id/appointments', authenticate, async (req, res, next) => {
   try {
-    const { staffId, serviceId, appointmentDate, timeSlot, paymentMethod, customerNotes, surgeMultiplier, finalPrice } = req.body;
+    const { serviceSlotId, scheduledDate, scheduledTime, paymentMethod, customerNotes, patientSymptoms } = req.body;
     
-    // Create appointment
-    const appt = await queryOne(
-      `INSERT INTO shop_appointments (shop_id, staff_id, user_id, service_id, appointment_date, time_slot, payment_method, customer_notes, surge_multiplier, final_price) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [req.params.id, staffId, req.user.id, serviceId, appointmentDate, timeSlot, paymentMethod, customerNotes, surgeMultiplier, finalPrice]
-    );
+    // Fetch service slot
+    const slot = await prisma.serviceSlot.findUnique({ where: { id: serviceSlotId } });
+    if (!slot) return res.status(404).json({ error: 'Service slot not found' });
 
-    // Commission logic
-    const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [req.params.id]);
-    const cat = await queryOne('SELECT * FROM shop_categories WHERE id = $1', [shop.category_id]);
-    const cp = shop.commission_override_percent ?? cat.commission_percent;
-    const cf = shop.convenience_fee_override ?? cat.convenience_fee;
-    const ca = finalPrice * (cp / 100);
-    const tpe = ca + cf;
-    const nts = finalPrice - tpe;
-    
-    await query(`INSERT INTO shop_commissions (id, shop_id, order_id, order_type, gross_amount, commission_percent, commission_amount, convenience_fee, total_platform_earning, net_to_shop) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, 
-    [crypto.randomUUID(), req.params.id, appt.id, 'appointment', finalPrice, cp, ca, cf, tpe, nts]);
-
-    // Socket.io event emission mock - (handled via supabaseRealtime instance usually)
-    // const supabaseRealtime = req.app.get('supabaseRealtime');
-    // if(supabaseRealtime) supabaseRealtime.broadcast(`shop_${req.params.id}`, 'shop:new-appointment', appt);
+    // Create appointment via Prisma
+    const appt = await prisma.appointment.create({
+      data: {
+        bookingNumber: 'LS-BK-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+        userId: req.user.id,
+        shopId: req.params.id,
+        serviceSlotId: serviceSlotId,
+        status: 'REQUESTED',
+        serviceName: slot.serviceName,
+        providerName: slot.providerName,
+        scheduledDate: new Date(scheduledDate),
+        scheduledTime: scheduledTime,
+        durationMinutes: slot.durationMinutes,
+        pricePaise: slot.pricePaise,
+        paymentMethod: paymentMethod || 'COD',
+        customerNotes: customerNotes,
+        patientSymptoms: patientSymptoms ? JSON.stringify(patientSymptoms) : null
+      }
+    });
 
     res.status(201).json({ success: true, appointment: appt });
   } catch (error) {
@@ -844,71 +851,77 @@ router.post('/cart/batch-checkout', authenticate, async (req, res, next) => {
     }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ENHANCED SHOP MANAGEMENT ROUTES (v2)
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-const { requireShopOwner, requireOrderAccess, requireAppointmentAccess } = require('../../../../middleware/shop-owner.middleware');
-const shopMgmt = require('../../../../controllers/shop-management.controller');
-const { upload, recordUpload } = require('../../../core/services/upload.service');
+const { requireShopOwner, requireOrderAccess, requireAppointmentAccess } = require('../../../middleware/shop-owner.middleware');
+const shopMgmt = require('../controllers/shop-management.controller');
+const { upload, recordUpload } = require('../../core/services/upload.service');
 
-// ─── SHOP OWNER DASHBOARD ──────────────────────────────────────────
+// â”€â”€â”€ SHOP OWNER DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/dashboard', authenticate, requireShopOwner, shopMgmt.getShopDashboard);
 router.get('/my-shop/analytics', authenticate, requireShopOwner, shopMgmt.getShopAnalytics);
 router.get('/my-shop/payouts', authenticate, requireShopOwner, shopMgmt.getShopPayouts);
 router.put('/my-shop/settings', authenticate, requireShopOwner, shopMgmt.updateShopSettings);
+router.put('/my-shop/live-status', authenticate, requireShopOwner, shopMgmt.toggleLiveVisibility);
 
-// ─── ORDER MANAGEMENT (Shop Owner) ─────────────────────────────────
+// â”€â”€â”€ ORDER MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/orders', authenticate, requireShopOwner, shopMgmt.getShopOrders);
 router.put('/my-shop/orders/:orderId/status', authenticate, requireShopOwner, shopMgmt.updateOrderStatus);
 
-// ─── APPOINTMENT MANAGEMENT (Shop Owner) ────────────────────────────
+// â”€â”€â”€ APPOINTMENT MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/appointments', authenticate, requireShopOwner, shopMgmt.getShopAppointments);
 router.put('/my-shop/appointments/:appointmentId/status', authenticate, requireShopOwner, shopMgmt.updateAppointmentStatus);
 
-// ─── PRODUCT & INVENTORY MANAGEMENT (Shop Owner) ────────────────────
+// â”€â”€â”€ PRODUCT & INVENTORY MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+router.post('/my-shop/products', authenticate, requireShopOwner, shopMgmt.addProduct);
 router.put('/my-shop/products/:productId', authenticate, requireShopOwner, shopMgmt.updateProduct);
 router.delete('/my-shop/products/:productId', authenticate, requireShopOwner, shopMgmt.deleteProduct);
 
-// ─── STAFF MANAGEMENT (Shop Owner) ─────────────────────────────────
+// Service Slot management
+router.post('/my-shop/service-slots', authenticate, requireShopOwner, shopMgmt.addServiceSlot);
+router.delete('/my-shop/service-slots/:slotId', authenticate, requireShopOwner, shopMgmt.deleteServiceSlot);
+
+// â”€â”€â”€ STAFF MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.put('/my-shop/staff/:staffId', authenticate, requireShopOwner, shopMgmt.updateStaff);
 router.put('/my-shop/staff/:staffId/availability', authenticate, requireShopOwner, shopMgmt.updateStaffAvailability);
 
-// ─── DISPUTES (Visitor + Shop Owner) ────────────────────────────────
+// â”€â”€â”€ DISPUTES (Visitor + Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/disputes', authenticate, shopMgmt.createDispute);
 
-// ─── RETURNS (Visitor) ──────────────────────────────────────────────
+// â”€â”€â”€ RETURNS (Visitor) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/returns', authenticate, shopMgmt.createReturn);
 
-// ─── CHAT (Visitor ↔ Shop Owner) ────────────────────────────────────
+// â”€â”€â”€ CHAT (Visitor â†” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/chat/:shopId/:userId', authenticate, shopMgmt.getChatMessages);
 router.post('/chat/:shopId/:userId', authenticate, shopMgmt.sendChatMessage);
 
-// ─── JOB CARDS (Garage, Repair, Laundry — Shop Owner) ───────────────
+// â”€â”€â”€ JOB CARDS (Garage, Repair, Laundry â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/job-cards', authenticate, requireShopOwner, shopMgmt.getJobCards);
 router.post('/my-shop/job-cards', authenticate, requireShopOwner, shopMgmt.createJobCard);
 router.put('/my-shop/job-cards/:jobCardId', authenticate, requireShopOwner, shopMgmt.updateJobCard);
 
-// ─── QUOTATIONS (Home Service, Events — Shop Owner) ─────────────────
+// â”€â”€â”€ QUOTATIONS (Home Service, Events â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/my-shop/quotations', authenticate, requireShopOwner, shopMgmt.createQuotation);
 
-// ─── KDS — Kitchen Display System (Restaurant — Shop Owner) ─────────
+// â”€â”€â”€ KDS â€” Kitchen Display System (Restaurant â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/kds', authenticate, requireShopOwner, shopMgmt.getKDSTickets);
 router.post('/my-shop/kds', authenticate, requireShopOwner, shopMgmt.createKDSTicket);
 router.put('/my-shop/kds/:ticketId', authenticate, requireShopOwner, shopMgmt.updateKDSTicket);
 
-// ─── TABLE MANAGEMENT (Restaurant — Shop Owner) ─────────────────────
+// â”€â”€â”€ TABLE MANAGEMENT (Restaurant â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/tables', authenticate, requireShopOwner, shopMgmt.getRestaurantTables);
 router.put('/my-shop/tables/:tableId', authenticate, requireShopOwner, shopMgmt.updateTableStatus);
 
-// ─── VISITOR: ORDER HISTORY ─────────────────────────────────────────
+// â”€â”€â”€ VISITOR: ORDER HISTORY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/visitor/order-history', authenticate, shopMgmt.getVisitorOrderHistory);
 
-// ─── NOTIFICATIONS ──────────────────────────────────────────────────
+// â”€â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/notifications', authenticate, shopMgmt.getNotifications);
 router.put('/notifications/:notificationId/read', authenticate, shopMgmt.markNotificationRead);
 
-// ─── FILE UPLOAD ────────────────────────────────────────────────────
+// â”€â”€â”€ FILE UPLOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/upload', authenticate, upload.array('files', 10), async (req, res, next) => {
   try {
     const purpose = req.body.purpose || 'general';

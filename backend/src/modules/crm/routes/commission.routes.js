@@ -1,8 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../../config/database');
-const { authenticate, requireAdmin } = require('../../../../middleware/auth.middleware');
-const { requirePermission } = require('../../../../middleware/rbac.middleware');
+const { query, queryOne } = require('../../../config/database');
+const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
+const { requirePermission } = require('../../../middleware/rbac.middleware');
 
 // GET dashboard summary
 router.get('/dashboard', authenticate, requireAdmin, requirePermission('finance', 'read'), async (req, res, next) => {

@@ -1,8 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 
 // GET all subscription plans
 router.get('/plans', async (req, res, next) => {
@@ -112,7 +112,7 @@ router.post('/vendor-saas/subscribe', authenticate, async (req, res, next) => {
     // Verify user balance
     const wallet = await queryOne('SELECT balance FROM wallets WHERE user_id = $1', [req.user.id]);
     if (!wallet || (wallet.balance || 0) < price) {
-      return res.status(402).json({ error: `Insufficient wallet balance to subscribe to ${plan_type.toUpperCase()} plan (₹${price}/mo).` });
+      return res.status(402).json({ error: `Insufficient wallet balance to subscribe to ${plan_type.toUpperCase()} plan (â‚¹${price}/mo).` });
     }
 
     // Deduct subscription fee

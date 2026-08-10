@@ -1,8 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
-const { requireFeature } = require('../../../../middleware/feature.middleware');
+const { query } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const { requireFeature } = require('../../../middleware/feature.middleware');
 const crypto = require('crypto');
 
 // Apply GTM Feature Protection

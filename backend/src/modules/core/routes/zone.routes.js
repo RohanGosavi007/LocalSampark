@@ -1,12 +1,12 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
-const spatialRepo = require('../../../../repositories/spatial.repository');
-const territoryValidator = require('../../../../validators/territory.validator');
+const spatialRepo = require('../../../repositories/spatial.repository');
+const territoryValidator = require('../../../validators/territory.validator');
 
-// GET /api/v1/zones/resolve?lat=X&lng=Y — PiP territory resolution
+// GET /api/v1/zones/resolve?lat=X&lng=Y â€” PiP territory resolution
 router.get('/resolve', async (req, res, next) => {
   try {
     const { lat, lng, pincode } = req.query;
@@ -55,7 +55,7 @@ router.get('/resolve', async (req, res, next) => {
       });
     }
 
-    // Out of bounds — return nearest for suggestion
+    // Out of bounds â€” return nearest for suggestion
     const nearest = await spatialRepo.nearestTerritory(parseFloat(lat), parseFloat(lng));
     res.json({
       success: true,
@@ -71,7 +71,7 @@ router.get('/resolve', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-// GET /api/v1/zones/hierarchy/v2 — 4-tier hierarchy
+// GET /api/v1/zones/hierarchy/v2 â€” 4-tier hierarchy
 router.get('/hierarchy/v2', async (req, res, next) => {
   try {
     const hierarchy = await spatialRepo.getFullHierarchy();

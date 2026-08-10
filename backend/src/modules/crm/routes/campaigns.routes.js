@@ -1,9 +1,9 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../../middleware/auth.middleware');
-const pool = require('../../../../config/database');
-const { query, queryOne } = require('../../../../config/database');
-const { getGeoTargetedAds } = require('../../../../services/AdService');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const pool = require('../../../config/database');
+const { query, queryOne } = require('../../../config/database');
+const { getGeoTargetedAds } = require('../../../services/AdService');
 const crypto = require('crypto');
 
 // GET /api/v1/campaigns/geo-feed - Fetch active targeted ads based on lat/lng & radius
@@ -38,7 +38,7 @@ router.post('/:id/impression', async (req, res) => {
 router.post('/:id/click', async (req, res) => {
   try {
     const { id } = req.params;
-    const cpcRate = 5.0; // ₹5 per click
+    const cpcRate = 5.0; // â‚¹5 per click
     await query(`UPDATE ad_campaigns SET clicks = clicks + 1, spent = spent + $1 WHERE id = $2`, [cpcRate, id]);
     res.json({ success: true, message: 'Click recorded' });
   } catch (error) {

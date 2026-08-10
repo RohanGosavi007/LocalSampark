@@ -1,11 +1,11 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const agmController = require('../../../../controllers/agm-management.controller');
-const budgetController = require('../../../../controllers/society-budget.controller');
-const auditController = require('../../../../controllers/facility-audit.controller');
-const docController = require('../../../../controllers/document-template.controller');
-const { authenticate } = require('../../../../middleware/auth.middleware');
-const { requireSocietyPermission } = require('../../../../middleware/society-rbac.middleware');
+const agmController = require('../controllers/agm-management.controller');
+const budgetController = require('../controllers/society-budget.controller');
+const auditController = require('../controllers/facility-audit.controller');
+const docController = require('../controllers/document-template.controller');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const { requireSocietyPermission } = require('../middleware/society-rbac.middleware');
 
 router.use(authenticate);
 

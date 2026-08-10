@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { requireFeature } = require('../../../../middleware/feature.middleware');
+const { query } = require('../../../config/database');
+const { requireFeature } = require('../../../middleware/feature.middleware');
 
 // Apply GTM Feature Flag Protection
 router.use(requireFeature('multilingual'));

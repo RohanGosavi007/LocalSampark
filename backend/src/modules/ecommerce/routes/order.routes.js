@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne, transaction } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
-const { sendNewOrderNotification, sendOrderConfirmation } = require('../../../core/services/email.service');
+const { query, queryOne, transaction } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const { sendNewOrderNotification, sendOrderConfirmation } = require('../../core/services/email.service');
 
 
 // Validate Coupon
@@ -16,7 +16,7 @@ router.post('/validate-coupon', authenticate, async (req, res, next) => {
 
     // Mock validation logic
     const validCoupons = {
-      'WELCOME50': { type: 'fixed', value: 50, minOrder: 200, message: '₹50 off on your first order!' },
+      'WELCOME50': { type: 'fixed', value: 50, minOrder: 200, message: 'â‚¹50 off on your first order!' },
       'FREEDELIVERY': { type: 'free_delivery', value: 0, minOrder: 150, message: 'Free delivery applied!' },
       'SAVE10': { type: 'percentage', value: 10, maxDiscount: 100, minOrder: 300, message: '10% off applied!' }
     };
@@ -28,7 +28,7 @@ router.post('/validate-coupon', authenticate, async (req, res, next) => {
     }
 
     if (cartTotal < coupon.minOrder) {
-      return res.status(400).json({ error: `Minimum order value for this coupon is ₹${coupon.minOrder}` });
+      return res.status(400).json({ error: `Minimum order value for this coupon is â‚¹${coupon.minOrder}` });
     }
 
     let discount = 0;

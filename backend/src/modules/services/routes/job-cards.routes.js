@@ -1,13 +1,13 @@
-/**
- * JOB CARDS ROUTES — Archetype 4: Repair & Service Job Management
+﻿/**
+ * JOB CARDS ROUTES â€” Archetype 4: Repair & Service Job Management
  * For: Auto Mechanics, AC/Appliance Repair, Mobile Repair, Plumbing, Electrical
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 
-// ── GET /api/v1/job-cards/:shopId — Get all job cards for a shop ──
+// â”€â”€ GET /api/v1/job-cards/:shopId â€” Get all job cards for a shop â”€â”€
 router.get('/:shopId', authenticate, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -43,7 +43,7 @@ router.get('/:shopId', authenticate, async (req, res, next) => {
   }
 });
 
-// ── GET /api/v1/job-cards/:shopId/:cardId — Get single job card with milestones ──
+// â”€â”€ GET /api/v1/job-cards/:shopId/:cardId â€” Get single job card with milestones â”€â”€
 router.get('/:shopId/:cardId', authenticate, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -73,7 +73,7 @@ router.get('/:shopId/:cardId', authenticate, async (req, res, next) => {
   }
 });
 
-// ── POST /api/v1/job-cards/:shopId — Create new job card ──
+// â”€â”€ POST /api/v1/job-cards/:shopId â€” Create new job card â”€â”€
 router.post('/:shopId', authenticate, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -134,7 +134,7 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
   }
 });
 
-// ── PUT /api/v1/job-cards/:shopId/:cardId/status — Update job card status ──
+// â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/status â€” Update job card status â”€â”€
 router.put('/:shopId/:cardId/status', authenticate, async (req, res, next) => {
   try {
     const { shopId, cardId } = req.params;
@@ -162,7 +162,7 @@ router.put('/:shopId/:cardId/status', authenticate, async (req, res, next) => {
   }
 });
 
-// ── PUT /api/v1/job-cards/:shopId/:cardId/milestone/:milestoneId — Update milestone ──
+// â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/milestone/:milestoneId â€” Update milestone â”€â”€
 router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, async (req, res, next) => {
   try {
     const { milestoneId } = req.params;
@@ -182,7 +182,7 @@ router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, async (req, 
   }
 });
 
-// ── POST /api/v1/job-cards/:shopId/:cardId/parts — Add parts/labor to job card ──
+// â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/parts â€” Add parts/labor to job card â”€â”€
 router.post('/:shopId/:cardId/parts', authenticate, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -213,7 +213,7 @@ router.post('/:shopId/:cardId/parts', authenticate, async (req, res, next) => {
   }
 });
 
-// ── POST /api/v1/job-cards/:shopId/:cardId/photo — Upload photo proof ──
+// â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/photo â€” Upload photo proof â”€â”€
 router.post('/:shopId/:cardId/photo', authenticate, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -232,7 +232,7 @@ router.post('/:shopId/:cardId/photo', authenticate, async (req, res, next) => {
   }
 });
 
-// ── GET /api/v1/job-cards/:shopId/:cardId/photos — Get all photos for a job card ──
+// â”€â”€ GET /api/v1/job-cards/:shopId/:cardId/photos â€” Get all photos for a job card â”€â”€
 router.get('/:shopId/:cardId/photos', authenticate, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -248,7 +248,7 @@ router.get('/:shopId/:cardId/photos', authenticate, async (req, res, next) => {
   }
 });
 
-// ── GET /api/v1/job-cards/:shopId/track/:jobNumber — Public tracking by job number ──
+// â”€â”€ GET /api/v1/job-cards/:shopId/track/:jobNumber â€” Public tracking by job number â”€â”€
 router.get('/:shopId/track/:jobNumber', async (req, res, next) => {
   try {
     const { jobNumber } = req.params;

@@ -1,13 +1,13 @@
-/**
- * FLEET ASSETS ROUTES — Archetype 5: Heavy Equipment & Rentals
+﻿/**
+ * FLEET ASSETS ROUTES â€” Archetype 5: Heavy Equipment & Rentals
  * For: Tractor & Ag-Machinery, Borewell, Construction Equipment, Party/Tent Rentals, Vehicle Rentals, Scaffolding
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 
-// ── GET /api/v1/fleet-assets/:shopId — Get all assets ──
+// â”€â”€ GET /api/v1/fleet-assets/:shopId â€” Get all assets â”€â”€
 router.get('/:shopId', authenticate, async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -44,7 +44,7 @@ router.get('/:shopId', authenticate, async (req, res) => {
   }
 });
 
-// ── POST /api/v1/fleet-assets/:shopId — Add new asset ──
+// â”€â”€ POST /api/v1/fleet-assets/:shopId â€” Add new asset â”€â”€
 router.post('/:shopId', authenticate, async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -75,7 +75,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
   }
 });
 
-// ── PUT /api/v1/fleet-assets/:shopId/:assetId/status — Update asset status ──
+// â”€â”€ PUT /api/v1/fleet-assets/:shopId/:assetId/status â€” Update asset status â”€â”€
 router.put('/:shopId/:assetId/status', authenticate, async (req, res) => {
   try {
     const { assetId } = req.params;
@@ -100,7 +100,7 @@ router.put('/:shopId/:assetId/status', authenticate, async (req, res) => {
   }
 });
 
-// ── POST /api/v1/fleet-assets/:shopId/book — Book/rent an asset (visitor) ──
+// â”€â”€ POST /api/v1/fleet-assets/:shopId/book â€” Book/rent an asset (visitor) â”€â”€
 router.post('/:shopId/book', authenticate, async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -168,7 +168,7 @@ router.post('/:shopId/book', authenticate, async (req, res) => {
   }
 });
 
-// ── GET /api/v1/fleet-assets/:shopId/bookings — Get all rental bookings ──
+// â”€â”€ GET /api/v1/fleet-assets/:shopId/bookings â€” Get all rental bookings â”€â”€
 router.get('/:shopId/bookings', authenticate, async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -195,7 +195,7 @@ router.get('/:shopId/bookings', authenticate, async (req, res) => {
   }
 });
 
-// ── POST /api/v1/fleet-assets/:shopId/:assetId/log — Add operator/fuel log ──
+// â”€â”€ POST /api/v1/fleet-assets/:shopId/:assetId/log â€” Add operator/fuel log â”€â”€
 router.post('/:shopId/:assetId/log', authenticate, async (req, res) => {
   try {
     const { assetId } = req.params;
@@ -215,7 +215,7 @@ router.post('/:shopId/:assetId/log', authenticate, async (req, res) => {
   }
 });
 
-// ── GET /api/v1/fleet-assets/:shopId/availability — Check availability calendar ──
+// â”€â”€ GET /api/v1/fleet-assets/:shopId/availability â€” Check availability calendar â”€â”€
 router.get('/:shopId/availability', authenticate, async (req, res) => {
   try {
     const { shopId } = req.params;

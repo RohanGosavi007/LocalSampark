@@ -1,14 +1,14 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../../config/database');
-const { authenticate, requireAdmin } = require('../../../../middleware/auth.middleware');
-const { requirePermission } = require('../../../../middleware/rbac.middleware');
-const apiCache = require('../../../../middleware/cache.middleware');
-const { cacheDel } = require('../../../../config/redis');
-const { calculateRevenueSplits, getFranchises, updateFranchiseSplit, getPendingPayouts, getDashboardStats, getRevenueChart } = require('../../../../controllers/admin-revenue.controller');
-const { getPendingApprovals, updateApprovalStatus } = require('../../../../controllers/admin-approvals.controller');
-const { getRevenueModels, updateSubscriptionPlan, updateLoyaltyTier, updateConfig } = require('../../../../controllers/admin-revenue-models.controller');
+const { query, queryOne } = require('../../../config/database');
+const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
+const { requirePermission } = require('../../../middleware/rbac.middleware');
+const apiCache = require('../../../middleware/cache.middleware');
+const { cacheDel } = require('../../../config/redis');
+const { calculateRevenueSplits, getFranchises, updateFranchiseSplit, getPendingPayouts, getDashboardStats, getRevenueChart } = require('../controllers/admin-revenue.controller');
+const { getPendingApprovals, updateApprovalStatus } = require('../controllers/admin-approvals.controller');
+const { getRevenueModels, updateSubscriptionPlan, updateLoyaltyTier, updateConfig } = require('../controllers/admin-revenue-models.controller');
 
 
 router.get('/config', authenticate, requireAdmin, apiCache(300), async (req, res, next) => {
@@ -345,7 +345,7 @@ router.put('/regions/:id/features', authenticate, requireAdmin, async (req, res,
     const { features } = req.body; // e.g. { delivery: true, jobs: false, rentals: true, events: true, services: true }
     if (!features) return res.status(400).json({ error: 'features object required' });
     
-    // Store features as JSON in a column — first check if column exists, if not we store in admin_config
+    // Store features as JSON in a column â€” first check if column exists, if not we store in admin_config
     const key = `territory_features_${req.params.id}`;
     await queryOne(
       `INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
@@ -628,14 +628,14 @@ router.put('/users/:id/role', authenticate, requireAdmin, async (req, res, next)
   }
 });
 
-// ─── Phase 7: Revenue & Payouts ───
+// â”€â”€â”€ Phase 7: Revenue & Payouts â”€â”€â”€
 
 router.get('/revenue/chart', authenticate, requirePermission('finance', 'read'), getRevenueChart);
 router.get('/franchises', authenticate, requirePermission('crm', 'read'), getFranchises);
 router.put('/franchises/:id/split', authenticate, requirePermission('crm', 'write'), updateFranchiseSplit);
 router.get('/payouts/pending', authenticate, requirePermission('finance', 'read'), getPendingPayouts);
 
-// ─── Skilled Job Dispatch ───
+// â”€â”€â”€ Skilled Job Dispatch â”€â”€â”€
 router.get('/skilled-bookings', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const bookings = await query(`
@@ -666,17 +666,17 @@ router.post('/skilled-bookings/:id/assign', authenticate, requireAdmin, async (r
   }
 });
 
-// ─── Approvals ───
+// â”€â”€â”€ Approvals â”€â”€â”€
 router.get('/approvals', authenticate, requireAdmin, getPendingApprovals);
 router.put('/approvals/:type/:id', authenticate, requireAdmin, updateApprovalStatus);
 
-// ─── Revenue Models ───
+// â”€â”€â”€ Revenue Models â”€â”€â”€
 router.get('/revenue-models', authenticate, requireAdmin, getRevenueModels);
 router.put('/revenue-models/subscriptions/:id', authenticate, requireAdmin, updateSubscriptionPlan);
 router.put('/revenue-models/loyalty/:id', authenticate, requireAdmin, updateLoyaltyTier);
 router.put('/revenue-models/config', authenticate, requireAdmin, updateConfig);
 
-// ─── Shop Categories Management ───
+// â”€â”€â”€ Shop Categories Management â”€â”€â”€
 router.get('/shop-categories', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const categories = await query('SELECT * FROM shop_categories ORDER BY display_order ASC');
@@ -724,7 +724,7 @@ router.delete('/shop-categories/:id', authenticate, requireAdmin, async (req, re
   }
 });
 
-// ─── Shop Premium Status ───
+// â”€â”€â”€ Shop Premium Status â”€â”€â”€
 router.put('/shops/:id/premium', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { is_premium, premium_expires_at } = req.body;
@@ -748,7 +748,7 @@ router.get('/shops/:id/full-details', authenticate, requireAdmin, async (req, re
   }
 });
 
-// ─── Delivery Overview ───
+// â”€â”€â”€ Delivery Overview â”€â”€â”€
 router.get('/delivery/overview', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const stats = {
@@ -761,7 +761,7 @@ router.get('/delivery/overview', authenticate, requireAdmin, async (req, res, ne
   }
 });
 
-// ─── Phase 2.5: Admin Tab Endpoints ───
+// â”€â”€â”€ Phase 2.5: Admin Tab Endpoints â”€â”€â”€
 router.get('/delivery/agents', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const agents = await query(`
@@ -902,11 +902,11 @@ router.get('/properties', authenticate, requireAdmin, async (req, res, next) => 
 });
 
 
-// ═══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Phase 6: Territory Assignment Endpoints (RBAC Hard Partitioning)
-// ═══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// POST /admin/assign-territory — SuperAdmin assigns territory to user
+// POST /admin/assign-territory â€” SuperAdmin assigns territory to user
 router.post('/assign-territory', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { userId, territoryId, districtId, role } = req.body;
@@ -930,7 +930,7 @@ router.post('/assign-territory', authenticate, requireAdmin, async (req, res, ne
   }
 });
 
-// GET /admin/territory-assignments — List all assignments
+// GET /admin/territory-assignments â€” List all assignments
 router.get('/territory-assignments', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const result = await query(`
@@ -948,7 +948,7 @@ router.get('/territory-assignments', authenticate, requireAdmin, async (req, res
   } catch (error) { next(error); }
 });
 
-// DELETE /admin/territory-assignments/:id — Remove assignment
+// DELETE /admin/territory-assignments/:id â€” Remove assignment
 router.delete('/territory-assignments/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     await query('UPDATE admin_territory_assignments SET is_active = 0 WHERE id = $1', [req.params.id]);

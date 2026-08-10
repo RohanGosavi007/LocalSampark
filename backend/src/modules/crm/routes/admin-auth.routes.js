@@ -1,11 +1,11 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { query, queryOne } = require('../../../../config/database');
-const { authLimiter } = require('../../../../middleware/rateLimit.middleware');
+const { query, queryOne } = require('../../../config/database');
+const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const { v4: uuidv4 } = require('uuid');
-const { generateTokens } = require('../../../../middleware/auth.middleware');
+const { generateTokens } = require('../../../middleware/auth.middleware');
 
 // Default dev PIN for bootstrapping (will be bcrypt-compared)
 const DEV_DEFAULT_PIN = '123456';
@@ -66,7 +66,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
         pinValid = await bcrypt.compare(pin, adminPin.pin_hash);
       }
     } else {
-      // No admin_pins record — accept dev default PIN and auto-create hashed record
+      // No admin_pins record â€” accept dev default PIN and auto-create hashed record
       pinValid = (pin === DEV_DEFAULT_PIN);
       if (pinValid) {
         const bcryptHash = await bcrypt.hash(pin, 12);

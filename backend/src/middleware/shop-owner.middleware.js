@@ -1,5 +1,6 @@
 const { queryOne } = require('../config/database');
-
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 /**
  * Middleware: Verify that the authenticated user owns the shop they're trying to access.
  * Used on all /my-shop/* routes to prevent cross-shop data access.
@@ -15,7 +16,7 @@ const requireShopOwner = async (req, res, next) => {
       // If admin passes shopId query param, use that; otherwise find first shop
       const shopId = req.query.shopId || req.params.shopId;
       if (shopId) {
-        const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [shopId]);
+        const shop = await prisma.shop.findUnique({ where: { id: shopId } });
         if (!shop) return res.status(404).json({ error: 'Shop not found' });
         req.shop = shop;
       }
@@ -23,10 +24,12 @@ const requireShopOwner = async (req, res, next) => {
     }
 
     // For shop owners, find their shop
-    const shop = await queryOne(
-      'SELECT * FROM local_shops WHERE owner_id = $1 AND is_verified = 1',
-      [req.user.id]
-    );
+    const shop = await prisma.shop.findFirst({
+      where: {
+        ownerId: req.user.id,
+        isVerified: true
+      }
+    });
 
     if (!shop) {
       return res.status(403).json({ 

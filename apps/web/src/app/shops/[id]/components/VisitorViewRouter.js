@@ -28,106 +28,90 @@ const LeadDirectoryVisitorView = dynamic(() => import('./LeadDirectoryVisitorVie
 
 const CATEGORY_VIEW_MAP = {
   // Retail
-  'grocery-supermarkets':       'retail',
-  'fresh-produce-meat':         'retail',
-  'dairy-sweets-bakery':        'retail',
-  'stationery-gifts-books':     'retail',
-  'pooja-samagri-religious':    'retail',
-  'hardware-sanitary':          'retail',
-  'clothing-fashion':           'retail',
-  'pet-care-supplies':          'retail',
-  'jewellery-gold':             'retail',
-  'florists-nurseries':         'retail',
-  'eyewear-opticians':          'retail',
+  'kirana_grocery':             'retail',
+  'pharmacy':                   'pharmacy',
+  'bakery_sweets':              'retail',
+  'dairy_milk_booth':           'retail',
+  'meat_fish_poultry':          'retail',
+  'fruit_vegetable':            'retail',
+  'electronics':                'retail',
+  'clothing_fashion':           'retail',
+  'hardware_paint':             'retail',
+  'stationery_bookstore':       'retail',
+  'florist':                    'retail',
+  'jewellery':                  'retail',
+  'sports_fitness':             'retail',
+  'home_decor':                 'retail',
+  'general_retail':             'retail',
+  'pet_store':                  'retail',
+  'cosmetics_beauty':           'retail',
+  'furniture':                  'retail',
+  'mattress_bedding':           'retail',
+  'kitchenware_utensils':       'retail',
+  'electrical_plumbing_supply': 'retail',
+  'tyre_battery':               'retail',
+  'pan_betel_shop':             'retail',
+  'liquor_wine':                'retail',
+  'ice_cream_dessert':          'retail',
+  'juice_smoothie_bar':         'retail',
+  'mobile_recharge_dth':        'retail',
+  'gift_novelty':               'retail',
+  'toy_store':                  'retail',
+  'nursery_garden':             'retail',
+  'pooja_religious':            'retail',
+  'fuel_station':               'retail',
+  'farm_agri_input':            'retail',
+  'recycling_scrap':            'lead_directory',
 
-  // Restaurant
-  'restaurants-cafes':          'restaurant',
+  // Restaurant & Food
+  'restaurant':                 'restaurant',
+  'tiffin_catering':            'tiffin',
+  'tea_coffee_cafe':            'restaurant',
 
-  // Tiffin / Catering
-  'tiffin-meal-subscription':   'tiffin',
-  'catering-party':             'tiffin',
+  // Salon / Spa / Beauty
+  'salon_spa':                  'beauty',
 
-  // Salon / Beauty / Wellness
-  'salon-beauty-spa':           'beauty',
-  'yoga-wellness':              'beauty',
-  'gym-fitness':                'beauty',
+  // Healthcare & Clinics
+  'medical_clinic':             'hospital',
+  'dental_clinic':              'hospital',
+  'pathology_diagnostic_lab':   'hospital',
+  'physiotherapy_rehab':        'hospital',
+  'ayurveda_homeopathy':        'hospital',
+  'veterinary_clinic':          'hospital',
+  'optical':                    'retail',
 
-  // Healthcare
-  'pharmacy-healthcare':        'pharmacy',
-  'dentists-orthodontists':     'hospital',
-  'pathology-labs':             'hospital',
-  'physiotherapy':              'hospital',
-  'ayurvedic-homeopathic':      'hospital',
-  'dieticians-nutritionists':   'hospital',
+  // Coaching & Education
+  'coaching_tuition':           'education',
 
-  // Garage / Repair
-  'automotive-mechanic':        'garage',
-  'mobile-computer-repair':     'garage',
-  'ac-appliance-repair':        'garage',
-  'ro-water-purifier':          'garage',
-  'laundry-dry-cleaning':       'garage',
-  'car-bike-wash':              'garage',
+  // Garage & Auto
+  'garage_auto':                'garage',
+  'car_bike_dealer':            'retail',
 
-  // Home Services
-  'home-services-plumbers':     'home_service',
-  'electricians-electronics':   'home_service',
-  'pest-control':               'home_service',
-  'deep-cleaning':              'home_service',
-  'painting-renovation':        'home_service',
-  'interior-design-decor':      'home_service',
-  'security-cctv':              'home_service',
-  'locksmith-key-maker':        'home_service',
+  // Home Services & Repair
+  'computer_mobile_repair':     'garage',
+  'ac_appliance_repair':        'garage',
+  'water_purifier_ro':          'garage',
+  'pest_control':               'home_service',
+  'packers_movers':             'home_service',
+  'laundry_dryclean':           'home_service',
+  'cobbler_shoe_repair':        'home_service',
+  'key_locksmith':              'home_service',
+  'tailoring_alteration':       'retail',
 
-  // Professional Consultation
-  'cas-tax-consultants':        'professional',
-  'lawyers-advocates':          'professional',
-  'insurance-agents':           'professional',
-  'real-estate-brokers':        'professional',
-  'astrologer-pandit':          'professional',
-
-  // Education
-  'tutors-education':           'education',
-  'coaching-test-prep':         'education',
-  'driving-schools':            'education',
-
-  // Events / Creative
-  'event-planners-decorators':      'education',
-  'photographers-videographers':    'education',
-  'wedding-party-planner':          'education',
-  'tailoring-boutiques':            'retail',
-
-  // Logistics
-  'courier-parcel-services':    'retail',
-  'packers-movers':             'home_service',
-
-  // Supply
-  'water-tanker-supply':        'retail',
-  'gas-cylinder-lpg':           'retail',
-
-  // Travel
-  'travel-agents-visa':         'professional',
-
-  // Print
-  'printing-xerox-dtp':         'retail',
-
-  // Sports & Recreation
-  'turf-grounds':               'turf',
+  // Professionals & Planners
+  'photography_studio':         'education',
+  'ca_legal_services':          'professional',
+  'insurance_financial':        'professional',
+  'travel_agent':               'professional',
+  'event_wedding_planner':      'education',
+  'interior_designer':          'professional',
   
-  // NEW Archetype 5: Rentals & Heavy Equipment
-  'vehicle-rentals':            'rental',
-  'construction-equipment':     'rental',
-  'agriculture-tractor':        'rental',
-  'party-tent-rentals':         'rental',
-  'scaffolding-rentals':        'rental',
-  'borewell-drilling':          'rental',
+  // Logistics & Printing
+  'courier_logistics':          'retail',
+  'printing_xerox':             'retail',
 
-  // NEW Archetype 6: Leads & Directory
-  'real-estate-brokers':        'lead_directory', // Moved from professional
-  'matrimony-marriage':         'lead_directory',
-  'jobs-placements':            'lead_directory',
-  'scrap-kabadi':               'lead_directory',
-  'krishi-mandi':               'lead_directory',
-  'community-volunteer':        'lead_directory',
+  // Fitness
+  'gym_yoga_studio':            'beauty', // Reusing beauty for fitness classes
 };
 
 /**

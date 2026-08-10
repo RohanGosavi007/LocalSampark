@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
@@ -31,7 +31,7 @@ router.post('/send-otp', authLimiter, async (req, res, next) => {
     if (redisClient) {
       await cacheSet(`otp:${phoneNumber}`, otp, 300); // 5 min TTL
     } else {
-      console.warn('⚠️ Redis unavailable — using in-memory OTP (NOT SAFE FOR PRODUCTION)');
+      console.warn('âš ï¸ Redis unavailable â€” using in-memory OTP (NOT SAFE FOR PRODUCTION)');
       tempOtpStore.set(phoneNumber, {
         otp,
         expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
@@ -48,7 +48,7 @@ router.post('/send-otp', authLimiter, async (req, res, next) => {
       provider: smsResult.provider,
     };
 
-    // Only return OTP in response during development — NEVER in production
+    // Only return OTP in response during development â€” NEVER in production
     if (process.env.NODE_ENV !== 'production') {
       response.otp = otp;
       response.message = 'OTP sent successfully (Check server logs or use the OTP below)';
@@ -152,7 +152,7 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
       }
     } catch (dbError) {
       if (process.env.NODE_ENV !== 'production') {
-        console.warn('⚠️ DB Error in verify-otp, falling back to mock user.');
+        console.warn('âš ï¸ DB Error in verify-otp, falling back to mock user.');
         // Create a mock user for dev preset logins based on the phone number
         const roleMap = {
           '+919000000001': 'user',
@@ -606,7 +606,7 @@ router.put('/switch-role', authenticate, async (req, res, next) => {
   }
 });
 
-// Logout — invalidates refresh token (client should also delete localStorage tokens)
+// Logout â€” invalidates refresh token (client should also delete localStorage tokens)
 router.post('/logout', authenticate, async (req, res, next) => {
   try {
     // In production this would blacklist the refresh token in Redis

@@ -39,6 +39,8 @@ async function connectRedis() {
       console.warn('⚠️  Redis failed to connect. Falling back to memory/no cache mode.', err.message);
       hasLoggedError = true;
     }
+    // STOP the background reconnect attempts
+    try { await redisClient.disconnect(); } catch (e) {}
     redisClient = null;
   }
   return redisClient;

@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const db = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const db = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 
 // Get user earnings ledger
 router.get('/user/:userId', authenticate, async (req, res, next) => {
@@ -72,7 +72,7 @@ router.get('/leaderboard', authenticate, async (req, res, next) => {
     const leaderboard = leaderboardData.map(l => ({
       name: `${l.name} (${l.role})`,
       points: Math.floor(l.total_earned / 100), // Simple points calculation
-      amount: `₹${parseFloat(l.total_earned).toLocaleString('en-IN')}`
+      amount: `â‚¹${parseFloat(l.total_earned).toLocaleString('en-IN')}`
     }));
     res.json(leaderboard);
   } catch (error) {

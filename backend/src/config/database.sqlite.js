@@ -115,7 +115,9 @@ async function query(text, params = []) {
     } else {
       db.run(translated.sql, translated.params, function(err) {
         if (err) {
-          console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          if (!err.message.includes('duplicate column name')) {
+            console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          }
           reject(err);
         } else {
           resolve({ rows: [], rowCount: this.changes, lastID: this.lastID });

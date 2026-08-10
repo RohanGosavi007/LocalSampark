@@ -26,10 +26,15 @@ try { JobCardConsole = require('./components/JobCardConsole').default; } catch (
 try { FleetAssetTracker = require('./components/FleetAssetTracker').default; } catch (e) {}
 try { LeadCRMCenter = require('./components/LeadCRMCenter').default; } catch (e) {}
 
+import CatalogManagerView from './components/CatalogManagerView';
+
 export default function ShopDashboard({ user }) {
   const [loading, setLoading] = useState(true);
+  const [shopStats, setShopStats] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
-  const categorySlug = user?.category_slug || 'retail';
+  const [categorySlug, setCategorySlug] = useState(user?.category_slug || 'retail');
+  const [shopCategoryType, setShopCategoryType] = useState('PRODUCT'); // PRODUCT, APPOINTMENT, HYBRID
+  const [viewMode, setViewMode] = useState('live'); // 'live' | 'catalog'
 
   useEffect(() => {
     let unsubscribe;
@@ -38,7 +43,13 @@ export default function ShopDashboard({ user }) {
         setIsOffline(!(state.isConnected && state.isInternetReachable));
       });
     }
-    setTimeout(() => setLoading(false), 1500);
+    
+    // Mock fetch dashboard setup
+    setTimeout(() => {
+      setShopStats({ todaySales: '12,450', activeOrders: 8 });
+      setLoading(false);
+    }, 1000);
+
     return () => unsubscribe?.();
   }, []);
 
@@ -63,6 +74,17 @@ export default function ShopDashboard({ user }) {
   const IconComponent = config.icon;
 
   const renderDashboard = () => {
+    if (viewMode === 'catalog') {
+      return (
+        <CatalogManagerView 
+          shop={shop} 
+          shopCategoryType={shopCategoryType} 
+          themeColor={config.theme} 
+          onRefresh={fetchShopData}
+        />
+      );
+    }
+
     switch (config.view) {
       case 'food': return <FoodKDS themeColor={config.theme} />;
       case 'retail': return <RetailPOS themeColor={config.theme} />;
@@ -106,6 +128,22 @@ export default function ShopDashboard({ user }) {
           {user?.name || 'Local'} • {categorySlug.replace(/-/g, ' ')}
         </Text>
       </View>
+
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+        <TouchableOpacity 
+          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: viewMode === 'live' ? config.theme : '#1e293b', alignItems: 'center' }}
+          onPress={() => setViewMode('live')}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Live Dashboard</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: viewMode === 'catalog' ? config.theme : '#1e293b', alignItems: 'center' }}
+          onPress={() => setViewMode('catalog')}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Manage Catalog</Text>
+        </TouchableOpacity>
+      </View>
+
       {renderDashboard()}
     </ScrollView>
   );

@@ -129,7 +129,7 @@ async function request(endpoint, options = {}) {
     if (error.name === 'AbortError') {
       throw new ApiError('Request timed out. Please check your internet connection.', 408);
     }
-    if (!(error instanceof ApiError)) {
+    if (error?.name !== 'ApiError') {
       if (isDev) console.error(`[API Network Error] -> ${url}`, error);
       throw new ApiError('Network connectivity error. Please check if the server is running.', 503);
     }

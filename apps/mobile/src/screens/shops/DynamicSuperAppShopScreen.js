@@ -29,6 +29,7 @@ import { useCartStore } from '../../store/cartStore';
 import { theme } from '../../theme/theme';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import BouncyButton from '../../components/BouncyButton';
+import VisitorViewRouter from '../../components/shops/VisitorViewRouter';
 
 const API_BASE = 'http://10.0.2.2:5000/api/v1'; // Android emulator localhost alias
 
@@ -160,96 +161,40 @@ export default function DynamicSuperAppShopScreen({ route, navigation }) {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-        {/* PRODUCT FLOW */}
-        {(shop.categoryType === 'PRODUCT' || (isHybrid && activeTab === 'products')) && (
-          <View>
-            <Text style={s.sectionTitle}>Product Catalog</Text>
-            {products.map((item) => {
-              const cartItem = cart.find((i) => i.id === item.id);
-              return (
-                <View key={item.id} style={s.card}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.productName}>{item.name}</Text>
-                    <Text style={s.productPrice}>{item.priceFormatted}</Text>
-                  </View>
-
-                  {cartItem ? (
-                    <View style={s.qtyBox}>
-                      <TouchableOpacity onPress={() => updateCartQty(item.id, -1)} style={s.qtyBtn}>
-                        <Minus size={14} color="#10b981" />
-                      </TouchableOpacity>
-                      <Text style={s.qtyText}>{cartItem.quantity}</Text>
-                      <TouchableOpacity onPress={() => updateCartQty(item.id, 1)} style={s.qtyBtn}>
-                        <Plus size={14} color="#10b981" />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity onPress={() => addToCart(item)} style={s.addBtn}>
-                      <Text style={s.addBtnText}>ADD</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* APPOINTMENT FLOW */}
-        {(shop.categoryType === 'APPOINTMENT' || (isHybrid && activeTab === 'appointment')) && (
-          <View>
-            <Text style={s.sectionTitle}>Select Available Service</Text>
-            {availableServices.map((svc, idx) => {
-              const isSelected = selectedService?.name === svc.name;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => setSelectedService(svc)}
-                  style={[s.serviceCard, isSelected && s.selectedServiceCard]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.serviceTitle}>{svc.name}</Text>
-                    <Text style={s.serviceSub}>{svc.durationMinutes} mins • Provider: {svc.providerName}</Text>
-                  </View>
-                  <Text style={s.servicePrice}>{svc.priceFormatted}</Text>
-                </TouchableOpacity>
-              );
-            })}
-
-            <Text style={[s.sectionTitle, { marginTop: 20 }]}>Available Time Slots</Text>
-            <View style={s.slotGrid}>
-              {serviceSlots
-                .filter((slot) => !selectedService || slot.serviceName === selectedService.name)
-                .map((slot) => {
-                  const isAvail = slot.status === 'AVAILABLE';
-                  const isSel = selectedSlot?.id === slot.id;
-                  return (
-                    <TouchableOpacity
-                      key={slot.id}
-                      disabled={!isAvail}
-                      onPress={() => setSelectedSlot(slot)}
-                      style={[
-                        s.slotBtn,
-                        isSel && s.selectedSlotBtn,
-                        !isAvail && s.disabledSlotBtn,
-                      ]}
-                    >
-                      <Text style={[s.slotTime, isSel && { color: '#090d16' }]}>{slot.startTime}</Text>
-                      <Text style={[s.slotDate, isSel && { color: '#090d16' }]}>{slot.date.slice(5)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-            </View>
-
-            {selectedSlot && (
-              <TouchableOpacity onPress={handleBooking} style={s.confirmBookingBtn}>
-                <Text style={s.confirmBookingBtnText}>
-                  {isSubmitting ? 'Booking...' : `Confirm Booking (${selectedSlot.priceFormatted})`}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <VisitorViewRouter 
+          shop={shop} 
+          products={products} 
+          services={availableServices} 
+          serviceSlots={serviceSlots}
+          onBook={async (slotId, payload) => {
+            try {
+              setIsSubmitting(true);
+              const res = await fetch(`${API_BASE}/book`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  shopId: shop.id,
+                  serviceSlotId: slotId,
+                  paymentMethod: 'COD',
+                  metadata: payload
+                }),
+              });
+              const json = await res.json();
+              if (json.success) {
+                Alert.alert('Booking Confirmed!', `Ref: ${json.appointment.bookingNumber}`);
+                fetchShopData();
+              } else {
+                Alert.alert('Booking Failed', json.error);
+              }
+            } catch (err) {
+              Alert.alert('Error', err.message);
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+          categories={data.categories || []} 
+        />
       </ScrollView>
 
       {/* Floating Cart Bar for Mobile */}

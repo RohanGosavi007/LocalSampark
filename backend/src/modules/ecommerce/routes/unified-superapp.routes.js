@@ -1,6 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════════
-// Unified Super-App Routes — Phase 3 API Contracts
-// ═══════════════════════════════════════════════════════════════════════
+﻿// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Unified Super-App Routes â€” Phase 3 API Contracts
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const express = require('express');
 const router = express.Router();
 const {
@@ -8,18 +8,18 @@ const {
   processCheckout,
   processBooking,
   updateOrderStatus,
-} = require('../../../../controllers/unified-superapp.controller');
+} = require('../controllers/unified-superapp.controller');
 
-// ── GET /api/shops/:id (Unified dynamic payload for Web & Mobile)
+// â”€â”€ GET /api/shops/:id (Unified dynamic payload for Web & Mobile)
 router.get('/shops/:id', getShopById);
 
-// ── POST /api/checkout (Product Order Flow)
+// â”€â”€ POST /api/checkout (Product Order Flow)
 router.post('/checkout', processCheckout);
 
-// ── POST /api/book (Service Appointment Flow)
+// â”€â”€ POST /api/book (Service Appointment Flow)
 router.post('/book', processBooking);
 
-// ── PATCH /api/orders/:id/status (Vendor/DMS State Machine Transition)
+// â”€â”€ PATCH /api/orders/:id/status (Vendor/DMS State Machine Transition)
 router.patch('/orders/:id/status', updateOrderStatus);
 
 module.exports = router;

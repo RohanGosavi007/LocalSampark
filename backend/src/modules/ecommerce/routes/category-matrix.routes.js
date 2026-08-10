@@ -1,13 +1,13 @@
-/**
- * ═══════════════════════════════════════════════════════════════════════
- * Category-Territory Matrix Routes — Dynamic Category Engine
- * ═══════════════════════════════════════════════════════════════════════
+﻿/**
+ * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ * Category-Territory Matrix Routes â€” Dynamic Category Engine
+ * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  */
 const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../../config/database');
-const { authenticate, requireAdmin, ROLES } = require('../../../../middleware/auth.middleware');
-const CacheService = require('../../../../services/cache.service');
+const { query, queryOne } = require('../../../config/database');
+const { authenticate, requireAdmin, ROLES } = require('../../../middleware/auth.middleware');
+const CacheService = require('../../../services/cache.service');
 const { v4: uuidv4 } = require('uuid');
 
 /**

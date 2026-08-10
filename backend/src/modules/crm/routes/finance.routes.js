@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const financeController = require('../../../../controllers/finance.controller');
-const { authenticate, requireAdmin, requireRole } = require('../../../../middleware/auth.middleware');
+const financeController = require('../controllers/finance.controller');
+const { authenticate, requireAdmin, requireRole } = require('../../../middleware/auth.middleware');
 
 // Generate financial export (CSV or JSON stats)
 // Accessible only by superadmin

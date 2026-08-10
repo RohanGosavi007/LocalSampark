@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query, queryOne } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 const { v4: uuidv4 } = require('uuid');
 
 // --- 1. CORE SOCIETY & MEMBERS ---

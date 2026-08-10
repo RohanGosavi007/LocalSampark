@@ -1,8 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../../middleware/auth.middleware');
-const { query, queryOne } = require('../../../../config/database');
-const { sendPushNotification, sendTopicPush } = require('../../../../config/firebase');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../config/database');
+const { sendPushNotification, sendTopicPush } = require('../../../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 
 // Get user's notifications
@@ -66,7 +66,7 @@ router.post('/register-token', authenticate, async (req, res, next) => {
         [uuidv4(), userId, fcmToken, platform || 'android']
       );
     } catch (e) {
-      // Table might not exist yet — create it
+      // Table might not exist yet â€” create it
       await query(`
         CREATE TABLE IF NOT EXISTS user_fcm_tokens (
           id TEXT PRIMARY KEY,

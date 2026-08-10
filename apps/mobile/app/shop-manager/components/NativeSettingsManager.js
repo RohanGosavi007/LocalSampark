@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Switch, ActivityIndicator, ScrollView, RefreshControl, TouchableOpacity , StyleSheet } from 'react-native';
 import { Settings, Bell, CreditCard, Clock, Shield, AlertCircle, ChevronRight, Store } from 'lucide-react-native';
-import { apiGet } from '../../../src/lib/api';
+import { apiGet, apiPut } from '../../../src/lib/api';
 import { useAppStore } from '../../../src/store/useAppStore';
 
 export default function NativeSettingsManager() {
@@ -26,6 +26,12 @@ export default function NativeSettingsManager() {
       } else if (data && typeof data === 'object') {
         setSettings(data);
       }
+      
+      // Also fetch Shop's actual status for isLive
+      const shopData = await apiGet('/shops/my-shop/dashboard');
+      if (shopData && shopData.shop) {
+        setSettings(prev => ({ ...prev, isLive: shopData.shop.isLive }));
+      }
     } catch (err) {
       console.warn('Failed to fetch settings:', err);
     } finally {
@@ -45,7 +51,18 @@ export default function NativeSettingsManager() {
     </View>
   );
 
-  const renderToggleRow = (label, description, key, defaultValue = false) => (
+  const toggleLiveStatus = async (val) => {
+    setSettings(prev => ({ ...prev, isLive: val }));
+    try {
+      await apiPut('/shops/my-shop/live-status', { isLive: val });
+    } catch(err) {
+      console.error('Failed to toggle live status', err);
+      // Revert UI on failure
+      setSettings(prev => ({ ...prev, isLive: !val }));
+    }
+  };
+
+  const renderToggleRow = (label, description, key, defaultValue = false, onCustomToggle = null) => (
     <View style={s.s2}>
       <View style={s.s3}>
         <Text style={s.s4}>{label}</Text>
@@ -56,7 +73,13 @@ export default function NativeSettingsManager() {
         thumbColor="#ffffff"
         ios_backgroundColor="#334155"
         value={settings[key] !== undefined ? settings[key] === 'true' || settings[key] === true : defaultValue}
-        onValueChange={(val) => setSettings(prev => ({ ...prev, [key]: val }))}
+        onValueChange={(val) => {
+          if (onCustomToggle) {
+             onCustomToggle(val);
+          } else {
+             setSettings(prev => ({ ...prev, [key]: val }));
+          }
+        }}
       />
     </View>
   );
@@ -93,6 +116,7 @@ export default function NativeSettingsManager() {
           contentContainerStyle={{ paddingBottom: 100 }}
         >
           {renderSectionHeader('Store Status', Store)}
+          {renderToggleRow('Live Visibility', 'Show shop on the customer app.', 'isLive', false, toggleLiveStatus)}
           {renderToggleRow('Accept New Orders', 'Temporarily disable incoming orders without closing the shop.', 'accept_orders', true)}
           {renderToggleRow('Auto-Accept Orders', 'Automatically accept all incoming orders.', 'auto_accept', false)}
           

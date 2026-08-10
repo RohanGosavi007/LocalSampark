@@ -1,5 +1,20 @@
 import { Stack } from 'expo-router';
 import React, { useEffect } from 'react';
+
+// ══════════════════════════════════════════════════════════════════════
+// HERMES CRASH PREVENTION POLYFILLS
+// Some third-party libraries (like react-native-webrtc's event-target-shim, 
+// or Supabase) do unchecked `instanceof Event` or `instanceof URL` checks.
+// Since React Native doesn't define Event globally, this causes an immediate
+// crash at startup: "Right operand of 'instanceof' is not an object".
+// ══════════════════════════════════════════════════════════════════════
+if (typeof global.Event === 'undefined') {
+  global.Event = class Event {};
+}
+if (typeof global.URL === 'undefined') {
+  global.URL = class URL {};
+}
+
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import WebRTCIntercomMobile from '../src/components/WebRTCIntercomMobile';

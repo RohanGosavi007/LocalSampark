@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 const { v4: uuidv4 } = require('uuid');
 
 // Configure Coin Value (100 coins = 10 rupees)
@@ -28,7 +28,7 @@ router.post('/referral/claim', authenticate, async (req, res) => {
         const existingClaim = await query(`SELECT id FROM referrals WHERE referee_id = $1`, [refereeId]);
         if (existingClaim.rows.length > 0) return res.status(400).json({ error: 'You have already used a referral code' });
 
-        // 500 Coins for Referrer (₹50), 200 Coins for Referee (₹20)
+        // 500 Coins for Referrer (â‚¹50), 200 Coins for Referee (â‚¹20)
         const referrerCoins = 50 * COINS_PER_RUPEE; 
         const refereeCoins = 20 * COINS_PER_RUPEE;
 

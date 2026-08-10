@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const { query } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
 
 // GET wallet history and balance
@@ -125,7 +125,7 @@ router.post('/unlock-lead', authenticate, async (req, res, next) => {
         const currentBalance = transactions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
         if (currentBalance < fee_amount) {
-            return res.status(402).json({ error: `Insufficient wallet balance (₹${currentBalance}). Unlocking requires ₹${fee_amount}.` });
+            return res.status(402).json({ error: `Insufficient wallet balance (â‚¹${currentBalance}). Unlocking requires â‚¹${fee_amount}.` });
         }
 
         // Deduct lead unlock fee

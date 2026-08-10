@@ -1,13 +1,13 @@
-/**
- * TOKEN QUEUE ROUTES — Archetype 3: Clinic/Salon/Doctor Token Management
+﻿/**
+ * TOKEN QUEUE ROUTES â€” Archetype 3: Clinic/Salon/Doctor Token Management
  * For: Dentists, Pathology Labs, Salons, Physiotherapy, Ayurvedic, Dieticians
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../../config/database');
-const { authenticate, hasAccess, ROLES } = require('../../../../middleware/auth.middleware');
+const { query } = require('../../../config/database');
+const { authenticate, hasAccess, ROLES } = require('../../../middleware/auth.middleware');
 
-// ── GET /api/v1/token-queue/:shopId — Get current queue state ──
+// â”€â”€ GET /api/v1/token-queue/:shopId â€” Get current queue state â”€â”€
 router.get('/:shopId', async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -50,7 +50,7 @@ router.get('/:shopId', async (req, res, next) => {
   }
 });
 
-// ── POST /api/v1/token-queue/:shopId/increment — Merchant calls next token ──
+// â”€â”€ POST /api/v1/token-queue/:shopId/increment â€” Merchant calls next token â”€â”€
 router.post('/:shopId/increment', authenticate, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -99,7 +99,7 @@ router.post('/:shopId/increment', authenticate, async (req, res, next) => {
   }
 });
 
-// ── POST /api/v1/token-queue/:shopId/join — Visitor joins the queue ──
+// â”€â”€ POST /api/v1/token-queue/:shopId/join â€” Visitor joins the queue â”€â”€
 router.post('/:shopId/join', authenticate, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -149,7 +149,7 @@ router.post('/:shopId/join', authenticate, async (req, res, next) => {
   }
 });
 
-// ── PUT /api/v1/token-queue/:shopId/pause — Pause/unpause the queue ──
+// â”€â”€ PUT /api/v1/token-queue/:shopId/pause â€” Pause/unpause the queue â”€â”€
 router.put('/:shopId/pause', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.ADMIN]), async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -171,7 +171,7 @@ router.put('/:shopId/pause', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.AD
   }
 });
 
-// ── POST /api/v1/token-queue/:shopId/reset — Reset queue for the day ──
+// â”€â”€ POST /api/v1/token-queue/:shopId/reset â€” Reset queue for the day â”€â”€
 router.post('/:shopId/reset', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.ADMIN]), async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -204,7 +204,7 @@ router.post('/:shopId/reset', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.A
   }
 });
 
-// ── GET /api/v1/token-queue/:shopId/visitors — Get today's visitor list ──
+// â”€â”€ GET /api/v1/token-queue/:shopId/visitors â€” Get today's visitor list â”€â”€
 router.get('/:shopId/visitors', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.ADMIN]), async (req, res, next) => {
   try {
     const { shopId } = req.params;

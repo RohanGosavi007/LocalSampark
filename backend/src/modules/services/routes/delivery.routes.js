@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const deliveryController = require('../../../../controllers/delivery.controller');
-const { authenticate } = require('../../../../middleware/auth.middleware');
+const deliveryController = require('../controllers/delivery.controller');
+const { authenticate } = require('../../../middleware/auth.middleware');
 
 router.post('/request', authenticate, deliveryController.requestDelivery);
 router.get('/jobs', authenticate, deliveryController.getJobs);

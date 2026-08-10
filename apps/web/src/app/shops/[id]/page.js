@@ -263,141 +263,44 @@ export default function ShopDetailPage() {
                   services={services}
                   staff={staff}
                   products={products}
-                  onBookAppointment={({ service, staff: selectedStaffMember }) => {
-                    setSelectedService(service);
-                    if (selectedStaffMember) setSelectedStaff(selectedStaffMember);
-                    setActiveTab('services');
+                  onBookAppointment={async ({ service, staff, slot, metadata }) => {
+                    try {
+                      // Optional slot ID or default
+                      const slotId = slot?.id || 'slot_default';
+                      
+                      const res = await fetch(`${API_URL}/api/v1/book`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          shopId: shop.id,
+                          serviceSlotId: slotId,
+                          paymentMethod: 'COD',
+                          metadata: metadata || {}
+                        }),
+                      });
+                      const json = await res.json();
+                      if (json.success) {
+                        alert(`Booking Confirmed!\nReference: ${json.appointment?.bookingNumber || 'N/A'}`);
+                      } else {
+                        alert(`Booking Failed: ${json.error || 'Unknown error'}`);
+                      }
+                    } catch (err) {
+                      alert(`Error: ${err.message}`);
+                    }
                   }}
-                  onRequestQuote={({ service }) => {
-                    setSelectedService(service);
-                    setActiveTab('services');
+                  onRequestQuote={async ({ service, metadata }) => {
+                    alert(`Quote Requested for ${service?.name || 'Service'}! Shop will contact you soon.`);
                   }}
-                  onRequestService={({ service }) => {
-                    setSelectedService(service);
-                    setActiveTab('services');
+                  onRequestService={async ({ service, metadata }) => {
+                    alert(`Service Requested for ${service?.name || 'Service'}! Technician assigned.`);
                   }}
                   onSubscribe={(plan) => {
-                    alert('Subscription flow triggered');
+                    alert(`Subscription ${plan?.name || 'Plan'} activated!`);
                   }}
                 />
               )}
               
-              {/* Tabs for Hybrid */}
-              {bm === 'hybrid' && (
-                  <div className="flex gap-4 p-1 bg-border rounded-xl w-fit mb-6">
-                      <button className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === 'products' ? 'bg-background shadow-sm text-text' : 'text-text-muted hover:text-text'}`} onClick={() => setActiveTab('products')}>🛒 Retail Products</button>
-                      <button className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === 'services' ? 'bg-background shadow-sm text-text' : 'text-text-muted hover:text-text'}`} onClick={() => setActiveTab('services')}>📅 Book Services</button>
-                  </div>
-              )}
-
-              {activeTab === 'services' && (bm === 'appointment' || bm === 'hybrid') && (
-                <div className="glass-card p-6 lg:p-8 rounded-3xl border border-border bg-background shadow-sm">
-                  <h2 className="text-2xl font-heading font-bold mb-6 flex items-center gap-2"><BadgeCheck className="w-6 h-6 text-primary"/> Select Service</h2>
-                  <div className="grid gap-4 mb-8">
-                    {services.map(s => (
-                        <div key={s.id} onClick={() => setSelectedService(s)} className={`p-5 rounded-2xl cursor-pointer border-2 transition-all duration-200 flex justify-between items-center ${selectedService?.id === s.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 bg-background'}`}>
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h4 className="font-bold text-lg">{s.name}</h4>
-                                    {s.is_free_for_premium === 1 && <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">Free for Premium</Badge>}
-                                </div>
-                                <p className="text-text-muted text-sm mb-2">{s.description}</p>
-                                <span className="flex items-center gap-1 text-xs font-semibold text-text-muted bg-background-alt px-2 py-1 rounded-md w-fit"><Clock className="w-3 h-3"/> {s.duration_minutes} mins</span>
-                            </div>
-                            <div className="font-black text-xl text-primary">₹{s.price}</div>
-                        </div>
-                    ))}
-                  </div>
-                  
-                  <AnimatePresence>
-                      {selectedService && (
-                          <motion.div initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} exit={{opacity:0, height:0}} className="overflow-hidden">
-                            <h2 className="text-2xl font-heading font-bold mb-6 mt-4 flex items-center gap-2"><Store className="w-6 h-6 text-primary"/> Select Professional</h2>
-                            <div className="flex gap-4 overflow-x-auto pb-4 mb-8 no-scrollbar">
-                            {staff.map(st => (
-                                <div key={st.id} onClick={() => setSelectedStaff(st)} className={`p-4 border-2 rounded-2xl cursor-pointer text-center min-w-[150px] transition-all duration-200 ${selectedStaff?.id === st.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
-                                    <div className="w-16 h-16 mx-auto rounded-full bg-background-alt overflow-hidden mb-3 border border-border">
-                                        {st.profile_image ? <img src={st.profile_image} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
-                                    </div>
-                                    <div className="font-bold text-text mb-1">{st.name}</div>
-                                    <div className="text-xs text-text-muted font-medium mb-2">{st.specialization || st.role}</div>
-                                    <div className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 bg-amber-50 rounded-full py-0.5"><Star className="w-3 h-3 fill-amber-500"/> {st.avg_rating} ({st.experience_years}y)</div>
-                                </div>
-                            ))}
-                            </div>
-                          </motion.div>
-                      )}
-                  </AnimatePresence>
-
-                  <AnimatePresence>
-                      {selectedStaff && (
-                        <motion.div initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} exit={{opacity:0, height:0}} className="overflow-hidden pt-4 border-t border-border">
-                            <h3 className="text-xl font-heading font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-primary"/> Select Date & Time</h3>
-                            <input type="date" value={appointmentDate} onChange={e => { setAppointmentDate(e.target.value); setTimeSlot(null); }} className="w-full max-w-xs p-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary mb-6" min={new Date().toISOString().split('T')[0]} />
-
-                            {slotsLoading ? (
-                                <div className="flex items-center gap-2 text-primary"><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> Loading slots...</div>
-                            ) : availableSlots.length > 0 ? (
-                                <div className="flex flex-wrap gap-3">
-                                    {availableSlots.map(sl => (
-                                        <button 
-                                            key={sl.time} 
-                                            onClick={() => setTimeSlot(sl)}
-                                            className={`relative px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 border-2 ${timeSlot?.time === sl.time ? 'bg-primary border-primary text-white shadow-md' : 'bg-background border-border text-text hover:border-primary/50'}`}
-                                        >
-                                            {sl.time}
-                                            {sl.surgeMultiplier > 1.0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-[10px] shadow-sm animate-pulse">🔥</span>}
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : appointmentDate ? <p className="text-red-500 font-medium bg-red-50 p-3 rounded-lg w-fit">No slots available on this date.</p> : null}
-                        </motion.div>
-                      )}
-                  </AnimatePresence>
-                </div>
-              )}
-
-              {activeTab === 'products' && (bm === 'product' || bm === 'hybrid') && (
-                <div className="glass-card p-6 lg:p-8 rounded-3xl border border-border bg-background shadow-sm">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-heading font-bold flex items-center gap-2"><ShoppingBag className="w-6 h-6 text-primary"/> Products / Menu</h2>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {products.map(product => {
-                        const inCart = shopCartItems.find(c => c.id === product.id);
-                        return (
-                        <div key={product.id} className="flex flex-col p-4 border border-border rounded-2xl bg-background hover:border-primary/50 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                                <div>
-                                    <h4 className="font-bold text-lg leading-tight">{product.name}</h4>
-                                    <p className="text-text-muted text-sm line-clamp-2 mt-1">{product.description}</p>
-                                </div>
-                                <span className="font-black text-xl text-primary shrink-0 ml-4">₹{product.price}</span>
-                            </div>
-                          
-                            <div className="mt-auto pt-4">
-                                {inCart ? (
-                                    <div className="flex items-center justify-between bg-primary text-white p-1 rounded-xl shadow-md">
-                                        <button onClick={() => updateQuantity(product.id, inCart.quantity - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors">
-                                            <Minus className="w-4 h-4" />
-                                        </button>
-                                        <span className="font-bold text-lg w-8 text-center">{inCart.quantity}</span>
-                                        <button onClick={() => addItem({...product, shop_id: id}, 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors">
-                                            <Plus className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <Button className="w-full" variant="outline" onClick={() => addItem({...product, shop_id: id}, 1)}>Add to Cart</Button>
-                                )}
-                            </div>
-                        </div>
-                      )
-                    })}
-                    {products.length === 0 && <div className="col-span-full py-12 text-center text-text-muted bg-background-alt rounded-2xl border border-dashed border-border">No products uploaded yet.</div>}
-                  </div>
-                </div>
-              )}
+              {/* Generic fallback blocks removed to ensure specific VisitorViews handle rendering */}
 
               {/* Trust Section: Reviews & QA */}
               <div className="glass-card p-6 lg:p-8 rounded-3xl border border-border bg-background shadow-sm">

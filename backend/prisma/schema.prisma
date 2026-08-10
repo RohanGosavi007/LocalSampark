@@ -121,6 +121,7 @@ model Category {
 
   // Relations
   shops Shop[]
+  products Product[] @relation("ProductCategory")
 
   @@index([categoryType])
   @@index([isActive, displayOrder])
@@ -164,6 +165,7 @@ model Shop {
   totalRatings          Int      @default(0)
   commissionPercent     Float    @default(10.0)
   isVerified            Boolean  @default(true)
+  isLive                Boolean  @default(false) // Toggle for live visibility on customer app
   isFeatured            Boolean  @default(false)
   isPremium             Boolean  @default(false)
   deliveryAvailable     Boolean  @default(true)
@@ -178,6 +180,7 @@ model Shop {
   serviceSlots ServiceSlot[]
   orders       Order[]
   appointments Appointment[]
+  kdsTickets   KDSTicket[]
 
   @@index([categoryId])
   @@index([categoryType])
@@ -199,6 +202,8 @@ model Product {
   id               String   @id @default(cuid())
   shopId           String
   shop             Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  masterCategoryId String?
+  masterCategory   Category? @relation("ProductCategory", fields: [masterCategoryId], references: [id])
   name             String
   slug             String
   description      String?
@@ -323,6 +328,7 @@ model Order {
   // Relations
   items         OrderItem[]
   deliveryRoute DeliveryRoute?
+  kdsTicket     KDSTicket?
 
   @@index([userId])
   @@index([shopId])
@@ -385,9 +391,12 @@ model Appointment {
   paymentStatus     String   @default("PENDING")
   paymentId         String?
 
-  // Notes
+  // Notes & Patient Hub
   customerNotes     String?
   providerNotes     String?
+  prescriptionUrls  String?  // JSON string array for uploaded prescriptions/reports
+  patientSymptoms   String?  // JSON string array or text
+  metadata          String?  // Generic JSON string for dynamic category data (e.g. vehicleMake)
 
   // Timestamps
   confirmedAt       DateTime?
@@ -434,6 +443,34 @@ model DeliveryRoute {
   @@index([runnerId])
   @@index([status])
   @@map("delivery_routes")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// KITCHEN DISPLAY SYSTEM (KDS)
+// ─────────────────────────────────────────────────────────────────────
+
+model KDSTicket {
+  id                    String   @id @default(cuid())
+  shopId                String
+  shop                  Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId               String?  @unique
+  order                 Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketNumber          Int
+  items                 String   // JSON string
+  specialInstructions   String?
+  priority              String   @default("normal") // normal, high, rush
+  assignedStation       String?
+  estimatedPrepMinutes  Int      @default(15)
+  status                String   @default("pending") // pending, preparing, ready, served
+  prepStartedAt         DateTime?
+  readyAt               DateTime?
+  servedAt              DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([shopId])
+  @@index([status])
+  @@map("kds_tickets")
 }
 
 // ─────────────────────────────────────────────────────────────────────

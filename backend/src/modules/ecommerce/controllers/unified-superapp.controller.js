@@ -308,7 +308,7 @@ async function processCheckout(req, res, next) {
  */
 async function processBooking(req, res, next) {
   try {
-    const { userId, shopId, serviceSlotId, customerNotes, paymentMethod = 'COD' } = req.body;
+    const { userId, shopId, serviceSlotId, customerNotes, paymentMethod = 'COD', metadata } = req.body;
 
     if (!shopId || !serviceSlotId) {
       return res.status(400).json({ success: false, error: 'shopId and serviceSlotId are required' });
@@ -363,6 +363,7 @@ async function processBooking(req, res, next) {
           paymentMethod,
           paymentStatus: paymentMethod === 'COD' ? 'PENDING' : 'PAID',
           customerNotes,
+          metadata: metadata ? JSON.stringify(metadata) : null, // Save category-specific payload
         },
         include: {
           shop: { select: { name: true, categoryType: true } },
