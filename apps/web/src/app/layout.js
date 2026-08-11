@@ -6,10 +6,13 @@ import { ZoneProvider } from '../context/ZoneContext';
 import { ConfigProvider } from '../context/ConfigContext';
 import { SocketProvider } from '../context/SocketContext';
 import { LanguageProvider } from './components/LanguageToggle';
+import { ThemeProvider } from '../contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 import ServiceWorkerRegistrar from './components/ServiceWorkerRegistrar';
 import DevLoginScreen from '../components/DevLoginScreen';
 import QueryProvider from './components/QueryProvider';
+import ConsentBanner from '../components/ConsentBanner';
+import WelcomeTour from '../components/WelcomeTour';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -31,6 +34,7 @@ export const metadata = {
   description: 'LocalSampark (लोकल संपर्क) brings neighborhood discussions, local shops, gig jobs, properties, and community events directly into your hands. Pilot running in Dhanori, Pune.',
   keywords: 'hyperlocal, pune, dhanori, local delivery, neighborhood, community, society management, carpool',
   authors: [{ name: 'LocalSampark' }],
+  manifest: '/manifest.json',
   openGraph: {
     title: 'LocalSampark — Your Neighborhood, Connected',
     description: 'The ultimate hyperlocal app for your community.',
@@ -82,28 +86,51 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2563eb" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body suppressHydrationWarning>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        <a href="#main-content" className="skip-link">Skip to main content</a>
-        <ServiceWorkerRegistrar />
-        <QueryProvider>
-          <LanguageProvider>
-            <AuthProvider>
-            <ZoneProvider>
-              <LocationProvider>
-                <ConfigProvider>
-                  <SocketProvider>
-                    <ToastProvider />
+        <LanguageProvider>
+          <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                          registration.unregister();
+                          console.log('Unregistered stale ServiceWorker in dev mode');
+                        }
+                      });
+                    } else {
+                      navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                      });
+                    }
+                  });
+                }
+              `,
+            }}
+          />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+          <a href="#main-content" className="skip-link">Skip to main content</a>
+          <ServiceWorkerRegistrar />
+          <QueryProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <ZoneProvider>
+                  <LocationProvider>
                     {children}
-                  </SocketProvider>
-                </ConfigProvider>
-              </LocationProvider>
-            </ZoneProvider>
-          </AuthProvider>
+                    <ConsentBanner />
+                    <WelcomeTour />
+                  </LocationProvider>
+                </ZoneProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </QueryProvider>
         </LanguageProvider>
-        </QueryProvider>
         <DevLoginScreen />
       </body>
     </html>

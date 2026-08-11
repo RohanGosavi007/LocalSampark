@@ -147,17 +147,33 @@ const getPendingPayouts = async (req, res, next) => {
  */
 const getDashboardStats = async (req, res, next) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
+    let shopsCount = 0, activeRegions = 0, totalRegions = 0, totalUsers = 0, totalOrders = 0, completedOrders = 0;
 
-    const [shopsCount, activeRegions, totalRegions, totalUsers, totalOrders, completedOrders] = await Promise.all([
-      prisma.shop.count(),
-      prisma.region.count({ where: { isActive: true } }),
-      prisma.region.count(),
-      prisma.user.count(),
-      prisma.order.count(),
-      prisma.order.count({ where: { status: 'DELIVERED' } })
-    ]);
+    if (process.env.USE_SQLITE === 'true') {
+      const { queryOne } = require('../../../config/database.sqlite');
+      try {
+        shopsCount = (await queryOne('SELECT COUNT(*) as count FROM local_shops'))?.count || 0;
+        activeRegions = (await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = 1'))?.count || 0;
+        totalRegions = (await queryOne('SELECT COUNT(*) as count FROM regions'))?.count || 0;
+        totalUsers = (await queryOne('SELECT COUNT(*) as count FROM users'))?.count || 0;
+        totalOrders = (await queryOne('SELECT COUNT(*) as count FROM orders'))?.count || 0;
+        completedOrders = (await queryOne('SELECT COUNT(*) as count FROM orders WHERE order_status = ?', ['delivered']))?.count || 0;
+      } catch (e) {
+        console.warn('Dashboard stats sqlite error:', e.message);
+      }
+    } else {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+
+      [shopsCount, activeRegions, totalRegions, totalUsers, totalOrders, completedOrders] = await Promise.all([
+        prisma.shop.count(),
+        prisma.region.count({ where: { isActive: true } }),
+        prisma.region.count(),
+        prisma.user.count(),
+        prisma.order.count(),
+        prisma.order.count({ where: { status: 'DELIVERED' } })
+      ]);
+    }
 
     // Financial stats (mocked since tables don't exist yet in Phase 3 schema)
     const totalRevenue = completedOrders * 1500; // Fake metric for dashboard demo

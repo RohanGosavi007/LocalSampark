@@ -8,54 +8,59 @@ export default function CatalogManagerView({ shop, shopCategoryType, themeColor 
   const [loading, setLoading] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', price: '', duration: '' });
 
-  const products = shop?.products || [];
-  
-  // Aggregate unique services from slots
-  const services = useMemo(() => {
-    const slots = shop?.serviceSlots || [];
-    const unique = new Map();
-    slots.forEach(s => {
-      const key = `${s.serviceName}-${s.providerName}`;
-      if (!unique.has(key)) {
-        unique.set(key, { 
-          id: s.id, 
-          name: s.serviceName, 
-          duration: s.durationMinutes, 
-          price: (s.pricePaise / 100).toString(),
-          providerName: s.providerName 
-        });
+  const [items, setItems] = useState([]);
+  const [fetching, setFetching] = useState(true);
+
+  const fetchItems = async () => {
+    try {
+      setFetching(true);
+      const res = await fetch(`${API_BASE}/universal-catalog/${shop?.id || shop?.shop_id}`, {
+        headers: { Authorization: `Bearer ${shop?.ownerToken || ''}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setItems(data.items);
       }
-    });
-    return Array.from(unique.values());
-  }, [shop?.serviceSlots]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (shop?.id || shop?.shop_id) {
+      fetchItems();
+    }
+  }, [shop]);
+
+  const products = items.filter(i => i.item_type === 'physical_good');
+  const services = items.filter(i => i.item_type === 'service' || i.item_type === 'job_card');
 
   const handleAdd = async () => {
     if (!newItem.name) return;
     setLoading(true);
     
     try {
-      const endpoint = activeTab === 'products' ? '/my-shop/products' : '/my-shop/service-slots';
-      const body = activeTab === 'products' ? {
-        name: newItem.name,
-        price: newItem.price,
-        is_available: true
-      } : {
-        serviceName: newItem.name,
-        price: newItem.price,
-        durationMinutes: newItem.duration
+      const body = {
+        title: newItem.name,
+        description: newItem.duration ? `Duration: ${newItem.duration} mins` : '',
+        price: parseFloat(newItem.price),
+        item_type: activeTab === 'products' ? 'physical_good' : 'service'
       };
 
-      const res = await fetch(`${API_BASE}/shop${endpoint}`, {
+      const res = await fetch(`${API_BASE}/universal-catalog/${shop?.id || shop?.shop_id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${shop?.ownerToken || ''}` // Assuming token is handled by the auth context in a real app, but for now we just pass if we have it
+          'Authorization': `Bearer ${shop?.ownerToken || ''}`
         },
         body: JSON.stringify(body)
       });
       const data = await res.json();
       if (data.success) {
         setNewItem({ name: '', price: '', duration: '' });
+        fetchItems();
         if (onRefresh) onRefresh();
       } else {
         Alert.alert('Error', data.error || 'Failed to save item');
@@ -70,8 +75,7 @@ export default function CatalogManagerView({ shop, shopCategoryType, themeColor 
   const handleDelete = async (id, type) => {
     setLoading(true);
     try {
-      const endpoint = type === 'products' ? `/my-shop/products/${id}` : `/my-shop/service-slots/${id}`;
-      const res = await fetch(`${API_BASE}/shop${endpoint}`, {
+      const res = await fetch(`${API_BASE}/universal-catalog/item/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${shop?.ownerToken || ''}`
@@ -79,6 +83,7 @@ export default function CatalogManagerView({ shop, shopCategoryType, themeColor 
       });
       const data = await res.json();
       if (data.success) {
+        fetchItems();
         if (onRefresh) onRefresh();
       } else {
         Alert.alert('Error', data.error || 'Failed to delete item');
@@ -159,9 +164,9 @@ export default function CatalogManagerView({ shop, shopCategoryType, themeColor 
         {(activeTab === 'products' ? products : services).map((item) => (
           <View key={item.id} style={s.listItem}>
             <View style={{ flex: 1 }}>
-              <Text style={s.itemName}>{item.name}</Text>
+              <Text style={s.itemName}>{item.title}</Text>
               <Text style={s.itemMeta}>
-                ₹{item.price} {item.duration ? `• ${item.duration} mins` : ''}
+                ₹{item.price} {item.description ? `• ${item.description}` : ''}
               </Text>
             </View>
             <TouchableOpacity onPress={() => handleDelete(item.id, activeTab)} style={s.deleteBtn}>

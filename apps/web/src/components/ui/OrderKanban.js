@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * A reusable Kanban Board component.
@@ -33,38 +33,54 @@ export default function OrderKanban({ columns, items, onStatusChange, renderItem
         return (
           <div 
             key={col.id}
-            className="flex-shrink-0 w-80 bg-background-alt border border-border rounded-2xl flex flex-col"
+            className="flex-1 min-w-[300px] bg-background-alt/50 rounded-2xl p-4 border border-border"
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, col.id)}
           >
-            <div className={`p-4 border-b border-border rounded-t-2xl font-bold flex justify-between items-center`} style={{ backgroundColor: `${col.color}15`, color: col.color }}>
-              <span>{col.title}</span>
-              <span className="bg-background text-text-muted px-2 py-0.5 rounded-full text-xs">{colItems.length}</span>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold flex items-center gap-2" style={{ color: col.color }}>
+                {col.title} <span className="bg-background px-2 py-0.5 rounded-full text-xs border border-border">{colItems.length}</span>
+              </h3>
             </div>
             
-            <div className="flex-1 p-3 space-y-3 overflow-y-auto">
-              {colItems.map(item => (
-                <motion.div
-                  key={item.id}
-                  layoutId={item.id.toString()}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, item.id)}
-                  className="cursor-grab active:cursor-grabbing"
-                >
-                  {renderItem ? renderItem(item) : (
-                    <div className="bg-background border border-border p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
-                      <p className="font-bold text-sm">#{item.id}</p>
-                      <p className="text-xs text-text-muted mt-1">{item.content}</p>
+            <div className="space-y-3">
+              <AnimatePresence>
+                {colItems.map(item => (
+                  <motion.div 
+                    key={item.id} 
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-background rounded-xl p-3 border border-border shadow-sm"
+                  >
+                    {renderItem ? renderItem(item) : (
+                      <div>
+                        <div className="flex justify-between">
+                          <span className="font-bold">#{item.id.toString().slice(-4)}</span>
+                          <span className="text-xs text-text-muted">{new Date(item.created_at).toLocaleTimeString()}</span>
+                        </div>
+                        <div className="mt-2 text-sm">{item.total_amount ? `₹${item.total_amount}` : ''}</div>
+                      </div>
+                    )}
+
+                    {/* Actions for Status Change */}
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-border overflow-x-auto pb-1 custom-scrollbar">
+                      {columns.filter(c => c.id !== col.id).map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => onStatusChange(item.id, c.id)}
+                          className="text-[10px] font-bold px-2 py-1 rounded border border-border bg-background hover:bg-background-alt transition-colors whitespace-nowrap"
+                          style={{ color: c.color }}
+                        >
+                          Move to {c.title}
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </motion.div>
-              ))}
-              
-              {colItems.length === 0 && (
-                <div className="h-24 border-2 border-dashed border-border rounded-xl flex items-center justify-center text-text-muted text-sm">
-                  Drop items here
-                </div>
-              )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </div>
         );

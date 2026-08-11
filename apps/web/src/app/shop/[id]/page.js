@@ -11,6 +11,9 @@ export default function ShopDetailWeb({ params }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutForm, setCheckoutForm] = useState({ name: '', phone: '', address: '' });
 
   // Safely get params (Next.js 14+ params might be a promise or direct)
   // But usually in page.js client component it's direct. If not, React.use() would be needed.
@@ -25,7 +28,7 @@ export default function ShopDetailWeb({ params }) {
       try {
         const [shopRes, prodRes] = await Promise.all([
           fetch(`${BACKEND_URL}/api/v1/shops/${shopId}`),
-          fetch(`${BACKEND_URL}/api/v1/shops/${shopId}/products`)
+          fetch(`${BACKEND_URL}/api/v1/shops/${shopId}/universal-catalog`)
         ]);
         
         const shopData = await shopRes.json();
@@ -42,8 +45,8 @@ export default function ShopDetailWeb({ params }) {
           });
         }
         
-        if (prodData.success && prodData.products) {
-          setMenu(prodData.products ? prodData.products.map(p => ({
+        if (prodData.success && prodData.catalog) {
+          setMenu(prodData.catalog ? prodData.catalog.map(p => ({
             id: p.id,
             name: p.name,
             price: p.price,
@@ -260,7 +263,7 @@ export default function ShopDetailWeb({ params }) {
                 </div>
 
                 <button 
-                  onClick={() => router.push('/checkout')}
+                  onClick={() => setShowCheckout(true)}
                   className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-lg mt-6 transition-colors"
                 >
                   Checkout
@@ -270,6 +273,65 @@ export default function ShopDetailWeb({ params }) {
           </div>
         </div>
       </div>
+
+      {showCheckout && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6">
+            <h2 className="text-2xl font-bold text-white mb-6">Complete Checkout</h2>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-slate-400 text-sm font-bold mb-2">Name</label>
+                <input type="text" value={checkoutForm.name} onChange={e => setCheckoutForm({...checkoutForm, name: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-sm font-bold mb-2">Phone</label>
+                <input type="tel" value={checkoutForm.phone} onChange={e => setCheckoutForm({...checkoutForm, phone: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-sm font-bold mb-2">Delivery Address</label>
+                <textarea value={checkoutForm.address} onChange={e => setCheckoutForm({...checkoutForm, address: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none h-24 resize-none" />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button onClick={() => setShowCheckout(false)} className="flex-1 bg-transparent border border-slate-700 hover:bg-slate-800 text-white font-bold py-3 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  setCheckoutLoading(true);
+                  try {
+                    const res = await fetch(`/api/v1/checkout/create-order`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ shopId, cart, ...checkoutForm })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.payment_flow === 'instant') {
+                      // Trigger Razorpay
+                      alert(`Proceeding to Razorpay for order: ${data.order_id}`);
+                      router.push(`/tracking?order_id=${data.order_id || 'ORD-123'}`);
+                    } else if (data.success) {
+                      setCart([]);
+                      setShowCheckout(false);
+                      router.push(`/tracking?order_id=${data.order_id || 'ORD-123'}`);
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setCheckoutLoading(false);
+                  }
+                }}
+                disabled={checkoutLoading || !checkoutForm.name || !checkoutForm.phone}
+                className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors"
+              >
+                {checkoutLoading ? 'Processing...' : `Pay ₹${cart.reduce((s,i) => s + i.price * i.qty, 0) + 40}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

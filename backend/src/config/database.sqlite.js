@@ -55,7 +55,8 @@ function prepareInsert(sql, params) {
     
     // If the table has an id primary key, and 'id' is not in the columns being inserted,
     // we can prepend a generated UUID to the params and insert it.
-    if (!columns.includes('id')) {
+    const autoIncTables = ['users', 'admin_roles'];
+    if (!columns.includes('id') && !autoIncTables.includes(tableName)) {
       const id = uuidv4();
       const newSql = sql
         .replace(/(INSERT\s+INTO\s+\w+\s*\()([^)]+\))/i, `$1id, $2`)
@@ -78,16 +79,19 @@ async function connectDB() {
       db.get('SELECT 1', (err) => {
         if (err) {
           console.error('❌ SQLite connection failed:', err.message);
-          reject(err);
-        } else {
-          db.run("PRAGMA journal_mode = WAL;", () => {});
-          db.run("ALTER TABLE local_shops ADD COLUMN is_featured INTEGER DEFAULT 0", () => {});
-          db.run("ALTER TABLE local_shops ADD COLUMN rating REAL DEFAULT 4.5", () => {});
-          db.run("ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL DEFAULT NULL", () => {
-            console.log(`📂 SQLite connected. Database location: ${dbPath}`);
-            resolve();
-          });
+          return reject(err);
         }
+        
+        db.run("PRAGMA journal_mode = WAL;", (err1) => {
+          db.run("ALTER TABLE local_shops ADD COLUMN is_featured INTEGER DEFAULT 0", (err2) => {
+            db.run("ALTER TABLE local_shops ADD COLUMN rating REAL DEFAULT 4.5", (err3) => {
+              db.run("ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL DEFAULT NULL", (err4) => {
+                console.log(`📂 SQLite connected. Database location: ${dbPath}`);
+                resolve();
+              });
+            });
+          });
+        });
       });
     });
   });

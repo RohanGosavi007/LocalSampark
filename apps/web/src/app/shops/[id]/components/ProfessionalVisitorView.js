@@ -13,7 +13,7 @@ import {
 // Features: Consultation types, expertise areas, booking, testimonials
 // ═══════════════════════════════════════════════════════════════════════
 
-export default function ProfessionalVisitorView({ shop, services = [], onBookConsultation }) {
+export default function ProfessionalVisitorView({ shop, services = [], onBookAppointment }) {
   const [selectedType, setSelectedType] = useState(null);
 
   return (
@@ -114,7 +114,7 @@ export default function ProfessionalVisitorView({ shop, services = [], onBookCon
             <p className="text-indigo-200 text-sm">₹{selectedType.price} • {selectedType.time}</p>
           </div>
           <button
-            onClick={() => onBookConsultation?.(selectedType)}
+            onClick={() => onBookAppointment?.(selectedType)}
             className="bg-white text-indigo-500 font-bold px-5 py-2 rounded-xl text-sm flex items-center gap-1"
           >
             Book Now <ChevronRight className="w-4 h-4" />

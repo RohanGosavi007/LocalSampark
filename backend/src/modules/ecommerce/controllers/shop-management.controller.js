@@ -1,10 +1,21 @@
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../config/database');
+const { query, queryMany, queryOne } = require('../../../config/database');
 const { cacheInvalidate } = require('../../../config/redis');
 const notificationService = require('../../core/services/notification.service');
 const emailService = require('../../core/services/email.service');
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+/**
+ * 10x FIX: Use centralized Prisma singleton instead of creating a new instance.
+ * Previously: `const prisma = new PrismaClient()` — each import created a separate
+ * connection pool, wasting database connections.
+ */
+let prisma;
+try {
+  const { getPrismaClient } = require('../../../config/prisma');
+  prisma = getPrismaClient();
+} catch {
+  prisma = new PrismaClient();
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // SHOP MANAGEMENT CONTROLLER
@@ -140,7 +151,7 @@ async function updateOrderStatus(req, res, next) {
     const { status, preparation_time_minutes, rejection_reason } = req.body;
     const shop = req.shop;
 
-    const order = await prisma.order.findFirst({ where: { id: orderId, shopId: shop.id } });
+    const order = await queryOne('SELECT * FROM universal_orders WHERE id = ? AND shop_id = ?', [orderId, shop.id]);
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
     // Validate state transitions
@@ -152,26 +163,23 @@ async function updateOrderStatus(req, res, next) {
       OUT_FOR_DELIVERY: ['DELIVERED'],
       DELIVERED: ['RETURN_REQUESTED'],
       RETURN_REQUESTED: ['RETURNED'],
-      RETURNED: ['REFUNDED'],
+      CANCELLED: []
     };
+    const currentStatus = order.status.toUpperCase();
+    const newStatus = status.toUpperCase();
 
-    const allowed = validTransitions[order.status] || [];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({ error: `Cannot transition from '${order.status}' to '${status}'` });
+    if (currentStatus !== newStatus && !validTransitions[currentStatus]?.includes(newStatus)) {
+      return res.status(400).json({ error: `Invalid transition from ${currentStatus} to ${newStatus}` });
     }
 
-    const updated = await prisma.order.update({
-        where: { id: orderId },
-        data: { 
-            status, 
-            ...(status === 'OUT_FOR_DELIVERY' && { outForDeliveryAt: new Date() }),
-            ...(status === 'DELIVERED' && { deliveredAt: new Date() })
-        },
-        include: { user: true, shop: true }
-    });
+    await query(
+      `UPDATE universal_orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [newStatus, orderId]
+    );
 
-    const customer = updated.user;
-    const shopInfo = updated.shop;
+    const updated = await queryOne('SELECT * FROM universal_orders WHERE id = ?', [orderId]);
+    const customer = await queryOne('SELECT * FROM users WHERE id = ?', [updated.user_id]);
+    const shopInfo = shop;
 
     // Send notifications
     if (customer) {
@@ -203,33 +211,102 @@ async function updateOrderStatus(req, res, next) {
 async function getShopOrders(req, res, next) {
   try {
     const shop = req.shop;
-    const { status, page = 1, limit = 20, date } = req.query;
+    let { status, page = 1, limit = 20, date } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
-
-    const where = { shopId: shop.id };
-    if (status) where.status = status;
-    if (date) {
-        const dateObj = new Date(date);
-        const nextDate = new Date(date);
-        nextDate.setDate(nextDate.getDate() + 1);
-        where.createdAt = { gte: dateObj, lt: nextDate };
+    
+    // Map Kanban lowercase status to uppercase DB status
+    if (status) {
+      status = status.toUpperCase();
+      if (status === 'READY_FOR_PICKUP') status = 'READY_FOR_PICKUP';
+      else if (status === 'DISPATCHED') status = 'OUT_FOR_DELIVERY'; // Map dispatched to out_for_delivery
     }
 
-    const orders = await prisma.order.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: offset,
-      take: parseInt(limit),
-      include: { user: { select: { name: true, phone: true } } }
-    });
+    let sql = 'SELECT uo.*, u.name as customer_name, u.phone as customer_phone FROM universal_orders uo JOIN users u ON uo.user_id = u.id WHERE uo.shop_id = ?';
+    let countSql = 'SELECT COUNT(*) as count FROM universal_orders uo WHERE uo.shop_id = ?';
+    const params = [shop.id];
 
-    const total = await prisma.order.count({ where });
+    if (status) {
+      sql += ' AND uo.status = ?';
+      countSql += ' AND uo.status = ?';
+      params.push(status);
+    }
+    
+    if (date) {
+        sql += " AND date(uo.created_at) = date(?)";
+        countSql += " AND date(uo.created_at) = date(?)";
+        params.push(date);
+    }
+
+    sql += ' ORDER BY uo.created_at DESC LIMIT ? OFFSET ?';
+    const pagedParams = [...params, parseInt(limit), offset];
+
+    const ordersData = await queryMany(sql, pagedParams);
+    const countRow = await queryOne(countSql, params);
+
+    // Fetch items for each order to format like prisma response
+    const orders = [];
+    for (let o of ordersData) {
+      const items = await queryMany('SELECT uoi.*, uci.title as product_name FROM universal_order_items uoi JOIN universal_catalog_items uci ON uoi.item_id = uci.id WHERE uoi.order_id = ?', [o.id]);
+      orders.push({
+        ...o,
+        id: o.id.toString(), // stringify for react key
+        status: o.status.toLowerCase() === 'out_for_delivery' ? 'dispatched' : o.status.toLowerCase(), // Map back to frontend expected status
+        items: JSON.stringify(items) // Frontend expects stringified JSON
+      });
+    }
 
     res.json({
       success: true,
       orders,
-      total,
+      total: countRow ? countRow.count : 0,
       page: parseInt(page), limit: parseInt(limit),
+    });
+  } catch (error) { next(error); }
+}
+
+async function getShopLedger(req, res, next) {
+  try {
+    const shop = req.shop;
+
+    // Fetch all completed/delivered orders for this shop to calculate ledger
+    const orders = await queryMany(
+      "SELECT id, total_amount, created_at, status FROM universal_orders WHERE shop_id = ? AND status IN ('DELIVERED', 'COMPLETED')",
+      [shop.id]
+    );
+
+    let grossSales = 0;
+    let platformCommission = 0;
+    let netPayout = 0;
+    
+    // We'll calculate pending payouts as those orders that are delivered but not yet "paid out"
+    // Since we don't have a payout table yet, we'll just simulate the metrics based on orders
+    const transactions = orders.map(o => {
+      const gross = o.total_amount || 0;
+      const commission = gross * 0.10; // 10% platform commission
+      const net = gross - commission;
+
+      grossSales += gross;
+      platformCommission += commission;
+      netPayout += net;
+
+      return {
+        order_id: o.id.toString(),
+        created_at: o.created_at,
+        gross_amount: gross,
+        commission: commission,
+        net_amount: net
+      };
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json({
+      success: true,
+      ledger: {
+        grossSales,
+        platformCommission,
+        netPayout,
+        pendingPayouts: netPayout, // Assuming nothing has been paid out yet for this demo
+        transactions
+      }
     });
   } catch (error) { next(error); }
 }
@@ -1114,13 +1191,191 @@ async function createReturn(req, res, next) {
     });
   } catch (error) { next(error); }
 }
+// ═══════════════════════════════════════════════════════════════════════
+// SECTION 13: LEAD CRM
+// ═══════════════════════════════════════════════════════════════════════
+
+async function getShopLeads(req, res, next) {
+  try {
+    const shop = req.shop;
+    const leads = await queryMany(
+      'SELECT ul.*, u.name as customer_name, u.phone as customer_phone FROM universal_leads ul JOIN users u ON ul.user_id = u.id WHERE ul.shop_id = ? ORDER BY ul.created_at DESC',
+      [shop.id]
+    );
+
+    res.json({ success: true, leads });
+  } catch (error) { next(error); }
+}
+
+async function updateLeadStatus(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { leadId } = req.params;
+    const { status } = req.body;
+
+    await query(
+      'UPDATE universal_leads SET lead_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND shop_id = ?',
+      [status.toUpperCase(), leadId, shop.id]
+    );
+
+    res.json({ success: true, message: 'Lead updated successfully' });
+  } catch (error) { next(error); }
+}
+
+// ─── PHASE 5: STAFF, REVIEWS, ANALYTICS ──────────────────────────
+
+async function getShopStaff(req, res, next) {
+  try {
+    const shop = req.shop;
+    const staff = await queryMany('SELECT * FROM shop_staff WHERE shop_id = ? ORDER BY created_at DESC', [shop.id]);
+    res.json({ success: true, staff });
+  } catch (error) { next(error); }
+}
+
+async function addShopStaff(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { name, role, phone, email, status, shift, commission } = req.body;
+    await query(
+      'INSERT INTO shop_staff (shop_id, name, role, phone, email, status, shift, commission) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [shop.id, name, role, phone, email, status || 'Active', shift, commission || 0.0]
+    );
+    res.json({ success: true, message: 'Staff added successfully' });
+  } catch (error) { next(error); }
+}
+
+async function updateShopStaff(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { staffId } = req.params;
+    const { name, role, phone, email, status, shift, commission } = req.body;
+    await query(
+      'UPDATE shop_staff SET name=?, role=?, phone=?, email=?, status=?, shift=?, commission=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND shop_id=?',
+      [name, role, phone, email, status, shift, commission, staffId, shop.id]
+    );
+    res.json({ success: true, message: 'Staff updated successfully' });
+  } catch (error) { next(error); }
+}
+
+async function removeShopStaff(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { staffId } = req.params;
+    await query('DELETE FROM shop_staff WHERE id=? AND shop_id=?', [staffId, shop.id]);
+    res.json({ success: true, message: 'Staff removed successfully' });
+  } catch (error) { next(error); }
+}
+
+async function getShopReviews(req, res, next) {
+  try {
+    const shop = req.shop;
+    const reviews = await queryMany('SELECT * FROM shop_reviews WHERE shop_id = ? ORDER BY created_at DESC', [shop.id]);
+    res.json({ success: true, reviews });
+  } catch (error) { next(error); }
+}
+
+async function replyToShopReview(req, res, next) {
+  try {
+    const shop = req.shop;
+    const { reviewId } = req.params;
+    const { reply } = req.body;
+    await query('UPDATE shop_reviews SET reply=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND shop_id=?', [reply, reviewId, shop.id]);
+    res.json({ success: true, message: 'Reply added successfully' });
+  } catch (error) { next(error); }
+}
+
+async function getShopAnalyticsData(req, res, next) {
+  try {
+    const shop = req.shop;
+    
+    // In a full implementation, this might read from shop_analytics_snapshots table.
+    // For now, we will dynamically aggregate from universal_orders.
+    const orders = await queryMany('SELECT * FROM universal_orders WHERE shop_id = ?', [shop.id]);
+    
+    let totalRevenue = 0;
+    let completedOrders = 0;
+    
+    orders.forEach(o => {
+      if (o.status === 'delivered' || o.status === 'completed') {
+        completedOrders++;
+        totalRevenue += parseFloat(o.total_amount || 0);
+      }
+    });
+
+    const analytics = {
+      revenue: totalRevenue,
+      orders: completedOrders,
+      views: Math.floor(Math.random() * 1000) + 100, // mock views for now
+      conversion: ((completedOrders / (completedOrders + 50)) * 100).toFixed(1)
+    };
+
+    res.json({ success: true, analytics });
+  } catch (error) { next(error); }
+}
+
+
+// ─── CONSUMER SEARCH (Phase 6) ──────────────────────────────────
+async function searchDirectory(req, res, next) {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.json({ success: true, shops: [] });
+    }
+
+    // Attempt to use FTS5 Virtual Table for fast search
+    let shops = [];
+    try {
+      shops = await queryMany(`
+        SELECT s.id, s.name, s.description, s.category, s.cover_image, s.rating, s.total_ratings, s.is_promoted
+        FROM shop_search_index fts
+        JOIN local_shops s ON fts.shop_id = s.id
+        WHERE shop_search_index MATCH ?
+        ORDER BY s.is_promoted DESC, rank LIMIT 50
+      `, [q]);
+    } catch (ftsError) {
+      // Fallback to standard wildcard search if FTS table does not exist or fails
+      shops = await queryMany(`
+        SELECT id, name, description, category, cover_image, rating, total_ratings, is_promoted
+        FROM local_shops 
+        WHERE name LIKE ? OR description LIKE ? OR category LIKE ?
+        ORDER BY is_promoted DESC
+        LIMIT 50
+      `, [`%${q}%`, `%${q}%`, `%${q}%`]);
+    }
+
+    res.json({ success: true, shops });
+  } catch (error) { next(error); }
+}
+
+// ─── RIDER MANAGEMENT (Phase 7) ──────────────────────────────────
+async function assignRiderToOrder(req, res, next) {
+  try {
+    const { orderId } = req.params;
+    const { riderId } = req.body;
+    
+    // Assign rider
+    await query('UPDATE universal_orders SET rider_id = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [riderId, 'dispatched', orderId]);
+    await query('UPDATE delivery_riders SET status = ?, current_order_id = ? WHERE id = ?', ['on_delivery', orderId, riderId]);
+
+    // Broadcast Socket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${orderId}`).emit('RIDER_ASSIGNED', { riderId });
+    }
+
+    res.json({ success: true, message: 'Rider assigned successfully' });
+  } catch (error) { next(error); }
+}
+
 
 module.exports = {
   getArchetype, ARCHETYPE_MAP,
   // Dashboard
   getShopDashboard,
+  // Consumer
+  searchDirectory,
   // Orders
-  updateOrderStatus, getShopOrders,
+  updateOrderStatus, getShopOrders, assignRiderToOrder,
   // Appointments
   updateAppointmentStatus, getShopAppointments,
   // Products & Visibility
@@ -1151,4 +1406,10 @@ module.exports = {
   getVisitorOrderHistory,
   // Notifications
   getNotifications, markNotificationRead,
+  getShopLedger,
+  getShopLeads, updateLeadStatus,
+  // Phase 5 Additions
+  getShopStaff, addShopStaff, updateShopStaff, removeShopStaff,
+  getShopReviews, replyToShopReview,
+  getShopAnalyticsData
 };

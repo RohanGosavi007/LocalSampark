@@ -11,12 +11,19 @@ try {
       host: REDIS_HOST,
       port: REDIS_PORT,
       password: process.env.REDIS_PASSWORD || undefined,
+      maxRetriesPerRequest: null,
+      retryStrategy: () => null, // 10x FIX: Prevent ioredis from crashing the app if Redis is down
     },
     defaultJobOptions: {
       removeOnComplete: true,
       removeOnFail: 50,
       attempts: 2
     }
+  });
+  
+  auditQueue.on('error', () => {
+    // Suppress unhandled redis connection errors
+    auditQueue = null;
   });
 } catch (err) {
   console.warn('⚠️ BullMQ audit queue initialization deferred (Redis offline fallback)');

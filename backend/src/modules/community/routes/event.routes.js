@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
@@ -36,3 +36,4 @@ router.post('/', authenticate, async (req, res, next) => {
 });
 
 module.exports = router;
+console.log('--- DEBUG: event.routes.js successfully loaded ---');

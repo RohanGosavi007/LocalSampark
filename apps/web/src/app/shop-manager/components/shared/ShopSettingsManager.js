@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import {
   Store, Clock, MapPin, Phone, Mail, CreditCard, Gift,
   Truck, Camera, Save, ChevronDown, ChevronUp, ToggleLeft,
-  ToggleRight, Info, Edit2, Check, X, Globe, AlertCircle
+  ToggleRight, Info, Edit2, Check, X, Globe, AlertCircle, RefreshCw
 } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -41,6 +42,7 @@ const INITIAL_SETTINGS = {
   loyaltyEnabled: true,
   loyaltyPointsPer100: 10,
   loyaltyRedemptionRate: 1,
+  paymentFlow: 'instant', // 'instant' or 'approve'
 };
 
 function Section({ icon: Icon, title, children, accent = 'var(--primary)' }) {
@@ -90,6 +92,35 @@ function Toggle({ value, onChange, label }) {
 export default function ShopSettingsManager({ token, shopId }) {
   const [settings, setSettings] = useState(INITIAL_SETTINGS);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load existing settings
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/shops/my-shop/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.shop) {
+          // Map backend shop fields to our settings state if needed, or parse a settings JSON
+          if (data.shop.settings) {
+            try {
+              const parsed = JSON.parse(data.shop.settings);
+              setSettings(s => ({ ...s, ...parsed }));
+            } catch (e) {
+              console.error('Failed to parse shop settings', e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, [token, shopId]);
 
   const set = (key, val) => setSettings(s => ({ ...s, [key]: val }));
   const setHour = (day, field, val) => setSettings(s => ({ ...s, hours: { ...s.hours, [day]: { ...s.hours[day], [field]: val } } }));
@@ -100,11 +131,37 @@ export default function ShopSettingsManager({ token, shopId }) {
     setSettings(s => ({ ...s, hours: newHours }));
   };
 
-  const handleSave = () => {
-    console.log('[ShopSettings] Saving:', settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/shops/my-shop/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ settings: JSON.stringify(settings) })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } else {
+        alert('Failed to save settings');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error saving settings');
+    }
   };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+        <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
+        <p style={{ marginTop: '12px' }}>Loading Settings...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: 840 }}>
@@ -223,7 +280,19 @@ export default function ShopSettingsManager({ token, shopId }) {
       </Section>
 
       {/* 6. Payments */}
-      <Section icon={CreditCard} title="Payment Methods" accent="#f97316">
+      <Section icon={CreditCard} title="Payment Methods & Flow" accent="#f97316">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          <Field label="Payment Flow" help="How and when customers pay">
+            <select 
+              value={settings.paymentFlow || 'instant'} 
+              onChange={e => set('paymentFlow', e.target.value)}
+              style={{ width: '100%', padding: '0.625rem 0.875rem', border: '1px solid var(--border)', borderRadius: '0.625rem', background: 'var(--background)', fontSize: '0.875rem', outline: 'none' }}
+            >
+              <option value="instant">Instant Capture (Customer pays at checkout)</option>
+              <option value="approve">Approve -&gt; Pay (Shop accepts order, then customer pays)</option>
+            </select>
+          </Field>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
           <Toggle value={settings.paymentCash} onChange={v => set('paymentCash', v)} label="Accept Cash on Delivery" />
           <Toggle value={settings.paymentUPI} onChange={v => set('paymentUPI', v)} label="Accept UPI Payments (GPay, PhonePe, Paytm)" />

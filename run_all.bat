@@ -1,4 +1,11 @@
 @echo off
+REM ═══════════════════════════════════════════════════════════════
+REM  LocalSampark — Complete Service Launcher
+REM  This file is safe to run. If Windows SmartScreen blocks it:
+REM  Right-click → Properties → Check "Unblock" → Apply
+REM  OR run in PowerShell: Unblock-File -Path "run_all.bat"
+REM ═══════════════════════════════════════════════════════════════
+
 title LocalSampark Complete Launcher
 
 :: Change to the directory where this batch file is located

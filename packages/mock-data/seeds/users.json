@@ -21,7 +21,7 @@
       "gender": "FEMALE",
       "dateOfBirth": "1994-06-15",
       "preferredLanguage": "en",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_consumer_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["CONSUMER"],
       "primaryRole": "CONSUMER",
       "accountStatus": "ACTIVE",
@@ -34,7 +34,7 @@
           "isVerified": true,
           "verifiedAt": "2025-04-10T10:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_consumer_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -115,7 +115,7 @@
       "gender": "MALE",
       "dateOfBirth": "1982-11-22",
       "preferredLanguage": "mr",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_shop_owner_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["SHOP_OWNER", "CONSUMER"],
       "primaryRole": "SHOP_OWNER",
       "accountStatus": "ACTIVE",
@@ -128,7 +128,7 @@
           "isVerified": true,
           "verifiedAt": "2025-02-15T11:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_shop_owner_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -138,7 +138,7 @@
           "isVerified": true,
           "verifiedAt": "2025-02-20T14:30:00.000Z",
           "expiresAt": "2028-03-31T23:59:59.000Z",
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_shop_owner_01_gst.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -148,7 +148,7 @@
           "isVerified": true,
           "verifiedAt": "2025-02-22T09:00:00.000Z",
           "expiresAt": "2027-12-31T23:59:59.000Z",
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_shop_owner_01_license.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -232,7 +232,7 @@
       "gender": "MALE",
       "dateOfBirth": "1998-03-08",
       "preferredLanguage": "mr",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_runner_04.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["DELIVERY_RUNNER"],
       "primaryRole": "DELIVERY_RUNNER",
       "accountStatus": "ACTIVE",
@@ -245,7 +245,7 @@
           "isVerified": true,
           "verifiedAt": "2025-05-01T12:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_runner_04_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -255,7 +255,7 @@
           "isVerified": true,
           "verifiedAt": "2025-05-02T10:00:00.000Z",
           "expiresAt": "2030-03-07T23:59:59.000Z",
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_runner_04_dl.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -324,7 +324,7 @@
       "gender": "FEMALE",
       "dateOfBirth": "1990-01-25",
       "preferredLanguage": "mr",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_service_provider_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["SERVICE_PROVIDER", "CONSUMER"],
       "primaryRole": "SERVICE_PROVIDER",
       "accountStatus": "ACTIVE",
@@ -337,7 +337,7 @@
           "isVerified": true,
           "verifiedAt": "2025-06-10T09:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_sp_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -411,7 +411,7 @@
       "gender": "MALE",
       "dateOfBirth": "1995-09-14",
       "preferredLanguage": "hi",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_field_agent_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["FIELD_AGENT"],
       "primaryRole": "FIELD_AGENT",
       "accountStatus": "ACTIVE",
@@ -424,7 +424,7 @@
           "isVerified": true,
           "verifiedAt": "2025-07-01T10:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_fa_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -434,7 +434,7 @@
           "isVerified": true,
           "verifiedAt": "2025-07-01T10:30:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_fa_01_pan.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -497,7 +497,7 @@
       "gender": "FEMALE",
       "dateOfBirth": "1985-12-03",
       "preferredLanguage": "en",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_franchise_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["FRANCHISE_PARTNER", "CONSUMER"],
       "primaryRole": "FRANCHISE_PARTNER",
       "accountStatus": "ACTIVE",
@@ -510,7 +510,7 @@
           "isVerified": true,
           "verifiedAt": "2024-12-20T10:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_franchise_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -520,7 +520,7 @@
           "isVerified": true,
           "verifiedAt": "2024-12-20T10:30:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_franchise_01_pan.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -584,7 +584,7 @@
       "gender": "MALE",
       "dateOfBirth": "1992-07-20",
       "preferredLanguage": "en",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_super_admin_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["SUPER_ADMIN"],
       "primaryRole": "SUPER_ADMIN",
       "accountStatus": "ACTIVE",
@@ -664,7 +664,7 @@
           "isVerified": false,
           "verifiedAt": null,
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_farmer_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -674,7 +674,7 @@
           "isVerified": false,
           "verifiedAt": null,
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_farmer_01_voter.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -750,7 +750,7 @@
       "gender": "MALE",
       "dateOfBirth": "1988-08-30",
       "preferredLanguage": "mr",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_suspended_merchant_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["SHOP_OWNER"],
       "primaryRole": "SHOP_OWNER",
       "accountStatus": "SUSPENDED",
@@ -763,7 +763,7 @@
           "isVerified": false,
           "verifiedAt": null,
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_susp_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": "Document appears tampered. Face mismatch with selfie verification."
         },
         {
@@ -773,7 +773,7 @@
           "isVerified": false,
           "verifiedAt": null,
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_susp_01_gst.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": "GST number does not match registered entity name."
         }
       ],
@@ -901,7 +901,7 @@
       "gender": "FEMALE",
       "dateOfBirth": "1978-05-18",
       "preferredLanguage": "mr",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_society_admin_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["SOCIETY_ADMIN", "CONSUMER"],
       "primaryRole": "SOCIETY_ADMIN",
       "accountStatus": "ACTIVE",
@@ -914,7 +914,7 @@
           "isVerified": true,
           "verifiedAt": "2025-08-10T10:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_sa_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         },
         {
@@ -924,7 +924,7 @@
           "isVerified": true,
           "verifiedAt": "2025-08-10T10:30:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_sa_01_pan.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],
@@ -991,7 +991,7 @@
       "gender": "MALE",
       "dateOfBirth": "2001-02-14",
       "preferredLanguage": "hi",
-      "avatarUrl": "https://cdn.localsampark.in/avatars/usr_volunteer_01.webp",
+      "avatarUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "roles": ["VOLUNTEER", "CONSUMER"],
       "primaryRole": "VOLUNTEER",
       "accountStatus": "ACTIVE",
@@ -1004,7 +1004,7 @@
           "isVerified": true,
           "verifiedAt": "2026-03-20T09:00:00.000Z",
           "expiresAt": null,
-          "documentUrl": "https://cdn.localsampark.in/kyc/usr_vol_01_aadhaar.enc",
+          "documentUrl": "https://placehold.co/400x400/png?text=Mock+Image",
           "rejectionReason": null
         }
       ],

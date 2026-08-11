@@ -5,29 +5,66 @@ import {
   Filter, Search, Clock, Reply, User
 } from 'lucide-react';
 
-const DEMO_REVIEWS = [
-  { id: 'r1', customer: 'Anjali Verma', rating: 5, date: 'Today, 10:30 AM', text: 'Great service! The vegetables were extremely fresh and delivered very quickly.', status: 'Pending Reply', reply: '' },
-  { id: 'r2', customer: 'Rajesh K.', rating: 4, date: 'Yesterday', text: 'Good variety of products, but the delivery took a bit longer than expected.', status: 'Responded', reply: 'We apologize for the delay Rajesh. We are working on improving our delivery speed.' },
-  { id: 'r3', customer: 'Smita P.', rating: 5, date: 'Aug 04, 2026', text: 'My go-to store for all daily needs. Love the new loyalty points feature!', status: 'Responded', reply: 'Thank you Smita! We are glad you love it.' },
-  { id: 'r4', customer: 'Kunal M.', rating: 2, date: 'Aug 02, 2026', text: 'One of the milk packets was leaking when it arrived.', status: 'Pending Reply', reply: '' },
-  { id: 'r5', customer: 'Pooja J.', rating: 5, date: 'Jul 28, 2026', text: 'Excellent behavior by the store staff.', status: 'Pending Reply', reply: '' },
-];
+// DEMO_REVIEWS removed for live integration
 
-export default function ShopReviewsManager() {
-  const [reviews, setReviews] = useState(DEMO_REVIEWS);
+export default function ShopReviewsManager({ token, shopId }) {
+  const [reviews, setReviews] = useState([]);
   const [filterRating, setFilterRating] = useState('All'); // All | 5 | 4 | 3 | 2 | 1
   const [filterStatus, setFilterStatus] = useState('All'); // All | Pending Reply | Responded
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
 
-  const handleReplySubmit = (id) => {
-    if (!replyText.trim()) return;
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, reply: replyText, status: 'Responded' } : r));
-    setReplyingTo(null);
-    setReplyText('');
+  const [loading, setLoading] = useState(true);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/v1/shops/my-shop/reviews`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Map backend fields to frontend format
+        const mapped = data.reviews.map(r => ({
+          id: r.id.toString(),
+          customer: r.customer_name || 'Anonymous',
+          rating: r.rating,
+          date: new Date(r.created_at).toLocaleDateString(),
+          text: r.comment || '',
+          status: r.reply ? 'Responded' : 'Pending Reply',
+          reply: r.reply || ''
+        }));
+        setReviews(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const avgRating = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+  React.useEffect(() => {
+    if (token) fetchReviews();
+  }, [token]);
+
+  const handleReplySubmit = async (id) => {
+    if (!replyText.trim()) return;
+    try {
+      await fetch(`/api/v1/shops/my-shop/reviews/${id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reply: replyText })
+      });
+      fetchReviews();
+      setReplyingTo(null);
+      setReplyText('');
+    } catch (e) {
+      console.error(e);
+      alert('Error saving reply');
+    }
+  };
+
+  const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : "0.0";
 
   const filtered = reviews.filter(r => {
     const matchRating = filterRating === 'All' || r.rating.toString() === filterRating;

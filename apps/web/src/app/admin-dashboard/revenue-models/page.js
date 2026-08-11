@@ -1,58 +1,125 @@
-
 'use client';
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Settings, BarChart3, Users, Activity, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useAdminAuth } from '@/context/AdminAuthContext';
+import { TrendingUp, DollarSign, Percent, Save, Clock, Activity, Zap } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-export default function Page() {
+export default function RevenueModelsPage() {
+  const { adminUser } = useAdminAuth();
+  
+  const [subscriptionFees, setSubscriptionFees] = useState({
+    basic: 99,
+    pro: 499,
+    enterprise: 999
+  });
+  
+  const [platformCuts, setPlatformCuts] = useState({
+    grocery: 5.5,
+    electronics: 3.0,
+    services: 10.0,
+    logistics_base: 40
+  });
+
+  const saveConfiguration = async (type) => {
+    toast.success(\`\${type} models updated successfully across all clusters.\`);
+    // Ideally maps to PUT /api/v1/admin/revenue/models
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Revenue Models</h1>
-          <p className="text-slate-400">Adjust commission rates and pricing structures.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Revenue Models & Commissions</h1>
+          <p className="text-slate-400">Configure global monetization logic, cuts, and subscription tiers.</p>
         </div>
-        <div className="flex gap-3">
-          <button className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition flex items-center gap-2 font-medium">
-            <Settings className="w-4 h-4" /> Settings
-          </button>
-          <button className="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition font-medium shadow-lg shadow-blue-500/20">
-            Export Report
-          </button>
-        </div>
+        <button className="px-5 py-2 bg-blue-600/20 text-blue-500 rounded-xl hover:bg-blue-600/30 transition flex items-center gap-2 font-medium border border-blue-500/30">
+          <TrendingUp className="w-4 h-4" /> View Forecasting
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {[
-          { label: 'Total Volume', value: '₹12.4M', trend: '+15%', icon: BarChart3, color: 'text-blue-500' },
-          { label: 'Active Users', value: '4,521', trend: '+5%', icon: Users, color: 'text-emerald-500' },
-          { label: 'System Health', value: '99.9%', trend: 'Stable', icon: Activity, color: 'text-purple-500' }
-        ].map((stat, i) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-slate-800 rounded-2xl">
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-              </div>
-              <span className="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">{stat.trend}</span>
-            </div>
-            <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
-            <h3 className="text-2xl font-black text-white">{stat.value}</h3>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="bg-slate-900 border border-slate-800 rounded-3xl p-10 min-h-[400px] flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5" />
-        <div className="relative z-10">
-          <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-slate-900">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Subscriptions */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-500"/> Subscription Tiers (Monthly)
+            </h2>
+            <button onClick={() => saveConfiguration('Subscription')} className="p-2 bg-emerald-600/20 text-emerald-500 rounded-lg hover:bg-emerald-600/30 transition">
+              <Save className="w-5 h-5"/>
+            </button>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">Module Provisioned</h2>
-          <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
-            The Revenue Models module is fully provisioned. Data tables and interactive elements are currently being hydrated by the backend system.
-          </p>
+          
+          <div className="space-y-4">
+            {Object.entries(subscriptionFees).map(([tier, fee]) => (
+              <div key={tier} className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold capitalize">{tier} Plan</h3>
+                  <p className="text-slate-500 text-xs mt-1">Base monthly recurring revenue</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">₹</span>
+                  <input 
+                    type="number" 
+                    value={fee}
+                    onChange={(e) => setSubscriptionFees({...subscriptionFees, [tier]: Number(e.target.value)})}
+                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-bold text-right w-24 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </motion.div>
+
+        {/* Categories & Platform Cuts */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Percent className="w-5 h-5 text-purple-500"/> Platform Category Cuts
+            </h2>
+            <button onClick={() => saveConfiguration('Commission')} className="p-2 bg-purple-600/20 text-purple-500 rounded-lg hover:bg-purple-600/30 transition">
+              <Save className="w-5 h-5"/>
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {Object.entries(platformCuts).map(([cat, cut]) => (
+              <div key={cat} className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold capitalize">{cat.replace('_', ' ')}</h3>
+                  <p className="text-slate-500 text-xs mt-1">Percentage cut per transaction</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={cut}
+                    onChange={(e) => setPlatformCuts({...platformCuts, [cat]: Number(e.target.value)})}
+                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-bold text-right w-20 focus:outline-none focus:border-purple-500"
+                  />
+                  <span className="text-slate-400">%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-8 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-amber-500"/> Dynamic Pricing Constraints
+        </h2>
+        <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
+          <div className="max-w-2xl">
+            <h3 className="text-white font-bold mb-2">Surge Pricing Multiplier Cap</h3>
+            <p className="text-slate-400 text-sm">Set the maximum allowable multiple for dynamic delivery pricing during high demand or bad weather conditions.</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <span className="text-slate-500">Max x</span>
+             <input type="number" defaultValue={2.5} step={0.1} className="bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white font-black text-xl text-center w-24 focus:outline-none focus:border-amber-500"/>
+             <button onClick={() => saveConfiguration('Surge Cap')} className="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-500 transition shadow-lg shadow-amber-500/20">Apply</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

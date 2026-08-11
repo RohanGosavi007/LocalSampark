@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Timer, Scissors, Award, Sparkles, ChevronRight, Users
+  Heart, Timer, Scissors, Award, Sparkles, ChevronRight, Users, Clock, CheckCircle, Star
 } from 'lucide-react';
 import TokenTrackerBar from '@/components/ui/TokenTrackerBar';
 import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
 
-import { API_BASE } from '@/lib/api';
+import { API_URL, API_BASE } from '@/lib/api';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED SALON VISITOR VIEW
@@ -16,7 +16,25 @@ import { API_BASE } from '@/lib/api';
 
 export default React.memo(function EnhancedSalonVisitorView({ shop, services = [], staff = [], onBookAppointment }) {
   const [selectedService, setSelectedService] = useState(null);
-  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [selectedStaff, setSelectedStaff] = useState(staff[0] || null);
+  const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  React.useEffect(() => {
+    if (selectedService && selectedStaff && appointmentDate && shop?.id) {
+      setLoadingSlots(true);
+      fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/${selectedStaff.id}/slots?date=${appointmentDate}`)
+        .then(r => r.json())
+        .then(data => {
+          setAvailableSlots(data.slots || []);
+          setLoadingSlots(false);
+        })
+        .catch(() => setLoadingSlots(false));
+    } else {
+        setAvailableSlots([]);
+    }
+  }, [selectedService, selectedStaff, appointmentDate, shop?.id]);
 
   // Group services by category
   const serviceCategories = React.useMemo(() => {
@@ -28,6 +46,12 @@ export default React.memo(function EnhancedSalonVisitorView({ shop, services = [
     });
     return categories;
   }, [services]);
+
+  const formattedSlots = {
+    morning: availableSlots.filter(s => s.time.includes('AM')),
+    afternoon: availableSlots.filter(s => s.time.includes('PM') && parseInt(s.time.split(':')[0]) < 5 && parseInt(s.time.split(':')[0]) !== 12),
+    evening: availableSlots.filter(s => s.time.includes('PM') && (parseInt(s.time.split(':')[0]) >= 5 || parseInt(s.time.split(':')[0]) === 12))
+  };
 
   return (
     <div className="space-y-8">
@@ -205,22 +229,27 @@ export default React.memo(function EnhancedSalonVisitorView({ shop, services = [
               <button onClick={() => setSelectedService(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
             </div>
             
-            <SlotMatrixGrid 
-              slots={{
-                morning: [
-                  { id: 'm1', time: '10:00', status: 'available' },
-                  { id: 'm2', time: '11:00', status: 'booked' },
-                ],
-                afternoon: [
-                  { id: 'a1', time: '13:00', status: 'filling_fast', remaining: 1 },
-                  { id: 'a2', time: '15:00', status: 'available' },
-                ],
-                evening: [
-                  { id: 'e1', time: '18:00', status: 'available' }
-                ]
-              }}
-              onSelectSlot={(slot) => onBookAppointment?.({ service: selectedService, staff: selectedStaff, slot })}
-            />
+            <div className="mb-4">
+                <p className="text-sm font-bold text-text mb-2">Select Date</p>
+                <input 
+                    type="date" 
+                    value={appointmentDate} 
+                    onChange={e => setAppointmentDate(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-border bg-background text-text focus:ring-2 focus:ring-pink-500"
+                    min={new Date().toISOString().split('T')[0]}
+                />
+            </div>
+
+            {loadingSlots ? (
+                <div className="text-center py-8 text-text-muted animate-pulse">Loading slots...</div>
+            ) : availableSlots.length > 0 ? (
+                <SlotMatrixGrid 
+                  slots={formattedSlots}
+                  onSelectSlot={(slot) => onBookAppointment?.({ service: selectedService, staff: selectedStaff, slot, metadata: { date: appointmentDate } })}
+                />
+            ) : (
+                <div className="text-center py-8 text-text-muted">No slots available. Please select staff and date.</div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

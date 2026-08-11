@@ -11,8 +11,14 @@ class FeatureFlagService {
       return flagCache;
     }
 
-    const res = await query('SELECT * FROM feature_flags ORDER BY phase ASC');
-    const flags = res.rows || res;
+    let flags = [];
+    try {
+      const res = await query('SELECT * FROM feature_flags ORDER BY phase ASC');
+      flags = res.rows || res;
+    } catch (e) {
+      console.warn('Feature flag query failed:', e.message);
+      flags = [];
+    }
     
     // Convert to lookup map
     const flagMap = {};

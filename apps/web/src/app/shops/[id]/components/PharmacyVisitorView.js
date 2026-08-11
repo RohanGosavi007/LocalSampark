@@ -35,9 +35,19 @@ export default function PharmacyVisitorView({ shop, products = [], onAddToCart }
             </h2>
             <p className="text-text-muted text-sm mt-1">Upload your prescription & get medicines delivered</p>
           </div>
-          <button className="bg-green-500 text-white font-bold px-5 py-3 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-2">
+          <label className="bg-green-500 text-white font-bold px-5 py-3 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-2 cursor-pointer">
             <Upload className="w-4 h-4" /> Upload
-          </button>
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*,.pdf"
+              onChange={(e) => {
+                if(e.target.files && e.target.files.length > 0) {
+                  alert(`Prescription "${e.target.files[0].name}" selected for upload!`);
+                }
+              }} 
+            />
+          </label>
         </div>
       </motion.div>
 

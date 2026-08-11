@@ -1,0 +1,29 @@
+{
+  "gatekeeper": {
+    "title": "Main Gate 1",
+    "subtitle": "Sunil (Security Officer)",
+    "tabs": {
+      "guest": "Guest",
+      "delivery": "Delivery",
+      "cab": "Cab",
+      "staff": "Staff"
+    },
+    "log_new": "Log New",
+    "form": {
+      "flat_no": "Flat / Villa No.",
+      "visitor_name": "Visitor Name",
+      "phone": "Phone Number",
+      "submit": "Send Intercom Request"
+    },
+    "status": {
+      "calling": "Calling Flat",
+      "waiting": "Waiting for resident approval...",
+      "approved": "Entry Approved",
+      "approved_desc": "Resident has approved the entry.",
+      "denied": "Entry Denied",
+      "denied_desc": "Resident has denied the entry.",
+      "log_another": "Log Another",
+      "go_back": "Go Back"
+    }
+  }
+}

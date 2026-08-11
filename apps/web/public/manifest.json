@@ -1,21 +1,24 @@
 {
-  "name": "LocalSampark — Your Neighborhood, Connected",
+  "name": "LocalSampark",
   "short_name": "LocalSampark",
-  "description": "Hyperlocal super-app for neighborhood shops, services, carpools, community, and delivery in Pune.",
+  "description": "The Hyper-Local Super App for Shops, Residents, and Logistics",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f4ff",
-  "theme_color": "#4f46e5",
+  "background_color": "#020617",
+  "theme_color": "#2563eb",
   "orientation": "portrait-primary",
-  "categories": ["lifestyle", "shopping", "social"],
-  "lang": "en-IN",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
-  ],
-  "shortcuts": [
-    { "name": "Browse Shops", "url": "/shops" },
-    { "name": "Book Service", "url": "/services" },
-    { "name": "Dashboard", "url": "/dashboard" }
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

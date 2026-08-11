@@ -134,17 +134,18 @@ const VisitorViewRouterComponent = ({
   onRequestQuote,
   onSubscribe,
   onRequestService,
+  onAddToCart,
 }) => {
   const viewType = CATEGORY_VIEW_MAP[categorySlug] || 'retail';
 
   const renderView = () => {
     switch (viewType) {
-      case 'restaurant': return <RestaurantVisitorView shop={shop} products={products} />;
+      case 'restaurant': return <RestaurantVisitorView shop={shop} products={products} onAddToCart={onAddToCart} />;
       case 'tiffin': return <TiffinCateringVisitorView shop={shop} products={products} onSubscribe={onSubscribe} />;
       case 'beauty': return <BeautyVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
       case 'hospital': return <HospitalVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
-      case 'pharmacy': return <PharmacyVisitorView shop={shop} products={products} />;
-      case 'garage': return <GarageVisitorView shop={shop} services={services} onRequestService={onRequestService} />;
+      case 'pharmacy': return <PharmacyVisitorView shop={shop} products={products} onAddToCart={onAddToCart} />;
+      case 'garage': return <GarageVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} onRequestService={onRequestService} />;
       case 'home_service': return <HomeServiceVisitorView shop={shop} services={services} staff={staff} onRequestQuote={onRequestQuote} />;
       case 'professional': return <ProfessionalVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
       case 'education': return <EducationEventsVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
@@ -152,7 +153,7 @@ const VisitorViewRouterComponent = ({
       case 'rental': return <RentalVisitorView shop={shop} products={products} />;
       case 'lead_directory': return <LeadDirectoryVisitorView shop={shop} />;
       case 'retail':
-      default: return <RetailVisitorView shop={shop} products={products} />;
+      default: return <RetailVisitorView shop={shop} products={products} onAddToCart={onAddToCart} />;
     }
   };
 

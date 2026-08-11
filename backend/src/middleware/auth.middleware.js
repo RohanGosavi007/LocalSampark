@@ -85,11 +85,12 @@ const requireAdmin = async (req, res, next) => {
     }
 
     let adminRole = null;
+    const userRoleStr = (req.user.role || '').toUpperCase();
     // Check if user.role itself is admin/super_admin
-    if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
+    if (userRoleStr === 'ADMIN' || userRoleStr === 'SUPER_ADMIN') {
       adminRole = {
-        role: req.user.role,
-        regionId: req.user.regionId || null,
+        role: userRoleStr,
+        regionId: req.user.regionId || req.user.region_id || null,
         permissions: '{"all": true}'
       };
     }

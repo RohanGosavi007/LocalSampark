@@ -54,7 +54,7 @@
       "status": "RESOLVED",
       "location": { "latitude": 18.5023, "longitude": 73.8112, "accuracyMeters": 5 },
       "locationAddress": "Flat 302, Kalyani Heights, Karve Nagar, Pune 411038",
-      "audioRecordingUrl": "https://cdn.localsampark.in/sos/sos_medical_01_audio.webm",
+      "audioRecordingUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "photoUrls": [],
       "description": "Elderly father (72) experiencing chest pain and difficulty breathing. Need ambulance immediately.",
       "notifiedResponderIds": ["usr_volunteer_01", "usr_society_admin_01"],
@@ -81,8 +81,8 @@
       "location": { "latitude": 18.1480, "longitude": 74.5920, "accuracyMeters": 50 },
       "locationAddress": "Kale Farm, Katewadi, Tal. Baramati, Dist. Pune",
       "photoUrls": [
-        "https://cdn.localsampark.in/sos/sos_flood_01_photo1.webp",
-        "https://cdn.localsampark.in/sos/sos_flood_01_photo2.webp"
+        "https://placehold.co/400x400/png?text=Mock+Image",
+        "https://placehold.co/400x400/png?text=Mock+Image"
       ],
       "description": "Nira canal overflowing. Water entering sugarcane field. 3 cattle stuck in waterlogged area. Need rescue team.",
       "notifiedResponderIds": ["usr_field_agent_01"],
@@ -123,7 +123,7 @@
       "status": "PUBLISHED",
       "title": "Weekend Tree Plantation Drive – Sambhaji Park",
       "body": "Join us this Sunday (Aug 10) for a community tree plantation drive at Sambhaji Park. We'll plant 50 saplings of native species (Neem, Peepal, Banyan). Refreshments provided. Bring your own gardening gloves!",
-      "imageUrls": ["https://cdn.localsampark.in/posts/tree_drive_banner.webp"],
+      "imageUrls": ["https://placehold.co/400x400/png?text=Mock+Image"],
       "eventDate": "2026-08-10",
       "eventTime": "07:00-10:00",
       "eventLocation": "Sambhaji Park, JM Road, Shivajinagar",
@@ -164,7 +164,7 @@
       "status": "PUBLISHED",
       "title": "Stray dogs aggressive near Gate 2 – Safety concern",
       "body": "For the past week, a pack of 4-5 stray dogs near Gate 2 have been barking aggressively at residents, especially children returning from school. One child was chased yesterday. Can we contact PMC Animal Control?",
-      "imageUrls": ["https://cdn.localsampark.in/posts/stray_dogs_gate2.webp"],
+      "imageUrls": ["https://placehold.co/400x400/png?text=Mock+Image"],
       "likeCount": 28, "commentCount": 15, "shareCount": 7, "viewCount": 65,
       "flagCount": 0, "flagReasons": [],
       "isPinned": false, "isAnonymous": false,
@@ -178,7 +178,7 @@
       "status": "PUBLISHED",
       "title": "FOUND: Gold earring near Dahanukar Colony bus stop",
       "body": "Found a gold earring (small jhumka style) near the Dahanukar Colony bus stop this morning around 7:30 AM. DM me with a description to claim. Will hold for 7 days.",
-      "imageUrls": ["https://cdn.localsampark.in/posts/found_earring.webp"],
+      "imageUrls": ["https://placehold.co/400x400/png?text=Mock+Image"],
       "likeCount": 12, "commentCount": 4, "shareCount": 8, "viewCount": 89,
       "flagCount": 0, "flagReasons": [],
       "isPinned": false, "isAnonymous": false,
@@ -192,7 +192,7 @@
       "status": "FLAGGED",
       "title": "iPhone 15 Pro Max for sale – ₹45,000 only!!",
       "body": "Brand new sealed iPhone 15 Pro Max. No bill. Cash only. Meet at Hadapsar market yard. DM fast.",
-      "imageUrls": ["https://cdn.localsampark.in/posts/suspicious_iphone.webp"],
+      "imageUrls": ["https://placehold.co/400x400/png?text=Mock+Image"],
       "likeCount": 3, "commentCount": 7, "shareCount": 0, "viewCount": 45,
       "flagCount": 5,
       "flagReasons": ["Suspicious pricing", "No bill = possibly stolen", "Seller is suspended merchant", "Cash only deal", "Too good to be true"],
@@ -213,7 +213,7 @@
       "status": "RESOLVED",
       "subject": "Order delivered to wrong address",
       "description": "My order #ord_20260801_005 from Patil Kirana was delivered to Flat 301 instead of Flat 302. The neighbor kept it but some items are missing (1L milk, curd).",
-      "attachmentUrls": ["https://cdn.localsampark.in/tickets/ticket_001_photo.webp"],
+      "attachmentUrls": ["https://placehold.co/400x400/png?text=Mock+Image"],
       "relatedOrderId": "ord_20260801_005",
       "messages": [
         { "messageId": "msg_001_01", "senderId": "usr_consumer_01", "senderType": "USER", "body": "My order was delivered to the wrong flat. Missing items: Chitale milk 1L and Amul curd.", "attachmentUrls": [], "createdAt": "2026-08-01T19:00:00.000Z" },
@@ -262,9 +262,9 @@
       "status": "OPEN",
       "subject": "App crashes when viewing APMC rates on Android 11",
       "description": "When I open the Mandi Rates page, the app shows loading for 5 seconds then crashes. Happens every time. Phone: Redmi 9A, Android 11, App v6.0.3. Tried reinstalling.",
-      "attachmentUrls": ["https://cdn.localsampark.in/tickets/ticket_003_screenshot.webp"],
+      "attachmentUrls": ["https://placehold.co/400x400/png?text=Mock+Image"],
       "messages": [
-        { "messageId": "msg_003_01", "senderId": "usr_farmer_01", "senderType": "USER", "body": "App crash on Mandi Rates page. Please fix.", "attachmentUrls": ["https://cdn.localsampark.in/tickets/ticket_003_screenshot.webp"], "createdAt": "2026-08-03T07:00:00.000Z" }
+        { "messageId": "msg_003_01", "senderId": "usr_farmer_01", "senderType": "USER", "body": "App crash on Mandi Rates page. Please fix.", "attachmentUrls": ["https://placehold.co/400x400/png?text=Mock+Image"], "createdAt": "2026-08-03T07:00:00.000Z" }
       ],
       "slaResponseDueAt": "2026-08-03T09:00:00.000Z",
       "slaResolutionDueAt": "2026-08-04T07:00:00.000Z",
@@ -284,7 +284,7 @@
       "attachmentUrls": [],
       "messages": [
         { "messageId": "msg_004_01", "senderId": "usr_shop_owner_01", "senderType": "USER", "body": "Where is the subscription box feature in the dashboard?", "attachmentUrls": [], "createdAt": "2026-08-04T03:00:00.000Z" },
-        { "messageId": "msg_004_02", "senderId": "usr_franchise_01", "senderType": "AGENT", "body": "Hi Rajesh! Yes, subscription boxes are available on Gold plan. Go to Shop Dashboard > Products > Subscription Boxes > Create New. You'll need to set up at least 3 items and a delivery schedule. I've attached a guide. Let me know if you need help.", "attachmentUrls": ["https://cdn.localsampark.in/docs/subscription_box_guide.pdf"], "createdAt": "2026-08-04T04:00:00.000Z" }
+        { "messageId": "msg_004_02", "senderId": "usr_franchise_01", "senderType": "AGENT", "body": "Hi Rajesh! Yes, subscription boxes are available on Gold plan. Go to Shop Dashboard > Products > Subscription Boxes > Create New. You'll need to set up at least 3 items and a delivery schedule. I've attached a guide. Let me know if you need help.", "attachmentUrls": ["https://placehold.co/400x400/png?text=Mock+Image"], "createdAt": "2026-08-04T04:00:00.000Z" }
       ],
       "slaResponseDueAt": "2026-08-07T03:00:00.000Z",
       "slaResolutionDueAt": "2026-08-11T03:00:00.000Z",

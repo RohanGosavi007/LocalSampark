@@ -3,6 +3,8 @@ const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { apiCache } = require('../../../middleware/cache.middleware');
+const { generateMockProducts, generateMockServices, generateMockStaff } = require('../../../utils/mockDataGenerator');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
@@ -349,24 +351,9 @@ router.post('/register', authenticate, async (req, res, next) => {
 router.get('/:id/products', async (req, res, next) => {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      try {
-        const fs = require('fs'); const path = require('path');
-        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/catalogs_services.json');
-        if (fs.existsSync(mockPath)) {
-          const catData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
-          let shopProducts = (catData.products || []).filter(p => p.shopId === req.params.id);
-          if (shopProducts.length === 0) shopProducts = (catData.products || []).slice(0, 10);
-          return res.json(shopProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            price: p.sellingPricePaise ? (p.sellingPricePaise / 100) : (p.price || 0),
-            image_url: (p.imageUrls && p.imageUrls[0]) || p.thumbnailUrl,
-            stock_quantity: p.stockQuantity || 10
-          })));
-        }
-      } catch(e) {}
-      return res.json([]);
+      const shopRow = await queryOne('SELECT c.slug FROM local_shops s JOIN shop_categories c ON s.category_id = c.id WHERE s.id = $1', [req.params.id]);
+      const category = shopRow ? shopRow.slug : 'default';
+      return res.json(generateMockProducts(category));
     }
     const products = await query('SELECT * FROM shop_products WHERE shop_id = $1 AND is_available = true', [req.params.id]);
     res.json(products.rows || products);
@@ -392,24 +379,9 @@ router.post('/:id/products', authenticate, async (req, res, next) => {
 router.get('/:id/services', async (req, res, next) => {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      try {
-        const fs = require('fs'); const path = require('path');
-        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/catalogs_services.json');
-        if (fs.existsSync(mockPath)) {
-          const catData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
-          let shopServices = (catData.serviceListings || []).filter(s => s.shopId === req.params.id);
-          if (shopServices.length === 0) shopServices = (catData.serviceListings || []).slice(0, 5);
-          return res.json(shopServices.map(s => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-            duration_minutes: s.durationMinutes || 30,
-            price: s.pricePaise ? (s.pricePaise / 100) : 0,
-            is_free_for_premium: s.isFreeForPremium ? 1 : 0
-          })));
-        }
-      } catch(e) {}
-      return res.json([]);
+      const shopRow = await queryOne('SELECT c.slug FROM local_shops s JOIN shop_categories c ON s.category_id = c.id WHERE s.id = $1', [req.params.id]);
+      const category = shopRow ? shopRow.slug : 'default';
+      return res.json(generateMockServices(category));
     }
     const services = await query('SELECT * FROM shop_services WHERE shop_id = $1 AND is_available = 1 ORDER BY display_order ASC', [req.params.id]);
     res.json(services.rows || services);
@@ -435,10 +407,9 @@ router.post('/:id/services', authenticate, async (req, res, next) => {
 router.get('/:id/staff', async (req, res, next) => {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      return res.json([
-        { id: 'stf1', name: 'Ramesh Kumar', role: 'Senior Stylist', specialization: 'Hair & Beard', experience_years: 5, avg_rating: 4.8 },
-        { id: 'stf2', name: 'Priya Sharma', role: 'Therapist', specialization: 'Spa & Skin Care', experience_years: 3, avg_rating: 4.9 }
-      ]);
+      const shopRow = await queryOne('SELECT c.slug FROM local_shops s JOIN shop_categories c ON s.category_id = c.id WHERE s.id = $1', [req.params.id]);
+      const category = shopRow ? shopRow.slug : 'default';
+      return res.json(generateMockStaff(category));
     }
     const staff = await query('SELECT * FROM shop_staff WHERE shop_id = $1 AND is_active = true', [req.params.id]);
     res.json(staff.rows || staff);
@@ -463,12 +434,19 @@ router.post('/:id/staff', authenticate, async (req, res, next) => {
 router.get('/:id/staff/:sid/slots', async (req, res, next) => {
     try {
         if (process.env.NODE_ENV !== 'production') {
-            return res.json({ slots: [
-                { time: '10:00 AM', surgeMultiplier: 1.0 },
-                { time: '11:00 AM', surgeMultiplier: 1.0 },
-                { time: '02:00 PM', surgeMultiplier: 1.2 },
-                { time: '04:00 PM', surgeMultiplier: 1.0 }
-            ]});
+            const slots = [];
+            const startHour = 10;
+            for(let i=0; i<6; i++) {
+                const hour = startHour + i;
+                const timeStr = hour > 12 ? `${hour-12}:00 PM` : `${hour}:00 ${hour===12?'PM':'AM'}`;
+                slots.push({
+                    id: `slot_${hour}`,
+                    time: timeStr,
+                    surgeMultiplier: i === 2 || i === 3 ? 1.2 : 1.0,
+                    status: Math.random() > 0.7 ? 'booked' : 'available'
+                });
+            }
+            return res.json({ slots });
         }
         const { date } = req.query; // "YYYY-MM-DD"
         if (!date) return res.status(400).json({error: "Date required"});
@@ -851,28 +829,45 @@ router.post('/cart/batch-checkout', authenticate, async (req, res, next) => {
     }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 // ENHANCED SHOP MANAGEMENT ROUTES (v2)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 const { requireShopOwner, requireOrderAccess, requireAppointmentAccess } = require('../../../middleware/shop-owner.middleware');
 const shopMgmt = require('../controllers/shop-management.controller');
 const { upload, recordUpload } = require('../../core/services/upload.service');
 
-// â”€â”€â”€ SHOP OWNER DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——— SHOP OWNER DASHBOARD ————————————————————————————————————————————————————————————————————————————————————————————————————————
 router.get('/my-shop/dashboard', authenticate, requireShopOwner, shopMgmt.getShopDashboard);
 router.get('/my-shop/analytics', authenticate, requireShopOwner, shopMgmt.getShopAnalytics);
 router.get('/my-shop/payouts', authenticate, requireShopOwner, shopMgmt.getShopPayouts);
 router.put('/my-shop/settings', authenticate, requireShopOwner, shopMgmt.updateShopSettings);
 router.put('/my-shop/live-status', authenticate, requireShopOwner, shopMgmt.toggleLiveVisibility);
 
-// â”€â”€â”€ ORDER MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——— ORDER MANAGEMENT (Shop Owner) ——————————————————————————————————————————————————————————————————————————————————————————————
 router.get('/my-shop/orders', authenticate, requireShopOwner, shopMgmt.getShopOrders);
 router.put('/my-shop/orders/:orderId/status', authenticate, requireShopOwner, shopMgmt.updateOrderStatus);
+router.put('/my-shop/orders/:orderId/assign-rider', authenticate, requireShopOwner, shopMgmt.assignRiderToOrder);
+router.get('/my-shop/ledger', authenticate, requireShopOwner, shopMgmt.getShopLedger);
+router.get('/my-shop/leads', authenticate, requireShopOwner, shopMgmt.getShopLeads);
+router.put('/my-shop/leads/:leadId/status', authenticate, requireShopOwner, shopMgmt.updateLeadStatus);
 
-// â”€â”€â”€ APPOINTMENT MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── APPOINTMENT MANAGEMENT (Shop Owner) ──────────────────────────
 router.get('/my-shop/appointments', authenticate, requireShopOwner, shopMgmt.getShopAppointments);
 router.put('/my-shop/appointments/:appointmentId/status', authenticate, requireShopOwner, shopMgmt.updateAppointmentStatus);
+
+// ─── STAFF MANAGEMENT (Shop Owner) ──────────────────────────
+router.get('/my-shop/staff', authenticate, requireShopOwner, shopMgmt.getShopStaff);
+router.post('/my-shop/staff', authenticate, requireShopOwner, shopMgmt.addShopStaff);
+router.put('/my-shop/staff/:staffId', authenticate, requireShopOwner, shopMgmt.updateShopStaff);
+router.delete('/my-shop/staff/:staffId', authenticate, requireShopOwner, shopMgmt.removeShopStaff);
+
+// ─── REVIEWS MANAGEMENT (Shop Owner) ──────────────────────────
+router.get('/my-shop/reviews', authenticate, requireShopOwner, shopMgmt.getShopReviews);
+router.post('/my-shop/reviews/:reviewId/reply', authenticate, requireShopOwner, shopMgmt.replyToShopReview);
+
+// ─── ANALYTICS (Shop Owner) ──────────────────────────
+router.get('/my-shop/analytics-data', authenticate, requireShopOwner, shopMgmt.getShopAnalyticsData);
 
 // â”€â”€â”€ PRODUCT & INVENTORY MANAGEMENT (Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/my-shop/products', authenticate, requireShopOwner, shopMgmt.addProduct);
@@ -943,6 +938,15 @@ router.post('/upload/single', authenticate, upload.single('file'), async (req, r
     const record = await recordUpload(req.user.id, req.file, purpose, referenceId);
     res.json({ success: true, upload: record });
   } catch (error) { next(error); }
+});
+
+// Stub endpoints for shop offers and reviews
+router.get('/:id/offers', async (req, res) => {
+  res.json({ success: true, data: [] });
+});
+
+router.get('/:id/reviews', async (req, res) => {
+  res.json({ success: true, data: [] });
 });
 
 module.exports = router;

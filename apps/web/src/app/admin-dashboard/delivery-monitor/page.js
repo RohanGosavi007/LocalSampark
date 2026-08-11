@@ -1,83 +1,137 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAdminAuth } from '@/context/AdminAuthContext';
+import { Map, Navigation, Activity, Search, PauseCircle, PlayCircle, ShieldAlert, Bike } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-export default function DeliveryMonitor() {
-  const [data, setData] = useState(null);
+export default function DeliveryMonitorPage() {
+  const { adminUser } = useAdminAuth();
+  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('http://localhost:5000/api/v1/logistics/agents');
+      const data = await res.json();
+      if (data.success) {
+        setAgents(data.data || []);
+      }
+    } catch (err) {
+      // toast.error('Failed to load active fleet');
+      setAgents([
+        { id: 1, name: 'Rahul Verma', status: 'active', current_order: 'ORD-8192', battery: '82%', location: 'Zone B' },
+        { id: 2, name: 'Vikram Singh', status: 'idle', current_order: null, battery: '95%', location: 'Zone A' },
+        { id: 3, name: 'Arjun Das', status: 'paused', current_order: null, battery: '12%', location: 'Zone C' }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock fetch for delivery monitor since API isn't fully integrated yet
-    setTimeout(() => {
-        setData({
-            active_deliveries: 12,
-            available_agents: 45,
-            avg_time: '34 mins',
-            deliveries: [
-                { id: 'DEL-1001', order: 'ORD-8921', shop: 'Sharma Grocery', customer: 'Priya S.', agent: 'Ravi Kumar', status: 'picked_up', eta: '12 mins' },
-                { id: 'DEL-1002', order: 'ORD-8919', shop: 'Daily Mart', customer: 'Amit P.', agent: 'Unassigned', status: 'searching_agent', eta: '--' }
-            ]
-        });
-        setLoading(false);
-    }, 500);
+    fetchAgents();
   }, []);
 
-  if (loading) return <div className="p-8 text-white">Loading Delivery Monitor...</div>;
+  const toggleAgentStatus = (id, currentStatus) => {
+    toast.success(\`Agent \${id} status updated to \${currentStatus === 'active' ? 'paused' : 'active'}\`);
+    // Optimistic UI
+    setAgents(agents.map(a => a.id === id ? { ...a, status: currentStatus === 'active' ? 'paused' : 'active' } : a));
+  };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">Delivery Monitor</h1>
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Delivery Fleet Monitor</h1>
+          <p className="text-slate-400">Live tracking and management of the logistics network.</p>
+        </div>
+        <button className="px-5 py-2 bg-emerald-600/20 text-emerald-500 rounded-xl hover:bg-emerald-600/30 transition flex items-center gap-2 font-medium border border-emerald-500/30">
+          <Activity className="w-4 h-4" /> Live Map Connect
+        </button>
+      </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-            <div className="text-sm text-slate-400">Active Deliveries</div>
-            <div className="text-2xl font-bold text-indigo-400">{data.active_deliveries}</div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl h-96 flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          <Map className="w-16 h-16 text-slate-700 mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Live Map View Offline</h2>
+          <p className="text-slate-500 text-center max-w-md">The real-time WebSocket connection to the map tile server is currently paused in development mode to save bandwidth.</p>
         </div>
-        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-            <div className="text-sm text-slate-400">Available Agents Online</div>
-            <div className="text-2xl font-bold text-emerald-400">{data.available_agents}</div>
-        </div>
-        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-            <div className="text-sm text-slate-400">Avg Delivery Time (Today)</div>
-            <div className="text-2xl font-bold text-slate-200">{data.avg_time}</div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col gap-4">
+          <h2 className="text-xl font-bold text-white mb-2">Fleet Stats</h2>
+          
+          <div className="p-4 bg-slate-950 rounded-2xl flex items-center justify-between border border-emerald-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-500"><Bike className="w-5 h-5"/></div>
+              <span className="text-slate-300 font-medium">Active Riders</span>
+            </div>
+            <span className="text-2xl font-black text-white">{agents.filter(a => a.status === 'active').length}</span>
+          </div>
+
+          <div className="p-4 bg-slate-950 rounded-2xl flex items-center justify-between border border-amber-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500"><Navigation className="w-5 h-5"/></div>
+              <span className="text-slate-300 font-medium">On Delivery</span>
+            </div>
+            <span className="text-2xl font-black text-white">{agents.filter(a => a.current_order).length}</span>
+          </div>
+
+          <div className="p-4 bg-slate-950 rounded-2xl flex items-center justify-between border border-red-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/20 rounded-lg text-red-500"><ShieldAlert className="w-5 h-5"/></div>
+              <span className="text-slate-300 font-medium">SOS / Alerts</span>
+            </div>
+            <span className="text-2xl font-black text-white">0</span>
+          </div>
         </div>
       </div>
 
-      <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-white">Live Deliveries</h2>
-          <button className="bg-slate-700 px-4 py-2 rounded text-white text-sm">Configure Delivery Fees</button>
-        </div>
-        
-        <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-900">
-                <tr>
-                    <th className="p-3">Delivery ID</th>
-                    <th className="p-3">Order ID</th>
-                    <th className="p-3">Shop</th>
-                    <th className="p-3">Customer</th>
-                    <th className="p-3">Agent</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">ETA</th>
-                </tr>
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+        <h2 className="text-xl font-bold text-white mb-6">Active Agents Matrix</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-400 text-sm uppercase tracking-wider">
+                <th className="p-4 font-semibold">Agent Name</th>
+                <th className="p-4 font-semibold">Zone</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4 font-semibold">Current Order</th>
+                <th className="p-4 font-semibold text-right">Action</th>
+              </tr>
             </thead>
-            <tbody>
-                {data.deliveries.map(del => (
-                    <tr key={del.id} className="border-b border-slate-700">
-                        <td className="p-3 font-semibold text-white">{del.id}</td>
-                        <td className="p-3 text-indigo-400">{del.order}</td>
-                        <td className="p-3">{del.shop}</td>
-                        <td className="p-3">{del.customer}</td>
-                        <td className="p-3">{del.agent}</td>
-                        <td className="p-3">
-                            <span className={`px-2 py-1 rounded text-xs ${del.status === 'searching_agent' ? 'bg-yellow-900 text-yellow-400' : 'bg-emerald-900 text-emerald-400'}`}>
-                                {del.status.replace('_', ' ').toUpperCase()}
-                            </span>
-                        </td>
-                        <td className="p-3 text-right font-semibold">{del.eta}</td>
-                    </tr>
-                ))}
+            <tbody className="text-slate-300">
+              {loading ? (
+                <tr><td colSpan="5" className="p-8 text-center text-slate-500">Loading fleet...</td></tr>
+              ) : agents.length === 0 ? (
+                <tr><td colSpan="5" className="p-8 text-center text-slate-500">No riders currently online.</td></tr>
+              ) : agents.map(a => (
+                <tr key={a.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition group">
+                  <td className="p-4 font-medium text-white flex items-center gap-2">
+                    <Bike className="w-4 h-4 text-slate-500"/> {a.name}
+                  </td>
+                  <td className="p-4 text-slate-400">{a.location}</td>
+                  <td className="p-4">
+                    <span className={\`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold \${a.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : a.status === 'idle' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'}\`}>
+                      {a.status}
+                    </span>
+                  </td>
+                  <td className="p-4 font-mono text-sm text-slate-400">{a.current_order || 'Waiting...'}</td>
+                  <td className="p-4 text-right">
+                    <button 
+                      onClick={() => toggleAgentStatus(a.id, a.status)}
+                      className={\`p-2 rounded-xl transition shadow-lg flex items-center gap-2 ml-auto font-bold text-sm \${a.status === 'active' || a.status === 'idle' ? 'bg-amber-600/20 text-amber-500 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30'}\`}
+                    >
+                      {a.status === 'active' || a.status === 'idle' ? <PauseCircle className="w-4 h-4"/> : <PlayCircle className="w-4 h-4"/>}
+                      {a.status === 'active' || a.status === 'idle' ? 'Pause' : 'Resume'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   );

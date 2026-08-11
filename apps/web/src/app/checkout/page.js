@@ -7,6 +7,8 @@ import { ShoppingBag, CreditCard, MapPin, Truck, CheckCircle2, Navigation, Alert
 import { useCartStore } from '../../store/cartStore';
 import { useAuth } from '../../context/AuthContext';
 import { apiPost } from '../../lib/api';
+import UpiGateway from '../../components/UpiGateway';
+import Link from 'next/link';
 
 export default function CheckoutPage() {
   const [step, setStep] = useState(1); // 1: Cart, 2: Address/Fulfillment, 3: Payment, 4: Success
@@ -16,10 +18,24 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // 'RAZORPAY' | 'STRIPE' | 'CASHFREE' | 'COD'
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [showUpi, setShowUpi] = useState(false);
 
   // Use the cart store
   const { items: cartItems, getCartTotal, clearCart, currentShopName, currentShopId, sessionId } = useCartStore();
   const total = getCartTotal();
+  
+  // Dynamic Pricing Logic
+  const hasPlusPass = false; // Mock state
+  const isSurge = true; // High demand mock
+  
+  const smallOrderFee = total < 100 ? 15 : 0;
+  const distanceFee = 20;
+  const surgeFee = isSurge ? 20 : 0;
+  
+  const calculatedDeliveryFee = hasPlusPass ? 0 : (distanceFee + surgeFee);
+  const platformFee = 10;
+  
+  const finalTotal = total + (fulfillmentMethod === 'SELF_PICKUP' ? 0 : calculatedDeliveryFee) + platformFee + smallOrderFee;
 
   const [allowedPayments, setAllowedPayments] = useState(['RAZORPAY', 'STRIPE', 'CASHFREE', 'COD']);
   const [allowedFulfillments, setAllowedFulfillments] = useState(['DELIVERY', 'SELF_PICKUP']);
@@ -91,33 +107,41 @@ export default function CheckoutPage() {
     setLoading(true);
     
     try {
-      // Create Order on Backend via new checkout API
-      const data = await apiPost('/checkout', {
-        sessionId,
+      // Create Order on Backend via new Universal Orders API
+      const orderType = cartItems.some(i => i.item_type && i.item_type !== 'physical_good') ? 'booking' : 'retail';
+      
+      const payload = {
         shopId: currentShopId,
-        paymentMethod,
-        fulfillmentMethod,
-        deliveryLat: 0,
-        deliveryLng: 0
-      });
+        orderType,
+        totalAmount: total + (fulfillmentMethod === 'DELIVERY' ? 60 : 10),
+        deliveryAddress: fulfillmentMethod === 'DELIVERY' ? `${address}, ${pincode}` : 'Self Pickup',
+        items: cartItems.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        notes: `Payment: ${paymentMethod}`
+      };
+
+      const data = await apiPost('/universal-orders', payload);
       
       if (!data.success) {
         throw new Error(data.error || 'Failed to place order');
       }
 
-      const generatedOrderId = data.order.id;
+      const generatedOrderId = data.orderId;
 
       if (paymentMethod === 'RAZORPAY') {
-        // Initialize Razorpay
+        // Initialize Razorpay (Mocking key for universal orders)
         const options = {
-          key: data.paymentData.key || 'rzp_test_mock',
+          key: 'rzp_test_mock',
           amount: Math.round((total + (fulfillmentMethod === 'DELIVERY' ? 60 : 10)) * 100), // in paise
           currency: 'INR',
           name: 'LocalSampark',
           description: `Order from ${currentShopName}`,
-          order_id: data.paymentData.orderId, 
+          order_id: data.orderId, 
           handler: async function (response) {
-            setOrderId(generatedOrderId);
+            setOrderId(data.orderId);
             setStep(4);
             clearCart();
           },
@@ -147,10 +171,6 @@ export default function CheckoutPage() {
     
     setLoading(false);
   };
-
-  const deliveryFee = fulfillmentMethod === 'SELF_PICKUP' ? 0 : 50;
-  const platformFee = 10;
-  const finalTotal = total + deliveryFee + platformFee;
 
   return (
     <>
@@ -337,6 +357,20 @@ export default function CheckoutPage() {
                     </div>
                   </motion.div>
                 )}
+                
+                {/* UPI Simulator Modal */}
+                {showUpi && (
+                  <UpiGateway 
+                    amount={finalTotal} 
+                    onClose={() => setShowUpi(false)} 
+                    onSuccess={() => {
+                      setShowUpi(false);
+                      setOrderId('ORD-' + Math.floor(Math.random() * 1000000));
+                      setStep(4);
+                      clearCart();
+                    }} 
+                  />
+                )}
 
                 {/* Step 4: Success */}
                 {step === 4 && (
@@ -376,26 +410,64 @@ export default function CheckoutPage() {
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl sticky top-28">
                   <h3 className="text-xl font-bold text-white mb-6">Order Summary</h3>
                   
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-4 mb-6 text-sm">
                     <div className="flex justify-between text-slate-300">
                       <span>Item Total ({cartItems.length} items)</span>
-                      <span>₹{total}</span>
+                      <span>₹{total.toFixed(2)}</span>
                     </div>
+                    
+                    {smallOrderFee > 0 && (
+                      <div className="flex justify-between text-orange-400">
+                        <span>Small Order Fee</span>
+                        <span>+₹{smallOrderFee.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between text-slate-300">
                       <span>Platform Fee</span>
-                      <span>₹{platformFee}</span>
+                      <span>₹{platformFee.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>Delivery Fee</span>
-                      <span className={deliveryFee === 0 ? "text-emerald-400" : ""}>
-                        {deliveryFee === 0 ? "FREE (Pickup)" : `₹${deliveryFee}`}
-                      </span>
-                    </div>
+                    
+                    {fulfillmentMethod === 'DELIVERY' && (
+                      <>
+                        <div className="flex justify-between text-slate-300">
+                          <span>Delivery Fee</span>
+                          {hasPlusPass ? (
+                            <span className="text-emerald-400 font-bold">FREE</span>
+                          ) : (
+                            <span>₹{distanceFee.toFixed(2)}</span>
+                          )}
+                        </div>
+                        {isSurge && !hasPlusPass && (
+                          <div className="flex justify-between text-purple-400 font-bold">
+                            <span>High Demand Surge</span>
+                            <span>+₹{surgeFee.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {fulfillmentMethod === 'SELF_PICKUP' && (
+                      <div className="flex justify-between text-emerald-400 font-bold">
+                        <span>Delivery Fee</span>
+                        <span>FREE (Pickup)</span>
+                      </div>
+                    )}
+
                     <div className="border-t border-slate-800 pt-4 flex justify-between items-end">
                       <span className="text-slate-400">Total to Pay</span>
-                      <span className="text-3xl font-black text-white">₹{finalTotal}</span>
+                      <span className="text-3xl font-black text-white">₹{finalTotal.toFixed(2)}</span>
                     </div>
                   </div>
+
+                  {!hasPlusPass && fulfillmentMethod === 'DELIVERY' && (
+                    <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-4 mb-6">
+                      <h4 className="font-bold text-orange-500 text-sm mb-1">Save ₹{distanceFee + surgeFee} on this order!</h4>
+                      <p className="text-slate-400 text-xs mb-3">Get unlimited free deliveries with LocalSampark Plus.</p>
+                      <Link href="/resident/plus" className="text-xs font-bold text-white bg-orange-500 px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors inline-block">
+                        Join Plus
+                      </Link>
+                    </div>
+                  )}
 
                   {step === 1 && (
                     <button onClick={() => setStep(2)} disabled={cartItems.length === 0} className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 disabled:opacity-50">
@@ -408,8 +480,8 @@ export default function CheckoutPage() {
                     </button>
                   )}
                   {step === 3 && (
-                    <button onClick={handlePlaceOrder} disabled={loading} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-500 transition shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2">
-                      {loading ? <span className="animate-pulse">Processing...</span> : <>Pay ₹{finalTotal}</>}
+                    <button onClick={() => setShowUpi(true)} disabled={loading} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-500 transition shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2">
+                      {loading ? <span className="animate-pulse">Processing...</span> : <>Pay ₹{finalTotal.toFixed(2)}</>}
                     </button>
                   )}
                 </div>

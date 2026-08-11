@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import { API_BASE } from '@/lib/api';
+import io from 'socket.io-client';
 
 // ─── STATUS CONFIG ──────────────────────────────────────────────
 const ORDER_STATUS_CONFIG = {
@@ -52,6 +53,29 @@ export default function OrderManagementPanel({ token, shopId }) {
     fetchOrders(activeTab);
   }, [activeTab, fetchOrders]);
 
+  useEffect(() => {
+    if (!shopId) return;
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const socket = io(BACKEND_URL);
+
+    socket.emit('join_shop_room', shopId);
+
+    socket.on('NEW_ORDER', (data) => {
+      // If we are on the pending tab or the status matches, refresh
+      if (activeTab === 'pending' || activeTab === data.status) {
+        fetchOrders(activeTab);
+      }
+    });
+
+    socket.on('ORDER_STATUS_CHANGED', (data) => {
+      fetchOrders(activeTab);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [shopId, activeTab, fetchOrders]);
+
   const handleStatusUpdate = async (orderId, newStatus, prepTime) => {
     try {
       const res = await fetch(`${API_BASE}/shops/my-shop/orders/${orderId}/status`, {
@@ -72,6 +96,22 @@ export default function OrderManagementPanel({ token, shopId }) {
       }
     } catch (err) {
       console.error('Failed to update order:', err);
+    }
+  };
+
+  const handleAssignRider = async (orderId) => {
+    // In a real app, this would open a modal with a list of riders.
+    // For now, we mock assign nearest rider.
+    const mockRiderId = 'RIDER-TEST-123';
+    try {
+      const res = await fetch(`${API_BASE}/shops/${shopId}/orders/${orderId}/assign-rider`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ riderId: mockRiderId })
+      });
+      if (res.ok) fetchOrders(activeTab);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -321,7 +361,14 @@ export default function OrderManagementPanel({ token, shopId }) {
                         <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                           {config.action && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, config.nextStatus); }}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (order.status === 'ready_for_pickup' && order.delivery_type === 'delivery') {
+                                  handleAssignRider(order.id);
+                                } else {
+                                  handleStatusUpdate(order.id, config.nextStatus); 
+                                }
+                              }}
                               style={{
                                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                                 padding: '12px', borderRadius: '12px', border: 'none',
@@ -329,7 +376,7 @@ export default function OrderManagementPanel({ token, shopId }) {
                                 color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
                               }}
                             >
-                              {config.action} <ArrowRight size={16} />
+                              {order.status === 'ready_for_pickup' && order.delivery_type === 'delivery' ? 'Assign Rider' : config.action} <ArrowRight size={16} />
                             </button>
                           )}
                           {order.status === 'pending' && (

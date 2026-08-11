@@ -15,6 +15,7 @@ import { Badge } from './components/ui/Badge';
 import { Button } from './components/ui/Button';
 import { cn } from './components/ui/Button';
 import { StoreIcon, CommunityIcon, DeliveryIcon, ProduceIcon } from './components/ui/RichIcons';
+import { useLanguage } from './components/LanguageToggle';
 
 // ── Data ──────────────────────────────────────────────────────
 
@@ -26,60 +27,60 @@ const TESTIMONIALS = [
 
 const PILLARS = [
   { 
-    title: 'Community Forums', 
+    title: 'pillar_community', 
     iconComp: <CommunityIcon size={48} />, 
     link: '/community', 
-    desc: 'Share local updates & discuss developments with your neighbors.',
+    desc: 'pillar_community_desc',
     badge: '💬 12k+ Posts',
     gradient: 'from-rose-500/20 via-pink-500/10 to-transparent',
     borderHover: 'hover:border-rose-500/40',
     span: 'col-span-2 row-span-2',
   },
   { 
-    title: 'Local Shops', 
+    title: 'pillar_shops', 
     iconComp: <StoreIcon size={48} />, 
     link: '/shops', 
-    desc: 'Order direct from neighborhood stores instantly.',
+    desc: 'pillar_shops_desc',
     badge: '⭐ Top Rated',
     gradient: 'from-orange-500/20 via-amber-500/10 to-transparent',
     borderHover: 'hover:border-orange-500/40',
     span: 'col-span-2',
   },
   { 
-    title: 'Hyperlocal Delivery', 
+    title: 'pillar_hyperlocal', 
     iconComp: <DeliveryIcon size={48} />, 
     link: '/download', 
-    desc: '10-minute grocery delivery from your zone.',
+    desc: 'pillar_hyperlocal_desc',
     badge: '⚡ 10-Min',
     gradient: 'from-violet-500/20 via-purple-500/10 to-transparent',
     borderHover: 'hover:border-violet-500/40',
     span: '',
   },
   { 
-    title: 'Fresh Produce', 
+    title: 'pillar_fresh', 
     iconComp: <ProduceIcon size={48} />, 
     link: '/shops?category=fresh', 
-    desc: 'Farm-fresh vegetables direct to door.',
+    desc: 'pillar_fresh_desc',
     badge: '🌿 Organic',
     gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent',
     borderHover: 'hover:border-emerald-500/40',
     span: '',
   },
   { 
-    title: 'Society Mgmt', 
+    title: 'pillar_society', 
     icon: Home, 
     link: '/society', 
-    desc: 'Digital visitor passes, notices, and maintenance.',
+    desc: 'pillar_society_desc',
     badge: '🏘️ Smart',
     gradient: 'from-indigo-500/20 via-blue-500/10 to-transparent',
     borderHover: 'hover:border-indigo-500/40',
     span: '',
   },
   { 
-    title: 'Earn & Franchise', 
+    title: 'pillar_earn', 
     icon: HandCoins, 
     link: '/earn', 
-    desc: 'Become a partner and build recurring income.',
+    desc: 'pillar_earn_desc',
     badge: '💰 ₹42k/mo',
     gradient: 'from-green-500/20 via-emerald-500/10 to-transparent',
     borderHover: 'hover:border-green-500/40',
@@ -110,6 +111,7 @@ const ZONES = [
 // ── 3D Tilt Card Component ──────────────────────────────────
 
 function BentoCard({ pillar, index }) {
+  const { t } = useLanguage();
   const cardRef = useRef(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -172,9 +174,9 @@ function BentoCard({ pillar, index }) {
         </div>
 
         <h3 className="text-xl font-heading font-bold mb-2 text-text group-hover:text-primary transition-colors">
-          {pillar.title}
+          {t(pillar.title)}
         </h3>
-        <p className="text-sm text-text-muted leading-relaxed flex-1">{pillar.desc}</p>
+        <p className="text-sm text-text-muted leading-relaxed flex-1">{t(pillar.desc)}</p>
         
         <div className="mt-5 flex items-center text-sm font-semibold text-primary opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
           Explore <ArrowRight className="w-4 h-4 ml-1" />
@@ -187,6 +189,7 @@ function BentoCard({ pillar, index }) {
 // ── Main Page ────────────────────────────────────────────────
 
 export default function HomePage() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({ neighbors: 1000, shops: 50, gigs: 10, commission: 5000 });
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
@@ -234,26 +237,26 @@ export default function HomePage() {
               >
                 <Badge variant="success" pulse className="mb-6 px-4 py-1.5 text-sm shimmer-hover">
                   <span className="status-dot-live mr-2"></span>
-                  Pilot Live in Dhanori, Pune
+                  {t('hero_badge')}
                 </Badge>
                 
                 <h1 className="text-5xl lg:text-7xl font-heading font-black tracking-tight leading-[1.1] mb-6 text-text">
-                  Your Neighborhood, <br/>
+                  {t('hero_main_title').split(',')[0]}, <br/>
                   <span className="gradient-text-v2">
-                    Connected.
+                    {t('hero_main_title').split(',')[1] || 'Connected.'}
                   </span>
                 </h1>
                 
                 <p className="text-lg lg:text-xl text-text-muted mb-8 leading-relaxed max-w-xl">
-                  LocalSampark is India's most comprehensive hyper-local super-app. Connect with neighbors, find service providers, shop from local stores, list properties, and earn money — all within your own zone.
+                  {t('hero_main_sub')}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-10">
                   <Button asChild size="lg" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-1 shimmer-hover">
-                    <a href="/download">Download the App</a>
+                    <a href="/download">{t('hero_btn_download')}</a>
                   </Button>
                   <Button asChild size="lg" variant="secondary" icon={Store} className="w-full sm:w-auto hover:-translate-y-1">
-                    <a href="/register">Register Your Shop</a>
+                    <a href="/register">{t('hero_btn_register')}</a>
                   </Button>
                 </div>
 
@@ -261,17 +264,17 @@ export default function HomePage() {
                 <div className="flex flex-wrap gap-8 items-center pt-6 border-t border-border/50">
                   <div>
                     <p className="text-3xl font-heading font-black text-text">0%</p>
-                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Commission</p>
+                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">{t('stat_commission')}</p>
                   </div>
                   <div className="w-px h-10 bg-border"></div>
                   <div>
                     <p className="text-3xl font-heading font-black text-text">2hrs</p>
-                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Avg Delivery</p>
+                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">{t('stat_delivery')}</p>
                   </div>
                   <div className="w-px h-10 bg-border"></div>
                   <div>
                     <p className="text-3xl font-heading font-black text-text">25+</p>
-                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Pune Zones</p>
+                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">{t('stat_zones')}</p>
                   </div>
                 </div>
               </motion.div>
@@ -393,14 +396,12 @@ export default function HomePage() {
            ══════════════════════════════════════════════════════════ */}
         <section className="py-24 relative" id="features">
           <div className="container">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4">
-                <Sparkles className="w-3 h-3 mr-1" /> Platform Architecture
-              </Badge>
-              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">
-                The 8 Pillars of <span className="gradient-text-v2">LocalSampark</span>
+            <div className="text-center mb-16">
+              <Badge variant="outline" className="mb-4 border-primary/20 text-primary uppercase tracking-widest text-xs px-3 py-1">Ecosystem</Badge>
+              <h2 className="text-4xl lg:text-5xl font-heading font-black text-text mb-4">
+                {t('sec_what_is')} <span className="gradient-text-v2">LocalSampark</span>
               </h2>
-              <p className="text-lg text-text-muted">Everything your community needs, unified under a single platform to boost local trade and strengthen social bonds.</p>
+              <p className="text-lg text-text-muted">{t('sec_what_is_desc')}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1200px' }}>

@@ -69,8 +69,10 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
         return ['super_admin', 'admin', 'territory_admin', 'area_agent', 'moderator'].includes(u.role);
       } else if (activeTier === 'tier2') {
         return ['shop_owner', 'chef', 'doctor', 'service_provider'].includes(u.role) || u.role === 'user';
-      } else {
+      } else if (activeTier === 'tier3') {
         return ['society_admin', 'security_guard', 'resident_member', 'delivery_agent', 'field_agent'].includes(u.role);
+      } else {
+        return ['krishi_agent', 'farmer', 'mandi_operator', 'driver', 'bike_taxi_agent', 'ngo_admin', 'volunteer', 'csc_operator', 'lawyer', 'scrap_collector', 'vet', 'animal_rescuer'].includes(u.role);
       }
     });
   };
@@ -108,15 +110,18 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
         </div>
 
         {/* Tier Tabs Navigation */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', borderBottom: '1px solid #334155', pb: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '0.75rem', flexWrap: 'wrap' }}>
           <button style={tabBtnStyle(activeTier === 'tier1')} onClick={() => setActiveTier('tier1')}>
             🌐 Tier 1: Global & Territory
           </button>
           <button style={tabBtnStyle(activeTier === 'tier2')} onClick={() => setActiveTier('tier2')}>
-            🏪 Tier 2: Shop Staff & Services (Chefs, Doctors)
+            🏪 Tier 2: Shop Staff & Services
           </button>
           <button style={tabBtnStyle(activeTier === 'tier3')} onClick={() => setActiveTier('tier3')}>
             🏢 Tier 3: Society & Logistics
+          </button>
+          <button style={tabBtnStyle(activeTier === 'tier4')} onClick={() => setActiveTier('tier4')}>
+            🌱 Tier 4: Ecosystems (Krishi, Charity, etc)
           </button>
         </div>
       </div>
@@ -126,18 +131,23 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
         {/* Tier Specific Banner */}
         <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: '#0f172a', borderRadius: '0.5rem', borderLeft: '4px solid #4f46e5' }}>
           {activeTier === 'tier1' && (
-            <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
               <strong>Platform Scope:</strong> Super Admins, Territory Admins, and Franchise Partners bound to Pincode/Regions.
             </p>
           )}
           {activeTier === 'tier2' && (
-            <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
               <strong>Merchant Data Silo Scope:</strong> Roles like <code>Chef</code> and <code>Doctor</code> are scoped to specific <code>shop_id</code> instances to enforce data protection.
             </p>
           )}
           {activeTier === 'tier3' && (
-            <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
               <strong>Hyperlocal & Logistics Scope:</strong> Society Admins, Security Guards, and Delivery Agents.
+            </p>
+          )}
+          {activeTier === 'tier4' && (
+            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
+              <strong>Ecosystem Specialists:</strong> Krishi Agents, NGOs, Vets, Scrap Collectors, and Civic Operators.
             </p>
           )}
         </div>
@@ -223,6 +233,30 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
                                   <option value="resident_member">Resident Member</option>
                                   <option value="delivery_agent">Delivery Agent</option>
                                   <option value="field_agent">Field Agent</option>
+                                </>
+                              )}
+                              {activeTier === 'tier4' && (
+                                <>
+                                  <optgroup label="Agriculture" style={{ background: '#0f172a' }}>
+                                    <option value="krishi_agent">Krishi Agent</option>
+                                    <option value="farmer">Farmer</option>
+                                    <option value="mandi_operator">Mandi Operator</option>
+                                  </optgroup>
+                                  <optgroup label="Mobility" style={{ background: '#0f172a' }}>
+                                    <option value="driver">Driver</option>
+                                    <option value="bike_taxi_agent">Bike Taxi Agent</option>
+                                  </optgroup>
+                                  <optgroup label="Charity & Civic" style={{ background: '#0f172a' }}>
+                                    <option value="ngo_admin">NGO Admin</option>
+                                    <option value="volunteer">Volunteer</option>
+                                    <option value="csc_operator">CSC Operator</option>
+                                    <option value="lawyer">Lawyer</option>
+                                  </optgroup>
+                                  <optgroup label="Environment & Pets" style={{ background: '#0f172a' }}>
+                                    <option value="scrap_collector">Scrap Collector</option>
+                                    <option value="vet">Vet</option>
+                                    <option value="animal_rescuer">Animal Rescuer</option>
+                                  </optgroup>
                                 </>
                               )}
                             </select>

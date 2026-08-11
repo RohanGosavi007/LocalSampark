@@ -28,7 +28,15 @@ import AuditTab from '../components/tabs/AuditTab';
 import ShopCategoriesTab from '../components/tabs/ShopCategoriesTab';
 import ChefTab from '../components/tabs/ChefTab';
 import BillsTab from '../components/tabs/BillsTab';
+import AdCampaignsTab from '../components/tabs/AdCampaignsTab';
 import MultilingualTab from '../components/tabs/MultilingualTab';
+import KrishiTab from '../components/tabs/KrishiTab';
+import MobilityTab from '../components/tabs/MobilityTab';
+import CharityTab from '../components/tabs/CharityTab';
+import EnvironmentTab from '../components/tabs/EnvironmentTab';
+import AnimalWelfareTab from '../components/tabs/AnimalWelfareTab';
+import CivicTab from '../components/tabs/CivicTab';
+import RewardsTab from '../components/tabs/RewardsTab';
 
 const authHeaders = getAuthHeaders;
 
@@ -392,7 +400,15 @@ export default function AdminDashboardPage() {
     { id: 'chef', label: 'Home Chef & Tiffin', icon: '👨‍🍳' },
     { id: 'bills', label: 'Utility Bills', icon: '🧾' },
     { id: 'ads', label: 'Ad Campaigns', icon: '📢' },
-    { id: 'multilingual', label: 'Regional Languages', icon: '🌐' }
+    { id: 'multilingual', label: 'Regional Languages', icon: '🌐' },
+    
+    { id: 'krishi', label: 'Agriculture & Rural', icon: '🌾' },
+    { id: 'mobility', label: 'Mobility & Transport', icon: '🚗' },
+    { id: 'charity', label: 'Charity & NGO', icon: '🤝' },
+    { id: 'environment', label: 'Environment & Waste', icon: '♻️' },
+    { id: 'animal', label: 'Animal Welfare & Pets', icon: '🐾' },
+    { id: 'civic', label: 'Civic & Legal Services', icon: '🏛️' },
+    { id: 'rewards', label: 'Earn & Rewards', icon: '🎁' }
   ];
 
   const tabStyle = (id) => ({
@@ -576,6 +592,13 @@ export default function AdminDashboardPage() {
         {activeTab === 'bills' && <BillsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'ads' && <AdCampaignsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'multilingual' && <MultilingualTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'krishi' && <KrishiTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'mobility' && <MobilityTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'charity' && <CharityTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'environment' && <EnvironmentTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'animal' && <AnimalWelfareTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'civic' && <CivicTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'rewards' && <RewardsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
 
       </main>
     </div>

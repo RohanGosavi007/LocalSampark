@@ -22,7 +22,9 @@ import ProfessionalConsultationManager from './ProfessionalConsultationManager';
 import TailoringManager from './TailoringManager';
 import EducationCoachingManager from './EducationCoachingManager';
 
-import ShopProductsManager from './shared/ShopProductsManager';
+import UnifiedCatalogueManager from './shared/UnifiedCatalogueManager';
+import LeadCRMCenter from './shared/LeadCRMCenter';
+import ShopLedger from './shared/ShopLedger';
 import ShopStaffManager from './shared/ShopStaffManager';
 import ShopReviewsManager from './shared/ShopReviewsManager';
 import ShopAnalyticsManager from './shared/ShopAnalyticsManager';
@@ -146,7 +148,9 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
     ...(useOrders ? [{ id: 'orders', label: 'Orders', icon: ShoppingBag }] : []),
     ...(useAppointments ? [{ id: 'appointments', label: 'Appointments', icon: Calendar }] : []),
     ...(useJobCards ? [{ id: 'jobcards', label: 'Job Cards', icon: Package }] : []),
-    { id: 'products', label: 'Products / Services', icon: Package },
+    { id: 'catalogue', label: 'Catalogue', icon: Package },
+    { id: 'crm', label: 'CRM', icon: Users },
+    { id: 'ledger', label: 'Ledger', icon: CreditCard },
     { id: 'staff', label: 'Staff', icon: Users },
     { id: 'reviews', label: 'Reviews', icon: Star },
     { id: 'chat', label: 'Chat', icon: MessageCircle },
@@ -182,7 +186,9 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
       {activeTab === 'orders' && <OrderManagementPanel token={token} shopId={shopId} />}
       {activeTab === 'appointments' && <AppointmentManagementPanel token={token} shopId={shopId} />}
       {activeTab === 'jobcards' && <JobCardManager token={token} shopId={shopId} categoryType={archetype} />}
-      {activeTab === 'products' && <ShopProductsManager token={token} shopId={shopId} />}
+      {activeTab === 'catalogue' && <UnifiedCatalogueManager token={token} shopId={shopId} />}
+      {activeTab === 'crm' && <LeadCRMCenter token={token} shopId={shopId} />}
+      {activeTab === 'ledger' && <ShopLedger token={token} shopId={shopId} />}
       {activeTab === 'staff' && <ShopStaffManager token={token} shopId={shopId} />}
       {activeTab === 'reviews' && <ShopReviewsManager token={token} shopId={shopId} />}
       {activeTab === 'chat' && <ShopChatManager token={token} shopId={shopId} />}

@@ -216,7 +216,7 @@
       ],
       "deliveryOtp": "4287",
       "otpVerified": true,
-      "deliveryPhotoUrl": "https://cdn.localsampark.in/deliveries/del_track_001_proof.webp",
+      "deliveryPhotoUrl": "https://placehold.co/400x400/png?text=Mock+Image",
       "assignedAt": "2026-08-03T18:46:00.000Z",
       "pickedUpAt": "2026-08-03T18:50:00.000Z",
       "deliveredAt": "2026-08-03T18:58:00.000Z"

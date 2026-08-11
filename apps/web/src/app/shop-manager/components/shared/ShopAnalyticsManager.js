@@ -6,12 +6,7 @@ import {
   PieChart, BarChart3, Receipt
 } from 'lucide-react';
 
-const KPIS = [
-  { id: 'revenue', label: 'Today\'s Revenue', value: '₹12,450', trend: '+14.5%', isPositive: true, icon: IndianRupee, color: '#10b981' },
-  { id: 'orders', label: 'Total Orders', value: '142', trend: '+5.2%', isPositive: true, icon: ShoppingBag, color: '#3b82f6' },
-  { id: 'aov', label: 'Avg. Order Value', value: '₹87.6', trend: '-1.4%', isPositive: false, icon: Receipt, color: '#f59e0b' },
-  { id: 'customers', label: 'New Customers', value: '28', trend: '+12.0%', isPositive: true, icon: Users, color: '#8b5cf6' }
-];
+// KPIS will be built dynamically
 
 const SETTLEMENTS = [
   { id: 'SET-9921', date: 'Today, 10:00 AM', amount: 8450, status: 'Processing', method: 'NEFT to HDFC ***1234' },
@@ -29,8 +24,36 @@ const TOP_PRODUCTS = [
   { id: 'p5', name: 'Sunflower Oil 1L', qty: 12, revenue: 1680 },
 ];
 
-export default function ShopAnalyticsManager() {
+export default function ShopAnalyticsManager({ token, shopId }) {
   const [dateRange, setDateRange] = useState('Today');
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch(`/api/v1/shops/my-shop/analytics-data`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setAnalytics(data.analytics);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (token) fetchAnalytics();
+  }, [token]);
+
+  const KPIS = analytics ? [
+    { id: 'revenue', label: 'Total Revenue', value: `₹${analytics.revenue.toLocaleString()}`, trend: '+0.0%', isPositive: true, icon: IndianRupee, color: '#10b981' },
+    { id: 'orders', label: 'Total Orders', value: analytics.orders.toString(), trend: '+0.0%', isPositive: true, icon: ShoppingBag, color: '#3b82f6' },
+    { id: 'views', label: 'Store Views', value: analytics.views.toString(), trend: '+0.0%', isPositive: true, icon: Users, color: '#8b5cf6' },
+    { id: 'conversion', label: 'Conversion Rate', value: `${analytics.conversion}%`, trend: '+0.0%', isPositive: true, icon: Activity, color: '#f59e0b' }
+  ] : [];
 
   // Helper to render a simple bar chart
   const renderBarChart = () => {
@@ -52,6 +75,15 @@ export default function ShopAnalyticsManager() {
       </div>
     );
   };
+
+  if (loading || !analytics) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+        <Activity size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: '12px' }} />
+        <p>Loading Analytics Engine...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: 1200 }}>

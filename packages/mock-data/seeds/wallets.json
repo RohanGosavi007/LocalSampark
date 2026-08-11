@@ -584,7 +584,7 @@
       "settledAt": "2026-08-04T04:30:00.000Z",
       "failedAt": null,
       "failureReason": null,
-      "invoiceUrl": "https://cdn.localsampark.in/invoices/pay_shop_owner_01_weekly_W31.pdf"
+      "invoiceUrl": "https://placehold.co/400x400/png?text=Mock+Image"
     },
     {
       "id": "pay_runner_04_failed",

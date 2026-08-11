@@ -73,14 +73,15 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "wss:", "https:", "http://localhost:5000", "ws://localhost:5000"]
+      connectSrc: ["'self'", "wss:", "https:", "http://localhost:5000", "ws://localhost:5000"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     }
   },
-  hsts: {
+  hsts: process.env.NODE_ENV === 'production' ? {
     maxAge: 31536000,
     includeSubDomains: true,
     preload: true
-  }
+  } : false
 }));
 
 // ─── Enable Brotli/Gzip Compression & ETag Caching ────────

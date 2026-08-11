@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import TokenTrackerBar from '@/components/ui/TokenTrackerBar';
 import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
+import { API_URL } from '@/lib/api';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED HOSPITAL / HEALTHCARE VISITOR VIEW
@@ -17,6 +18,30 @@ import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
 
 export default function EnhancedHospitalVisitorView({ shop, services = [], staff = [], onBookAppointment }) {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  React.useEffect(() => {
+    if (selectedDoctor && appointmentDate && shop?.id) {
+      setLoadingSlots(true);
+      fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/${selectedDoctor.id}/slots?date=${appointmentDate}`)
+        .then(r => r.json())
+        .then(data => {
+          setAvailableSlots(data.slots || []);
+          setLoadingSlots(false);
+        })
+        .catch(() => setLoadingSlots(false));
+    } else {
+        setAvailableSlots([]);
+    }
+  }, [selectedDoctor, appointmentDate, shop?.id]);
+
+  const formattedSlots = {
+    morning: availableSlots.filter(s => s.time.includes('AM')),
+    afternoon: availableSlots.filter(s => s.time.includes('PM') && parseInt(s.time.split(':')[0]) < 5 && parseInt(s.time.split(':')[0]) !== 12),
+    evening: availableSlots.filter(s => s.time.includes('PM') && (parseInt(s.time.split(':')[0]) >= 5 || parseInt(s.time.split(':')[0]) === 12))
+  };
 
   return (
     <div className="space-y-8">
@@ -92,21 +117,28 @@ export default function EnhancedHospitalVisitorView({ shop, services = [], staff
             className="mt-6 pt-6 border-t border-border"
           >
             <h3 className="font-heading font-bold text-text mb-4">Book Appointment with {selectedDoctor.name}</h3>
-            <SlotMatrixGrid 
-              slots={{
-                morning: [
-                  { id: 'm1', time: '09:00', status: 'available' },
-                  { id: 'm2', time: '09:30', status: 'booked' },
-                  { id: 'm3', time: '10:00', status: 'filling_fast', remaining: 2 },
-                  { id: 'm4', time: '10:30', status: 'available' },
-                ],
-                afternoon: [
-                  { id: 'a1', time: '14:00', status: 'available' },
-                  { id: 'a2', time: '15:00', status: 'available' },
-                ]
-              }}
-              onSelectSlot={(slot) => onBookAppointment?.(selectedDoctor, slot)}
-            />
+            
+            <div className="mb-4">
+                <p className="text-sm font-bold text-text mb-2">Select Date</p>
+                <input 
+                    type="date" 
+                    value={appointmentDate} 
+                    onChange={e => setAppointmentDate(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-border bg-background text-text focus:ring-2 focus:ring-cyan-500"
+                    min={new Date().toISOString().split('T')[0]}
+                />
+            </div>
+
+            {loadingSlots ? (
+                <div className="text-center py-8 text-text-muted animate-pulse">Loading slots...</div>
+            ) : availableSlots.length > 0 ? (
+                <SlotMatrixGrid 
+                  slots={formattedSlots}
+                  onSelectSlot={(slot) => onBookAppointment?.({ staff: selectedDoctor, slot, metadata: { date: appointmentDate } })}
+                />
+            ) : (
+                <div className="text-center py-8 text-text-muted">No slots available. Please select a date.</div>
+            )}
           </motion.div>
         )}
       </div>

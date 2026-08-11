@@ -1,58 +1,140 @@
-
 'use client';
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Settings, BarChart3, Users, Activity, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useAdminAuth } from '@/context/AdminAuthContext';
+import { Search, MapPin, Users, DollarSign, Activity, Percent, Save, Edit } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-export default function Page() {
+export default function FranchisesManagementPage() {
+  const { adminUser } = useAdminAuth();
+  const [franchises, setFranchises] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [editingSplit, setEditingSplit] = useState(null);
+  const [splitValue, setSplitValue] = useState('');
+
+  const fetchFranchises = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`http://localhost:5000/api/v1/admin/franchises?search=${search}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFranchises(data.data || data.franchises || []);
+      }
+    } catch (err) {
+      toast.error('Failed to load franchises');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFranchises();
+  }, [search]);
+
+  const updateSplit = async (id) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`http://localhost:5000/api/v1/admin/franchises/${id}/split`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ split_percentage: parseFloat(splitValue) })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Revenue split updated');
+        setEditingSplit(null);
+        fetchFranchises();
+      }
+    } catch (err) {
+      toast.error('Failed to update split');
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Franchise Network</h1>
-          <p className="text-slate-400">Global map of all franchise partners.</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition flex items-center gap-2 font-medium">
-            <Settings className="w-4 h-4" /> Settings
-          </button>
-          <button className="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition font-medium shadow-lg shadow-blue-500/20">
-            Export Report
-          </button>
+          <h1 className="text-3xl font-bold text-white mb-2">Franchise & Territory Management</h1>
+          <p className="text-slate-400">Manage regional partners, territories, and revenue splits.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {[
-          { label: 'Total Volume', value: '₹12.4M', trend: '+15%', icon: BarChart3, color: 'text-blue-500' },
-          { label: 'Active Users', value: '4,521', trend: '+5%', icon: Users, color: 'text-emerald-500' },
-          { label: 'System Health', value: '99.9%', trend: 'Stable', icon: Activity, color: 'text-purple-500' }
-        ].map((stat, i) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-slate-800 rounded-2xl">
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-              </div>
-              <span className="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">{stat.trend}</span>
-            </div>
-            <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
-            <h3 className="text-2xl font-black text-white">{stat.value}</h3>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="bg-slate-900 border border-slate-800 rounded-3xl p-10 min-h-[400px] flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5" />
-        <div className="relative z-10">
-          <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-slate-900">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl mb-6">
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+            <input 
+              type="text" 
+              placeholder="Search franchises or territories..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition"
+            />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">Module Provisioned</h2>
-          <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
-            The Franchise Network module is fully provisioned. Data tables and interactive elements are currently being hydrated by the backend system.
-          </p>
         </div>
-      </motion.div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-400 text-sm uppercase tracking-wider">
+                <th className="p-4 font-semibold">Territory</th>
+                <th className="p-4 font-semibold">Partner Name</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4 font-semibold">Rev Split</th>
+                <th className="p-4 font-semibold">Joined Date</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-300">
+              {loading ? (
+                <tr><td colSpan="5" className="p-8 text-center text-slate-500">Loading territories...</td></tr>
+              ) : (!Array.isArray(franchises) || franchises.length === 0) ? (
+                <tr><td colSpan="5" className="p-8 text-center text-slate-500">No franchises found.</td></tr>
+              ) : franchises.map(f => (
+                <tr key={f.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition group">
+                  <td className="p-4">
+                    <div className="font-bold text-white flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-blue-500"/> {f.territory_name || f.territory_pincode || 'Unassigned'}
+                    </div>
+                  </td>
+                  <td className="p-4 font-medium text-slate-300">{f.user_name || 'Unassigned'}</td>
+                  <td className="p-4">
+                    <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold ${f.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                      {f.status || 'Pending'}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    {editingSplit === f.id ? (
+                      <div className="flex gap-2 items-center">
+                        <input 
+                          type="number" 
+                          value={splitValue} 
+                          onChange={e => setSplitValue(e.target.value)}
+                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-sm text-white w-20"
+                        />
+                        <button onClick={() => updateSplit(f.id)} className="text-emerald-500 hover:text-emerald-400 p-1"><Save className="w-4 h-4"/></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-emerald-400">{f.revenue_split || 0}%</span>
+                        <button onClick={() => { setEditingSplit(f.id); setSplitValue(f.revenue_split || 0); }} className="text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition"><Edit className="w-4 h-4"/></button>
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 text-slate-500 text-sm">
+                    {new Date(f.created_at).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

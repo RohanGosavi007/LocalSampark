@@ -51,10 +51,10 @@ export default function KrishiPage() {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="shadow-xl shadow-green-500/20 bg-green-600 hover:bg-green-700 hover:-translate-y-1 text-white border-green-600">
-                  Join as Farmer
+                  {t('hero_btn_farmer')}
                 </Button>
                 <Button size="lg" variant="secondary" className="hover:-translate-y-1">
-                  Explore Services
+                  {t('hero_btn_explore_services')}
                 </Button>
               </div>
             </motion.div>
@@ -66,7 +66,7 @@ export default function KrishiPage() {
           <div className="container">
             <div className="flex items-center gap-3 mb-10">
               <Sprout className="w-8 h-8 text-green-500" />
-              <h2 className="text-3xl font-heading font-bold text-text">Trending & Priority Features</h2>
+              <h2 className="text-3xl font-heading font-bold text-text">{t('sec_trending_features')}</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

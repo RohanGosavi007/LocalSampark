@@ -1,5 +1,6 @@
 'use client';
 import { API_URL } from '@/lib/api';
+import { io } from 'socket.io-client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
@@ -49,8 +50,6 @@ export default function ShopDetailPage() {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [appointmentDate, setAppointmentDate] = useState('');
   const [timeSlot, setTimeSlot] = useState(null);
-  const [availableSlots, setAvailableSlots] = useState([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
 
   // Global Cart
   const { items: cart, addItem, removeItem, updateQuantity, getCartTotal, openCart } = useCartStore();
@@ -65,11 +64,12 @@ export default function ShopDetailPage() {
 
     async function fetchShopData() {
       try {
-        const [shopRes, offersRes, reviewsRes, qaRes] = await Promise.all([
+        const [shopRes, offersRes, reviewsRes, qaRes, univCatRes] = await Promise.all([
           fetch(`${API_URL}/api/v1/shops/${id}`),
           fetch(`${API_URL}/api/v1/shops/${id}/offers`).catch(()=>({json:()=>[]})),
           fetch(`${API_URL}/api/v1/shops/${id}/reviews`).catch(()=>({json:()=>[]})),
-          fetch(`${API_URL}/api/v1/shops/${id}/qa`).catch(()=>({json:()=>[]}))
+          fetch(`${API_URL}/api/v1/shops/${id}/qa`).catch(()=>({json:()=>[]})),
+          fetch(`${API_URL}/api/v1/universal-catalog/${id}`).catch(()=>({json:()=>({items:[]})}))
         ]);
         
         const shopData = await shopRes.json();
@@ -86,20 +86,29 @@ export default function ShopDetailPage() {
 
         const bm = shopData.category_details?.business_model || 'product';
 
+        const univCatData = await univCatRes.json();
+        const univItems = univCatData.items || [];
+        const univProducts = univItems.filter(i => i.item_type === 'physical_good');
+        const univServices = univItems.filter(i => i.item_type !== 'physical_good');
+
         if (bm === 'product' || bm === 'hybrid') {
-          const prodRes = await fetch(`${API_URL}/api/v1/shops/${id}/products`);
+          const prodRes = await fetch(`${API_URL}/api/v1/shops/${id}/products`).catch(()=>({json:()=>[]}));
           const prodData = await prodRes.json();
-          setProducts(Array.isArray(prodData) ? prodData : []);
+          setProducts([...(Array.isArray(prodData) ? prodData : []), ...univProducts]);
+        } else {
+          setProducts(univProducts);
         }
 
         if (bm === 'appointment' || bm === 'hybrid') {
-          const srvRes = await fetch(`${API_URL}/api/v1/shops/${id}/services`);
+          const srvRes = await fetch(`${API_URL}/api/v1/shops/${id}/services`).catch(()=>({json:()=>[]}));
           const srvData = await srvRes.json();
-          setServices(Array.isArray(srvData) ? srvData : []);
+          setServices([...(Array.isArray(srvData) ? srvData : []), ...univServices]);
 
-          const staffRes = await fetch(`${API_URL}/api/v1/shops/${id}/staff`);
+          const staffRes = await fetch(`${API_URL}/api/v1/shops/${id}/staff`).catch(()=>({json:()=>[]}));
           const staffData = await staffRes.json();
           setStaff(Array.isArray(staffData) ? staffData : []);
+        } else {
+          setServices(univServices);
         }
 
         if (bm === 'appointment') setActiveTab('services');
@@ -112,21 +121,26 @@ export default function ShopDetailPage() {
     }
     fetchShopData();
 
-    return () => document.body.removeChild(script);
+    // WebSocket real-time inventory sync
+    const socketUrl = API_URL.replace('/api/v1', '');
+    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+    
+    socket.on('connect', () => {
+      socket.emit('join_shop_room', id);
+    });
+
+    socket.on('inventory_update', (data) => {
+      if (data && data.itemId) {
+        fetchShopData(); // Silently refresh products to get accurate stock and active status
+      }
+    });
+
+    return () => {
+      document.body.removeChild(script);
+      socket.disconnect();
+    };
   }, [id]);
 
-  useEffect(() => {
-    if (selectedStaff && appointmentDate) {
-        setSlotsLoading(true);
-        fetch(`${API_URL}/api/v1/shops/${id}/staff/${selectedStaff.id}/slots?date=${appointmentDate}`)
-            .then(r => r.json())
-            .then(data => {
-                setAvailableSlots(data.slots || []);
-                setSlotsLoading(false);
-            })
-            .catch(() => setSlotsLoading(false));
-    }
-  }, [selectedStaff, appointmentDate, id]);
 
   const shopCartItems = cart.filter(item => item.shop_id === id);
   const cartSubtotal = shopCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -263,6 +277,21 @@ export default function ShopDetailPage() {
                   services={services}
                   staff={staff}
                   products={products}
+                  onAddToCart={(productId, qty, metadata) => {
+                    const product = products.find(p => p.id === productId);
+                    if (product) {
+                      addItem({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price || 0,
+                        shop_id: shop.id,
+                        shop_name: shop.name,
+                        image_url: product.image_url,
+                        metadata
+                      }, qty);
+                      openCart();
+                    }
+                  }}
                   onBookAppointment={async ({ service, staff, slot, metadata }) => {
                     try {
                       // Optional slot ID or default

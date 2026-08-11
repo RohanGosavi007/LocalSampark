@@ -29,7 +29,8 @@ import { useCartStore } from '../../store/cartStore';
 import { theme } from '../../theme/theme';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import BouncyButton from '../../components/BouncyButton';
-import VisitorViewRouter from '../../components/shops/VisitorViewRouter';
+import VisitorViewRouter from './components/VisitorViewRouter';
+import { socketService } from '../../services/socket';
 
 const API_BASE = 'http://10.0.2.2:5000/api/v1'; // Android emulator localhost alias
 
@@ -52,16 +53,48 @@ export default function DynamicSuperAppShopScreen({ route, navigation }) {
 
   useEffect(() => {
     fetchShopData();
+    
+    // Connect and join WebSocket room for this shop
+    socketService.connect();
+    socketService.joinShopRoom(shopId);
+
+    const handleInventoryUpdate = (data) => {
+      // Re-fetch shop data to get latest inventory safely
+      // Or manually mutate state if preferred
+      if (data && data.itemId) {
+        fetchShopData();
+      }
+    };
+
+    socketService.on('inventory_update', handleInventoryUpdate);
+
+    return () => {
+      socketService.off('inventory_update', handleInventoryUpdate);
+    };
   }, [shopId]);
 
   async function fetchShopData() {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/shops/${shopId}`);
+      const [res, univRes] = await Promise.all([
+        fetch(`${API_BASE}/shops/${shopId}`),
+        fetch(`${API_BASE}/universal-catalog/${shopId}`).catch(() => null)
+      ]);
       const json = await res.json();
+      const univJson = univRes ? await univRes.json() : { items: [] };
+
       if (json.success) {
+        // Merge universal items
+        const univItems = univJson.items || [];
+        const univProducts = univItems.filter(i => i.item_type === 'physical_good').map(i => ({...i, name: i.title, pricePaise: i.price * 100}));
+        const univServices = univItems.filter(i => i.item_type !== 'physical_good').map(i => ({...i, serviceName: i.title, pricePaise: i.price * 100, durationMinutes: 30}));
+
+        json.shop = json.shop || {};
+        json.shop.products = [...(json.shop.products || []), ...univProducts];
+        json.shop.serviceSlots = [...(json.shop.serviceSlots || []), ...univServices];
+
         setData(json);
-        if (json.shop.categoryType === 'APPOINTMENT') {
+        if (json.shop.categoryType === 'APPOINTMENT' || json.shop.business_model === 'appointment') {
           setActiveTab('appointment');
         }
       }
@@ -84,19 +117,21 @@ export default function DynamicSuperAppShopScreen({ route, navigation }) {
     if (!selectedSlot) return;
     try {
       setIsSubmitting(true);
-      const res = await fetch(`${API_BASE}/book`, {
+      const res = await fetch(`${API_BASE}/universal-orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shopId: data.shop.id,
-          serviceSlotId: selectedSlot.id,
-          paymentMethod: 'COD',
+          orderType: 'booking',
+          totalAmount: selectedSlot.pricePaise ? selectedSlot.pricePaise / 100 : 0,
+          items: [{ id: selectedSlot.id, quantity: 1, price: selectedSlot.pricePaise ? selectedSlot.pricePaise / 100 : 0 }],
+          notes: 'Payment: COD'
         }),
       });
 
       const json = await res.json();
       if (json.success) {
-        Alert.alert('Booking Confirmed!', `Ref: ${json.appointment.bookingNumber}\nDate: ${json.appointment.scheduledDate} @ ${json.appointment.scheduledTime}`);
+        Alert.alert('Booking Confirmed!', `Order ID: ${json.orderId}`);
         setSelectedSlot(null);
         fetchShopData();
       } else {
@@ -170,22 +205,23 @@ export default function DynamicSuperAppShopScreen({ route, navigation }) {
           onBook={async (slotId, payload) => {
             try {
               setIsSubmitting(true);
-              const res = await fetch(`${API_BASE}/book`, {
+              const res = await fetch(`${API_BASE}/universal-orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   shopId: shop.id,
-                  serviceSlotId: slotId,
-                  paymentMethod: 'COD',
-                  metadata: payload
+                  orderType: 'booking',
+                  totalAmount: 0, // Fallback, real price depends on service
+                  items: [{ id: slotId, quantity: 1, price: 0, metaData: payload }],
+                  notes: 'Payment: COD'
                 }),
               });
               const json = await res.json();
               if (json.success) {
-                Alert.alert('Booking Confirmed!', `Ref: ${json.appointment.bookingNumber}`);
+                Alert.alert('Booking Confirmed!', `Order ID: ${json.orderId}`);
                 fetchShopData();
               } else {
-                Alert.alert('Booking Failed', json.error);
+                Alert.alert('Booking Failed', json.message || json.error);
               }
             } catch (err) {
               Alert.alert('Error', err.message);

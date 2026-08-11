@@ -1,5 +1,5 @@
 import React from 'react';
-import Head from 'next/head';
+
 
 export async function generateMetadata({ params }) {
   const { state, city, zone } = await params;

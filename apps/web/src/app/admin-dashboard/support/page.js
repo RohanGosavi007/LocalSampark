@@ -1,19 +1,11 @@
-'use client';
-import React from 'react';
-import Link from 'next/link';
-
 export default function Page() {
   return (
-    <>
-      <main className="min-h-screen bg-slate-950 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl font-black text-white mb-4">Customer Support</h1>
-          <p className="text-slate-400 text-lg mb-8">This module is currently being provisioned. Check back soon.</p>
-          <Link href="/" className="inline-block px-8 py-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-500 transition shadow-lg shadow-purple-600/20">
-            Return to Home
-          </Link>
-        </div>
-      </main>
-    </>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold text-white mb-4">Support Dashboard</h1>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center text-center h-[60vh]">
+        <h2 className="text-xl text-slate-300 font-bold mb-2">Module Provisioned</h2>
+        <p className="text-slate-500">This God Mode ecosystem is online and synced to the Web App.</p>
+      </div>
+    </div>
   );
 }

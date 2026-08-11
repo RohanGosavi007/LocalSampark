@@ -16,9 +16,12 @@ import CampaignManager from './components/CampaignManager';
 import AIInsightsWidget from './components/AIInsightsWidget';
 import AudioNotifier from '@/components/ui/AudioNotifier';
 import { io } from 'socket.io-client';
+import SalesChart from '../../components/charts/SalesChart';
+import OnboardingChecklist from '../../components/OnboardingChecklist';
+import StockAlerts from '../../components/StockAlerts';
 
 import Link from 'next/link';
-import { Settings } from 'lucide-react';
+import { Settings, BarChart2 } from 'lucide-react';
 
 export default function ShopDashboardPage() {
   const { user, token, loading } = useAuth();
@@ -107,7 +110,32 @@ export default function ShopDashboardPage() {
         </div>
         
         <div className="container max-w-[1400px] mb-12">
-          <AIInsightsWidget shopId={user?.shop_id || 1} />
+          {/* Gamified Onboarding Widget */}
+          <OnboardingChecklist />
+
+          {/* Low Stock Alerts */}
+          <StockAlerts />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2">
+              <AIInsightsWidget shopId={user?.shop_id || 1} />
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+              <div className="flex items-center gap-2 mb-6">
+                <BarChart2 className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-bold text-slate-800">Weekly Revenue</h3>
+              </div>
+              <SalesChart data={[
+                { label: 'Mon', value: 4500 },
+                { label: 'Tue', value: 5200 },
+                { label: 'Wed', value: 3800 },
+                { label: 'Thu', value: 6100 },
+                { label: 'Fri', value: 8400 },
+                { label: 'Sat', value: 12500 },
+                { label: 'Sun', value: 14200 },
+              ]} />
+            </div>
+          </div>
           <div className="mt-8">
             {renderDashboard()}
           </div>

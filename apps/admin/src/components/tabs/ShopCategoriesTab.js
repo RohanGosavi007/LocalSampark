@@ -2,17 +2,25 @@ import React, { useState, useEffect } from 'react';
 
 export default function ShopCategoriesTab({ API_BASE, authHeaders }) {
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data for categories until the dedicated endpoint is fully populated
-    setCategories([
-      { id: 1, name: 'Grocery & Essentials', type: 'Product', count: 120, status: 'Active' },
-      { id: 2, name: 'Pharmacy & Medical', type: 'Product', count: 45, status: 'Active' },
-      { id: 3, name: 'Plumbing & Repairs', type: 'Service', count: 32, status: 'Active' },
-      { id: 4, name: 'Tiffin Services', type: 'Hybrid', count: 18, status: 'Active' },
-      { id: 5, name: 'Astrology', type: 'Appointment', count: 5, status: 'Inactive' },
-    ]);
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/shop-categories`, {
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) setCategories(data);
+    } catch (error) {
+      console.error('Failed to fetch shop categories:', error);
+    }
+    setLoading(false);
+  };
 
   const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
   const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
@@ -34,19 +42,25 @@ export default function ShopCategoriesTab({ API_BASE, authHeaders }) {
               </tr>
             </thead>
             <tbody>
-              {categories.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>{c.name}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{c.type}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#64748b' }}>{c.count}</td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span style={{ color: c.status === 'Active' ? '#4ade80' : '#f87171', fontWeight: 700 }}>{c.status}</span>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <button style={{ ...btnPrimary, background: '#334155', padding: '0.4rem 0.8rem' }}>Edit</button>
-                  </td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>Loading categories...</td></tr>
+              ) : categories.length === 0 ? (
+                <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No categories configured.</td></tr>
+              ) : (
+                categories.map(c => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                    <td style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>{c.name}</td>
+                    <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{c.business_model || 'Standard'}</td>
+                    <td style={{ padding: '0.85rem 1rem', color: '#64748b' }}>{c.commission_percent ? `${c.commission_percent}%` : 'N/A'}</td>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      <span style={{ color: c.is_active ? '#4ade80' : '#f87171', fontWeight: 700 }}>{c.is_active ? 'Active' : 'Inactive'}</span>
+                    </td>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      <button style={{ ...btnPrimary, background: '#334155', padding: '0.4rem 0.8rem' }}>Edit</button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

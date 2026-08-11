@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import i18n from '../i18n';
 
 const LanguageContext = createContext({
   language: 'en',
@@ -7,11 +8,14 @@ const LanguageContext = createContext({
 });
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(i18n.locale || 'en');
 
-  // Dummy translation function that just returns the key
+  useEffect(() => {
+    i18n.locale = language;
+  }, [language]);
+
   const t = (key) => {
-    return key;
+    return i18n.t(key, { locale: language, defaultValue: key });
   };
 
   return (

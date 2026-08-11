@@ -57,8 +57,8 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
                     </td>
                   </tr>
                 ) : (
-                  territories.map((t) => (
-                    <tr key={t.id}>
+                  territories.map((t, index) => (
+                    <tr key={t.id || `zone-${index}`}>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 600, color: '#f8fafc' }}>{t.zone_name}</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>ID: {t.id}</div>

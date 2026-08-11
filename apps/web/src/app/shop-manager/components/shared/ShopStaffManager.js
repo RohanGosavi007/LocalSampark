@@ -5,41 +5,86 @@ import {
   CheckCircle, XCircle, Search, Clock, CreditCard, ChevronDown
 } from 'lucide-react';
 
-const DEMO_STAFF = [
-  { id: 's1', name: 'Ramesh Kumar', role: 'Store Manager', phone: '+91 98765 00001', email: 'ramesh@example.com', status: 'Active', joined: 'Jan 2024', shift: 'Morning (8AM - 4PM)', commission: 0 },
-  { id: 's2', name: 'Suresh Patil', role: 'Cashier', phone: '+91 98765 00002', email: 'suresh@example.com', status: 'Active', joined: 'Mar 2024', shift: 'Evening (2PM - 10PM)', commission: 0 },
-  { id: 's3', name: 'Amit Singh', role: 'Delivery Agent', phone: '+91 98765 00003', email: 'amit@example.com', status: 'On Leave', joined: 'May 2024', shift: 'Flexible', commission: 450 },
-  { id: 's4', name: 'Priya Sharma', role: 'Inventory Clerk', phone: '+91 98765 00004', email: 'priya@example.com', status: 'Active', joined: 'Jun 2024', shift: 'Morning (8AM - 4PM)', commission: 0 },
-];
+// DEMO_STAFF removed for live integration
 
 const ROLES = ['Store Manager', 'Cashier', 'Inventory Clerk', 'Delivery Agent', 'Chef/Cook', 'Cleaner'];
 const SHIFTS = ['Morning (8AM - 4PM)', 'Evening (2PM - 10PM)', 'Night (10PM - 6AM)', 'Flexible'];
 
-const EMPTY_STAFF = { name: '', role: 'Cashier', phone: '', email: '', status: 'Active', shift: 'Morning (8AM - 4PM)' };
+const EMPTY_STAFF = { name: '', role: 'Cashier', phone: '', email: '', status: 'Active', shift: 'Morning (8AM - 4PM)', commission: 0 };
 
-export default function ShopStaffManager() {
-  const [staff, setStaff] = useState(DEMO_STAFF);
+export default function ShopStaffManager({ token, shopId }) {
+  const [staff, setStaff] = useState([]);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_STAFF);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/v1/shops/my-shop/staff`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        const mappedStaff = data.staff.map(s => ({
+          ...s,
+          id: s.id.toString(),
+          joined: s.joined_date ? new Date(s.joined_date).toLocaleDateString() : 'Just Now'
+        }));
+        setStaff(mappedStaff);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (token) fetchStaff();
+  }, [token]);
 
   const openAdd = () => { setForm(EMPTY_STAFF); setEditingId(null); setShowModal(true); };
   const openEdit = (member) => { setForm({ ...member }); setEditingId(member.id); setShowModal(true); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.phone) return;
-    if (editingId) {
-      setStaff(prev => prev.map(s => s.id === editingId ? { ...form, id: editingId } : s));
-    } else {
-      setStaff(prev => [...prev, { ...form, id: `s${Date.now()}`, joined: 'Just Now', commission: 0 }]);
+    try {
+      if (editingId) {
+        await fetch(`/api/v1/shops/my-shop/staff/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(form)
+        });
+      } else {
+        await fetch(`/api/v1/shops/my-shop/staff`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(form)
+        });
+      }
+      setShowModal(false);
+      fetchStaff();
+    } catch (e) {
+      console.error(e);
+      alert('Error saving staff');
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Are you sure you want to remove this staff member?')) {
-      setStaff(prev => prev.filter(s => s.id !== id));
+      try {
+        await fetch(`/api/v1/shops/my-shop/staff/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchStaff();
+      } catch (e) {
+        console.error(e);
+        alert('Error deleting staff');
+      }
     }
   };
 

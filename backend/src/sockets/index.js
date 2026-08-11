@@ -26,6 +26,24 @@ const initSockets = (server) => {
       console.log(`[Socket.io] Client joined room:shop:${shopId}`);
     });
 
+    // Phase 9: Resident Intercom Rooms
+    socket.on('join_flat_room', ({ societyId, flatNo }) => {
+      const room = `flat_${societyId}_${flatNo}`;
+      socket.join(room);
+      console.log(`[Socket.io] Resident joined ${room}`);
+    });
+
+    socket.on('join_gatekeeper_room', ({ gateId }) => {
+      socket.join(`gatekeeper_${gateId}`);
+      console.log(`[Socket.io] Gatekeeper joined gatekeeper_${gateId}`);
+    });
+
+    socket.on('VISITOR_RESPONSE', (data) => {
+      // Forward the resident's response back to the gatekeeper
+      // data should contain { visitorId, status, gateId (optional) }
+      io.to('gatekeeper_GATE-1').emit('VISITOR_RESPONSE', data);
+    });
+
     orderSocket(io, socket);
     tokenQueueSocket(io, socket);
     trackingSocket(io, socket);

@@ -6,6 +6,8 @@ import {
   CheckCircle, ChevronRight, Car, Search, MapPin, AlertTriangle
 } from 'lucide-react';
 import { KitchenStatusPill } from '@/components/ui/UnitSelector';
+import SlotMatrixGrid from '@/components/ui/SlotMatrixGrid';
+import { API_URL } from '@/lib/api';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENHANCED GARAGE / REPAIR VISITOR VIEW
@@ -13,8 +15,34 @@ import { KitchenStatusPill } from '@/components/ui/UnitSelector';
 // For: Automotive, Mobile Repair, AC Repair, RO, Laundry
 // ═══════════════════════════════════════════════════════════════════════
 
-export default function EnhancedGarageVisitorView({ shop, services = [], onRequestService }) {
+export default function EnhancedGarageVisitorView({ shop, services = [], onRequestService, onBookAppointment }) {
   const [trackingId, setTrackingId] = useState('');
+  const [selectedService, setSelectedService] = useState(null);
+  const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  React.useEffect(() => {
+    // For garage, we might not have 'staff' explicitly selected, so we mock staff ID 'stf_garage'
+    if (selectedService && appointmentDate && shop?.id) {
+      setLoadingSlots(true);
+      fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/stf_garage/slots?date=${appointmentDate}`)
+        .then(r => r.json())
+        .then(data => {
+          setAvailableSlots(data.slots || []);
+          setLoadingSlots(false);
+        })
+        .catch(() => setLoadingSlots(false));
+    } else {
+        setAvailableSlots([]);
+    }
+  }, [selectedService, appointmentDate, shop?.id]);
+
+  const formattedSlots = {
+    morning: availableSlots.filter(s => s.time.includes('AM')),
+    afternoon: availableSlots.filter(s => s.time.includes('PM') && parseInt(s.time.split(':')[0]) < 5 && parseInt(s.time.split(':')[0]) !== 12),
+    evening: availableSlots.filter(s => s.time.includes('PM') && (parseInt(s.time.split(':')[0]) >= 5 || parseInt(s.time.split(':')[0]) === 12))
+  };
 
   return (
     <div className="space-y-8">
@@ -56,7 +84,7 @@ export default function EnhancedGarageVisitorView({ shop, services = [], onReque
         <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
           <Wrench className="w-6 h-6 text-slate-500" /> Services
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {(services.length > 0 ? services : [
             { name: 'General Service', price: 2499, icon: '🔧', time: '3-4 hrs' },
             { name: 'Oil Change', price: 899, icon: '🛢️', time: '30 min' },
@@ -72,7 +100,8 @@ export default function EnhancedGarageVisitorView({ shop, services = [], onReque
               key={i}
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05 }}
-              className="p-4 rounded-xl border border-border hover:border-blue-500/30 cursor-pointer transition-all hover:shadow-md"
+              onClick={() => setSelectedService(selectedService?.id === s.id ? null : s)}
+              className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${selectedService?.id === s.id ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-blue-500/30'}`}
             >
               <span className="text-2xl">{s.icon || '🔧'}</span>
               <h3 className="font-bold text-sm text-text mt-2">{s.name}</h3>
@@ -91,6 +120,38 @@ export default function EnhancedGarageVisitorView({ shop, services = [], onReque
             </motion.div>
           ))}
         </div>
+
+        {selectedService && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }}
+            className="pt-6 border-t border-border"
+          >
+            <h3 className="font-heading font-bold text-text mb-4">Book: {selectedService.name}</h3>
+            
+            <div className="mb-4">
+                <p className="text-sm font-bold text-text mb-2">Select Date</p>
+                <input 
+                    type="date" 
+                    value={appointmentDate} 
+                    onChange={e => setAppointmentDate(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-border bg-background text-text focus:ring-2 focus:ring-blue-500"
+                    min={new Date().toISOString().split('T')[0]}
+                />
+            </div>
+
+            {loadingSlots ? (
+                <div className="text-center py-8 text-text-muted animate-pulse">Loading slots...</div>
+            ) : availableSlots.length > 0 ? (
+                <SlotMatrixGrid 
+                  slots={formattedSlots}
+                  onSelectSlot={(slot) => onBookAppointment?.({ service: selectedService, slot, metadata: { date: appointmentDate } })}
+                />
+            ) : (
+                <div className="text-center py-8 text-text-muted">No slots available. Please select a date.</div>
+            )}
+          </motion.div>
+        )}
       </div>
 
       {/* Work Gallery (Before & After) */}
