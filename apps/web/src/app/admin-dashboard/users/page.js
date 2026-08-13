@@ -88,6 +88,15 @@ export default function UsersManagementPage() {
           <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
           <p className="text-slate-400">Manage all platform users, roles, and access statuses.</p>
         </div>
+        <button 
+          onClick={() => {
+            const token = localStorage.getItem('admin_token');
+            window.open(`http://localhost:5000/api/v1/admin/export/users?token=${token}`, '_blank');
+          }}
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg transition"
+        >
+          <Download className="w-5 h-5" /> Export CSV
+        </button>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl mb-6">

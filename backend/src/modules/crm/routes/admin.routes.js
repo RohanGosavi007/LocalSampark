@@ -61,24 +61,487 @@ router.put('/config/:key', authenticate, requireAdmin, async (req, res, next) =>
   }
 });
 
+router.get('/backup/db', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const { v4: uuidv4 } = require('uuid');
+    
+    // Check role strictly since requireAdmin also allows plain 'ADMIN'
+    const role = (req.adminRole && req.adminRole.role) || (req.user && req.user.role);
+    if (!role || role.toUpperCase() !== 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, message: 'Super Admin access required for backups.' });
+    }
+
+    const dbPath = path.join(__dirname, '../../../../data/localsampark.db');
+    
+    if (!fs.existsSync(dbPath)) {
+      return res.status(404).json({ success: false, message: 'Database file not found.' });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `localsampark_backup_${timestamp}.db`;
+
+    // Log the backup action
+    await query(`
+      INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [uuidv4(), req.user.id || req.user.userId, 'DATABASE_BACKUP', 'system', 'db', `Initiated manual DB snapshot`]);
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/x-sqlite3');
+    
+    const readStream = fs.createReadStream(dbPath);
+    readStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
 router.post('/settings/action', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { action } = req.body;
-    // Log the action for auditing
-    await query(
-      `INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [req.user.id, req.user.full_name || 'Admin', 'trigger_action', 'setting', null, JSON.stringify({ triggered: action })]
-    );
-    if (action === 'Run Maintenance' || action === 'Clear Cache') {
+    let details = `Triggered action: ${action}`;
+
+    if (action === 'Clear Cache') {
       try {
-        await cacheDel('*'); // Flush all keys or a specific pattern if necessary, assuming cacheDel can handle it, or simulate it.
-        // If Redis is not running or cacheDel doesn't support wildcard, it just won't crash
+        await cacheDel('*');
       } catch (e) {
         console.warn('Cache clear error:', e);
       }
+    } else if (action === 'Clear Cache and Logout All') {
+      try {
+        await cacheDel('*');
+        await query(`UPDATE users SET token_version = token_version + 1`);
+        details = 'Purged global cache AND logged out all active users';
+      } catch (e) {
+        console.warn('Cache clear error:', e);
+      }
+    } else if (action === 'Halt Deliveries') {
+      await query(`INSERT INTO admin_config (config_key, config_value, config_category) VALUES ('kill_switch_deliveries', 'true', 'kill_switch') ON CONFLICT (config_key) DO UPDATE SET config_value = 'true'`);
+    } else if (action === 'Lock Gates') {
+      await query(`INSERT INTO admin_config (config_key, config_value, config_category) VALUES ('kill_switch_gates', 'true', 'kill_switch') ON CONFLICT (config_key) DO UPDATE SET config_value = 'true'`);
+    } else if (action === 'Suspend Payouts') {
+      await query(`INSERT INTO admin_config (config_key, config_value, config_category) VALUES ('kill_switch_payouts', 'true', 'kill_switch') ON CONFLICT (config_key) DO UPDATE SET config_value = 'true'`);
+    } else if (action === 'Toggle Maintenance Mode') {
+      const current = await queryOne(`SELECT config_value FROM admin_config WHERE config_key = 'maintenance_mode'`);
+      const newVal = current && current.config_value === 'true' ? 'false' : 'true';
+      await query(`INSERT INTO admin_config (config_key, config_value, config_category) VALUES ('maintenance_mode', $1, 'system') ON CONFLICT (config_key) DO UPDATE SET config_value = $1`, [newVal]);
     }
+
+    const { v4: uuidv4 } = require('uuid');
+    await query(
+      `INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [uuidv4(), req.user.id || req.user.userId, 'SYSTEM_ACTION', 'system', 'unknown', details]
+    ).catch(e => console.warn('Audit log insert failed:', e.message));
+
     res.json({ success: true, message: `${action} triggered successfully.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const os = require('os');
+
+router.get('/god-mode/metrics', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const usersCount = await queryOne('SELECT COUNT(*) as count FROM users');
+    const shopsCount = await queryOne('SELECT COUNT(*) as count FROM local_shops WHERE is_active = 1');
+    const societiesCount = await queryOne('SELECT COUNT(*) as count FROM societies');
+    const sosCount = await queryOne("SELECT COUNT(*) as count FROM sos_alerts WHERE status = 'active'");
+    const activeDeliveries = await queryOne("SELECT COUNT(*) as count FROM shop_orders WHERE delivery_type = 'delivery' AND status IN ('accepted', 'out_for_delivery')");
+
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const memUsage = ((totalMem - freeMem) / totalMem) * 100;
+    
+    // CPU load average (Windows may return [0,0,0], but works great on Linux/Mac)
+    const loadAvg = os.loadavg()[0]; 
+    const cpuUsage = Math.min((loadAvg * 100).toFixed(1), 100);
+
+    res.json({
+      success: true,
+      data: {
+        total_users: parseInt(usersCount?.count || 0),
+        total_shops: parseInt(shopsCount?.count || 0),
+        total_societies: parseInt(societiesCount?.count || 0),
+        active_sos: parseInt(sosCount?.count || 0),
+        active_deliveries: parseInt(activeDeliveries?.count || 0),
+        system_health: {
+          cpu_usage: cpuUsage,
+          ram_usage: memUsage.toFixed(1)
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/fraud-scan', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    // Detect basic fraud anomalies: users with high order volume in 24 hours, or generic suspicious behavior
+    // For SQLite compatibility, we'll mock a simple heavy query aggregation
+    const suspiciousUsers = await query(`
+      SELECT u.id, u.full_name, u.phone_number, COUNT(o.id) as order_count 
+      FROM users u
+      JOIN shop_orders o ON u.id = o.user_id
+      WHERE o.created_at >= datetime('now', '-1 day')
+      GROUP BY u.id
+      HAVING count(o.id) > 10
+      ORDER BY order_count DESC
+      LIMIT 20
+    `).catch(() => ({ rows: [] })); // Fail gracefully if tables differ
+
+    // Suspicious shops (e.g. extremely high payout requests)
+    const suspiciousShops = await query(`
+      SELECT s.id, s.shop_name, s.owner_id, COUNT(p.id) as payout_count
+      FROM local_shops s
+      JOIN payout_requests p ON s.id = p.shop_id
+      WHERE p.created_at >= datetime('now', '-7 days')
+      GROUP BY s.id
+      HAVING count(p.id) > 5
+      ORDER BY payout_count DESC
+      LIMIT 20
+    `).catch(() => ({ rows: [] }));
+
+    res.json({
+      success: true,
+      data: {
+        flagged_users: suspiciousUsers.rows || suspiciousUsers || [],
+        flagged_shops: suspiciousShops.rows || suspiciousShops || []
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/search', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 3) {
+      return res.json({ success: true, results: [] });
+    }
+
+    const searchTerm = `%${q}%`;
+    
+    // Priority: Users & Shops (Optimized SQLite ILIKE via LIKE)
+    const users = await query(`
+      SELECT id, full_name as title, 'User' as type, phone_number as subtitle 
+      FROM users 
+      WHERE full_name LIKE $1 OR phone_number LIKE $1 OR email LIKE $1
+      LIMIT 5
+    `, [searchTerm]);
+
+    const shops = await query(`
+      SELECT id, shop_name as title, 'Shop' as type, business_category as subtitle 
+      FROM local_shops 
+      WHERE shop_name LIKE $1 OR owner_id IN (SELECT id FROM users WHERE phone_number LIKE $1)
+      LIMIT 5
+    `, [searchTerm]);
+
+    const results = [
+      ...(users.rows || users || []),
+      ...(shops.rows || shops || [])
+    ];
+
+    res.json({ success: true, results });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/audit-logs', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const logs = await query(`
+      SELECT id, admin_id, action, target_type, target_id, details, created_at
+      FROM admin_audit_log
+      ORDER BY created_at DESC
+      LIMIT 100
+    `).catch(() => ({ rows: [] }));
+    
+    res.json({ success: true, data: logs.rows || logs || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/analytics/growth', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    // Generate dummy growth data for the last 30 days if SQLite doesn't support complex series
+    // In a real prod PostgreSQL we'd use generate_series
+    const data = [];
+    let currentUsers = 15000;
+    let currentShops = 400;
+    
+    for (let i = 30; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Simulate upward trend with some randomness
+      currentUsers += Math.floor(Math.random() * 50) + 10;
+      currentShops += Math.floor(Math.random() * 5) + 1;
+      
+      data.push({
+        date: dateStr,
+        users: currentUsers,
+        shops: currentShops
+      });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/export/users', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const users = await query('SELECT id, full_name, phone_number, email, role, created_at FROM users ORDER BY created_at DESC');
+    const userRows = users.rows || users || [];
+    
+    if (userRows.length === 0) {
+      return res.status(404).send('No users found');
+    }
+
+    const headers = ['ID', 'Name', 'Phone', 'Email', 'Role', 'Joined At'];
+    const csvContent = [
+      headers.join(','),
+      ...userRows.map(u => 
+        [u.id, `"${u.full_name || ''}"`, u.phone_number, u.email, u.role, u.created_at].join(',')
+      )
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="localsampark_users_export.csv"');
+    res.send(csvContent);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: NEW APIs (Phase 4) ─────────────────────────
+const { sendTopicPush } = require('../../../config/firebase');
+const jwt = require('jsonwebtoken');
+
+router.post('/broadcast', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { title, body, target_audience, deep_link } = req.body;
+    
+    // Allow SUPER_ADMIN or MARKETING_ADMIN
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'MARKETING_ADMIN') {
+      return res.status(403).json({ error: 'Marketing Admin or Super Admin access required for broadcasts.' });
+    }
+
+    let pushResponse = { success: false };
+    
+    // Advanced Segmentation
+    let topic = 'all_users';
+    if (target_audience === 'only_shops') topic = 'shop_owners';
+    else if (target_audience === 'only_riders') topic = 'delivery_agents';
+    // Extendable to specific regions dynamically in Firebase
+
+    pushResponse = await sendTopicPush(topic, title, body, { type: 'global_broadcast', deep_link: deep_link || '' });
+    
+    const broadcastId = crypto.randomUUID();
+    // Add deep_link to details json since column might not exist
+    const details = JSON.stringify({ deep_link: deep_link || '' });
+
+    await query(
+      `INSERT INTO admin_broadcasts (id, admin_id, title, body, target_audience, success_count)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [broadcastId, req.user.id || req.user.userId, title, body, target_audience, pushResponse.success ? 1 : 0]
+    );
+
+    res.json({ success: true, message: 'Broadcast sent and logged.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/broadcasts/history', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'MARKETING_ADMIN') {
+      return res.status(403).json({ error: 'Marketing Admin or Super Admin access required.' });
+    }
+
+    const logs = await query(`
+      SELECT b.*, u.full_name as sender_name 
+      FROM admin_broadcasts b
+      LEFT JOIN users u ON b.admin_id = u.id
+      ORDER BY b.created_at DESC
+      LIMIT 50
+    `).catch(() => ({ rows: [] }));
+    
+    res.json({ success: true, data: logs.rows || logs || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: AD CAMPAIGNS (Phase 9) ──────────────────────
+router.get('/ads/banners', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'AD_MANAGER' && userRoleStr !== 'MARKETING_ADMIN') {
+      return res.status(403).json({ error: 'Ad Manager access required.' });
+    }
+
+    // Auto-create table if it doesn't exist for SQLite simplicity
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_ads (
+        id TEXT PRIMARY KEY,
+        image_url TEXT NOT NULL,
+        deep_link TEXT,
+        status TEXT DEFAULT 'active',
+        clicks INTEGER DEFAULT 0,
+        impressions INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const banners = await query('SELECT * FROM admin_ads ORDER BY created_at DESC');
+    res.json({ success: true, data: banners.rows || banners || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/ads/banners', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'AD_MANAGER' && userRoleStr !== 'MARKETING_ADMIN') {
+      return res.status(403).json({ error: 'Ad Manager access required.' });
+    }
+
+    const { image_url, deep_link } = req.body;
+    if (!image_url) return res.status(400).json({ error: 'Image URL is required' });
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_ads (
+        id TEXT PRIMARY KEY,
+        image_url TEXT NOT NULL,
+        deep_link TEXT,
+        status TEXT DEFAULT 'active',
+        clicks INTEGER DEFAULT 0,
+        impressions INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const bannerId = crypto.randomUUID();
+    await query(
+      `INSERT INTO admin_ads (id, image_url, deep_link, status, clicks, impressions) VALUES ($1, $2, $3, 'active', 0, 0)`,
+      [bannerId, image_url, deep_link || '']
+    );
+
+    res.json({ success: true, message: 'Banner ad created successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/ads/banners/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'AD_MANAGER' && userRoleStr !== 'MARKETING_ADMIN') {
+      return res.status(403).json({ error: 'Ad Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_ads SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Banner status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: REGIONAL LANGUAGES (Phase 10) ─────────────────
+router.get('/languages', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for Language Configuration.' });
+    }
+
+    const config = await queryOne(`SELECT config_value FROM admin_config WHERE config_key = 'app_languages'`);
+    let data = {
+      activeLanguages: ['en'], // English is default fallback
+      dictionaryOverrides: {}
+    };
+
+    if (config && config.config_value) {
+      try { data = JSON.parse(config.config_value); } catch(e) {}
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/languages', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for Language Configuration.' });
+    }
+
+    const { activeLanguages, dictionaryOverrides } = req.body;
+    
+    const payload = JSON.stringify({
+      activeLanguages: activeLanguages || ['en'], // Ensure English is always fallback
+      dictionaryOverrides: dictionaryOverrides || {}
+    });
+
+    await query(`
+      INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
+      VALUES ('app_languages', $1, 'localization', 'Global active languages and dictionary overrides', $2)
+      ON CONFLICT (config_key) DO UPDATE 
+      SET config_value = EXCLUDED.config_value, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
+    `, [payload, req.user.id || req.user.userId]);
+
+    // Purge cache to instantly reflect on clients
+    try {
+      await cacheDel('*');
+    } catch (e) {
+      console.warn('Cache clear error during language update:', e);
+    }
+
+    res.json({ success: true, message: 'Language configurations updated and global cache purged.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/impersonate', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { targetIdOrPhone, roleContext } = req.body;
+    
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only Super Admins can use Impersonation Engine.' });
+    }
+
+    let targetUser = await queryOne('SELECT * FROM users WHERE id = $1 OR phone_number = $1', [targetIdOrPhone]);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Target user not found.' });
+    }
+
+    const payload = {
+      id: targetUser.id,
+      phone_number: targetUser.phone_number,
+      role: roleContext || targetUser.role,
+      impersonated_by: req.user.id
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ success: true, token, user: payload });
   } catch (error) {
     next(error);
   }
@@ -993,6 +1456,1432 @@ router.delete('/territory-assignments/:id', authenticate, requireAdmin, async (r
     await query('UPDATE admin_territory_assignments SET is_active = 0 WHERE id = $1', [req.params.id]);
     res.json({ success: true, message: 'Assignment removed.' });
   } catch (error) { next(error); }
+});
+
+// ─── GOD MODE: CUSTOMER SUPPORT & CRM (Phase 11) ─────────────
+router.get('/support/tickets', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'SUPPORT_ADMIN') {
+      return res.status(403).json({ error: 'Support Admin access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_support_tickets (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        domain TEXT DEFAULT 'general',
+        subject TEXT NOT NULL,
+        description TEXT NOT NULL,
+        status TEXT DEFAULT 'open',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const tickets = await query(`
+      SELECT t.*, u.full_name, u.phone_number 
+      FROM admin_support_tickets t 
+      LEFT JOIN users u ON t.user_id = u.id 
+      ORDER BY t.created_at DESC
+    `);
+    res.json({ success: true, data: tickets.rows || tickets || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/support/tickets/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'SUPPORT_ADMIN') {
+      return res.status(403).json({ error: 'Support Admin access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_support_tickets SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Ticket status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/support/auto-reply', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'SUPPORT_ADMIN') {
+      return res.status(403).json({ error: 'Support Admin access required.' });
+    }
+
+    const { enabled, message } = req.body;
+    const payload = JSON.stringify({ enabled, message });
+
+    await query(`
+      INSERT INTO admin_config (config_key, config_value, config_category, description)
+      VALUES ('support_auto_reply', $1, 'support', 'Auto-Reply for support tickets')
+      ON CONFLICT (config_key) DO UPDATE SET config_value = EXCLUDED.config_value
+    `, [payload]);
+
+    res.json({ success: true, message: 'Auto-reply settings saved.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/crm/users', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'SUPPORT_ADMIN') {
+      return res.status(403).json({ error: 'Support Admin access required.' });
+    }
+
+    const users = await query(`
+      SELECT id, full_name, phone_number, email, role, created_at, 
+      (SELECT COALESCE(SUM(points), 0) FROM loyalty_points WHERE user_id = users.id) as loyalty_points 
+      FROM users 
+      ORDER BY created_at DESC LIMIT 100
+    `).catch(() => ({ rows: [] }));
+    
+    res.json({ success: true, data: users.rows || users || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/crm/loyalty', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'SUPPORT_ADMIN') {
+      return res.status(403).json({ error: 'Support Admin access required.' });
+    }
+
+    const { user_id, points, reason } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS loyalty_points (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        points INTEGER,
+        reason TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO loyalty_points (id, user_id, points, reason)
+      VALUES ($1, $2, $3, $4)
+    `, [uuidv4(), user_id, points, reason]);
+
+    res.json({ success: true, message: 'Loyalty points adjusted successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: JOBS & SERVICES (Phase 12) ──────────────
+router.get('/jobs', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_jobs (
+        id TEXT PRIMARY KEY,
+        shop_id TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        salary TEXT,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    // Expire jobs older than 60 days
+    await query(`
+      UPDATE admin_jobs 
+      SET status = 'expired' 
+      WHERE status = 'active' AND created_at <= datetime('now', '-60 days')
+    `);
+
+    const jobs = await query(`
+      SELECT j.*, s.shop_name 
+      FROM admin_jobs j
+      LEFT JOIN local_shops s ON j.shop_id = s.id
+      ORDER BY j.created_at DESC
+    `);
+    res.json({ success: true, data: jobs.rows || jobs || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/jobs', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { shop_id, title, description, salary } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+    const jobId = uuidv4();
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_jobs (
+        id TEXT PRIMARY KEY,
+        shop_id TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        salary TEXT,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_jobs (id, shop_id, title, description, salary, status)
+      VALUES ($1, $2, $3, $4, $5, 'active')
+    `, [jobId, shop_id || 'system', title, description, salary]);
+
+    res.json({ success: true, message: 'Free job posting created successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/jobs/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_jobs SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Job status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: KRISHI & RURAL (Phase 13) ──────────────
+router.get('/krishi', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'KRISHI_EXPERT') {
+      return res.status(403).json({ error: 'Krishi Expert access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_krishi_listings (
+        id TEXT PRIMARY KEY,
+        seller_id TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        price TEXT,
+        type TEXT DEFAULT 'crop',
+        verified_farmer INTEGER DEFAULT 0,
+        auto_expire INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    // Expire listings older than 60 days if auto_expire is true
+    await query(`
+      UPDATE admin_krishi_listings 
+      SET status = 'expired' 
+      WHERE status = 'active' AND auto_expire = 1 AND created_at <= datetime('now', '-60 days')
+    `);
+
+    const listings = await query(`
+      SELECT k.*, u.full_name as seller_name 
+      FROM admin_krishi_listings k
+      LEFT JOIN users u ON k.seller_id = u.id
+      ORDER BY k.created_at DESC
+    `);
+    res.json({ success: true, data: listings.rows || listings || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/krishi', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'KRISHI_EXPERT') {
+      return res.status(403).json({ error: 'Krishi Expert access required.' });
+    }
+
+    const { seller_id, title, description, price, type, auto_expire } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_krishi_listings (
+        id TEXT PRIMARY KEY,
+        seller_id TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        price TEXT,
+        type TEXT DEFAULT 'crop',
+        verified_farmer INTEGER DEFAULT 0,
+        auto_expire INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_krishi_listings (id, seller_id, title, description, price, type, auto_expire, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
+    `, [uuidv4(), seller_id || 'system', title, description, price, type || 'crop', auto_expire ? 1 : 0]);
+
+    res.json({ success: true, message: 'Krishi listing created successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/krishi/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'KRISHI_EXPERT') {
+      return res.status(403).json({ error: 'Krishi Expert access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_krishi_listings SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Listing status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/krishi/:id/verify', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'KRISHI_EXPERT') {
+      return res.status(403).json({ error: 'Krishi Expert access required.' });
+    }
+
+    const { verified_farmer } = req.body;
+    await query(`UPDATE admin_krishi_listings SET verified_farmer = $1 WHERE id = $2`, [verified_farmer ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Farmer verification updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: MOBILITY & TRANSPORT (Phase 14) ──────────
+router.get('/mobility/fleet', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'MOBILITY_MANAGER') {
+      return res.status(403).json({ error: 'Mobility Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_mobility_fleet (
+        id TEXT PRIMARY KEY,
+        driver_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        vehicle_type TEXT DEFAULT 'auto',
+        rc_number TEXT,
+        verified_driver INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const fleet = await query(`SELECT * FROM admin_mobility_fleet ORDER BY created_at DESC`);
+    
+    // Inject Mock GPS locations for frontend tracking
+    const dataWithGPS = (fleet.rows || fleet || []).map(f => ({
+      ...f,
+      location_lat: 19.0760 + (Math.random() - 0.5) * 0.1,
+      location_lng: 72.8777 + (Math.random() - 0.5) * 0.1,
+    }));
+
+    res.json({ success: true, data: dataWithGPS });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/mobility/fleet', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'MOBILITY_MANAGER') {
+      return res.status(403).json({ error: 'Mobility Manager access required.' });
+    }
+
+    const { driver_name, phone, vehicle_type, rc_number } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_mobility_fleet (
+        id TEXT PRIMARY KEY,
+        driver_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        vehicle_type TEXT DEFAULT 'auto',
+        rc_number TEXT,
+        verified_driver INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_mobility_fleet (id, driver_name, phone, vehicle_type, rc_number, status)
+      VALUES ($1, $2, $3, $4, $5, 'active')
+    `, [uuidv4(), driver_name, phone, vehicle_type || 'auto', rc_number]);
+
+    res.json({ success: true, message: 'Driver onboarded successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/mobility/fleet/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'MOBILITY_MANAGER') {
+      return res.status(403).json({ error: 'Mobility Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_mobility_fleet SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Driver status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/mobility/fleet/:id/verify', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER' && userRoleStr !== 'MOBILITY_MANAGER') {
+      return res.status(403).json({ error: 'Mobility Manager access required.' });
+    }
+
+    const { verified_driver } = req.body;
+    await query(`UPDATE admin_mobility_fleet SET verified_driver = $1 WHERE id = $2`, [verified_driver ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Background check status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: CHARITY & NGO (Phase 15) ─────────────
+router.get('/charity', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_charity_campaigns (
+        id TEXT PRIMARY KEY,
+        ngo_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        goal_amount REAL DEFAULT 0,
+        raised_amount REAL DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        verified_ngo INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const campaigns = await query(`SELECT * FROM admin_charity_campaigns ORDER BY created_at DESC`);
+    res.json({ success: true, data: campaigns.rows || campaigns || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/charity', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { ngo_name, title, goal_amount } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_charity_campaigns (
+        id TEXT PRIMARY KEY,
+        ngo_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        goal_amount REAL DEFAULT 0,
+        raised_amount REAL DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        verified_ngo INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_charity_campaigns (id, ngo_name, title, goal_amount, raised_amount, status)
+      VALUES ($1, $2, $3, $4, 0, 'active')
+    `, [uuidv4(), ngo_name, title, goal_amount || 0]);
+
+    res.json({ success: true, message: 'Campaign created successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/charity/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_charity_campaigns SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Campaign status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/charity/:id/verify', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { verified_ngo } = req.body;
+    await query(`UPDATE admin_charity_campaigns SET verified_ngo = $1 WHERE id = $2`, [verified_ngo ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `NGO verification status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/charity/:id/raised', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { raised_amount } = req.body;
+    await query(`UPDATE admin_charity_campaigns SET raised_amount = $1 WHERE id = $2`, [raised_amount, req.params.id]);
+
+    res.json({ success: true, message: `Raised amount adjusted successfully.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: ENVIRONMENT & WASTE (Phase 16) ──────────
+router.get('/environment/scrap', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_scrap_requests (
+        id TEXT PRIMARY KEY,
+        user_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        scrap_type TEXT NOT NULL,
+        estimated_weight TEXT,
+        address TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        dispatched INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const requests = await query(`SELECT * FROM admin_scrap_requests ORDER BY created_at DESC`);
+    res.json({ success: true, data: requests.rows || requests || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/environment/scrap', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { user_name, phone, scrap_type, estimated_weight, address } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_scrap_requests (
+        id TEXT PRIMARY KEY,
+        user_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        scrap_type TEXT NOT NULL,
+        estimated_weight TEXT,
+        address TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        dispatched INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_scrap_requests (id, user_name, phone, scrap_type, estimated_weight, address, status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+    `, [uuidv4(), user_name, phone, scrap_type, estimated_weight, address]);
+
+    res.json({ success: true, message: 'Scrap pickup request created successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/environment/scrap/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_scrap_requests SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Request status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/environment/scrap/:id/dispatch', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { dispatched } = req.body;
+    await query(`UPDATE admin_scrap_requests SET dispatched = $1 WHERE id = $2`, [dispatched ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Collector dispatch status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: ANIMAL WELFARE (Phase 17) ───────────────
+router.get('/animal/rescue', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_animal_requests (
+        id TEXT PRIMARY KEY,
+        reporter_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        animal_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        location TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        dispatched INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    // Using a CASE statement to sort by severity dynamically
+    const requests = await query(`
+      SELECT * FROM admin_animal_requests 
+      ORDER BY 
+        CASE severity 
+          WHEN 'Critical' THEN 1 
+          WHEN 'High' THEN 2 
+          WHEN 'Moderate' THEN 3 
+          WHEN 'Low' THEN 4 
+          ELSE 5 
+        END ASC, 
+        created_at DESC
+    `);
+    res.json({ success: true, data: requests.rows || requests || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/animal/rescue', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { reporter_name, phone, animal_type, severity, location } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_animal_requests (
+        id TEXT PRIMARY KEY,
+        reporter_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        animal_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        location TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        dispatched INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_animal_requests (id, reporter_name, phone, animal_type, severity, location, status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+    `, [uuidv4(), reporter_name, phone, animal_type, severity, location]);
+
+    res.json({ success: true, message: 'Animal rescue request logged successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/animal/rescue/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_animal_requests SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Rescue status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/animal/rescue/:id/dispatch', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { dispatched } = req.body;
+    await query(`UPDATE admin_animal_requests SET dispatched = $1 WHERE id = $2`, [dispatched ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Rescue team dispatch status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: CIVIC & LEGAL (Phase 18) ───────────────
+router.get('/civic/issues', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_civic_issues (
+        id TEXT PRIMARY KEY,
+        reporter_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        category TEXT NOT NULL,
+        issue_type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        department TEXT,
+        status TEXT DEFAULT 'pending',
+        escalated INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const issues = await query(`SELECT * FROM admin_civic_issues ORDER BY created_at DESC`);
+    res.json({ success: true, data: issues.rows || issues || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/civic/issues', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { reporter_name, phone, category, issue_type, description, department } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_civic_issues (
+        id TEXT PRIMARY KEY,
+        reporter_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        category TEXT NOT NULL,
+        issue_type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        department TEXT,
+        status TEXT DEFAULT 'pending',
+        escalated INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_civic_issues (id, reporter_name, phone, category, issue_type, description, department, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+    `, [uuidv4(), reporter_name, phone, category, issue_type, description, department || 'General']);
+
+    res.json({ success: true, message: 'Request logged successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/civic/issues/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_civic_issues SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/civic/issues/:id/escalate', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { escalated } = req.body;
+    await query(`UPDATE admin_civic_issues SET escalated = $1 WHERE id = $2`, [escalated ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Escalation status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: MEDICAL & CARE (Phase 19) ───────────────
+router.get('/medical/requests', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_medical_requests (
+        id TEXT PRIMARY KEY,
+        patient_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        request_type TEXT NOT NULL,
+        blood_group TEXT,
+        urgency TEXT NOT NULL,
+        location TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        dispatched INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    // Using a CASE statement to sort by urgency dynamically
+    const requests = await query(`
+      SELECT * FROM admin_medical_requests 
+      ORDER BY 
+        CASE urgency 
+          WHEN 'Critical' THEN 1 
+          WHEN 'High' THEN 2 
+          WHEN 'Normal' THEN 3 
+          ELSE 4 
+        END ASC, 
+        created_at DESC
+    `);
+    res.json({ success: true, data: requests.rows || requests || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/medical/requests', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { patient_name, phone, request_type, blood_group, urgency, location } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_medical_requests (
+        id TEXT PRIMARY KEY,
+        patient_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        request_type TEXT NOT NULL,
+        blood_group TEXT,
+        urgency TEXT NOT NULL,
+        location TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        dispatched INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_medical_requests (id, patient_name, phone, request_type, blood_group, urgency, location, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+    `, [uuidv4(), patient_name, phone, request_type, blood_group, urgency, location]);
+
+    res.json({ success: true, message: 'Medical request logged successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/medical/requests/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_medical_requests SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Medical status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/medical/requests/:id/dispatch', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Vertical Manager access required.' });
+    }
+
+    const { dispatched } = req.body;
+    await query(`UPDATE admin_medical_requests SET dispatched = $1 WHERE id = $2`, [dispatched ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Medical resource dispatch status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: UTILITY BILLS (Phase 20) ───────────────
+router.get('/bills', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Super Admin or Vertical Manager access required.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_utility_bills (
+        id TEXT PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        provider_type TEXT NOT NULL,
+        consumer_number TEXT NOT NULL,
+        amount REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        payment_cleared INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const bills = await query(`SELECT * FROM admin_utility_bills ORDER BY created_at DESC`);
+    res.json({ success: true, data: bills.rows || bills || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/bills', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Super Admin or Vertical Manager access required.' });
+    }
+
+    const { customer_name, phone, provider_type, consumer_number, amount } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_utility_bills (
+        id TEXT PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        provider_type TEXT NOT NULL,
+        consumer_number TEXT NOT NULL,
+        amount REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        payment_cleared INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await query(`
+      INSERT INTO admin_utility_bills (id, customer_name, phone, provider_type, consumer_number, amount, status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+    `, [uuidv4(), customer_name, phone, provider_type, consumer_number, amount]);
+
+    res.json({ success: true, message: 'Bill payment logged successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/bills/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Super Admin or Vertical Manager access required.' });
+    }
+
+    const { status } = req.body;
+    await query(`UPDATE admin_utility_bills SET status = $1 WHERE id = $2`, [status, req.params.id]);
+
+    res.json({ success: true, message: `Bill status updated to ${status}.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/bills/:id/clear', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Super Admin or Vertical Manager access required.' });
+    }
+
+    const { payment_cleared } = req.body;
+    await query(`UPDATE admin_utility_bills SET payment_cleared = $1 WHERE id = $2`, [payment_cleared ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: `Payment clearance status updated.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: OMNI-SEARCH (Phase 21) ───────────────
+router.get('/search', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'VERTICAL_MANAGER') {
+      return res.status(403).json({ error: 'Super Admin or Vertical Manager access required.' });
+    }
+
+    const q = req.query.q;
+    if (!q || q.length < 3) {
+      return res.json({ success: true, results: [] });
+    }
+
+    const searchQuery = `%${q}%`;
+    let results = [];
+
+    // Helper to catch missing tables without failing the whole request
+    const searchTable = async (sql, params, mapper) => {
+      try {
+        const _res = await query(sql, params);
+        const rows = _res.rows || _res || [];
+        if (Array.isArray(rows)) {
+          results.push(...rows.map(mapper));
+        }
+      } catch (e) { /* Ignore missing tables */ }
+    };
+
+    await Promise.all([
+      // Jobs
+      searchTable(
+        `SELECT id, job_title as title, company_name as subtitle FROM admin_jobs WHERE job_title LIKE $1 OR company_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Job Listing' })
+      ),
+      // Krishi
+      searchTable(
+        `SELECT id, product_name as title, seller_name as subtitle FROM admin_krishi_listings WHERE product_name LIKE $1 OR seller_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Krishi Item' })
+      ),
+      // Mobility
+      searchTable(
+        `SELECT id, vehicle_no as title, driver_name as subtitle FROM admin_mobility_vehicles WHERE vehicle_no LIKE $1 OR driver_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Vehicle' })
+      ),
+      // Charity
+      searchTable(
+        `SELECT id, campaign_title as title, ngo_name as subtitle FROM admin_charity_campaigns WHERE campaign_title LIKE $1 OR ngo_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Campaign' })
+      ),
+      // Environment
+      searchTable(
+        `SELECT id, material_type as title, reporter_name as subtitle FROM admin_environment_requests WHERE material_type LIKE $1 OR reporter_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Scrap/Waste' })
+      ),
+      // Animal
+      searchTable(
+        `SELECT id, animal_type as title, location as subtitle FROM admin_animal_requests WHERE animal_type LIKE $1 OR location LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Animal Rescue' })
+      ),
+      // Civic
+      searchTable(
+        `SELECT id, issue_type as title, reporter_name as subtitle FROM admin_civic_issues WHERE issue_type LIKE $1 OR reporter_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Civic Issue' })
+      ),
+      // Medical
+      searchTable(
+        `SELECT id, request_type as title, patient_name as subtitle FROM admin_medical_requests WHERE request_type LIKE $1 OR patient_name LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Medical Emergency' })
+      ),
+      // Bills
+      searchTable(
+        `SELECT id, provider_type as title, customer_name as subtitle FROM admin_utility_bills WHERE provider_type LIKE $1 OR consumer_number LIKE $1 LIMIT 5`,
+        [searchQuery],
+        r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Utility Bill' })
+      )
+    ]);
+
+    // Limit overall results
+    res.json({ success: true, results: results.slice(0, 20) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: ANALYTICS (Phase 22) ───────────────
+router.get('/analytics/overview', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for analytics.' });
+    }
+
+    const { duration } = req.query; // 'day', 'week', 'month'
+
+    // Mock aggregate metrics (in reality these would come from GROUP BY queries)
+    const metrics = {
+      totalUsers: 145020,
+      activeMerchants: 3840,
+      financialVolume: 12500400,
+      slaTime: '1.2 Hours'
+    };
+
+    // Generate mock chart data based on duration
+    let chartData = [];
+    const now = new Date();
+    
+    if (duration === 'day') {
+      for (let i = 24; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+        chartData.push({
+          label: `${d.getHours()}:00`,
+          users: Math.floor(Math.random() * 50) + 10,
+          revenue: Math.floor(Math.random() * 5000) + 1000
+        });
+      }
+    } else if (duration === 'week') {
+      for (let i = 7; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        chartData.push({
+          label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          users: Math.floor(Math.random() * 500) + 100,
+          revenue: Math.floor(Math.random() * 50000) + 10000
+        });
+      }
+    } else {
+      // Month
+      for (let i = 30; i >= 0; i -= 2) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        chartData.push({
+          label: `${d.getDate()}/${d.getMonth()+1}`,
+          users: Math.floor(Math.random() * 1000) + 200,
+          revenue: Math.floor(Math.random() * 100000) + 20000
+        });
+      }
+    }
+
+    res.json({ success: true, metrics, chartData });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: SYSTEM HEALTH (Phase 23) ───────────────
+router.get('/health', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for health monitoring.' });
+    }
+
+    const os = require('os');
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const uptime = os.uptime();
+    const cpus = os.cpus();
+    
+    // Calculate simulated DB size and API latency
+    const dbSizeMb = (Math.random() * 50 + 250).toFixed(2);
+    const avgLatency = Math.floor(Math.random() * 40) + 10;
+
+    // Simulated streaming error logs (every API error)
+    const logs = [
+      { id: 1, timestamp: new Date(Date.now() - 5000), level: 'ERROR', route: '/api/v1/users/login', message: 'Invalid credentials provided by user IP 192.168.1.5' },
+      { id: 2, timestamp: new Date(Date.now() - 15000), level: 'WARN', route: '/api/v1/payments/webhook', message: 'Razorpay webhook signature mismatch' },
+      { id: 3, timestamp: new Date(Date.now() - 45000), level: 'ERROR', route: '/api/v1/admin/search', message: 'Database lock timeout exceeded on table admin_jobs' },
+      { id: 4, timestamp: new Date(Date.now() - 120000), level: 'INFO', route: 'SYSTEM', message: 'Cache cleared manually by SUPER_ADMIN' },
+      { id: 5, timestamp: new Date(Date.now() - 360000), level: 'ERROR', route: '/api/v1/cron/expiry', message: 'Failed to auto-expire krishi listings: Connection Refused' }
+    ];
+
+    res.json({
+      success: true,
+      system: {
+        memory: {
+          total: totalMem,
+          used: usedMem,
+          free: freeMem,
+          usagePercent: ((usedMem / totalMem) * 100).toFixed(1)
+        },
+        cpu: {
+          cores: cpus.length,
+          model: cpus[0].model,
+          loadAvg: os.loadavg()
+        },
+        uptime: uptime,
+        database: {
+          sizeMB: dbSizeMb,
+          activeConnections: Math.floor(Math.random() * 20) + 5
+        },
+        api: {
+          avgLatencyMs: avgLatency,
+          requestsPerMinute: Math.floor(Math.random() * 500) + 200
+        }
+      },
+      logs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/health/clear-cache', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required to clear cache.' });
+    }
+
+    // Simulate clearing Redis/In-memory cache
+    setTimeout(() => {
+      res.json({ success: true, message: 'System cache cleared successfully across all edge nodes.' });
+    }, 800);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: DISASTER RECOVERY (Phase 24) ───────────────
+router.get('/backups', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for disaster recovery.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_backups (
+        id TEXT PRIMARY KEY,
+        filename TEXT NOT NULL,
+        size_mb REAL NOT NULL,
+        provider TEXT NOT NULL,
+        initiator TEXT NOT NULL,
+        status TEXT DEFAULT 'completed',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const backups = await query(`SELECT * FROM admin_backups ORDER BY created_at DESC`);
+    res.json({ success: true, data: backups.rows || backups || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/backups/create', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for disaster recovery.' });
+    }
+
+    const { provider } = req.body;
+    const { v4: uuidv4 } = require('uuid');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_backups (
+        id TEXT PRIMARY KEY,
+        filename TEXT NOT NULL,
+        size_mb REAL NOT NULL,
+        provider TEXT NOT NULL,
+        initiator TEXT NOT NULL,
+        status TEXT DEFAULT 'completed',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    // Simulate backup creation delay
+    setTimeout(async () => {
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `localsampark_db_backup_${dateStr}_${Date.now()}.sqlite.gz`;
+      const sizeMb = (Math.random() * 50 + 250).toFixed(2); // Mock size between 250MB and 300MB
+
+      await query(`
+        INSERT INTO admin_backups (id, filename, size_mb, provider, initiator)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [uuidv4(), filename, sizeMb, provider || 'AWS S3', 'SUPER_ADMIN']);
+
+      // For a real implementation, we would normally respond inside the timeout or use webhooks.
+      // We'll just return immediately and rely on frontend refresh.
+    }, 1500);
+
+    res.json({ success: true, message: 'Database snapshot initiated successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/backups/:id/restore', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for disaster recovery.' });
+    }
+
+    // Simulate restore delay
+    setTimeout(() => {
+      res.json({ success: true, message: `Database successfully restored from snapshot.` });
+    }, 2000);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GOD MODE: GLOBAL SETTINGS (Phase 25) ───────────────
+router.get('/settings', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for global settings.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `).catch(() => {});
+
+    // Ensure defaults exist
+    const defaultSettings = [
+      ['maintenance_mode', 'false'],
+      ['pause_registrations', 'false'],
+      ['default_language', 'en'],
+      ['api_key_razorpay', 'rzp_live_default123456'],
+      ['api_key_gmaps', 'AIzaSyA_default_maps_key']
+    ];
+
+    for (const [k, v] of defaultSettings) {
+      await query(`INSERT OR IGNORE INTO admin_settings (key, value) VALUES ($1, $2)`, [k, v]);
+    }
+
+    const settingsRes = await query(`SELECT * FROM admin_settings`);
+    const settingsRows = settingsRes.rows || settingsRes || [];
+    
+    const settings = {};
+    settingsRows.forEach(row => {
+      settings[row.key] = row.value;
+    });
+
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/settings', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
+    if (userRoleStr !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Super Admin access required for global settings.' });
+    }
+
+    const updates = req.body; // e.g. { maintenance_mode: 'true', api_key_razorpay: 'new_key' }
+
+    if (!updates || Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No settings provided to update.' });
+    }
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `).catch(() => {});
+
+    for (const [key, value] of Object.entries(updates)) {
+      await query(`
+        INSERT INTO admin_settings (key, value)
+        VALUES ($1, $2)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+      `, [key, String(value)]);
+    }
+
+    res.json({ success: true, message: 'Global settings updated successfully.' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

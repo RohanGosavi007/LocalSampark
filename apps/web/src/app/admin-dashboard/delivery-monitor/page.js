@@ -46,9 +46,14 @@ export default function DeliveryMonitorPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Delivery Fleet Monitor</h1>
           <p className="text-slate-400">Live tracking and management of the logistics network.</p>
         </div>
-        <button className="px-5 py-2 bg-emerald-600/20 text-emerald-500 rounded-xl hover:bg-emerald-600/30 transition flex items-center gap-2 font-medium border border-emerald-500/30">
-          <Activity className="w-4 h-4" /> Live Map Connect
-        </button>
+        <div className="flex gap-4">
+          <button className="px-5 py-2 bg-emerald-600/20 text-emerald-500 rounded-xl hover:bg-emerald-600/30 transition flex items-center gap-2 font-medium border border-emerald-500/30">
+            <Activity className="w-4 h-4" /> Live Map Connect
+          </button>
+          <a href="/delivery-dashboard" className="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition flex items-center gap-2 font-medium shadow-lg">
+            Open Full Dashboard
+          </a>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

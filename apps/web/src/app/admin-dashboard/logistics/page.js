@@ -1,52 +1,50 @@
-"use client";
+'use client';
+import React from 'react';
+import Link from 'next/link';
+import { Activity, ExternalLink, Settings, LayoutDashboard } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-import { useAuth } from '../../../context/AuthContext';
+export default function GodModelogistics() {
+  return (
+    <div className="max-w-6xl mx-auto pb-12">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black mb-1 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
+            <LayoutDashboard size={28} style={{ color: 'var(--accent)' }} /> God-Mode: Logistics
+          </h1>
+          <p style={{ color: 'var(--text-muted)' }}>Super-Admin overview and configuration for the Logistics module.</p>
+        </div>
+        
+        <button className="px-5 py-3 rounded-xl flex items-center gap-2 font-bold opacity-50 cursor-not-allowed" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
+          Dashboard Pending <Settings size={18} />
+        </button>
+        
+      </div>
 
-// Dynamically import the actual map component to avoid SSR issues with Leaflet
-const MapComponent = dynamic(() => import('../../../components/LogisticsMap'), { ssr: false });
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {[1, 2, 3].map((_, i) => (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} key={i} 
+            className="rounded-2xl p-6 shadow-sm border"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+          >
+            <div className="h-4 w-24 rounded-full mb-3" style={{ backgroundColor: 'var(--border-color)' }}></div>
+            <div className="h-8 w-16 rounded-full" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}></div>
+          </motion.div>
+        ))}
+      </div>
 
-export default function AdminLogisticsPage() {
-  const { user } = useAuth();
-  
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800">Unauthorized</h1>
-          <p className="text-gray-600 mt-2">Only administrators can access the Logistics God's Eye view.</p>
+      <div className="rounded-3xl border overflow-hidden" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+        <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+          <h3 className="text-xl font-bold" style={{ color: 'var(--text-main)' }}>Module Status</h3>
+        </div>
+        <div className="p-6 text-center py-24">
+           <Activity size={64} className="mx-auto mb-6 opacity-30 animate-pulse" style={{ color: 'var(--accent)' }} />
+           <h4 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-main)' }}>System Awaiting Live Data Sync</h4>
+           <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>
+             The Logistics module is provisioned. Detailed analytics, configurations, and aggregated data will appear here once the live data pipeline is fully synced.
+           </p>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow px-6 py-4 flex items-center justify-between z-10">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Logistics God's Eye View</h1>
-          <p className="text-sm text-gray-500">Real-time fleet monitoring and telemetry</p>
-        </div>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-green-500"></span>
-            <span className="text-sm text-gray-700">Online</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-            <span className="text-sm text-gray-700">On Delivery</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-red-500"></span>
-            <span className="text-sm text-gray-700">Offline</span>
-          </div>
-        </div>
-      </header>
-      
-      <main className="flex-1 relative">
-        <MapComponent />
-      </main>
     </div>
   );
 }

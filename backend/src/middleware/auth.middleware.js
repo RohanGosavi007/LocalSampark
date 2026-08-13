@@ -13,12 +13,18 @@ const getPrisma = () => {
 // Verify JWT token middleware
 const authenticate = async (req, res, next) => {
   try {
+    let token = null;
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
+    }
+
+    if (!token) {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     let user = null;
@@ -237,7 +243,19 @@ const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   // Phase 6: Enterprise RBAC roles
   DISTRICT_MANAGER: 'DISTRICT_MANAGER',
-  TERRITORY_FRANCHISE: 'TERRITORY_FRANCHISE'
+  TERRITORY_FRANCHISE: 'TERRITORY_FRANCHISE',
+  // Phase 8: Marketing
+  MARKETING_ADMIN: 'MARKETING_ADMIN',
+  // Phase 9: Ad Manager
+  AD_MANAGER: 'AD_MANAGER',
+  // Phase 11: Support Admin
+  SUPPORT_ADMIN: 'SUPPORT_ADMIN',
+  // Phase 12: Specialized Verticals
+  VERTICAL_MANAGER: 'VERTICAL_MANAGER',
+  // Phase 13: Krishi
+  KRISHI_EXPERT: 'KRISHI_EXPERT',
+  // Phase 14: Mobility
+  MOBILITY_MANAGER: 'MOBILITY_MANAGER'
 };
 
 const hasAccess = (allowedRoles) => {

@@ -1,183 +1,239 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useAdminAuth } from '@/context/AdminAuthContext';
-import { Settings, Save, Server, Shield, Zap, AlertTriangle } from 'lucide-react';
+import { Settings, ShieldAlert, Key, Globe, EyeOff, Eye, Save, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-export default function SystemSettingsPage() {
-  const { adminUser } = useAdminAuth();
-  const [configs, setConfigs] = useState([]);
+export default function SettingsDashboard() {
+  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Local state for UI inputs before saving
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [pauseRegistrations, setPauseRegistrations] = useState(false);
+  const [defaultLang, setDefaultLang] = useState('en');
+  
+  const [razorpayKey, setRazorpayKey] = useState('');
+  const [gmapsKey, setGmapsKey] = useState('');
+  
+  const [showRzp, setShowRzp] = useState(false);
+  const [showGmaps, setShowGmaps] = useState(false);
 
-  const fetchConfigs = async () => {
+  const fetchSettings = async () => {
     try {
-      setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/config', {
+      const res = await fetch(`http://localhost:5000/api/v1/admin/settings`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setConfigs(data.map(c => ({
-          ...c,
-          // Parse stringified JSON values if needed
-          value: typeof c.config_value === 'string' ? c.config_value.replace(/^"|"$/g, '') : c.config_value
-        })));
+      const result = await res.json();
+      if (result.success && result.data) {
+        setSettings(result.data);
+        setMaintenanceMode(result.data.maintenance_mode === 'true');
+        setPauseRegistrations(result.data.pause_registrations === 'true');
+        setDefaultLang(result.data.default_language || 'en');
+        setRazorpayKey(result.data.api_key_razorpay || '');
+        setGmapsKey(result.data.api_key_gmaps || '');
       }
     } catch (err) {
-      toast.error('Failed to load system config');
+      toast.error('Failed to load global settings');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchConfigs();
+    fetchSettings();
   }, []);
 
-  const saveConfig = async (key, value, category, description) => {
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      setSaving(key);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/config/${key}`, {
+      
+      const payload = {
+        maintenance_mode: maintenanceMode.toString(),
+        pause_registrations: pauseRegistrations.toString(),
+        default_language: defaultLang,
+        api_key_razorpay: razorpayKey,
+        api_key_gmaps: gmapsKey
+      };
+
+      const res = await fetch(`http://localhost:5000/api/v1/admin/settings`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ value, category, description })
+        body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (data) {
-        toast.success(`${key} updated successfully`);
-        fetchConfigs();
+      
+      const result = await res.json();
+      if (result.success) {
+        toast.success(result.message);
+        fetchSettings(); // reload obfuscated data
+      } else {
+        toast.error(result.error || 'Failed to save settings');
       }
     } catch (err) {
-      toast.error('Failed to update config');
+      toast.error('Network Error');
     } finally {
-      setSaving(null);
+      setSaving(false);
     }
   };
 
-  const updateLocalConfig = (index, newValue) => {
-    const updated = [...configs];
-    updated[index].value = newValue;
-    setConfigs(updated);
+  // Helper to obfuscate string: show first 8 chars, mask the rest
+  const obfuscate = (key, show) => {
+    if (show) return key;
+    if (!key || key.length < 10) return '********';
+    return key.substring(0, 8) + '********';
   };
 
-  const triggerMaintenance = async (action) => {
-    if (!confirm(`Are you sure you want to ${action}? This may impact active users.`)) return;
-    try {
-      const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/settings/action', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message);
-      }
-    } catch (err) {
-      toast.error('Action failed');
-    }
-  };
+  if (loading) {
+    return <div className="text-center py-20 text-slate-500">Loading Configuration Engine...</div>;
+  }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-7xl mx-auto pb-12 space-y-8">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">System Configurations</h1>
-          <p className="text-slate-400">Manage global platform variables, fees, and operational states.</p>
+          <h1 className="text-3xl font-black mb-1 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
+            <Settings className="text-slate-400" /> Global Configuration Hub
+          </h1>
+          <p style={{ color: 'var(--text-muted)' }}>Master switches, external API integrations, and platform-wide parameters.</p>
         </div>
+        
+        <button 
+          onClick={handleSave}
+          disabled={saving}
+          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
+        >
+          <Save className="w-5 h-5"/> {saving ? 'Saving Changes...' : 'Save All Settings'}
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Config Editor */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-blue-500"/> Core Variables
-            </h2>
-            
-            {loading ? (
-              <div className="text-slate-500 text-center py-8">Loading configurations...</div>
-            ) : configs.length === 0 ? (
-              <div className="text-slate-500 text-center py-8">No configurations found in database.</div>
-            ) : (
-              <div className="space-y-4">
-                {configs.map((config, idx) => (
-                  <div key={config.config_key} className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex flex-col md:flex-row gap-4 md:items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-white font-bold">{config.config_key}</span>
-                        <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full uppercase tracking-wider">{config.config_category}</span>
-                      </div>
-                      <p className="text-sm text-slate-500">{config.description}</p>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <input 
-                        type={config.config_value === 'true' || config.config_value === 'false' ? 'text' : 'text'}
-                        value={config.value || ''}
-                        onChange={(e) => updateLocalConfig(idx, e.target.value)}
-                        className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white w-32 md:w-48 focus:border-blue-500 focus:outline-none"
-                      />
-                      <button 
-                        onClick={() => saveConfig(config.config_key, config.value, config.config_category, config.description)}
-                        disabled={saving === config.config_key}
-                        className="p-2 bg-blue-600/20 text-blue-500 rounded-lg hover:bg-blue-600/30 transition disabled:opacity-50"
-                      >
-                        <Save className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column: Danger Zone / Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Core Platform Toggles */}
         <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500"/> Quick Actions
+          <div className="bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
+              <ShieldAlert className="w-5 h-5 text-rose-500" /> Platform God-Switches
             </h2>
-            <div className="space-y-3">
-              <button onClick={() => triggerMaintenance('Clear Cache')} className="w-full flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl hover:border-slate-700 transition group">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500 group-hover:bg-blue-500/20"><Server className="w-4 h-4"/></div>
-                  <span className="text-white font-medium">Clear Global Cache</span>
+
+            <div className="space-y-8">
+              
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: maintenanceMode ? 'rgba(244,63,94,0.4)' : 'var(--border-color)' }}>
+                <div>
+                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                    Maintenance Mode
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm">Blocks all regular users from accessing the app, displaying a "Down for Maintenance" screen. Super Admins bypass this.</p>
                 </div>
-              </button>
-              <button onClick={() => triggerMaintenance('Recalculate Routes')} className="w-full flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl hover:border-slate-700 transition group">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-500/10 rounded-xl text-purple-500 group-hover:bg-purple-500/20"><Zap className="w-4 h-4"/></div>
-                  <span className="text-white font-medium">Recalculate Routes</span>
+                <button 
+                  onClick={() => setMaintenanceMode(!maintenanceMode)}
+                  className={`transition-all ${maintenanceMode ? 'text-rose-500' : 'text-slate-500'}`}
+                >
+                  {maintenanceMode ? <ToggleRight className="w-12 h-12" /> : <ToggleLeft className="w-12 h-12" />}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: pauseRegistrations ? 'rgba(245,158,11,0.4)' : 'var(--border-color)' }}>
+                <div>
+                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                    Pause New Registrations
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm">Current users can still log in, but the signup flow for completely new users and shops is temporarily disabled.</p>
                 </div>
-              </button>
+                <button 
+                  onClick={() => setPauseRegistrations(!pauseRegistrations)}
+                  className={`transition-all ${pauseRegistrations ? 'text-amber-500' : 'text-slate-500'}`}
+                >
+                  {pauseRegistrations ? <ToggleRight className="w-12 h-12" /> : <ToggleLeft className="w-12 h-12" />}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: 'var(--border-color)' }}>
+                <div>
+                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-sky-500"/> Default Platform Language
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm">Fallback language if user's device locale is unsupported.</p>
+                </div>
+                <select 
+                  value={defaultLang}
+                  onChange={e => setDefaultLang(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 text-white text-sm font-bold rounded-lg px-4 py-2 outline-none"
+                >
+                  <option value="en">English</option>
+                  <option value="hi">Hindi (हिंदी)</option>
+                  <option value="mr">Marathi (मराठी)</option>
+                  <option value="gj">Gujarati (ગુજરાતી)</option>
+                </select>
+              </div>
+
             </div>
           </div>
+        </div>
 
-          <div className="bg-red-950/20 border border-red-900/50 rounded-3xl p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-red-500 mb-6 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5"/> Danger Zone
+        {/* Third-Party API Keys */}
+        <div className="space-y-6">
+          <div className="bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
+              <Key className="w-5 h-5 text-purple-500" /> External API Keys
             </h2>
-            <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-              These actions have immediate, platform-wide consequences. Ensure you have proper authorization.
-            </p>
-            <button 
-              onClick={() => triggerMaintenance('Toggle Maintenance Mode')} 
-              className="w-full py-3 bg-red-600/20 text-red-500 font-bold rounded-xl hover:bg-red-600/30 transition border border-red-600/30"
-            >
-              Toggle Maintenance Mode
-            </button>
+            
+            <div className="bg-purple-500/10 border border-purple-500/30 p-4 rounded-xl mb-6">
+                <p className="text-xs text-purple-400 font-bold flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5"/>
+                  Keys are automatically obfuscated for security. Modifying these keys will immediately affect live production pipelines.
+                </p>
+              </div>
+
+            <div className="space-y-6">
+              
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-400">
+                  Razorpay Live Secret
+                  <button onClick={() => setShowRzp(!showRzp)} className="text-sky-500 flex items-center gap-1 hover:text-sky-400">
+                    {showRzp ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>} {showRzp ? 'Hide' : 'Reveal'}
+                  </button>
+                </label>
+                <input 
+                  type="text" 
+                  value={obfuscate(razorpayKey, showRzp)}
+                  onChange={e => {
+                    // Only update if they are editing the raw key (not the masked one)
+                    if (showRzp) setRazorpayKey(e.target.value);
+                  }}
+                  readOnly={!showRzp}
+                  className="w-full px-4 py-3 rounded-xl border outline-none font-mono text-sm transition-all focus:border-purple-500"
+                  style={{ backgroundColor: showRzp ? '#1e293b' : 'var(--bg-base)', borderColor: showRzp ? 'rgb(168, 85, 247)' : 'var(--border-color)', color: 'var(--text-main)' }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-400">
+                  Google Maps API Key
+                  <button onClick={() => setShowGmaps(!showGmaps)} className="text-sky-500 flex items-center gap-1 hover:text-sky-400">
+                    {showGmaps ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>} {showGmaps ? 'Hide' : 'Reveal'}
+                  </button>
+                </label>
+                <input 
+                  type="text" 
+                  value={obfuscate(gmapsKey, showGmaps)}
+                  onChange={e => {
+                    if (showGmaps) setGmapsKey(e.target.value);
+                  }}
+                  readOnly={!showGmaps}
+                  className="w-full px-4 py-3 rounded-xl border outline-none font-mono text-sm transition-all focus:border-purple-500"
+                  style={{ backgroundColor: showGmaps ? '#1e293b' : 'var(--bg-base)', borderColor: showGmaps ? 'rgb(168, 85, 247)' : 'var(--border-color)', color: 'var(--text-main)' }}
+                />
+              </div>
+
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
