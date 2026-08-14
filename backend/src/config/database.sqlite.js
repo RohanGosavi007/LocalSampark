@@ -9,7 +9,10 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const dbPath = path.join(dbDir, 'localsampark.db');
+// Overridable so the test harness can point at an isolated file. Without this
+// the suite ran against the shared development database, where a divergent
+// schema broke seeding and every run mutated real dev data.
+const dbPath = process.env.SQLITE_DB_PATH || path.join(dbDir, 'localsampark.db');
 const db = new sqlite3.Database(dbPath);
 
 // Helper function to translate PG query to SQLite

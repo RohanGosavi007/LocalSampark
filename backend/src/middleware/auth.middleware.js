@@ -28,21 +28,22 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
     const targetUserId = decoded.userId || decoded.id || decoded.sub;
 
-    let user = null;
-    if (process.env.USE_SQLITE === 'true') {
-      const { queryOne } = require('../config/database');
-      user = await queryOne('SELECT * FROM users WHERE id = $1', [targetUserId]);
-    } else {
-      user = await getPrisma().user.findUnique({
-        where: { id: targetUserId }
-      });
-    }
+    // config/database already abstracts SQLite and Postgres, so there is no
+    // reason to branch to Prisma here. The old branch meant authentication took
+    // a different code path in production than in development, and it silently
+    // fell through when USE_SQLITE was unset.
+    const { queryOne } = require('../config/database');
+    const user = await queryOne('SELECT * FROM users WHERE id = $1', [targetUserId]);
 
     if (!user) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    if (user.isActive === false || user.is_active === 0) {
+    // Postgres returns a boolean here and SQLite an integer, so both shapes of
+    // "deactivated" must be handled. The previous check tested only `=== 0`,
+    // which let deactivated Postgres accounts authenticate successfully.
+    const isActive = user.isActive ?? user.is_active;
+    if (isActive === false || isActive === 0 || isActive === '0') {
       return res.status(403).json({ error: 'Account is deactivated.' });
     }
 
@@ -211,7 +212,10 @@ const verifyRole = (allowedRoles) => {
 // Require Territory Admin role
 const requireTerritory = (req, res, next) => {
   const allowedRoles = ['TERRITORY_ADMIN', 'AREA_AGENT', 'ADMIN', 'SUPER_ADMIN'];
-  const role = req.adminRole?.role || req.user?.role;
+  // Roles are stored inconsistently: ROLES uses upper case while the admin auth
+  // route compares against lower case. requireAdmin already normalises, and
+  // comparing raw here rejected legitimate admins stored as 'super_admin'.
+  const role = (req.adminRole?.role || req.user?.role || '').toUpperCase();
   if (!role || !allowedRoles.includes(role)) {
     return res.status(403).json({ error: 'Territory Admin access required.' });
   }
@@ -221,7 +225,7 @@ const requireTerritory = (req, res, next) => {
 // Require Area Agent (multi-zone admin) role or higher
 const requireAreaAgent = (req, res, next) => {
   const allowedRoles = ['AREA_AGENT', 'ADMIN', 'SUPER_ADMIN'];
-  const role = req.adminRole?.role || req.user?.role;
+  const role = (req.adminRole?.role || req.user?.role || '').toUpperCase();
   if (!role || !allowedRoles.includes(role)) {
     return res.status(403).json({ error: 'Area Agent or Super Admin access required.' });
   }

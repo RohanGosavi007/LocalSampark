@@ -4,10 +4,32 @@
  * Uses SQLite for fast CI runs or PostgreSQL for integration fidelity.
  */
 const path = require('path');
+const fs = require('fs');
 
 // Force test environment
 process.env.NODE_ENV = 'test';
 process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
+
+// Run against a dedicated database file. Previously the suite shared
+// src/data/localsampark.db with development, so CREATE TABLE IF NOT EXISTS hit
+// pre-existing tables with a divergent schema and seeding failed.
+if (!process.env.TEST_USE_POSTGRES) {
+  const testDbPath = path.join(__dirname, '../../data/test.db');
+  process.env.SQLITE_DB_PATH = testDbPath;
+
+  // Start from a clean slate so schema changes always take effect.
+  for (const suffix of ['', '-wal', '-shm']) {
+    const f = testDbPath + suffix;
+    if (fs.existsSync(f)) {
+      try {
+        fs.unlinkSync(f);
+      } catch {
+        // A lingering handle from a previous run is not fatal; the schema
+        // creation below is idempotent.
+      }
+    }
+  }
+}
 process.env.JWT_SECRET = 'test-jwt-secret-key-localsampark-2026';
 process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-localsampark-2026';
 process.env.JWT_EXPIRES_IN = '1h';
