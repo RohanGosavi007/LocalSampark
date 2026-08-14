@@ -159,7 +159,9 @@ describe('Auth Middleware', () => {
 
       await requireAdmin(req, res, next);
       expect(next).toHaveBeenCalled();
-      expect(req.adminRole.role).toBe('admin');
+      // Normalised to upper case: consumers such as admin.routes.js compare
+      // req.adminRole.role against 'SUPER_ADMIN' without normalising.
+      expect(req.adminRole.role).toBe('ADMIN');
     });
 
     it('should fallback to user.role if admin_roles table fails', async () => {
@@ -169,7 +171,7 @@ describe('Auth Middleware', () => {
 
       await requireAdmin(req, res, next);
       expect(next).toHaveBeenCalled();
-      expect(req.adminRole.role).toBe('super_admin');
+      expect(req.adminRole.role).toBe('SUPER_ADMIN');
     });
 
     it('should reject non-admin user', async () => {
@@ -336,7 +338,7 @@ describe('Auth Middleware', () => {
 
       await enforceMultiTenancy(req, res, next);
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Tenant Mismatch: Access Denied' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Tenant Mismatch: Access Denied to requested shopId' });
     });
 
     it('should reject regular user from CRM routes', async () => {

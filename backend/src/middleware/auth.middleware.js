@@ -69,16 +69,15 @@ const optionalAuth = async (req, res, next) => {
       const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
       const targetUserId = decoded.userId || decoded.id || decoded.sub;
       
-      let user = null;
-      if (process.env.USE_SQLITE === 'true') {
-        const { queryOne } = require('../config/database');
-        user = await queryOne('SELECT * FROM users WHERE id = $1 AND (is_active = true OR is_active = true)', [targetUserId]);
-      } else {
-        user = await getPrisma().user.findFirst({
-          where: { id: targetUserId, isActive: true }
-        });
-      }
-      req.user = user || null;
+      // Same reasoning as authenticate(): config/database already handles both
+      // dialects, and the old USE_SQLITE branch meant an unset flag silently
+      // routed to Prisma and produced an anonymous request.
+      const { queryOne } = require('../config/database');
+      const user = await queryOne('SELECT * FROM users WHERE id = $1', [targetUserId]);
+
+      const isActive = user ? (user.isActive ?? user.is_active) : null;
+      const deactivated = isActive === false || isActive === 0 || isActive === '0';
+      req.user = user && !deactivated ? user : null;
     }
   } catch {
     req.user = null;
@@ -94,14 +93,39 @@ const requireAdmin = async (req, res, next) => {
     }
 
     let adminRole = null;
-    const userRoleStr = (req.user.role || '').toUpperCase();
-    // Check if user.role itself is admin/super_admin
-    if (userRoleStr === 'ADMIN' || userRoleStr === 'SUPER_ADMIN') {
-      adminRole = {
-        role: userRoleStr,
-        regionId: req.user.regionId || req.user.region_id || null,
-        permissions: '{"all": true}'
-      };
+
+    // Primary source: an explicit grant in admin_roles. This lookup was missing
+    // entirely, so anyone who was an admin only via that table was rejected.
+    // Roles are normalised to upper case because consumers such as
+    // admin.routes.js compare req.adminRole.role against 'SUPER_ADMIN' directly.
+    try {
+      const { queryOne } = require('../config/database');
+      const granted = await queryOne(
+        'SELECT * FROM admin_roles WHERE user_id = $1',
+        [req.user.id || req.user.userId]
+      );
+      if (granted && granted.role) {
+        adminRole = {
+          role: String(granted.role).toUpperCase(),
+          regionId: granted.regionId || granted.region_id || null,
+          permissions: granted.permissions || '{"all": true}'
+        };
+      }
+    } catch {
+      // admin_roles may not exist in every deployment; fall through to
+      // users.role below rather than failing the request.
+    }
+
+    // Fallback: the role carried on the user record itself.
+    if (!adminRole) {
+      const userRoleStr = (req.user.role || '').toUpperCase();
+      if (userRoleStr === 'ADMIN' || userRoleStr === 'SUPER_ADMIN') {
+        adminRole = {
+          role: userRoleStr,
+          regionId: req.user.regionId || req.user.region_id || null,
+          permissions: '{"all": true}'
+        };
+      }
     }
 
     if (!adminRole) {
@@ -121,7 +145,11 @@ const requireRole = (...roles) => {
     if (!req.adminRole) {
       return res.status(403).json({ error: 'Admin access required.' });
     }
-    if (!roles.includes(req.adminRole.role) && req.adminRole.role !== 'SUPER_ADMIN') {
+    // Normalise both sides: callers pass role names in mixed case and
+    // req.adminRole.role may arrive either normalised or raw.
+    const actual = String(req.adminRole.role || '').toUpperCase();
+    const allowed = roles.map((r) => String(r).toUpperCase());
+    if (!allowed.includes(actual) && actual !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: `Required role: ${roles.join(' or ')}` });
     }
     next();
@@ -294,27 +322,33 @@ const enforceMultiTenancy = async (req, res, next) => {
     }
 
     if (req.user.role === ROLES.SHOP_OWNER || req.user.role === 'VENDOR' || req.user.role === 'VENDOR_OWNER' || req.user.role === 'VENDOR_STAFF') {
-      let shop = null;
-      if (process.env.USE_SQLITE === 'true') {
-        const { queryOne } = require('../config/database');
-        shop = await queryOne('SELECT * FROM local_shops WHERE owner_id = $1', [req.user.userId || req.user.id]);
-      } else {
-        shop = await getPrisma().shop.findFirst({
-          where: { ownerId: req.user.userId || req.user.id }
-        });
-      }
-      
+      // As above: one data path for both dialects, rather than silently
+      // routing to Prisma whenever USE_SQLITE is not exactly 'true'.
+      const { queryOne } = require('../config/database');
+      const shop = await queryOne(
+        'SELECT * FROM local_shops WHERE owner_id = $1',
+        [req.user.userId || req.user.id]
+      );
+
       if (!shop) {
         return res.status(403).json({ error: 'No shop associated with this account' });
       }
 
-      if (shop.status === 'SUSPENDED') {
+      // A shop can be locked either by status or by the is_locked flag; only
+      // status was checked, so is_locked shops kept full CRM access.
+      if (shop.status === 'SUSPENDED' || shop.is_locked === true || shop.is_locked === 1) {
         return res.status(403).json({ error: 'Shop is locked due to billing or policy violation' });
       }
 
-      // Inject strict shop context into the request
+      // Inject strict shop context into the request. saas.routes.js reads
+      // req.shopId, which was never set here, so those queries ran with
+      // undefined; both names are populated.
       req.tenantShopId = shop.id;
-      req.crmTier = shop.isPremium ? 'premium' : 'free';
+      req.shopId = shop.id;
+
+      // local_shops.crm_tier is the source of truth; deriving the tier from
+      // isPremium ignored shops explicitly placed on a named tier.
+      req.crmTier = shop.crm_tier || (shop.isPremium || shop.is_premium ? 'premium' : 'free');
 
       // Strict enforcement: if route provided a shopId explicitly, ensure it matches tenant
       const targetShopId = req.params.shopId || req.body.shopId || req.query.shopId;
