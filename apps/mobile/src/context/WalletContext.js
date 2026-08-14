@@ -19,7 +19,9 @@ export function WalletProvider({ children }) {
     if (!authToken || !user) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/wallet/balance`, {
+      // /wallet/history returns { balance, transactions }; /wallet/balance has
+      // never existed, so this always fell through to the mock below.
+      const res = await fetch(`${API_URL}/wallet/history`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       if (res.ok) {
