@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const router = express.Router();
-const { query, queryOne, withTransaction } = require('../../../config/database');
+const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
 
@@ -147,6 +147,47 @@ router.post('/payouts/claim', authenticate, async (req, res, next) => {
     } catch (err) {
         res.status(400).json({ error: err.message || 'Failed to claim payout' });
     }
+});
+
+// ─── LEADS ───────────────────────────────────────────────────────────────────
+// The admin Leads CRM tab has always called GET /franchise/leads; it was never
+// implemented, so the tab fell back to hardcoded sample rows. Leads live in
+// crm_leads, so this reads that table rather than introducing a parallel one.
+router.get('/leads', authenticate, async (req, res, next) => {
+  try {
+    const { status, limit } = req.query;
+
+    const clauses = [];
+    const params = [];
+    if (status) {
+      params.push(status);
+      clauses.push(`status = $${params.length}`);
+    }
+
+    params.push(Math.min(parseInt(limit, 10) || 100, 500));
+
+    const leads = await queryMany(
+      `SELECT id, first_name, last_name, email, phone, lead_source,
+              lead_score, status, assigned_to, notes, created_at
+         FROM crm_leads
+        ${clauses.length ? 'WHERE ' + clauses.join(' AND ') : ''}
+        ORDER BY created_at DESC
+        LIMIT $${params.length}`,
+      params
+    );
+
+    // The tab renders business_name and category, so expose those names
+    // alongside the stored columns rather than making the client remap.
+    const data = leads.map((l) => ({
+      ...l,
+      business_name: [l.first_name, l.last_name].filter(Boolean).join(' ') || l.email || 'Unknown',
+      category: l.lead_source || 'Uncategorised',
+    }));
+
+    res.json({ success: true, leads: data, data });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

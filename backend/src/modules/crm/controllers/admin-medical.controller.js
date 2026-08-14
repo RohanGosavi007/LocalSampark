@@ -1,4 +1,4 @@
-const { query } = require('../../../config/database');
+const { query, queryOne } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getRequests = async (req, res, next) => {
@@ -72,6 +72,40 @@ exports.updateStatus = async (req, res, next) => {
     const { status } = req.body;
     await query('UPDATE medical_requests SET status = $1 WHERE id = $2', [status, id]);
     res.json({ success: true, message: 'Request status updated' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Verify or unverify a medical provider. The admin Medical tab has always
+// called PUT /admin/medical/doctors/:id/verify; it was never implemented.
+exports.toggleDoctorVerification = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { is_verified } = req.body;
+
+    if (typeof is_verified !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'is_verified must be a boolean' });
+    }
+
+    const provider = await queryOne('SELECT id FROM medical_providers WHERE id = $1', [id]);
+    if (!provider) {
+      return res.status(404).json({ success: false, message: 'Medical provider not found' });
+    }
+
+    await query(
+      `UPDATE medical_providers
+          SET is_verified = $1, status = $2, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $3`,
+      [is_verified, is_verified ? 'verified' : 'pending', id]
+    );
+
+    res.json({
+      success: true,
+      id,
+      is_verified,
+      message: is_verified ? 'Provider verified' : 'Verification withdrawn',
+    });
   } catch (error) {
     next(error);
   }

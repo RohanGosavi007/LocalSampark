@@ -99,6 +99,7 @@ router.get('/medical/requests', authenticate, requireAdmin, adminMedicalControll
 router.post('/medical/requests', authenticate, requireAdmin, adminMedicalController.createRequest);
 router.put('/medical/requests/:id/status', authenticate, requireAdmin, adminMedicalController.updateStatus);
 router.put('/medical/requests/:id/dispatch', authenticate, requireAdmin, adminMedicalController.toggleDispatch);
+router.put('/medical/doctors/:id/verify', authenticate, requireAdmin, adminMedicalController.toggleDoctorVerification);
 
 // --- MARKETING (Phase 22) ---
 // Push broadcasts reach every device, so they need a tighter guard than the
