@@ -189,8 +189,102 @@ module.exports = {
           '0%': { opacity: '0', transform: 'rotateY(90deg) scale(0.5)' },
           '100%': { opacity: '1', transform: 'rotateY(0deg) scale(1)' },
         },
+        // ── Added in the design system overhaul ──
+        auroraDrift: {
+          '0%, 100%': { transform: 'translate3d(-6%, -4%, 0) scale(1.1)' },
+          '33%': { transform: 'translate3d(6%, 3%, 0) scale(1.25)' },
+          '66%': { transform: 'translate3d(-3%, 6%, 0) scale(1.15)' },
+        },
+        textRise: {
+          from: { opacity: '0', transform: 'translateY(120%) rotate(4deg)' },
+          to: { opacity: '1', transform: 'translateY(0) rotate(0deg)' },
+        },
+        sheen: {
+          '0%': { transform: 'translateX(-120%) skewX(-18deg)' },
+          '100%': { transform: 'translateX(220%) skewX(-18deg)' },
+        },
+      },
+
+      // Drop shadows follow the alpha channel, so a glow wraps the subject
+      // instead of its bounding box. Box shadows cannot do this.
+      dropShadow: {
+        'glow-sm': '0 0 6px var(--glow-color)',
+        'glow': ['0 0 10px var(--glow-color)', '0 0 30px var(--glow-color)'],
+        'glow-lg': ['0 0 18px var(--glow-color)', '0 0 55px var(--glow-color)'],
+        'emerald': ['0 0 12px rgba(0,200,128,0.55)', '0 0 42px rgba(0,200,128,0.32)'],
+        'violet': ['0 0 12px rgba(124,92,255,0.55)', '0 0 42px rgba(124,92,255,0.32)'],
+        'crimson': ['0 0 12px rgba(255,45,85,0.55)', '0 0 42px rgba(255,45,85,0.32)'],
+        'cyan': ['0 0 12px rgba(0,217,245,0.55)', '0 0 42px rgba(0,217,245,0.32)'],
+      },
+
+      // The gradientMove keyframe existed but nothing oversized the background,
+      // so it had nothing to travel across and appeared static.
+      backgroundSize: {
+        'flow': '300% 300%',
+        'flow-lg': '500% 500%',
+      },
+
+      backgroundImage: {
+        'aurora':
+          'radial-gradient(at 18% 22%, rgba(0,200,128,0.42) 0px, transparent 52%), ' +
+          'radial-gradient(at 82% 12%, rgba(124,92,255,0.38) 0px, transparent 52%), ' +
+          'radial-gradient(at 68% 82%, rgba(255,106,0,0.34) 0px, transparent 52%), ' +
+          'radial-gradient(at 12% 78%, rgba(0,217,245,0.30) 0px, transparent 52%)',
+        'holo':
+          'linear-gradient(115deg, #00C880 0%, #00D9F5 22%, #7C5CFF 46%, #FF2D55 70%, #FF6A00 100%)',
+        'glass-sheen':
+          'linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.22) 48%, transparent 58%)',
+      },
+
+      transitionTimingFunction: {
+        entrance: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        exit: 'cubic-bezier(0.7, 0, 0.84, 0)',
+        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
+
+      perspective: {
+        near: '600px',
+        base: '1200px',
+        far: '2400px',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Utilities Tailwind has no primitive for, needed by the tilt and glass work.
+    function ({ addUtilities }) {
+      addUtilities({
+        '.preserve-3d': { transformStyle: 'preserve-3d' },
+        '.backface-hidden': { backfaceVisibility: 'hidden' },
+        '.perspective-near': { perspective: '600px' },
+        '.perspective-base': { perspective: '1200px' },
+        '.perspective-far': { perspective: '2400px' },
+        // Text filled by a moving gradient.
+        '.text-holo': {
+          background:
+            'linear-gradient(115deg, #00C880 0%, #00D9F5 22%, #7C5CFF 46%, #FF2D55 70%, #FF6A00 100%)',
+          backgroundSize: '300% 300%',
+          '-webkit-background-clip': 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+          animation: 'gradientMove 8s ease infinite',
+        },
+      });
+    },
+
+    // Heavy motion is a comfort and accessibility problem for some users, and
+    // this system leans on it hard. Honour the OS setting globally rather than
+    // per component, so no future screen can forget to.
+    function ({ addBase }) {
+      addBase({
+        '@media (prefers-reduced-motion: reduce)': {
+          '*, *::before, *::after': {
+            animationDuration: '0.01ms !important',
+            animationIterationCount: '1 !important',
+            transitionDuration: '0.01ms !important',
+            scrollBehavior: 'auto !important',
+          },
+        },
+      });
+    },
+  ],
 };

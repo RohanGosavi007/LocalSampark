@@ -11,22 +11,32 @@
 
 :root {
   /* === INDIAN HYPERLOCAL ECOMMERCE MODE (Emerald/Indigo) === */
-  --primary:       #00B074; /* Vibrant Emerald Green */
-  --primary-hover: #008C5D;
-  --primary-light: #E6F7F1;
-  --primary-glass: rgba(0, 176, 116, 0.15);
+  /* Values retuned for higher chroma; every token name is unchanged, so all
+     existing pages pick up the new palette without edits. Mirrors
+     packages/shared/design-tokens.js — change both together. */
+  --primary:       #00C880; /* Emerald, lifted for saturation on glass */
+  --primary-hover: #00A468;
+  --primary-light: #E6FBF3;
+  --primary-glass: rgba(0, 200, 128, 0.16);
 
-  --secondary:       #FF5E00; /* Deep Hyper Orange */
-  --secondary-hover: #CC4B00;
-  --secondary-light: #FFF0E6;
-  --secondary-glass: rgba(255, 94, 0, 0.15);
+  --secondary:       #FF6A00; /* Hyper orange */
+  --secondary-hover: #D95400;
+  --secondary-light: #FFF2E8;
+  --secondary-glass: rgba(255, 106, 0, 0.16);
 
-  --accent:       #E52E2E; /* Festive Crimson */
-  --accent-light: #FCEAEA;
-  --accent-glass: rgba(229, 46, 46, 0.15);
-  
-  --trust:        #1A1D36; /* Deep Indigo Blue */
-  --promo:        #FFD600; /* Electric Yellow */
+  --accent:       #FF2D55; /* Crimson pushed toward magenta */
+  --accent-light: #FFE9EE;
+  --accent-glass: rgba(255, 45, 85, 0.16);
+
+  /* Added: the palette had no cool accent, which left dark surfaces and
+     depth cues relying entirely on warm hues. */
+  --violet:       #7C5CFF;
+  --violet-glass: rgba(124, 92, 255, 0.16);
+  --cyan:         #00D9F5;
+  --cyan-glass:   rgba(0, 217, 245, 0.16);
+
+  --trust:        #12152E; /* Deep indigo */
+  --promo:        #FFD400; /* Electric yellow */
 
   --background:     #F8FAFC; 
   --background-alt: #FFFFFF;
@@ -35,7 +45,7 @@
   --text:           #1A1D36; /* Using Trust Color for main text */
   --text-muted:     #64748B;
   --border:         #F0F0F5;
-  --glow-color:     rgba(0, 176, 116, 0.25);
+  --glow-color:     rgba(0, 200, 128, 0.32);
   --nav-bg:         rgba(255, 255, 255, 0.85); /* Frosted Glass Base */
   --section-alt:    linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
   --hero-bg:        linear-gradient(135deg, #E6F7F1 0%, #FFF0E6 50%, #FCEAEA 100%);
