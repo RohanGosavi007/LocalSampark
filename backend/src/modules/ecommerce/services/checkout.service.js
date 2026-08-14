@@ -43,7 +43,7 @@ class CheckoutService {
     }
 
     let cartQuery = `
-      SELECT c.*, p.price as product_price, p.shop_id, p.inventory_count, p.track_inventory 
+      SELECT c.*, p.price as product_price, p.name as product_name, p.shop_id, p.inventory_count, p.track_inventory
       FROM cart_items c
       JOIN shop_products p ON c.product_id = p.id
       WHERE c.product_id IN (SELECT id FROM shop_products WHERE shop_id = $1) AND `;
@@ -97,25 +97,41 @@ class CheckoutService {
 
     // Execute order creation and ledger updates atomically
     const orderId = await withTransaction(async (dbClient) => {
+      // Column names follow the canonical `orders` table: the status column is
+      // `order_status`, and a delivery address is required for DELIVERY orders
+      // but absent for PICKUP.
+      const isDelivery = fulfillmentMethod === 'DELIVERY';
+      const lat = deliveryAddress?.lat ?? null;
+      const lng = deliveryAddress?.lng ?? null;
+
+      if (isDelivery && (lat === null || lng === null)) {
+        throw { status: 400, message: 'A delivery address with coordinates is required for delivery orders' };
+      }
+
       const insertOrderParams = [
-        userId || null, 
-        shopId, 
-        'PENDING', 
-        totalAmount, 
-        deliveryFee, 
-        platformCommission, 
-        0, 
+        userId || null,
+        shopId,
+        'pending',
+        totalAmount,
+        deliveryFee,
+        platformCommission,
+        0,
         paymentMethod,
-        'PENDING',
+        'pending',
         fulfillmentMethod,
-        deliveryAddress?.lat || null,
-        deliveryAddress?.lng || null
+        lat,
+        lng,
+        deliveryAddress?.formatted || deliveryAddress?.line1 || null,
+        lat !== null && lng !== null ? `POINT(${lng} ${lat})` : null
       ];
 
       const orderQuery = `
-        INSERT INTO orders 
-        (user_id, shop_id, status, total_amount, delivery_fee, platform_fee, discount, payment_method, payment_status, fulfillment_method, delivery_lat, delivery_lng)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        INSERT INTO orders
+        (user_id, shop_id, order_status, total_amount, delivery_fee, platform_fee, discount,
+         payment_method, payment_status, fulfillment_method, delivery_lat, delivery_lng,
+         delivery_address, delivery_coordinate)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+                CASE WHEN $14::text IS NULL THEN NULL ELSE ST_GeomFromText($14, 4326) END)
         RETURNING id
       `;
       const orderRes = await dbClient.query(orderQuery, insertOrderParams);
@@ -128,8 +144,12 @@ class CheckoutService {
       }
 
       for (const item of items) {
-        await dbClient.query('INSERT INTO order_items (order_id, product_id, quantity, price_at_buy) VALUES ($1, $2, $3, $4)',
-          [insertedOrderId, item.product_id, item.quantity, item.product_price]
+        // order_items stores the name and price at purchase time; both are NOT
+        // NULL. The previous insert targeted a `price_at_buy` column that does
+        // not exist and omitted the required name.
+        await dbClient.query(
+          'INSERT INTO order_items (order_id, product_id, name, price, quantity) VALUES ($1, $2, $3, $4, $5)',
+          [insertedOrderId, item.product_id, item.product_name, item.product_price, item.quantity]
         );
         if (item.track_inventory === 1) {
           await dbClient.query('UPDATE shop_products SET inventory_count = inventory_count - $1 WHERE id = $2', [item.quantity, item.product_id]);

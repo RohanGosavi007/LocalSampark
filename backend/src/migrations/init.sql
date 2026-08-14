@@ -2800,36 +2800,11 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS orders (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    shop_id INTEGER NOT NULL,
-    status TEXT DEFAULT 'PENDING',
-    total_amount REAL NOT NULL,
-    delivery_fee REAL DEFAULT 0,
-    platform_fee REAL DEFAULT 0,
-    discount REAL DEFAULT 0,
-    delivery_lat REAL NULL,
-    delivery_lng REAL NULL,
-    payment_method TEXT DEFAULT 'COD',
-    payment_status TEXT DEFAULT 'PENDING',
-    payment_id TEXT NULL,
-    fulfillment_method TEXT DEFAULT 'DELIVERY',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (shop_id) REFERENCES local_shops(id)
-);
-
-CREATE TABLE IF NOT EXISTS order_items (
-    id SERIAL PRIMARY KEY,
-    order_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
-    quantity INTEGER NOT NULL,
-    price_at_buy REAL NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id)
-);
+-- NOTE: A second pair of orders/order_items definitions previously sat here,
+-- keyed on SERIAL with a `status` column. Because both used CREATE TABLE IF
+-- NOT EXISTS, they never took effect - the UUID definitions above always won.
+-- They are removed so the schema has a single source of truth. The commerce
+-- columns they carried are added to the canonical table by migration 055.
 
 CREATE TABLE IF NOT EXISTS order_tracking (
     id SERIAL PRIMARY KEY,
