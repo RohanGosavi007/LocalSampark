@@ -70,24 +70,30 @@ const upload = multer({
   }
 });
 
+const prisma = require('../../../../config/prisma');
+
 // ─── UPLOAD SERVICE FUNCTIONS ──────────────────────────────────────
 
 /**
  * Save file upload record to database
  */
 async function recordUpload(uploaderId, file, purpose, referenceId) {
-  const id = crypto.randomUUID();
   const relativePath = `/uploads/${purpose}/${file.filename}`;
   
-  await queryOne(
-    `INSERT INTO file_uploads (id, uploader_id, file_name, file_path, file_type, file_size, purpose, reference_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     RETURNING *`,
-    [id, uploaderId, file.originalname, relativePath, file.mimetype, file.size, purpose || 'general', referenceId || null]
-  );
+  const uploadRecord = await prisma.fileUpload.create({
+    data: {
+      uploaderId: uploaderId || null,
+      fileName: file.originalname,
+      filePath: relativePath,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      purpose: purpose || 'general',
+      referenceId: referenceId || null
+    }
+  });
 
   return {
-    id,
+    id: uploadRecord.id,
     url: relativePath,
     originalName: file.originalname,
     size: file.size,
@@ -99,15 +105,15 @@ async function recordUpload(uploaderId, file, purpose, referenceId) {
  * Delete a file from disk and database
  */
 async function deleteUpload(fileId) {
-  const record = await queryOne('SELECT * FROM file_uploads WHERE id = $1', [fileId]);
+  const record = await prisma.fileUpload.findUnique({ where: { id: fileId } });
   if (!record) return false;
 
-  const fullPath = path.join(__dirname, '../../public', record.file_path);
+  const fullPath = path.join(__dirname, '../../public', record.filePath);
   if (fs.existsSync(fullPath)) {
     fs.unlinkSync(fullPath);
   }
 
-  await query('DELETE FROM file_uploads WHERE id = $1', [fileId]);
+  await prisma.fileUpload.delete({ where: { id: fileId } });
   return true;
 }
 

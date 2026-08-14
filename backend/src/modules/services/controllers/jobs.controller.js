@@ -46,8 +46,7 @@ const postJob = async (req, res, next) => {
     }
 
     const jobId = crypto.randomUUID();
-    const newJob = await query(
-      `INSERT INTO job_vacancies (id, shop_id, title, description, job_type, salary_range, is_active) 
+    const newJob = await query(`INSERT INTO job_vacancies (id, shop_id, title, description, job_type, salary_range, is_active) 
        VALUES ($1, $2, $3, $4, $5, $6, 1) RETURNING *`,
       [jobId, shopId, title, description, jobType || 'Full-time', salaryRange || 'Negotiable']
     );
@@ -173,8 +172,7 @@ const applyJob = async (req, res, next) => {
     const appId = crypto.randomUUID();
     let application;
     try {
-      application = await queryOne(
-        `INSERT INTO job_applications (id, job_id, applicant_id, cover_note, status) 
+      application = await queryOne(`INSERT INTO job_applications (id, job_id, applicant_id, cover_note, status) 
          VALUES ($1, $2, $3, $4, 'applied') RETURNING *`,
         [appId, jobId, applicantId, applicationNote || resumeUrl]
       );
@@ -217,14 +215,13 @@ const dispatchSkilledWorker = async (req, res, next) => {
     // Search for nearest matching shop/worker
     let worker = null;
     try {
-      worker = await queryOne(
-        `SELECT id, name, phone_number, address, rating
+      worker = await queryOne(`SELECT id, name, phone_number, address, rating
          FROM local_shops
          WHERE (LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1))
          LIMIT 1`,
         [`%${skillCategory}%`]
       );
-    } catch (e) {}
+    } catch (e) { next(e); }
 
     const dispatchId = `DISPATCH-${Date.now().toString(36).toUpperCase()}`;
 

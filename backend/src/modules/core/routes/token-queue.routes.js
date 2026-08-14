@@ -12,8 +12,7 @@ router.get('/:shopId', async (req, res, next) => {
   try {
     const { shopId } = req.params;
 
-    const queueState = await query(
-      `SELECT current_token, total_tokens_today, avg_service_minutes, is_paused, last_updated
+    const queueState = await query(`SELECT current_token, total_tokens_today, avg_service_minutes, is_paused, last_updated
        FROM token_queues WHERE shop_id = $1`,
       [shopId]
     );
@@ -31,8 +30,7 @@ router.get('/:shopId', async (req, res, next) => {
     const state = queueState.rows[0];
 
     // Count how many visitors are still waiting
-    const waiting = await query(
-      `SELECT COUNT(*) as count FROM token_queue_visitors
+    const waiting = await query(`SELECT COUNT(*) as count FROM token_queue_visitors
        WHERE shop_id = $1 AND status = 'waiting' AND DATE(created_at) = CURRENT_DATE`,
       [shopId]
     );
@@ -69,16 +67,14 @@ router.post('/:shopId/increment', authenticate, async (req, res, next) => {
     const newToken = result.rows[0].current_token;
 
     // Mark the visitor with this token as 'serving'
-    await query(
-      `UPDATE token_queue_visitors SET status = 'serving'
+    await query(`UPDATE token_queue_visitors SET status = 'serving'
        WHERE shop_id = $1 AND token_number = $2 AND DATE(created_at) = CURRENT_DATE`,
       [shopId, newToken]
     ).catch(() => {});
 
     // Mark previous token as 'completed'
     if (newToken > 1) {
-      await query(
-        `UPDATE token_queue_visitors SET status = 'completed'
+      await query(`UPDATE token_queue_visitors SET status = 'completed'
          WHERE shop_id = $1 AND token_number = $2 AND DATE(created_at) = CURRENT_DATE`,
         [shopId, newToken - 1]
       ).catch(() => {});
@@ -106,22 +102,19 @@ router.post('/:shopId/join', authenticate, async (req, res, next) => {
     const { visitorName, visitorPhone, userId, serviceType } = req.body;
 
     // Get next available token number for today
-    const lastToken = await query(
-      `SELECT COALESCE(MAX(token_number), 0) as last_token FROM token_queue_visitors
+    const lastToken = await query(`SELECT COALESCE(MAX(token_number), 0) as last_token FROM token_queue_visitors
        WHERE shop_id = $1 AND DATE(created_at) = CURRENT_DATE`,
       [shopId]
     );
     const myToken = (lastToken.rows?.[0]?.last_token || 0) + 1;
 
-    await query(
-      `INSERT INTO token_queue_visitors (shop_id, token_number, visitor_name, visitor_phone, user_id, service_type, status, created_at)
+    await query(`INSERT INTO token_queue_visitors (shop_id, token_number, visitor_name, visitor_phone, user_id, service_type, status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, 'waiting', NOW())`,
       [shopId, myToken, visitorName || 'Walk-in', visitorPhone || null, userId || null, serviceType || null]
     );
 
     // Get current queue state for estimated wait
-    const queueState = await query(
-      `SELECT current_token, avg_service_minutes FROM token_queues WHERE shop_id = $1`,
+    const queueState = await query(`SELECT current_token, avg_service_minutes FROM token_queues WHERE shop_id = $1`,
       [shopId]
     );
     const currentToken = queueState.rows?.[0]?.current_token || 0;
@@ -155,8 +148,7 @@ router.put('/:shopId/pause', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.AD
     const { shopId } = req.params;
     const { isPaused } = req.body;
 
-    await query(
-      `UPDATE token_queues SET is_paused = $1, last_updated = NOW() WHERE shop_id = $2`,
+    await query(`UPDATE token_queues SET is_paused = $1, last_updated = NOW() WHERE shop_id = $2`,
       [isPaused, shopId]
     );
 
@@ -176,15 +168,13 @@ router.post('/:shopId/reset', authenticate, hasAccess([ROLES.SHOP_OWNER, ROLES.A
   try {
     const { shopId } = req.params;
 
-    await query(
-      `UPDATE token_queues SET current_token = 0, total_tokens_today = 0, is_paused = false, last_updated = NOW()
+    await query(`UPDATE token_queues SET current_token = 0, total_tokens_today = 0, is_paused = false, last_updated = NOW()
        WHERE shop_id = $1`,
       [shopId]
     );
 
     // Mark all today's visitors as completed
-    await query(
-      `UPDATE token_queue_visitors SET status = 'completed'
+    await query(`UPDATE token_queue_visitors SET status = 'completed'
        WHERE shop_id = $1 AND DATE(created_at) = CURRENT_DATE AND status = 'waiting'`,
       [shopId]
     );

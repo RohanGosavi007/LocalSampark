@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Recycle, MapPin, Truck, CheckCircle, Clock, Trash2, Plus, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function EnvironmentDashboard() {
   const [requests, setRequests] = useState([]);
@@ -17,7 +18,7 @@ export default function EnvironmentDashboard() {
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/environment/scrap', {
+      const res = await fetch(API_BASE + '/admin/environment/scrap', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -40,7 +41,7 @@ export default function EnvironmentDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/environment/scrap', {
+      const res = await fetch(API_BASE + '/admin/environment/scrap', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_name: userName, phone, scrap_type: scrapType, estimated_weight: estimatedWeight, address })
@@ -67,7 +68,7 @@ export default function EnvironmentDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/environment/scrap/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/environment/scrap/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -85,7 +86,7 @@ export default function EnvironmentDashboard() {
   const toggleDispatch = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/environment/scrap/${id}/dispatch`, {
+      const res = await fetch(`${API_BASE}/admin/environment/scrap/${id}/dispatch`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ dispatched: !currentStatus })

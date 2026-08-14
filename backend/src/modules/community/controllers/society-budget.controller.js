@@ -1,4 +1,4 @@
-const { query, queryMany, queryOne } = require('../../../config/database.sqlite');
+const { query, queryMany, queryOne } = require('../../../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const createBudget = async (req, res, next) => {
@@ -7,8 +7,7 @@ const createBudget = async (req, res, next) => {
         const { year, category, allocatedAmount } = req.body;
         
         const id = uuidv4();
-        await query(
-            'INSERT INTO society_budgets (id, society_id, financial_year, category, allocated_amount, spent_amount) VALUES (?, ?, ?, ?, ?, 0)',
+        await query('INSERT INTO society_budgets (id, society_id, financial_year, category, allocated_amount, spent_amount) VALUES ($1, $2, $3, $4, $5, 0)',
             [id, societyId, year, category, allocatedAmount]
         );
         res.status(201).json({ success: true, data: { id } });
@@ -33,13 +32,13 @@ const getBudgets = async (req, res, next) => {
 const recordExpense = async (req, res, next) => {
     try {
         const { budgetId, amount, description } = req.body;
-        await query('UPDATE society_budgets SET spent_amount = spent_amount + ? WHERE id = ?', [amount, budgetId]);
+        await query('UPDATE society_budgets SET spent_amount = spent_amount + $1 WHERE id = $2', [amount, budgetId]);
         res.json({ success: true, message: 'Expense recorded' });
     } catch (error) { next(error); }
 };
 
 async function getSocietyIdForUser(userId) {
-    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = ? AND is_active = 1', [userId]);
+    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = 1', [userId]);
     return member ? member.society_id : null;
 }
 

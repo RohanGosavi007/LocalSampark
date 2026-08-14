@@ -11,15 +11,13 @@ router.post('/:shopId', authenticate, async (req, res) => {
     const userId = req.user.id;
 
     // Verify if user actually ordered from this shop
-    const orderCheck = await pool.query(
-      `SELECT id FROM orders WHERE user_id = $1 AND shop_id = $2 AND status = 'delivered' LIMIT 1`,
+    const orderCheck = await pool.query(`SELECT id FROM orders WHERE user_id = $1 AND shop_id = $2 AND status = 'delivered' LIMIT 1`,
       [userId, shopId]
     );
 
     const isVerifiedBuyer = orderCheck.rowCount > 0;
 
-    const result = await pool.query(
-      `INSERT INTO trust_reviews (shop_id, user_id, video_url, rating, review_text, is_verified_buyer)
+    const result = await pool.query(`INSERT INTO trust_reviews (shop_id, user_id, video_url, rating, review_text, is_verified_buyer)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [shopId, userId, video_url, rating, review_text, isVerifiedBuyer]
     );
@@ -35,8 +33,7 @@ router.get('/feed', authenticate, async (req, res) => {
   try {
     const { zoneId } = req.query;
     // Join with shops to get shop name, join with users to get user name
-    const result = await pool.query(
-      `SELECT tr.*, s.name as shop_name, u.name as user_name 
+    const result = await pool.query(`SELECT tr.*, s.name as shop_name, u.name as user_name 
        FROM trust_reviews tr
        JOIN shops s ON tr.shop_id = s.id
        JOIN users u ON tr.user_id = u.id

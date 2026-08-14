@@ -70,8 +70,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "wss:", "https:", "http://localhost:5000", "ws://localhost:5000"],
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
@@ -140,24 +140,8 @@ const { auditLogger } = require('./middleware/audit.middleware');
 app.use(auditLogger);
 
 // ─── SAFE XSS SANITIZATION (Express 5 Compatible) ─────────────
-const sanitizeData = (data) => {
-  if (typeof data === 'string') {
-    return data.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-  if (Array.isArray(data)) return data.map(sanitizeData);
-  if (data && typeof data === 'object') {
-    const sanitized = {};
-    for (const key in data) { sanitized[key] = sanitizeData(data[key]); }
-    return sanitized;
-  }
-  return data;
-};
-app.use((req, res, next) => {
-  if (req.body) req.body = sanitizeData(req.body);
-  if (req.params) req.params = sanitizeData(req.params);
-  // Deliberately skipping req.query as it is a getter in Express 5 and will crash if reassigned
-  next();
-});
+// Removed destructive global regex middleware. Validation and sanitization
+// should be handled strictly at the route level via express-validator.
 
 // Serve static files (uploads)
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));

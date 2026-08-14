@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Save, CheckCircle, XCircle, Languages, FileJson, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 const AVAILABLE_LANGUAGES = [
   { code: 'en', name: 'English', native: 'English (Default)', required: true },
@@ -24,7 +25,7 @@ export default function LocalizationDashboard() {
   const fetchConfig = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/languages', {
+      const res = await fetch(API_BASE + '/admin/languages', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -64,7 +65,7 @@ export default function LocalizationDashboard() {
     setSaving(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/languages', {
+      const res = await fetch(API_BASE + '/admin/languages', {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

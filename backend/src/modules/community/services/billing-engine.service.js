@@ -1,4 +1,4 @@
-const { query, queryOne, queryMany, withTransaction } = require('../../../config/database.sqlite');
+const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const fs = require('fs');
@@ -8,13 +8,13 @@ const { v4: uuidv4 } = require('uuid');
 class BillingEngineService {
     // Calculate Service Charges (Equal split across all active flats per MCS Act)
     async calculateServiceCharges(societyId) {
-        const config = await queryOne('SELECT * FROM society_billing_config WHERE society_id = ?', [societyId]);
+        const config = await queryOne('SELECT * FROM society_billing_config WHERE society_id = $1', [societyId]);
         if (!config) throw new Error('Billing config not found');
 
-        const activeFlatsCount = (await queryOne('SELECT COUNT(*) as count FROM society_flat_ledger WHERE society_id = ?', [societyId])).count;
+        const activeFlatsCount = (await queryOne('SELECT COUNT(*) as count FROM society_flat_ledger WHERE society_id = $1', [societyId])).count;
         if (activeFlatsCount === 0) return 0;
 
-        const chargeHeads = await queryMany('SELECT * FROM society_charge_heads WHERE society_id = ? AND category = "service_charge" AND is_active = 1', [societyId]);
+        const chargeHeads = await queryMany('SELECT * FROM society_charge_heads WHERE society_id = $1 AND category = "service_charge" AND is_active = 1', [societyId]);
         
         let totalServiceCharge = 0;
         for (const head of chargeHeads) {
@@ -27,8 +27,8 @@ class BillingEngineService {
 
     // Calculate Sinking Fund (Construction Cost * Area * Rate% / 12)
     async calculateSinkingFund(societyId, flatNumber) {
-        const config = await queryOne('SELECT construction_cost_per_sqft, sinking_fund_rate FROM society_billing_config WHERE society_id = ?', [societyId]);
-        const flat = await queryOne('SELECT carpet_area_sqft, construction_cost FROM society_flat_ledger WHERE society_id = ? AND flat_number = ?', [societyId, flatNumber]);
+        const config = await queryOne('SELECT construction_cost_per_sqft, sinking_fund_rate FROM society_billing_config WHERE society_id = $1', [societyId]);
+        const flat = await queryOne('SELECT carpet_area_sqft, construction_cost FROM society_flat_ledger WHERE society_id = $1 AND flat_number = $2', [societyId, flatNumber]);
         
         if (!config || !flat) return 0;
 
@@ -38,8 +38,8 @@ class BillingEngineService {
 
     // Calculate NOC for Tenants (Max 10% of service charges)
     async calculateNOC(societyId, flatNumber, serviceChargeAmount) {
-        const config = await queryOne('SELECT noc_percentage FROM society_billing_config WHERE society_id = ?', [societyId]);
-        const flat = await queryOne('SELECT is_tenant FROM society_flat_ledger WHERE society_id = ? AND flat_number = ?', [societyId, flatNumber]);
+        const config = await queryOne('SELECT noc_percentage FROM society_billing_config WHERE society_id = $1', [societyId]);
+        const flat = await queryOne('SELECT is_tenant FROM society_flat_ledger WHERE society_id = $1 AND flat_number = $2', [societyId, flatNumber]);
         
         if (!flat || flat.is_tenant !== 1 || !config) return 0;
 
@@ -48,14 +48,14 @@ class BillingEngineService {
 
     // Calculate Parking Charges
     async calculateParkingCharges(societyId, flatNumber) {
-        const config = await queryOne('SELECT parking_charge_two_wheeler, parking_charge_four_wheeler FROM society_billing_config WHERE society_id = ?', [societyId]);
+        const config = await queryOne('SELECT parking_charge_two_wheeler, parking_charge_four_wheeler FROM society_billing_config WHERE society_id = $1', [societyId]);
         if (!config) return 0;
 
         // Fetch vehicle count for the flat owner
-        const flat = await queryOne('SELECT member_id FROM society_flat_ledger WHERE society_id = ? AND flat_number = ?', [societyId, flatNumber]);
+        const flat = await queryOne('SELECT member_id FROM society_flat_ledger WHERE society_id = $1 AND flat_number = $2', [societyId, flatNumber]);
         if (!flat || !flat.member_id) return 0;
 
-        const vehicles = await queryMany('SELECT vehicle_type FROM vehicles WHERE owner_id = ? AND is_active = 1', [flat.member_id]);
+        const vehicles = await queryMany('SELECT vehicle_type FROM vehicles WHERE owner_id = $1 AND is_active = 1', [flat.member_id]);
         
         let parkingCharge = 0;
         for (const v of vehicles) {
@@ -68,10 +68,10 @@ class BillingEngineService {
 
     // Generate Monthly Invoices Batch
     async generateMonthlyInvoices(societyId, month, year) {
-        const config = await queryOne('SELECT * FROM society_billing_config WHERE society_id = ?', [societyId]);
+        const config = await queryOne('SELECT * FROM society_billing_config WHERE society_id = $1', [societyId]);
         if (!config) throw new Error('Billing config not found');
 
-        const flats = await queryMany('SELECT * FROM society_flat_ledger WHERE society_id = ?', [societyId]);
+        const flats = await queryMany('SELECT * FROM society_flat_ledger WHERE society_id = $1', [societyId]);
         const baseServiceCharge = await this.calculateServiceCharges(societyId);
 
         const generatedBills = [];
@@ -146,18 +146,16 @@ class BillingEngineService {
 
                 // For simplicity, inserting into society_maintenance_bills 
                 // Note: society_maintenance_bills table might need structure alignment, assuming standard fields:
-                await query(
-                    `INSERT INTO society_maintenance_bills 
+                await query(`INSERT INTO society_maintenance_bills 
                     (id, society_id, flat_number, member_id, month, year, total_amount, paid_amount, payment_status, due_date, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'pending', ?, CURRENT_TIMESTAMP)`,
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 'pending', $8, CURRENT_TIMESTAMP)`,
                     [billId, societyId, flat.flat_number, flat.member_id, month, year, totalAmount, dueDate.toISOString()]
                 );
 
                 // Insert Invoice Items
                 for (const item of invoiceItems) {
-                    await query(
-                        `INSERT INTO society_invoice_items (id, bill_id, charge_head_id, description, amount, gst_amount, total, category) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    await query(`INSERT INTO society_invoice_items (id, bill_id, charge_head_id, description, amount, gst_amount, total, category) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                         [uuidv4(), billId, item.charge_head_id, item.description, item.amount, item.gst_amount, item.total, item.category]
                     );
                 }
@@ -177,26 +175,23 @@ class BillingEngineService {
     async applyAdvanceBalance(memberId, billId, advanceBalance, billAmount, societyId, flatNumber) {
         const amountToApply = Math.min(advanceBalance, billAmount);
         
-        await query(
-            'UPDATE society_maintenance_bills SET paid_amount = paid_amount + ?, payment_status = CASE WHEN total_amount <= (paid_amount + ?) THEN "paid" ELSE "partial" END WHERE id = ?',
+        await query('UPDATE society_maintenance_bills SET paid_amount = paid_amount + $1, payment_status = CASE WHEN total_amount <= (paid_amount + $2) THEN "paid" ELSE "partial" END WHERE id = $3',
             [amountToApply, amountToApply, billId]
         );
 
-        await query(
-            'UPDATE society_flat_ledger SET advance_balance = advance_balance - ? WHERE society_id = ? AND flat_number = ?',
+        await query('UPDATE society_flat_ledger SET advance_balance = advance_balance - $1 WHERE society_id = $2 AND flat_number = $3',
             [amountToApply, societyId, flatNumber]
         );
 
-        await query(
-            'UPDATE society_advance_account SET utilized_amount = utilized_amount + ?, balance = balance - ? WHERE society_id = ? AND flat_number = ?',
+        await query('UPDATE society_advance_account SET utilized_amount = utilized_amount + $1, balance = balance - $2 WHERE society_id = $3 AND flat_number = $4',
             [amountToApply, amountToApply, societyId, flatNumber]
         );
     }
 
     // Simple Interest Penalty
     async calculateLatePenalty(billId) {
-        const bill = await queryOne('SELECT * FROM society_maintenance_bills WHERE id = ?', [billId]);
-        const config = await queryOne('SELECT max_late_interest_rate FROM society_billing_config WHERE society_id = ?', [bill.society_id]);
+        const bill = await queryOne('SELECT * FROM society_maintenance_bills WHERE id = $1', [billId]);
+        const config = await queryOne('SELECT max_late_interest_rate FROM society_billing_config WHERE society_id = $1', [bill.society_id]);
         
         const principal = bill.total_amount - bill.paid_amount;
         if (principal <= 0) return 0;
@@ -215,7 +210,7 @@ class BillingEngineService {
 
     // PDF Generation
     async generatePDFReceipt(receiptId) {
-        const receipt = await queryOne('SELECT * FROM society_payment_receipts WHERE id = ?', [receiptId]);
+        const receipt = await queryOne('SELECT * FROM society_payment_receipts WHERE id = $1', [receiptId]);
         if (!receipt) throw new Error('Receipt not found');
 
         const pdfPath = path.join(__dirname, '../../../../uploads/receipts', `${receiptId}.pdf`);
@@ -234,7 +229,7 @@ class BillingEngineService {
         doc.end();
         
         const relativeUrl = `/uploads/receipts/${receiptId}.pdf`;
-        await query('UPDATE society_payment_receipts SET receipt_pdf_url = ? WHERE id = ?', [relativeUrl, receiptId]);
+        await query('UPDATE society_payment_receipts SET receipt_pdf_url = $1 WHERE id = $2', [relativeUrl, receiptId]);
         
         return relativeUrl;
     }

@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { query, queryMany } = require('../config/database.sqlite');
+const { query, queryMany } = require('../config/database');
 // Mock FCM
 const sendPushNotification = async (userId, payload) => {
     console.log(`[FCM Alert] Sending push to user ${userId}:`, payload.title);

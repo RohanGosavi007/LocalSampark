@@ -16,8 +16,7 @@ const postMeal = async (req, res, next) => {
       return res.status(403).json({ error: 'You must have the "Verified Chef" tag to post meals. Contact an Admin.' });
     }
 
-    const newMeal = await query(
-      `INSERT INTO home_chef_meals (chef_id, meal_name, description, price, total_plates, available_plates, is_veg, status) 
+    const newMeal = await query(`INSERT INTO home_chef_meals (chef_id, meal_name, description, price, total_plates, available_plates, is_veg, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'active') RETURNING *`,
       [userId, mealName, description, price, availablePlates, availablePlates, isVeg]
     );
@@ -85,8 +84,7 @@ const orderMeal = async (req, res, next) => {
 
         // Deduct from wallet
         await query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [coinsDeducted, userId]);
-        await query(
-          `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Home Chef Discount')`,
+        await query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Home Chef Discount')`,
           [userId, coinsDeducted]
         );
       }
@@ -96,8 +94,7 @@ const orderMeal = async (req, res, next) => {
     await query(`UPDATE home_chef_meals SET available_plates = available_plates - $1 WHERE id = $2`, [quantity, mealId]);
 
     // Create Order Record
-    const order = await query(
-      `INSERT INTO home_chef_orders (meal_id, customer_id, quantity, final_price, discount_applied, delivery_option, status) 
+    const order = await query(`INSERT INTO home_chef_orders (meal_id, customer_id, quantity, final_price, discount_applied, delivery_option, status) 
        VALUES ($1, $2, $3, $4, $5, $6, 'confirmed') RETURNING *`,
       [mealId, userId, quantity, finalPrice, discountAmount, deliveryOption]
     );
@@ -106,8 +103,7 @@ const orderMeal = async (req, res, next) => {
     let deliveryJobId = null;
     if (deliveryOption === 'delivery') {
       const deliveryRewardFiat = 30; // standard flat rate for demo
-      const newJob = await query(
-        `INSERT INTO delivery_jobs (requester_id, pickup_location, dropoff_location, item_details, delivery_type, payment_pref, price_fiat, price_coins, pincode, status) 
+      const newJob = await query(`INSERT INTO delivery_jobs (requester_id, pickup_location, dropoff_location, item_details, delivery_type, payment_pref, price_fiat, price_coins, pincode, status) 
          VALUES ($1, $2, $3, $4, 'walker', 'fiat', $5, 0, '400001', 'pending') RETURNING *`,
         [userId, `Chef ${meal.chef_name}'s Kitchen`, dropoffLocation, `${quantity}x ${meal.meal_name}`, deliveryRewardFiat]
       );

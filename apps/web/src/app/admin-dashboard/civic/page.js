@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Landmark, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin, Plus, Phone, Hammer, Scale } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function CivicDashboard() {
   const [issues, setIssues] = useState([]);
@@ -19,7 +20,7 @@ export default function CivicDashboard() {
   const fetchIssues = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/civic/issues', {
+      const res = await fetch(API_BASE + '/admin/civic/issues', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -42,7 +43,7 @@ export default function CivicDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/civic/issues', {
+      const res = await fetch(API_BASE + '/admin/civic/issues', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ reporter_name: reporterName, phone, category, issue_type: issueType, department: category === 'Civic' ? department : 'Legal', description })
@@ -67,7 +68,7 @@ export default function CivicDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/civic/issues/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/civic/issues/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -85,7 +86,7 @@ export default function CivicDashboard() {
   const toggleEscalation = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/civic/issues/${id}/escalate`, {
+      const res = await fetch(`${API_BASE}/admin/civic/issues/${id}/escalate`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ escalated: !currentStatus })

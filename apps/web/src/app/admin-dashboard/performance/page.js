@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Server, Cpu, HardDrive, Database, Terminal, RefreshCw, AlertTriangle, AlertCircle, Info, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function PerformanceDashboard() {
   const [data, setData] = useState(null);
@@ -11,7 +12,7 @@ export default function PerformanceDashboard() {
   const fetchHealth = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/health`, {
+      const res = await fetch(`${API_BASE}/admin/health`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await res.json();
@@ -36,7 +37,7 @@ export default function PerformanceDashboard() {
     setClearing(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/health/clear-cache`, {
+      const res = await fetch(`${API_BASE}/admin/health/clear-cache`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

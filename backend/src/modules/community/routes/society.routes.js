@@ -9,8 +9,7 @@ router.post('/admin/create', authenticate, async (req, res) => {
     try {
         const { name, region_id, address, subscription_fee } = req.body;
         const id = uuidv4();
-        await query(
-            `INSERT INTO societies (id, name, region_id, address, subscription_fee) VALUES ($1, $2, $3, $4, $5)`,
+        await query(`INSERT INTO societies (id, name, region_id, address, subscription_fee) VALUES ($1, $2, $3, $4, $5)`,
             [id, name, region_id, address, subscription_fee || 0]
         );
         res.json({ message: 'Society created', societyId: id });
@@ -36,8 +35,7 @@ router.post('/gate/request-entry', authenticate, async (req, res) => {
     try {
         const { society_id, flat_number, visitor_name, visitor_phone, purpose } = req.body;
         const id = uuidv4();
-        await query(
-            `INSERT INTO visitor_logs (id, society_id, flat_number, visitor_name, visitor_phone, purpose, guard_id) 
+        await query(`INSERT INTO visitor_logs (id, society_id, flat_number, visitor_name, visitor_phone, purpose, guard_id) 
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [id, society_id, flat_number, visitor_name, visitor_phone, purpose, req.user.id]
         );
@@ -91,8 +89,7 @@ router.post('/maintenance/generate', authenticate, async (req, res) => {
     try {
         const { society_id, flat_number, amount, due_date, billing_month } = req.body;
         const id = uuidv4();
-        await query(
-            `INSERT INTO maintenance_bills (id, society_id, flat_number, amount, due_date, billing_month) VALUES ($1, $2, $3, $4, $5, $6)`,
+        await query(`INSERT INTO maintenance_bills (id, society_id, flat_number, amount, due_date, billing_month) VALUES ($1, $2, $3, $4, $5, $6)`,
             [id, society_id, flat_number, amount, due_date, billing_month]
         );
         res.json({ message: 'Bill generated', billId: id });
@@ -115,8 +112,7 @@ router.get('/meters/:flat_number', authenticate, async (req, res) => {
 router.post('/cctv/webhook', async (req, res) => {
     try {
         const { society_id, camera_id, threat_level, snapshot_url } = req.body;
-        await query(
-            `INSERT INTO ai_cctv_alerts (id, society_id, camera_id, threat_level, snapshot_url) VALUES ($1, $2, $3, $4, $5)`,
+        await query(`INSERT INTO ai_cctv_alerts (id, society_id, camera_id, threat_level, snapshot_url) VALUES ($1, $2, $3, $4, $5)`,
             [uuidv4(), society_id, camera_id, threat_level, snapshot_url]
         );
         const supabaseRealtime = req.app.get('supabaseRealtime');

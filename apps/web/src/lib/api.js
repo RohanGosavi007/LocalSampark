@@ -98,3 +98,66 @@ export async function apiDelete(endpoint) {
   }
   return res.json();
 }
+
+// ─── ADMIN-SPECIFIC HELPERS ─────────────────────────────────
+// Admin dashboard pages store tokens under 'admin_token' key.
+
+/**
+ * Get admin auth headers with bearer token from localStorage.
+ * @returns {Object} Headers object with Authorization and Content-Type
+ */
+export function getAdminAuthHeaders() {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+/**
+ * Make an admin-authenticated GET request.
+ * @param {string} endpoint - API endpoint path (e.g., '/admin/users')
+ * @returns {Promise<any>} Parsed JSON response
+ */
+export async function adminGet(endpoint) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || err.message || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * Make an admin-authenticated POST request.
+ */
+export async function adminPost(endpoint, body) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || err.message || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * Make an admin-authenticated PUT request.
+ */
+export async function adminPut(endpoint, body) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'PUT',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || err.message || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}

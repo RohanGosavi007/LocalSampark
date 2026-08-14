@@ -80,8 +80,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
         const bcryptHash = await bcrypt.hash(pin, 12);
         try {
           const pinId = uuidv4();
-          await query(
-            'INSERT INTO admin_pins (id, user_id, pin_hash, failed_attempts) VALUES ($1, $2, $3, 0)',
+          await query('INSERT INTO admin_pins (id, user_id, pin_hash, failed_attempts) VALUES ($1, $2, $3, 0)',
             [pinId, user.id, bcryptHash]
           );
         } catch(e) { /* table might not exist yet, ignore */ }
@@ -118,8 +117,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
     );
 
     // Session log
-    await query(
-      `INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, ip_address, user_agent, details)
+    await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, ip_address, user_agent, details)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         uuidv4 ? uuidv4() : Math.random().toString(),

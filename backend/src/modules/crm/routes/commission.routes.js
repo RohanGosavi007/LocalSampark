@@ -48,8 +48,7 @@ router.get('/', authenticate, requireAdmin, requirePermission('finance', 'read')
 router.put('/shops/:shopId/override', authenticate, requireAdmin, requirePermission('finance', 'write'), async (req, res, next) => {
     try {
         const { commission_override_percent, convenience_fee_override } = req.body;
-        await query(
-            'UPDATE local_shops SET commission_override_percent = $1, convenience_fee_override = $2 WHERE id = $3',
+        await query('UPDATE local_shops SET commission_override_percent = $1, convenience_fee_override = $2 WHERE id = $3',
             [commission_override_percent, convenience_fee_override, req.params.shopId]
         );
         res.json({ success: true, message: "Shop override updated" });
@@ -71,21 +70,18 @@ router.post('/process-split', authenticate, requireAdmin, requirePermission('fin
     const netShopPayout = order_amount - platformCommission;
 
     // Insert commission record
-    await query(
-      `INSERT INTO shop_commissions (order_id, shop_id, gross_amount, commission_amount, net_to_shop, status)
+    await query(`INSERT INTO shop_commissions (order_id, shop_id, gross_amount, commission_amount, net_to_shop, status)
        VALUES ($1, $2, $3, $4, $5, 'settled')`,
       [order_id, shop_id, order_amount, platformCommission, netShopPayout]
     );
 
     // Find and credit franchise partner for pincode
-    const partner = await queryOne(
-      'SELECT id, user_id FROM franchise_partners WHERE target_pincodes LIKE $1 OR territory_name LIKE $2 LIMIT 1',
+    const partner = await queryOne('SELECT id, user_id FROM franchise_partners WHERE target_pincodes LIKE $1 OR territory_name LIKE $2 LIMIT 1',
       [`%${pincode}%`, `%${pincode}%`]
     );
 
     if (partner && partner.user_id) {
-      await query(
-        'UPDATE wallets SET balance = balance + $1 WHERE user_id = $2',
+      await query('UPDATE wallets SET balance = balance + $1 WHERE user_id = $2',
         [franchiseSplit, partner.user_id]
       );
     }

@@ -41,8 +41,7 @@ router.post('/subscribe', authenticate, async (req, res, next) => {
     const nextDeliveryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // Tomorrow
     const subId = crypto.randomUUID();
 
-    const subscription = await queryOne(
-      `INSERT INTO user_subscriptions (id, user_id, plan_id, delivery_address, delivery_coordinate, next_delivery_date)
+    const subscription = await queryOne(`INSERT INTO user_subscriptions (id, user_id, plan_id, delivery_address, delivery_coordinate, next_delivery_date)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [subId, req.user.id, planId, deliveryAddress || '', geom, nextDeliveryDate]
@@ -57,8 +56,7 @@ router.post('/subscribe', authenticate, async (req, res, next) => {
 // PUT pause subscription
 router.put('/:id/pause', authenticate, async (req, res, next) => {
   try {
-    const sub = await queryOne(
-      `UPDATE user_subscriptions 
+    const sub = await queryOne(`UPDATE user_subscriptions 
        SET status = 'paused', paused_until = $1 
        WHERE id = $2 AND user_id = $3
        RETURNING *`,
@@ -73,8 +71,7 @@ router.put('/:id/pause', authenticate, async (req, res, next) => {
 // PUT resume subscription
 router.put('/:id/resume', authenticate, async (req, res, next) => {
   try {
-    const sub = await queryOne(
-      `UPDATE user_subscriptions 
+    const sub = await queryOne(`UPDATE user_subscriptions 
        SET status = 'active', paused_until = NULL 
        WHERE id = $1 AND user_id = $2
        RETURNING *`,
@@ -89,8 +86,7 @@ router.put('/:id/resume', authenticate, async (req, res, next) => {
 // DELETE cancel subscription
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
-    await query(
-      `UPDATE user_subscriptions 
+    await query(`UPDATE user_subscriptions 
        SET status = 'cancelled' 
        WHERE id = $1 AND user_id = $2`,
       [req.params.id, req.user.id]
@@ -120,8 +116,7 @@ router.post('/vendor-saas/subscribe', authenticate, async (req, res, next) => {
 
     // Update shop commission override to 0% for SaaS subscribers and set expiry
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await query(
-      'UPDATE local_shops SET commission_override_percent = 0, is_verified = TRUE, is_premium = 1, premium_expires_at = $2 WHERE id = $1',
+    await query('UPDATE local_shops SET commission_override_percent = 0, is_verified = TRUE, is_premium = 1, premium_expires_at = $2 WHERE id = $1',
       [shopId, expiresAt]
     );
 

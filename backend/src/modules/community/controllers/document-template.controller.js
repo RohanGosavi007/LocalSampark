@@ -1,14 +1,13 @@
 const PDFDocument = require('pdfkit');
-const { queryOne } = require('../../../config/database.sqlite');
+const { queryOne } = require('../../../config/database');
 
 const generateNOC = async (req, res, next) => {
     try {
-        const member = await queryOne(
-            `SELECT sm.*, s.name as society_name, u.full_name 
+        const member = await queryOne(`SELECT sm.*, s.name as society_name, u.full_name 
              FROM society_members sm 
              JOIN societies s ON sm.society_id = s.id 
              JOIN users u ON sm.user_id = u.id 
-             WHERE sm.user_id = ? AND sm.is_active = 1`,
+             WHERE sm.user_id = $1 AND sm.is_active = 1`,
             [req.user.id]
         );
 

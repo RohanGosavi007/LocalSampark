@@ -27,8 +27,7 @@ router.get('/active', async (req, res, next) => {
     const cached = await CacheService.getOrSet(cacheKey, 1800, async () => {
       if (territoryId) {
         // Check if matrix has entries for this territory
-        const matrixCount = await queryOne(
-          'SELECT count(*) as c FROM category_territory_matrix WHERE territory_id = $1',
+        const matrixCount = await queryOne('SELECT count(*) as c FROM category_territory_matrix WHERE territory_id = $1',
           [territoryId]
         );
 
@@ -89,19 +88,16 @@ router.put('/matrix', authenticate, requireAdmin, async (req, res, next) => {
     }
 
     for (const cat of categories) {
-      const existing = await queryOne(
-        'SELECT id FROM category_territory_matrix WHERE category_id = $1 AND territory_id = $2',
+      const existing = await queryOne('SELECT id FROM category_territory_matrix WHERE category_id = $1 AND territory_id = $2',
         [cat.categoryId, territoryId]
       );
 
       if (existing) {
-        await query(
-          'UPDATE category_territory_matrix SET is_active = $1, priority = $2 WHERE id = $3',
+        await query('UPDATE category_territory_matrix SET is_active = $1, priority = $2 WHERE id = $3',
           [cat.isActive ? 1 : 0, cat.priority || 0, existing.id]
         );
       } else {
-        await query(
-          'INSERT INTO category_territory_matrix (id, category_id, territory_id, is_active, priority) VALUES ($1, $2, $3, $4, $5)',
+        await query('INSERT INTO category_territory_matrix (id, category_id, territory_id, is_active, priority) VALUES ($1, $2, $3, $4, $5)',
           [uuidv4(), cat.categoryId, territoryId, cat.isActive ? 1 : 0, cat.priority || 0]
         );
       }

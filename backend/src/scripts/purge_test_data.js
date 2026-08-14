@@ -1,4 +1,4 @@
-const { query } = require('../config/database.sqlite');
+const { query } = require('../config/database');
 const logger = require('../config/logger');
 
 async function runPurge(isDryRun = true) {

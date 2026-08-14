@@ -1,4 +1,4 @@
-const { query, queryOne } = require('../../../config/database.sqlite');
+const { query, queryOne } = require('../../../config/database');
 
 // Note: In actual implementation, this might use Prisma and PostgreSQL for the SaaS tenant DB
 // For this society module isolation, we mock it using SQLite or assume it's part of the main E-Commerce tenant settings.

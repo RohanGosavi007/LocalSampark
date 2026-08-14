@@ -15,8 +15,7 @@ router.get('/', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const { name, species, breed, ageYears, gender, photoUrl } = req.body;
-    const pet = await queryOne(
-      `INSERT INTO pets (owner_id, name, species, breed, age_years, gender, photo_url)
+    const pet = await queryOne(`INSERT INTO pets (owner_id, name, species, breed, age_years, gender, photo_url)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [req.user.id, name, species, breed, ageYears, gender, photoUrl]

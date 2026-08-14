@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Layers, Plus, Save, Trash2, Edit2, CheckCircle, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function ShopCategoriesPage() {
   const { adminUser } = useAdminAuth();
@@ -16,7 +17,7 @@ export default function ShopCategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:5000/api/v1/shops/categories');
+      const res = await fetch(API_BASE + '/shops/categories');
       const data = await res.json();
       if (data.success) {
         setCategories(data.data || []);

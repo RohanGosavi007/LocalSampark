@@ -4,7 +4,7 @@
  * 10x ENHANCED: Now includes all 6 new 10x migrations (038-043)
  * ═══════════════════════════════════════════════════════════════════════
  */
-const { query } = require('../config/database.sqlite');
+const { query } = require('../config/database');
 const logger = require('../config/logger');
 const fs = require('fs');
 const path = require('path');

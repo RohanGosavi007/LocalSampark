@@ -1,9 +1,9 @@
-const { queryOne, queryMany } = require('../../../config/database.sqlite');
+const { queryOne, queryMany } = require('../../../config/database');
 
 const getDashboardOverview = async (req, res, next) => {
     try {
         const adminId = req.user.id;
-        const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = ? AND is_active = 1', [adminId]);
+        const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = 1', [adminId]);
         if (!member) return res.status(403).json({ error: 'Access denied' });
         
         const societyId = member.society_id;
@@ -12,7 +12,7 @@ const getDashboardOverview = async (req, res, next) => {
         const visitorsTodayResult = await queryOne(`
             SELECT COUNT(*) as count 
             FROM society_visitors 
-            WHERE society_id = ? AND date(expected_date) = date('now')
+            WHERE society_id = $1 AND date(expected_date) = date('now')
         `, [societyId]);
         const visitorsToday = visitorsTodayResult ? visitorsTodayResult.count : 0;
 
@@ -20,7 +20,7 @@ const getDashboardOverview = async (req, res, next) => {
         const openComplaintsResult = await queryOne(`
             SELECT COUNT(*) as count 
             FROM society_complaints 
-            WHERE society_id = ? AND status != 'resolved'
+            WHERE society_id = $1 AND status != 'resolved'
         `, [societyId]);
         const openComplaints = openComplaintsResult ? openComplaintsResult.count : 0;
 
@@ -28,7 +28,7 @@ const getDashboardOverview = async (req, res, next) => {
         const bookingsResult = await queryOne(`
             SELECT COUNT(*) as count 
             FROM society_amenity_bookings 
-            WHERE society_id = ? AND date(booking_date) = date('now') AND status = 'confirmed'
+            WHERE society_id = $1 AND date(booking_date) = date('now') AND status = 'confirmed'
         `, [societyId]);
         const activeBookings = bookingsResult ? bookingsResult.count : 0;
 
@@ -37,7 +37,7 @@ const getDashboardOverview = async (req, res, next) => {
         const budgetResult = await queryOne(`
             SELECT SUM(allocated_amount) as total_allocated, SUM(spent_amount) as total_spent
             FROM society_budgets
-            WHERE society_id = ? AND financial_year = ?
+            WHERE society_id = $1 AND financial_year = $2
         `, [societyId, currentYear]);
 
         res.json({

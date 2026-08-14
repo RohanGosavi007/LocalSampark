@@ -98,8 +98,7 @@ router.get('/me/data-export', authenticate, async (req, res, next) => {
 
     // Check rate limit: 1 export per 24 hours
     const { queryOne } = require('../../../config/database');
-    const recentExport = await queryOne(
-      `SELECT id FROM data_subject_requests
+    const recentExport = await queryOne(`SELECT id FROM data_subject_requests
        WHERE user_id = $1 AND request_type = 'access' AND status = 'completed'
        AND created_at > datetime('now', '-24 hours')`,
       [userId]

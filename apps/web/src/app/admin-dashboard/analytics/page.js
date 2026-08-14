@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Users, DollarSign, Clock, TrendingUp, TrendingDown, Map, ArrowUpRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function AnalyticsDashboard() {
   const [duration, setDuration] = useState('week'); // 'day', 'week', 'month'
@@ -12,7 +13,7 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/analytics/overview?duration=${duration}`, {
+      const res = await fetch(`${API_BASE}/admin/analytics/overview?duration=${duration}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await res.json();

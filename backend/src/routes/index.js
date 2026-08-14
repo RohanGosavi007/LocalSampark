@@ -107,6 +107,7 @@ router.use('/job-services', require('../modules/services/routes/job.routes'));
 router.use('/properties', require('../modules/services/routes/properties.routes'));
 router.use('/delivery', require('../modules/services/routes/delivery.routes'));
 router.use('/logistics/riders', require('../modules/logistics/routes/rider.routes'));
+router.use('/logistics/agents', require('../modules/logistics/routes/agents.routes'));
 router.use('/health-services', apiCache(600), require('../modules/services/routes/health.routes'));
 router.use('/rental', require('../modules/services/routes/rental.routes'));
 router.use('/carpool', require('../modules/services/routes/carpool.routes'));

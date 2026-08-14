@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'
 
 if (process.env.USE_SQLITE === 'true') {
   console.log('--- DEBUG: USE_SQLITE IS TRUE IN DATABASE.JS ---');
-  const sqlite = require('./database.sqlite');
+  const sqlite = require('./database');
   console.log('--- DEBUG: SQLITE KEYS:', Object.keys(sqlite), '---');
   module.exports = sqlite;
 } else {

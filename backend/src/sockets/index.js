@@ -1,4 +1,5 @@
 const socketIo = require('socket.io');
+const jwt = require('jsonwebtoken');
 const orderSocket = require('./orderSocket');
 const tokenQueueSocket = require('./tokenQueueSocket');
 const trackingSocket = require('./trackingSocket');
@@ -7,16 +8,42 @@ const inventorySocket = require('./inventorySocket');
 
 let io;
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:5000',
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL
+].filter(Boolean);
+
 const initSockets = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: '*', // Adjust for production
-      methods: ['GET', 'POST']
+      origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
+      methods: ['GET', 'POST'],
+      credentials: true
+    }
+  });
+
+  // Authentication Middleware
+  io.use((socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+      if (!token) {
+        return next(new Error('Authentication Error: Missing Token'));
+      }
+      
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.user = decoded;
+      next();
+    } catch (error) {
+      return next(new Error('Authentication Error: Invalid Token'));
     }
   });
 
   io.on('connection', (socket) => {
-    console.log(`[Socket.io] Client connected: ${socket.id}`);
+    console.log(`[Socket.io] Authenticated Client connected: ${socket.id} (User: ${socket.user?.id})`);
 
     // Allow clients to join shop-specific rooms for private broadcast
     socket.on('join_shop_room', (shopId) => {

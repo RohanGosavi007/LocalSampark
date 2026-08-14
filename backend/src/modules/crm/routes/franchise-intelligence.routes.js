@@ -9,8 +9,7 @@ router.get('/:zoneId/health-scores', authenticate, requireRole('franchise'), asy
     const { zoneId } = req.params;
     
     // Simulate complex health scoring: query orders in last 7 days, revenue trend, response time
-    const result = await pool.query(
-      `SELECT s.id, s.name, s.shop_category_slug,
+    const result = await pool.query(`SELECT s.id, s.name, s.shop_category_slug,
         (SELECT COUNT(*) FROM orders o WHERE o.shop_id = s.id AND o.created_at >= NOW() - INTERVAL '7 days') as recent_orders,
         (SELECT COALESCE(SUM(total_amount), 0) FROM orders o WHERE o.shop_id = s.id AND o.created_at >= NOW() - INTERVAL '7 days') as recent_revenue
        FROM shops s
@@ -44,8 +43,7 @@ router.get('/:zoneId/health-scores', authenticate, requireRole('franchise'), asy
 router.get('/:zoneId/leads', authenticate, requireRole('franchise'), async (req, res) => {
   try {
     const { zoneId } = req.params;
-    const result = await pool.query(
-      `SELECT * FROM lead_crm WHERE zone_id = $1 ORDER BY created_at DESC`,
+    const result = await pool.query(`SELECT * FROM lead_crm WHERE zone_id = $1 ORDER BY created_at DESC`,
       [zoneId]
     );
     res.json(result.rows);

@@ -43,8 +43,7 @@ router.post('/skills/register', authenticate, async (req, res, next) => {
   try {
     const { skillName, experienceYears, dailyRate, portfolioPhotos, bio, location } = req.body;
     const skillId = crypto.randomUUID();
-    const skill = await queryOne(
-      `INSERT INTO user_skills (id, user_id, skill_name, experience_years, daily_rate, portfolio_photos, bio, location)
+    const skill = await queryOne(`INSERT INTO user_skills (id, user_id, skill_name, experience_years, daily_rate, portfolio_photos, bio, location)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (user_id, skill_name)
        DO UPDATE SET experience_years = EXCLUDED.experience_years,
@@ -86,8 +85,7 @@ router.post('/skills/book', authenticate, async (req, res, next) => {
   try {
     const { serviceCategory, description, address, preferredDate } = req.body;
     const bookingId = crypto.randomUUID();
-    await query(
-      `INSERT INTO skilled_bookings (id, customer_id, service_category, description, address, preferred_date, status)
+    await query(`INSERT INTO skilled_bookings (id, customer_id, service_category, description, address, preferred_date, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
       [bookingId, req.user.id, serviceCategory, description, address, preferredDate]
     );

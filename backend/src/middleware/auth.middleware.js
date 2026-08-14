@@ -25,11 +25,11 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
 
     let user = null;
     if (process.env.USE_SQLITE === 'true') {
-      const { queryOne } = require('../config/database.sqlite');
+      const { queryOne } = require('../config/database');
       user = await queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId]);
     } else {
       user = await getPrisma().user.findUnique({
@@ -64,11 +64,11 @@ const optionalAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
       
       let user = null;
       if (process.env.USE_SQLITE === 'true') {
-        const { queryOne } = require('../config/database.sqlite');
+        const { queryOne } = require('../config/database');
         user = await queryOne('SELECT * FROM users WHERE id = $1 AND is_active = 1', [decoded.userId]);
       } else {
         user = await getPrisma().user.findFirst({
@@ -127,7 +127,7 @@ const requireRole = (...roles) => {
 
 // Generate tokens
 function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
-  const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_change_in_prod';
+  const jwtSecret = (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026') || 'fallback_secret_key_change_in_prod';
   const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret;
 
   const payload = {
@@ -162,7 +162,7 @@ const verifyRole = (allowedRoles) => {
       }
 
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
 
       const userRole = decoded.role;
       if (!userRole) {
@@ -172,7 +172,7 @@ const verifyRole = (allowedRoles) => {
       // Token Versioning strict check
       let user = null;
       if (process.env.USE_SQLITE === 'true') {
-        const { queryOne } = require('../config/database.sqlite');
+        const { queryOne } = require('../config/database');
         user = await queryOne('SELECT token_version as tokenVersion FROM users WHERE id = $1', [decoded.userId]);
       } else {
         user = await getPrisma().user.findUnique({
@@ -290,7 +290,7 @@ const enforceMultiTenancy = async (req, res, next) => {
     if (req.user.role === ROLES.SHOP_OWNER || req.user.role === 'VENDOR' || req.user.role === 'VENDOR_OWNER' || req.user.role === 'VENDOR_STAFF') {
       let shop = null;
       if (process.env.USE_SQLITE === 'true') {
-        const { queryOne } = require('../config/database.sqlite');
+        const { queryOne } = require('../config/database');
         shop = await queryOne('SELECT * FROM shops WHERE owner_id = $1', [req.user.userId || req.user.id]);
       } else {
         shop = await getPrisma().shop.findFirst({

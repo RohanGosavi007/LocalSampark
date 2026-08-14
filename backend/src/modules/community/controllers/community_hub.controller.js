@@ -16,8 +16,7 @@ const postLostItem = async (req, res, next) => {
 
     await withTransaction(async (client) => {
       // Check if user has enough coins to fund the bounty they set, locking wallet
-      const walletResult = await client.query(
-        `SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
+      const walletResult = await client.query(`SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
         [userId]
       );
       const wallet = walletResult.rows[0];
@@ -28,13 +27,11 @@ const postLostItem = async (req, res, next) => {
 
       // Deduct coins immediately and hold them in escrow
       await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [bountyCoins, userId]);
-      await client.query(
-        `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Lost & Found Bounty Escrow')`,
+      await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Lost & Found Bounty Escrow')`,
         [userId, bountyCoins]
       );
 
-      const alert = await client.query(
-        `INSERT INTO lost_found_alerts (user_id, item_name, description, pincode, bounty_coins, status) 
+      const alert = await client.query(`INSERT INTO lost_found_alerts (user_id, item_name, description, pincode, bounty_coins, status) 
          VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
         [userId, itemName, description, pincode, bountyCoins]
       );
@@ -89,8 +86,7 @@ const resolveLostItem = async (req, res, next) => {
 
     await withTransaction(async (client) => {
       // Lock alert to prevent double resolution
-      const alertResult = await client.query(
-        `SELECT * FROM lost_found_alerts WHERE id = $1 AND user_id = $2 FOR UPDATE`, 
+      const alertResult = await client.query(`SELECT * FROM lost_found_alerts WHERE id = $1 AND user_id = $2 FOR UPDATE`, 
         [alertId, ownerId]
       );
       const alert = alertResult.rows[0];
@@ -101,8 +97,7 @@ const resolveLostItem = async (req, res, next) => {
 
       // Transfer bounty to Finder
       await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins + $1 WHERE user_id = $2`, [alert.bounty_coins, finderId]);
-      await client.query(
-        `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Lost & Found Hero Bounty')`,
+      await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Lost & Found Hero Bounty')`,
         [finderId, alert.bounty_coins]
       );
 
@@ -134,8 +129,7 @@ const postGarageItem = async (req, res, next) => {
     const { itemName, description, priceCoins } = req.body;
     const userId = req.user.id;
 
-    const item = await query(
-      `INSERT INTO garage_sale_items (seller_id, item_name, description, price_coins, status) 
+    const item = await query(`INSERT INTO garage_sale_items (seller_id, item_name, description, price_coins, status) 
        VALUES ($1, $2, $3, $4, 'available') RETURNING *`,
       [userId, itemName, description, priceCoins]
     );
@@ -174,8 +168,7 @@ const buyGarageItem = async (req, res, next) => {
 
     await withTransaction(async (client) => {
       // Lock garage sale item to prevent race condition (double purchase)
-      const itemResult = await client.query(
-        `SELECT * FROM garage_sale_items WHERE id = $1 AND status = 'available' FOR UPDATE`, 
+      const itemResult = await client.query(`SELECT * FROM garage_sale_items WHERE id = $1 AND status = 'available' FOR UPDATE`, 
         [itemId]
       );
       const item = itemResult.rows[0];
@@ -184,8 +177,7 @@ const buyGarageItem = async (req, res, next) => {
       if (item.seller_id === buyerId) throw new Error('Cannot buy your own item.');
 
       // Check Buyer Wallet, lock it
-      const buyerWalletResult = await client.query(
-        `SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
+      const buyerWalletResult = await client.query(`SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
         [buyerId]
       );
       const buyerWallet = buyerWalletResult.rows[0];
@@ -208,8 +200,7 @@ const buyGarageItem = async (req, res, next) => {
       // 4. (Optional) Ping Delivery Agent Network
       let deliveryJobId = null;
       if (deliveryRequested) {
-         const newJob = await client.query(
-          `INSERT INTO delivery_jobs (requester_id, pickup_location, dropoff_location, item_details, delivery_type, payment_pref, price_fiat, price_coins, pincode, status) 
+         const newJob = await client.query(`INSERT INTO delivery_jobs (requester_id, pickup_location, dropoff_location, item_details, delivery_type, payment_pref, price_fiat, price_coins, pincode, status) 
            VALUES ($1, 'Seller Address', $2, $3, 'walker', 'fiat', 30, 0, '400001', 'pending') RETURNING *`,
           [buyerId, dropoffLocation, `Garage Sale: ${item.item_name}`]
         );

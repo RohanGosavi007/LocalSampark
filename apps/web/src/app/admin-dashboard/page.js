@@ -6,6 +6,7 @@ import {
   MapPin, AlertTriangle, Truck, Home, TrendingUp, Search, ExternalLink 
 } from 'lucide-react';
 import Link from 'next/link';
+import { API_BASE } from '@/lib/api';
 
 export default function GodModeOverview() {
   const [stats, setStats] = useState({
@@ -16,7 +17,7 @@ export default function GodModeOverview() {
     const fetchMetrics = async () => {
       try {
         const token = localStorage.getItem('admin_token');
-        const res = await fetch('http://localhost:5000/api/v1/admin/god-mode/metrics', {
+        const res = await fetch(API_BASE + '/admin/god-mode/metrics', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const json = await res.json();

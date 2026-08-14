@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, UserX, Store, Activity, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function SecurityFraudDashboard() {
   const [flaggedUsers, setFlaggedUsers] = useState([]);
@@ -11,7 +12,7 @@ export default function SecurityFraudDashboard() {
   const fetchFraudData = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/fraud-scan', {
+      const res = await fetch(API_BASE + '/admin/fraud-scan', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

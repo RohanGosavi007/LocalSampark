@@ -13,8 +13,7 @@ class SurgePricingService {
   async getSurgeSuggestion(shopId) {
     try {
       // 1. Fetch shop and category info
-      const shop = await queryOne(
-        `SELECT s.*, c.slug as category_slug, c.name as category_name
+      const shop = await queryOne(`SELECT s.*, c.slug as category_slug, c.name as category_name
          FROM local_shops s
          LEFT JOIN shop_categories c ON s.category_id = c.id
          WHERE s.id = $1`,
@@ -49,20 +48,20 @@ class SurgePricingService {
       // 3. Recent Demand Factor (orders/appointments in the last 2 hours)
       let recentOrdersCount = 0;
       try {
-        const orderRes = await queryOne(
-          `SELECT COUNT(*) as recent_count FROM shop_orders WHERE shop_id = $1 AND (created_at >= NOW() - INTERVAL '2 hours' OR created_at >= datetime('now', '-2 hours'))`,
+        const orderRes = await queryOne(`SELECT COUNT(*) as recent_count FROM shop_orders WHERE shop_id = $1 AND (created_at >= NOW() - INTERVAL '2 hours' OR created_at >= datetime('now', '-2 hours'))`,
           [shopId]
         );
         recentOrdersCount = parseInt(orderRes?.recent_count || 0, 10);
       } catch (e) {
         // SQLite fallback or alternate table
         try {
-          const orderRes = await queryOne(
-            `SELECT COUNT(*) as recent_count FROM shop_orders WHERE shop_id = $1`,
+          const orderRes = await queryOne(`SELECT COUNT(*) as recent_count FROM shop_orders WHERE shop_id = $1`,
             [shopId]
           );
           recentOrdersCount = parseInt(orderRes?.recent_count || 0, 10);
-        } catch (err) {}
+        } catch (err) {
+          console.warn('[SurgePricingService] Fallback order count query failed:', err.message);
+        }
       }
 
       let demandMultiplier = 1.0;
@@ -73,13 +72,14 @@ class SurgePricingService {
       // 4. Fetch Admin Configured Surge Cap
       let maxCap = 2.5; // Default safety cap
       try {
-        const configRow = await queryOne(
-          "SELECT config_value FROM admin_config WHERE config_key = 'max_surge_multiplier'"
+        const configRow = await queryOne("SELECT config_value FROM admin_config WHERE config_key = 'max_surge_multiplier'"
         );
         if (configRow?.config_value) {
           maxCap = parseFloat(configRow.config_value) || 2.5;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[SurgePricingService] Failed to fetch admin config surge cap:', e.message);
+      }
 
       // 5. Calculate Final Multiplier
       let calculatedMultiplier = Math.max(timeMultiplier, demandMultiplier);

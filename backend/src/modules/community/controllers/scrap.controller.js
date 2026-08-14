@@ -12,8 +12,7 @@ const requestPickup = async (req, res, next) => {
     // Flat 500 Coins for doing a good deed, regardless of weight for simplicity in demo
     const coinReward = payoutPreference === 'donate' ? 500 : 0;
 
-    const newRequest = await query(
-      `INSERT INTO scrap_requests (resident_id, scrap_type, approx_weight, address, pincode, payout_preference, coin_reward, status) 
+    const newRequest = await query(`INSERT INTO scrap_requests (resident_id, scrap_type, approx_weight, address, pincode, payout_preference, coin_reward, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending') RETURNING *`,
       [userId, scrapType, approxWeight, address, pincode, payoutPreference, coinReward]
     );
@@ -66,8 +65,7 @@ const acceptPickup = async (req, res, next) => {
       return res.status(400).json({ error: 'This request has already been accepted by another dealer.' });
     }
 
-    const updated = await query(
-      `UPDATE scrap_requests SET status = 'accepted', dealer_id = $1 WHERE id = $2 RETURNING *`,
+    const updated = await query(`UPDATE scrap_requests SET status = 'accepted', dealer_id = $1 WHERE id = $2 RETURNING *`,
       [dealerId, requestId]
     );
 
@@ -95,8 +93,7 @@ const completePickup = async (req, res, next) => {
       // Resident chose to Donate to Old Age Fund
       // Reward Resident with Gamification Coins
       await query(`UPDATE loyalty_wallets SET total_coins = total_coins + $1 WHERE user_id = $2`, [reqData.coin_reward, reqData.resident_id]);
-      await query(
-        `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Scrap Donation - Old Age Fund')`,
+      await query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Scrap Donation - Old Age Fund')`,
         [reqData.resident_id, reqData.coin_reward]
       );
     } else {

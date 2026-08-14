@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Leaf, Tractor, ShieldCheck, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function KrishiDashboard() {
   const [listings, setListings] = useState([]);
@@ -17,7 +18,7 @@ export default function KrishiDashboard() {
   const fetchListings = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/krishi', {
+      const res = await fetch(API_BASE + '/admin/krishi', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -40,7 +41,7 @@ export default function KrishiDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/krishi', {
+      const res = await fetch(API_BASE + '/admin/krishi', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, price, type, auto_expire: autoExpire })
@@ -65,7 +66,7 @@ export default function KrishiDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/krishi/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/krishi/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -83,7 +84,7 @@ export default function KrishiDashboard() {
   const toggleVerification = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/krishi/${id}/verify`, {
+      const res = await fetch(`${API_BASE}/admin/krishi/${id}/verify`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ verified_farmer: !currentStatus })

@@ -55,12 +55,11 @@ exports.updateUserStatus = async (req, res, next) => {
     await query('UPDATE users SET is_active = $1 WHERE id = $2', [is_active, id]);
     
     try {
-      await query(
-        `INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
+      await query(`INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [req.user.id, req.user.full_name || 'Admin', 'update_user_status', 'user', id, JSON.stringify({ is_active })]
       );
-    } catch(e) {}
+    } catch (e) { next(e); }
 
     res.json({ success: true, message: 'User status updated successfully' });
   } catch (error) {
@@ -76,14 +75,39 @@ exports.updateUserRole = async (req, res, next) => {
     await query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
     
     try {
-      await query(
-        `INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
+      await query(`INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [req.user.id, req.user.full_name || 'Admin', 'update_user_role', 'user', id, JSON.stringify({ role })]
       );
-    } catch(e) {}
+    } catch (e) { next(e); }
 
     res.json({ success: true, message: 'User role updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── USER EXPORT ──────────────────────────────────────────
+exports.exportUsers = async (req, res, next) => {
+  try {
+    const users = await query('SELECT id, full_name, phone, role, is_active, created_at FROM users ORDER BY created_at DESC');
+    const rows = users.rows || users;
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="users_export.csv"');
+    
+    // CSV Header
+    res.write('ID,Name,Phone,Role,Status,Joined Date\n');
+    
+    // CSV Rows
+    rows.forEach(user => {
+      const name = user.full_name ? \`"\${user.full_name.replace(/"/g, '""')}"\` : 'Anonymous';
+      const status = user.is_active !== false ? 'Active' : 'Blocked';
+      const date = new Date(user.created_at).toISOString();
+      res.write(\`\${user.id},\${name},\${user.phone},\${user.role || 'user'},\${status},\${date}\n\`);
+    });
+    
+    res.end();
   } catch (error) {
     next(error);
   }
@@ -115,12 +139,11 @@ exports.createOrUpdateRole = async (req, res, next) => {
     }
     
     try {
-      await query(
-        `INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
+      await query(`INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [req.user.id, req.user.full_name || 'Admin', 'upsert_role', 'role', role ? role.id : null, JSON.stringify({ role_name })]
       );
-    } catch(e) {}
+    } catch (e) { next(e); }
 
     res.json({ success: true, data: role });
   } catch (error) {

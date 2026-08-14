@@ -60,7 +60,7 @@ async function verifyPaymentSignature(req, res, next) {
       .update(body.toString())
       .digest('hex');
 
-    const isValid = expectedSignature === razorpay_signature || process.env.NODE_ENV !== 'production';
+    const isValid = expectedSignature === razorpay_signature;
 
     if (!isValid) {
       await query(
@@ -110,7 +110,7 @@ async function handleWebhook(req, res, next) {
       .update(JSON.stringify(req.body))
       .digest('hex');
 
-    if (signature && signature !== expectedSignature && process.env.NODE_ENV === 'production') {
+    if (signature && signature !== expectedSignature) {
       return res.status(400).send('Invalid webhook signature');
     }
 

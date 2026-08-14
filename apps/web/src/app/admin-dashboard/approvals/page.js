@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { ShieldCheck, CheckCircle2, XCircle, Search, Clock, FileText, Store, UserCheck, Shield } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function ApprovalsCenterPage() {
   const { adminUser } = useAdminAuth();
@@ -14,7 +15,7 @@ export default function ApprovalsCenterPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/approvals/pending', {
+      const res = await fetch(API_BASE + '/admin/approvals/pending', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -35,7 +36,7 @@ export default function ApprovalsCenterPage() {
   const handleAction = async (type, id, action) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/approvals/${type}/${id}`, {
+      const res = await fetch(`${API_BASE}/admin/approvals/${type}/${id}`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,

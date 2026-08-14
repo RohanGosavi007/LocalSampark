@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { query, queryMany } = require('../config/database.sqlite');
+const { query, queryMany } = require('../config/database');
 const billingService = require('../modules/community/services/billing-engine.service');
 
 // Run daily at midnight to check for overdue bills and apply penalties

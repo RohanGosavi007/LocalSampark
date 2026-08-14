@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Shield, Plus, Save, Trash2, Check, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 const AVAILABLE_PERMISSIONS = [
   { key: 'manage_users', label: 'Manage Users', category: 'Core' },
@@ -32,7 +33,7 @@ export default function RolesManagementPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/roles', {
+      const res = await fetch(API_BASE + '/admin/roles', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -58,7 +59,7 @@ export default function RolesManagementPage() {
   const saveRole = async (roleName, permissions, description) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/roles', {
+      const res = await fetch(API_BASE + '/admin/roles', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,

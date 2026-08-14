@@ -3,6 +3,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
@@ -35,5 +36,13 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  hideSourceMaps: true,
+  widenClientFileUpload: true,
+  isTreeShakingEnabled: true,
+  transpileClientSDK: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+});
 

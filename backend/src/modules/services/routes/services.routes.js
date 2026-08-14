@@ -16,7 +16,7 @@ router.get('/nearby', authenticate, async (req, res, next) => {
             try {
                 sql += ' AND region_id = $2';
                 params.push(region_id);
-            } catch(e) {}
+            } catch (e) { next(e); }
         }
 
         const svcsData = await query(sql, params);

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Car, MapPin, UserPlus, ShieldCheck, CheckCircle, XCircle, Settings, Truck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function MobilityDashboard() {
   const [fleet, setFleet] = useState([]);
@@ -16,7 +17,7 @@ export default function MobilityDashboard() {
   const fetchFleet = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/mobility/fleet', {
+      const res = await fetch(API_BASE + '/admin/mobility/fleet', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -50,7 +51,7 @@ export default function MobilityDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/mobility/fleet', {
+      const res = await fetch(API_BASE + '/admin/mobility/fleet', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ driver_name: driverName, phone, vehicle_type: vehicleType, rc_number: rcNumber })
@@ -75,7 +76,7 @@ export default function MobilityDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/mobility/fleet/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/mobility/fleet/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -93,7 +94,7 @@ export default function MobilityDashboard() {
   const toggleVerification = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/mobility/fleet/${id}/verify`, {
+      const res = await fetch(`${API_BASE}/admin/mobility/fleet/${id}/verify`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ verified_driver: !currentStatus })

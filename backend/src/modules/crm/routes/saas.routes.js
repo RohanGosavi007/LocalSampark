@@ -1,8 +1,9 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');
 const { authenticate, enforceMultiTenancy, requireAdmin } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const PaymentGatewayEngine = require('../../../services/payment.gateway');
 
 // GET /plans - List available SaaS tiers (Public/Authenticated)
 router.get('/plans', async (req, res, next) => {
@@ -21,7 +22,7 @@ router.get('/my-subscription', authenticate, enforceMultiTenancy, async (req, re
       SELECT vs.*, sp.name as plan_name, sp.price_monthly, sp.features_json 
       FROM vendor_subscriptions vs
       JOIN saas_plans sp ON vs.plan_id = sp.id
-      WHERE vs.shop_id = ? 
+      WHERE vs.shop_id = $1 
       ORDER BY vs.created_at DESC LIMIT 1
     `, [req.shopId]);
     
@@ -37,14 +38,13 @@ router.post('/subscribe', authenticate, enforceMultiTenancy, async (req, res, ne
     const { planId } = req.body;
     if (!planId) return res.status(400).json({ error: 'planId is required' });
 
-    const plan = await queryOne('SELECT * FROM saas_plans WHERE id = ? AND is_active = 1', [planId]);
+    const plan = await queryOne('SELECT * FROM saas_plans WHERE id = $1 AND is_active = 1', [planId]);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
 
     // Mocking Razorpay/Stripe Checkout Session Generation
     const mockGatewayId = `sub_${crypto.randomUUID().replace(/-/g, '').substring(0, 14)}`;
 
-    await query(
-      'INSERT INTO vendor_subscriptions (id, shop_id, plan_id, status, gateway_subscription_id) VALUES (?, ?, ?, ?, ?)',
+    await query('INSERT INTO vendor_subscriptions (id, shop_id, plan_id, status, gateway_subscription_id) VALUES ($1, $2, $3, $4, $5)',
       [crypto.randomUUID(), req.shopId, planId, 'pending', mockGatewayId]
     );
 
@@ -55,11 +55,28 @@ router.post('/subscribe', authenticate, enforceMultiTenancy, async (req, res, ne
 });
 
 // POST /webhook/billing - Idempotent Webhook Listener
-router.post('/webhook/billing', async (req, res, next) => {
+router.post('/webhook/billing', express.raw({ type: 'application/json' }), async (req, res, next) => {
   try {
-    const { event_id, type, data } = req.body;
+    const signature = req.headers['x-razorpay-signature'] || req.headers['x-webhook-signature'];
+    const secret = process.env.SAAS_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || 'webhook_secret';
+    
+    if (!signature) {
+      return res.status(401).json({ error: 'Missing webhook signature' });
+    }
+
+    const rawPayload = req.body.toString('utf8');
+    const isValid = PaymentGatewayEngine.verifyWebhookSignature('razorpay', rawPayload, signature, secret);
+    
+    if (!isValid) {
+      console.error('[SaaS Webhook] Invalid cryptographic signature detected');
+      return res.status(400).json({ error: 'Invalid webhook signature' });
+    }
+
+    const parsedBody = JSON.parse(rawPayload);
+    const { event_id, type, data } = parsedBody;
+    
     if (!event_id || !type || !data || !data.gateway_subscription_id) {
-      return res.status(400).json({ error: 'Invalid webhook payload' });
+      return res.status(400).json({ error: 'Invalid webhook payload structure' });
     }
 
     await withTransaction(async (dbClient) => {
@@ -74,7 +91,7 @@ router.post('/webhook/billing', async (req, res, next) => {
       await dbClient.query('INSERT INTO webhook_events (id, event_id) VALUES ($1, $2)', [crypto.randomUUID(), event_id]);
 
       // 2. Find associated subscription
-      const sub = (await dbClient.query('SELECT * FROM vendor_subscriptions WHERE gateway_subscription_id = ?', [data.gateway_subscription_id])).rows?.[0] || (await dbClient.query('SELECT * FROM vendor_subscriptions WHERE gateway_subscription_id = ?', [data.gateway_subscription_id]))[0];
+      const sub = (await dbClient.query('SELECT * FROM vendor_subscriptions WHERE gateway_subscription_id = $1', [data.gateway_subscription_id])).rows?.[0] || (await dbClient.query('SELECT * FROM vendor_subscriptions WHERE gateway_subscription_id = $1', [data.gateway_subscription_id]))[0];
       
       if (!sub) {
         console.warn(`Subscription ${data.gateway_subscription_id} not found.`);
@@ -86,16 +103,16 @@ router.post('/webhook/billing', async (req, res, next) => {
         const newEnd = new Date();
         newEnd.setDate(newEnd.getDate() + 30);
         
-        await dbClient.query('UPDATE vendor_subscriptions SET status = ?, current_period_end = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['active', newEnd.toISOString(), sub.id]);
+        await dbClient.query('UPDATE vendor_subscriptions SET status = $1, current_period_end = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', ['active', newEnd.toISOString(), sub.id]);
         
         // Upgrade CRM Tier
-        await dbClient.query('UPDATE local_shops SET crm_tier = ?, is_locked = 0 WHERE id = ?', ['premium', sub.shop_id]);
+        await dbClient.query('UPDATE local_shops SET crm_tier = $1, is_locked = 0 WHERE id = $2', ['premium', sub.shop_id]);
         
       } else if (type === 'subscription.halted' || type === 'subscription.cancelled') {
-        await dbClient.query('UPDATE vendor_subscriptions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['cancelled', sub.id]);
+        await dbClient.query('UPDATE vendor_subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['cancelled', sub.id]);
         
         // Graceful Degradation: Downgrade tier, but don't delete shop
-        await dbClient.query('UPDATE local_shops SET crm_tier = ? WHERE id = ?', ['free', sub.shop_id]);
+        await dbClient.query('UPDATE local_shops SET crm_tier = $1 WHERE id = $2', ['free', sub.shop_id]);
       }
     });
 

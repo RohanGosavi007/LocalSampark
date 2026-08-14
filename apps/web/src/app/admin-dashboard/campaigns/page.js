@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Send, Users, Smartphone, History, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function GodModeCampaigns() {
   const [title, setTitle] = useState('');
@@ -18,7 +19,7 @@ export default function GodModeCampaigns() {
     try {
       setSending(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/broadcast', {
+      const res = await fetch(API_BASE + '/admin/broadcast', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,

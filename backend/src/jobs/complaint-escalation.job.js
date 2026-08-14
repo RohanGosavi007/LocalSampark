@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { query, queryMany } = require('../config/database.sqlite');
+const { query, queryMany } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 // Mock FCM

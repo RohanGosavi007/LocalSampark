@@ -44,7 +44,7 @@ router.get('/dashboard', authenticate, enforceTerritoryBounds, async (req, res, 
         const activeShops = shopsData.rows ? parseInt(shopsData.rows[0].count) : parseInt(shopsData[0]?.count || 0);
 
         // Wallet Balance
-        const walletData = await queryOne('SELECT COALESCE(SUM(amount), 0) as balance FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE franchise_id = ? LIMIT 1)', [franchise.id]);
+        const walletData = await queryOne('SELECT COALESCE(SUM(amount), 0) as balance FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE franchise_id = $1 LIMIT 1)', [franchise.id]);
         const walletBalance = walletData ? parseFloat(walletData.balance) : 0;
 
         res.json({
@@ -74,8 +74,7 @@ router.post('/register', authenticate, async (req, res, next) => {
         const region_id = region ? region.id : null;
 
         const id = crypto.randomUUID();
-        await query(
-          'INSERT INTO franchise_partners (id, user_id, region_id, territory_name, territory_pincode, status) VALUES ($1, $2, $3, $4, $5, $6)',
+        await query('INSERT INTO franchise_partners (id, user_id, region_id, territory_name, territory_pincode, status) VALUES ($1, $2, $3, $4, $5, $6)',
           [id, req.user.id, region_id, territory_name, region_pincode, 'pending']
         );
         res.status(201).json({ success: true, id, message: 'Franchise registered successfully' });
@@ -125,7 +124,7 @@ router.post('/payouts/claim', authenticate, async (req, res, next) => {
         if (amountToClaim <= 0) return res.status(400).json({ error: 'Invalid amount' });
 
         await withTransaction(async (dbClient) => {
-            const walletData = await dbClient.query('SELECT id, COALESCE(SUM(amount), 0) as balance FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE franchise_id = ? LIMIT 1)', [franchise.id]);
+            const walletData = await dbClient.query('SELECT id, COALESCE(SUM(amount), 0) as balance FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE franchise_id = $1 LIMIT 1)', [franchise.id]);
             const walletBalance = (walletData.rows || walletData)[0]?.balance || 0;
             const walletId = (walletData.rows || walletData)[0]?.id;
             
@@ -134,14 +133,12 @@ router.post('/payouts/claim', authenticate, async (req, res, next) => {
             }
 
             // Append-only withdrawal debit
-            await dbClient.query(
-                'INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES (?, ?, ?, ?, ?, ?)',
+            await dbClient.query('INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES ($1, $2, $3, $4, $5, $6)',
                 [crypto.randomUUID(), walletId, -amountToClaim, 'debit', 'withdrawal', 'pending']
             );
             
             // Record payout request
-            await dbClient.query(
-                'INSERT INTO franchise_payouts (id, franchise_partner_id, commission_earned, status) VALUES (?, ?, ?, ?)',
+            await dbClient.query('INSERT INTO franchise_payouts (id, franchise_partner_id, commission_earned, status) VALUES ($1, $2, $3, $4)',
                 [crypto.randomUUID(), franchise.id, amountToClaim, 'payout_requested']
             );
         });

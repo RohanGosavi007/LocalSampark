@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Wallet, TrendingUp, ArrowUpRight, ArrowDownRight, CreditCard, Banknote, History, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function FinanceLedgerPage() {
   const { adminUser } = useAdminAuth();
@@ -13,7 +14,7 @@ export default function FinanceLedgerPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/payouts/pending', {
+      const res = await fetch(API_BASE + '/admin/payouts/pending', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

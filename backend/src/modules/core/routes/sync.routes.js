@@ -103,14 +103,12 @@ router.get('/status', authenticate, async (req, res, next) => {
     const userId = req.user.id || req.user.userId;
     const { queryMany } = require('../../../config/database');
 
-    const watermarks = await queryMany(
-      `SELECT device_id, table_name, territory_id, last_synced_at
+    const watermarks = await queryMany(`SELECT device_id, table_name, territory_id, last_synced_at
        FROM sync_watermarks WHERE user_id = $1 ORDER BY last_synced_at DESC`,
       [userId]
     );
 
-    const pendingMutations = await queryMany(
-      `SELECT id, mutation_type, table_name, status, created_at
+    const pendingMutations = await queryMany(`SELECT id, mutation_type, table_name, status, created_at
        FROM offline_mutations WHERE user_id = $1 AND status IN ('pending', 'processing')
        ORDER BY created_at ASC LIMIT 20`,
       [userId]

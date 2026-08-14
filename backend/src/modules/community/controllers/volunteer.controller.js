@@ -14,8 +14,7 @@ const postTask = async (req, res, next) => {
     await withTransaction(async (client) => {
       // If Resident is attaching a bounty, deduct from their wallet (escrow) safely
       if (finalBounty > 0 && userRole !== 'admin') {
-        const walletResult = await client.query(
-          `SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
+        const walletResult = await client.query(`SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
           [userId]
         );
         const wallet = walletResult.rows[0];
@@ -29,8 +28,7 @@ const postTask = async (req, res, next) => {
         await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Volunteer Bounty Escrow')`, [userId, finalBounty]);
       }
 
-      const newTask = await client.query(
-        `INSERT INTO volunteer_tasks (poster_id, title, description, bounty_coins, type, status) 
+      const newTask = await client.query(`INSERT INTO volunteer_tasks (poster_id, title, description, bounty_coins, type, status) 
          VALUES ($1, $2, $3, $4, $5, 'open') RETURNING *`,
         [userId, title, description, finalBounty, type]
       );
@@ -73,8 +71,7 @@ const volunteerForTask = async (req, res, next) => {
 
     await withTransaction(async (client) => {
       // Lock the task row so two people can't volunteer at the exact same time
-      const taskResult = await client.query(
-        `SELECT * FROM volunteer_tasks WHERE id = $1 FOR UPDATE`, 
+      const taskResult = await client.query(`SELECT * FROM volunteer_tasks WHERE id = $1 FOR UPDATE`, 
         [taskId]
       );
       const task = taskResult.rows[0];
@@ -108,8 +105,7 @@ const completeTask = async (req, res, next) => {
 
     await withTransaction(async (client) => {
       // Lock the task row
-      const taskResult = await client.query(
-        `SELECT * FROM volunteer_tasks WHERE id = $1 FOR UPDATE`, 
+      const taskResult = await client.query(`SELECT * FROM volunteer_tasks WHERE id = $1 FOR UPDATE`, 
         [taskId]
       );
       const task = taskResult.rows[0];

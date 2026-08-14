@@ -1,31 +1,26 @@
-const { query, queryOne, queryMany } = require('../../../config/database.sqlite');
+const { query, queryOne, queryMany } = require('../../../config/database');
 const { v4: uuidv4 } = require('uuid');
 
-const configureGate = async (req, res) => {
+const configureGate = async (req, res, next) => {
     try {
         const { societyId, gateName, gateType, locationDescription } = req.body;
         const id = uuidv4();
-        await query(
-            'INSERT INTO society_gates (id, society_id, gate_name, gate_type, location_description) VALUES ($1, $2, $3, $4, $5)',
+        await query('INSERT INTO society_gates (id, society_id, gate_name, gate_type, location_description) VALUES ($1, $2, $3, $4, $5)',
             [id, societyId, gateName, gateType, locationDescription]
         );
         res.json({ success: true, message: 'Gate configured successfully' });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const assignGuardToGate = async (req, res) => {
+const assignGuardToGate = async (req, res, next) => {
     try {
         const { gateId, guardIds } = req.body;
         await query('UPDATE society_gates SET assigned_guards = $1 WHERE id = $2', [JSON.stringify(guardIds), gateId]);
         res.json({ success: true, message: 'Guards assigned to gate' });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const lookupVehicle = async (req, res) => {
+const lookupVehicle = async (req, res, next) => {
     try {
         const { societyId, vehicleNumber } = req.query;
         const vehicle = await queryOne('SELECT * FROM vehicles WHERE vehicle_number = $1', [vehicleNumber]);
@@ -36,32 +31,26 @@ const lookupVehicle = async (req, res) => {
         } else {
             res.json({ success: true, data: null, message: 'Vehicle not found' });
         }
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const getVehicleLog = async (req, res) => {
+const getVehicleLog = async (req, res, next) => {
     try {
         const { societyId } = req.query;
         const logs = await queryMany('SELECT * FROM society_vehicle_log WHERE society_id = $1 ORDER BY created_at DESC LIMIT 100', [societyId]);
         res.json({ success: true, data: logs });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const getUtilityHistory = async (req, res) => {
+const getUtilityHistory = async (req, res, next) => {
     try {
         const { societyId } = req.query;
         const logs = await queryMany('SELECT * FROM society_utility_deliveries WHERE society_id = $1 ORDER BY created_at DESC LIMIT 100', [societyId]);
         res.json({ success: true, data: logs });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const getGateDashboard = async (req, res) => {
+const getGateDashboard = async (req, res, next) => {
     try {
         const { societyId } = req.query;
         const gates = await queryMany('SELECT * FROM society_gates WHERE society_id = $1 AND is_active = 1', [societyId]);
@@ -72,9 +61,7 @@ const getGateDashboard = async (req, res) => {
         }
         
         res.json({ success: true, data: gates });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 module.exports = {

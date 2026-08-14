@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Headset, CheckCircle, Clock, Search, Settings, Filter, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function SupportDashboard() {
   const [tickets, setTickets] = useState([]);
@@ -17,7 +18,7 @@ export default function SupportDashboard() {
       // In a real app we would fetch the auto-reply config via a separate endpoint
       // Mocking auto-reply state load for UI demo
       
-      const res = await fetch('http://localhost:5000/api/v1/admin/support/tickets', {
+      const res = await fetch(API_BASE + '/admin/support/tickets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -39,7 +40,7 @@ export default function SupportDashboard() {
     setSavingSettings(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/support/auto-reply', {
+      const res = await fetch(API_BASE + '/admin/support/auto-reply', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: autoReplyEnabled, message: autoReplyMessage })
@@ -58,7 +59,7 @@ export default function SupportDashboard() {
   const updateTicketStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/support/tickets/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/support/tickets/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })

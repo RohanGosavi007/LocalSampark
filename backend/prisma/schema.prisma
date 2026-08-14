@@ -571,3 +571,57 @@ model CartItem {
   @@index([productId])
   @@map("cart_items")
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// FILE UPLOAD — Track all user uploaded files
+// ─────────────────────────────────────────────────────────────────────
+
+model FileUpload {
+  id          String   @id @default(cuid())
+  uploaderId  String?
+  fileName    String
+  filePath    String
+  fileType    String
+  fileSize    Int
+  purpose     String   @default("general")
+  referenceId String?
+  createdAt   DateTime @default(now())
+
+  @@map("file_uploads")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ADMIN KRISHI LISTING — B2B Agricultural trading
+// ─────────────────────────────────────────────────────────────────────
+
+model AdminKrishiListing {
+  id             String   @id @default(cuid())
+  title          String?
+  description    String?
+  price          String?
+  type           String?
+  autoExpire     Boolean  @default(true)
+  status         String   @default("active")
+  verifiedFarmer Boolean  @default(false)
+  sellerName     String?
+  adminId        String?
+  createdAt      DateTime @default(now())
+
+  @@map("admin_krishi_listings")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ADMIN AUDIT LOG — Track admin actions
+// ─────────────────────────────────────────────────────────────────────
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  action     String?
+  targetType String?
+  targetId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@map("admin_audit_log")
+}

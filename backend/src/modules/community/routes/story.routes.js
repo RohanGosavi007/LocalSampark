@@ -7,8 +7,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 router.get('/', authenticate, async (req, res, next) => {
   try {
     // Select stories that have not expired
-    const stories = await query(
-      `SELECT s.*, u.full_name, u.avatar_url 
+    const stories = await query(`SELECT s.*, u.full_name, u.avatar_url 
        FROM stories s
        JOIN users u ON s.user_id = u.id
        WHERE s.expires_at > CURRENT_TIMESTAMP
@@ -31,8 +30,7 @@ router.post('/', authenticate, async (req, res, next) => {
     // Set expiry to 24 hours from now
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const story = await queryOne(
-      `INSERT INTO stories (user_id, media_url, media_type, caption, expires_at)
+    const story = await queryOne(`INSERT INTO stories (user_id, media_url, media_type, caption, expires_at)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [req.user.id, mediaUrl, mediaType || 'video', caption || '', expiresAt]

@@ -9,8 +9,10 @@ import {
   Leaf, Car, Heart, Recycle, Activity, Landmark, Gift, MessageCircle, Home, 
   ShoppingBag, Key, Receipt, Utensils, Wrench, Calendar, ShieldAlert, Star, 
   AlertTriangle, Headset, Contact, Megaphone, Globe, ChevronDown, Moon, Sun, 
-  ShieldCheck, TrendingUp, Search
+  ShieldCheck, TrendingUp, Search, Bell, Database, Save, Target, Percent, 
+  Banknote, FileText, Truck
 } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 
 const sidebarGroups = [
   {
@@ -20,14 +22,23 @@ const sidebarGroups = [
       { label: 'Approvals Hub', icon: ShieldCheck, path: '/admin-dashboard/approvals' },
       { label: 'Role Management', icon: ShieldCheck, path: '/admin-dashboard/roles' },
       { label: 'Platform Users', icon: Users, path: '/admin-dashboard/users' },
+      { label: 'SaaS Tenants', icon: Database, path: '/admin-dashboard/saas' },
+      { label: 'AI Analytics', icon: Activity, path: '/admin-dashboard/ai-analytics' },
+      { label: 'System Audit', icon: Database, path: '/admin-dashboard/audit' },
+      { label: 'System Alerts', icon: Bell, path: '/admin-dashboard/alerts' },
+      { label: 'Backups', icon: Save, path: '/admin-dashboard/backups' },
       { label: 'Settings', icon: Settings, path: '/admin-dashboard/settings' },
     ]
   },
   {
     title: 'Finance & Revenue',
     items: [
+      { label: 'Finance Overview', icon: Banknote, path: '/admin-dashboard/finance' },
       { label: 'Finance Ledger', icon: Wallet, path: '/admin-dashboard/finance-ledger' },
       { label: 'Revenue Models', icon: TrendingUp, path: '/admin-dashboard/revenue-models' },
+      { label: 'Revenue & Taxes', icon: FileText, path: '/admin-dashboard/revenue' },
+      { label: 'Commissions', icon: Percent, path: '/admin-dashboard/commissions' },
+      { label: 'Payouts', icon: Banknote, path: '/admin-dashboard/payouts' },
       { label: 'Earn & Rewards', icon: Gift, path: '/admin-dashboard/rewards' },
       { label: 'Premium & Subs', icon: Star, path: '/admin-dashboard/subscriptions' },
     ]
@@ -35,7 +46,10 @@ const sidebarGroups = [
   {
     title: 'Commerce & Logistics',
     items: [
+      { label: 'Logistics Overview', icon: Truck, path: '/admin-dashboard/logistics' },
       { label: 'Delivery Monitor', icon: MapPin, path: '/admin-dashboard/delivery-monitor' },
+      { label: 'Skilled Dispatch', icon: Wrench, path: '/admin-dashboard/skilled-dispatch' },
+      { label: 'Fleet & Assets', icon: Truck, path: '/admin-dashboard/fleet-assets' },
       { label: 'Franchise Mapping', icon: MapPin, path: '/admin-dashboard/franchises' },
       { label: 'Shop Categories', icon: Briefcase, path: '/admin-dashboard/shop-categories' },
       { label: 'Marketplace Audit', icon: ShoppingBag, path: '/admin-dashboard/marketplace' },
@@ -57,15 +71,20 @@ const sidebarGroups = [
     title: 'Support & CRM',
     items: [
       { label: 'Support & Helpdesk', icon: Headset, path: '/admin-dashboard/support' },
+      { label: 'Disputes & Claims', icon: ShieldAlert, path: '/admin-dashboard/disputes' },
       { label: 'CRM & Engagement', icon: Contact, path: '/admin-dashboard/crm' },
+      { label: 'Leads CRM', icon: Contact, path: '/admin-dashboard/leads-crm' },
+      { label: 'Fraud & Risk', icon: ShieldAlert, path: '/admin-dashboard/fraud' },
+      { label: 'GTM Analytics', icon: TrendingUp, path: '/admin-dashboard/gtm' },
       { label: 'Marketing & Push', icon: Megaphone, path: '/admin-dashboard/marketing' },
-      { label: 'Ad Campaigns', icon: Megaphone, path: '/admin-dashboard/ads' },
+      { label: 'Ad Campaigns', icon: Target, path: '/admin-dashboard/campaigns' },
       { label: 'Regional Languages', icon: Globe, path: '/admin-dashboard/languages' },
     ]
   },
   {
     title: 'Specialized Verticals',
     items: [
+      { label: 'Territory Map', icon: MapPin, path: '/admin-dashboard/territory' },
       { label: 'Jobs & Services', icon: Wrench, path: '/admin-dashboard/jobs' },
       { label: 'Krishi & Rural', icon: Leaf, path: '/admin-dashboard/krishi' },
       { label: 'Mobility & Transport', icon: Car, path: '/admin-dashboard/mobility' },
@@ -164,7 +183,7 @@ export default function AdminLayout({ children }) {
     const fetchOmni = async () => {
       try {
         const token = localStorage.getItem('admin_token');
-        const res = await fetch(`http://localhost:5000/api/v1/admin/search?q=${omniSearch}`, {
+        const res = await fetch(`${API_BASE}/admin/search?q=${omniSearch}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();

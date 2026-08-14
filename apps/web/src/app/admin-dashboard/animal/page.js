@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, MapPin, Truck, AlertTriangle, CheckCircle, Clock, PawPrint, Plus, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function AnimalWelfareDashboard() {
   const [requests, setRequests] = useState([]);
@@ -17,7 +18,7 @@ export default function AnimalWelfareDashboard() {
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/animal/rescue', {
+      const res = await fetch(API_BASE + '/admin/animal/rescue', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -40,7 +41,7 @@ export default function AnimalWelfareDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/animal/rescue', {
+      const res = await fetch(API_BASE + '/admin/animal/rescue', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ reporter_name: reporterName, phone, animal_type: animalType, severity, location })
@@ -67,7 +68,7 @@ export default function AnimalWelfareDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/animal/rescue/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/animal/rescue/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -85,7 +86,7 @@ export default function AnimalWelfareDashboard() {
   const toggleDispatch = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/animal/rescue/${id}/dispatch`, {
+      const res = await fetch(`${API_BASE}/admin/animal/rescue/${id}/dispatch`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ dispatched: !currentStatus })

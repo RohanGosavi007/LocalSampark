@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Send, History, Megaphone, Target, Link as LinkIcon, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function MarketingDashboard() {
   const [title, setTitle] = useState('');
@@ -14,7 +15,7 @@ export default function MarketingDashboard() {
   const fetchHistory = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/broadcasts/history', {
+      const res = await fetch(API_BASE + '/admin/broadcasts/history', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -37,7 +38,7 @@ export default function MarketingDashboard() {
     setSending(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/broadcast', {
+      const res = await fetch(API_BASE + '/admin/broadcast', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, body, target_audience: targetAudience, deep_link: deepLink })

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, HardDrive, Download, ShieldAlert, Cloud, CheckCircle, RefreshCw, AlertTriangle, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function BackupsDashboard() {
   const [backups, setBackups] = useState([]);
@@ -13,7 +14,7 @@ export default function BackupsDashboard() {
   const fetchBackups = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/backups`, {
+      const res = await fetch(`${API_BASE}/admin/backups`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await res.json();
@@ -35,7 +36,7 @@ export default function BackupsDashboard() {
     setGenerating(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/backups/create`, {
+      const res = await fetch(`${API_BASE}/admin/backups/create`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider })
@@ -61,7 +62,7 @@ export default function BackupsDashboard() {
     setRestoringId(id);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/backups/${id}/restore`, {
+      const res = await fetch(`${API_BASE}/admin/backups/${id}/restore`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

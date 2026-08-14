@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, HandHeart, ShieldCheck, CheckCircle, XCircle, DollarSign, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function CharityDashboard() {
   const [campaigns, setCampaigns] = useState([]);
@@ -15,7 +16,7 @@ export default function CharityDashboard() {
   const fetchCampaigns = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/charity', {
+      const res = await fetch(API_BASE + '/admin/charity', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -38,7 +39,7 @@ export default function CharityDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/charity', {
+      const res = await fetch(API_BASE + '/admin/charity', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ ngo_name: ngoName, title, goal_amount: parseFloat(goalAmount) })
@@ -63,7 +64,7 @@ export default function CharityDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/charity/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/charity/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -81,7 +82,7 @@ export default function CharityDashboard() {
   const toggleVerification = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/charity/${id}/verify`, {
+      const res = await fetch(`${API_BASE}/admin/charity/${id}/verify`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ verified_ngo: !currentStatus })
@@ -104,7 +105,7 @@ export default function CharityDashboard() {
     
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/charity/${id}/raised`, {
+      const res = await fetch(`${API_BASE}/admin/charity/${id}/raised`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ raised_amount: amount })

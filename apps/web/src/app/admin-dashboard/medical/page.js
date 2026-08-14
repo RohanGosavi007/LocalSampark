@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, MapPin, Truck, AlertTriangle, CheckCircle, Clock, HeartPulse, Plus, Phone, Droplet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function MedicalDashboard() {
   const [requests, setRequests] = useState([]);
@@ -18,7 +19,7 @@ export default function MedicalDashboard() {
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/medical/requests', {
+      const res = await fetch(API_BASE + '/admin/medical/requests', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -41,7 +42,7 @@ export default function MedicalDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/medical/requests', {
+      const res = await fetch(API_BASE + '/admin/medical/requests', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ patient_name: patientName, phone, request_type: requestType, blood_group: requestType === 'Blood Required' ? bloodGroup : null, urgency, location })
@@ -66,7 +67,7 @@ export default function MedicalDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/medical/requests/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/medical/requests/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -84,7 +85,7 @@ export default function MedicalDashboard() {
   const toggleDispatch = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/medical/requests/${id}/dispatch`, {
+      const res = await fetch(`${API_BASE}/admin/medical/requests/${id}/dispatch`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ dispatched: !currentStatus })

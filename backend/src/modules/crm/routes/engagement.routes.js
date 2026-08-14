@@ -34,8 +34,7 @@ router.post('/referral/claim', authenticate, async (req, res) => {
 
         // Start transaction (mocking transaction in SQLite via sequential logic)
         const referralId = uuidv4();
-        await query(
-            `INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ($1, $2, $3, $4, 'completed', 1)`,
+        await query(`INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ($1, $2, $3, $4, 'completed', 1)`,
             [referralId, referrerId, refereeId, referralCode]
         );
 
@@ -98,8 +97,7 @@ router.post('/reviews/submit', authenticate, async (req, res) => {
         if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be between 1 and 5' });
 
         const reviewId = uuidv4();
-        await query(
-            `INSERT INTO reviews (id, user_id, target_id, target_type, rating, comment) VALUES ($1, $2, $3, $4, $5, $6)`,
+        await query(`INSERT INTO reviews (id, user_id, target_id, target_type, rating, comment) VALUES ($1, $2, $3, $4, $5, $6)`,
             [reviewId, req.user.id, targetId, targetType, rating, comment]
         );
 

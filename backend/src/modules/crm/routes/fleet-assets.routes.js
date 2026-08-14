@@ -29,8 +29,7 @@ router.get('/:shopId', authenticate, async (req, res) => {
     const result = await query(sql, params);
 
     // Get status summary
-    const summary = await query(
-      `SELECT status, COUNT(*) as count FROM fleet_assets WHERE shop_id = $1 GROUP BY status`,
+    const summary = await query(`SELECT status, COUNT(*) as count FROM fleet_assets WHERE shop_id = $1 GROUP BY status`,
       [shopId]
     );
 
@@ -55,8 +54,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
       fuelType, capacity, description
     } = req.body;
 
-    const result = await query(
-      `INSERT INTO fleet_assets (shop_id, name, asset_type, model, registration_number, photos,
+    const result = await query(`INSERT INTO fleet_assets (shop_id, name, asset_type, model, registration_number, photos,
        hourly_rate, daily_rate, weekly_rate, acreage_rate, security_deposit,
        driver_available, driver_charge_per_day, fuel_type, capacity, description, status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'available', NOW())
@@ -87,8 +85,7 @@ router.put('/:shopId/:assetId/status', authenticate, async (req, res) => {
       return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
     }
 
-    await query(
-      `UPDATE fleet_assets SET status = $1, status_notes = $2, expected_return_date = $3,
+    await query(`UPDATE fleet_assets SET status = $1, status_notes = $2, expected_return_date = $3,
        current_operator = $4, fuel_level = $5, updated_at = NOW() WHERE id = $6`,
       [status, notes || null, returnDate || null, operatorName || null, fuelLevel || null, assetId]
     );
@@ -130,8 +127,7 @@ router.post('/:shopId/book', authenticate, async (req, res) => {
 
     const bookingNumber = `RNT-${Date.now().toString(36).toUpperCase()}`;
 
-    await query(
-      `INSERT INTO rental_bookings (shop_id, asset_id, booking_number, customer_name, customer_phone, user_id,
+    await query(`INSERT INTO rental_bookings (shop_id, asset_id, booking_number, customer_name, customer_phone, user_id,
        start_date, end_date, duration_type, duration_value, need_driver, delivery_address,
        rental_cost, security_deposit, total_amount, notes, status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending', NOW())`,
@@ -201,8 +197,7 @@ router.post('/:shopId/:assetId/log', authenticate, async (req, res) => {
     const { assetId } = req.params;
     const { logType, operatorName, fuelAdded, hoursUsed, notes, photos } = req.body;
 
-    await query(
-      `INSERT INTO fleet_asset_logs (asset_id, log_type, operator_name, fuel_added, hours_used, notes, photos, created_at)
+    await query(`INSERT INTO fleet_asset_logs (asset_id, log_type, operator_name, fuel_added, hours_used, notes, photos, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
       [assetId, logType || 'usage', operatorName || null, fuelAdded || 0,
        hoursUsed || 0, notes || null, JSON.stringify(photos || [])]

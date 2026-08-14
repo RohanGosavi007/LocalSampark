@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Receipt, CreditCard, Zap, Droplet, Flame, CheckCircle, Clock, ShieldCheck, Plus, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function UtilityBillsDashboard() {
   const [bills, setBills] = useState([]);
@@ -18,7 +19,7 @@ export default function UtilityBillsDashboard() {
   const fetchBills = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/bills', {
+      const res = await fetch(API_BASE + '/admin/bills', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -44,7 +45,7 @@ export default function UtilityBillsDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/bills', {
+      const res = await fetch(API_BASE + '/admin/bills', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ customer_name: customerName, phone, provider_type: finalProvider, consumer_number: consumerNumber, amount: parseFloat(amount) })
@@ -71,7 +72,7 @@ export default function UtilityBillsDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/bills/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/bills/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -89,7 +90,7 @@ export default function UtilityBillsDashboard() {
   const toggleClearance = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/bills/${id}/clear`, {
+      const res = await fetch(`${API_BASE}/admin/bills/${id}/clear`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ payment_cleared: !currentStatus })

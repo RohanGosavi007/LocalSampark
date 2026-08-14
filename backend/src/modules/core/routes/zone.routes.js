@@ -126,7 +126,7 @@ router.get('/hierarchy', async (req, res, next) => {
       
       let features = { delivery: true, jobs: true, rentals: true, events: true, services: true };
       if (r.features_json) {
-        try { features = JSON.parse(r.features_json); } catch(e) {}
+        try { features = JSON.parse(r.features_json); } catch (e) { next(e); }
       }
 
       territories.push({

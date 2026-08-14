@@ -1,7 +1,7 @@
 const { query } = require('../../../config/database');
 
 // Simulated gamification engine
-exports.getGamificationProfile = async (req, res) => {
+exports.getGamificationProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
         
@@ -50,7 +50,7 @@ exports.getGamificationProfile = async (req, res) => {
     }
 };
 
-exports.spinWheel = async (req, res) => {
+exports.spinWheel = async (req, res, next) => {
     try {
         const userId = req.user.id;
         

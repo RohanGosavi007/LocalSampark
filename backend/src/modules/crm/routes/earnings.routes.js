@@ -7,8 +7,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 router.get('/user/:userId', authenticate, async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const earnings = await db.queryMany(
-      `SELECT * FROM user_earnings WHERE user_id = $1 ORDER BY created_at DESC`,
+    const earnings = await db.queryMany(`SELECT * FROM user_earnings WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );
     res.json(earnings);
@@ -21,8 +20,7 @@ router.get('/user/:userId', authenticate, async (req, res, next) => {
 router.get('/summary/:userId', authenticate, async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const result = await db.queryOne(
-      `SELECT COALESCE(SUM(amount), 0.00) as total_earned FROM user_earnings WHERE user_id = $1`,
+    const result = await db.queryOne(`SELECT COALESCE(SUM(amount), 0.00) as total_earned FROM user_earnings WHERE user_id = $1`,
       [userId]
     );
     res.json(result);
@@ -45,8 +43,7 @@ router.post('/withdraw', authenticate, async (req, res, next) => {
     // Deduct from wallet & record transaction
     await db.transaction(async (client) => {
       await client.query(`UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`, [amount, userId]);
-      await client.query(
-        `INSERT INTO wallet_transactions (wallet_id, amount, type, purpose, status)
+      await client.query(`INSERT INTO wallet_transactions (wallet_id, amount, type, purpose, status)
          VALUES ((SELECT id FROM wallets WHERE user_id = $1), $2, 'debit', 'withdrawal', 'completed')`,
         [userId, amount]
       );
@@ -61,8 +58,7 @@ router.post('/withdraw', authenticate, async (req, res, next) => {
 // Leaderboard
 router.get('/leaderboard', authenticate, async (req, res, next) => {
   try {
-    const leaderboardData = await db.queryMany(
-      `SELECT u.full_name as name, u.role, COALESCE(SUM(ue.amount), 0) as total_earned
+    const leaderboardData = await db.queryMany(`SELECT u.full_name as name, u.role, COALESCE(SUM(ue.amount), 0) as total_earned
        FROM users u
        JOIN user_earnings ue ON u.id = ue.user_id
        GROUP BY u.id, u.full_name, u.role

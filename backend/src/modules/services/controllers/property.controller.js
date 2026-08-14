@@ -35,8 +35,7 @@ const createProperty = async (req, res, next) => {
     
     const propertyId = crypto.randomUUID();
     
-    await query(
-      `INSERT INTO local_property_listings (id, owner_id, title, property_type, listing_type, price, deposit, address, images_json, status)
+    await query(`INSERT INTO local_property_listings (id, owner_id, title, property_type, listing_type, price, deposit, address, images_json, status)
        VALUES ($1, $2, $3, $4, 'RENT', $5, $6, $7, $8, 'available')`,
       [propertyId, req.user.id, title, propertyType || 'FLAT', price, deposit || 0, address || '', JSON.stringify(images || [])]
     );

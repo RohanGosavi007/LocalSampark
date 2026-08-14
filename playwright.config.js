@@ -116,7 +116,7 @@ module.exports = defineConfig({
     },
   ],
 
-  /* Web server configuration - auto-start backend server before tests */
+  /* Web server configuration - auto-start backend and frontend servers before tests */
   webServer: [
     {
       command: 'node backend/src/server.js',
@@ -126,9 +126,20 @@ module.exports = defineConfig({
       env: {
         NODE_ENV: 'test',
         PORT: '5000',
-        USE_SQLITE: 'true',
+        USE_SQLITE: 'false',
+        DB_NAME: 'localsampark_test',
         JWT_SECRET: 'test-jwt-secret-key-localsampark-2026',
         JWT_REFRESH_SECRET: 'test-jwt-refresh-secret-key-localsampark-2026',
+      },
+    },
+    {
+      command: 'cd apps/web && npm run dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: true,
+      timeout: 60000,
+      env: {
+        NODE_ENV: 'test',
+        PORT: '3000',
       },
     },
   ],

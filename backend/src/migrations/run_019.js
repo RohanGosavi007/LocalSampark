@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const db = require('../config/database.sqlite');
+const db = require('../config/database');
 const logger = require('../utils/logger'); // Or console.log
 
 async function runMigration() {

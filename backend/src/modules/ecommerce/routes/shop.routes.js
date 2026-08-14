@@ -70,7 +70,7 @@ router.get('/categories', async (req, res, next) => {
           const cats = [...new Set(sData.shops.map(s => s.category))].map((c, i) => ({ id: i + 1, name: c, slug: c.toLowerCase().replace(/ /g, '-'), icon_url: '' }));
           return res.json({ success: true, categories: cats });
         }
-      } catch(e) {}
+      } catch (e) { next(e); }
     }
     AuditLogger.log('api_access', { endpoint: '/categories', ip: req.ip });
 
@@ -154,7 +154,7 @@ router.get('/nearby', async (req, res, next) => {
           }
           return res.json({ shops: filteredShops, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
         }
-      } catch(e) {}
+      } catch (e) { next(e); }
     }
     
     // Check Redis cache first if no specific filters that change frequently
@@ -310,7 +310,7 @@ router.get('/:id', async (req, res, next) => {
             return res.json(mockShop);
           }
         }
-      } catch(e) {}
+      } catch (e) { next(e); }
     }
     const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [req.params.id]);
     if (!shop) return res.status(404).json({ error: 'Shop not found' });
@@ -330,8 +330,7 @@ router.post('/register', authenticate, async (req, res, next) => {
     // Generate UUID if DB doesn't auto-gen string IDs easily (using crypto)
     const id = crypto.randomUUID();
 
-    const shop = await queryOne(
-      `INSERT INTO local_shops (id, owner_id, region_id, name, description, category_id, phone_number, address, latitude, longitude, opening_hours, photo_urls, delivery_available, pickup_available, estimated_delivery_time, gst_number, bank_account, registration_metadata, approval_status)
+    const shop = await queryOne(`INSERT INTO local_shops (id, owner_id, region_id, name, description, category_id, phone_number, address, latitude, longitude, opening_hours, photo_urls, delivery_available, pickup_available, estimated_delivery_time, gst_number, bank_account, registration_metadata, approval_status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'pending')
        RETURNING *`,
       [id, req.user.id, req.user.regionId, name, description, category_id, phoneNumber, address, latitude, longitude, JSON.stringify(openingHours || {}), JSON.stringify(photoUrls || []), delivery_available ? 1:0, pickup_available ? 1:0, estimated_delivery_time, gst_number, JSON.stringify(bank_account||{}), JSON.stringify(registration_metadata||{})]
@@ -365,8 +364,7 @@ router.get('/:id/products', async (req, res, next) => {
 router.post('/:id/products', authenticate, async (req, res, next) => {
   try {
     const { name, description, price, imageUrl } = req.body;
-    const product = await queryOne(
-      `INSERT INTO shop_products (shop_id, name, description, price, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    const product = await queryOne(`INSERT INTO shop_products (shop_id, name, description, price, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [req.params.id, name, description, price, imageUrl]
     );
     res.status(201).json(product);
@@ -393,8 +391,7 @@ router.get('/:id/services', async (req, res, next) => {
 router.post('/:id/services', authenticate, async (req, res, next) => {
   try {
     const { name, description, duration_minutes, price, image_url, category, display_order } = req.body;
-    const s = await queryOne(
-      `INSERT INTO shop_services (id, shop_id, name, description, duration_minutes, price, image_url, category, display_order) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    const s = await queryOne(`INSERT INTO shop_services (id, shop_id, name, description, duration_minutes, price, image_url, category, display_order) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [crypto.randomUUID(), req.params.id, name, description, duration_minutes, price, image_url, category, display_order]
     );
     res.status(201).json(s);
@@ -421,8 +418,7 @@ router.get('/:id/staff', async (req, res, next) => {
 router.post('/:id/staff', authenticate, async (req, res, next) => {
   try {
     const { name, role, profileImage, specialization, phone_number, experience_years } = req.body;
-    const s = await queryOne(
-      `INSERT INTO shop_staff (shop_id, name, role, profile_image, specialization, phone_number, experience_years) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    const s = await queryOne(`INSERT INTO shop_staff (shop_id, name, role, profile_image, specialization, phone_number, experience_years) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [req.params.id, name, role, profileImage, specialization, phone_number, experience_years]
     );
     res.status(201).json(s);
@@ -536,8 +532,7 @@ router.post('/:id/orders', authenticate, async (req, res, next) => {
     const serviceItems = items.filter(item => item.type === 'service');
 
     if (productItems.length > 0) {
-      order = await queryOne(
-        `INSERT INTO shop_orders (id, shop_id, user_id, total_amount, items, payment_method, delivery_type, delivery_address, delivery_coordinate, customer_name, customer_phone, tracking_otp, status) 
+      order = await queryOne(`INSERT INTO shop_orders (id, shop_id, user_id, total_amount, items, payment_method, delivery_type, delivery_address, delivery_coordinate, customer_name, customer_phone, tracking_otp, status) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending') RETURNING *`,
         [crypto.randomUUID(), req.params.id, req.user.id, totalAmount, JSON.stringify(productItems), paymentMethod, deliveryType, deliveryAddress, deliveryCoordinate, customerName, customerPhone, Math.floor(1000+Math.random()*9000).toString()]
       );
@@ -565,8 +560,7 @@ router.post('/:id/orders', authenticate, async (req, res, next) => {
     const createdAppointments = [];
     if (serviceItems.length > 0 && appointmentDetails) {
       for (const service of serviceItems) {
-        const appt = await queryOne(
-          `INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, service_id, appointment_date, time_slot, payment_method, status) 
+        const appt = await queryOne(`INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, service_id, appointment_date, time_slot, payment_method, status) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending') RETURNING *`,
           [crypto.randomUUID(), req.params.id, appointmentDetails.staffId, req.user.id, service.id, appointmentDetails.appointmentDate, appointmentDetails.timeSlot, paymentMethod]
         );
@@ -940,13 +934,46 @@ router.post('/upload/single', authenticate, upload.single('file'), async (req, r
   } catch (error) { next(error); }
 });
 
-// Stub endpoints for shop offers and reviews
-router.get('/:id/offers', async (req, res) => {
-  res.json({ success: true, data: [] });
+// Shop offers endpoint — queries shop_offers table
+router.get('/:id/offers', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await query(`SELECT id, title, description, discount_percentage, valid_until, is_active, created_at
+       FROM shop_offers
+       WHERE shop_id = $1 AND is_active = true AND (valid_until IS NULL OR valid_until > NOW())
+       ORDER BY created_at DESC`,
+      [id]
+    );
+    const offers = result.rows || result || [];
+    res.json({ success: true, data: offers });
+  } catch (error) { next(error); }
 });
 
-router.get('/:id/reviews', async (req, res) => {
-  res.json({ success: true, data: [] });
+// Shop reviews endpoint — queries shop_reviews table with user info
+router.get('/:id/reviews', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await query(`SELECT sr.id, sr.rating, sr.review_text, sr.photo_urls, sr.created_at,
+              u.name as user_name, u.avatar_url as user_avatar
+       FROM shop_reviews sr
+       LEFT JOIN users u ON sr.user_id = u.id
+       WHERE sr.shop_id = $1
+       ORDER BY sr.created_at DESC
+       LIMIT 50`,
+      [id]
+    );
+    const reviews = result.rows || result || [];
+    
+    // Calculate aggregate rating
+    let avgRating = 0;
+    if (reviews.length > 0) {
+      const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+      avgRating = parseFloat((sum / reviews.length).toFixed(1));
+    }
+    
+    res.json({ success: true, data: reviews, meta: { averageRating: avgRating, totalReviews: reviews.length } });
+  } catch (error) { next(error); }
 });
 
 module.exports = router;
+

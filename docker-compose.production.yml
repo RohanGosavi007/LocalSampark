@@ -12,8 +12,6 @@ services:
       POSTGRES_DB: localsampark
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U localsampark_user -d localsampark"]
       interval: 10s
@@ -43,8 +41,6 @@ services:
       LOG_CONNECTIONS: 0
       LOG_DISCONNECTIONS: 0
       IGNORE_STARTUP_PARAMETERS: extra_float_digits
-    ports:
-      - "6432:6432"
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,8 +51,6 @@ services:
     container_name: localsampark-redis
     restart: unless-stopped
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -72,8 +66,6 @@ services:
       dockerfile: Dockerfile
     container_name: localsampark-api
     restart: unless-stopped
-    ports:
-      - "5000:5000"
     depends_on:
       pgbouncer:
         condition: service_started
@@ -105,8 +97,6 @@ services:
       dockerfile: Dockerfile
     container_name: localsampark-web
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     depends_on:
       - api
     env_file:

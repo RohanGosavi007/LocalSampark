@@ -23,8 +23,7 @@ router.post('/', authenticate, async (req, res, next) => {
   try {
     const { title, description, category, venue, eventDate, startTime, endTime, maxAttendees, isPaid, ticketPrice, coverImageUrl } = req.body;
     const eventId = crypto.randomUUID();
-    const event = await queryOne(
-      `INSERT INTO events (id, organizer_id, title, description, category, venue, event_date, start_time, end_time, max_attendees, is_paid, ticket_price, cover_image_url)
+    const event = await queryOne(`INSERT INTO events (id, organizer_id, title, description, category, venue, event_date, start_time, end_time, max_attendees, is_paid, ticket_price, cover_image_url)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [eventId, req.user.id, title, description, category || 'other', venue, eventDate, startTime, endTime, maxAttendees || null, isPaid || false, ticketPrice || 0.00, coverImageUrl || null]

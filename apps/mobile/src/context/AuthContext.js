@@ -5,21 +5,17 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 
-// ── Secure Token Storage Helpers ──
-// Sensitive data (JWT tokens) → encrypted keychain/keystore via SecureStore
-// Non-sensitive data (user profile, role names) → AsyncStorage for fast reads
 export const SecureTokenStorage = {
   async setToken(key, value) {
     try {
       if (Platform.OS !== 'web') {
-        await SecureStore.setItemAsync(key, value).catch(e => {
-          console.warn(`SecureStore.setItemAsync failed for ${key}:`, e.message);
-        });
+        await SecureStore.setItemAsync(key, value);
+      } else {
+        await AsyncStorage.setItem(`sec_${key}`, value);
       }
     } catch (e) {
       console.warn(`SecureStore error for ${key}:`, e.message);
-    } finally {
-      // Always store in AsyncStorage as fail-safe fallback
+      // Fallback for Android/iOS if SecureStore is completely broken (rare)
       await AsyncStorage.setItem(`sec_${key}`, value);
     }
   },

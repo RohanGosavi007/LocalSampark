@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Link as LinkIcon, Plus, Megaphone, Activity, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function AdCampaignsPage() {
   const [banners, setBanners] = useState([]);
@@ -13,7 +14,7 @@ export default function AdCampaignsPage() {
   const fetchBanners = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/ads/banners', {
+      const res = await fetch(API_BASE + '/admin/ads/banners', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -36,7 +37,7 @@ export default function AdCampaignsPage() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/ads/banners', {
+      const res = await fetch(API_BASE + '/admin/ads/banners', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_url: imageUrl, deep_link: deepLink })
@@ -61,7 +62,7 @@ export default function AdCampaignsPage() {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/ads/banners/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/ads/banners/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

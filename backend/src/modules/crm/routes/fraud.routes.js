@@ -48,8 +48,7 @@ router.get('/signals', authenticate, requireAdmin, async (req, res, next) => {
 
     params.push(parseInt(limit), offset);
 
-    const signals = await queryMany(
-      `SELECT * FROM fraud_signals ${whereClause}
+    const signals = await queryMany(`SELECT * FROM fraud_signals ${whereClause}
        ORDER BY CASE severity
          WHEN 'critical' THEN 1 WHEN 'high' THEN 2
          WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5
@@ -59,8 +58,7 @@ router.get('/signals', authenticate, requireAdmin, async (req, res, next) => {
     );
 
     const countParams = params.slice(0, -2);
-    const total = await queryOne(
-      `SELECT COUNT(*) as cnt FROM fraud_signals ${whereClause}`,
+    const total = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals ${whereClause}`,
       countParams
     );
 
@@ -80,8 +78,7 @@ router.get('/signals', authenticate, requireAdmin, async (req, res, next) => {
  */
 router.get('/signals/:signalId', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const signal = await queryOne(
-      `SELECT * FROM fraud_signals WHERE id = $1`, [req.params.signalId]
+    const signal = await queryOne(`SELECT * FROM fraud_signals WHERE id = $1`, [req.params.signalId]
     );
     if (!signal) return res.status(404).json({ error: 'Signal not found' });
 
@@ -111,8 +108,7 @@ router.put('/signals/:signalId/review', authenticate, requireAdmin, async (req, 
       return res.status(400).json({ error: 'action must be: confirmed, false_positive, or resolved' });
     }
 
-    await query(
-      `UPDATE fraud_signals SET status = $1, reviewed_by = $2, reviewed_at = datetime('now'), review_notes = $3
+    await query(`UPDATE fraud_signals SET status = $1, reviewed_by = $2, reviewed_at = datetime('now'), review_notes = $3
        WHERE id = $4`,
       [action, adminId, notes || null, signalId]
     );
@@ -148,14 +144,12 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
     stats.confirmed = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'confirmed'`);
     stats.falsePositive = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'false_positive'`);
 
-    const byType = await queryMany(
-      `SELECT signal_type, COUNT(*) as count FROM fraud_signals
+    const byType = await queryMany(`SELECT signal_type, COUNT(*) as count FROM fraud_signals
        WHERE created_at >= datetime('now', '-30 days')
        GROUP BY signal_type ORDER BY count DESC`
     );
 
-    const blockedEntities = await queryOne(
-      `SELECT COUNT(*) as cnt FROM fraud_blocklist WHERE is_active = 1`
+    const blockedEntities = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_blocklist WHERE is_active = 1`
     );
 
     res.json({
@@ -189,8 +183,7 @@ router.post('/blocklist', authenticate, requireAdmin, async (req, res, next) => 
     const crypto = require('crypto');
     const id = crypto.randomUUID();
 
-    await query(
-      `INSERT OR REPLACE INTO fraud_blocklist (id, entity_type, entity_value, reason, blocked_by, expires_at)
+    await query(`INSERT OR REPLACE INTO fraud_blocklist (id, entity_type, entity_value, reason, blocked_by, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [id, entity_type, entity_value, reason, adminId, expires_at || null]
     );

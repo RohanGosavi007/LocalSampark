@@ -10,8 +10,7 @@ const createListing = async (req, res, next) => {
     const { itemName, category, description, dailyPrice, securityDeposit, imageUrl } = req.body;
     const userId = req.user.id;
 
-    const newItem = await query(
-      `INSERT INTO equipment_listings (owner_id, item_name, category, description, daily_price, security_deposit, image_url, status) 
+    const newItem = await query(`INSERT INTO equipment_listings (owner_id, item_name, category, description, daily_price, security_deposit, image_url, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'available') RETURNING *`,
       [userId, itemName, category, description, dailyPrice, securityDeposit, imageUrl || '']
     );
@@ -51,8 +50,7 @@ const rentEquipment = async (req, res, next) => {
 
     await withTransaction(async (client) => {
       // 1. Lock the equipment row to prevent double booking
-      const itemResult = await client.query(
-        `SELECT * FROM equipment_listings WHERE id = $1 AND status = 'available' FOR UPDATE`, 
+      const itemResult = await client.query(`SELECT * FROM equipment_listings WHERE id = $1 AND status = 'available' FOR UPDATE`, 
         [equipmentId]
       );
       const item = itemResult.rows[0];
@@ -72,8 +70,7 @@ const rentEquipment = async (req, res, next) => {
 
       // 3. If using coins, lock the wallet and deduct safely
       if (totalCoinsRequired > 0) {
-        const walletResult = await client.query(
-          `SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
+        const walletResult = await client.query(`SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
           [userId]
         );
         const wallet = walletResult.rows[0];
@@ -83,8 +80,7 @@ const rentEquipment = async (req, res, next) => {
         }
         
         await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [totalCoinsRequired, userId]);
-        await client.query(
-          `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Equipment Rent Escrow')`,
+        await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Equipment Rent Escrow')`,
           [userId, totalCoinsRequired]
         );
       }
@@ -93,8 +89,7 @@ const rentEquipment = async (req, res, next) => {
       await client.query(`UPDATE equipment_listings SET status = 'rented' WHERE id = $1`, [equipmentId]);
 
       // 5. Create rental record with escrow
-      const rental = await client.query(
-        `INSERT INTO equipment_rentals (equipment_id, renter_id, days, rent_paid_fiat, rent_paid_coins, escrow_deposit_fiat, status) 
+      const rental = await client.query(`INSERT INTO equipment_rentals (equipment_id, renter_id, days, rent_paid_fiat, rent_paid_coins, escrow_deposit_fiat, status) 
          VALUES ($1, $2, $3, $4, $5, $6, 'active') RETURNING *`,
         [equipmentId, userId, days, totalFiatRequired - deposit, totalCoinsRequired, deposit]
       );

@@ -151,7 +151,7 @@ async function updateOrderStatus(req, res, next) {
     const { status, preparation_time_minutes, rejection_reason } = req.body;
     const shop = req.shop;
 
-    const order = await queryOne('SELECT * FROM universal_orders WHERE id = ? AND shop_id = ?', [orderId, shop.id]);
+    const order = await queryOne('SELECT * FROM universal_orders WHERE id = $1 AND shop_id = $2', [orderId, shop.id]);
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
     // Validate state transitions
@@ -172,13 +172,12 @@ async function updateOrderStatus(req, res, next) {
       return res.status(400).json({ error: `Invalid transition from ${currentStatus} to ${newStatus}` });
     }
 
-    await query(
-      `UPDATE universal_orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    await query(`UPDATE universal_orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
       [newStatus, orderId]
     );
 
-    const updated = await queryOne('SELECT * FROM universal_orders WHERE id = ?', [orderId]);
-    const customer = await queryOne('SELECT * FROM users WHERE id = ?', [updated.user_id]);
+    const updated = await queryOne('SELECT * FROM universal_orders WHERE id = $1', [orderId]);
+    const customer = await queryOne('SELECT * FROM users WHERE id = $1', [updated.user_id]);
     const shopInfo = shop;
 
     // Send notifications
@@ -246,7 +245,7 @@ async function getShopOrders(req, res, next) {
     // Fetch items for each order to format like prisma response
     const orders = [];
     for (let o of ordersData) {
-      const items = await queryMany('SELECT uoi.*, uci.title as product_name FROM universal_order_items uoi JOIN universal_catalog_items uci ON uoi.item_id = uci.id WHERE uoi.order_id = ?', [o.id]);
+      const items = await queryMany('SELECT uoi.*, uci.title as product_name FROM universal_order_items uoi JOIN universal_catalog_items uci ON uoi.item_id = uci.id WHERE uoi.order_id = $1', [o.id]);
       orders.push({
         ...o,
         id: o.id.toString(), // stringify for react key
@@ -269,8 +268,7 @@ async function getShopLedger(req, res, next) {
     const shop = req.shop;
 
     // Fetch all completed/delivered orders for this shop to calculate ledger
-    const orders = await queryMany(
-      "SELECT id, total_amount, created_at, status FROM universal_orders WHERE shop_id = ? AND status IN ('DELIVERED', 'COMPLETED')",
+    const orders = await queryMany("SELECT id, total_amount, created_at, status FROM universal_orders WHERE shop_id = $1 AND status IN ('DELIVERED', 'COMPLETED')",
       [shop.id]
     );
 
@@ -574,8 +572,7 @@ async function updateStaff(req, res, next) {
     updates.push('updated_at = CURRENT_TIMESTAMP');
     params.push(staffId);
 
-    const updated = await queryOne(
-      `UPDATE shop_staff SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params
+    const updated = await queryOne(`UPDATE shop_staff SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params
     );
 
     res.json({ success: true, staff: updated });
@@ -591,8 +588,7 @@ async function updateStaffAvailability(req, res, next) {
     const staff = await queryOne('SELECT * FROM shop_staff WHERE id = $1 AND shop_id = $2', [staffId, shop.id]);
     if (!staff) return res.status(404).json({ error: 'Staff not found' });
 
-    const updated = await queryOne(
-      'UPDATE shop_staff SET availability = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+    const updated = await queryOne('UPDATE shop_staff SET availability = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
       [JSON.stringify(availability), staffId]
     );
 
@@ -610,8 +606,7 @@ async function createDispute(req, res, next) {
     const userId = req.user.id;
     const id = crypto.randomUUID();
 
-    const dispute = await queryOne(
-      `INSERT INTO shop_disputes (id, shop_id, order_id, appointment_id, initiator_id, initiator_role, category, description, photo_urls)
+    const dispute = await queryOne(`INSERT INTO shop_disputes (id, shop_id, order_id, appointment_id, initiator_id, initiator_role, category, description, photo_urls)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [id, shopId, orderId || null, appointmentId || null, userId,
        req.user.role === 'shop_owner' ? 'shop_owner' : 'visitor',
@@ -639,8 +634,7 @@ async function createReturn(req, res, next) {
     if (order.status !== 'delivered') return res.status(400).json({ error: 'Only delivered orders can be returned' });
 
     const id = crypto.randomUUID();
-    const returnRecord = await queryOne(
-      `INSERT INTO shop_returns (id, order_id, shop_id, user_id, reason, description, photo_urls, return_items)
+    const returnRecord = await queryOne(`INSERT INTO shop_returns (id, order_id, shop_id, user_id, reason, description, photo_urls, return_items)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [id, orderId, order.shop_id, userId, reason, description || '',
        JSON.stringify(photoUrls || []), JSON.stringify(returnItems || [])]
@@ -679,8 +673,7 @@ async function getChatMessages(req, res, next) {
 
     const otherUserId = isOwner ? userId : shop.owner_id;
 
-    const messages = await query(
-      `SELECT m.*, u.full_name as sender_name FROM shop_chat_messages m
+    const messages = await query(`SELECT m.*, u.full_name as sender_name FROM shop_chat_messages m
        LEFT JOIN users u ON m.sender_id = u.id
        WHERE m.shop_id = $1
          AND ((m.sender_id = $2 AND m.receiver_id = $3) OR (m.sender_id = $3 AND m.receiver_id = $2))
@@ -689,8 +682,7 @@ async function getChatMessages(req, res, next) {
     );
 
     // Mark as read
-    await query(
-      `UPDATE shop_chat_messages SET is_read = 1, read_at = CURRENT_TIMESTAMP
+    await query(`UPDATE shop_chat_messages SET is_read = 1, read_at = CURRENT_TIMESTAMP
        WHERE shop_id = $1 AND receiver_id = $2 AND sender_id = $3 AND is_read = 0`,
       [shopId, currentUserId, otherUserId]
     );
@@ -712,8 +704,7 @@ async function sendChatMessage(req, res, next) {
     const receiverId = isOwner ? userId : shop.owner_id;
 
     const id = crypto.randomUUID();
-    const chatMessage = await queryOne(
-      `INSERT INTO shop_chat_messages (id, shop_id, sender_id, receiver_id, message, message_type, reference_id)
+    const chatMessage = await queryOne(`INSERT INTO shop_chat_messages (id, shop_id, sender_id, receiver_id, message, message_type, reference_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [id, shopId, senderId, receiverId, message, messageType || 'text', referenceId || null]
     );
@@ -749,8 +740,7 @@ async function createJobCard(req, res, next) {
     const jobNumber = `JC${String(parseInt(countResult?.c || 0) + 1).padStart(4, '0')}`;
 
     const id = crypto.randomUUID();
-    const jobCard = await queryOne(
-      `INSERT INTO job_cards (id, shop_id, customer_id, job_number, title, description, item_type, item_identifier, estimated_cost, priority)
+    const jobCard = await queryOne(`INSERT INTO job_cards (id, shop_id, customer_id, job_number, title, description, item_type, item_identifier, estimated_cost, priority)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [id, shop.id, customerId || null, jobNumber, title, description || '',
        itemType || '', itemIdentifier || '', estimatedCost || 0, priority || 'normal']
@@ -795,8 +785,7 @@ async function updateJobCard(req, res, next) {
     }
 
     params.push(jobCardId);
-    const updated = await queryOne(
-      `UPDATE job_cards SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params
+    const updated = await queryOne(`UPDATE job_cards SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params
     );
 
     // Notify customer
@@ -833,8 +822,7 @@ async function getJobCards(req, res, next) {
 
     if (status) { whereClause += ` AND jc.status = $${idx}`; params.push(status); idx++; }
 
-    const jobCards = await query(
-      `SELECT jc.*, u.full_name as customer_name, u.phone_number as customer_phone
+    const jobCards = await query(`SELECT jc.*, u.full_name as customer_name, u.phone_number as customer_phone
        FROM job_cards jc LEFT JOIN users u ON jc.customer_id = u.id
        ${whereClause} ORDER BY jc.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, parseInt(limit), offset]
@@ -858,8 +846,7 @@ async function createQuotation(req, res, next) {
     const finalAmount = totalAmount - (discount || 0);
 
     const id = crypto.randomUUID();
-    const quotation = await queryOne(
-      `INSERT INTO service_quotations (id, shop_id, customer_id, service_request_description, items,
+    const quotation = await queryOne(`INSERT INTO service_quotations (id, shop_id, customer_id, service_request_description, items,
        labour_charge, material_charge, total_amount, discount_amount, final_amount, validity_days,
        service_address, preferred_date, preferred_time, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'sent') RETURNING *`,
@@ -934,8 +921,7 @@ async function updateKDSTicket(req, res, next) {
     if (status === 'ready') updates.push(`ready_at = '${new Date().toISOString()}'`);
     if (status === 'served') updates.push(`served_at = '${new Date().toISOString()}'`);
 
-    const updated = await queryOne(
-      `UPDATE kds_tickets SET ${updates.join(', ')} WHERE id = $1 AND shop_id = $2 RETURNING *`,
+    const updated = await queryOne(`UPDATE kds_tickets SET ${updates.join(', ')} WHERE id = $1 AND shop_id = $2 RETURNING *`,
       [ticketId, shop.id]
     );
     if (!updated) return res.status(404).json({ error: 'Ticket not found' });
@@ -955,8 +941,7 @@ async function getKDSTickets(req, res, next) {
     const params = [shop.id];
     if (status) { whereClause += ' AND status = $2'; params.push(status); }
 
-    const tickets = await query(
-      `SELECT * FROM kds_tickets ${whereClause} ORDER BY ticket_number ASC`, params
+    const tickets = await query(`SELECT * FROM kds_tickets ${whereClause} ORDER BY ticket_number ASC`, params
     );
 
     res.json({ success: true, tickets: tickets.rows || tickets });
@@ -986,8 +971,7 @@ async function updateTableStatus(req, res, next) {
     if (status === 'available') updates.push(`occupied_at = NULL`, `current_order_id = NULL`);
     if (currentOrderId) updates.push(`current_order_id = '${currentOrderId}'`);
 
-    const updated = await queryOne(
-      `UPDATE restaurant_tables SET ${updates.join(', ')} WHERE id = $1 AND shop_id = $2 RETURNING *`,
+    const updated = await queryOne(`UPDATE restaurant_tables SET ${updates.join(', ')} WHERE id = $1 AND shop_id = $2 RETURNING *`,
       [tableId, shop.id]
     );
     if (!updated) return res.status(404).json({ error: 'Table not found' });
@@ -1048,8 +1032,7 @@ async function getShopAnalytics(req, res, next) {
 async function getShopPayouts(req, res, next) {
   try {
     const shop = req.shop;
-    const payouts = await query(
-      'SELECT * FROM shop_owner_payouts WHERE shop_id = $1 ORDER BY created_at DESC LIMIT 50',
+    const payouts = await query('SELECT * FROM shop_owner_payouts WHERE shop_id = $1 ORDER BY created_at DESC LIMIT 50',
       [shop.id]
     );
     res.json({ success: true, payouts: payouts.rows || payouts });
@@ -1113,8 +1096,7 @@ async function getVisitorOrderHistory(req, res, next) {
     if (status) { whereClause += ` AND status = $${idx}`; params.push(status); idx++; }
 
     // Use the view we created in migration
-    const history = await query(
-      `SELECT * FROM visitor_order_history ${whereClause} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+    const history = await query(`SELECT * FROM visitor_order_history ${whereClause} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, parseInt(limit), offset]
     );
 
@@ -1198,8 +1180,7 @@ async function createReturn(req, res, next) {
 async function getShopLeads(req, res, next) {
   try {
     const shop = req.shop;
-    const leads = await queryMany(
-      'SELECT ul.*, u.name as customer_name, u.phone as customer_phone FROM universal_leads ul JOIN users u ON ul.user_id = u.id WHERE ul.shop_id = ? ORDER BY ul.created_at DESC',
+    const leads = await queryMany('SELECT ul.*, u.name as customer_name, u.phone as customer_phone FROM universal_leads ul JOIN users u ON ul.user_id = u.id WHERE ul.shop_id = $1 ORDER BY ul.created_at DESC',
       [shop.id]
     );
 
@@ -1213,8 +1194,7 @@ async function updateLeadStatus(req, res, next) {
     const { leadId } = req.params;
     const { status } = req.body;
 
-    await query(
-      'UPDATE universal_leads SET lead_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND shop_id = ?',
+    await query('UPDATE universal_leads SET lead_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND shop_id = $3',
       [status.toUpperCase(), leadId, shop.id]
     );
 
@@ -1227,7 +1207,7 @@ async function updateLeadStatus(req, res, next) {
 async function getShopStaff(req, res, next) {
   try {
     const shop = req.shop;
-    const staff = await queryMany('SELECT * FROM shop_staff WHERE shop_id = ? ORDER BY created_at DESC', [shop.id]);
+    const staff = await queryMany('SELECT * FROM shop_staff WHERE shop_id = $1 ORDER BY created_at DESC', [shop.id]);
     res.json({ success: true, staff });
   } catch (error) { next(error); }
 }
@@ -1236,8 +1216,7 @@ async function addShopStaff(req, res, next) {
   try {
     const shop = req.shop;
     const { name, role, phone, email, status, shift, commission } = req.body;
-    await query(
-      'INSERT INTO shop_staff (shop_id, name, role, phone, email, status, shift, commission) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    await query('INSERT INTO shop_staff (shop_id, name, role, phone, email, status, shift, commission) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
       [shop.id, name, role, phone, email, status || 'Active', shift, commission || 0.0]
     );
     res.json({ success: true, message: 'Staff added successfully' });
@@ -1249,8 +1228,7 @@ async function updateShopStaff(req, res, next) {
     const shop = req.shop;
     const { staffId } = req.params;
     const { name, role, phone, email, status, shift, commission } = req.body;
-    await query(
-      'UPDATE shop_staff SET name=?, role=?, phone=?, email=?, status=?, shift=?, commission=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND shop_id=?',
+    await query('UPDATE shop_staff SET name=$1, role=$2, phone=$3, email=$4, status=$5, shift=$6, commission=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8 AND shop_id=$9',
       [name, role, phone, email, status, shift, commission, staffId, shop.id]
     );
     res.json({ success: true, message: 'Staff updated successfully' });
@@ -1261,7 +1239,7 @@ async function removeShopStaff(req, res, next) {
   try {
     const shop = req.shop;
     const { staffId } = req.params;
-    await query('DELETE FROM shop_staff WHERE id=? AND shop_id=?', [staffId, shop.id]);
+    await query('DELETE FROM shop_staff WHERE id=$1 AND shop_id=$2', [staffId, shop.id]);
     res.json({ success: true, message: 'Staff removed successfully' });
   } catch (error) { next(error); }
 }
@@ -1269,7 +1247,7 @@ async function removeShopStaff(req, res, next) {
 async function getShopReviews(req, res, next) {
   try {
     const shop = req.shop;
-    const reviews = await queryMany('SELECT * FROM shop_reviews WHERE shop_id = ? ORDER BY created_at DESC', [shop.id]);
+    const reviews = await queryMany('SELECT * FROM shop_reviews WHERE shop_id = $1 ORDER BY created_at DESC', [shop.id]);
     res.json({ success: true, reviews });
   } catch (error) { next(error); }
 }
@@ -1279,7 +1257,7 @@ async function replyToShopReview(req, res, next) {
     const shop = req.shop;
     const { reviewId } = req.params;
     const { reply } = req.body;
-    await query('UPDATE shop_reviews SET reply=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND shop_id=?', [reply, reviewId, shop.id]);
+    await query('UPDATE shop_reviews SET reply=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND shop_id=$3', [reply, reviewId, shop.id]);
     res.json({ success: true, message: 'Reply added successfully' });
   } catch (error) { next(error); }
 }
@@ -1290,7 +1268,7 @@ async function getShopAnalyticsData(req, res, next) {
     
     // In a full implementation, this might read from shop_analytics_snapshots table.
     // For now, we will dynamically aggregate from universal_orders.
-    const orders = await queryMany('SELECT * FROM universal_orders WHERE shop_id = ?', [shop.id]);
+    const orders = await queryMany('SELECT * FROM universal_orders WHERE shop_id = $1', [shop.id]);
     
     let totalRevenue = 0;
     let completedOrders = 0;
@@ -1329,7 +1307,7 @@ async function searchDirectory(req, res, next) {
         SELECT s.id, s.name, s.description, s.category, s.cover_image, s.rating, s.total_ratings, s.is_promoted
         FROM shop_search_index fts
         JOIN local_shops s ON fts.shop_id = s.id
-        WHERE shop_search_index MATCH ?
+        WHERE shop_search_index MATCH $1
         ORDER BY s.is_promoted DESC, rank LIMIT 50
       `, [q]);
     } catch (ftsError) {
@@ -1337,7 +1315,7 @@ async function searchDirectory(req, res, next) {
       shops = await queryMany(`
         SELECT id, name, description, category, cover_image, rating, total_ratings, is_promoted
         FROM local_shops 
-        WHERE name LIKE ? OR description LIKE ? OR category LIKE ?
+        WHERE name LIKE $1 OR description LIKE $2 OR category LIKE $3
         ORDER BY is_promoted DESC
         LIMIT 50
       `, [`%${q}%`, `%${q}%`, `%${q}%`]);
@@ -1354,8 +1332,8 @@ async function assignRiderToOrder(req, res, next) {
     const { riderId } = req.body;
     
     // Assign rider
-    await query('UPDATE universal_orders SET rider_id = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [riderId, 'dispatched', orderId]);
-    await query('UPDATE delivery_riders SET status = ?, current_order_id = ? WHERE id = ?', ['on_delivery', orderId, riderId]);
+    await query('UPDATE universal_orders SET rider_id = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [riderId, 'dispatched', orderId]);
+    await query('UPDATE delivery_riders SET status = $1, current_order_id = $2 WHERE id = $3', ['on_delivery', orderId, riderId]);
 
     // Broadcast Socket
     const io = req.app.get('io');

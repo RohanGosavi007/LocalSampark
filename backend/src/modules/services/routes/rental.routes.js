@@ -7,8 +7,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 router.post('/properties', authenticate, async (req, res, next) => {
   try {
     const { userId, title, description, propertyType, listingType, price, deposit, coordinate } = req.body;
-    const result = await db.query(
-      `INSERT INTO property_listings (user_id, title, description, property_type, listing_type, price, deposit, coordinate, is_verified, is_active)
+    const result = await db.query(`INSERT INTO property_listings (user_id, title, description, property_type, listing_type, price, deposit, coordinate, is_verified, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, true) RETURNING *`,
       [userId, title, description, propertyType, listingType, price, deposit, coordinate]
     );
@@ -22,8 +21,7 @@ router.post('/properties', authenticate, async (req, res, next) => {
 router.get('/dashboard/:landlordId', authenticate, async (req, res, next) => {
   try {
     const { landlordId } = req.params;
-    const listings = await db.queryMany(
-      `SELECT * FROM property_listings WHERE user_id = $1`,
+    const listings = await db.queryMany(`SELECT * FROM property_listings WHERE user_id = $1`,
       [landlordId]
     );
     

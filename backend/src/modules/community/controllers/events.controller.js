@@ -72,8 +72,7 @@ const createEvent = async (req, res, next) => {
       status = 'active';
     }
 
-    const newEvent = await query(
-      `INSERT INTO events (organizer_id, title, description, event_date, location, ticket_price, total_tickets, available_tickets, allow_coin_discount, status) 
+    const newEvent = await query(`INSERT INTO events (organizer_id, title, description, event_date, location, ticket_price, total_tickets, available_tickets, allow_coin_discount, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [userId, title, description, eventDate, location, ticketPrice, totalTickets, totalTickets, allowCoinDiscount, status]
     );
@@ -155,8 +154,7 @@ const bookTicket = async (req, res, next) => {
 
         // Deduct from wallet
         await query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [coinsDeducted, userId]);
-        await query(
-          `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Event Ticket Discount')`,
+        await query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Event Ticket Discount')`,
           [userId, coinsDeducted]
         );
       }
@@ -169,8 +167,7 @@ const bookTicket = async (req, res, next) => {
     const bookingRef = 'TKT-' + Math.random().toString(36).substring(2, 9).toUpperCase();
     const qrCodeFake = 'QR_' + bookingRef;
 
-    await query(
-      `INSERT INTO event_tickets (id, event_id, user_id, ticket_count, total_price, qr_code) 
+    await query(`INSERT INTO event_tickets (id, event_id, user_id, ticket_count, total_price, qr_code) 
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [bookingRef, eventId, userId, qty, finalPrice, qrCodeFake]
     );

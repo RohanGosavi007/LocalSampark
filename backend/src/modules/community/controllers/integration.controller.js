@@ -1,8 +1,8 @@
-const { query, queryMany, queryOne } = require('../../../config/database.sqlite');
+const { query, queryMany, queryOne } = require('../../../config/database');
 const exceljs = require('exceljs');
 
 // ═══════════════════════════════════════════════════════════════
-// TALLY TDL / XML STUB (Phase 10.2)
+// TALLY TDL / XML EXPORT (Phase 10.2)
 // ═══════════════════════════════════════════════════════════════
 
 const exportTallyXML = async (req, res, next) => {
@@ -10,16 +10,16 @@ const exportTallyXML = async (req, res, next) => {
         const societyId = await getSocietyIdForUser(req.user.id);
         const { month } = req.query; // Format: YYYY-MM
         
-        const bills = await queryMany(
-            `SELECT smb.*, u.full_name as member_name 
+        const result = await query(`SELECT smb.*, u.name as member_name 
              FROM society_maintenance_bills smb
              JOIN society_members sm ON smb.member_id = sm.id
              JOIN users u ON sm.user_id = u.id
-             WHERE smb.society_id = ? AND smb.month = ? AND smb.payment_status = 'paid'`,
+             WHERE smb.society_id = $1 AND smb.month = $2 AND smb.payment_status = 'paid'`,
             [societyId, month]
         );
+        const bills = result.rows || result || [];
 
-        // Generate Tally XML Stub
+        // Generate Tally XML
         let xml = `<ENVELOPE>\n<HEADER>\n<TALLYREQUEST>Import Data</TALLYREQUEST>\n</HEADER>\n<BODY>\n<IMPORTDATA>\n<REQUESTDESC>\n<REPORTNAME>Vouchers</REPORTNAME>\n</REQUESTDESC>\n<REQUESTDATA>\n`;
 
         for (const bill of bills) {
@@ -28,7 +28,7 @@ const exportTallyXML = async (req, res, next) => {
             xml += `<DATE>${bill.paid_at ? new Date(bill.paid_at).toISOString().split('T')[0].replace(/-/g, '') : ''}</DATE>\n`;
             xml += `<NARRATION>Maintenance Receipt for Flat ${bill.flat_number} - ${month}</NARRATION>\n`;
             xml += `<VOUCHERTYPENAME>Receipt</VOUCHERTYPENAME>\n`;
-            xml += `<VOUCHERNUMBER>${bill.id.substring(0, 8)}</VOUCHERNUMBER>\n`;
+            xml += `<VOUCHERNUMBER>${bill.id.toString().substring(0, 8)}</VOUCHERNUMBER>\n`;
             xml += `<ALLLEDGERENTRIES.LIST>\n`;
             xml += `<LEDGERNAME>${bill.member_name} (Flat ${bill.flat_number})</LEDGERNAME>\n`;
             xml += `<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n`;
@@ -63,17 +63,19 @@ const exportVisitorsCSV = async (req, res, next) => {
         let sql = `
             SELECT sv.visitor_name, sv.visitor_phone, sv.purpose, sv.flat_number, 
                    sv.status, sv.created_at, sv.checked_in_at, sv.checked_out_at,
-                   u.full_name as resident_name 
+                   u.name as resident_name 
             FROM society_visitors sv
             LEFT JOIN users u ON sv.resident_id = u.id
-            WHERE sv.society_id = ?
+            WHERE sv.society_id = $1
         `;
         const params = [societyId];
-        if (dateFrom) { sql += ' AND date(sv.created_at) >= ?'; params.push(dateFrom); }
-        if (dateTo) { sql += ' AND date(sv.created_at) <= ?'; params.push(dateTo); }
+        let paramIndex = 2;
+        if (dateFrom) { sql += ` AND date(sv.created_at) >= $${paramIndex}`; params.push(dateFrom); paramIndex++; }
+        if (dateTo) { sql += ` AND date(sv.created_at) <= $${paramIndex}`; params.push(dateTo); paramIndex++; }
         sql += ' ORDER BY sv.created_at DESC';
 
-        const visitors = await queryMany(sql, params);
+        const result = await query(sql, params);
+        const visitors = result.rows || result || [];
 
         const workbook = new exceljs.Workbook();
         const worksheet = workbook.addWorksheet('Visitors');
@@ -105,14 +107,14 @@ const exportBillsCSV = async (req, res, next) => {
         const societyId = await getSocietyIdForUser(req.user.id);
         const { month } = req.query;
 
-        const bills = await queryMany(
-            `SELECT smb.*, u.full_name as member_name 
+        const result = await query(`SELECT smb.*, u.name as member_name 
              FROM society_maintenance_bills smb
              JOIN society_members sm ON smb.member_id = sm.id
              JOIN users u ON sm.user_id = u.id
-             WHERE smb.society_id = ? AND smb.month = ?`,
+             WHERE smb.society_id = $1 AND smb.month = $2`,
             [societyId, month]
         );
+        const bills = result.rows || result || [];
 
         const workbook = new exceljs.Workbook();
         const worksheet = workbook.addWorksheet('Bills');
@@ -139,8 +141,8 @@ const exportBillsCSV = async (req, res, next) => {
 };
 
 async function getSocietyIdForUser(userId) {
-    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = ? AND is_active = 1', [userId]);
-    return member ? member.society_id : null;
+    const result = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = true', [userId]);
+    return result ? result.society_id : null;
 }
 
 module.exports = {

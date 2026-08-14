@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Search, Filter, ShieldAlert, CheckCircle, XCircle, MoreVertical, Edit2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function UsersManagementPage() {
   const { adminUser } = useAdminAuth();
@@ -19,7 +20,7 @@ export default function UsersManagementPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/users?page=${page}&search=${search}`, {
+      const res = await fetch(`${API_BASE}/admin/users?page=${page}&search=${search}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -41,7 +42,7 @@ export default function UsersManagementPage() {
   const toggleStatus = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/users/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/users/${id}/status`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -62,7 +63,7 @@ export default function UsersManagementPage() {
   const saveRole = async (id) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/users/${id}/role`, {
+      const res = await fetch(`${API_BASE}/admin/users/${id}/role`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -91,7 +92,7 @@ export default function UsersManagementPage() {
         <button 
           onClick={() => {
             const token = localStorage.getItem('admin_token');
-            window.open(`http://localhost:5000/api/v1/admin/export/users?token=${token}`, '_blank');
+            window.open(`${API_BASE}/admin/export/users?token=${token}`, '_blank');
           }}
           className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg transition"
         >

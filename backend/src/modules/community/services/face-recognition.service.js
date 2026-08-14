@@ -1,6 +1,6 @@
 const faceapi = require('face-api.js');
 const { Canvas, Image, ImageData } = require('canvas');
-const { query, queryOne } = require('../../../config/database.sqlite');
+const { query, queryOne } = require('../../../config/database');
 const path = require('path');
 
 // Configure face-api to use canvas node bindings

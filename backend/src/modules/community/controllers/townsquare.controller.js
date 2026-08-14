@@ -50,8 +50,7 @@ const submitNewsTip = async (req, res, next) => {
     const bundledContent = JSON.stringify({ title, text: content, pincode });
 
     // We store the location in `coordinate` field temporarily since there's no location field.
-    const newArticle = await query(
-      `INSERT INTO posts (id, user_id, content, post_type, coordinate) 
+    const newArticle = await query(`INSERT INTO posts (id, user_id, content, post_type, coordinate) 
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [postId, userId, bundledContent, status, location || '']
     );
@@ -141,8 +140,7 @@ const createAdminPoll = async (req, res, next) => {
     }
 
     const pollId = crypto.randomUUID();
-    const newPoll = await query(
-      `INSERT INTO polls (id, user_id, question, options) 
+    const newPoll = await query(`INSERT INTO polls (id, user_id, question, options) 
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [pollId, userId, question, JSON.stringify(options)]
     );
@@ -172,8 +170,7 @@ const votePoll = async (req, res, next) => {
     }
 
     const voteId = crypto.randomUUID();
-    await query(
-      `INSERT INTO poll_votes (id, poll_id, user_id, selected_option) VALUES ($1, $2, $3, $4)`,
+    await query(`INSERT INTO poll_votes (id, poll_id, user_id, selected_option) VALUES ($1, $2, $3, $4)`,
       [voteId, pollId, userId, optionId]
     );
 

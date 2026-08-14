@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { query } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
@@ -27,7 +27,8 @@ router.post('/create-topup-order', authenticate, async (req, res, next) => {
         }
 
         const orderId = 'W_ORD_' + crypto.randomBytes(8).toString('hex');
-        const token = crypto.createHmac('sha256', process.env.JWT_SECRET || 'secret')
+        if (!process.env.JWT_SECRET) throw new Error('CRITICAL: JWT_SECRET is not configured');
+        const token = crypto.createHmac('sha256', process.env.JWT_SECRET)
                             .update(`${req.user.id}:${amount}:${orderId}`)
                             .digest('hex');
 
@@ -53,7 +54,8 @@ router.post('/verify-topup', authenticate, async (req, res, next) => {
         }
 
         // Verify token signature
-        const expectedToken = crypto.createHmac('sha256', process.env.JWT_SECRET || 'secret')
+        if (!process.env.JWT_SECRET) throw new Error('CRITICAL: JWT_SECRET is not configured');
+        const expectedToken = crypto.createHmac('sha256', process.env.JWT_SECRET)
                                     .update(`${req.user.id}:${amount}:${orderId}`)
                                     .digest('hex');
 
@@ -68,8 +70,7 @@ router.post('/verify-topup', authenticate, async (req, res, next) => {
         }
 
         const id = crypto.randomUUID();
-        await query(
-            'INSERT INTO wallet_transactions (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
+        await query('INSERT INTO wallet_transactions (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
             [id, req.user.id, amount, 'credit', `Wallet Top-up (${orderId})`]
         );
 
@@ -100,8 +101,7 @@ router.post('/unlock-lead', authenticate, async (req, res, next) => {
         const lead = leads[0];
 
         // Check for double unlock
-        const existingUnlock = await query(
-            'SELECT id FROM wallet_transactions WHERE user_id = $1 AND description LIKE $2',
+        const existingUnlock = await query('SELECT id FROM wallet_transactions WHERE user_id = $1 AND description LIKE $2',
             [req.user.id, `%Lead Unlock Fee (${lead_type.toUpperCase()} #${lead_id})%`]
         );
         if (existingUnlock.rows && existingUnlock.rows.length > 0) {
@@ -130,8 +130,7 @@ router.post('/unlock-lead', authenticate, async (req, res, next) => {
 
         // Deduct lead unlock fee
         const id = crypto.randomUUID();
-        await query(
-            'INSERT INTO wallet_transactions (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
+        await query('INSERT INTO wallet_transactions (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
             [id, req.user.id, -fee_amount, 'debit', `Lead Unlock Fee (${lead_type.toUpperCase()} #${lead_id})`]
         );
 

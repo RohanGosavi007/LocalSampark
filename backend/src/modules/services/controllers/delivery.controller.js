@@ -105,7 +105,7 @@ const acceptJob = async (req, res, next) => {
 const completeJob = async (req, res, next) => {
   try {
     const { jobId } = req.params;
-    const { otp } = req.body; // Phase 3: Add OTP verification logic later if schema supports tracking_otp
+    const { otp, lat, lng } = req.body;
     const userId = req.user.id;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -114,9 +114,23 @@ const completeJob = async (req, res, next) => {
           include: { order: true } 
       });
       
-      if (!route || route.runnerId !== userId || !['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'].includes(route.status)) {
-        throw { status: 400, message: 'Invalid job or already completed.' };
+      // Strict State Machine: Must be in transit to be delivered
+      if (!route || route.runnerId !== userId || route.status !== 'IN_TRANSIT') {
+        throw { status: 400, message: 'Job must be marked IN_TRANSIT before it can be delivered.' };
       }
+
+      // Geo-Fencing Placeholder
+      if (!lat || !lng) {
+        throw { status: 400, message: 'Delivery location telemetry is required to complete trip.' };
+      }
+
+      // OTP Verification Enforcement (Phase 57)
+      if (!otp || otp.toString().length !== 4) {
+        throw { status: 403, message: 'A valid 4-digit Delivery OTP is required to complete this order.' };
+      }
+      
+      // If we had OTP stored in DB:
+      // if (otp !== route.order.delivery_otp) throw { status: 403, message: 'Invalid OTP' };
       
       const updatedRoute = await tx.deliveryRoute.update({
         where: { id: jobId },

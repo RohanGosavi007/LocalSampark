@@ -4,6 +4,32 @@ const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
 const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
 const { requirePermission } = require('../../../middleware/rbac.middleware');
+const rateLimit = require('express-rate-limit');
+
+// Phase 48: God-Mode Security & Rate Limiting
+const globalAdminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 admin requests per windowMs
+  message: { success: false, error: 'Too many admin requests from this IP, please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const mutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 20, // Stricter limit for state-mutating requests
+  message: { success: false, error: 'Too many mutations from this IP, please try again later.' }
+});
+
+const impersonationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // Max 3 impersonation attempts per hour
+  message: { success: false, error: 'Too many impersonation attempts. Account locked for 1 hour.' }
+});
+
+// Apply global admin limiter to all routes here
+router.use(globalAdminLimiter);
+
 const apiCache = require('../../../middleware/cache.middleware');
 const { cacheDel } = require('../../../config/redis');
 const { calculateRevenueSplits, getFranchises, updateFranchiseSplit, getPendingPayouts, getDashboardStats, getRevenueChart } = require('../controllers/admin-revenue.controller');
@@ -11,6 +37,36 @@ const { getPendingApprovals, updateApprovalStatus } = require('../controllers/ad
 const { getRevenueModels, updateSubscriptionPlan, updateLoyaltyTier, updateConfig } = require('../controllers/admin-revenue-models.controller');
 const { getUsers, updateUserStatus, updateUserRole, getRoles, createOrUpdateRole, getRegions } = require('../controllers/admin-godmode.controller');
 const ecoController = require('../controllers/admin-ecosystems.controller');
+const adminCrmController = require('../controllers/admin-crm.controller');
+const adminSupportController = require('../controllers/admin-support.controller');
+const adminTelemetryController = require('../controllers/admin-telemetry.controller');
+const adminHealthController = require('../controllers/admin-health.controller');
+const adminSettingsController = require('../controllers/admin-settings.controller');
+const adminMedicalController = require('../controllers/admin-medical.controller');
+const adminMarketingController = require('../controllers/admin-marketing.controller');
+const adminBillsController = require('../controllers/admin-bills.controller');
+const adminBackupsController = require('../controllers/admin-backups.controller');
+const adminCharityController = require('../controllers/admin-charity.controller');
+const adminLanguagesController = require('../controllers/admin-languages.controller');
+const adminCivicController = require('../controllers/admin-civic.controller');
+const adminEnvironmentController = require('../controllers/admin-environment.controller');
+const adminFraudController = require('../controllers/admin-fraud.controller');
+const adminHealthController = require('../controllers/admin-health.controller');
+const adminKrishiController = require('../controllers/admin-krishi.controller');
+const adminAnalyticsController = require('../controllers/admin-analytics.controller');
+const adminAnimalController = require('../controllers/admin-animal.controller');
+const adminJobsController = require('../controllers/admin-jobs.controller');
+const adminAlertsController = require('../controllers/admin-alerts.controller');
+const adminRolesController = require('../controllers/admin-roles.controller');
+const adminSupportController = require('../controllers/admin-support.controller');
+const adminBackupsController = require('../controllers/admin-backups.controller');
+const adminCharityController = require('../controllers/admin-charity.controller');
+const adminCivicController = require('../controllers/admin-civic.controller');
+const adminApprovalsController = require('../controllers/admin-approvals.controller');
+const adminBillsController = require('../controllers/admin-bills.controller');
+const adminCrmController = require('../controllers/admin-crm.controller');
+const financeController = require('../controllers/finance.controller');
+const territoryController = require('../controllers/territory.controller');
 
 // --- NEW GOD MODE ECOSYSTEMS ---
 router.get('/krishi/stats', authenticate, requireAdmin, ecoController.getKrishiStats);
@@ -20,6 +76,155 @@ router.get('/environment/stats', authenticate, requireAdmin, ecoController.getEn
 router.get('/animal/stats', authenticate, requireAdmin, ecoController.getAnimalStats);
 router.get('/civic/stats', authenticate, requireAdmin, ecoController.getCivicStats);
 router.get('/rewards/campaigns', authenticate, requireAdmin, ecoController.getRewardsStats);
+
+// --- CRM & SUPPORT (Phase 17) ---
+router.get('/crm/users', authenticate, requireAdmin, adminCrmController.getUsers);
+router.post('/crm/loyalty', authenticate, requireAdmin, adminCrmController.adjustLoyalty);
+
+router.get('/support/tickets', authenticate, requireAdmin, adminSupportController.getTickets);
+router.post('/support/auto-reply', authenticate, requireAdmin, adminSupportController.setAutoReply);
+router.put('/support/tickets/:id/status', authenticate, requireAdmin, adminSupportController.updateTicketStatus);
+
+// --- TELEMETRY & AUDIT (Phase 18 & 19) ---
+router.get('/god-mode/metrics', authenticate, requireAdmin, adminTelemetryController.getGodModeMetrics);
+router.get('/audit-logs', authenticate, requireAdmin, adminTelemetryController.getAuditLogs);
+router.get('/health', authenticate, requireAdmin, adminHealthController.getHealthMetrics);
+router.post('/health/clear-cache', mutationLimiter, authenticate, requireAdmin, adminHealthController.clearGlobalCache);
+
+// --- GLOBAL SETTINGS (Phase 20) ---
+router.get('/settings', authenticate, requireAdmin, adminSettingsController.getSettings);
+router.put('/settings', authenticate, requireAdmin, adminSettingsController.updateSettings);
+
+// --- USERS & MEDICAL (Phase 21) ---
+router.get('/users', authenticate, requireAdmin, godmodeController.getUsers);
+router.put('/users/:id/status', authenticate, requireAdmin, godmodeController.updateUserStatus);
+router.put('/users/:id/role', authenticate, requireAdmin, godmodeController.updateUserRole);
+router.get('/export/users', authenticate, requireAdmin, godmodeController.exportUsers);
+
+router.get('/medical/requests', authenticate, requireAdmin, adminMedicalController.getRequests);
+router.post('/medical/requests', authenticate, requireAdmin, adminMedicalController.createRequest);
+router.put('/medical/requests/:id/status', authenticate, requireAdmin, adminMedicalController.updateStatus);
+router.put('/medical/requests/:id/dispatch', authenticate, requireAdmin, adminMedicalController.toggleDispatch);
+
+// --- MARKETING (Phase 22) ---
+router.get('/broadcasts/history', authenticate, requireAdmin, adminMarketingController.getBroadcastHistory);
+router.post('/broadcast', authenticate, requireAdmin, adminMarketingController.createBroadcast);
+
+// --- UTILITY BILLS (Phase 23) ---
+router.get('/bills', authenticate, requireAdmin, adminBillsController.getBills);
+router.post('/bills', authenticate, requireAdmin, adminBillsController.createBill);
+router.put('/bills/:id/status', authenticate, requireAdmin, adminBillsController.updateStatus);
+router.put('/bills/:id/clear', authenticate, requireAdmin, adminBillsController.toggleClearance);
+
+// --- BACKUPS (Phase 24) ---
+router.get('/backups', authenticate, requireAdmin, adminBackupsController.getBackups);
+router.post('/backups/create', authenticate, requireAdmin, adminBackupsController.createBackup);
+router.post('/backups/:id/restore', authenticate, requireAdmin, adminBackupsController.restoreBackup);
+
+// --- CHARITY (Phase 25) ---
+router.get('/charity', authenticate, requireAdmin, adminCharityController.getCampaigns);
+router.post('/charity', authenticate, requireAdmin, adminCharityController.createCampaign);
+router.put('/charity/:id/status', authenticate, requireAdmin, adminCharityController.updateStatus);
+router.put('/charity/:id/verify', authenticate, requireAdmin, adminCharityController.toggleVerification);
+router.put('/charity/:id/raised', authenticate, requireAdmin, adminCharityController.adjustRaised);
+
+// --- LOCALIZATION (Phase 26) ---
+router.get('/languages', authenticate, requireAdmin, adminLanguagesController.getConfig);
+router.put('/languages', authenticate, requireAdmin, adminLanguagesController.updateConfig);
+
+// --- CIVIC & LEGAL (Phase 28) ---
+router.get('/civic/issues', authenticate, requireAdmin, adminCivicController.getIssues);
+router.post('/civic/issues', authenticate, requireAdmin, adminCivicController.createIssue);
+router.put('/civic/issues/:id/status', authenticate, requireAdmin, adminCivicController.updateStatus);
+router.put('/civic/issues/:id/escalate', authenticate, requireAdmin, adminCivicController.toggleEscalation);
+
+// --- ENVIRONMENT (Phase 29) ---
+router.get('/environment/scrap', authenticate, requireAdmin, adminEnvironmentController.getRequests);
+router.post('/environment/scrap', authenticate, requireAdmin, adminEnvironmentController.createRequest);
+router.put('/environment/scrap/:id/status', authenticate, requireAdmin, adminEnvironmentController.updateStatus);
+router.put('/environment/scrap/:id/dispatch', authenticate, requireAdmin, adminEnvironmentController.toggleDispatch);
+
+// --- SECURITY & FRAUD (Phase 30) ---
+router.get('/fraud-scan', authenticate, requireAdmin, adminFraudController.getFraudScan);
+
+// --- SYSTEM HEALTH (Phase 31) ---
+router.get('/health', authenticate, requireAdmin, adminHealthController.getHealthMetrics);
+router.post('/health/clear-cache', authenticate, requireAdmin, adminHealthController.clearGlobalCache);
+
+// --- KRISHI MARKETPLACE (Phase 32) ---
+router.get('/krishi', authenticate, requireAdmin, adminKrishiController.getListings);
+router.post('/krishi', authenticate, requireAdmin, adminKrishiController.createListing);
+router.put('/krishi/:id/status', authenticate, requireAdmin, adminKrishiController.updateStatus);
+router.put('/krishi/:id/verify', authenticate, requireAdmin, adminKrishiController.toggleVerification);
+
+// --- GLOBAL ANALYTICS (Phase 33) ---
+router.get('/analytics/overview', authenticate, requireAdmin, adminAnalyticsController.getOverview);
+
+// --- ANIMAL WELFARE (Phase 34) ---
+router.get('/animal/rescue', authenticate, requireAdmin, adminAnimalController.getRequests);
+router.post('/animal/rescue', authenticate, requireAdmin, adminAnimalController.createRequest);
+router.put('/animal/rescue/:id/status', authenticate, requireAdmin, adminAnimalController.updateStatus);
+router.put('/animal/rescue/:id/dispatch', authenticate, requireAdmin, adminAnimalController.toggleDispatch);
+
+// --- JOBS & SERVICES (Phase 35) ---
+router.get('/jobs', authenticate, requireAdmin, adminJobsController.getJobs);
+router.post('/jobs', authenticate, requireAdmin, adminJobsController.createJob);
+router.put('/jobs/:id/status', authenticate, requireAdmin, adminJobsController.updateStatus);
+
+// --- GLOBAL ALERTS (Phase 36) ---
+router.post('/alerts/broadcast', authenticate, requireAdmin, adminAlertsController.broadcastAlert);
+
+// --- ROLES & PERMISSIONS (Phase 37) ---
+router.get('/roles', authenticate, requireAdmin, adminRolesController.getRoles);
+router.post('/roles', authenticate, requireAdmin, adminRolesController.upsertRole);
+
+// --- SUPPORT & HELPDESK (Phase 38) ---
+router.get('/support/tickets', authenticate, requireAdmin, adminSupportController.getTickets);
+router.post('/support/auto-reply', authenticate, requireAdmin, adminSupportController.setAutoReply);
+router.put('/support/tickets/:id/status', authenticate, requireAdmin, adminSupportController.updateTicketStatus);
+
+// --- DISASTER RECOVERY (Phase 39) ---
+router.get('/backups', authenticate, requireAdmin, adminBackupsController.getBackups);
+router.post('/backups/create', authenticate, requireAdmin, adminBackupsController.createBackup);
+router.post('/backups/:id/restore', authenticate, requireAdmin, adminBackupsController.restoreBackup);
+
+// --- CHARITY & NGO (Phase 40) ---
+router.get('/charity', authenticate, requireAdmin, adminCharityController.getCampaigns);
+router.post('/charity', authenticate, requireAdmin, adminCharityController.createCampaign);
+router.put('/charity/:id/status', authenticate, requireAdmin, adminCharityController.updateStatus);
+router.put('/charity/:id/verify', authenticate, requireAdmin, adminCharityController.toggleVerification);
+router.put('/charity/:id/raised', authenticate, requireAdmin, adminCharityController.adjustRaised);
+
+// --- CIVIC ISSUES (Phase 41) ---
+router.get('/civic', authenticate, requireAdmin, adminCivicController.getIssues);
+router.post('/civic', authenticate, requireAdmin, adminCivicController.createIssue);
+router.put('/civic/:id/status', authenticate, requireAdmin, adminCivicController.updateStatus);
+router.put('/civic/:id/escalate', authenticate, requireAdmin, adminCivicController.toggleEscalation);
+
+// --- UNIVERSAL APPROVALS (Phase 42) ---
+router.get('/approvals/pending', authenticate, requireAdmin, adminApprovalsController.getPendingApprovals);
+router.put('/approvals/:type/:id', authenticate, requireAdmin, adminApprovalsController.updateApprovalStatus);
+
+// --- UTILITY BILLS (Phase 43) ---
+router.get('/bills', authenticate, requireAdmin, adminBillsController.getBills);
+router.post('/bills', authenticate, requireAdmin, adminBillsController.createBill);
+router.put('/bills/:id/status', authenticate, requireAdmin, adminBillsController.updateStatus);
+router.put('/bills/:id/clear', authenticate, requireAdmin, adminBillsController.toggleClearance);
+
+// --- CRM & ENGAGEMENT (Phase 44) ---
+router.get('/crm/users', authenticate, requireAdmin, adminCrmController.getUsers);
+router.post('/crm/loyalty', authenticate, requireAdmin, adminCrmController.adjustLoyalty);
+
+// --- REVENUE MODELS (Phase 45) ---
+router.get('/revenue-models', authenticate, requireAdmin, getRevenueModels);
+router.put('/revenue-models/subscriptions/:id', authenticate, requireAdmin, updateSubscriptionPlan);
+router.put('/revenue-models/loyalty/:id', authenticate, requireAdmin, updateLoyaltyTier);
+router.put('/revenue-models/config', authenticate, requireAdmin, updateConfig);
+
+// --- FINANCE & TERRITORY (Phase 46) ---
+router.get('/finance/export', authenticate, requireAdmin, financeController.exportFinancials);
+router.get('/territory/map', authenticate, requireAdmin, territoryController.getTerritoryMap);
+
 router.get('/config', authenticate, requireAdmin, apiCache(300), async (req, res, next) => {
   try {
     const config = await query('SELECT * FROM admin_config WHERE is_active = true');
@@ -33,8 +238,7 @@ router.put('/config/:key', authenticate, requireAdmin, async (req, res, next) =>
   try {
     const { key } = req.params;
     const { value, category, description } = req.body;
-    const config = await queryOne(
-      `INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
+    const config = await queryOne(`INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (config_key)
        DO UPDATE SET config_value = EXCLUDED.config_value,
@@ -129,8 +333,7 @@ router.post('/settings/action', authenticate, requireAdmin, async (req, res, nex
     }
 
     const { v4: uuidv4 } = require('uuid');
-    await query(
-      `INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
+    await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [uuidv4(), req.user.id || req.user.userId, 'SYSTEM_ACTION', 'system', 'unknown', details]
     ).catch(e => console.warn('Audit log insert failed:', e.message));
@@ -350,8 +553,7 @@ router.post('/broadcast', authenticate, requireAdmin, async (req, res, next) => 
     // Add deep_link to details json since column might not exist
     const details = JSON.stringify({ deep_link: deep_link || '' });
 
-    await query(
-      `INSERT INTO admin_broadcasts (id, admin_id, title, body, target_audience, success_count)
+    await query(`INSERT INTO admin_broadcasts (id, admin_id, title, body, target_audience, success_count)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [broadcastId, req.user.id || req.user.userId, title, body, target_audience, pushResponse.success ? 1 : 0]
     );
@@ -434,8 +636,7 @@ router.post('/ads/banners', authenticate, requireAdmin, async (req, res, next) =
     `).catch(() => {});
 
     const bannerId = crypto.randomUUID();
-    await query(
-      `INSERT INTO admin_ads (id, image_url, deep_link, status, clicks, impressions) VALUES ($1, $2, $3, 'active', 0, 0)`,
+    await query(`INSERT INTO admin_ads (id, image_url, deep_link, status, clicks, impressions) VALUES ($1, $2, $3, 'active', 0, 0)`,
       [bannerId, image_url, deep_link || '']
     );
 
@@ -476,7 +677,7 @@ router.get('/languages', authenticate, requireAdmin, async (req, res, next) => {
     };
 
     if (config && config.config_value) {
-      try { data = JSON.parse(config.config_value); } catch(e) {}
+      try { data = JSON.parse(config.config_value); } catch (e) { next(e); }
     }
 
     res.json({ success: true, data });
@@ -653,8 +854,7 @@ router.get('/shop-categories', authenticate, requireAdmin, requirePermission('ec
 router.put('/shop-categories/:id', authenticate, requireAdmin, requirePermission('ecommerce', 'write'), async (req, res, next) => {
   try {
     const { commission_percent, convenience_fee } = req.body;
-    const result = await queryOne(
-      `UPDATE shop_categories 
+    const result = await queryOne(`UPDATE shop_categories 
        SET commission_percent = $1, convenience_fee = $2, updated_at = CURRENT_TIMESTAMP
        WHERE id = $3 RETURNING *`,
       [commission_percent, convenience_fee, req.params.id]
@@ -716,8 +916,7 @@ router.post('/regions', authenticate, requireAdmin, async (req, res, next) => {
       return res.status(400).json({ error: 'name and state are required' });
     }
 
-    const region = await queryOne(
-      `INSERT INTO regions (id, name, state, country, latitude, longitude, radius_km, pincode, district, city, is_active)
+    const region = await queryOne(`INSERT INTO regions (id, name, state, country, latitude, longitude, radius_km, pincode, district, city, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [crypto.randomUUID(), name, state, country || 'India', latitude || 0, longitude || 0, radiusKm || 5.0, pincode || null, district || null, city || null, is_active !== undefined ? is_active : 1]
@@ -761,8 +960,7 @@ router.put('/regions/:id', authenticate, requireAdmin, async (req, res, next) =>
 
     if (features !== undefined) {
       const key = `territory_features_${req.params.id}`;
-      await queryOne(
-        `INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
+      await queryOne(`INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
          VALUES ($1, $2, 'territory_features', $3, $4)
          ON CONFLICT (config_key)
          DO UPDATE SET config_value = EXCLUDED.config_value, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
@@ -837,8 +1035,7 @@ router.put('/regions/:id/features', authenticate, requireAdmin, async (req, res,
     
     // Store features as JSON in a column â€” first check if column exists, if not we store in admin_config
     const key = `territory_features_${req.params.id}`;
-    await queryOne(
-      `INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
+    await queryOne(`INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
        VALUES ($1, $2, 'territory_features', $3, $4)
        ON CONFLICT (config_key)
        DO UPDATE SET config_value = EXCLUDED.config_value, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
@@ -862,8 +1059,7 @@ router.put('/regions/:id/assign-franchise', authenticate, requireAdmin, async (r
     const region = await queryOne('SELECT * FROM regions WHERE id = $1', [req.params.id]);
     if (!region) return res.status(404).json({ error: 'Region not found' });
     
-    const franchise = await queryOne(
-      'UPDATE franchise_partners SET region_id = $1, territory_name = $2, territory_pincode = $3 WHERE id = $4 RETURNING *',
+    const franchise = await queryOne('UPDATE franchise_partners SET region_id = $1, territory_name = $2, territory_pincode = $3 WHERE id = $4 RETURNING *',
       [req.params.id, region.name, region.pincode, franchise_id]
     );
     
@@ -891,7 +1087,7 @@ router.get('/regions/:id/stats', authenticate, requireAdmin, async (req, res, ne
     let revenueTotal = { total: 0 };
     try {
       revenueTotal = await queryOne('SELECT COALESCE(SUM(gross_amount), 0) as total FROM revenue_transactions WHERE region_id = $1', [regionId]);
-    } catch(e) {}
+    } catch (e) { next(e); }
     
     const franchise = await queryOne('SELECT f.id, u.full_name as partner_name, f.status, f.commission_rate FROM franchise_partners f JOIN users u ON f.user_id = u.id WHERE f.region_id = $1 LIMIT 1', [regionId]);
     
@@ -900,7 +1096,7 @@ router.get('/regions/:id/stats', authenticate, requireAdmin, async (req, res, ne
     try {
       const featureConfig = await queryOne("SELECT config_value FROM admin_config WHERE config_key = $1", [`territory_features_${regionId}`]);
       if (featureConfig) features = JSON.parse(featureConfig.config_value);
-    } catch(e) {}
+    } catch (e) { next(e); }
     
     res.json({
       success: true,
@@ -932,7 +1128,7 @@ router.get('/regions/summary', authenticate, requireAdmin, async (req, res, next
     let totalRevenue = { total: 0 };
     try {
       totalRevenue = await queryOne("SELECT COALESCE(SUM(gross_amount), 0) as total FROM revenue_transactions WHERE status = 'completed'");
-    } catch(e) {}
+    } catch (e) { next(e); }
     
     res.json({
       success: true,
@@ -987,8 +1183,7 @@ router.put('/franchise-partners/:id/status', authenticate, requireAdmin, async (
     const { status } = req.body; // 'active', 'suspended', 'terminated', 'pending'
     if (!status) return res.status(400).json({ error: 'status is required' });
     
-    const result = await queryOne(
-      'UPDATE franchise_partners SET status = $1 WHERE id = $2 RETURNING *',
+    const result = await queryOne('UPDATE franchise_partners SET status = $1 WHERE id = $2 RETURNING *',
       [status, req.params.id]
     );
     if (!result) return res.status(404).json({ error: 'Franchise partner not found' });
@@ -1005,8 +1200,7 @@ router.put('/franchises/:id/split', authenticate, requireAdmin, async (req, res,
     const { splitPercentage } = req.body;
     if (splitPercentage === undefined) return res.status(400).json({ error: 'splitPercentage is required' });
     
-    const result = await queryOne(
-      'UPDATE franchise_partners SET commission_rate = $1 WHERE id = $2 RETURNING *',
+    const result = await queryOne('UPDATE franchise_partners SET commission_rate = $1 WHERE id = $2 RETURNING *',
       [splitPercentage, req.params.id]
     );
     if (!result) return res.status(404).json({ error: 'Franchise partner not found' });
@@ -1090,8 +1284,7 @@ router.put('/users/:id/ban', authenticate, requireAdmin, async (req, res, next) 
     const { id } = req.params;
     const { is_banned } = req.body;
     
-    const user = await queryOne(
-      `UPDATE users SET is_banned = $1, is_active = $2 WHERE id = $3 RETURNING id, is_banned`,
+    const user = await queryOne(`UPDATE users SET is_banned = $1, is_active = $2 WHERE id = $3 RETURNING id, is_banned`,
       [is_banned ? 1 : 0, is_banned ? 0 : 1, id]
     );
     
@@ -1107,8 +1300,7 @@ router.put('/users/:id/role', authenticate, requireAdmin, async (req, res, next)
     const { id } = req.params;
     const { role } = req.body;
     
-    const user = await queryOne(
-      `UPDATE users SET role = $1 WHERE id = $2 RETURNING id, role`,
+    const user = await queryOne(`UPDATE users SET role = $1 WHERE id = $2 RETURNING id, role`,
       [role, id]
     );
     
@@ -1144,8 +1336,7 @@ router.post('/skilled-bookings/:id/assign', authenticate, requireAdmin, async (r
   try {
     const { id } = req.params;
     const { workerId } = req.body;
-    await query(
-      `UPDATE skilled_bookings 
+    await query(`UPDATE skilled_bookings 
        SET assigned_worker_id = $1, status = 'assigned'
        WHERE id = $2`,
       [workerId, id]
@@ -1179,8 +1370,7 @@ router.get('/shop-categories', authenticate, requireAdmin, async (req, res, next
 router.post('/shop-categories', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields } = req.body;
-    const cat = await queryOne(
-      `INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields)
+    const cat = await queryOne(`INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [require('crypto').randomUUID(), name, slug, icon, business_model, commission_percent, convenience_fee, display_order, JSON.stringify(registration_fields || [])]
     );
@@ -1193,8 +1383,7 @@ router.post('/shop-categories', authenticate, requireAdmin, async (req, res, nex
 router.put('/shop-categories/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { name, slug, icon, business_model, commission_percent, convenience_fee, is_active, display_order, registration_fields } = req.body;
-    const cat = await queryOne(
-      `UPDATE shop_categories 
+    const cat = await queryOne(`UPDATE shop_categories 
        SET name=$1, slug=$2, icon=$3, business_model=$4, commission_percent=$5, convenience_fee=$6, is_active=$7, display_order=$8, registration_fields=$9, updated_at=CURRENT_TIMESTAMP
        WHERE id=$10 RETURNING *`,
       [name, slug, icon, business_model, commission_percent, convenience_fee, is_active, display_order, JSON.stringify(registration_fields || []), req.params.id]
@@ -1218,8 +1407,7 @@ router.delete('/shop-categories/:id', authenticate, requireAdmin, async (req, re
 router.put('/shops/:id/premium', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { is_premium, premium_expires_at } = req.body;
-    await query(
-      `UPDATE local_shops SET is_premium = $1, premium_expires_at = $2 WHERE id = $3`,
+    await query(`UPDATE local_shops SET is_premium = $1, premium_expires_at = $2 WHERE id = $3`,
       [is_premium ? 1 : 0, premium_expires_at, req.params.id]
     );
     res.json({ success: true, message: 'Shop premium status updated' });
@@ -1417,8 +1605,7 @@ router.post('/assign-territory', authenticate, requireAdmin, async (req, res, ne
     }
 
     const id = crypto.randomUUID();
-    await query(
-      `INSERT INTO admin_territory_assignments (id, user_id, territory_id, district_id, role, assigned_by, is_active)
+    await query(`INSERT INTO admin_territory_assignments (id, user_id, territory_id, district_id, role, assigned_by, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, 1)`,
       [id, userId, territoryId || null, districtId || null, role || 'territory_franchise', req.user.id]
     );
@@ -2882,6 +3069,23 @@ router.put('/settings', authenticate, requireAdmin, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+// Phase 49: Global Error Handling & Validation
+// Sanitize all God-Mode errors so no stack traces leak from admin APIs
+router.use((err, req, res, next) => {
+  console.error('[God-Mode API Error]', err.message);
+  // Log the full stack internally
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(err.stack);
+  }
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'production' 
+      ? 'An internal admin system error occurred.' 
+      : err.message
+  });
 });
 
 module.exports = router;

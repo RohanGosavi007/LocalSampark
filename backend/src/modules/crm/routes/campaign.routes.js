@@ -26,8 +26,7 @@ router.post('/purchase', authenticate, async (req, res, next) => {
 
     await query('UPDATE local_shops SET is_featured = TRUE WHERE id = $1', [shop_id]);
 
-    const campaign = await queryOne(
-      `INSERT INTO shop_campaigns 
+    const campaign = await queryOne(`INSERT INTO shop_campaigns 
        (shop_id, title, discount_type, discount_value, start_datetime, end_datetime, radius_km, is_flash_sale, status) 
        VALUES ($1, $2, 'ad_boost', $3, $4, $5, $6, FALSE, 'active') RETURNING *`,
       [shop_id, `Featured Ad Boost (${duration_days} Days)`, budget_amount, startDate.toISOString(), endDate.toISOString(), radius_km]
@@ -51,8 +50,7 @@ router.get('/featured-shops', async (req, res, next) => {
     const userLon = parseFloat(lon);
 
     // Query featured shops
-    const result = await query(
-      `SELECT id, name, category, address, phone_number, is_featured, rating, latitude, longitude
+    const result = await query(`SELECT id, name, category, address, phone_number, is_featured, rating, latitude, longitude
        FROM local_shops 
        WHERE is_featured = TRUE AND is_active = TRUE LIMIT 20`
     );
@@ -100,8 +98,7 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
       fomo_timer_minutes
     } = req.body;
 
-    const result = await query(
-      `INSERT INTO shop_campaigns 
+    const result = await query(`INSERT INTO shop_campaigns 
        (shop_id, title, discount_type, discount_value, start_datetime, end_datetime, radius_km, is_flash_sale, fomo_timer_minutes, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'scheduled') RETURNING *`,
       [shopId, title, discount_type, discount_value, start_datetime, end_datetime, radius_km || 3, is_flash_sale || false, fomo_timer_minutes || 0]

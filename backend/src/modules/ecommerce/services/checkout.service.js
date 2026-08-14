@@ -10,7 +10,8 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_secret'
 });
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
+if (!process.env.STRIPE_SECRET_KEY) throw new Error('CRITICAL: STRIPE_SECRET_KEY is not configured');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 Cashfree.XClientId = process.env.CASHFREE_CLIENT_ID || 'mock_id';
 Cashfree.XClientSecret = process.env.CASHFREE_CLIENT_SECRET || 'mock_secret';
@@ -24,12 +25,12 @@ class CheckoutService {
       throw { status: 400, message: 'Shop ID is required' };
     }
 
-    const shop = await queryOne('SELECT category_id, region_id, pincode FROM local_shops WHERE id = ?', [shopId]);
+    const shop = await queryOne('SELECT category_id, region_id, pincode FROM local_shops WHERE id = $1', [shopId]);
     if (!shop) {
       throw { status: 404, message: 'Shop not found' };
     }
 
-    const category = await queryOne('SELECT allowed_payment_methods, allowed_fulfillment_methods FROM shop_categories WHERE id = ?', [shop.category_id]);
+    const category = await queryOne('SELECT allowed_payment_methods, allowed_fulfillment_methods FROM shop_categories WHERE id = $1', [shop.category_id]);
     if (category) {
       const allowedPayments = (category.allowed_payment_methods || 'RAZORPAY,STRIPE,CASHFREE,COD').split(',');
       const allowedFulfillments = (category.allowed_fulfillment_methods || 'DELIVERY,SELF_PICKUP').split(',');
@@ -46,14 +47,14 @@ class CheckoutService {
       SELECT c.*, p.price as product_price, p.shop_id, p.inventory_count, p.track_inventory 
       FROM cart_items c
       JOIN shop_products p ON c.product_id = p.id
-      WHERE c.product_id IN (SELECT id FROM shop_products WHERE shop_id = ?) AND `;
+      WHERE c.product_id IN (SELECT id FROM shop_products WHERE shop_id = $1) AND `;
     
     let params = [shopId];
     if (userId) {
-      cartQuery += `c.user_id = ?`;
+      cartQuery += `c.user_id = $2`;
       params.push(userId);
     } else {
-      cartQuery += `c.session_id = ?`;
+      cartQuery += `c.session_id = $2`;
       params.push(sessionId);
     }
 
@@ -115,47 +116,42 @@ class CheckoutService {
       const orderQuery = `
         INSERT INTO orders 
         (user_id, shop_id, status, total_amount, delivery_fee, platform_fee, discount, payment_method, payment_status, fulfillment_method, delivery_lat, delivery_lng)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       `;
       const orderRes = await dbClient.query(orderQuery, insertOrderParams);
       const insertedOrderId = orderRes.lastID;
 
       for (const item of items) {
-        await dbClient.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, price_at_buy) VALUES (?, ?, ?, ?)',
+        await dbClient.query('INSERT INTO order_items (order_id, product_id, quantity, price_at_buy) VALUES ($1, $2, $3, $4)',
           [insertedOrderId, item.product_id, item.quantity, item.product_price]
         );
         if (item.track_inventory === 1) {
-          await dbClient.query('UPDATE shop_products SET inventory_count = inventory_count - ? WHERE id = ?', [item.quantity, item.product_id]);
+          await dbClient.query('UPDATE shop_products SET inventory_count = inventory_count - $1 WHERE id = $2', [item.quantity, item.product_id]);
           const newCount = item.inventory_count - item.quantity;
           depletedProducts.push({ productId: item.product_id, newCount });
         }
       }
 
-      await dbClient.query('INSERT INTO order_tracking (order_id) VALUES (?)', [insertedOrderId]);
+      await dbClient.query('INSERT INTO order_tracking (order_id) VALUES ($1)', [insertedOrderId]);
 
       // ─── STRICT APPEND-ONLY WALLET LEDGER ───
       // 1. Vendor Escrow Hold
-      await dbClient.query(
-        'INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES (?, (SELECT id FROM wallets WHERE shop_id = ? LIMIT 1), ?, ?, ?, ?)',
+      await dbClient.query('INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES ($1, (SELECT id FROM wallets WHERE shop_id = $2 LIMIT 1), $3, $4, $5, $6)',
         [crypto.randomUUID(), shopId, vendorNetEarnings, 'credit', 'order_payment', 'pending']
       );
 
       // 2. Platform Revenue
       const netPlatformRevenue = platformCommission - franchiseCommission;
-      await dbClient.query(
-        'INSERT INTO revenue_transactions (id, type, gross_amount, platform_share, franchise_share, region_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      await dbClient.query('INSERT INTO revenue_transactions (id, type, gross_amount, platform_share, franchise_share, region_id, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [crypto.randomUUID(), 'order_commission', platformCommission, netPlatformRevenue, franchiseCommission, shop.region_id, 'completed']
       );
 
       // 3. Franchise Share
       if (franchiseCommission > 0 && franchiseId) {
-        await dbClient.query(
-          'INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES (?, (SELECT id FROM wallets WHERE franchise_id = ? LIMIT 1), ?, ?, ?, ?)',
+        await dbClient.query('INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES ($1, (SELECT id FROM wallets WHERE franchise_id = $2 LIMIT 1), $3, $4, $5, $6)',
           [crypto.randomUUID(), franchiseId, franchiseCommission, 'credit', 'order_payment', 'pending']
         );
-        await dbClient.query(
-          'INSERT INTO franchise_payouts (id, franchise_partner_id, commission_earned, status) VALUES (?, ?, ?, ?)',
+        await dbClient.query('INSERT INTO franchise_payouts (id, franchise_partner_id, commission_earned, status) VALUES ($1, $2, $3, $4)',
           [crypto.randomUUID(), franchiseId, franchiseCommission, 'pending']
         );
       }
@@ -164,9 +160,9 @@ class CheckoutService {
     });
 
     if (userId) {
-      await query('DELETE FROM cart_items WHERE user_id = ?', [userId]);
+      await query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
     } else {
-      await query('DELETE FROM cart_items WHERE session_id = ?', [sessionId]);
+      await query('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
     }
 
     // Payment Gateway Strategy Integration

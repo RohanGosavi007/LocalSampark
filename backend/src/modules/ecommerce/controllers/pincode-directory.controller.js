@@ -36,7 +36,7 @@ async function getShopsByPincode(req, res, next) {
           let filteredShops = sData.shops;
           return res.json({ success: true, shops: filteredShops, pincode, count: filteredShops.length, nextCursor: null });
         }
-      } catch(e) {}
+      } catch (e) { next(e); }
     }
 
     // Construct Cache Key

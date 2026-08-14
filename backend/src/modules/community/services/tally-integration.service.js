@@ -1,4 +1,4 @@
-const { query, queryOne, queryMany } = require('../../../config/database.sqlite');
+const { query, queryOne, queryMany } = require('../../../config/database');
 const axios = require('axios');
 const ExcelJS = require('exceljs');
 
@@ -65,11 +65,10 @@ class TallyIntegrationService {
 
     // Generate CSV for manual Tally import
     async exportToCSV(societyId, dateRange) {
-        const bills = await queryMany(
-            `SELECT b.*, f.tenant_name, f.member_id 
+        const bills = await queryMany(`SELECT b.*, f.tenant_name, f.member_id 
              FROM society_maintenance_bills b
              JOIN society_flat_ledger f ON b.flat_number = f.flat_number AND b.society_id = f.society_id
-             WHERE b.society_id = ?`, // add date range logic here
+             WHERE b.society_id = $1`, // add date range logic here
             [societyId]
         );
 

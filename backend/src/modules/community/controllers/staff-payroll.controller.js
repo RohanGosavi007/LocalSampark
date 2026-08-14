@@ -1,7 +1,7 @@
-const { query, queryMany } = require('../../../config/database.sqlite');
+const { query, queryMany } = require('../../../config/database');
 const { v4: uuidv4 } = require('uuid');
 
-const generateMonthlyPayroll = async (req, res) => {
+const generateMonthlyPayroll = async (req, res, next) => {
     try {
         const adminId = req.user.id;
         const { societyId, month, year } = req.body;
@@ -11,30 +11,25 @@ const generateMonthlyPayroll = async (req, res) => {
         // For demonstration, we assume we fetch staff and their attendance
         
         // Mock processing:
-        // const staffList = await queryMany('SELECT * FROM society_staff WHERE society_id = ? AND is_active = 1', [societyId]);
+        // const staffList = await queryMany('SELECT * FROM society_staff WHERE society_id = $1 AND is_active = 1', [societyId]);
         
         const id = uuidv4();
-        await query(
-            `INSERT INTO society_staff_payroll 
+        await query(`INSERT INTO society_staff_payroll 
             (id, society_id, staff_name, month, total_working_days, present_days, net_payable, approved_by) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [id, societyId, 'Security Guard Team', monthStr, 30, 30, 15000, adminId]
         );
 
         res.json({ success: true, message: 'Payroll generated successfully for ' + monthStr });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const getPayrollSummary = async (req, res) => {
+const getPayrollSummary = async (req, res, next) => {
     try {
         const { societyId, month } = req.query;
-        const payroll = await queryMany('SELECT * FROM society_staff_payroll WHERE society_id = ? AND month = ?', [societyId, month]);
+        const payroll = await queryMany('SELECT * FROM society_staff_payroll WHERE society_id = $1 AND month = $2', [societyId, month]);
         res.json({ success: true, data: payroll });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 module.exports = {

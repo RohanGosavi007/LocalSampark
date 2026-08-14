@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Map, Navigation, Activity, Search, PauseCircle, PlayCircle, ShieldAlert, Bike } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function DeliveryMonitorPage() {
   const { adminUser } = useAdminAuth();
@@ -12,7 +13,7 @@ export default function DeliveryMonitorPage() {
   const fetchAgents = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:5000/api/v1/logistics/agents');
+      const res = await fetch(API_BASE + '/logistics/agents');
       const data = await res.json();
       if (data.success) {
         setAgents(data.data || []);

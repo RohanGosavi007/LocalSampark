@@ -62,8 +62,7 @@ const updateFranchiseSplit = async (req, res, next) => {
       platform_profit_split, reward_pool_split, reserve_split
     } = req.body;
 
-    const result = await query(
-      `UPDATE franchise_partners 
+    const result = await query(`UPDATE franchise_partners 
        SET commission_rate = COALESCE($1, commission_rate),
            product_commission_percent = COALESCE($2, product_commission_percent),
            skilled_job_commission_percent = COALESCE($3, skilled_job_commission_percent),
@@ -150,14 +149,14 @@ const getDashboardStats = async (req, res, next) => {
     let shopsCount = 0, activeRegions = 0, totalRegions = 0, totalUsers = 0, totalOrders = 0, completedOrders = 0;
 
     if (process.env.USE_SQLITE === 'true') {
-      const { queryOne } = require('../../../config/database.sqlite');
+      const { queryOne } = require('../../../config/database');
       try {
         shopsCount = (await queryOne('SELECT COUNT(*) as count FROM local_shops'))?.count || 0;
         activeRegions = (await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = 1'))?.count || 0;
         totalRegions = (await queryOne('SELECT COUNT(*) as count FROM regions'))?.count || 0;
         totalUsers = (await queryOne('SELECT COUNT(*) as count FROM users'))?.count || 0;
         totalOrders = (await queryOne('SELECT COUNT(*) as count FROM orders'))?.count || 0;
-        completedOrders = (await queryOne('SELECT COUNT(*) as count FROM orders WHERE order_status = ?', ['delivered']))?.count || 0;
+        completedOrders = (await queryOne('SELECT COUNT(*) as count FROM orders WHERE order_status = $1', ['delivered']))?.count || 0;
       } catch (e) {
         console.warn('Dashboard stats sqlite error:', e.message);
       }

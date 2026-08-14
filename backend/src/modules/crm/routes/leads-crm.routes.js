@@ -32,8 +32,7 @@ router.get('/:shopId', authenticate, async (req, res) => {
     const result = await query(sql, params);
 
     // Pipeline stage counts
-    const pipeline = await query(
-      `SELECT pipeline_stage, COUNT(*) as count FROM leads WHERE shop_id = $1 AND status = 'active' GROUP BY pipeline_stage`,
+    const pipeline = await query(`SELECT pipeline_stage, COUNT(*) as count FROM leads WHERE shop_id = $1 AND status = 'active' GROUP BY pipeline_stage`,
       [shopId]
     );
 
@@ -60,8 +59,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
 
     const leadNumber = `LEAD-${Date.now().toString(36).toUpperCase()}`;
 
-    const result = await query(
-      `INSERT INTO leads (shop_id, lead_number, name, phone, email, source, inquiry_type,
+    const result = await query(`INSERT INTO leads (shop_id, lead_number, name, phone, email, source, inquiry_type,
        message, budget, location, property_type, user_id, referred_by,
        pipeline_stage, status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'new', 'active', NOW())
@@ -103,15 +101,13 @@ router.put('/:shopId/:leadId/stage', authenticate, async (req, res) => {
       return res.status(400).json({ error: `Invalid stage. Must be one of: ${validStages.join(', ')}` });
     }
 
-    await query(
-      `UPDATE leads SET pipeline_stage = $1, updated_at = NOW() WHERE id = $2`,
+    await query(`UPDATE leads SET pipeline_stage = $1, updated_at = NOW() WHERE id = $2`,
       [stage, leadId]
     );
 
     // Add activity log
     if (notes) {
-      await query(
-        `INSERT INTO lead_activities (lead_id, activity_type, notes, created_by, created_at)
+      await query(`INSERT INTO lead_activities (lead_id, activity_type, notes, created_by, created_at)
          VALUES ($1, 'stage_change', $2, $3, NOW())`,
         [leadId, `Moved to ${stage}: ${notes}`, req.user?.id || null]
       );
@@ -135,8 +131,7 @@ router.post('/:shopId/:leadId/activity', authenticate, async (req, res) => {
     const { activityType, notes, callDuration, nextFollowUp } = req.body;
 
     // Valid types: call, whatsapp, email, site_visit, meeting, note
-    await query(
-      `INSERT INTO lead_activities (lead_id, activity_type, notes, call_duration, next_follow_up, created_by, created_at)
+    await query(`INSERT INTO lead_activities (lead_id, activity_type, notes, call_duration, next_follow_up, created_by, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [leadId, activityType || 'note', notes, callDuration || null,
        nextFollowUp || null, req.user?.id || null]
@@ -157,8 +152,7 @@ router.get('/:shopId/:leadId/activities', authenticate, async (req, res) => {
   try {
     const { leadId } = req.params;
 
-    const result = await query(
-      `SELECT * FROM lead_activities WHERE lead_id = $1 ORDER BY created_at DESC LIMIT 50`,
+    const result = await query(`SELECT * FROM lead_activities WHERE lead_id = $1 ORDER BY created_at DESC LIMIT 50`,
       [leadId]
     );
 
@@ -177,13 +171,11 @@ router.get('/:shopId/stats', authenticate, async (req, res) => {
     const totalLeads = await query(`SELECT COUNT(*) as count FROM leads WHERE shop_id = $1`, [shopId]);
     const activeLeads = await query(`SELECT COUNT(*) as count FROM leads WHERE shop_id = $1 AND status = 'active'`, [shopId]);
     const convertedLeads = await query(`SELECT COUNT(*) as count FROM leads WHERE shop_id = $1 AND status = 'converted'`, [shopId]);
-    const todayLeads = await query(
-      `SELECT COUNT(*) as count FROM leads WHERE shop_id = $1 AND DATE(created_at) = CURRENT_DATE`, [shopId]
+    const todayLeads = await query(`SELECT COUNT(*) as count FROM leads WHERE shop_id = $1 AND DATE(created_at) = CURRENT_DATE`, [shopId]
     );
 
     // Follow-ups due today
-    const followUpsDue = await query(
-      `SELECT la.*, l.name as lead_name, l.phone as lead_phone
+    const followUpsDue = await query(`SELECT la.*, l.name as lead_name, l.phone as lead_phone
        FROM lead_activities la
        JOIN leads l ON la.lead_id = l.id
        WHERE l.shop_id = $1 AND DATE(la.next_follow_up) = CURRENT_DATE

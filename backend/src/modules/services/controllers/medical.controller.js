@@ -20,8 +20,7 @@ const registerDonor = async (req, res, next) => {
     }
 
     const donorId = crypto.randomUUID();
-    const newDonor = await query(
-      `INSERT INTO medical_donors (id, user_id, blood_group, pincode, location, is_active) VALUES ($1, $2, $3, $4, $5, 1) RETURNING *`,
+    const newDonor = await query(`INSERT INTO medical_donors (id, user_id, blood_group, pincode, location, is_active) VALUES ($1, $2, $3, $4, $5, 1) RETURNING *`,
       [donorId, userId, bloodGroup, pincode, location || '']
     );
 
@@ -79,8 +78,7 @@ const createRequest = async (req, res, next) => {
     const userId = req.user.id;
     const reqId = crypto.randomUUID();
 
-    const newReq = await query(
-      `INSERT INTO medical_requests (id, requester_id, request_type, required_item, description, location, urgency, status) 
+    const newReq = await query(`INSERT INTO medical_requests (id, requester_id, request_type, required_item, description, location, urgency, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'active') RETURNING *`,
       [reqId, userId, requestType, requiredItem, description, location, urgency]
     );

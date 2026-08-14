@@ -14,7 +14,7 @@
     "prisma:seed": "node prisma/seed.js",
     "test": "jest --coverage",
     "test:load": "artillery run load-tests/critical-flow.yml",
-    "postinstall": "npm rebuild sqlite3 --build-from-source && prisma generate && npx prisma db push --accept-data-loss"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",
@@ -48,7 +48,6 @@
     "razorpay": "^2.9.8",
     "redis": "^5.0.0",
     "socket.io": "^4.8.3",
-    "sqlite3": "^6.0.1",
     "stripe": "^22.3.2",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",

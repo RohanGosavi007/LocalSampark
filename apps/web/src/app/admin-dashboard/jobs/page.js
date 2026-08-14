@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wrench, Briefcase, Plus, CheckCircle, XCircle, Clock, Save, Edit3, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function JobsDashboard() {
   const [jobs, setJobs] = useState([]);
@@ -14,7 +15,7 @@ export default function JobsDashboard() {
   const fetchJobs = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/jobs', {
+      const res = await fetch(API_BASE + '/admin/jobs', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -37,7 +38,7 @@ export default function JobsDashboard() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('http://localhost:5000/api/v1/admin/jobs', {
+      const res = await fetch(API_BASE + '/admin/jobs', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, salary })
@@ -62,7 +63,7 @@ export default function JobsDashboard() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/jobs/${id}/status`, {
+      const res = await fetch(`${API_BASE}/admin/jobs/${id}/status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })

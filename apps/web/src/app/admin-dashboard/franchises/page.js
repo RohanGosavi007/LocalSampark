@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Search, MapPin, Users, DollarSign, Activity, Percent, Save, Edit } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function FranchisesManagementPage() {
   const { adminUser } = useAdminAuth();
@@ -16,7 +17,7 @@ export default function FranchisesManagementPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/franchises?search=${search}`, {
+      const res = await fetch(`${API_BASE}/admin/franchises?search=${search}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -37,7 +38,7 @@ export default function FranchisesManagementPage() {
   const updateSplit = async (id) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/franchises/${id}/split`, {
+      const res = await fetch(`${API_BASE}/admin/franchises/${id}/split`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,

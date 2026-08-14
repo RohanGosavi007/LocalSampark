@@ -3,25 +3,48 @@ import React, { useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { AlertTriangle, Bell, Send, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
-
+import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 export default function AdminAlertSystem() {
   const [alertType, setAlertType] = useState('promotional'); // promotional, emergency, system
   const [targetAudience, setTargetAudience] = useState('all'); // all, customers, shops, delivery
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('idle');
 
-  const handleSendAlert = () => {
+  const handleSendAlert = async () => {
     if (!message) return;
     setStatus('sending');
     
-    // Simulate API call to notification service
-    setTimeout(() => {
-      setStatus('sent');
-      setTimeout(() => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(API_BASE + '/admin/alerts/broadcast', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          alertType,
+          targetAudience,
+          message
+        })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setStatus('sent');
+        setTimeout(() => {
+          setStatus('idle');
+          setMessage('');
+        }, 3000);
+      } else {
+        toast.error(data.error || 'Failed to broadcast alert');
         setStatus('idle');
-        setMessage('');
-      }, 3000);
-    }, 1500);
+      }
+    } catch (err) {
+      toast.error('Network Error');
+      setStatus('idle');
+    }
   };
 
   return (

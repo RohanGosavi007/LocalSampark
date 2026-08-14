@@ -6,10 +6,14 @@ async function createCheckoutOrder(req, res, next) {
     const { shopId, cart, name, phone, address } = req.body;
     
     // 1. Check Shop Payment Flow Settings
-    const settingsRaw = await queryOne('SELECT settings FROM shop_settings WHERE shop_id = ?', [shopId]);
+    const settingsRaw = await queryOne('SELECT settings FROM shop_settings WHERE shop_id = $1', [shopId]);
     let settings = {};
     if (settingsRaw && settingsRaw.settings) {
-      try { settings = JSON.parse(settingsRaw.settings); } catch (e) {}
+      try { 
+        settings = JSON.parse(settingsRaw.settings); 
+      } catch (e) {
+        console.warn('Failed to parse shop settings JSON in checkout:', e.message);
+      }
     }
     const paymentFlow = settings.paymentFlow || 'instant';
     
@@ -24,12 +28,11 @@ async function createCheckoutOrder(req, res, next) {
     const initialStatus = paymentFlow === 'instant' ? 'pending_payment' : 'pending_approval';
 
     // The SQLite database logic. 'query' might just return the changes or nothing if RETURNING is not used natively, so we'll do an INSERT and assume we can query it back or just use the orderRef.
-    await query(
-      `INSERT INTO universal_orders (shop_id, user_id, type, amount, status, metadata) VALUES (?, ?, ?, ?, ?, ?)`,
+    await query(`INSERT INTO universal_orders (shop_id, user_id, type, amount, status, metadata) VALUES ($1, $2, $3, $4, $5, $6)`,
       [shopId, req.user ? req.user.id : null, 'ecom', totalAmount, initialStatus, JSON.stringify({ name, phone, address, items: itemsJson, ref: orderRef })]
     );
 
-    const insertedOrder = await queryOne('SELECT id FROM universal_orders WHERE metadata LIKE ? ORDER BY created_at DESC LIMIT 1', [`%${orderRef}%`]);
+    const insertedOrder = await queryOne('SELECT id FROM universal_orders WHERE metadata LIKE $1 ORDER BY created_at DESC LIMIT 1', [`%${orderRef}%`]);
 
     // 4. Broadcast via Socket.io
     const io = req.app.get('io');
@@ -54,13 +57,28 @@ async function createCheckoutOrder(req, res, next) {
 
 async function verifyPayment(req, res, next) {
   try {
-    const { order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { order_id, razorpay_payment_id, razorpay_signature, razorpay_order_id } = req.body;
     
+    // Webhook Verification (Phase 56)
+    if (!razorpay_signature || !razorpay_payment_id || !razorpay_order_id) {
+      return res.status(400).json({ success: false, error: 'Missing payment signature parameters' });
+    }
+
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'mocksecret';
+    const generated_signature = crypto
+      .createHmac('sha256', secret)
+      .update(razorpay_order_id + '|' + razorpay_payment_id)
+      .digest('hex');
+
+    if (generated_signature !== razorpay_signature) {
+      return res.status(403).json({ success: false, error: 'Invalid payment signature' });
+    }
+
     // Update order status to paid
-    await query('UPDATE universal_orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['paid', order_id]);
+    await query('UPDATE universal_orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['paid', order_id]);
     
     // Broadcast status change
-    const orderRaw = await queryOne('SELECT shop_id FROM universal_orders WHERE id = ?', [order_id]);
+    const orderRaw = await queryOne('SELECT shop_id FROM universal_orders WHERE id = $1', [order_id]);
     if (orderRaw && orderRaw.shop_id) {
       const io = req.app.get('io');
       if (io) {

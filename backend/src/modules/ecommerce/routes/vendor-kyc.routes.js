@@ -38,8 +38,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
     } = req.body;
 
     // Check shop ownership
-    const shop = await queryOne(
-      `SELECT id, owner_id FROM local_shops WHERE id = $1`, [shopId]
+    const shop = await queryOne(`SELECT id, owner_id FROM local_shops WHERE id = $1`, [shopId]
     );
     if (!shop) return res.status(404).json({ error: 'Shop not found' });
     if (shop.owner_id !== userId) {
@@ -47,8 +46,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
     }
 
     // Check if KYC already exists
-    const existing = await queryOne(
-      `SELECT id, kyc_status FROM vendor_kyc WHERE shop_id = $1`, [shopId]
+    const existing = await queryOne(`SELECT id, kyc_status FROM vendor_kyc WHERE shop_id = $1`, [shopId]
     );
 
     if (existing && existing.kyc_status === 'verified') {
@@ -65,8 +63,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
     };
 
     if (existing) {
-      await query(
-        `UPDATE vendor_kyc SET
+      await query(`UPDATE vendor_kyc SET
           aadhaar_front_url = COALESCE($1, aadhaar_front_url),
           aadhaar_back_url = COALESCE($2, aadhaar_back_url),
           pan_number = COALESCE($3, pan_number),
@@ -91,8 +88,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
          encryptField(bank_account_number), bank_ifsc, bank_name, bank_branch, id]
       );
     } else {
-      await query(
-        `INSERT INTO vendor_kyc (id, shop_id, owner_id,
+      await query(`INSERT INTO vendor_kyc (id, shop_id, owner_id,
           aadhaar_front_url, aadhaar_back_url, pan_number, pan_url,
           gst_number, fssai_number, fssai_expiry, fssai_url,
           drug_license_number, drug_license_url,
@@ -117,8 +113,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
  */
 router.get('/:shopId/kyc', authenticate, async (req, res, next) => {
   try {
-    const kyc = await queryOne(
-      `SELECT id, kyc_status, gst_number, gst_status, gst_type,
+    const kyc = await queryOne(`SELECT id, kyc_status, gst_number, gst_status, gst_type,
               fssai_number, fssai_expiry,
               bank_name, bank_ifsc, bank_verified,
               rejection_reason, submitted_at, verified_at
@@ -143,8 +138,7 @@ router.post('/:shopId/kyc/verify-gst', authenticate, async (req, res, next) => {
 
     // Update KYC record
     if (result.isValid) {
-      await query(
-        `UPDATE vendor_kyc SET gst_status = 'verified', gst_verified_at = datetime('now'),
+      await query(`UPDATE vendor_kyc SET gst_status = 'verified', gst_verified_at = datetime('now'),
          gst_type = $1, gst_legal_name = $2, gst_trade_name = $3
          WHERE shop_id = $4`,
         [result.type, result.legalName, result.tradeName, req.params.shopId]
@@ -169,8 +163,7 @@ router.put('/admin/:kycId/review', authenticate, requireAdmin, async (req, res, 
       return res.status(400).json({ error: 'action must be: verified or rejected' });
     }
 
-    await query(
-      `UPDATE vendor_kyc SET kyc_status = $1, verified_by = $2, verified_at = datetime('now'),
+    await query(`UPDATE vendor_kyc SET kyc_status = $1, verified_by = $2, verified_at = datetime('now'),
        rejection_reason = $3, updated_at = datetime('now')
        WHERE id = $4`,
       [action, adminId, action === 'rejected' ? rejection_reason : null, kycId]
@@ -180,8 +173,7 @@ router.put('/admin/:kycId/review', authenticate, requireAdmin, async (req, res, 
     if (action === 'verified') {
       const kyc = await queryOne(`SELECT shop_id FROM vendor_kyc WHERE id = $1`, [kycId]);
       if (kyc) {
-        await query(
-          `UPDATE local_shops SET is_verified = 1, is_active = 1 WHERE id = $1`,
+        await query(`UPDATE local_shops SET is_verified = 1, is_active = 1 WHERE id = $1`,
           [kyc.shop_id]
         );
         logger.info(`✅ Shop ${kyc.shop_id} activated after KYC verification by admin ${adminId}`);
@@ -201,8 +193,7 @@ router.get('/admin/pending', authenticate, requireAdmin, async (req, res, next) 
     const { page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const submissions = await queryMany(
-      `SELECT vk.*, ls.name as shop_name, ls.category, u.full_name as owner_name, u.phone_number as owner_phone
+    const submissions = await queryMany(`SELECT vk.*, ls.name as shop_name, ls.category, u.full_name as owner_name, u.phone_number as owner_phone
        FROM vendor_kyc vk
        JOIN local_shops ls ON vk.shop_id = ls.id
        JOIN users u ON vk.owner_id = u.id
@@ -212,8 +203,7 @@ router.get('/admin/pending', authenticate, requireAdmin, async (req, res, next) 
       [parseInt(limit), offset]
     );
 
-    const total = await queryOne(
-      `SELECT COUNT(*) as cnt FROM vendor_kyc WHERE kyc_status IN ('submitted', 'pending')`
+    const total = await queryOne(`SELECT COUNT(*) as cnt FROM vendor_kyc WHERE kyc_status IN ('submitted', 'pending')`
     );
 
     res.json({

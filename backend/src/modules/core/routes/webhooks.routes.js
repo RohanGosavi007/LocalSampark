@@ -1,9 +1,10 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { query } = require('../../../config/database');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
+if (!process.env.STRIPE_SECRET_KEY) throw new Error('CRITICAL: STRIPE_SECRET_KEY is not configured');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Stripe webhook requires raw body
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -71,7 +72,7 @@ router.post('/cashfree', express.json(), async (req, res) => {
       const match = orderId.match(/^order_([^_]+)_/);
       const actualOrderId = match ? match[1] : orderId;
       if (actualOrderId) {
-        await query('UPDATE orders SET payment_status = ? WHERE id = ?', ['PAID', actualOrderId]);
+        await query('UPDATE orders SET payment_status = $1 WHERE id = $2', ['PAID', actualOrderId]);
       }
     }
 

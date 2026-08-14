@@ -10,8 +10,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
     const { product_id, title, min_buyers, wholesale_price, end_datetime, scope, society_id } = req.body;
     
     // scope = 'zone' or 'society'
-    const result = await pool.query(
-      `INSERT INTO group_buying_deals 
+    const result = await pool.query(`INSERT INTO group_buying_deals 
        (shop_id, product_id, title, min_buyers, current_buyers, wholesale_price, end_datetime, scope, society_id, status)
        VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, 'active') RETURNING *`,
       [shopId, product_id, title, min_buyers, wholesale_price, end_datetime, scope, society_id || null]
@@ -30,8 +29,7 @@ router.post('/:dealId/join', authenticate, async (req, res) => {
     const userId = req.user.id;
 
     // Simplified logic: Just increment the current_buyers
-    const result = await pool.query(
-      `UPDATE group_buying_deals 
+    const result = await pool.query(`UPDATE group_buying_deals 
        SET current_buyers = current_buyers + 1 
        WHERE id = $1 AND status = 'active' 
        RETURNING *`,
@@ -51,8 +49,7 @@ router.get('/active', authenticate, async (req, res) => {
   try {
     const { zoneId, societyId } = req.query;
     // We would filter by zone or society depending on user scope
-    const result = await pool.query(
-      `SELECT * FROM group_buying_deals WHERE status = 'active' AND end_datetime > NOW()`
+    const result = await pool.query(`SELECT * FROM group_buying_deals WHERE status = 'active' AND end_datetime > NOW()`
     );
     res.json(result.rows);
   } catch (err) {

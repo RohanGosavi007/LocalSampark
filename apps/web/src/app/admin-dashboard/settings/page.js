@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, ShieldAlert, Key, Globe, EyeOff, Eye, Save, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_BASE } from '@/lib/api';
 
 export default function SettingsDashboard() {
   const [settings, setSettings] = useState({});
@@ -22,7 +23,7 @@ export default function SettingsDashboard() {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/v1/admin/settings`, {
+      const res = await fetch(`${API_BASE}/admin/settings`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await res.json();
@@ -58,7 +59,7 @@ export default function SettingsDashboard() {
         api_key_gmaps: gmapsKey
       };
 
-      const res = await fetch(`http://localhost:5000/api/v1/admin/settings`, {
+      const res = await fetch(`${API_BASE}/admin/settings`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,

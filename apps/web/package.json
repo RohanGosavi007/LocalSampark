@@ -4,14 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "next build",
     "postbuild": "npx next-sitemap",
     "start": "next start"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@phosphor-icons/react": "^2.1.10",
-    "@prisma/client": "^5.21.1",
     "@sentry/nextjs": "^8.20.0",
     "@supabase/supabase-js": "^2.110.0",
     "@tanstack/react-query": "^5.101.2",
@@ -42,11 +41,5 @@
     "autoprefixer": "^10.5.2",
     "postcss": "^8.5.16",
     "zustand": "^5.0.14"
-  },
-  "devDependencies": {
-    "prisma": "^5.21.1"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
   }
 }

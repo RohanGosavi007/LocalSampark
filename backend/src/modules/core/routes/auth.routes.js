@@ -137,7 +137,7 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
           try {
             const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
             if (matchedRegion) assignedRegionId = matchedRegion.id;
-          } catch(e) {}
+          } catch (e) { next(e); }
         }
 
         const id = crypto.randomUUID();
