@@ -35,7 +35,7 @@ ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS applied_at TIMESTAMP DEFAU
 
 -- delivery_agents: columns carried only by the shadowed declaration(s)
 ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS region_id TEXT;
-ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'offline', -- 'offline', 'available', 'busy';
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'offline';
 ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS current_lat REAL;
 ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS current_lng REAL;
 ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS rating REAL DEFAULT 5.0;
@@ -76,7 +76,7 @@ ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS joined_date TIMESTAMP DEFAULT CU
 ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- society_members: columns carried only by the shadowed declaration(s)
-ALTER TABLE society_members ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending', -- 'pending', 'active', 'inactive';
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 
 -- society_notices: columns carried only by the shadowed declaration(s)
 ALTER TABLE society_notices ADD COLUMN IF NOT EXISTS created_by TEXT;

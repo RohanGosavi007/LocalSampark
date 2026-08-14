@@ -73,7 +73,9 @@ CREATE TABLE IF NOT EXISTS societies (
     address TEXT,
     coordinate GEOGRAPHY(Point, 4326),
     visitor_gate_pass_code TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    subscription_fee REAL DEFAULT 0.0,
+    is_active BOOLEAN DEFAULT TRUE
 );
 
 -- ─── COMMUNITY FEED (POSTS, COMMENTS, VOTES) ────────────────
@@ -151,7 +153,12 @@ CREATE TABLE IF NOT EXISTS shop_reviews (
     review_text TEXT,
     photo_urls JSONB DEFAULT '[]',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(shop_id, user_id)
+    UNIQUE(shop_id, user_id),
+    customer_name TEXT,
+    comment TEXT,
+    reply TEXT,
+    status TEXT DEFAULT 'Published',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── GIG ECONOMY & JOBS ──────────────────────────────────────
@@ -185,7 +192,12 @@ CREATE TABLE IF NOT EXISTS job_applications (
     applicant_id UUID REFERENCES users(id) ON DELETE CASCADE,
     cover_note TEXT,
     status VARCHAR(20) DEFAULT 'applied', -- applied, shortlisted, interviewed, hired, rejected
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    user_id TEXT,
+    applicant_name TEXT,
+    applicant_phone TEXT,
+    experience_summary TEXT,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── REAL ESTATE HUB ────────────────────────────────────────
@@ -218,7 +230,12 @@ CREATE TABLE IF NOT EXISTS delivery_agents (
     is_online BOOLEAN DEFAULT FALSE,
     coordinate GEOGRAPHY(Point, 4326),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    region_id TEXT,
+    status TEXT DEFAULT 'offline',
+    current_lat REAL,
+    current_lng REAL,
+    rating REAL DEFAULT 5.0
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -278,7 +295,11 @@ CREATE TABLE IF NOT EXISTS referrals (
     referred_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
     status VARCHAR(20) DEFAULT 'pending', -- pending, completed
     reward_points INT DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    referee_id TEXT,
+    referral_code TEXT,
+    reward_issued INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── COMMUNITY POLLS & SURVEYS ──────────────────────────────
@@ -328,7 +349,13 @@ CREATE TABLE IF NOT EXISTS society_visitors (
     expected_at TIMESTAMP WITH TIME ZONE,
     checked_in_at TIMESTAMP WITH TIME ZONE,
     checked_out_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    guard_id TEXT,
+    visitor_photo_url TEXT,
+    id_card_photo_url TEXT,
+    flat_number TEXT,
+    approved_at TEXT,
+    notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS society_maintenance (
@@ -357,7 +384,12 @@ CREATE TABLE IF NOT EXISTS society_complaints (
     priority VARCHAR(10) DEFAULT 'medium', -- low, medium, high, urgent
     resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
     resolved_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    filed_by TEXT,
+    flat_number TEXT,
+    assigned_to TEXT,
+    admin_notes TEXT,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS society_bookings (
@@ -501,7 +533,10 @@ CREATE TABLE IF NOT EXISTS event_tickets (
     qr_code TEXT,
     status VARCHAR(20) DEFAULT 'valid', -- valid, used, cancelled, refunded
     payment_id VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    ticket_ref TEXT,
+    quantity INTEGER DEFAULT 1,
+    total_amount REAL
 );
 
 -- ─── v3-27: SUBSCRIPTION BOX ────────────────────────────────
@@ -749,10 +784,10 @@ INSERT INTO platform_settings (key, value) VALUES ('icon_theme', 'lucide') ON CO
 -- Migration: Add Hierarchy and Pincode to regions table
 
 -- Note: SQLite ALTER TABLE ADD COLUMN does not support adding multiple columns in one statement.
-ALTER TABLE regions ADD COLUMN region_type TEXT NOT NULL DEFAULT 'locality';
-ALTER TABLE regions ADD COLUMN parent_id TEXT REFERENCES regions(id) ON DELETE SET NULL;
-ALTER TABLE regions ADD COLUMN pincode TEXT;
-ALTER TABLE franchise_partners ADD COLUMN region_id TEXT REFERENCES regions(id) ON DELETE SET NULL;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS region_type TEXT NOT NULL DEFAULT 'locality';
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES regions(id) ON DELETE SET NULL;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS pincode TEXT;
+ALTER TABLE franchise_partners ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE SET NULL;
 
 
 -- =======================================
@@ -762,25 +797,32 @@ ALTER TABLE franchise_partners ADD COLUMN region_id TEXT REFERENCES regions(id) 
 -- 003_shop_expansion.sqlite.sql
 
 -- 1. Add new columns to local_shops (SQLite requires separate ALTER statements)
-ALTER TABLE local_shops ADD COLUMN shop_type TEXT DEFAULT 'retail';
-ALTER TABLE local_shops ADD COLUMN approval_status TEXT DEFAULT 'pending';
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS shop_type TEXT DEFAULT 'retail';
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'pending';
 
 -- 2. Create new tables
 CREATE TABLE IF NOT EXISTS shop_staff (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     role TEXT NOT NULL,
     profile_image TEXT,
     is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    phone TEXT,
+    email TEXT,
+    status TEXT DEFAULT 'Active',
+    shift TEXT,
+    commission REAL DEFAULT 0.0,
+    joined_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS shop_appointments (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     staff_id TEXT REFERENCES shop_staff(id) ON DELETE SET NULL,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     appointment_date TEXT NOT NULL,
     time_slot TEXT NOT NULL,
     status TEXT DEFAULT 'pending',
@@ -791,8 +833,8 @@ CREATE TABLE IF NOT EXISTS shop_appointments (
 
 CREATE TABLE IF NOT EXISTS shop_orders (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     total_amount REAL NOT NULL,
     status TEXT DEFAULT 'pending',
     items TEXT NOT NULL,
@@ -803,7 +845,7 @@ CREATE TABLE IF NOT EXISTS shop_orders (
 
 CREATE TABLE IF NOT EXISTS shop_offers (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
     discount_percentage INTEGER DEFAULT 0,
@@ -825,20 +867,21 @@ CREATE TABLE IF NOT EXISTS shop_offers (
 -- ─── SOCIETY MEMBERS ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_members (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     flat_number TEXT NOT NULL,
     role TEXT DEFAULT 'resident',
     is_active INTEGER DEFAULT 1,
-    added_by TEXT REFERENCES users(id),
+    added_by UUID REFERENCES users(id),
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(society_id, user_id)
+    UNIQUE(society_id, user_id),
+    status TEXT DEFAULT 'pending'
 );
 
 -- ─── SOCIETY SETTINGS ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_settings (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE UNIQUE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE UNIQUE,
     auto_approve_expected INTEGER DEFAULT 0,
     visitor_photo_required INTEGER DEFAULT 1,
     id_card_required INTEGER DEFAULT 1,
@@ -854,13 +897,16 @@ CREATE TABLE IF NOT EXISTS society_settings (
 -- ─── SOCIETY NOTICES ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_notices (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    posted_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    posted_by UUID REFERENCES users(id),
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     priority TEXT DEFAULT 'normal',
     is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT,
+    document_url TEXT,
+    is_urgent BOOLEAN DEFAULT FALSE
 );
 
 -- ─── SOCIETY VISITORS ───────────────────────────────────────
@@ -868,9 +914,9 @@ CREATE TABLE IF NOT EXISTS society_notices (
 -- ─── SOCIETY VISITOR LOG ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_visitor_log (
     id TEXT PRIMARY KEY,
-    visitor_id TEXT REFERENCES society_visitors(id) ON DELETE CASCADE,
+    visitor_id UUID REFERENCES society_visitors(id) ON DELETE CASCADE,
     action TEXT NOT NULL,
-    performed_by TEXT REFERENCES users(id),
+    performed_by UUID REFERENCES users(id),
     notes TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -878,9 +924,9 @@ CREATE TABLE IF NOT EXISTS society_visitor_log (
 -- ─── GUARD MESSAGES ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_guard_messages (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    sender_id TEXT REFERENCES users(id),
-    guard_id TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    sender_id UUID REFERENCES users(id),
+    guard_id UUID REFERENCES users(id),
     message TEXT NOT NULL,
     is_read INTEGER DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -889,9 +935,9 @@ CREATE TABLE IF NOT EXISTS society_guard_messages (
 -- ─── GUARD REMINDERS ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_guard_reminders (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    guard_id TEXT REFERENCES users(id),
-    created_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    guard_id UUID REFERENCES users(id),
+    created_by UUID REFERENCES users(id),
     title TEXT NOT NULL,
     description TEXT,
     reminder_time TEXT NOT NULL,
@@ -905,7 +951,7 @@ CREATE TABLE IF NOT EXISTS society_guard_reminders (
 -- ─── DOMESTIC STAFF ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_domestic_staff (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
     staff_name TEXT NOT NULL,
     staff_phone TEXT,
     staff_photo_url TEXT,
@@ -913,7 +959,7 @@ CREATE TABLE IF NOT EXISTS society_domestic_staff (
     assigned_flats TEXT DEFAULT '[]',
     id_proof_url TEXT,
     is_active INTEGER DEFAULT 1,
-    added_by TEXT REFERENCES users(id),
+    added_by UUID REFERENCES users(id),
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -921,8 +967,8 @@ CREATE TABLE IF NOT EXISTS society_domestic_staff (
 CREATE TABLE IF NOT EXISTS society_staff_attendance (
     id TEXT PRIMARY KEY,
     staff_id TEXT REFERENCES society_domestic_staff(id) ON DELETE CASCADE,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    marked_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    marked_by UUID REFERENCES users(id),
     check_in_time TEXT,
     check_out_time TEXT,
     date TEXT NOT NULL,
@@ -935,7 +981,7 @@ CREATE TABLE IF NOT EXISTS society_staff_attendance (
 -- ─── MAINTENANCE BILLS ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_maintenance_bills (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
     member_id TEXT REFERENCES society_members(id) ON DELETE CASCADE,
     flat_number TEXT NOT NULL,
     month TEXT NOT NULL,
@@ -951,14 +997,14 @@ CREATE TABLE IF NOT EXISTS society_maintenance_bills (
     paid_at TEXT,
     payment_reference TEXT,
     notes TEXT,
-    generated_by TEXT REFERENCES users(id),
+    generated_by UUID REFERENCES users(id),
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── PARKING SLOTS ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_parking_slots (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
     slot_number TEXT NOT NULL,
     slot_type TEXT DEFAULT 'car',
     flat_number TEXT,
@@ -974,7 +1020,7 @@ CREATE TABLE IF NOT EXISTS society_parking_slots (
 -- ─── AMENITIES ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_amenities (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     capacity INTEGER,
@@ -991,8 +1037,8 @@ CREATE TABLE IF NOT EXISTS society_amenities (
 CREATE TABLE IF NOT EXISTS society_amenity_bookings (
     id TEXT PRIMARY KEY,
     amenity_id TEXT REFERENCES society_amenities(id) ON DELETE CASCADE,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    booked_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    booked_by UUID REFERENCES users(id),
     flat_number TEXT,
     booking_date TEXT NOT NULL,
     start_time TEXT NOT NULL,
@@ -1009,10 +1055,10 @@ CREATE TABLE IF NOT EXISTS society_amenity_bookings (
 -- ─── PACKAGES ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_packages (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
     flat_number TEXT NOT NULL,
-    resident_id TEXT REFERENCES users(id),
-    logged_by TEXT REFERENCES users(id),
+    resident_id UUID REFERENCES users(id),
+    logged_by UUID REFERENCES users(id),
     courier_name TEXT,
     package_description TEXT,
     package_photo_url TEXT,
@@ -1027,8 +1073,8 @@ CREATE TABLE IF NOT EXISTS society_packages (
 -- ─── POLLS ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_polls (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    created_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    created_by UUID REFERENCES users(id),
     title TEXT NOT NULL,
     description TEXT,
     options TEXT NOT NULL,
@@ -1037,14 +1083,16 @@ CREATE TABLE IF NOT EXISTS society_polls (
     starts_at TEXT,
     ends_at TEXT,
     status TEXT DEFAULT 'active',
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    question TEXT,
+    expires_at TEXT
 );
 
 -- ─── POLL VOTES ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_poll_votes (
     id TEXT PRIMARY KEY,
     poll_id TEXT REFERENCES society_polls(id) ON DELETE CASCADE,
-    voter_id TEXT REFERENCES users(id),
+    voter_id UUID REFERENCES users(id),
     selected_option INTEGER NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(poll_id, voter_id)
@@ -1053,22 +1101,23 @@ CREATE TABLE IF NOT EXISTS society_poll_votes (
 -- ─── EMERGENCY ALERTS ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_emergency_alerts (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    triggered_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    triggered_by UUID REFERENCES users(id),
     alert_type TEXT NOT NULL,
     description TEXT,
     flat_number TEXT,
     status TEXT DEFAULT 'active',
     resolved_at TEXT,
-    resolved_by TEXT REFERENCES users(id),
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    resolved_by UUID REFERENCES users(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── EVENTS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_events (
     id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    created_by TEXT REFERENCES users(id),
+    society_id UUID REFERENCES societies(id) ON DELETE CASCADE,
+    created_by UUID REFERENCES users(id),
     title TEXT NOT NULL,
     description TEXT,
     event_date TEXT NOT NULL,
@@ -1085,7 +1134,7 @@ CREATE TABLE IF NOT EXISTS society_events (
 CREATE TABLE IF NOT EXISTS society_event_rsvps (
     id TEXT PRIMARY KEY,
     event_id TEXT REFERENCES society_events(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id),
+    user_id UUID REFERENCES users(id),
     flat_number TEXT,
     guests_count INTEGER DEFAULT 0,
     status TEXT DEFAULT 'going',
@@ -1135,7 +1184,21 @@ CREATE TABLE IF NOT EXISTS shop_categories (
     display_order INTEGER DEFAULT 0,
     registration_fields TEXT DEFAULT '[]',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    name_mr TEXT,
+    name_hi TEXT,
+    archetype TEXT DEFAULT 'retail',
+    parent_category_id TEXT,
+    requires_fssai BOOLEAN DEFAULT FALSE,
+    requires_gst BOOLEAN DEFAULT FALSE,
+    requires_drug_license BOOLEAN DEFAULT FALSE,
+    supports_delivery BOOLEAN DEFAULT TRUE,
+    supports_pickup BOOLEAN DEFAULT TRUE,
+    supports_appointment BOOLEAN DEFAULT FALSE,
+    supports_subscription BOOLEAN DEFAULT FALSE,
+    supports_table_booking BOOLEAN DEFAULT FALSE,
+    default_commission_pct REAL DEFAULT 10.0,
+    min_order_amount REAL DEFAULT 0
 );
 
 -- ═══════════════════════════════════════════════════════════
@@ -1143,7 +1206,7 @@ CREATE TABLE IF NOT EXISTS shop_categories (
 -- ═══════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_services (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     duration_minutes INTEGER DEFAULT 30,
@@ -1162,7 +1225,7 @@ CREATE TABLE IF NOT EXISTS shop_services (
 -- ═══════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_commissions (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     order_id TEXT,
     order_type TEXT NOT NULL CHECK (order_type IN ('product_order', 'appointment', 'subscription')),
     gross_amount REAL NOT NULL,
@@ -1183,8 +1246,8 @@ CREATE TABLE IF NOT EXISTS shop_commissions (
 CREATE TABLE IF NOT EXISTS shop_invoices (
     id TEXT PRIMARY KEY,
     invoice_number TEXT UNIQUE NOT NULL,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     order_id TEXT,
     order_type TEXT NOT NULL,
     items TEXT NOT NULL,
@@ -1203,7 +1266,7 @@ CREATE TABLE IF NOT EXISTS shop_invoices (
 -- ═══════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_qr_codes (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE UNIQUE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE UNIQUE,
     qr_data TEXT NOT NULL,
     qr_image_url TEXT,
     scan_count INTEGER DEFAULT 0,
@@ -1242,7 +1305,7 @@ CREATE TABLE IF NOT EXISTS staff_off_days (
 -- ═══════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS surge_pricing_rules (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     day_of_week INTEGER,
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
@@ -1254,53 +1317,53 @@ CREATE TABLE IF NOT EXISTS surge_pricing_rules (
 -- ═══════════════════════════════════════════════════════════
 -- ALTER: local_shops — Add location, commission, premium, delivery fields
 -- ═══════════════════════════════════════════════════════════
-ALTER TABLE local_shops ADD COLUMN latitude REAL;
-ALTER TABLE local_shops ADD COLUMN longitude REAL;
-ALTER TABLE local_shops ADD COLUMN category_id TEXT REFERENCES shop_categories(id);
-ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL;
-ALTER TABLE local_shops ADD COLUMN convenience_fee_override REAL;
-ALTER TABLE local_shops ADD COLUMN is_premium INTEGER DEFAULT 0;
-ALTER TABLE local_shops ADD COLUMN premium_expires_at TEXT;
-ALTER TABLE local_shops ADD COLUMN delivery_available INTEGER DEFAULT 0;
-ALTER TABLE local_shops ADD COLUMN pickup_available INTEGER DEFAULT 1;
-ALTER TABLE local_shops ADD COLUMN estimated_delivery_time TEXT;
-ALTER TABLE local_shops ADD COLUMN gst_number TEXT;
-ALTER TABLE local_shops ADD COLUMN bank_account TEXT;
-ALTER TABLE local_shops ADD COLUMN registration_metadata TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS latitude REAL;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS longitude REAL;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS category_id TEXT REFERENCES shop_categories(id);
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS commission_override_percent REAL;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS convenience_fee_override REAL;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS is_premium INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS premium_expires_at TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS delivery_available INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS pickup_available INTEGER DEFAULT 1;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS estimated_delivery_time TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS gst_number TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS bank_account TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS registration_metadata TEXT;
 
 -- ═══════════════════════════════════════════════════════════
 -- ALTER: shop_staff — Add specialization, performance tracking
 -- ═══════════════════════════════════════════════════════════
-ALTER TABLE shop_staff ADD COLUMN specialization TEXT;
-ALTER TABLE shop_staff ADD COLUMN phone_number TEXT;
-ALTER TABLE shop_staff ADD COLUMN experience_years INTEGER DEFAULT 0;
-ALTER TABLE shop_staff ADD COLUMN avg_rating REAL DEFAULT 0.0;
-ALTER TABLE shop_staff ADD COLUMN total_bookings INTEGER DEFAULT 0;
-ALTER TABLE shop_staff ADD COLUMN total_revenue REAL DEFAULT 0.0;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS specialization TEXT;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS phone_number TEXT;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS experience_years INTEGER DEFAULT 0;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS avg_rating REAL DEFAULT 0.0;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS total_bookings INTEGER DEFAULT 0;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS total_revenue REAL DEFAULT 0.0;
 
 -- ═══════════════════════════════════════════════════════════
 -- ALTER: shop_appointments — Add service reference, pricing, customer info
 -- ═══════════════════════════════════════════════════════════
-ALTER TABLE shop_appointments ADD COLUMN service_id TEXT REFERENCES shop_services(id);
-ALTER TABLE shop_appointments ADD COLUMN service_price REAL;
-ALTER TABLE shop_appointments ADD COLUMN surge_multiplier REAL DEFAULT 1.0;
-ALTER TABLE shop_appointments ADD COLUMN final_price REAL;
-ALTER TABLE shop_appointments ADD COLUMN customer_notes TEXT;
-ALTER TABLE shop_appointments ADD COLUMN customer_name TEXT;
-ALTER TABLE shop_appointments ADD COLUMN customer_phone TEXT;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS service_id TEXT REFERENCES shop_services(id);
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS service_price REAL;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS surge_multiplier REAL DEFAULT 1.0;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS final_price REAL;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS customer_notes TEXT;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS customer_name TEXT;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS customer_phone TEXT;
 
 -- ═══════════════════════════════════════════════════════════
 -- ALTER: shop_orders — Add delivery integration, customer info
 -- ═══════════════════════════════════════════════════════════
-ALTER TABLE shop_orders ADD COLUMN delivery_type TEXT DEFAULT 'pickup';
-ALTER TABLE shop_orders ADD COLUMN delivery_address TEXT;
-ALTER TABLE shop_orders ADD COLUMN delivery_coordinate TEXT;
-ALTER TABLE shop_orders ADD COLUMN delivery_fee REAL DEFAULT 0.0;
-ALTER TABLE shop_orders ADD COLUMN delivery_agent_id TEXT;
-ALTER TABLE shop_orders ADD COLUMN estimated_delivery_time TEXT;
-ALTER TABLE shop_orders ADD COLUMN customer_name TEXT;
-ALTER TABLE shop_orders ADD COLUMN customer_phone TEXT;
-ALTER TABLE shop_orders ADD COLUMN tracking_otp TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS delivery_type TEXT DEFAULT 'pickup';
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS delivery_address TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS delivery_coordinate TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS delivery_fee REAL DEFAULT 0.0;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS delivery_agent_id TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS estimated_delivery_time TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS customer_name TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS tracking_otp TEXT;
 
 -- ═══════════════════════════════════════════════════════════
 -- INDEXES
@@ -1379,26 +1442,26 @@ INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_pe
 
 -- Migration: Add remaining Phase 3 columns for Zone/Region System
 
-ALTER TABLE regions ADD COLUMN district TEXT;
-ALTER TABLE regions ADD COLUMN city TEXT;
-ALTER TABLE regions ADD COLUMN is_active INTEGER DEFAULT 0;
-ALTER TABLE regions ADD COLUMN launch_date TEXT;
-ALTER TABLE regions ADD COLUMN population_estimate INTEGER;
-ALTER TABLE regions ADD COLUMN tier TEXT DEFAULT 'tier3';
-ALTER TABLE regions ADD COLUMN zone_type TEXT DEFAULT 'urban';
-ALTER TABLE regions ADD COLUMN local_language TEXT DEFAULT 'mr';
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS district TEXT;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 0;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS launch_date TEXT;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS population_estimate INTEGER;
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'tier3';
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS zone_type TEXT DEFAULT 'urban';
+ALTER TABLE regions ADD COLUMN IF NOT EXISTS local_language TEXT DEFAULT 'mr';
 
 CREATE INDEX IF NOT EXISTS idx_regions_district ON regions (district);
 CREATE INDEX IF NOT EXISTS idx_regions_pincode ON regions (pincode);
 CREATE INDEX IF NOT EXISTS idx_regions_state ON regions (state);
 CREATE INDEX IF NOT EXISTS idx_regions_active ON regions (is_active);
 
-ALTER TABLE users ADD COLUMN active_zone_id TEXT REFERENCES regions(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active_zone_id UUID REFERENCES regions(id);
 
 CREATE TABLE IF NOT EXISTS user_saved_zones (
   id TEXT PRIMARY KEY,
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  region_id TEXT REFERENCES regions(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
   label TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, region_id)
@@ -1414,10 +1477,10 @@ CREATE TABLE IF NOT EXISTS user_saved_zones (
 -- 1. Batch Orders (For Multi-Shop Carts)
 CREATE TABLE IF NOT EXISTS batch_orders (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     total_batch_amount REAL NOT NULL DEFAULT 0.00,
     combined_delivery_fee REAL NOT NULL DEFAULT 0.00,
-    delivery_partner_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    delivery_partner_id UUID REFERENCES users(id) ON DELETE SET NULL,
     status TEXT DEFAULT 'pending',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -1426,11 +1489,11 @@ CREATE TABLE IF NOT EXISTS batch_orders (
 -- Modify Orders table (SQLite requires adding column if not exists, but we can just use ALTER TABLE)
 -- Since SQLite ALTER TABLE ADD COLUMN IF NOT EXISTS is not standard until newer versions, we will try standard ALTER TABLE.
 -- If it fails because column exists, it's fine.
-ALTER TABLE orders ADD COLUMN batch_id TEXT REFERENCES batch_orders(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS batch_id TEXT REFERENCES batch_orders(id) ON DELETE SET NULL;
 
 -- 2. Loyalty Coins
 CREATE TABLE IF NOT EXISTS loyalty_accounts (
-    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     sampark_coins_balance INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -1438,7 +1501,7 @@ CREATE TABLE IF NOT EXISTS loyalty_accounts (
 
 CREATE TABLE IF NOT EXISTS loyalty_transactions (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     amount INTEGER NOT NULL,
     transaction_type TEXT NOT NULL, -- 'earned' or 'burned'
     reference_id TEXT, -- e.g., order_id
@@ -1447,18 +1510,18 @@ CREATE TABLE IF NOT EXISTS loyalty_transactions (
 );
 
 -- 3. Shop Stories/Highlights
-ALTER TABLE stories ADD COLUMN shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE;
 
 -- 4. Shop QA & Society Verified Reviews
-ALTER TABLE shop_reviews ADD COLUMN is_society_verified INTEGER DEFAULT 0;
+ALTER TABLE shop_reviews ADD COLUMN IF NOT EXISTS is_society_verified INTEGER DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS shop_qa (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     question TEXT NOT NULL,
     answer TEXT,
-    answered_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    answered_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -1466,8 +1529,8 @@ CREATE TABLE IF NOT EXISTS shop_qa (
 -- 5. Flash Sales
 CREATE TABLE IF NOT EXISTS flash_sales (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    product_id TEXT REFERENCES shop_products(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES shop_products(id) ON DELETE CASCADE,
     discount_percentage REAL NOT NULL,
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
@@ -1483,7 +1546,7 @@ CREATE TABLE IF NOT EXISTS flash_sales (
 -- ─── DELIVERY WALLET LEDGER ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS delivery_wallets (
     id TEXT PRIMARY KEY,
-    agent_id TEXT REFERENCES delivery_agents(id) ON DELETE CASCADE UNIQUE,
+    agent_id UUID REFERENCES delivery_agents(id) ON DELETE CASCADE UNIQUE,
     balance REAL NOT NULL DEFAULT 0.00,
     total_earned REAL NOT NULL DEFAULT 0.00,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -1503,19 +1566,19 @@ CREATE TABLE IF NOT EXISTS delivery_wallet_transactions (
 
 -- ─── DRIVER KYC ONBOARDING ──────────────────────────────────────
 -- Add columns to delivery_agents table if they don't exist
-ALTER TABLE delivery_agents ADD COLUMN aadhar_number TEXT;
-ALTER TABLE delivery_agents ADD COLUMN dl_number TEXT;
-ALTER TABLE delivery_agents ADD COLUMN rc_number TEXT;
-ALTER TABLE delivery_agents ADD COLUMN profile_image_url TEXT;
-ALTER TABLE delivery_agents ADD COLUMN dl_image_url TEXT;
-ALTER TABLE delivery_agents ADD COLUMN rc_image_url TEXT;
-ALTER TABLE delivery_agents ADD COLUMN kyc_status TEXT DEFAULT 'pending'; -- 'pending', 'approved', 'rejected'
-ALTER TABLE delivery_agents ADD COLUMN full_name TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS aadhar_number TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS dl_number TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS rc_number TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS profile_image_url TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS dl_image_url TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS rc_image_url TEXT;
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS kyc_status TEXT DEFAULT 'pending'; -- 'pending', 'approved', 'rejected'
+ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS full_name TEXT;
 
 -- ─── DELIVERY ANALYTICS (Daily/Weekly/Monthly) ──────────────────
 CREATE TABLE IF NOT EXISTS delivery_analytics (
     id TEXT PRIMARY KEY,
-    agent_id TEXT REFERENCES delivery_agents(id) ON DELETE CASCADE,
+    agent_id UUID REFERENCES delivery_agents(id) ON DELETE CASCADE,
     period_type TEXT NOT NULL, -- 'daily', 'weekly', 'monthly'
     period_start TEXT NOT NULL, -- ISO Date string '2026-07-04'
     period_end TEXT NOT NULL,
@@ -1537,7 +1600,7 @@ CREATE TABLE IF NOT EXISTS delivery_analytics (
 -- 1. Delivery Batches: For grouping multiple orders to one agent
 CREATE TABLE IF NOT EXISTS delivery_batches (
     id TEXT PRIMARY KEY,
-    agent_id TEXT,
+    agent_id UUID,
     zone_id TEXT,
     status TEXT DEFAULT 'pending', -- pending, assigned, in_progress, completed
     total_amount REAL DEFAULT 0,
@@ -1553,7 +1616,7 @@ CREATE TABLE IF NOT EXISTS delivery_jobs (
     batch_id TEXT,
     shop_order_id TEXT,
     requester_id TEXT,
-    assigned_agent_id TEXT REFERENCES delivery_agents(id),
+    assigned_agent_id UUID REFERENCES delivery_agents(id),
     pickup_location TEXT,
     dropoff_location TEXT,
     item_details TEXT,
@@ -1576,7 +1639,7 @@ CREATE TABLE IF NOT EXISTS delivery_jobs (
 -- 3. High-Frequency Telemetry
 CREATE TABLE IF NOT EXISTS delivery_telemetry (
     id TEXT PRIMARY KEY,
-    agent_id TEXT NOT NULL,
+    agent_id UUID NOT NULL,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     speed REAL DEFAULT 0,
@@ -1610,7 +1673,7 @@ CREATE TABLE IF NOT EXISTS delivery_incentives (
 -- 2. Reward Coins Ledger
 CREATE TABLE IF NOT EXISTS reward_coins_ledger (
     id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    user_id UUID NOT NULL,
     amount INTEGER NOT NULL, -- Number of coins (100 coins = 10 rupees)
     transaction_type TEXT NOT NULL, -- 'earned_referral', 'spent_on_order', 'earned_cashback'
     description TEXT,
@@ -1620,13 +1683,13 @@ CREATE TABLE IF NOT EXISTS reward_coins_ledger (
 
 -- Ensure users have a total_coins column
 -- ALTER TABLE users ADD COLUMN total_coins INTEGER DEFAULT 0;
-ALTER TABLE users ADD COLUMN my_referral_code TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS my_referral_code TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(my_referral_code);
 
 -- 3. Reviews and Ratings
 CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    user_id UUID NOT NULL,
     target_id TEXT NOT NULL, -- Can be shop_id, agent_id, or service_id
     target_type TEXT NOT NULL, -- 'shop', 'agent', 'service'
     rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
@@ -1648,7 +1711,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 
 CREATE TABLE IF NOT EXISTS visitor_logs (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT,
     visitor_name TEXT NOT NULL,
     visitor_phone TEXT,
@@ -1663,7 +1726,7 @@ CREATE TABLE IF NOT EXISTS visitor_logs (
 
 CREATE TABLE IF NOT EXISTS maintenance_bills (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     amount REAL NOT NULL,
     due_date TEXT,
@@ -1678,7 +1741,7 @@ CREATE TABLE IF NOT EXISTS maintenance_bills (
 -- 2. Add-Ons Pack 1
 CREATE TABLE IF NOT EXISTS society_helpdesk (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     issue_type TEXT,
     description TEXT,
@@ -1702,7 +1765,7 @@ CREATE TABLE IF NOT EXISTS amenity_bookings (
 
 CREATE TABLE IF NOT EXISTS society_classifieds (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
@@ -1715,7 +1778,7 @@ CREATE TABLE IF NOT EXISTS society_classifieds (
 -- 3. Add-Ons Pack 2
 CREATE TABLE IF NOT EXISTS daily_staff (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     name TEXT NOT NULL,
     type TEXT, -- 'maid', 'cook', 'driver'
     phone TEXT,
@@ -1733,7 +1796,7 @@ CREATE TABLE IF NOT EXISTS daily_staff_flats (
 
 CREATE TABLE IF NOT EXISTS vehicles (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     flat_number TEXT NOT NULL,
     license_plate TEXT NOT NULL,
@@ -1746,7 +1809,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
 -- 4. Enterprise Pack 3
 CREATE TABLE IF NOT EXISTS parcel_desk (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     courier_name TEXT,
     otp TEXT NOT NULL,
@@ -1757,7 +1820,7 @@ CREATE TABLE IF NOT EXISTS parcel_desk (
 
 CREATE TABLE IF NOT EXISTS child_security (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     child_name TEXT NOT NULL,
     exit_permission TEXT DEFAULT 'requires_parent',
@@ -1766,7 +1829,7 @@ CREATE TABLE IF NOT EXISTS child_security (
 
 CREATE TABLE IF NOT EXISTS pet_registry (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     pet_type TEXT,
     pet_name TEXT NOT NULL,
@@ -1776,7 +1839,7 @@ CREATE TABLE IF NOT EXISTS pet_registry (
 
 CREATE TABLE IF NOT EXISTS move_passes (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     type TEXT, -- 'move_in', 'move_out'
     status TEXT DEFAULT 'pending',
@@ -1786,7 +1849,7 @@ CREATE TABLE IF NOT EXISTS move_passes (
 
 CREATE TABLE IF NOT EXISTS society_vault (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     document_name TEXT NOT NULL,
     file_url TEXT NOT NULL,
     uploaded_by TEXT,
@@ -1797,7 +1860,7 @@ CREATE TABLE IF NOT EXISTS society_vault (
 -- 5. Flagship Pack 4
 CREATE TABLE IF NOT EXISTS society_expenses (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     category TEXT,
     amount REAL NOT NULL,
     date TEXT,
@@ -1807,7 +1870,7 @@ CREATE TABLE IF NOT EXISTS society_expenses (
 
 CREATE TABLE IF NOT EXISTS blood_donors (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     blood_group TEXT NOT NULL,
     last_donated_at TEXT,
@@ -1816,7 +1879,7 @@ CREATE TABLE IF NOT EXISTS blood_donors (
 
 CREATE TABLE IF NOT EXISTS utility_meters (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     meter_type TEXT NOT NULL, -- 'electricity', 'gas', 'fastag'
     current_balance REAL DEFAULT 0.0,
@@ -1835,7 +1898,7 @@ CREATE TABLE IF NOT EXISTS meter_recharges (
 
 CREATE TABLE IF NOT EXISTS intercom_logs (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     guard_id TEXT NOT NULL,
     flat_number TEXT NOT NULL,
     call_status TEXT,
@@ -1847,7 +1910,7 @@ CREATE TABLE IF NOT EXISTS intercom_logs (
 -- 6. Unstoppable Pack 5
 CREATE TABLE IF NOT EXISTS group_buy_campaigns (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     product_name TEXT NOT NULL,
     wholesale_price REAL NOT NULL,
     min_orders_required INTEGER DEFAULT 10,
@@ -1867,7 +1930,7 @@ CREATE TABLE IF NOT EXISTS group_buy_orders (
 
 CREATE TABLE IF NOT EXISTS society_carpools (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     destination TEXT NOT NULL,
     departure_time TEXT NOT NULL,
@@ -1878,7 +1941,7 @@ CREATE TABLE IF NOT EXISTS society_carpools (
 
 CREATE TABLE IF NOT EXISTS resident_directory (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     profession TEXT,
     skills TEXT,
@@ -1888,7 +1951,7 @@ CREATE TABLE IF NOT EXISTS resident_directory (
 
 CREATE TABLE IF NOT EXISTS lost_and_found (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     item_name TEXT NOT NULL,
     description TEXT,
@@ -1901,7 +1964,7 @@ CREATE TABLE IF NOT EXISTS lost_and_found (
 -- 7. Visionary Pack 6
 CREATE TABLE IF NOT EXISTS ev_charging_stations (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     station_name TEXT NOT NULL,
     status TEXT DEFAULT 'available',
     current_user_id TEXT,
@@ -1921,7 +1984,7 @@ CREATE TABLE IF NOT EXISTS ev_charging_sessions (
 
 CREATE TABLE IF NOT EXISTS water_meters (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     daily_consumption_liters REAL DEFAULT 0.0,
     FOREIGN KEY(society_id) REFERENCES societies(id)
@@ -1929,7 +1992,7 @@ CREATE TABLE IF NOT EXISTS water_meters (
 
 CREATE TABLE IF NOT EXISTS society_karma_ledger (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     amount INTEGER NOT NULL,
     action TEXT, -- 'earned', 'spent'
@@ -1940,7 +2003,7 @@ CREATE TABLE IF NOT EXISTS society_karma_ledger (
 
 CREATE TABLE IF NOT EXISTS cpr_responders (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     certification_level TEXT,
     is_available INTEGER DEFAULT 1,
@@ -1950,7 +2013,7 @@ CREATE TABLE IF NOT EXISTS cpr_responders (
 -- 8. God-Tier Pack 7
 CREATE TABLE IF NOT EXISTS ai_cctv_alerts (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     camera_id TEXT NOT NULL,
     threat_level TEXT,
     snapshot_url TEXT,
@@ -1961,7 +2024,7 @@ CREATE TABLE IF NOT EXISTS ai_cctv_alerts (
 
 CREATE TABLE IF NOT EXISTS faceid_profiles (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     vector_data TEXT NOT NULL,
     status TEXT DEFAULT 'active',
@@ -1970,7 +2033,7 @@ CREATE TABLE IF NOT EXISTS faceid_profiles (
 
 CREATE TABLE IF NOT EXISTS iot_waste_bins (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     location TEXT NOT NULL,
     capacity_percent INTEGER DEFAULT 0,
     last_emptied_at TEXT,
@@ -1979,7 +2042,7 @@ CREATE TABLE IF NOT EXISTS iot_waste_bins (
 
 CREATE TABLE IF NOT EXISTS housekeeping_tasks (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     assigned_to TEXT,
     task_type TEXT,
     status TEXT DEFAULT 'pending',
@@ -1988,7 +2051,7 @@ CREATE TABLE IF NOT EXISTS housekeeping_tasks (
 
 CREATE TABLE IF NOT EXISTS drone_pad_deliveries (
     id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
+    society_id UUID NOT NULL,
     flat_number TEXT NOT NULL,
     drone_operator TEXT,
     locker_pin TEXT NOT NULL,
@@ -2008,7 +2071,7 @@ CREATE TABLE IF NOT EXISTS drone_pad_deliveries (
 CREATE TABLE IF NOT EXISTS order_dispatch (
     id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL,
-    agent_id TEXT,
+    agent_id UUID,
     pickup_time TEXT,
     delivery_time TEXT,
     status TEXT DEFAULT 'pending', -- 'pending', 'assigned', 'picked_up', 'delivered', 'failed'
@@ -2019,7 +2082,7 @@ CREATE TABLE IF NOT EXISTS order_dispatch (
 
 CREATE TABLE IF NOT EXISTS agent_payouts (
     id TEXT PRIMARY KEY,
-    agent_id TEXT NOT NULL,
+    agent_id UUID NOT NULL,
     amount REAL NOT NULL,
     week_ending TEXT,
     payment_status TEXT DEFAULT 'pending', -- 'pending', 'paid'
@@ -2071,10 +2134,10 @@ INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_pe
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_disputes (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     order_id TEXT,
     appointment_id TEXT,
-    initiator_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    initiator_id UUID REFERENCES users(id) ON DELETE SET NULL,
     initiator_role TEXT NOT NULL CHECK (initiator_role IN ('visitor', 'shop_owner')),
     category TEXT NOT NULL CHECK (category IN ('wrong_item', 'quality_issue', 'late_delivery', 'overcharge', 'rude_behavior', 'no_show', 'damage', 'other')),
     description TEXT NOT NULL,
@@ -2082,7 +2145,7 @@ CREATE TABLE IF NOT EXISTS shop_disputes (
     status TEXT DEFAULT 'open' CHECK (status IN ('open', 'under_review', 'resolved', 'closed', 'escalated')),
     resolution TEXT,
     admin_notes TEXT,
-    resolved_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
     resolved_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -2099,8 +2162,8 @@ CREATE INDEX IF NOT EXISTS idx_shop_disputes_initiator ON shop_disputes (initiat
 CREATE TABLE IF NOT EXISTS shop_returns (
     id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     reason TEXT NOT NULL CHECK (reason IN ('wrong_item', 'damaged', 'not_as_described', 'expired', 'change_of_mind', 'other')),
     description TEXT,
     photo_urls TEXT DEFAULT '[]',
@@ -2108,9 +2171,9 @@ CREATE TABLE IF NOT EXISTS shop_returns (
     refund_amount REAL DEFAULT 0.0,
     status TEXT DEFAULT 'requested' CHECK (status IN ('requested', 'approved', 'pickup_scheduled', 'picked_up', 'refunded', 'rejected')),
     pickup_date TEXT,
-    pickup_agent_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    pickup_agent_id UUID REFERENCES users(id) ON DELETE SET NULL,
     admin_notes TEXT,
-    approved_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    approved_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -2125,7 +2188,7 @@ CREATE INDEX IF NOT EXISTS idx_shop_returns_status ON shop_returns (status);
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_notifications (
     id TEXT PRIMARY KEY,
-    recipient_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    recipient_id UUID REFERENCES users(id) ON DELETE CASCADE,
     type TEXT NOT NULL CHECK (type IN ('order_update', 'appointment_reminder', 'appointment_update', 'dispute_update', 'payout_settled', 'new_review', 'chat_message', 'flash_sale', 'return_update', 'system', 'promotion')),
     title TEXT NOT NULL,
     body TEXT,
@@ -2146,9 +2209,9 @@ CREATE INDEX IF NOT EXISTS idx_shop_notifications_type ON shop_notifications (ty
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_chat_messages (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    sender_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-    receiver_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    receiver_id UUID REFERENCES users(id) ON DELETE SET NULL,
     message TEXT NOT NULL,
     message_type TEXT DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'system', 'order_card', 'appointment_card')),
     reference_id TEXT,
@@ -2167,8 +2230,8 @@ CREATE INDEX IF NOT EXISTS idx_shop_chat_receiver ON shop_chat_messages (receive
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_walkin_scans (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    visitor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    visitor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     scan_source TEXT DEFAULT 'qr' CHECK (scan_source IN ('qr', 'nfc', 'manual')),
     scanned_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -2181,7 +2244,7 @@ CREATE INDEX IF NOT EXISTS idx_shop_walkin_shop ON shop_walkin_scans (shop_id);
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_owner_payouts (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     amount REAL NOT NULL,
     period_start TEXT NOT NULL,
     period_end TEXT NOT NULL,
@@ -2193,7 +2256,7 @@ CREATE TABLE IF NOT EXISTS shop_owner_payouts (
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'settled', 'failed')),
     bank_reference TEXT,
     settled_at TEXT,
-    settled_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    settled_by UUID REFERENCES users(id) ON DELETE SET NULL,
     notes TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -2207,7 +2270,7 @@ CREATE INDEX IF NOT EXISTS idx_shop_payouts_status ON shop_owner_payouts (status
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS tiffin_plans (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     meal_type TEXT NOT NULL CHECK (meal_type IN ('lunch', 'dinner', 'both', 'breakfast')),
@@ -2228,8 +2291,8 @@ CREATE TABLE IF NOT EXISTS tiffin_plans (
 CREATE TABLE IF NOT EXISTS tiffin_subscriptions (
     id TEXT PRIMARY KEY,
     plan_id TEXT REFERENCES tiffin_plans(id) ON DELETE CASCADE,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     subscription_type TEXT NOT NULL CHECK (subscription_type IN ('daily', 'weekly', 'monthly', 'trial')),
     delivery_address TEXT NOT NULL,
     delivery_coordinate TEXT,
@@ -2250,7 +2313,7 @@ CREATE TABLE IF NOT EXISTS tiffin_subscriptions (
 
 CREATE TABLE IF NOT EXISTS tiffin_daily_menu (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     plan_id TEXT REFERENCES tiffin_plans(id) ON DELETE CASCADE,
     menu_date TEXT NOT NULL,
     meal_type TEXT NOT NULL CHECK (meal_type IN ('lunch', 'dinner', 'breakfast')),
@@ -2265,12 +2328,12 @@ CREATE TABLE IF NOT EXISTS tiffin_daily_menu (
 CREATE TABLE IF NOT EXISTS tiffin_deliveries (
     id TEXT PRIMARY KEY,
     subscription_id TEXT REFERENCES tiffin_subscriptions(id) ON DELETE CASCADE,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     delivery_date TEXT NOT NULL,
     meal_type TEXT NOT NULL,
     status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'preparing', 'dispatched', 'delivered', 'skipped', 'cancelled')),
     delivery_mode TEXT DEFAULT 'shop_delivery',
-    delivery_agent_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    delivery_agent_id UUID REFERENCES users(id) ON DELETE SET NULL,
     delivered_at TEXT,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     feedback TEXT,
@@ -2290,7 +2353,7 @@ CREATE INDEX IF NOT EXISTS idx_tiffin_deliveries_date ON tiffin_deliveries (deli
 -- Table Management (Dine-in)
 CREATE TABLE IF NOT EXISTS restaurant_tables (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     table_number TEXT NOT NULL,
     capacity INTEGER NOT NULL DEFAULT 4,
     section TEXT DEFAULT 'main',
@@ -2305,7 +2368,7 @@ CREATE TABLE IF NOT EXISTS restaurant_tables (
 -- Kitchen Display System (KDS) Tickets
 CREATE TABLE IF NOT EXISTS kds_tickets (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     order_id TEXT NOT NULL,
     ticket_number INTEGER NOT NULL,
     items TEXT NOT NULL DEFAULT '[]',
@@ -2323,7 +2386,7 @@ CREATE TABLE IF NOT EXISTS kds_tickets (
 -- Menu Customization Options
 CREATE TABLE IF NOT EXISTS menu_customizations (
     id TEXT PRIMARY KEY,
-    product_id TEXT REFERENCES shop_products(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES shop_products(id) ON DELETE CASCADE,
     group_name TEXT NOT NULL,
     group_type TEXT DEFAULT 'single' CHECK (group_type IN ('single', 'multiple')),
     is_required INTEGER DEFAULT 0,
@@ -2335,8 +2398,8 @@ CREATE TABLE IF NOT EXISTS menu_customizations (
 -- Table Reservations
 CREATE TABLE IF NOT EXISTS table_reservations (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     table_id TEXT REFERENCES restaurant_tables(id) ON DELETE SET NULL,
     reservation_date TEXT NOT NULL,
     reservation_time TEXT NOT NULL,
@@ -2353,7 +2416,7 @@ CREATE TABLE IF NOT EXISTS table_reservations (
 CREATE TABLE IF NOT EXISTS order_item_customizations (
     id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL,
-    product_id TEXT REFERENCES shop_products(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES shop_products(id) ON DELETE CASCADE,
     customization_id TEXT REFERENCES menu_customizations(id) ON DELETE SET NULL,
     selected_options TEXT NOT NULL DEFAULT '[]',
     extra_charge REAL DEFAULT 0.0,
@@ -2363,8 +2426,8 @@ CREATE TABLE IF NOT EXISTS order_item_customizations (
 -- Daily Specials
 CREATE TABLE IF NOT EXISTS daily_specials (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    product_id TEXT REFERENCES shop_products(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES shop_products(id) ON DELETE CASCADE,
     special_date TEXT NOT NULL,
     original_price REAL NOT NULL,
     special_price REAL NOT NULL,
@@ -2386,8 +2449,8 @@ CREATE INDEX IF NOT EXISTS idx_table_reservations_date ON table_reservations (re
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS job_cards (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    customer_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
     job_number TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
@@ -2424,8 +2487,8 @@ CREATE INDEX IF NOT EXISTS idx_job_cards_status ON job_cards (status);
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS service_quotations (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    customer_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
     service_request_description TEXT NOT NULL,
     service_photos TEXT DEFAULT '[]',
     service_address TEXT,
@@ -2456,17 +2519,17 @@ CREATE INDEX IF NOT EXISTS idx_quotations_status ON service_quotations (status);
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS shop_favorites (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, shop_id)
 );
 
 CREATE TABLE IF NOT EXISTS shop_wishlists (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-    product_id TEXT REFERENCES shop_products(id) ON DELETE CASCADE,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES shop_products(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, product_id)
 );
@@ -2480,7 +2543,7 @@ CREATE INDEX IF NOT EXISTS idx_wishlists_user ON shop_wishlists (user_id);
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS user_badges (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     badge_type TEXT NOT NULL,
     badge_name TEXT NOT NULL,
     badge_icon TEXT,
@@ -2491,7 +2554,7 @@ CREATE TABLE IF NOT EXISTS user_badges (
 
 CREATE TABLE IF NOT EXISTS daily_rewards (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     reward_date TEXT NOT NULL,
     reward_type TEXT NOT NULL CHECK (reward_type IN ('spin_wheel', 'daily_login', 'streak_bonus', 'challenge_complete')),
     reward_value REAL DEFAULT 0,
@@ -2503,7 +2566,7 @@ CREATE TABLE IF NOT EXISTS daily_rewards (
 
 CREATE TABLE IF NOT EXISTS locality_challenges (
     id TEXT PRIMARY KEY,
-    region_id TEXT REFERENCES regions(id) ON DELETE CASCADE,
+    region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
     challenge_type TEXT NOT NULL CHECK (challenge_type IN ('order_count', 'category_explore', 'review_write', 'referral', 'spending')),
@@ -2517,7 +2580,7 @@ CREATE TABLE IF NOT EXISTS locality_challenges (
 
 CREATE TABLE IF NOT EXISTS user_challenge_progress (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     challenge_id TEXT REFERENCES locality_challenges(id) ON DELETE CASCADE,
     current_progress INTEGER DEFAULT 0,
     is_completed INTEGER DEFAULT 0,
@@ -2537,7 +2600,7 @@ CREATE INDEX IF NOT EXISTS idx_challenges_region ON locality_challenges (region_
 -- ═══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS file_uploads (
     id TEXT PRIMARY KEY,
-    uploader_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    uploader_id UUID REFERENCES users(id) ON DELETE SET NULL,
     file_name TEXT NOT NULL,
     file_path TEXT NOT NULL,
     file_type TEXT NOT NULL,
@@ -2555,56 +2618,56 @@ CREATE INDEX IF NOT EXISTS idx_uploads_uploader ON file_uploads (uploader_id);
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Extend local_shops with management archetype
-ALTER TABLE local_shops ADD COLUMN management_archetype TEXT;
-ALTER TABLE local_shops ADD COLUMN busy_status TEXT DEFAULT 'normal' CHECK (busy_status IN ('not_busy', 'normal', 'moderate', 'very_busy'));
-ALTER TABLE local_shops ADD COLUMN avg_wait_minutes INTEGER DEFAULT 0;
-ALTER TABLE local_shops ADD COLUMN dine_in_available INTEGER DEFAULT 0;
-ALTER TABLE local_shops ADD COLUMN self_delivery_available INTEGER DEFAULT 0;
-ALTER TABLE local_shops ADD COLUMN accepts_walkin INTEGER DEFAULT 1;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS management_archetype TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS busy_status TEXT DEFAULT 'normal' CHECK (busy_status IN ('not_busy', 'normal', 'moderate', 'very_busy'));
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS avg_wait_minutes INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS dine_in_available INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS self_delivery_available INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS accepts_walkin INTEGER DEFAULT 1;
 
 -- Extend shop_appointments with enhanced tracking
-ALTER TABLE shop_appointments ADD COLUMN check_in_status TEXT DEFAULT 'pending' CHECK (check_in_status IN ('pending', 'checked_in', 'in_progress', 'completed', 'no_show'));
-ALTER TABLE shop_appointments ADD COLUMN no_show INTEGER DEFAULT 0;
-ALTER TABLE shop_appointments ADD COLUMN reschedule_count INTEGER DEFAULT 0;
-ALTER TABLE shop_appointments ADD COLUMN original_appointment_id TEXT;
-ALTER TABLE shop_appointments ADD COLUMN reminder_sent INTEGER DEFAULT 0;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS check_in_status TEXT DEFAULT 'pending' CHECK (check_in_status IN ('pending', 'checked_in', 'in_progress', 'completed', 'no_show'));
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS no_show INTEGER DEFAULT 0;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS reschedule_count INTEGER DEFAULT 0;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS original_appointment_id TEXT;
+ALTER TABLE shop_appointments ADD COLUMN IF NOT EXISTS reminder_sent INTEGER DEFAULT 0;
 
 -- Extend shop_orders with enhanced states
-ALTER TABLE shop_orders ADD COLUMN order_type TEXT DEFAULT 'online' CHECK (order_type IN ('online', 'walkin', 'phone', 'dine_in', 'qr_order'));
-ALTER TABLE shop_orders ADD COLUMN table_id TEXT;
-ALTER TABLE shop_orders ADD COLUMN preparation_time_minutes INTEGER;
-ALTER TABLE shop_orders ADD COLUMN accepted_at TEXT;
-ALTER TABLE shop_orders ADD COLUMN preparing_at TEXT;
-ALTER TABLE shop_orders ADD COLUMN ready_at TEXT;
-ALTER TABLE shop_orders ADD COLUMN tip_amount REAL DEFAULT 0.0;
-ALTER TABLE shop_orders ADD COLUMN special_instructions TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS order_type TEXT DEFAULT 'online' CHECK (order_type IN ('online', 'walkin', 'phone', 'dine_in', 'qr_order'));
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS table_id TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS preparation_time_minutes INTEGER;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS accepted_at TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS preparing_at TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS ready_at TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS tip_amount REAL DEFAULT 0.0;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS special_instructions TEXT;
 
 -- Extend shop_products with advanced fields
-ALTER TABLE shop_products ADD COLUMN category TEXT;
-ALTER TABLE shop_products ADD COLUMN subcategory TEXT;
-ALTER TABLE shop_products ADD COLUMN dietary_tags TEXT DEFAULT '[]';
-ALTER TABLE shop_products ADD COLUMN variants TEXT DEFAULT '[]';
-ALTER TABLE shop_products ADD COLUMN sku TEXT;
-ALTER TABLE shop_products ADD COLUMN barcode TEXT;
-ALTER TABLE shop_products ADD COLUMN stock_quantity INTEGER DEFAULT -1;
-ALTER TABLE shop_products ADD COLUMN low_stock_threshold INTEGER DEFAULT 5;
-ALTER TABLE shop_products ADD COLUMN unit TEXT DEFAULT 'piece';
-ALTER TABLE shop_products ADD COLUMN weight_grams REAL;
-ALTER TABLE shop_products ADD COLUMN is_featured INTEGER DEFAULT 0;
-ALTER TABLE shop_products ADD COLUMN preparation_time_minutes INTEGER;
-ALTER TABLE shop_products ADD COLUMN calories INTEGER;
-ALTER TABLE shop_products ADD COLUMN allergens TEXT DEFAULT '[]';
-ALTER TABLE shop_products ADD COLUMN display_order INTEGER DEFAULT 0;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS subcategory TEXT;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS dietary_tags TEXT DEFAULT '[]';
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS variants TEXT DEFAULT '[]';
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS sku TEXT;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS barcode TEXT;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS stock_quantity INTEGER DEFAULT -1;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER DEFAULT 5;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS unit TEXT DEFAULT 'piece';
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS weight_grams REAL;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS is_featured INTEGER DEFAULT 0;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS preparation_time_minutes INTEGER;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS calories INTEGER;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS allergens TEXT DEFAULT '[]';
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
 
 -- Extend shop_staff with more fields
-ALTER TABLE shop_staff ADD COLUMN bio TEXT;
-ALTER TABLE shop_staff ADD COLUMN portfolio_photos TEXT DEFAULT '[]';
-ALTER TABLE shop_staff ADD COLUMN commission_percent REAL DEFAULT 0.0;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS portfolio_photos TEXT DEFAULT '[]';
+ALTER TABLE shop_staff ADD COLUMN IF NOT EXISTS commission_percent REAL DEFAULT 0.0;
 
 -- Extend shop_reviews with owner response
-ALTER TABLE shop_reviews ADD COLUMN owner_response TEXT;
-ALTER TABLE shop_reviews ADD COLUMN owner_responded_at TEXT;
-ALTER TABLE shop_reviews ADD COLUMN is_flagged INTEGER DEFAULT 0;
+ALTER TABLE shop_reviews ADD COLUMN IF NOT EXISTS owner_response TEXT;
+ALTER TABLE shop_reviews ADD COLUMN IF NOT EXISTS owner_responded_at TEXT;
+ALTER TABLE shop_reviews ADD COLUMN IF NOT EXISTS is_flagged INTEGER DEFAULT 0;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -2668,7 +2731,7 @@ LEFT JOIN shop_staff st ON a.staff_id = st.id;
 
 CREATE TABLE IF NOT EXISTS scrap_pickups (
     id TEXT PRIMARY KEY,
-    user_id TEXT,
+    user_id UUID,
     address TEXT,
     preferred_time TEXT,
     estimated_weight TEXT,
@@ -2686,7 +2749,7 @@ CREATE TABLE IF NOT EXISTS scrap_pickups (
 CREATE TABLE IF NOT EXISTS cart_items (
     id SERIAL PRIMARY KEY,
     session_id TEXT NULL,
-    user_id INTEGER NULL,
+    user_id UUID NULL,
     product_id INTEGER NOT NULL,
     quantity INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -2723,7 +2786,7 @@ CREATE TABLE IF NOT EXISTS order_tracking (
 
 CREATE TABLE IF NOT EXISTS product_variants (
     id TEXT PRIMARY KEY,
-    product_id TEXT NOT NULL,
+    product_id UUID NOT NULL,
     variant_name TEXT NOT NULL, -- e.g., "Color", "Size"
     variant_value TEXT NOT NULL, -- e.g., "Red", "XL"
     sku TEXT,
@@ -2736,7 +2799,7 @@ CREATE TABLE IF NOT EXISTS product_variants (
 
 CREATE TABLE IF NOT EXISTS user_addresses (
     id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    user_id UUID NOT NULL,
     address_type TEXT NOT NULL DEFAULT 'home', -- e.g. 'home', 'work', 'other'
     full_name TEXT,
     phone_number TEXT,
@@ -2756,10 +2819,10 @@ CREATE TABLE IF NOT EXISTS user_addresses (
 
 -- Add advanced ecommerce fields to shop_products
 -- (Note: SQLite ALTER TABLE ADD COLUMN does not support constraints or defaults in one step nicely for all types, but basic columns work)
-ALTER TABLE shop_products ADD COLUMN inventory_count INTEGER DEFAULT 0;
-ALTER TABLE shop_products ADD COLUMN sku TEXT;
-ALTER TABLE shop_products ADD COLUMN track_inventory INTEGER DEFAULT 1;
-ALTER TABLE shop_products ADD COLUMN category_id TEXT;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS inventory_count INTEGER DEFAULT 0;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS sku TEXT;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS track_inventory INTEGER DEFAULT 1;
+ALTER TABLE shop_products ADD COLUMN IF NOT EXISTS category_id TEXT;
 
 
 -- =======================================
@@ -2810,7 +2873,7 @@ CREATE TABLE IF NOT EXISTS saas_plans (
 
 CREATE TABLE IF NOT EXISTS vendor_subscriptions (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     plan_id TEXT REFERENCES saas_plans(id),
     status TEXT DEFAULT 'pending',
     current_period_end TEXT,
@@ -2826,8 +2889,8 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 );
 
 -- Alter local_shops to include CRM constraints
-ALTER TABLE local_shops ADD COLUMN crm_tier TEXT DEFAULT 'free';
-ALTER TABLE local_shops ADD COLUMN is_locked INTEGER DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS crm_tier TEXT DEFAULT 'free';
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS is_locked INTEGER DEFAULT 0;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_vendor_subs_shop ON vendor_subscriptions (shop_id);
@@ -2849,7 +2912,10 @@ CREATE TABLE IF NOT EXISTS feature_flags (
     description TEXT,
     coming_soon_headline TEXT,
     coming_soon_message TEXT,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    id TEXT,
+    name TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Seed Initial 10x GTM Rollout Matrix
@@ -2893,7 +2959,8 @@ CREATE TABLE IF NOT EXISTS home_service_categories (
     icon TEXT,
     description TEXT,
     base_inspection_fee REAL DEFAULT 199.00,
-    is_active INTEGER DEFAULT 1
+    is_active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Service Technicians / Providers
@@ -2912,7 +2979,8 @@ CREATE TABLE IF NOT EXISTS home_service_providers (
     is_verified INTEGER DEFAULT 0,
     is_available INTEGER DEFAULT 1,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(category_id) REFERENCES home_service_categories(id)
+    FOREIGN KEY(category_id) REFERENCES home_service_categories(id),
+    geohash TEXT
 );
 
 -- Home Service Bookings
@@ -2963,7 +3031,16 @@ CREATE TABLE IF NOT EXISTS medical_doctors (
     rating REAL DEFAULT 4.8,
     serviced_pincodes_json TEXT DEFAULT '[]',
     is_available INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    user_id TEXT,
+    qualification TEXT,
+    license_no TEXT,
+    clinic_name TEXT,
+    address TEXT,
+    latitude REAL,
+    longitude REAL,
+    geohash TEXT,
+    is_verified BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS medical_appointments (
@@ -2978,7 +3055,8 @@ CREATE TABLE IF NOT EXISTS medical_appointments (
     status TEXT DEFAULT 'confirmed',
     consultation_fee REAL NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(doctor_id) REFERENCES medical_doctors(id)
+    FOREIGN KEY(doctor_id) REFERENCES medical_doctors(id),
+    payment_status TEXT DEFAULT 'paid'
 );
 
 -- B. Local Jobs Module
@@ -3001,7 +3079,7 @@ CREATE TABLE IF NOT EXISTS job_postings (
 -- C. Direct Properties Module (Extending existing property_listings table if needed)
 CREATE TABLE IF NOT EXISTS property_inquiries (
     id TEXT PRIMARY KEY,
-    property_id TEXT NOT NULL,
+    property_id UUID NOT NULL,
     user_id TEXT NOT NULL,
     buyer_name TEXT NOT NULL,
     buyer_phone TEXT NOT NULL,
@@ -3046,7 +3124,8 @@ CREATE TABLE IF NOT EXISTS localization_dictionaries (
     translation_key TEXT NOT NULL,
     translation_value TEXT NOT NULL,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(lang_code, translation_key)
+    UNIQUE(lang_code, translation_key),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Seed Initial Default Data
@@ -3085,7 +3164,7 @@ INSERT INTO localization_dictionaries (id, lang_code, translation_key, translati
 -- Migration: Add geohash column and spatial B-Tree indexes for ultra-fast location filtering
 
 -- 1. Add geohash column if it doesn't exist
-ALTER TABLE local_shops ADD COLUMN geohash TEXT;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS geohash TEXT;
 
 -- 2. Create spatial indexes for bounding box and geohash acceleration
 CREATE INDEX IF NOT EXISTS idx_shops_lat_lng ON local_shops(latitude, longitude);
@@ -3124,7 +3203,11 @@ CREATE TABLE IF NOT EXISTS local_job_postings (
     geohash TEXT,
     requirements TEXT,
     status TEXT DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    shop_id TEXT,
+    description TEXT,
+    salary REAL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -3349,11 +3432,11 @@ CREATE TABLE IF NOT EXISTS legacy_region_territory_map (
 
 CREATE TABLE IF NOT EXISTS admin_territory_assignments (
     id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     territory_id TEXT REFERENCES territories(id) ON DELETE CASCADE,
     district_id TEXT REFERENCES location_districts(id) ON DELETE CASCADE,
     role TEXT NOT NULL DEFAULT 'territory_franchise',
-    assigned_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
     is_active INTEGER DEFAULT 1,
     notes TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -3778,75 +3861,75 @@ CREATE TABLE IF NOT EXISTS society_delivery_preferences (
 
 -- Alter Tables (Ignoring errors if they already exist)
 -- The runner script will run these individually and ignore "duplicate column" errors.
-ALTER TABLE society_visitors ADD COLUMN max_stay_minutes INTEGER DEFAULT 120;
-ALTER TABLE society_visitors ADD COLUMN overstay_alert_sent INTEGER DEFAULT 0;
-ALTER TABLE society_visitors ADD COLUMN delivery_type TEXT;
-ALTER TABLE society_visitors ADD COLUMN is_leave_at_gate INTEGER DEFAULT 0;
-ALTER TABLE society_visitors ADD COLUMN parcel_photo_url TEXT;
-ALTER TABLE society_visitors ADD COLUMN gate_id TEXT;
-ALTER TABLE society_visitors ADD COLUMN approval_timeout_at TIMESTAMP;
-ALTER TABLE society_visitors ADD COLUMN ivr_fallback_triggered INTEGER DEFAULT 0;
-ALTER TABLE society_visitors ADD COLUMN passcode_used INTEGER DEFAULT 0;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS max_stay_minutes INTEGER DEFAULT 120;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS overstay_alert_sent INTEGER DEFAULT 0;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS delivery_type TEXT;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS is_leave_at_gate INTEGER DEFAULT 0;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS parcel_photo_url TEXT;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS gate_id TEXT;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS approval_timeout_at TIMESTAMP;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS ivr_fallback_triggered INTEGER DEFAULT 0;
+ALTER TABLE society_visitors ADD COLUMN IF NOT EXISTS passcode_used INTEGER DEFAULT 0;
 
-ALTER TABLE society_staff_attendance ADD COLUMN gate_id TEXT;
-ALTER TABLE society_staff_attendance ADD COLUMN face_match_score REAL;
-ALTER TABLE society_staff_attendance ADD COLUMN check_in_photo_url TEXT;
+ALTER TABLE society_staff_attendance ADD COLUMN IF NOT EXISTS gate_id TEXT;
+ALTER TABLE society_staff_attendance ADD COLUMN IF NOT EXISTS face_match_score REAL;
+ALTER TABLE society_staff_attendance ADD COLUMN IF NOT EXISTS check_in_photo_url TEXT;
 
-ALTER TABLE society_complaints ADD COLUMN sla_hours INTEGER DEFAULT 24;
-ALTER TABLE society_complaints ADD COLUMN escalation_level INTEGER DEFAULT 0;
-ALTER TABLE society_complaints ADD COLUMN escalated_to TEXT;
-ALTER TABLE society_complaints ADD COLUMN eta TIMESTAMP;
-ALTER TABLE society_complaints ADD COLUMN latitude REAL;
-ALTER TABLE society_complaints ADD COLUMN longitude REAL;
-ALTER TABLE society_complaints ADD COLUMN reopened_count INTEGER DEFAULT 0;
-ALTER TABLE society_complaints ADD COLUMN resolution_feedback INTEGER;
-ALTER TABLE society_complaints ADD COLUMN resolution_comment TEXT;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS sla_hours INTEGER DEFAULT 24;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS escalation_level INTEGER DEFAULT 0;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS escalated_to TEXT;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS eta TIMESTAMP;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS latitude REAL;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS longitude REAL;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS reopened_count INTEGER DEFAULT 0;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS resolution_feedback INTEGER;
+ALTER TABLE society_complaints ADD COLUMN IF NOT EXISTS resolution_comment TEXT;
 
-ALTER TABLE society_amenities ADD COLUMN peak_hour_rate REAL;
-ALTER TABLE society_amenities ADD COLUMN peak_hours TEXT;
-ALTER TABLE society_amenities ADD COLUMN max_bookings_per_week INTEGER;
-ALTER TABLE society_amenities ADD COLUMN cooldown_hours INTEGER;
-ALTER TABLE society_amenities ADD COLUMN cancellation_penalty REAL;
-ALTER TABLE society_amenities ADD COLUMN advance_payment_required INTEGER DEFAULT 0;
-ALTER TABLE society_amenities ADD COLUMN images TEXT;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS peak_hour_rate REAL;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS peak_hours TEXT;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS max_bookings_per_week INTEGER;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS cooldown_hours INTEGER;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS cancellation_penalty REAL;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS advance_payment_required INTEGER DEFAULT 0;
+ALTER TABLE society_amenities ADD COLUMN IF NOT EXISTS images TEXT;
 
-ALTER TABLE society_members ADD COLUMN show_phone INTEGER DEFAULT 1;
-ALTER TABLE society_members ADD COLUMN show_email INTEGER DEFAULT 1;
-ALTER TABLE society_members ADD COLUMN profession TEXT;
-ALTER TABLE society_members ADD COLUMN skills TEXT;
-ALTER TABLE society_members ADD COLUMN bio TEXT;
-ALTER TABLE society_members ADD COLUMN occupancy_type TEXT;
-ALTER TABLE society_members ADD COLUMN member_since TIMESTAMP;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS show_phone INTEGER DEFAULT 1;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS show_email INTEGER DEFAULT 1;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS profession TEXT;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS skills TEXT;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS occupancy_type TEXT;
+ALTER TABLE society_members ADD COLUMN IF NOT EXISTS member_since TIMESTAMP;
 
-ALTER TABLE society_polls ADD COLUMN is_secret_ballot INTEGER DEFAULT 0;
-ALTER TABLE society_polls ADD COLUMN eligible_voters TEXT;
-ALTER TABLE society_polls ADD COLUMN min_quorum_percent REAL;
-ALTER TABLE society_polls ADD COLUMN result_visibility TEXT DEFAULT 'public';
+ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS is_secret_ballot INTEGER DEFAULT 0;
+ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS eligible_voters TEXT;
+ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS min_quorum_percent REAL;
+ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS result_visibility TEXT DEFAULT 'public';
 
 -- Assuming society_move_passes exists based on move_passes referenced
-ALTER TABLE society_move_passes ADD COLUMN requested_by TEXT;
-ALTER TABLE society_move_passes ADD COLUMN clearance_status TEXT;
-ALTER TABLE society_move_passes ADD COLUMN outstanding_dues REAL;
-ALTER TABLE society_move_passes ADD COLUMN gate_passcode TEXT;
-ALTER TABLE society_move_passes ADD COLUMN movers_company TEXT;
-ALTER TABLE society_move_passes ADD COLUMN movers_vehicle_number TEXT;
-ALTER TABLE society_move_passes ADD COLUMN admin_approved_at TIMESTAMP;
-ALTER TABLE society_move_passes ADD COLUMN admin_approved_by TEXT;
-ALTER TABLE society_move_passes ADD COLUMN notes TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS requested_by TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS clearance_status TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS outstanding_dues REAL;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS gate_passcode TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS movers_company TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS movers_vehicle_number TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS admin_approved_at TIMESTAMP;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS admin_approved_by TEXT;
+ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS notes TEXT;
 
 -- Assuming society_vehicles exists
-ALTER TABLE society_vehicles ADD COLUMN vehicle_photo_url TEXT;
-ALTER TABLE society_vehicles ADD COLUMN is_active INTEGER DEFAULT 1;
+ALTER TABLE society_vehicles ADD COLUMN IF NOT EXISTS vehicle_photo_url TEXT;
+ALTER TABLE society_vehicles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1;
 
-ALTER TABLE society_settings ADD COLUMN overstay_timeout_minutes INTEGER DEFAULT 120;
-ALTER TABLE society_settings ADD COLUMN ivr_enabled INTEGER DEFAULT 0;
-ALTER TABLE society_settings ADD COLUMN ivr_provider TEXT;
-ALTER TABLE society_settings ADD COLUMN whatsapp_enabled INTEGER DEFAULT 0;
-ALTER TABLE society_settings ADD COLUMN multilingual_enabled INTEGER DEFAULT 0;
-ALTER TABLE society_settings ADD COLUMN default_language TEXT DEFAULT 'en';
-ALTER TABLE society_settings ADD COLUMN face_recognition_enabled INTEGER DEFAULT 0;
-ALTER TABLE society_settings ADD COLUMN patrol_enabled INTEGER DEFAULT 0;
-ALTER TABLE society_settings ADD COLUMN cab_preapproval_enabled INTEGER DEFAULT 0;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS overstay_timeout_minutes INTEGER DEFAULT 120;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS ivr_enabled INTEGER DEFAULT 0;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS ivr_provider TEXT;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS whatsapp_enabled INTEGER DEFAULT 0;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS multilingual_enabled INTEGER DEFAULT 0;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS default_language TEXT DEFAULT 'en';
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS face_recognition_enabled INTEGER DEFAULT 0;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS patrol_enabled INTEGER DEFAULT 0;
+ALTER TABLE society_settings ADD COLUMN IF NOT EXISTS cab_preapproval_enabled INTEGER DEFAULT 0;
 
 
 -- =======================================
@@ -3950,8 +4033,8 @@ CREATE TABLE IF NOT EXISTS society_audits (
 
 CREATE TABLE IF NOT EXISTS vendor_kyc (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
 
     -- Identity Documents
     aadhaar_number_encrypted TEXT,
@@ -3988,12 +4071,12 @@ CREATE TABLE IF NOT EXISTS vendor_kyc (
     -- Verification Status
     kyc_status TEXT DEFAULT 'pending',
     rejection_reason TEXT,
-    verified_by TEXT REFERENCES users(id),
+    verified_by UUID REFERENCES users(id),
     verified_at TEXT,
     submitted_at TEXT,
 
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
-    updated_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_vendor_kyc_shop ON vendor_kyc(shop_id);
@@ -4012,7 +4095,7 @@ CREATE INDEX IF NOT EXISTS idx_vendor_kyc_gst ON vendor_kyc(gst_number);
 
 CREATE TABLE IF NOT EXISTS shop_payouts (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     period_start TEXT NOT NULL,
     period_end TEXT NOT NULL,
 
@@ -4038,11 +4121,11 @@ CREATE TABLE IF NOT EXISTS shop_payouts (
 
     -- Audit
     calculated_by TEXT DEFAULT 'system',
-    approved_by TEXT REFERENCES users(id),
+    approved_by UUID REFERENCES users(id),
     approved_at TEXT,
 
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
-    updated_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_shop_payouts_shop ON shop_payouts(shop_id);
@@ -4053,12 +4136,12 @@ CREATE INDEX IF NOT EXISTS idx_shop_payouts_period ON shop_payouts(period_start,
 CREATE TABLE IF NOT EXISTS payout_line_items (
     id TEXT PRIMARY KEY,
     payout_id TEXT REFERENCES shop_payouts(id) ON DELETE CASCADE,
-    order_id TEXT REFERENCES orders(id) ON DELETE SET NULL,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
     order_amount REAL NOT NULL,
     commission_amount REAL NOT NULL,
     gateway_fee REAL NOT NULL,
     net_amount REAL NOT NULL,
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_payout_items_payout ON payout_line_items(payout_id);
@@ -4105,7 +4188,7 @@ CREATE INDEX IF NOT EXISTS idx_category_attrs_cat ON category_attributes(categor
 -- Shop-specific attribute values (EAV)
 CREATE TABLE IF NOT EXISTS shop_attribute_values (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     attribute_id TEXT REFERENCES category_attributes(id) ON DELETE CASCADE,
     value_text TEXT,
     value_number REAL,
@@ -4123,58 +4206,58 @@ CREATE INDEX IF NOT EXISTS idx_shop_attrs_attr ON shop_attribute_values(attribut
 -- ═══════════════════════════════════════════════════════════════════════
 
 INSERT INTO shop_categories (id, slug, name, icon, archetype, requires_fssai, supports_appointment) VALUES
-  ('cat-001', 'grocery-supermarkets', 'Grocery & Supermarket', '🛒', 'retail', 0, 0),
-  ('cat-002', 'restaurants-cafes', 'Restaurants & Cafes', '🍽️', 'restaurant', 1, 0),
-  ('cat-003', 'pharmacy-healthcare', 'Pharmacy & Healthcare', '💊', 'pharmacy', 0, 0),
-  ('cat-004', 'fresh-produce-meat', 'Fresh Produce & Meat', '🥩', 'pharmacy', 1, 0),
-  ('cat-005', 'dairy-sweets-bakery', 'Dairy, Sweets & Bakery', '🧁', 'retail', 1, 0),
-  ('cat-006', 'stationery-gifts-books', 'Stationery, Gifts & Books', '📚', 'retail', 0, 0),
-  ('cat-007', 'florists-nurseries', 'Florists & Nurseries', '🌸', 'fresh_perishable', 0, 0),
-  ('cat-008', 'pet-care-supplies', 'Pet Care & Supplies', '🐾', 'retail', 0, 1),
-  ('cat-009', 'pooja-samagri-religious', 'Pooja Samagri & Religious', '🕉️', 'retail', 0, 0),
-  ('cat-010', 'eyewear-opticians', 'Eyewear & Opticians', '👓', 'eyewear', 0, 1),
-  ('cat-011', 'home-services-plumbers', 'Plumber & Home Services', '🔧', 'home_visit', 0, 1),
-  ('cat-012', 'salon-beauty-spa', 'Salon, Beauty & Spa', '💇', 'salon_wellness', 0, 1),
-  ('cat-013', 'electricians-electronics', 'Electricians & Electronics', '⚡', 'garage_repair', 0, 1),
-  ('cat-014', 'tutors-education', 'Tutors & Education', '📖', 'education', 0, 1),
-  ('cat-015', 'hardware-sanitary', 'Hardware & Sanitary', '🔩', 'retail', 0, 0),
-  ('cat-016', 'clothing-fashion', 'Clothing & Fashion', '👗', 'retail', 0, 0),
-  ('cat-017', 'gym-fitness', 'Gym & Fitness', '💪', 'salon_wellness', 0, 1),
-  ('cat-018', 'real-estate-brokers', 'Real Estate Brokers', '🏠', 'professional', 0, 1),
-  ('cat-019', 'automotive-mechanic', 'Automotive & Mechanic', '🚗', 'garage_repair', 0, 1),
-  ('cat-020', 'dentists-orthodontists', 'Dentists & Orthodontists', '🦷', 'healthcare', 0, 1),
-  ('cat-021', 'pathology-labs', 'Pathology Labs', '🔬', 'healthcare', 0, 1),
-  ('cat-022', 'physiotherapy', 'Physiotherapy', '🏥', 'healthcare', 0, 1),
-  ('cat-023', 'ayurvedic-homeopathic', 'Ayurvedic & Homeopathic', '🌿', 'healthcare', 0, 1),
-  ('cat-024', 'pest-control', 'Pest Control', '🐜', 'home_visit', 0, 1),
-  ('cat-025', 'deep-cleaning', 'Deep Cleaning', '🧹', 'home_visit', 0, 1),
-  ('cat-026', 'ac-appliance-repair', 'AC & Appliance Repair', '❄️', 'garage_repair', 0, 1),
-  ('cat-027', 'ro-water-purifier', 'RO & Water Purifier', '💧', 'garage_repair', 0, 1),
-  ('cat-028', 'laundry-dry-cleaning', 'Laundry & Dry Cleaning', '👔', 'laundry', 0, 0),
-  ('cat-029', 'tailoring-boutiques', 'Tailoring & Boutiques', '🧵', 'tailoring', 0, 1),
-  ('cat-030', 'car-bike-wash', 'Car & Bike Wash', '🚿', 'salon_wellness', 0, 1),
-  ('cat-031', 'driving-schools', 'Driving Schools', '🚘', 'education', 0, 1),
-  ('cat-032', 'catering-party', 'Catering & Party', '🎉', 'event_creative', 0, 1),
-  ('cat-033', 'event-planners-decorators', 'Event Planners & Decorators', '🎊', 'event_creative', 0, 1),
-  ('cat-034', 'photographers-videographers', 'Photographers & Videographers', '📸', 'event_creative', 0, 1),
-  ('cat-035', 'cas-tax-consultants', 'CAs & Tax Consultants', '📊', 'professional', 0, 1),
-  ('cat-036', 'lawyers-advocates', 'Lawyers & Advocates', '⚖️', 'professional', 0, 1),
-  ('cat-037', 'insurance-agents', 'Insurance Agents', '🛡️', 'professional', 0, 1),
-  ('cat-038', 'yoga-wellness', 'Yoga & Wellness', '🧘', 'salon_wellness', 0, 1),
-  ('cat-039', 'dieticians-nutritionists', 'Dieticians & Nutritionists', '🥗', 'healthcare', 0, 1),
-  ('cat-040', 'tiffin-meal-subscription', 'Tiffin & Meal Subscription', '🍱', 'tiffin', 1, 0),
-  ('cat-041', 'mobile-computer-repair', 'Mobile & Computer Repair', '📱', 'garage_repair', 0, 1),
-  ('cat-042', 'courier-parcel-services', 'Courier & Parcel Services', '📦', 'print_counter', 0, 0),
-  ('cat-043', 'travel-agents-visa', 'Travel Agents & Visa', '✈️', 'professional', 0, 1),
-  ('cat-044', 'printing-xerox-dtp', 'Printing, Xerox & DTP', '🖨️', 'print_counter', 0, 0),
-  ('cat-045', 'locksmith-key-maker', 'Locksmith & Key Maker', '🔑', 'home_visit', 0, 1),
-  ('cat-046', 'packers-movers', 'Packers & Movers', '📦', 'home_visit', 0, 1),
-  ('cat-047', 'water-tanker-supply', 'Water Tanker Supply', '🚰', 'subscription', 0, 0),
-  ('cat-048', 'gas-cylinder-lpg', 'Gas Cylinder & LPG', '🔥', 'subscription', 0, 0),
-  ('cat-049', 'jewellery-gold', 'Jewellery & Gold', '💎', 'retail', 0, 0),
-  ('cat-050', 'wedding-party-planner', 'Wedding & Party Planner', '💒', 'event_creative', 0, 1),
-  ('cat-051', 'interior-design-decor', 'Interior Design & Decor', '🏡', 'event_creative', 0, 1),
-  ('cat-052', 'painting-renovation', 'Painting & Renovation', '🎨', 'home_visit', 0, 1),
+  ('cat-001', 'grocery-supermarkets', 'Grocery & Supermarket', '🛒', 'retail', FALSE, FALSE),
+  ('cat-002', 'restaurants-cafes', 'Restaurants & Cafes', '🍽️', 'restaurant', TRUE, FALSE),
+  ('cat-003', 'pharmacy-healthcare', 'Pharmacy & Healthcare', '💊', 'pharmacy', FALSE, FALSE),
+  ('cat-004', 'fresh-produce-meat', 'Fresh Produce & Meat', '🥩', 'pharmacy', TRUE, FALSE),
+  ('cat-005', 'dairy-sweets-bakery', 'Dairy, Sweets & Bakery', '🧁', 'retail', TRUE, FALSE),
+  ('cat-006', 'stationery-gifts-books', 'Stationery, Gifts & Books', '📚', 'retail', FALSE, FALSE),
+  ('cat-007', 'florists-nurseries', 'Florists & Nurseries', '🌸', 'fresh_perishable', FALSE, FALSE),
+  ('cat-008', 'pet-care-supplies', 'Pet Care & Supplies', '🐾', 'retail', FALSE, TRUE),
+  ('cat-009', 'pooja-samagri-religious', 'Pooja Samagri & Religious', '🕉️', 'retail', FALSE, FALSE),
+  ('cat-010', 'eyewear-opticians', 'Eyewear & Opticians', '👓', 'eyewear', FALSE, TRUE),
+  ('cat-011', 'home-services-plumbers', 'Plumber & Home Services', '🔧', 'home_visit', FALSE, TRUE),
+  ('cat-012', 'salon-beauty-spa', 'Salon, Beauty & Spa', '💇', 'salon_wellness', FALSE, TRUE),
+  ('cat-013', 'electricians-electronics', 'Electricians & Electronics', '⚡', 'garage_repair', FALSE, TRUE),
+  ('cat-014', 'tutors-education', 'Tutors & Education', '📖', 'education', FALSE, TRUE),
+  ('cat-015', 'hardware-sanitary', 'Hardware & Sanitary', '🔩', 'retail', FALSE, FALSE),
+  ('cat-016', 'clothing-fashion', 'Clothing & Fashion', '👗', 'retail', FALSE, FALSE),
+  ('cat-017', 'gym-fitness', 'Gym & Fitness', '💪', 'salon_wellness', FALSE, TRUE),
+  ('cat-018', 'real-estate-brokers', 'Real Estate Brokers', '🏠', 'professional', FALSE, TRUE),
+  ('cat-019', 'automotive-mechanic', 'Automotive & Mechanic', '🚗', 'garage_repair', FALSE, TRUE),
+  ('cat-020', 'dentists-orthodontists', 'Dentists & Orthodontists', '🦷', 'healthcare', FALSE, TRUE),
+  ('cat-021', 'pathology-labs', 'Pathology Labs', '🔬', 'healthcare', FALSE, TRUE),
+  ('cat-022', 'physiotherapy', 'Physiotherapy', '🏥', 'healthcare', FALSE, TRUE),
+  ('cat-023', 'ayurvedic-homeopathic', 'Ayurvedic & Homeopathic', '🌿', 'healthcare', FALSE, TRUE),
+  ('cat-024', 'pest-control', 'Pest Control', '🐜', 'home_visit', FALSE, TRUE),
+  ('cat-025', 'deep-cleaning', 'Deep Cleaning', '🧹', 'home_visit', FALSE, TRUE),
+  ('cat-026', 'ac-appliance-repair', 'AC & Appliance Repair', '❄️', 'garage_repair', FALSE, TRUE),
+  ('cat-027', 'ro-water-purifier', 'RO & Water Purifier', '💧', 'garage_repair', FALSE, TRUE),
+  ('cat-028', 'laundry-dry-cleaning', 'Laundry & Dry Cleaning', '👔', 'laundry', FALSE, FALSE),
+  ('cat-029', 'tailoring-boutiques', 'Tailoring & Boutiques', '🧵', 'tailoring', FALSE, TRUE),
+  ('cat-030', 'car-bike-wash', 'Car & Bike Wash', '🚿', 'salon_wellness', FALSE, TRUE),
+  ('cat-031', 'driving-schools', 'Driving Schools', '🚘', 'education', FALSE, TRUE),
+  ('cat-032', 'catering-party', 'Catering & Party', '🎉', 'event_creative', FALSE, TRUE),
+  ('cat-033', 'event-planners-decorators', 'Event Planners & Decorators', '🎊', 'event_creative', FALSE, TRUE),
+  ('cat-034', 'photographers-videographers', 'Photographers & Videographers', '📸', 'event_creative', FALSE, TRUE),
+  ('cat-035', 'cas-tax-consultants', 'CAs & Tax Consultants', '📊', 'professional', FALSE, TRUE),
+  ('cat-036', 'lawyers-advocates', 'Lawyers & Advocates', '⚖️', 'professional', FALSE, TRUE),
+  ('cat-037', 'insurance-agents', 'Insurance Agents', '🛡️', 'professional', FALSE, TRUE),
+  ('cat-038', 'yoga-wellness', 'Yoga & Wellness', '🧘', 'salon_wellness', FALSE, TRUE),
+  ('cat-039', 'dieticians-nutritionists', 'Dieticians & Nutritionists', '🥗', 'healthcare', FALSE, TRUE),
+  ('cat-040', 'tiffin-meal-subscription', 'Tiffin & Meal Subscription', '🍱', 'tiffin', TRUE, FALSE),
+  ('cat-041', 'mobile-computer-repair', 'Mobile & Computer Repair', '📱', 'garage_repair', FALSE, TRUE),
+  ('cat-042', 'courier-parcel-services', 'Courier & Parcel Services', '📦', 'print_counter', FALSE, FALSE),
+  ('cat-043', 'travel-agents-visa', 'Travel Agents & Visa', '✈️', 'professional', FALSE, TRUE),
+  ('cat-044', 'printing-xerox-dtp', 'Printing, Xerox & DTP', '🖨️', 'print_counter', FALSE, FALSE),
+  ('cat-045', 'locksmith-key-maker', 'Locksmith & Key Maker', '🔑', 'home_visit', FALSE, TRUE),
+  ('cat-046', 'packers-movers', 'Packers & Movers', '📦', 'home_visit', FALSE, TRUE),
+  ('cat-047', 'water-tanker-supply', 'Water Tanker Supply', '🚰', 'subscription', FALSE, FALSE),
+  ('cat-048', 'gas-cylinder-lpg', 'Gas Cylinder & LPG', '🔥', 'subscription', FALSE, FALSE),
+  ('cat-049', 'jewellery-gold', 'Jewellery & Gold', '💎', 'retail', FALSE, FALSE),
+  ('cat-050', 'wedding-party-planner', 'Wedding & Party Planner', '💒', 'event_creative', FALSE, TRUE),
+  ('cat-051', 'interior-design-decor', 'Interior Design & Decor', '🏡', 'event_creative', FALSE, TRUE),
+  ('cat-052', 'painting-renovation', 'Painting & Renovation', '🎨', 'home_visit', FALSE, TRUE),
   ('cat-053', 'security-cctv', 'Security & CCTV', '📹', 'home_visit', 0, 1),
   ('cat-054', 'coaching-test-prep', 'Coaching & Test Prep', '🎓', 'education', 0, 1),
   ('cat-055', 'astrologer-pandit', 'Astrologer & Pandit', '⭐', 'event_creative', 0, 1),
@@ -4251,10 +4334,10 @@ CREATE TABLE IF NOT EXISTS fraud_signals (
     fraud_score INTEGER DEFAULT 0,
     status TEXT DEFAULT 'pending',
     auto_action_taken TEXT,
-    reviewed_by TEXT REFERENCES users(id),
+    reviewed_by UUID REFERENCES users(id),
     reviewed_at TEXT,
     review_notes TEXT,
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_fraud_entity ON fraud_signals(entity_type, entity_id);
@@ -4266,7 +4349,7 @@ CREATE INDEX IF NOT EXISTS idx_fraud_created ON fraud_signals(created_at);
 -- Device fingerprinting for multi-account detection
 CREATE TABLE IF NOT EXISTS device_fingerprints (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     device_id TEXT NOT NULL,
     device_model TEXT,
     os_name TEXT,
@@ -4276,8 +4359,8 @@ CREATE TABLE IF NOT EXISTS device_fingerprints (
     screen_resolution TEXT,
     timezone TEXT,
     language TEXT,
-    first_seen_at TEXT DEFAULT (TIMESTAMP('now')),
-    last_seen_at TEXT DEFAULT (TIMESTAMP('now'))
+    first_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_device_fp_device ON device_fingerprints(device_id);
@@ -4296,8 +4379,8 @@ CREATE TABLE IF NOT EXISTS ip_reputation (
     is_vpn INTEGER DEFAULT 0,
     country_code TEXT,
     city TEXT,
-    last_seen_at TEXT DEFAULT (TIMESTAMP('now')),
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
+    last_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_ip_rep_address ON ip_reputation(ip_address);
@@ -4309,10 +4392,10 @@ CREATE TABLE IF NOT EXISTS fraud_blocklist (
     entity_type TEXT NOT NULL,
     entity_value TEXT NOT NULL,
     reason TEXT NOT NULL,
-    blocked_by TEXT REFERENCES users(id),
+    blocked_by UUID REFERENCES users(id),
     expires_at TEXT,
     is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(entity_type, entity_value)
 );
 
@@ -4331,7 +4414,7 @@ CREATE INDEX IF NOT EXISTS idx_blocklist_type ON fraud_blocklist(entity_type, en
 -- User consent records
 CREATE TABLE IF NOT EXISTS user_consents (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     consent_type TEXT NOT NULL,
     consent_purpose TEXT NOT NULL,
     granted INTEGER NOT NULL DEFAULT 0,
@@ -4340,8 +4423,8 @@ CREATE TABLE IF NOT EXISTS user_consents (
     consent_version TEXT NOT NULL DEFAULT '1.0',
     ip_address TEXT,
     user_agent TEXT,
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
-    updated_at TEXT DEFAULT (TIMESTAMP('now')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, consent_type)
 );
 
@@ -4351,19 +4434,19 @@ CREATE INDEX IF NOT EXISTS idx_consents_type ON user_consents(consent_type);
 -- Data subject requests (right to erasure, right to access)
 CREATE TABLE IF NOT EXISTS data_subject_requests (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     request_type TEXT NOT NULL,
     status TEXT DEFAULT 'pending',
     reason TEXT,
     requested_data TEXT,
     export_file_url TEXT,
-    processed_by TEXT REFERENCES users(id),
+    processed_by UUID REFERENCES users(id),
     processed_at TEXT,
     completed_at TEXT,
     rejection_reason TEXT,
     ip_address TEXT,
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
-    updated_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_dsr_user ON data_subject_requests(user_id);
@@ -4383,9 +4466,9 @@ CREATE TABLE IF NOT EXISTS data_breach_log (
     notification_timestamp TEXT,
     certin_reference TEXT,
     remediation_steps TEXT,
-    reported_by TEXT REFERENCES users(id),
+    reported_by UUID REFERENCES users(id),
     status TEXT DEFAULT 'detected',
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Privacy policy versions
@@ -4396,7 +4479,7 @@ CREATE TABLE IF NOT EXISTS privacy_policy_versions (
     effective_date TEXT NOT NULL,
     summary_of_changes TEXT,
     requires_reconsent INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -4412,14 +4495,14 @@ CREATE TABLE IF NOT EXISTS privacy_policy_versions (
 -- Sync watermarks per device
 CREATE TABLE IF NOT EXISTS sync_watermarks (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     device_id TEXT NOT NULL,
     table_name TEXT NOT NULL,
     territory_id TEXT,
     last_synced_at TEXT NOT NULL,
     records_synced INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
-    updated_at TEXT DEFAULT (TIMESTAMP('now')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, device_id, table_name, territory_id)
 );
 
@@ -4429,7 +4512,7 @@ CREATE INDEX IF NOT EXISTS idx_sync_territory ON sync_watermarks(territory_id);
 -- Offline mutation queue (server-side record of pending mutations from devices)
 CREATE TABLE IF NOT EXISTS offline_mutations (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     device_id TEXT NOT NULL,
     mutation_type TEXT NOT NULL,
     table_name TEXT NOT NULL,
@@ -4439,7 +4522,7 @@ CREATE TABLE IF NOT EXISTS offline_mutations (
     conflict_resolution TEXT,
     applied_at TEXT,
     error_message TEXT,
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_offline_mut_user ON offline_mutations(user_id, device_id);
@@ -4448,7 +4531,7 @@ CREATE INDEX IF NOT EXISTS idx_offline_mut_status ON offline_mutations(status);
 -- Shop analytics daily snapshots (pre-computed for dashboard performance)
 CREATE TABLE IF NOT EXISTS shop_analytics_daily (
     id TEXT PRIMARY KEY,
-    shop_id TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     date TEXT NOT NULL,
     
     -- Order metrics
@@ -4481,7 +4564,7 @@ CREATE TABLE IF NOT EXISTS shop_analytics_daily (
     completed_appointments INTEGER DEFAULT 0,
     no_shows INTEGER DEFAULT 0,
     
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(shop_id, date)
 );
 
@@ -4503,7 +4586,7 @@ CREATE TABLE IF NOT EXISTS zone_analytics_daily (
     total_gmv REAL DEFAULT 0,
     top_categories TEXT,
     
-    created_at TEXT DEFAULT (TIMESTAMP('now')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(territory_id, date)
 );
 
@@ -4623,7 +4706,7 @@ CREATE INDEX IF NOT EXISTS idx_univ_orders_user ON universal_orders(user_id);
 
 -- 046_add_metadata.sqlite.sql
 
-ALTER TABLE universal_catalog_items ADD COLUMN metadata TEXT; -- JSON for dynamic category schemas
+ALTER TABLE universal_catalog_items ADD COLUMN IF NOT EXISTS metadata TEXT; -- JSON for dynamic category schemas
 
 
 -- =======================================
@@ -4749,7 +4832,7 @@ CREATE INDEX IF NOT EXISTS idx_tracking_rider ON live_tracking(rider_id);
 CREATE INDEX IF NOT EXISTS idx_tracking_order ON live_tracking(order_id);
 
 -- Alter universal_orders to track assigned rider
-ALTER TABLE universal_orders ADD COLUMN rider_id TEXT REFERENCES delivery_riders(id);
+ALTER TABLE universal_orders ADD COLUMN IF NOT EXISTS rider_id TEXT REFERENCES delivery_riders(id);
 
 
 -- =======================================
@@ -4759,13 +4842,13 @@ ALTER TABLE universal_orders ADD COLUMN rider_id TEXT REFERENCES delivery_riders
 -- Migration 051: Ads Engine & Promoted Shops
 -- Adds promoted status to local shops for the global search algorithm
 
-ALTER TABLE local_shops ADD COLUMN is_promoted BOOLEAN DEFAULT 0;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS is_promoted BOOLEAN DEFAULT FALSE;
 
 -- Trigger to re-sync FTS5 if a shop's promoted status changes
 -- Note: the FTS index doesn't have is_promoted, but we can rely on standard SQL fallback for sorting or just keep it simple.
 
 -- Seed some mock promoted shops
-UPDATE local_shops SET is_promoted = 1 WHERE id IN (SELECT id FROM local_shops LIMIT 2);
+UPDATE local_shops SET is_promoted = TRUE WHERE id IN (SELECT id FROM local_shops LIMIT 2);
 
 
 -- =======================================
@@ -4789,7 +4872,7 @@ CREATE TABLE IF NOT EXISTS zones (
 -- Add phone column to users table if it does not exist
 -- SQLite ALTER TABLE ADD COLUMN does not support IF NOT EXISTS natively in older versions, 
 -- but in newer it might. Assuming simple add.
-ALTER TABLE users ADD COLUMN phone TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
 
 
 -- =======================================
