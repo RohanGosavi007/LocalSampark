@@ -55,7 +55,7 @@ export function ZoneProvider({ children }) {
   const loadUserZones = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users/saved-zones`, {
+      const res = await fetch(`${API_URL}/user-zones/saved-zones`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       const data = await res.json();
@@ -149,7 +149,7 @@ export function ZoneProvider({ children }) {
         }
         
         if (authToken) {
-          await fetch(`${API_URL}/users/zone`, {
+          await fetch(`${API_URL}/user-zones/zone`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export function ZoneProvider({ children }) {
           return;
       }
       try {
-          const res = await fetch(`${API_URL}/users/saved-zones`, {
+          const res = await fetch(`${API_URL}/user-zones/saved-zones`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

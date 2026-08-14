@@ -60,16 +60,27 @@ router.post('/postings', authenticate, async (req, res, next) => {
 // POST /apply - Submit candidate application
 router.post('/apply', authenticate, async (req, res, next) => {
   try {
-    const { jobId, applicantName, applicantPhone, experienceSummary } = req.body;
-    if (!jobId || !applicantName || !applicantPhone) {
-      return res.status(400).json({ error: 'Missing required application fields' });
+    const { jobId, applicantName, applicantPhone, experienceSummary, cover_note } = req.body;
+
+    // The route is authenticated, so the applicant's own profile is the natural
+    // default. Clients that already collect the details may still override.
+    const name = applicantName || req.user.full_name;
+    const phone = applicantPhone || req.user.phone_number || req.user.phone;
+
+    if (!jobId) {
+      return res.status(400).json({ error: 'jobId is required' });
+    }
+    if (!name || !phone) {
+      return res.status(400).json({
+        error: 'Applicant name and phone are required; add them to your profile or send them with the application',
+      });
     }
 
     const appId = crypto.randomUUID();
     await query(`
       INSERT INTO job_applications (id, job_id, applicant_id, applicant_name, applicant_phone, experience_summary, status)
       VALUES ($1, $2, $3, $4, $5, $6, 'applied')
-    `, [appId, jobId, req.user.id, applicantName, applicantPhone, experienceSummary || null]);
+    `, [appId, jobId, req.user.id, name, phone, experienceSummary || cover_note || null]);
 
     res.status(201).json({ success: true, message: 'Job application submitted successfully!', applicationId: appId });
   } catch (err) {

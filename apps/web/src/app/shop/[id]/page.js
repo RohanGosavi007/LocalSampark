@@ -28,7 +28,7 @@ export default function ShopDetailWeb({ params }) {
       try {
         const [shopRes, prodRes] = await Promise.all([
           fetch(`${BACKEND_URL}/api/v1/shops/${shopId}`),
-          fetch(`${BACKEND_URL}/api/v1/shops/${shopId}/universal-catalog`)
+          fetch(`${BACKEND_URL}/api/v1/universal-catalog/${shopId}`)
         ]);
         
         const shopData = await shopRes.json();

@@ -23,26 +23,30 @@ export default function WalletPage() {
   const [coins, setCoins] = useState(1450);
   const [transactions, setTransactions] = useState(DEMO_TRANSACTIONS);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '';
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-    // Fetch wallet balance
-    fetch(`${API_URL}/api/v1/wallet/balance`, { headers })
-      .then(r => r.json())
+    // /wallet/history returns { balance, transactions } in one call. The two
+    // endpoints previously requested here do not exist, and their failures were
+    // swallowed, so this page always showed hardcoded demo figures.
+    let cancelled = false;
+
+    fetch(`${API_URL}/api/v1/wallet/history`, { headers })
+      .then(async r => {
+        if (!r.ok) throw new Error(`Wallet unavailable (${r.status})`);
+        return r.json();
+      })
       .then(data => {
+        if (cancelled) return;
         if (data.balance !== undefined) setBalance(data.balance);
         if (data.coins !== undefined) setCoins(data.coins);
-      })
-      .catch(() => {}); // Keep demo data on failure
 
-    // Fetch transactions
-    fetch(`${API_URL}/api/v1/wallet/transactions`, { headers })
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTransactions(data.map(tx => ({
+        const list = Array.isArray(data.transactions) ? data.transactions : [];
+        if (list.length > 0) {
+          setTransactions(list.map(tx => ({
             title: tx.description || tx.title || 'Transaction',
             category: tx.category || tx.type || 'General',
             amount: tx.amount,
@@ -50,10 +54,18 @@ export default function WalletPage() {
             date: tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recently',
             icon: tx.amount >= 0 ? '🏦' : '🛒',
           })));
+        } else {
+          setTransactions([]);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(err => {
+        if (!cancelled) setLoadError(err.message || 'Could not load your wallet.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, []);
   return (
     <div className="min-h-screen bg-section-alt flex flex-col font-sans">
@@ -61,6 +73,13 @@ export default function WalletPage() {
       
       <main className="flex-1 py-12 lg:py-16">
         <div className="container max-w-5xl">
+
+          {loadError && (
+            <div role="alert" className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
+              {loadError} The figures below may not reflect your account.
+            </div>
+          )}
+
           
           <div className="flex flex-col lg:flex-row gap-8">
             

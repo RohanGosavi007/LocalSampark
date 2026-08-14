@@ -32,7 +32,7 @@ export default function JobsPage() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      let url = `${API_URL}/api/v1/jobs?status=active`;
+      let url = `${API_URL}/api/v1/jobs/postings?status=active`;
       if (jobType) url += `&type=${jobType}`;
       const res = await fetch(url);
       const data = await res.json();
@@ -48,10 +48,10 @@ export default function JobsPage() {
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) { alert('Please login to apply'); return; }
-      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/apply`, {
+      const res = await fetch(`${API_URL}/api/v1/jobs/apply`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cover_note: applyNote })
+        body: JSON.stringify({ jobId, cover_note: applyNote })
       });
       const data = await res.json();
       if (data.success || data.id || res.ok) {

@@ -30,7 +30,7 @@ export default function MedicalPage() {
   const fetchProviders = async () => {
     setLoading(true);
     try {
-      let url = `${API_URL}/api/v1/health/providers`;
+      let url = `${API_URL}/api/v1/health-services/providers`;
       if (category) url += `?type=${category}`;
       const res = await fetch(url);
       const data = await res.json();

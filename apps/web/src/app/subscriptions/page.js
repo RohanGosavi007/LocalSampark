@@ -21,7 +21,7 @@ export default function SubscriptionsPage() {
       setLoading(true);
       try {
         const token = localStorage.getItem('auth_token');
-        const res = await fetch(`${API_URL}/api/v1/subscription/plans`, {
+        const res = await fetch(`${API_URL}/api/v1/subscriptions/plans`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const data = await res.json();
@@ -50,7 +50,7 @@ export default function SubscriptionsPage() {
         return;
       }
 
-      const res = await fetch(`${API_URL}/api/v1/subscription/subscribe`, {
+      const res = await fetch(`${API_URL}/api/v1/subscriptions/subscribe`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

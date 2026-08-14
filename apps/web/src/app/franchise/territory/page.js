@@ -12,7 +12,7 @@ export default function TerritoryManager() {
   useEffect(() => {
     // 1. Fetch Territories Data
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    fetch(`${BACKEND_URL}/api/v1/crm/territory/map`)
+    fetch(`${BACKEND_URL}/api/v1/territory/map`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
