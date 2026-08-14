@@ -4,6 +4,7 @@ import { Text, Platform, View } from 'react-native';
 import { getTabsForRole, ROLES, ROLE_ICONS } from '../../src/utils/permissions';
 import RoleSwitcher from '../../src/components/RoleSwitcher';
 import AnimatedBottomTabs from '../../src/navigation/AnimatedBottomTabs';
+import MorphingBottomTabs from '../../src/navigation/MorphingBottomTabs';
 
 export default function TabLayout() {
   const { user, activeRole } = useAuth();
@@ -19,7 +20,7 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
-        tabBar={(props) => <AnimatedBottomTabs {...props} />}
+        tabBar={(props) => <MorphingBottomTabs {...props} />}
         screenOptions={{
           headerShown: false,
         }}

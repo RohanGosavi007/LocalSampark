@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { LocationContext } from '../../context/LocationContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { StaggerGrid, StaggerItem } from '../../components/motion/StaggerGrid';
 import { 
   Search, Map as MapIcon, List, Filter, Star, Clock, 
   Truck, ShieldCheck, X, Navigation, ShoppingBag, Eye, Store
@@ -385,17 +386,18 @@ export default function ShopsPage() {
                 onQuickView={handleQuickView}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {sortedShops.map((shop, i) => (
-                  <ShopCard
-                    key={shop.id}
-                    shop={shop}
-                    category={categoriesMap[shop.category_id || shop.categoryId] || shop.category}
-                    index={i}
-                    onQuickView={handleQuickView}
-                  />
+                  <StaggerItem key={shop.id}>
+                    <ShopCard
+                      shop={shop}
+                      category={categoriesMap[shop.category_id || shop.categoryId] || shop.category}
+                      index={i % 3}
+                      onQuickView={handleQuickView}
+                    />
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerGrid>
             )}
           </div>
         </div>

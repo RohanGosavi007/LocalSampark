@@ -13,6 +13,7 @@ import DevLoginScreen from '../components/DevLoginScreen';
 import QueryProvider from './components/QueryProvider';
 import ConsentBanner from '../components/ConsentBanner';
 import WelcomeTour from '../components/WelcomeTour';
+import PageTransition from '../components/motion/PageTransition';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -122,7 +123,9 @@ export default function RootLayout({ children }) {
               <AuthProvider>
                 <ZoneProvider>
                   <LocationProvider>
-                    {children}
+                    <PageTransition>
+                      {children}
+                    </PageTransition>
                     <ConsentBanner />
                     <WelcomeTour />
                   </LocationProvider>
