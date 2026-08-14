@@ -75,7 +75,7 @@ router.get('/categories', async (req, res, next) => {
     AuditLogger.log('api_access', { endpoint: '/categories', ip: req.ip });
 
     const result = await CacheService.getOrSet('shop:categories:active', 3600, async () => {
-      const categories = await query("SELECT * FROM shop_categories WHERE is_active = 1 ORDER BY display_order ASC");
+      const categories = await query("SELECT * FROM shop_categories WHERE is_active = 1 OR is_active = true ORDER BY display_order ASC");
       return categories.rows || categories;
     });
 

@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getRequests = async (req, res, next) => {
@@ -30,11 +30,11 @@ exports.createRequest = async (req, res, next) => {
       
       await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), adminId, 'LOG_SCRAP_REQUEST', 'environment', newId, \`Scheduled scrap pickup for \${user_name}\`]
+        [crypto.randomUUID(), adminId, 'LOG_SCRAP_REQUEST', 'environment', newId, `Scheduled scrap pickup for ${user_name}`]
       );
     } catch (e) {
       if (e.message.includes('relation "environment_scrap" does not exist') || e.message.includes('no such table')) {
-        await query(\`
+        await query(`
           CREATE TABLE environment_scrap (
             id VARCHAR(255) PRIMARY KEY,
             user_name VARCHAR(255),
@@ -47,7 +47,7 @@ exports.createRequest = async (req, res, next) => {
             created_by VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        \`);
+        `);
         await query(`INSERT INTO environment_scrap (id, user_name, phone, scrap_type, estimated_weight, address, created_by)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [newId, user_name, phone, scrap_type, estimated_weight, address, adminId]
@@ -68,7 +68,7 @@ exports.updateStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
     await query('UPDATE environment_scrap SET status = $1 WHERE id = $2', [status, id]);
-    res.json({ success: true, message: \`Status updated to \${status}\` });
+    res.json({ success: true, message: `Status updated to ${status}` });
   } catch (error) {
     next(error);
   }

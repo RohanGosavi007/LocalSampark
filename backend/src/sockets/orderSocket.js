@@ -9,7 +9,8 @@ module.exports = (io, socket) => {
   // Listen for merchant updating order status (e.g. Kanban drag-and-drop)
   socket.on('merchant_update_order_status', (payload) => {
     const { shopId, orderId, status } = payload;
-    // Broadcast to the specific visitor tracking the order
-    io.emit(`order_status_${orderId}`, { status });
+    // Broadcast to the specific visitor tracking the order and room subscribers
+    io.emit(`order_status_${orderId}`, { orderId, status });
+    io.to(`order_${orderId}`).to(`order:${orderId}`).emit('order_status_update', { orderId, status });
   });
 };

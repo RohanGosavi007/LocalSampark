@@ -87,7 +87,19 @@ async function processNotification(recipientId, notification) {
  * Send notification to shop owner by shop ID
  */
 async function sendToShopOwner(shopId, notification) {
-  const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
+  let shop = null;
+  try {
+    shop = await queryOne('SELECT owner_id FROM shops WHERE id = $1', [shopId]);
+  } catch (e) {
+    try {
+      shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
+    } catch (e2) {}
+  }
+  if (!shop) {
+    try {
+      shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
+    } catch (e3) {}
+  }
   if (shop && shop.owner_id) {
     return sendToUser(shop.owner_id, notification);
   }
@@ -113,7 +125,7 @@ async function sendToRegion(regionId, notification) {
  */
 async function getUnread(userId, limit = 50) {
   const notifications = await query(
-    'SELECT * FROM shop_notifications WHERE recipient_id = $1 AND is_read = 0 ORDER BY created_at DESC LIMIT $2',
+    'SELECT * FROM shop_notifications WHERE recipient_id = $1 AND (is_read = 0 OR is_read = false) ORDER BY created_at DESC LIMIT $2',
     [userId, limit]
   );
   return notifications.rows || notifications;

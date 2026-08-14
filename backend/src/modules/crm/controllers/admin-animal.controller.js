@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 
 async function ensureTable() {
   await query(`
@@ -61,7 +61,7 @@ exports.updateStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
     await query('UPDATE admin_animal_rescue SET status = $1 WHERE id = $2', [status, id]);
-    res.json({ success: true, message: \`Rescue status updated to \${status}\` });
+    res.json({ success: true, message: `Rescue status updated to ${status}` });
   } catch (error) {
     next(error);
   }

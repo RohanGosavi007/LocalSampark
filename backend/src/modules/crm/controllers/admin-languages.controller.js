@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getConfig = async (req, res, next) => {
@@ -50,11 +50,11 @@ exports.updateConfig = async (req, res, next) => {
       
       await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), adminId, 'UPDATE_LOCALIZATION', 'system', 'global', \`Updated global language matrix: \${activeLanguages.join(',')}\`]
+        [crypto.randomUUID(), adminId, 'UPDATE_LOCALIZATION', 'system', 'global', `Updated global language matrix: ${activeLanguages.join(',')}`]
       );
     } catch (e) {
       if (e.message.includes('relation "admin_localization" does not exist') || e.message.includes('no such table')) {
-        await query(\`
+        await query(`
           CREATE TABLE admin_localization (
             id VARCHAR(50) PRIMARY KEY,
             active_languages TEXT,
@@ -62,7 +62,7 @@ exports.updateConfig = async (req, res, next) => {
             updated_by VARCHAR(255),
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        \`);
+        `);
         await query(`INSERT INTO admin_localization (id, active_languages, dictionary_overrides, updated_by)
            VALUES ('global', $1, $2, $3)`,
           [activeLanguagesJson, overridesJson, adminId]

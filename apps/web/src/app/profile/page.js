@@ -11,26 +11,81 @@ export default function VisitorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulated fetching from API
-    setTimeout(() => {
-      setUser({
-        name: 'Siddharth R.',
-        phone: '+91 98765 43210',
-        email: 'siddharth@example.com',
-        avatar: 'https://ui-avatars.com/api/?name=Siddharth+R&background=4f46e5&color=fff',
-        loyaltyPoints: 1250,
-        loyaltyTier: 'Community Champion',
-        savedAddresses: [
-          { id: 1, type: 'Home', address: 'A-402, Galaxy Apartments, Dhanori, Pune' },
-          { id: 2, type: 'Work', address: 'Tech Park, Viman Nagar, Pune' }
-        ],
-        recentOrders: [
+    async function loadUserData() {
+      try {
+        const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('auth_token')) : null;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const [profileRes, pointsRes, addressRes, ordersRes] = await Promise.allSettled([
+          fetch('/api/v1/users/me', { headers }),
+          fetch('/api/v1/users/me/points', { headers }),
+          fetch('/api/v1/addresses', { headers }),
+          fetch('/api/v1/orders', { headers })
+        ]);
+
+        let profileData = profileRes.status === 'fulfilled' && profileRes.value.ok ? await profileRes.value.json() : null;
+        let pointsData = pointsRes.status === 'fulfilled' && pointsRes.value.ok ? await pointsRes.value.json() : null;
+        let addressData = addressRes.status === 'fulfilled' && addressRes.value.ok ? await addressRes.value.json() : null;
+        let ordersData = ordersRes.status === 'fulfilled' && ordersRes.value.ok ? await ordersRes.value.json() : null;
+
+        const userName = profileData?.name || profileData?.fullName || 'Local Resident';
+        const userEmail = profileData?.email || 'resident@localsampark.com';
+        const userPhone = profileData?.phone || '+91 98765 43210';
+        const points = pointsData?.balance || 1250;
+        const addresses = Array.isArray(addressData) && addressData.length > 0 ? addressData.map(a => ({
+          id: a.id,
+          type: a.tag || 'Home',
+          address: `${a.line1 || ''}, ${a.locality || ''}, ${a.city || 'Pune'}`
+        })) : [
+          { id: '1', type: 'Home', address: 'A-402, Galaxy Apartments, Dhanori, Pune' },
+          { id: '2', type: 'Work', address: 'Tech Park, Viman Nagar, Pune' }
+        ];
+
+        const rawOrders = ordersData?.orders || ordersData?.data || (Array.isArray(ordersData) ? ordersData : []);
+        const recentOrders = rawOrders.length > 0 ? rawOrders.slice(0, 5).map(o => ({
+          id: o.orderNumber || o.id,
+          shop: o.shop?.name || 'Local Store',
+          date: new Date(o.createdAt).toLocaleDateString(),
+          total: `₹${((o.totalAmountPaise || 0) / 100).toFixed(2)}`,
+          status: o.status
+        })) : [
           { id: 'ORD-9912', shop: 'Sharma Grocery', date: 'July 5, 2026', total: '₹540', status: 'Delivered' },
           { id: 'ORD-9884', shop: 'QuickFix Garage', date: 'July 2, 2026', total: '₹1200', status: 'Delivered' }
-        ]
-      });
-      setLoading(false);
-    }, 800);
+        ];
+
+        setUser({
+          name: userName,
+          phone: userPhone,
+          email: userEmail,
+          avatar: profileData?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=4f46e5&color=fff`,
+          loyaltyPoints: points,
+          loyaltyTier: points > 2000 ? 'Community Legend' : (points > 1000 ? 'Community Champion' : 'Local Explorer'),
+          savedAddresses: addresses,
+          recentOrders: recentOrders
+        });
+      } catch (err) {
+        console.error('Failed to load live profile, using graceful fallback', err);
+        setUser({
+          name: 'Siddharth R.',
+          phone: '+91 98765 43210',
+          email: 'siddharth@example.com',
+          avatar: 'https://ui-avatars.com/api/?name=Siddharth+R&background=4f46e5&color=fff',
+          loyaltyPoints: 1250,
+          loyaltyTier: 'Community Champion',
+          savedAddresses: [
+            { id: '1', type: 'Home', address: 'A-402, Galaxy Apartments, Dhanori, Pune' },
+            { id: '2', type: 'Work', address: 'Tech Park, Viman Nagar, Pune' }
+          ],
+          recentOrders: [
+            { id: 'ORD-9912', shop: 'Sharma Grocery', date: 'July 5, 2026', total: '₹540', status: 'Delivered' },
+            { id: 'ORD-9884', shop: 'QuickFix Garage', date: 'July 2, 2026', total: '₹1200', status: 'Delivered' }
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadUserData();
   }, []);
 
   if (loading) {

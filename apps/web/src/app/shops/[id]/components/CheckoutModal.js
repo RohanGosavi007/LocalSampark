@@ -55,7 +55,7 @@ export default function CheckoutModal({
           return;
         }
 
-        const res = await fetch(`${API_URL}/api/payment/create-order`, {
+        const res = await fetch(`${API_URL}/api/v1/checkout/create-order`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ export default function CheckoutModal({
           description: "LocalSampark Order Checkout",
           order_id: data.id,
           handler: async function (response) {
-            const verifyRes = await fetch(`${API_URL}/api/payment/verify`, {
+            const verifyRes = await fetch(`${API_URL}/api/v1/checkout/verify`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

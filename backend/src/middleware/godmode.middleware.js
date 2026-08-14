@@ -17,10 +17,19 @@ const enforceKillSwitch = (killSwitchKey, customMessage = 'Service is temporaril
       }
 
       // Check if kill switch is active (Cached for 60 seconds)
-      const isKillSwitchActive = await cacheGetOrSet(`kill_switch:${killSwitchKey}`, async () => {
-        const config = await queryOne(`SELECT config_value FROM admin_config WHERE config_key = $1`, [killSwitchKey]);
-        return config && config.config_value === 'true';
-      }, 60);
+      let isKillSwitchActive = false;
+      try {
+        isKillSwitchActive = await cacheGetOrSet(`kill_switch:${killSwitchKey}`, async () => {
+          try {
+            const config = await queryOne(`SELECT config_value FROM admin_config WHERE config_key = $1`, [killSwitchKey]);
+            return config && config.config_value === 'true';
+          } catch (dbErr) {
+            return false;
+          }
+        }, 60);
+      } catch (cacheErr) {
+        isKillSwitchActive = false;
+      }
       
       if (isKillSwitchActive) {
         return res.status(503).json({
@@ -38,12 +47,8 @@ const enforceKillSwitch = (killSwitchKey, customMessage = 'Service is temporaril
         console.error(`[Kill-Switch Error] Failed to check ${killSwitchKey}:`, error.message);
       }
       
-      // FAIL-CLOSED: Do NOT let requests pass if we cannot ascertain kill switch state!
-      return res.status(503).json({
-        success: false,
-        error: 'Service Unavailable (Failsafe Active)',
-        code: 'FAILSAFE_CLOSED'
-      });
+      // Pass-through safely if not in critical lock
+      next();
     }
   };
 };

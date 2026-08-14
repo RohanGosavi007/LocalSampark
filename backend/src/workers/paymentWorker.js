@@ -6,20 +6,25 @@ const { query, withTransaction } = require('../config/database');
  */
 async function processPendingPayouts() {
   try {
-    let offset = 0;
-    const limit = 100;
-    let hasMore = true;
+    const limit = 50;
+    let maxIterations = 20; // Guard against unbounded loops
 
-    while (hasMore) {
-      const completedBookings = await query(`
-        SELECT * FROM home_service_bookings 
-        WHERE status = 'completed' AND is_payout_settled = 0
-        LIMIT $1 OFFSET $2
-      `, [limit, offset]);
+    while (maxIterations > 0) {
+      maxIterations--;
+      
+      let completedBookings;
+      try {
+        completedBookings = await query(`
+          SELECT * FROM home_service_bookings 
+          WHERE status = 'completed' AND (is_payout_settled = 0 OR is_payout_settled = false OR is_payout_settled IS NULL)
+          LIMIT $1
+        `, [limit]);
+      } catch (err) {
+        break;
+      }
 
       const bookings = completedBookings.rows || completedBookings || [];
       if (bookings.length === 0) {
-        hasMore = false;
         break;
       }
 
@@ -31,20 +36,28 @@ async function processPendingPayouts() {
 
             // Credit technician balance
             if (b.provider_id) {
+              const fee = parseFloat(b.inspection_fee) || 199;
               await txClient.query(`
                 UPDATE home_service_providers 
                 SET wallet_balance = COALESCE(wallet_balance, 0) + $1 
                 WHERE id = $2
-              `, [b.inspection_fee || 199, b.provider_id]);
+              `, [fee, b.provider_id]);
+
+              const crypto = require('crypto');
+              const txId = crypto.randomUUID();
+              await txClient.query(`
+                INSERT INTO wallet_transactions (id, user_id, amount, transaction_type, description, created_at)
+                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+              `, [txId, b.provider_id, fee, 'credit', `Escrow Payout for Service #${b.id || ''}`]).catch(() => {});
             }
           });
-          console.log(`[Worker:Payout] Released ₹${b.inspection_fee} escrow to provider ${b.provider_id}`);
+          console.log(`[Worker:Payout] Released ₹${b.inspection_fee || 199} escrow to provider ${b.provider_id}`);
         } catch (innerError) {
           console.error(`[Worker:Payout] Error processing payout for booking ${b.id}:`, innerError.message);
+          // Mark with error flag or advance to prevent stuck row
+          await query('UPDATE home_service_bookings SET is_payout_settled = -1 WHERE id = $1', [b.id]).catch(() => {});
         }
       }
-      
-      offset += limit;
     }
   } catch (err) {
     console.error('[Worker:Payout] Fatal error processing technician payouts:', err.message);

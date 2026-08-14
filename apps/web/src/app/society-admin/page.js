@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import Header from '../../components/Header';
-import { Users, FileText, Wallet, Settings, Bell, Search, Filter } from 'lucide-react';
+import { Users, FileText, Wallet, Settings, Bell, Search, Filter, Download } from 'lucide-react';
+import SocietyDataExport from './components/SocietyDataExport';
 
 export default function SocietyAdminDashboard() {
   const [activeTab, setActiveTab] = useState('members');
@@ -27,6 +28,7 @@ export default function SocietyAdminDashboard() {
                 { id: 'members', label: 'Directory', icon: Users },
                 { id: 'finance', label: 'Finance & Dues', icon: Wallet },
                 { id: 'tickets', label: 'Maintenance', icon: FileText },
+                { id: 'exports', label: 'Data Exports', icon: Download },
                 { id: 'settings', label: 'Society Settings', icon: Settings }
               ].map(item => (
                 <button
@@ -71,6 +73,7 @@ export default function SocietyAdminDashboard() {
           </div>
 
           {/* Data Table Area */}
+          {activeTab === 'exports' ? <SocietyDataExport /> : (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-white capitalize">{activeTab} Management</h2>
@@ -114,6 +117,7 @@ export default function SocietyAdminDashboard() {
               </table>
             </div>
           </div>
+          )}
 
         </main>
       </div>

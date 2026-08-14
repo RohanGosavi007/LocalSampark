@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getBills = async (req, res, next) => {
@@ -8,7 +8,13 @@ exports.getBills = async (req, res, next) => {
       const result = await query("SELECT * FROM utility_bills ORDER BY CASE WHEN status = 'pending' THEN 1 WHEN status = 'processing' THEN 2 WHEN status = 'failed' THEN 3 ELSE 4 END, created_at DESC");
       bills = result.rows || result;
     } catch (e) {
-      bills = [];
+      // Only a missing table is an acceptable empty result; anything else is a
+      // real fault and must not be masked as "no bills".
+      if (e.message.includes('relation "utility_bills" does not exist') || e.message.includes('no such table')) {
+        bills = [];
+      } else {
+        throw e;
+      }
     }
     res.json({ success: true, data: bills });
   } catch (error) {
@@ -30,11 +36,11 @@ exports.createBill = async (req, res, next) => {
       
       await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), adminId, 'CREATE_BILL_PAYMENT', 'financial', newId, \`Initiated \${provider_type} payment of ₹\${amount} for \${customer_name}\`]
+        [crypto.randomUUID(), adminId, 'CREATE_BILL_PAYMENT', 'financial', newId, `Initiated ${provider_type} payment of ₹${amount} for ${customer_name}`]
       );
     } catch (e) {
       if (e.message.includes('relation "utility_bills" does not exist') || e.message.includes('no such table')) {
-        await query(\`
+        await query(`
           CREATE TABLE utility_bills (
             id VARCHAR(255) PRIMARY KEY,
             customer_name VARCHAR(255),
@@ -47,7 +53,7 @@ exports.createBill = async (req, res, next) => {
             created_by VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        \`);
+        `);
         await query(`INSERT INTO utility_bills (id, customer_name, phone, provider_type, consumer_number, amount, created_by)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [newId, customer_name, phone, provider_type, consumer_number, amount, adminId]

@@ -25,16 +25,118 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// requestDelivery: P2P delivery is disabled for Phase 3 Prisma Schema
+// requestDelivery: P2P courier and on-demand parcel delivery
 const requestDelivery = async (req, res, next) => {
-  res.status(501).json({ success: false, error: 'Manual P2P delivery is currently disabled for Phase 3.' });
+  try {
+    const {
+      pickupAddress,
+      deliveryAddress,
+      pickupLat,
+      pickupLng,
+      dropLat,
+      dropLng,
+      packageDetails = 'Parcel / Courier Document',
+      pincode = '411015',
+      estimatedDistanceKm = 3.5,
+      deliveryFee = 45
+    } = req.body;
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    // Find or create default logistics shop
+    let shop = await prisma.shop.findFirst({
+      where: { categoryType: { in: ['PRODUCT', 'HYBRID'] } }
+    });
+    if (!shop) {
+      shop = await prisma.shop.findFirst();
+    }
+
+    if (!shop) {
+      return res.status(400).json({ success: false, error: 'No active logistics channel found in region' });
+    }
+
+    const calculatedSurge = await SurgeEngine.calculateSurge(pincode, 5, 2);
+    const finalFeePaise = Math.round((deliveryFee || (calculatedSurge.totalDeliveryFee || 45)) * 100);
+    const orderNumber = `LS-P2P-${Date.now().toString().slice(-6)}`;
+
+    // Create Order and DeliveryRoute
+    const newOrder = await prisma.order.create({
+      data: {
+        orderNumber,
+        userId,
+        shopId: shop.id,
+        status: 'PENDING',
+        subtotalPaise: 0,
+        deliveryFeePaise: finalFeePaise,
+        platformFeePaise: 500,
+        totalAmountPaise: finalFeePaise + 500,
+        paymentMethod: 'COD',
+        paymentStatus: 'PENDING',
+        fulfillmentMethod: 'DELIVERY',
+        specialInstructions: `[P2P Parcel] ${packageDetails} | Pickup: ${pickupAddress || 'Address'} -> Drop: ${deliveryAddress || 'Address'}`,
+        deliveryRoute: {
+          create: {
+            status: 'PENDING',
+            pickupLatitude: pickupLat ? parseFloat(pickupLat) : shop.latitude,
+            pickupLongitude: pickupLng ? parseFloat(pickupLng) : shop.longitude,
+            dropLatitude: dropLat ? parseFloat(dropLat) : null,
+            dropLongitude: dropLng ? parseFloat(dropLng) : null,
+            distanceKm: parseFloat(estimatedDistanceKm) || 3.5,
+            estimatedMinutes: Math.round((parseFloat(estimatedDistanceKm) || 3.5) * 5 + 10),
+          }
+        }
+      },
+      include: {
+        deliveryRoute: true
+      }
+    });
+
+    // Notify online riders via WebSocket
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_delivery_job', {
+        jobId: newOrder.deliveryRoute?.id,
+        orderId: newOrder.id,
+        orderNumber: newOrder.orderNumber,
+        pincode,
+        fee: finalFeePaise / 100
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'P2P Delivery requested successfully. Finding nearest delivery partner.',
+      order: newOrder,
+      jobId: newOrder.deliveryRoute?.id
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
-// autoCreateShopDelivery: Deprecated in Phase 3. unified-superapp.controller.js directly creates DeliveryRoute.
-const autoCreateShopDelivery = async () => {
-    console.warn('autoCreateShopDelivery is deprecated. DeliveryRoute is created directly during checkout.');
+// autoCreateShopDelivery: Creates DeliveryRoute during checkout
+const autoCreateShopDelivery = async (orderId, shopLat, shopLng, dropLat, dropLng, distanceKm) => {
+  try {
+    return await prisma.deliveryRoute.create({
+      data: {
+        orderId,
+        status: 'PENDING',
+        pickupLatitude: shopLat,
+        pickupLongitude: shopLng,
+        dropLatitude: dropLat,
+        dropLongitude: dropLng,
+        distanceKm: distanceKm || 3.0,
+        estimatedMinutes: Math.round((distanceKm || 3.0) * 5 + 10)
+      }
+    });
+  } catch (e) {
+    console.error('Failed to create delivery route:', e);
     return null;
-}
+  }
+};
 
 /**
  * Get active/pending delivery jobs in pincode
@@ -142,11 +244,16 @@ const completeJob = async (req, res, next) => {
         data: { status: 'DELIVERED', deliveredAt: new Date() }
       });
       
-      // Update Agent Profile Delivery Count
-      await tx.deliveryAgentProfile.update({
+      // Update Agent Profile Delivery Count safely
+      try {
+        await tx.deliveryAgentProfile.upsert({
           where: { userId },
-          data: { totalDeliveries: { increment: 1 } }
-      });
+          create: { userId, totalDeliveries: 1, isAvailable: true },
+          update: { totalDeliveries: { increment: 1 } }
+        });
+      } catch (agentErr) {
+        console.warn('Could not update agent profile stats:', agentErr.message);
+      }
 
       return updatedRoute;
     });

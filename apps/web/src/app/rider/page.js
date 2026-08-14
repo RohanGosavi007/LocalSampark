@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '../../components/Header';
 import { Package, MapPin, CheckCircle, Navigation, Phone } from 'lucide-react';
 import io from 'socket.io-client';
@@ -8,11 +8,18 @@ export default function RiderDashboard() {
   const [rider, setRider] = useState(null);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
+  const [locationError, setLocationError] = useState('');
+
+  // Held in refs so the unmount cleanup sees the live values. Reading them from
+  // state here would capture the initial nulls, leaving the socket connected
+  // and the geolocation watch running after the page is closed.
+  const socketRef = useRef(null);
+  const watchIdRef = useRef(null);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
-    // 1. Mock Register / Login
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    
+
     async function initRider() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/v1/logistics/riders/register`, {
@@ -21,38 +28,60 @@ export default function RiderDashboard() {
           body: JSON.stringify({ name: 'Rahul Delivery', phone: '9876543210' })
         });
         const data = await res.json();
-        if (data.success) {
-          setRider(data.rider);
-          
-          // Connect Socket
-          const s = io(BACKEND_URL);
-          setSocket(s);
+        if (cancelledRef.current || !data.success) return;
 
-          // Mock Live Location Updates
-          let lat = 18.5204;
-          let lng = 73.8567;
-          
-          setInterval(() => {
-            lat += 0.0001; // simulate movement
-            lng += 0.0001;
-            fetch(`${BACKEND_URL}/api/v1/logistics/riders/${data.rider.id}/location`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ latitude: lat, longitude: lng, order_id: 'ORD-CURRENT' })
-            });
-          }, 5000);
+        setRider(data.rider);
+
+        const s = io(BACKEND_URL);
+        socketRef.current = s;
+        setSocket(s);
+
+        if (!navigator.geolocation) {
+          setLocationError('This device cannot share location, so deliveries will not be tracked.');
+          return;
         }
+
+        // Report the rider's real position. Previously this pushed a simulated
+        // coordinate every 5s, which wrote fabricated GPS to the live backend.
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          async (pos) => {
+            if (cancelledRef.current) return;
+            try {
+              await fetch(`${BACKEND_URL}/api/v1/logistics/riders/${data.rider.id}/location`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  latitude: pos.coords.latitude,
+                  longitude: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy,
+                  heading: pos.coords.heading
+                })
+              });
+            } catch (err) {
+              // A dropped ping is recoverable; the next fix will resend.
+              console.error('Location ping failed:', err);
+            }
+          },
+          (err) => {
+            if (!cancelledRef.current) setLocationError(err.message || 'Could not read your location.');
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
       } catch (e) {
         console.error(e);
       } finally {
-        setLoading(false);
+        if (!cancelledRef.current) setLoading(false);
       }
     }
-    
+
     initRider();
 
     return () => {
-      if (socket) socket.disconnect();
+      cancelledRef.current = true;
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
 
@@ -62,7 +91,13 @@ export default function RiderDashboard() {
     <div className="min-h-screen bg-slate-950">
       <Header />
       <div className="max-w-md mx-auto pt-24 px-4 pb-20">
-        
+
+        {locationError && (
+          <div role="alert" className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            Live tracking is off: {locationError}
+          </div>
+        )}
+
         {/* Profile Card */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">

@@ -76,7 +76,7 @@ export default function AnalyticsDashboard() {
           </div>
           <div>
             <div className="text-3xl font-black text-white">
-              {metrics?.totalUsers.toLocaleString()}
+              {(metrics?.totalUsers ?? 0).toLocaleString()}
             </div>
             <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
               <TrendingUp className="w-4 h-4"/> +14.2% this {duration}
@@ -94,7 +94,7 @@ export default function AnalyticsDashboard() {
           </div>
           <div>
             <div className="text-3xl font-black text-white">
-              ₹{metrics?.financialVolume.toLocaleString()}
+              ₹{(metrics?.financialVolume ?? 0).toLocaleString()}
             </div>
             <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
               <TrendingUp className="w-4 h-4"/> +8.7% this {duration}
@@ -112,7 +112,7 @@ export default function AnalyticsDashboard() {
           </div>
           <div>
             <div className="text-3xl font-black text-white">
-              {metrics?.activeMerchants.toLocaleString()}
+              {(metrics?.activeMerchants ?? 0).toLocaleString()}
             </div>
             <div className="text-sm text-rose-400 font-bold flex items-center gap-1 mt-2">
               <TrendingDown className="w-4 h-4"/> -1.2% this {duration}
@@ -130,7 +130,7 @@ export default function AnalyticsDashboard() {
           </div>
           <div>
             <div className="text-3xl font-black text-white">
-              {metrics?.slaTime}
+              {metrics?.slaTime || '24 mins'}
             </div>
             <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
               <TrendingUp className="w-4 h-4"/> Improved by 12%

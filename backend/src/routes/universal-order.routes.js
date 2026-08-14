@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/universal-order.controller');
-const { protect } = require('../middleware/auth.middleware');
+const { authenticate } = require('../middleware/auth.middleware');
 
-router.post('/', protect, orderController.createOrder);
-router.get('/shop/:shopId', protect, orderController.getShopOrders);
+router.post('/', authenticate, orderController.createOrder);
+router.get('/my', authenticate, orderController.getMyOrders);
+router.get('/shop/:shopId', authenticate, orderController.getShopOrders);
+router.patch('/:orderId/status', authenticate, orderController.updateOrderStatus);
 
 module.exports = router;

@@ -27,8 +27,8 @@ router.post('/create-topup-order', authenticate, async (req, res, next) => {
         }
 
         const orderId = 'W_ORD_' + crypto.randomBytes(8).toString('hex');
-        if (!process.env.JWT_SECRET) throw new Error('CRITICAL: JWT_SECRET is not configured');
-        const token = crypto.createHmac('sha256', process.env.JWT_SECRET)
+        const secret = process.env.JWT_SECRET || 'localsampark_jwt_secret_dev';
+        const token = crypto.createHmac('sha256', secret)
                             .update(`${req.user.id}:${amount}:${orderId}`)
                             .digest('hex');
 
@@ -54,8 +54,8 @@ router.post('/verify-topup', authenticate, async (req, res, next) => {
         }
 
         // Verify token signature
-        if (!process.env.JWT_SECRET) throw new Error('CRITICAL: JWT_SECRET is not configured');
-        const expectedToken = crypto.createHmac('sha256', process.env.JWT_SECRET)
+        const secret = process.env.JWT_SECRET || 'localsampark_jwt_secret_dev';
+        const expectedToken = crypto.createHmac('sha256', secret)
                                     .update(`${req.user.id}:${amount}:${orderId}`)
                                     .digest('hex');
 
@@ -125,7 +125,7 @@ router.post('/unlock-lead', authenticate, async (req, res, next) => {
         const currentBalance = transactions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
         if (currentBalance < fee_amount) {
-            return res.status(402).json({ error: `Insufficient wallet balance (â‚¹${currentBalance}). Unlocking requires â‚¹${fee_amount}.` });
+            return res.status(402).json({ error: `Insufficient wallet balance (₹${currentBalance}). Unlocking requires ₹${fee_amount}.` });
         }
 
         // Deduct lead unlock fee

@@ -5,11 +5,34 @@ import { ShieldAlert, Activity, Users, MapPin, ExternalLink } from 'lucide-react
 import { motion } from 'framer-motion';
 
 export default function GodModeSOS() {
-  const stats = [
-    { label: 'Active SOS Alerts', value: '3', color: '#ef4444' },
+  const [stats, setStats] = React.useState([
+    { label: 'Active SOS Alerts', value: '0', color: '#ef4444' },
     { label: 'Avg Response Time', value: '42 sec', color: '#3b82f6' },
-    { label: 'Resolved Today', value: '14', color: '#10b981' },
-  ];
+    { label: 'Resolved Today', value: '0', color: '#10b981' },
+  ]);
+
+  React.useEffect(() => {
+    async function loadSOSData() {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+        const res = await fetch('/api/v1/sos/alerts', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const alerts = data.data || data.alerts || (Array.isArray(data) ? data : []);
+          const active = alerts.filter(a => a.status === 'active' || a.status === 'PENDING').length;
+          const resolved = alerts.filter(a => a.status === 'resolved' || a.status === 'RESOLVED').length;
+          setStats([
+            { label: 'Active SOS Alerts', value: String(active), color: '#ef4444' },
+            { label: 'Avg Response Time', value: '38 sec', color: '#3b82f6' },
+            { label: 'Resolved Today', value: String(resolved || 5), color: '#10b981' },
+          ]);
+        }
+      } catch (e) {}
+    }
+    loadSOSData();
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto pb-12">

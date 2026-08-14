@@ -1,52 +1,29 @@
-console.log('--- DEBUG: inside routes/index.js top ---');
 const express = require('express');
 const router = express.Router();
-console.log('--- DEBUG: requiring cache.middleware ---');
 const apiCache = require('../middleware/cache.middleware');
-console.log('--- DEBUG: requiring rateLimit.middleware ---');
 const { authLimiter, paymentLimiter, uploadLimiter, adminLimiter } = require('../middleware/rateLimit.middleware');
-console.log('--- DEBUG: requiring auth.routes ---');
 
 // ─── CORE DOMAIN ──────────────────────────────────────────
-console.log('--- DEBUG: requiring auth.routes ---');
 router.use('/auth', authLimiter, require('../modules/core/routes/auth.routes'));
-console.log('--- DEBUG: requiring user.routes ---');
 router.use('/users', require('../modules/core/routes/user.routes'));
-console.log('--- DEBUG: requiring addresses.routes ---');
 router.use('/users/addresses', require('../modules/ecommerce/routes/addresses.routes')); // Legacy overlap
-console.log('--- DEBUG: requiring chatbot.routes ---');
 router.use('/chatbot', require('../modules/core/routes/chatbot.routes'));
-console.log('--- DEBUG: requiring loyalty.routes ---');
 router.use('/loyalty', require('../modules/core/routes/loyalty.routes'));
-console.log('--- DEBUG: requiring notification.routes ---');
 router.use('/notifications', require('../modules/core/routes/notification.routes'));
-console.log('--- DEBUG: requiring sos.routes ---');
 router.use('/sos', require('../modules/core/routes/sos.routes'));
-console.log('--- DEBUG: requiring zone.routes ---');
 router.use('/zones', apiCache(3600), require('../modules/core/routes/zone.routes'));
-console.log('--- DEBUG: requiring user_zone.routes ---');
 router.use('/user-zones', require('../modules/core/routes/user_zone.routes'));
-console.log('--- DEBUG: requiring rewards.routes ---');
 router.use('/rewards', require('../modules/core/routes/rewards.routes'));
-console.log('--- DEBUG: requiring referral.routes ---');
 router.use('/referral', require('../modules/core/routes/referral.routes'));
-console.log('--- DEBUG: requiring upload.routes ---');
 router.use('/upload', uploadLimiter, require('../modules/core/routes/upload.routes'));
-console.log('--- DEBUG: requiring settings.routes ---');
 router.use('/settings', require('../modules/core/routes/settings.routes'));
-console.log('--- DEBUG: requiring webhooks.routes ---');
 router.use('/webhooks', require('../modules/core/routes/webhooks.routes'));
-console.log('--- DEBUG: requiring token-queue.routes ---');
 router.use('/token-queue', require('../modules/core/routes/token-queue.routes'));
 
 // ─── COMMUNITY DOMAIN ─────────────────────────────────────
-console.log('--- DEBUG: entering COMMUNITY DOMAIN ---');
 router.use('/feed', apiCache(300), require('../modules/community/routes/feed.routes'));
-console.log('--- DEBUG: requiring chat.routes ---');
 router.use('/chat', require('../modules/community/routes/chat.routes'));
-console.log('--- DEBUG: requiring societies.routes ---');
 router.use('/societies', require('../modules/community/routes/society.routes'));
-console.log('--- DEBUG: requiring event.routes ---');
 router.use('/events', apiCache(3600), require('../modules/community/routes/event.routes'));
 router.use('/pets', require('../modules/community/routes/pet.routes'));
 router.use('/stories', require('../modules/community/routes/story.routes'));
@@ -69,12 +46,11 @@ router.use('/society-messaging', require('../modules/community/routes/private-me
 router.use('/society-shifts', require('../modules/community/routes/guard-shifts.routes'));
 router.use('/society-compliance', require('../modules/community/routes/society-compliance.routes'));
 router.use('/society-analytics', require('../modules/community/routes/society-analytics.routes'));
+router.use('/society-integration', require('../modules/community/routes/integration.routes'));
 
 // ─── UNIFIED SUPER-APP CONTRACTS (Phase 3 & Hyperlocal Optimization) ────────────────
-console.log('--- DEBUG: requiring pincode-directory.routes ---');
 router.use('/shops/pincode', require('../modules/ecommerce/routes/pincode-directory.routes'));
 
-console.log('--- DEBUG: requiring shop.routes ---');
 router.use('/shops', (req, res, next) => {
   if (req.path.startsWith('/admin') || req.headers.authorization || req.method !== 'GET') {
     return next();
@@ -82,11 +58,8 @@ router.use('/shops', (req, res, next) => {
   return apiCache(900)(req, res, next);
 }, require('../modules/ecommerce/routes/shop.routes'));
 
-console.log('--- DEBUG: requiring unified-superapp.routes ---');
 router.use('/', require('../modules/ecommerce/routes/unified-superapp.routes'));
-console.log('--- DEBUG: requiring marketplace.routes ---');
 router.use('/marketplace', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
-console.log('--- DEBUG: requiring payment.routes ---');
 router.use('/payments', paymentLimiter, require('../modules/ecommerce/routes/payment.routes'));
 router.use('/subscriptions', require('../modules/ecommerce/routes/subscription.routes'));
 router.use('/bills', require('../modules/ecommerce/routes/bills.routes'));
@@ -100,6 +73,7 @@ router.use('/group-buy', require('../modules/ecommerce/routes/group-buying.route
 router.use('/trust-reviews', require('../modules/ecommerce/routes/trust-reviews.routes'));
 router.use('/categories', require('../modules/ecommerce/routes/category-matrix.routes'));
 router.use('/universal-catalog', require('./universal-catalog.routes'));
+router.use('/universal-orders', require('./universal-order.routes'));
 
 // ─── SERVICES DOMAIN ──────────────────────────────────────
 router.use('/jobs', require('../modules/services/routes/jobs.routes'));

@@ -101,10 +101,10 @@ exports.exportUsers = async (req, res, next) => {
     
     // CSV Rows
     rows.forEach(user => {
-      const name = user.full_name ? \`"\${user.full_name.replace(/"/g, '""')}"\` : 'Anonymous';
+      const name = user.full_name ? `"${user.full_name.replace(/"/g, '""')}"` : 'Anonymous';
       const status = user.is_active !== false ? 'Active' : 'Blocked';
       const date = new Date(user.created_at).toISOString();
-      res.write(\`\${user.id},\${name},\${user.phone},\${user.role || 'user'},\${status},\${date}\n\`);
+      res.write(`${user.id},${name},${user.phone},${user.role || 'user'},${status},${date}\n`);
     });
     
     res.end();

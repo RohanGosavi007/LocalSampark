@@ -7,7 +7,7 @@ const exceljs = require('exceljs');
 
 const exportTallyXML = async (req, res, next) => {
     try {
-        const societyId = await getSocietyIdForUser(req.user.id);
+        const societyId = req.query.societyId || req.headers['x-society-id'] || await getSocietyIdForUser(req.user?.id);
         const { month } = req.query; // Format: YYYY-MM
         
         const result = await query(`SELECT smb.*, u.name as member_name 
@@ -46,7 +46,7 @@ const exportTallyXML = async (req, res, next) => {
         xml += `</REQUESTDATA>\n</IMPORTDATA>\n</BODY>\n</ENVELOPE>`;
 
         res.set('Content-Type', 'text/xml');
-        res.attachment(`Tally_Export_${month}.xml`);
+        res.attachment(`Tally_Export_${month || 'all'}.xml`);
         res.send(xml);
     } catch (error) { next(error); }
 };
@@ -57,7 +57,7 @@ const exportTallyXML = async (req, res, next) => {
 
 const exportVisitorsCSV = async (req, res, next) => {
     try {
-        const societyId = await getSocietyIdForUser(req.user.id);
+        const societyId = req.query.societyId || req.headers['x-society-id'] || await getSocietyIdForUser(req.user?.id);
         const { dateFrom, dateTo } = req.query;
 
         let sql = `
@@ -70,8 +70,8 @@ const exportVisitorsCSV = async (req, res, next) => {
         `;
         const params = [societyId];
         let paramIndex = 2;
-        if (dateFrom) { sql += ` AND date(sv.created_at) >= $${paramIndex}`; params.push(dateFrom); paramIndex++; }
-        if (dateTo) { sql += ` AND date(sv.created_at) <= $${paramIndex}`; params.push(dateTo); paramIndex++; }
+        if (dateFrom) { sql += ` AND sv.created_at >= $${paramIndex}`; params.push(dateFrom); paramIndex++; }
+        if (dateTo) { sql += ` AND sv.created_at <= $${paramIndex}`; params.push(dateTo); paramIndex++; }
         sql += ' ORDER BY sv.created_at DESC';
 
         const result = await query(sql, params);
@@ -104,16 +104,24 @@ const exportVisitorsCSV = async (req, res, next) => {
 
 const exportBillsCSV = async (req, res, next) => {
     try {
-        const societyId = await getSocietyIdForUser(req.user.id);
+        const societyId = req.query.societyId || req.headers['x-society-id'] || await getSocietyIdForUser(req.user?.id);
         const { month } = req.query;
 
-        const result = await query(`SELECT smb.*, u.name as member_name 
-             FROM society_maintenance_bills smb
-             JOIN society_members sm ON smb.member_id = sm.id
-             JOIN users u ON sm.user_id = u.id
-             WHERE smb.society_id = $1 AND smb.month = $2`,
-            [societyId, month]
-        );
+        let sql = `
+            SELECT smb.*, u.name as member_name 
+            FROM society_maintenance_bills smb
+            JOIN society_members sm ON smb.member_id = sm.id
+            JOIN users u ON sm.user_id = u.id
+            WHERE smb.society_id = $1
+        `;
+        const params = [societyId];
+        if (month) {
+            sql += ' AND smb.month = $2';
+            params.push(month);
+        }
+        sql += ' ORDER BY smb.flat_number ASC';
+
+        const result = await query(sql, params);
         const bills = result.rows || result || [];
 
         const workbook = new exceljs.Workbook();
@@ -133,7 +141,7 @@ const exportBillsCSV = async (req, res, next) => {
         worksheet.addRows(bills);
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=Bills_${month}.xlsx`);
+        res.setHeader('Content-Disposition', `attachment; filename=Bills_${month || 'all'}.xlsx`);
 
         await workbook.xlsx.write(res);
         res.end();

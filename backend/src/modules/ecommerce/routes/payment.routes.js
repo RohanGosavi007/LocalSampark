@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const PaymentGatewayEngine = require('../../../services/payment.gateway');
 const { query } = require('../../../config/database');
@@ -64,5 +64,13 @@ router.post('/webhook/:provider', express.raw({ type: 'application/json' }), asy
     res.status(500).send('Webhook Error');
   }
 });
+
+const { createCheckoutOrder, verifyPayment } = require('../controllers/payments.controller');
+
+// Create payment gateway order
+router.post('/create-order', createCheckoutOrder);
+
+// Verify payment signature
+router.post('/verify', verifyPayment);
 
 module.exports = router;

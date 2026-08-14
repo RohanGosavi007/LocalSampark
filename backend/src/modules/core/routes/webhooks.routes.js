@@ -3,11 +3,14 @@ const router = express.Router();
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { query } = require('../../../config/database');
-if (!process.env.STRIPE_SECRET_KEY) throw new Error('CRITICAL: STRIPE_SECRET_KEY is not configured');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 // Stripe webhook requires raw body
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Stripe is not configured' });
+  }
+
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 

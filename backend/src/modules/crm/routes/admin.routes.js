@@ -35,7 +35,8 @@ const { cacheDel } = require('../../../config/redis');
 const { calculateRevenueSplits, getFranchises, updateFranchiseSplit, getPendingPayouts, getDashboardStats, getRevenueChart } = require('../controllers/admin-revenue.controller');
 const { getPendingApprovals, updateApprovalStatus } = require('../controllers/admin-approvals.controller');
 const { getRevenueModels, updateSubscriptionPlan, updateLoyaltyTier, updateConfig } = require('../controllers/admin-revenue-models.controller');
-const { getUsers, updateUserStatus, updateUserRole, getRoles, createOrUpdateRole, getRegions } = require('../controllers/admin-godmode.controller');
+const godmodeController = require('../controllers/admin-godmode.controller');
+const { getUsers, updateUserStatus, updateUserRole, getRoles, createOrUpdateRole, getRegions } = godmodeController;
 const ecoController = require('../controllers/admin-ecosystems.controller');
 const adminCrmController = require('../controllers/admin-crm.controller');
 const adminSupportController = require('../controllers/admin-support.controller');
@@ -51,20 +52,13 @@ const adminLanguagesController = require('../controllers/admin-languages.control
 const adminCivicController = require('../controllers/admin-civic.controller');
 const adminEnvironmentController = require('../controllers/admin-environment.controller');
 const adminFraudController = require('../controllers/admin-fraud.controller');
-const adminHealthController = require('../controllers/admin-health.controller');
 const adminKrishiController = require('../controllers/admin-krishi.controller');
 const adminAnalyticsController = require('../controllers/admin-analytics.controller');
 const adminAnimalController = require('../controllers/admin-animal.controller');
 const adminJobsController = require('../controllers/admin-jobs.controller');
 const adminAlertsController = require('../controllers/admin-alerts.controller');
 const adminRolesController = require('../controllers/admin-roles.controller');
-const adminSupportController = require('../controllers/admin-support.controller');
-const adminBackupsController = require('../controllers/admin-backups.controller');
-const adminCharityController = require('../controllers/admin-charity.controller');
-const adminCivicController = require('../controllers/admin-civic.controller');
 const adminApprovalsController = require('../controllers/admin-approvals.controller');
-const adminBillsController = require('../controllers/admin-bills.controller');
-const adminCrmController = require('../controllers/admin-crm.controller');
 const financeController = require('../controllers/finance.controller');
 const territoryController = require('../controllers/territory.controller');
 
@@ -107,8 +101,18 @@ router.put('/medical/requests/:id/status', authenticate, requireAdmin, adminMedi
 router.put('/medical/requests/:id/dispatch', authenticate, requireAdmin, adminMedicalController.toggleDispatch);
 
 // --- MARKETING (Phase 22) ---
-router.get('/broadcasts/history', authenticate, requireAdmin, adminMarketingController.getBroadcastHistory);
-router.post('/broadcast', authenticate, requireAdmin, adminMarketingController.createBroadcast);
+// Push broadcasts reach every device, so they need a tighter guard than the
+// generic admin check.
+const requireMarketingAdmin = (req, res, next) => {
+  const role = ((req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '').toUpperCase();
+  if (role !== 'SUPER_ADMIN' && role !== 'MARKETING_ADMIN') {
+    return res.status(403).json({ error: 'Marketing Admin or Super Admin access required for broadcasts.' });
+  }
+  next();
+};
+
+router.get('/broadcasts/history', authenticate, requireAdmin, requireMarketingAdmin, adminMarketingController.getBroadcastHistory);
+router.post('/broadcast', authenticate, requireAdmin, requireMarketingAdmin, adminMarketingController.createBroadcast);
 
 // --- UTILITY BILLS (Phase 23) ---
 router.get('/bills', authenticate, requireAdmin, adminBillsController.getBills);
@@ -383,36 +387,65 @@ router.get('/god-mode/metrics', authenticate, requireAdmin, async (req, res, nex
 
 router.get('/fraud-scan', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    // Detect basic fraud anomalies: users with high order volume in 24 hours, or generic suspicious behavior
-    // For SQLite compatibility, we'll mock a simple heavy query aggregation
-    const suspiciousUsers = await query(`
-      SELECT u.id, u.full_name, u.phone_number, COUNT(o.id) as order_count 
-      FROM users u
-      JOIN shop_orders o ON u.id = o.user_id
-      WHERE o.created_at >= datetime('now', '-1 day')
-      GROUP BY u.id
-      HAVING count(o.id) > 10
-      ORDER BY order_count DESC
-      LIMIT 20
-    `).catch(() => ({ rows: [] })); // Fail gracefully if tables differ
+    let flagged_users = [];
+    let flagged_shops = [];
 
-    // Suspicious shops (e.g. extremely high payout requests)
-    const suspiciousShops = await query(`
-      SELECT s.id, s.shop_name, s.owner_id, COUNT(p.id) as payout_count
-      FROM local_shops s
-      JOIN payout_requests p ON s.id = p.shop_id
-      WHERE p.created_at >= datetime('now', '-7 days')
-      GROUP BY s.id
-      HAVING count(p.id) > 5
-      ORDER BY payout_count DESC
-      LIMIT 20
-    `).catch(() => ({ rows: [] }));
+    // Suspicious Users (Order Velocity)
+    try {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const userRes = await query(`
+        SELECT u.id, COALESCE(u.name, 'Resident') as full_name, u.phone as phone_number, COUNT(o.id) as order_count 
+        FROM users u
+        JOIN orders o ON u.id = o.user_id
+        WHERE o.created_at >= $1
+        GROUP BY u.id, u.name, u.phone
+        HAVING COUNT(o.id) > 5
+        ORDER BY order_count DESC
+        LIMIT 20
+      `, [oneDayAgo]);
+      flagged_users = userRes.rows || userRes || [];
+    } catch (e) {
+      flagged_users = [];
+    }
+
+    // Suspicious Shops (Payout Velocity)
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const shopRes = await query(`
+        SELECT s.id, s.name as shop_name, s.owner_id, COUNT(p.id) as payout_count
+        FROM shops s
+        JOIN payout_requests p ON s.id = p.shop_id
+        WHERE p.created_at >= $1
+        GROUP BY s.id, s.name, s.owner_id
+        HAVING COUNT(p.id) > 5
+        ORDER BY payout_count DESC
+        LIMIT 20
+      `, [sevenDaysAgo]);
+      flagged_shops = shopRes.rows || shopRes || [];
+    } catch (e) {
+      try {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const shopRes2 = await query(`
+          SELECT s.id, s.name as shop_name, s.owner_id, COUNT(p.id) as payout_count
+          FROM local_shops s
+          JOIN payout_requests p ON s.id = p.shop_id
+          WHERE p.created_at >= $1
+          GROUP BY s.id, s.name, s.owner_id
+          HAVING COUNT(p.id) > 5
+          ORDER BY payout_count DESC
+          LIMIT 20
+        `, [sevenDaysAgo]);
+        flagged_shops = shopRes2.rows || shopRes2 || [];
+      } catch (e2) {
+        flagged_shops = [];
+      }
+    }
 
     res.json({
       success: true,
       data: {
-        flagged_users: suspiciousUsers.rows || suspiciousUsers || [],
-        flagged_shops: suspiciousShops.rows || suspiciousShops || []
+        flagged_users,
+        flagged_shops
       }
     });
   } catch (error) {
@@ -529,67 +562,12 @@ router.get('/export/users', authenticate, requireAdmin, async (req, res, next) =
 const { sendTopicPush } = require('../../../config/firebase');
 const jwt = require('jsonwebtoken');
 
-router.post('/broadcast', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const { title, body, target_audience, deep_link } = req.body;
-    
-    // Allow SUPER_ADMIN or MARKETING_ADMIN
-    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
-    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'MARKETING_ADMIN') {
-      return res.status(403).json({ error: 'Marketing Admin or Super Admin access required for broadcasts.' });
-    }
-
-    let pushResponse = { success: false };
-    
-    // Advanced Segmentation
-    let topic = 'all_users';
-    if (target_audience === 'only_shops') topic = 'shop_owners';
-    else if (target_audience === 'only_riders') topic = 'delivery_agents';
-    // Extendable to specific regions dynamically in Firebase
-
-    pushResponse = await sendTopicPush(topic, title, body, { type: 'global_broadcast', deep_link: deep_link || '' });
-    
-    const broadcastId = crypto.randomUUID();
-    // Add deep_link to details json since column might not exist
-    const details = JSON.stringify({ deep_link: deep_link || '' });
-
-    await query(`INSERT INTO admin_broadcasts (id, admin_id, title, body, target_audience, success_count)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [broadcastId, req.user.id || req.user.userId, title, body, target_audience, pushResponse.success ? 1 : 0]
-    );
-
-    res.json({ success: true, message: 'Broadcast sent and logged.' });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/broadcasts/history', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
-    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'MARKETING_ADMIN') {
-      return res.status(403).json({ error: 'Marketing Admin or Super Admin access required.' });
-    }
-
-    const logs = await query(`
-      SELECT b.*, u.full_name as sender_name 
-      FROM admin_broadcasts b
-      LEFT JOIN users u ON b.admin_id = u.id
-      ORDER BY b.created_at DESC
-      LIMIT 50
-    `).catch(() => ({ rows: [] }));
-    
-    res.json({ success: true, data: logs.rows || logs || [] });
-  } catch (error) {
-    next(error);
-  }
-});
 
 // ─── GOD MODE: AD CAMPAIGNS (Phase 9) ──────────────────────
 router.get('/ads/banners', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
-    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'AD_MANAGER' && userRoleStr !== 'MARKETING_ADMIN') {
+    const userRoleStr = ((req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '').toUpperCase();
+    if (!['SUPER_ADMIN', 'ADMIN', 'AD_MANAGER', 'MARKETING_ADMIN'].includes(userRoleStr)) {
       return res.status(403).json({ error: 'Ad Manager access required.' });
     }
 
@@ -615,8 +593,8 @@ router.get('/ads/banners', authenticate, requireAdmin, async (req, res, next) =>
 
 router.post('/ads/banners', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
-    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'AD_MANAGER' && userRoleStr !== 'MARKETING_ADMIN') {
+    const userRoleStr = ((req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '').toUpperCase();
+    if (!['SUPER_ADMIN', 'ADMIN', 'AD_MANAGER', 'MARKETING_ADMIN'].includes(userRoleStr)) {
       return res.status(403).json({ error: 'Ad Manager access required.' });
     }
 
@@ -648,8 +626,8 @@ router.post('/ads/banners', authenticate, requireAdmin, async (req, res, next) =
 
 router.put('/ads/banners/:id/status', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const userRoleStr = (req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '';
-    if (userRoleStr !== 'SUPER_ADMIN' && userRoleStr !== 'AD_MANAGER' && userRoleStr !== 'MARKETING_ADMIN') {
+    const userRoleStr = ((req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '').toUpperCase();
+    if (!['SUPER_ADMIN', 'ADMIN', 'AD_MANAGER', 'MARKETING_ADMIN'].includes(userRoleStr)) {
       return res.status(403).json({ error: 'Ad Manager access required.' });
     }
 
@@ -749,16 +727,15 @@ router.post('/impersonate', authenticate, requireAdmin, async (req, res, next) =
 });
 
 router.get('/dashboard', authenticate, requireAdmin, getDashboardStats);
-router.get('/revenue/chart', authenticate, requireAdmin, getRevenueChart);
 
-// GET all franchises
-router.get('/franchises', authenticate, requireAdmin, getFranchises);
-router.put('/franchises/:id/split', authenticate, requireAdmin, updateFranchiseSplit);
+// NOTE: /revenue/chart, /franchises, /franchises/:id/split and /payouts/pending
+// are registered further down with requirePermission() RBAC guards. Registering
+// them here too would shadow those guards, because Express serves the first
+// matching layer.
 
 // ─── GOD MODE: APPROVALS & PAYOUTS ────────────────────────
 router.get('/approvals/pending', authenticate, requireAdmin, getPendingApprovals);
 router.put('/approvals/:type/:id', authenticate, requireAdmin, updateApprovalStatus);
-router.get('/payouts/pending', authenticate, requireAdmin, getPendingPayouts);
 
 // ─── GOD MODE: USERS, ROLES, REGIONS ──────────────────────
 router.get('/users', authenticate, requireAdmin, getUsers);
@@ -769,7 +746,10 @@ router.get('/roles', authenticate, requireAdmin, getRoles);
 router.post('/roles', authenticate, requireAdmin, createOrUpdateRole);
 router.put('/roles', authenticate, requireAdmin, createOrUpdateRole);
 
-router.get('/regions', authenticate, requireAdmin, getRegions);
+// NOTE: /regions is served further down by the richer implementation that
+// returns the bare array with users_count/shops_count/features_json that the
+// admin territories table consumes. Registering getRegions here would shadow it
+// and return {success, data} from `zones`, which the UI silently discards.
 
 // GET all bills for Admin BillsTab
 router.get('/bills', authenticate, requireAdmin, async (req, res, next) => {
@@ -1195,7 +1175,7 @@ router.put('/franchise-partners/:id/status', authenticate, requireAdmin, async (
 });
 
 // PUT update franchise commission rate
-router.put('/franchises/:id/split', authenticate, requireAdmin, async (req, res, next) => {
+router.put('/franchises/:id/split', authenticate, requireAdmin, requirePermission('crm', 'write'), async (req, res, next) => {
   try {
     const { splitPercentage } = req.body;
     if (splitPercentage === undefined) return res.status(400).json({ error: 'splitPercentage is required' });
@@ -1314,7 +1294,7 @@ router.put('/users/:id/role', authenticate, requireAdmin, async (req, res, next)
 
 router.get('/revenue/chart', authenticate, requireAdmin, requirePermission('finance', 'read'), getRevenueChart);
 router.get('/franchises', authenticate, requireAdmin, requirePermission('crm', 'read'), getFranchises);
-router.put('/franchises/:id/split', authenticate, requireAdmin, requirePermission('crm', 'write'), updateFranchiseSplit);
+// /franchises/:id/split is registered above with the same RBAC guard.
 router.get('/payouts/pending', authenticate, requireAdmin, requirePermission('finance', 'read'), getPendingPayouts);
 
 // â”€â”€â”€ Skilled Job Dispatch â”€â”€â”€

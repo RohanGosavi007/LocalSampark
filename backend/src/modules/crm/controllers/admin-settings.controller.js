@@ -1,4 +1,4 @@
-const { query, withTransaction } = require('../../../../config/database');
+const { query, withTransaction } = require('../../../config/database');
 const crypto = require('crypto');
 
 // 256-bit fallback key for AES encryption if env var is missing
@@ -114,7 +114,7 @@ exports.updateSettings = async (req, res, next) => {
 
     // Phase 50: Redis Cache Invalidation Sweep
     try {
-      const { cacheDel } = require('../../../../config/redis');
+      const { cacheDel } = require('../../../config/redis');
       await cacheDel('godmode:settings');
       await cacheDel('godmode:config');
     } catch (e) {

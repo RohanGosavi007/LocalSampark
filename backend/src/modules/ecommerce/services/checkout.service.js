@@ -10,8 +10,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_secret'
 });
 
-if (!process.env.STRIPE_SECRET_KEY) throw new Error('CRITICAL: STRIPE_SECRET_KEY is not configured');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 Cashfree.XClientId = process.env.CASHFREE_CLIENT_ID || 'mock_id';
 Cashfree.XClientSecret = process.env.CASHFREE_CLIENT_SECRET || 'mock_secret';

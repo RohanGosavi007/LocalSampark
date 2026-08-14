@@ -18,7 +18,7 @@ async function sendWhatsAppBusiness(phoneNumber, message) {
     };
     try {
         await axios.post(url, payload, {
-            headers: { Authorization: \`Bearer \${process.env.WHATSAPP_API_KEY}\` }
+            headers: { Authorization: `Bearer ${process.env.WHATSAPP_API_KEY}` }
         });
     } catch (err) {
         console.error("WhatsApp API error:", err);

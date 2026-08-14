@@ -15,10 +15,12 @@ export const API_BASE = `${API_URL}/api/v1`;
  * @returns {Object} Headers object with Authorization and Content-Type
  */
 export function getAuthHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '';
+  const token = typeof window !== 'undefined' 
+    ? (localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('admin_token') || '')
+    : '';
   const territoryId = typeof window !== 'undefined' ? localStorage.getItem('territoryId') : '';
   const headers = {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
   };
   // Territory-scoped routing: inject on every request

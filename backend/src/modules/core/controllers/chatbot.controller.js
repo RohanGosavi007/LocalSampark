@@ -46,11 +46,26 @@ exports.handleChatMessage = async (req, res, next) => {
 
     // If it's the final step where visitor submits their details
     if (isFinal && visitorDetails) {
-      // In a real scenario, we'd save visitor details to the database (leads/support table)
-      console.log('Lead Captured:', visitorDetails);
+      try {
+        const crypto = require('crypto');
+        const leadId = crypto.randomUUID();
+        await query(
+          `INSERT INTO leads (id, name, phone, email, status, source, notes, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+          [leadId, visitorDetails.name || 'Chat Visitor', visitorDetails.phone || '', visitorDetails.email || '', 'NEW', 'CHATBOT', visitorDetails.notes || 'Inquiry via resident chatbot']
+        ).catch(async () => {
+          await query(
+            `INSERT INTO crm_leads (id, name, phone, email, status, source)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [leadId, visitorDetails.name || 'Chat Visitor', visitorDetails.phone || '', visitorDetails.email || '', 'NEW', 'CHATBOT']
+          ).catch(() => {});
+        });
+      } catch (err) {
+        console.warn('Failed to persist chatbot lead to db:', err.message);
+      }
       return res.json({
         success: true,
-        reply: "Thank you for providing your details. We will contact you back soon."
+        reply: "Thank you for providing your details. Our support team will get in touch with you shortly!"
       });
     }
 
@@ -63,14 +78,41 @@ exports.handleChatMessage = async (req, res, next) => {
     // Check if Gemini AI is configured (Dual Mode)
     const geminiKey = process.env.GEMINI_API_KEY;
     
-    if (geminiKey && geminiKey !== 'your_gemini_key_here') {
-      // AI Mode Active (Placeholder for actual Google Gemini integration)
-      console.log('Gemini AI Mode Triggered for:', message);
-      return res.json({
-        success: true,
-        mode: 'ai',
-        reply: "[Gemini AI Assistant] I understand you are asking about: " + message + ". Here is an AI-generated response based on the platform data."
-      });
+    if (geminiKey && geminiKey !== 'your_gemini_key_here' && geminiKey.startsWith('AIza')) {
+      try {
+        const systemPrompt = "You are LocalSampark AI Assistant, a friendly and helpful assistant for LocalSampark - a hyperlocal super-app platform connecting local shops, service providers, societies, residents, and delivery runners in India. Keep answers concise, helpful, and friendly.";
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemPrompt}\n\nUser Question: ${message}` }]
+              }
+            ],
+            generationConfig: {
+              maxOutputTokens: 250,
+              temperature: 0.7
+            }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (aiText) {
+            return res.json({
+              success: true,
+              mode: 'ai',
+              reply: aiText.trim(),
+              needsDetails: false
+            });
+          }
+        }
+      } catch (geminiErr) {
+        console.warn('Gemini API call failed, falling back to FAQ engine:', geminiErr.message);
+      }
     }
 
     // Non-AI Fallback Mode

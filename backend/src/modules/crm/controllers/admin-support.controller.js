@@ -1,4 +1,4 @@
-const { query, queryOne } = require('../../../../config/database');
+const { query, queryOne } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getTickets = async (req, res, next) => {

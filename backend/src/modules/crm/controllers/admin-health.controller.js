@@ -1,7 +1,7 @@
 const os = require('os');
 const crypto = require('crypto');
-const prisma = require('../../../../config/prisma');
-const { query } = require('../../../../config/database');
+const prisma = require('../../../config/prisma');
+const { query } = require('../../../config/database');
 
 exports.getHealthMetrics = async (req, res, next) => {
   try {

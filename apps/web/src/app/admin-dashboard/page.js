@@ -22,11 +22,16 @@ export default function GodModeOverview() {
         });
         const json = await res.json();
         if (json.success && json.data) {
+          const shopCount = json.data.total_shops ?? json.data.totalShops ?? 0;
+          const userCount = json.data.total_users ?? json.data.totalUsers ?? 0;
+          const alertCount = json.data.active_sos ?? json.data.activeSos ?? 0;
+          const healthStr = json.data.system_health?.ram_usage ? `RAM: ${json.data.system_health.ram_usage}%` : '99.9%';
+
           setStats({
-            volume: `${json.data.total_shops} Shops`, // Using shops count as volume placeholder
-            users: json.data.total_users.toLocaleString(),
-            health: json.data.system_health ? `RAM: ${json.data.system_health.ram_usage}%` : '99.9%',
-            alerts: json.data.active_sos.toString()
+            volume: `${shopCount} Shops`,
+            users: Number(userCount).toLocaleString(),
+            health: healthStr,
+            alerts: String(alertCount)
           });
         }
       } catch (err) {

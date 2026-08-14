@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 
 async function ensureTable() {
   await query(`

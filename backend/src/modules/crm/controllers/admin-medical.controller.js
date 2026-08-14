@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getRequests = async (req, res, next) => {
@@ -31,12 +31,12 @@ exports.createRequest = async (req, res, next) => {
       
       await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), adminId, 'CREATE_MEDICAL_REQUEST', 'medical', newId, \`Logged new \${request_type} emergency for \${patient_name}\`]
+        [crypto.randomUUID(), adminId, 'CREATE_MEDICAL_REQUEST', 'medical', newId, `Logged new ${request_type} emergency for ${patient_name}`]
       );
     } catch (e) {
       // Create table lazily if missing during early development phases
       if (e.message.includes('relation "medical_requests" does not exist') || e.message.includes('no such table')) {
-        await query(\`
+        await query(`
           CREATE TABLE medical_requests (
             id VARCHAR(255) PRIMARY KEY,
             patient_name VARCHAR(255),
@@ -50,7 +50,7 @@ exports.createRequest = async (req, res, next) => {
             created_by VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        \`);
+        `);
         await query(`INSERT INTO medical_requests (id, patient_name, phone, request_type, blood_group, urgency, location, created_by)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [newId, patient_name, phone, request_type, blood_group, urgency, location, adminId]

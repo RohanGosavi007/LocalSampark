@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getCampaigns = async (req, res, next) => {
@@ -30,11 +30,11 @@ exports.createCampaign = async (req, res, next) => {
       
       await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), adminId, 'CREATE_CHARITY_CAMPAIGN', 'charity', newId, \`Launched campaign: \${title} for \${ngo_name}\`]
+        [crypto.randomUUID(), adminId, 'CREATE_CHARITY_CAMPAIGN', 'charity', newId, `Launched campaign: ${title} for ${ngo_name}`]
       );
     } catch (e) {
       if (e.message.includes('relation "charity_campaigns" does not exist') || e.message.includes('no such table')) {
-        await query(\`
+        await query(`
           CREATE TABLE charity_campaigns (
             id VARCHAR(255) PRIMARY KEY,
             ngo_name VARCHAR(255),
@@ -46,7 +46,7 @@ exports.createCampaign = async (req, res, next) => {
             created_by VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        \`);
+        `);
         await query(`INSERT INTO charity_campaigns (id, ngo_name, title, goal_amount, created_by)
            VALUES ($1, $2, $3, $4, $5)`,
           [newId, ngo_name, title, goal_amount, adminId]

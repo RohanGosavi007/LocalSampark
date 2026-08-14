@@ -70,7 +70,7 @@ const upload = multer({
   }
 });
 
-const prisma = require('../../../../config/prisma');
+const prisma = require('../../../config/prisma');
 
 // ─── UPLOAD SERVICE FUNCTIONS ──────────────────────────────────────
 

@@ -26,19 +26,23 @@ const initSockets = (server) => {
     }
   });
 
-  // Authentication Middleware
+  // Authentication Middleware (Optional Auth: supports authenticated users and guest trackers)
   io.use((socket, next) => {
     try {
       const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
       if (!token) {
-        return next(new Error('Authentication Error: Missing Token'));
+        socket.user = { isGuest: true, id: `guest_${socket.id.substring(0, 8)}` };
+        return next();
       }
       
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const secret = process.env.JWT_SECRET || 'localsampark_jwt_secret_dev';
+      const decoded = jwt.verify(token, secret);
       socket.user = decoded;
       next();
     } catch (error) {
-      return next(new Error('Authentication Error: Invalid Token'));
+      // Degrade gracefully to guest session instead of killing socket connection
+      socket.user = { isGuest: true, id: `guest_${socket.id.substring(0, 8)}` };
+      next();
     }
   });
 

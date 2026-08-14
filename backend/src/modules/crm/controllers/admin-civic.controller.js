@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/database');
+const { query } = require('../../../config/database');
 const crypto = require('crypto');
 
 exports.getIssues = async (req, res, next) => {
@@ -30,11 +30,11 @@ exports.createIssue = async (req, res, next) => {
       
       await query(`INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), adminId, 'LOG_CIVIC_ISSUE', category, newId, \`Logged \${issue_type} complaint for \${reporter_name}\`]
+        [crypto.randomUUID(), adminId, 'LOG_CIVIC_ISSUE', category, newId, `Logged ${issue_type} complaint for ${reporter_name}`]
       );
     } catch (e) {
       if (e.message.includes('relation "civic_issues" does not exist') || e.message.includes('no such table')) {
-        await query(\`
+        await query(`
           CREATE TABLE civic_issues (
             id VARCHAR(255) PRIMARY KEY,
             reporter_name VARCHAR(255),
@@ -48,7 +48,7 @@ exports.createIssue = async (req, res, next) => {
             created_by VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        \`);
+        `);
         await query(`INSERT INTO civic_issues (id, reporter_name, phone, category, issue_type, department, description, created_by)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [newId, reporter_name, phone, category, issue_type, department, description, adminId]
@@ -58,7 +58,7 @@ exports.createIssue = async (req, res, next) => {
       }
     }
 
-    res.json({ success: true, message: \`\${category} request logged successfully\` });
+    res.json({ success: true, message: `${category} request logged successfully` });
   } catch (error) {
     next(error);
   }
@@ -69,7 +69,7 @@ exports.updateStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
     await query('UPDATE civic_issues SET status = $1 WHERE id = $2', [status, id]);
-    res.json({ success: true, message: \`Issue marked as \${status}\` });
+    res.json({ success: true, message: `Issue marked as ${status}` });
   } catch (error) {
     next(error);
   }

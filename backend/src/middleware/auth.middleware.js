@@ -26,14 +26,15 @@ const authenticate = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
+    const targetUserId = decoded.userId || decoded.id || decoded.sub;
 
     let user = null;
     if (process.env.USE_SQLITE === 'true') {
       const { queryOne } = require('../config/database');
-      user = await queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+      user = await queryOne('SELECT * FROM users WHERE id = $1', [targetUserId]);
     } else {
       user = await getPrisma().user.findUnique({
-        where: { id: decoded.userId }
+        where: { id: targetUserId }
       });
     }
 
@@ -65,14 +66,15 @@ const optionalAuth = async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
+      const targetUserId = decoded.userId || decoded.id || decoded.sub;
       
       let user = null;
       if (process.env.USE_SQLITE === 'true') {
         const { queryOne } = require('../config/database');
-        user = await queryOne('SELECT * FROM users WHERE id = $1 AND is_active = 1', [decoded.userId]);
+        user = await queryOne('SELECT * FROM users WHERE id = $1 AND (is_active = 1 OR is_active = true)', [targetUserId]);
       } else {
         user = await getPrisma().user.findFirst({
-          where: { id: decoded.userId, isActive: true }
+          where: { id: targetUserId, isActive: true }
         });
       }
       req.user = user || null;

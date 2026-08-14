@@ -10,9 +10,7 @@ function convertSQLiteToPostgres(sql) {
   // Replace SQLite specific types and keywords
   pgSql = pgSql.replace(/\bDATETIME\b/gi, 'TIMESTAMP');
   pgSql = pgSql.replace(/\bINTEGER PRIMARY KEY AUTOINCREMENT\b/gi, 'SERIAL PRIMARY KEY');
-  
-  // In Postgres, REAL is valid, but sometimes BOOLEAN is needed. 
-  // We will leave INTEGER DEFAULT 1/0 as is since Postgres handles it.
+  pgSql = pgSql.replace(/datetime\('now'\)/gi, 'CURRENT_TIMESTAMP');
   
   return pgSql;
 }
@@ -29,8 +27,10 @@ async function syncMigrations() {
     return;
   }
 
-  // Backup init.sql just in case
-  fs.copyFileSync(initSqlPath, initSqlPath + '.bak');
+  // Backup init.sql if exists
+  if (fs.existsSync(initSqlPath)) {
+    fs.copyFileSync(initSqlPath, initSqlPath + '.bak');
+  }
 
   let mergedContent = '\n\n-- =========================================================================\n';
   mergedContent += '-- AUTO-SYNCED POSTGRES MIGRATIONS (Appended by sync_migrations.js)\n';

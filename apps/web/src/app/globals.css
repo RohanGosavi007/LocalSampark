@@ -86,8 +86,7 @@
 /* === DARK MODE === */
 body.dark-mode,
 [data-theme="dark"],
-@media (prefers-color-scheme: dark) {
-  :root {
+.dark {
   --background:     #060b18;
   --background-alt: #0d1526;
   --card-bg:        rgba(13, 21, 38, 0.85);
@@ -111,6 +110,33 @@ body.dark-mode,
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background:     #060b18;
+    --background-alt: #0d1526;
+    --card-bg:        rgba(13, 21, 38, 0.85);
+    --card-border:    rgba(99, 102, 241, 0.25);
+    --text:           #f1f5f9;
+    --text-muted:     #94a3b8;
+    --border:         #1e2d4a;
+    --glow-color:     rgba(99, 102, 241, 0.4);
+    --nav-bg:         rgba(6, 11, 24, 0.9);
+    
+    --primary-light:  rgba(99, 102, 241, 0.15);
+    --primary-glass:  rgba(99, 102, 241, 0.2);
+    --secondary-light:rgba(249, 115, 22, 0.15);
+    --secondary-glass:rgba(249, 115, 22, 0.2);
+    --accent-light:   rgba(16, 185, 129, 0.15);
+    --accent-glass:   rgba(16, 185, 129, 0.2);
+    
+    --section-alt:    linear-gradient(135deg, #060b18 0%, #0d0520 100%);
+    --hero-bg:        linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
   }
 }
 

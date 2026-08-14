@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'
 
 if (process.env.USE_SQLITE === 'true') {
   console.log('--- DEBUG: USE_SQLITE IS TRUE IN DATABASE.JS ---');
-  const sqlite = require('./database');
+  const sqlite = require('./database.sqlite');
   console.log('--- DEBUG: SQLITE KEYS:', Object.keys(sqlite), '---');
   module.exports = sqlite;
 } else {
@@ -41,12 +41,23 @@ if (process.env.USE_SQLITE === 'true') {
 
   async function query(text, params) {
     const start = Date.now();
-    const result = await pool.query(text, params);
-    const duration = Date.now() - start;
-    if (duration > 1000) {
-      logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+    try {
+      const result = await pool.query(text, params);
+      const duration = Date.now() - start;
+      if (duration > 1000) {
+        logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+      }
+      return result;
+    } catch (err) {
+      // Auto-heal boolean = integer mismatch in Postgres (error code 42883)
+      if (err.code === '42883' && (text.includes('= 1') || text.includes('= 0') || text.includes('!= 0'))) {
+        let fixedSql = text
+          .replace(/\b(is_active|is_verified|is_available|is_online|is_tenant|active)\s*=\s*1\b/gi, '$1 = true')
+          .replace(/\b(is_active|is_verified|is_available|is_online|is_tenant|active)\s*=\s*0\b/gi, '$1 = false');
+        return await pool.query(fixedSql, params);
+      }
+      throw err;
     }
-    return result;
   }
 
   async function queryOne(text, params) {
