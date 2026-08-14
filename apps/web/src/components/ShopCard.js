@@ -1,19 +1,41 @@
 'use client';
 import React, { memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Star, Navigation, Truck, ShieldCheck, Eye } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { WhatsAppChatButton } from './ui/WhatsAppChatButton';
+import TiltCard from './motion/TiltCard';
 
 const ShopCardComponent = ({ shop, category, index, onQuickView }) => {
+  const reduce = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
-      transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.3 }}
-      className="glass-card hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 flex flex-col h-full border border-white/20 dark:border-white/10 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 rounded-3xl overflow-hidden group relative"
+      // Reveal on entering the viewport rather than on mount. Previously this
+      // used `animate`, so every card below the fold completed its reveal while
+      // off-screen and was already visible when scrolled to.
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={
+        reduce
+          ? { duration: 0.2 }
+          : {
+              // Stagger within a row, not across the whole list: capping the
+              // old delay at 0.3s made every card past the tenth fire together.
+              delay: (index % 3) * 0.07,
+              duration: 0.55,
+              ease: [0.16, 1, 0.3, 1],
+            }
+      }
+      className="h-full"
+    >
+    <TiltCard
+      maxTilt={7}
+      scale={1.02}
+      radius="rounded-3xl"
+      className="glass-card hover:shadow-2xl hover:shadow-primary/20 transition-shadow duration-300 flex flex-col h-full border border-white/20 dark:border-white/10 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 overflow-hidden group"
     >
       {shop.is_premium === 1 && (
         <div className="absolute top-4 right-4 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 text-black px-3.5 py-1 rounded-full text-xs font-black z-10 shadow-lg shadow-amber-500/30 flex items-center gap-1.5 backdrop-blur-md">
@@ -108,6 +130,7 @@ const ShopCardComponent = ({ shop, category, index, onQuickView }) => {
           )}
         </div>
       </div>
+    </TiltCard>
     </motion.div>
   );
 };
