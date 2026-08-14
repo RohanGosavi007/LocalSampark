@@ -10,7 +10,7 @@ const requireSocietyPermission = (permission) => {
                 return res.status(400).json({ error: 'societyId is required to verify permissions' });
             }
 
-            const adminRole = await queryOne('SELECT * FROM society_admin_roles WHERE user_id = $1 AND society_id = $2 AND is_active = 1', 
+            const adminRole = await queryOne('SELECT * FROM society_admin_roles WHERE user_id = $1 AND society_id = $2 AND is_active = true', 
                 [userId, societyId]
             );
 

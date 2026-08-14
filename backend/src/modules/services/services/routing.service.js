@@ -72,7 +72,7 @@ class RoutingService {
       let multiplier = 1.0;
       // 1. Check for active configured incentives (e.g., rain, peak)
       const incentives = await dbQuery(
-        `SELECT multiplier FROM delivery_incentives WHERE zone_id = $1 AND is_active = 1 AND end_time > CURRENT_TIMESTAMP`,
+        `SELECT multiplier FROM delivery_incentives WHERE zone_id = $1 AND is_active = true AND end_time > CURRENT_TIMESTAMP`,
         [zoneId]
       );
       
@@ -83,7 +83,7 @@ class RoutingService {
 
       // 2. Compute live demand vs supply ratio
       const activeJobs = await dbQuery(`SELECT COUNT(*) as count FROM delivery_jobs WHERE status IN ('pending', 'assigned') AND pincode = $1`, [zoneId]);
-      const onlineAgents = await dbQuery(`SELECT COUNT(*) as count FROM delivery_agents WHERE is_online = 1`);
+      const onlineAgents = await dbQuery(`SELECT COUNT(*) as count FROM delivery_agents WHERE is_online = true`);
       
       const demand = parseInt(activeJobs.rows[0].count);
       const supply = parseInt(onlineAgents.rows[0].count) || 1; // avoid divide by zero

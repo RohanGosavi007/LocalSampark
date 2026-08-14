@@ -168,7 +168,7 @@ async function migrate() {
 
   // ── Step 3: Read existing regions ──────────────────────────────────
   console.log('📋 Step 3: Reading existing regions...');
-  const regions = await dbAll('SELECT * FROM regions WHERE is_active = 1');
+  const regions = await dbAll('SELECT * FROM regions WHERE is_active = true');
   console.log(`  📊 Found ${regions.length} active regions.\n`);
 
   if (regions.length === 0) {
@@ -182,7 +182,7 @@ async function migrate() {
   const stateId = 'state_mh';
   try {
     await dbRun(
-      'INSERT OR IGNORE INTO location_states (id, name, code) VALUES (?, ?, ?)',
+      'INSERT INTO location_states (id, name, code) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
       [stateId, 'Maharashtra', 'MH']
     );
   } catch (e) { /* already exists */ }
@@ -198,7 +198,7 @@ async function migrate() {
     districtIds[distName] = distId;
     try {
       await dbRun(
-        'INSERT OR IGNORE INTO location_districts (id, state_id, name) VALUES (?, ?, ?)',
+        'INSERT INTO location_districts (id, state_id, name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
         [distId, stateId, distName]
       );
     } catch (e) { /* already exists */ }
@@ -226,7 +226,7 @@ async function migrate() {
 
       try {
         await dbRun(
-          'INSERT OR IGNORE INTO location_talukas (id, district_id, name) VALUES (?, ?, ?)',
+          'INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
           [talukaId, distId, talukaName]
         );
       } catch (e) { /* already exists */ }
@@ -271,7 +271,7 @@ async function migrate() {
         // Last resort: create a placeholder taluka
         talukaId = 'tal_placeholder_' + successCount;
         await dbRun(
-          'INSERT OR IGNORE INTO location_talukas (id, district_id, name) VALUES (?, ?, ?)',
+          'INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
           [talukaId, distId, distName + ' (Default)']
         );
       }
@@ -296,9 +296,9 @@ async function migrate() {
       else if (tier2Districts.includes(distName)) tier = 'tier2';
 
       await dbRun(`
-        INSERT OR IGNORE INTO territories 
+        INSERT INTO territories 
         (id, taluka_id, name, pincode, centroid_lat, centroid_lng, boundary_geojson, radius_km, tier, zone_type, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT DO NOTHING
       `, [
         territoryId, talukaId, areaName, pincode,
         lat, lng, boundary,
@@ -310,7 +310,7 @@ async function migrate() {
 
       // Create legacy mapping
       await dbRun(
-        'INSERT OR IGNORE INTO legacy_region_territory_map (legacy_region_id, territory_id) VALUES (?, ?)',
+        'INSERT INTO legacy_region_territory_map (legacy_region_id, territory_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
         [region.id, territoryId]
       );
 

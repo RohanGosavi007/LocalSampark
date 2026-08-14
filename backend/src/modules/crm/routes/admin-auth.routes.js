@@ -35,16 +35,16 @@ router.post('/login', authLimiter, async (req, res, next) => {
     }
 
     // Verify admin role
-    const adminRole = await queryOne('SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = 1', [user.id]);
+    const adminRole = await queryOne('SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = true', [user.id]);
     const isDirectAdmin = user.role === 'admin' || user.role === 'super_admin';
     if (!adminRole && !isDirectAdmin) {
       return res.status(403).json({ error: 'Access denied. Admin role not assigned.' });
     }
 
     // IP Allowlist Check
-    const allowedIpsCount = await queryOne('SELECT COUNT(*) as count FROM admin_ip_allowlist WHERE is_active = 1');
+    const allowedIpsCount = await queryOne('SELECT COUNT(*) as count FROM admin_ip_allowlist WHERE is_active = true');
     if (allowedIpsCount && parseInt(allowedIpsCount.count) > 0) {
-      const isAllowed = await queryOne('SELECT * FROM admin_ip_allowlist WHERE ip_address = $1 AND is_active = 1', [clientIp]);
+      const isAllowed = await queryOne('SELECT * FROM admin_ip_allowlist WHERE ip_address = $1 AND is_active = true', [clientIp]);
       // Simple localhost overrides for development convenience
       const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp.includes('::ffff:127.0.0.1');
       if (!isAllowed && !isLocal) {

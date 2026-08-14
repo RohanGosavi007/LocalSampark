@@ -41,7 +41,7 @@ const getAGMResolutions = async (req, res, next) => {
 };
 
 async function getSocietyIdForUser(userId) {
-    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = 1', [userId]);
+    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = true', [userId]);
     return member ? member.society_id : null;
 }
 

@@ -37,7 +37,7 @@ router.get('/active', async (req, res, next) => {
             SELECT sc.*, ctm.priority, ctm.is_active as territory_active
             FROM shop_categories sc
             JOIN category_territory_matrix ctm ON sc.id = ctm.category_id
-            WHERE ctm.territory_id = $1 AND ctm.is_active = 1 AND sc.is_active = 1
+            WHERE ctm.territory_id = $1 AND ctm.is_active = true AND sc.is_active = true
             ORDER BY ctm.priority DESC, sc.display_order ASC
           `, [territoryId]);
           return categories.rows || categories;
@@ -45,7 +45,7 @@ router.get('/active', async (req, res, next) => {
       }
 
       // Fallback: return ALL active categories (no matrix defined)
-      const all = await query('SELECT * FROM shop_categories WHERE is_active = 1 ORDER BY display_order ASC');
+      const all = await query('SELECT * FROM shop_categories WHERE is_active = true ORDER BY display_order ASC');
       return all.rows || all;
     });
 
@@ -67,7 +67,7 @@ router.get('/matrix/:territoryId', authenticate, requireAdmin, async (req, res, 
       FROM shop_categories sc
       LEFT JOIN category_territory_matrix ctm 
         ON sc.id = ctm.category_id AND ctm.territory_id = $1
-      WHERE sc.is_active = 1
+      WHERE sc.is_active = true
       ORDER BY ctm.priority DESC, sc.display_order ASC
     `, [req.params.territoryId]);
 

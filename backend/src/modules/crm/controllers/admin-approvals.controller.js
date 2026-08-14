@@ -19,7 +19,7 @@ const getPendingApprovals = async (req, res, next) => {
       SELECT e.id, e.title, e.category, e.venue, e.event_date, u.region_id, e.created_at
       FROM events e
       LEFT JOIN users u ON e.organizer_id = u.id
-      WHERE e.is_approved = 0
+      WHERE e.is_approved = false
       ORDER BY e.created_at ASC
     `);
 
@@ -27,7 +27,7 @@ const getPendingApprovals = async (req, res, next) => {
     const properties = await query(`
       SELECT id, title, property_type, listing_type, price, region_id, created_at
       FROM property_listings
-      WHERE is_verified = 0
+      WHERE is_verified = false
       ORDER BY created_at ASC
     `);
 
@@ -35,7 +35,7 @@ const getPendingApprovals = async (req, res, next) => {
     const healthProviders = await query(`
       SELECT id, name, type, specialization, phone, created_at
       FROM health_providers
-      WHERE is_verified = 0
+      WHERE is_verified = false
       ORDER BY created_at ASC
     `);
 
@@ -53,7 +53,7 @@ const getPendingApprovals = async (req, res, next) => {
       SELECT s.id, s.skill_name as name, u.full_name as user_name, u.phone_number, u.region_id, s.created_at
       FROM user_skills s
       JOIN users u ON s.user_id = u.id
-      WHERE s.is_certified = 0
+      WHERE s.is_certified = false
       ORDER BY s.created_at ASC
     `);
 
@@ -61,7 +61,7 @@ const getPendingApprovals = async (req, res, next) => {
     const usersKyc = await query(`
       SELECT id, full_name as name, phone_number, role, region_id, created_at
       FROM users
-      WHERE is_verified = 0
+      WHERE is_verified = false
       ORDER BY created_at ASC
     `);
 
@@ -97,7 +97,7 @@ const getPendingApprovals = async (req, res, next) => {
       SELECT j.id, j.title as name, j.job_type as category, s.name as user_name, s.region_id, j.created_at
       FROM job_vacancies j
       JOIN local_shops s ON j.shop_id = s.id
-      WHERE j.is_active = 0
+      WHERE j.is_active = false
       ORDER BY j.created_at ASC
     `);
 
@@ -124,7 +124,7 @@ const getPendingApprovals = async (req, res, next) => {
       SELECT d.id, d.vehicle_type as name, d.vehicle_number as category, u.full_name as user_name, u.region_id, d.created_at
       FROM delivery_agents d
       JOIN users u ON d.user_id = u.id
-      WHERE u.is_verified = 0
+      WHERE u.is_verified = false
       ORDER BY d.created_at ASC
     `);
 
@@ -257,7 +257,7 @@ const updateApprovalStatus = async (req, res, next) => {
         break;
       case 'deliveryAgent':
         // For delivery agent, we actually update the USER table's is_verified flag.
-        // Wait, the action handles `tableName`. Let's just update delivery_agents is_online=1 for now, or users is_verified.
+        // Wait, the action handles `tableName`. Let's just update delivery_agents is_online=true for now, or users is_verified.
         // It's safer to update users.
         tableName = 'users';
         idColumn = 'id';
@@ -271,7 +271,7 @@ const updateApprovalStatus = async (req, res, next) => {
 
     if (action === 'approve') {
       if (type === 'shops' || type === 'shop') {
-        await query(`UPDATE ${tableName} SET ${statusColumn} = $1, is_active = 1 WHERE ${idColumn} = $2`, [approvedValue, id]);
+        await query(`UPDATE ${tableName} SET ${statusColumn} = $1, is_active = true WHERE ${idColumn} = $2`, [approvedValue, id]);
       } else {
         await query(`UPDATE ${tableName} SET ${statusColumn} = $1 WHERE ${idColumn} = $2`, [approvedValue, id]);
       }

@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const getPatrolRoutes = async (req, res, next) => {
     try {
         const { societyId } = req.query;
-        const routes = await queryMany('SELECT * FROM society_patrol_routes WHERE society_id = $1 AND is_active = 1', [societyId]);
+        const routes = await queryMany('SELECT * FROM society_patrol_routes WHERE society_id = $1 AND is_active = true', [societyId]);
         res.json({ success: true, data: routes });
     } catch (error) { next(error); }
 };
@@ -77,7 +77,7 @@ const logVehicle = async (req, res, next) => {
         // Direction: 'in' or 'out'
 
         // Check if it's a resident vehicle
-        const residentVehicle = await queryOne('SELECT id, flat_number FROM society_vehicles WHERE vehicle_number = $1 AND society_id = $2 AND is_active = 1', [vehicleNumber, societyId]);
+        const residentVehicle = await queryOne('SELECT id, flat_number FROM society_vehicles WHERE vehicle_number = $1 AND society_id = $2 AND is_active = true', [vehicleNumber, societyId]);
         const isResident = residentVehicle ? 1 : 0;
         const finalFlatNumber = residentVehicle ? residentVehicle.flat_number : flatNumber;
 

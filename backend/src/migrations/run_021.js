@@ -29,9 +29,10 @@ async function runMigration() {
     console.log('Migration 021 applied successfully.');
     
     // Seed default saas_plans
-    await query(`INSERT OR IGNORE INTO saas_plans (id, name, price_monthly, features_json) VALUES 
+    await query(`INSERT INTO saas_plans (id, name, price_monthly, features_json) VALUES
       ('plan_basic', 'Basic CRM', 0, '["pos", "inventory"]'),
       ('plan_premium', 'Premium SaaS', 999, '["pos", "inventory", "advanced_analytics", "staff_management", "priority_support"]')
+      ON CONFLICT (id) DO NOTHING
     `);
     console.log('Seeded default saas plans.');
     

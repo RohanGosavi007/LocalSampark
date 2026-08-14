@@ -7,12 +7,12 @@ async function testPhase3Fullstack() {
   try {
     // 1. Home Services Category & Provider Query
     console.log('\n[1] Testing Home Services API data...');
-    const catRes = await query('SELECT * FROM home_service_categories WHERE is_active = 1');
+    const catRes = await query('SELECT * FROM home_service_categories WHERE is_active = true');
     console.log('  [+] Home Service Categories Count:', (catRes.rows || catRes).length);
 
     // 2. Events & Capacity Check
     console.log('\n[2] Testing Local Events Data...');
-    const evRes = await query('SELECT * FROM local_events WHERE is_active = 1');
+    const evRes = await query('SELECT * FROM local_events WHERE is_active = true');
     console.log('  [+] Active Local Events Count:', (evRes.rows || evRes).length);
 
     // 3. Community Posts Check

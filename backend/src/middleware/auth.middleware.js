@@ -71,7 +71,7 @@ const optionalAuth = async (req, res, next) => {
       let user = null;
       if (process.env.USE_SQLITE === 'true') {
         const { queryOne } = require('../config/database');
-        user = await queryOne('SELECT * FROM users WHERE id = $1 AND (is_active = 1 OR is_active = true)', [targetUserId]);
+        user = await queryOne('SELECT * FROM users WHERE id = $1 AND (is_active = true OR is_active = true)', [targetUserId]);
       } else {
         user = await getPrisma().user.findFirst({
           where: { id: targetUserId, isActive: true }
@@ -293,7 +293,7 @@ const enforceMultiTenancy = async (req, res, next) => {
       let shop = null;
       if (process.env.USE_SQLITE === 'true') {
         const { queryOne } = require('../config/database');
-        shop = await queryOne('SELECT * FROM shops WHERE owner_id = $1', [req.user.userId || req.user.id]);
+        shop = await queryOne('SELECT * FROM local_shops WHERE owner_id = $1', [req.user.userId || req.user.id]);
       } else {
         shop = await getPrisma().shop.findFirst({
           where: { ownerId: req.user.userId || req.user.id }

@@ -12,15 +12,14 @@ exports.getGodModeMetrics = async (req, res, next) => {
       }
     };
 
-    const [totalUsers, totalShops1, totalShops2, totalOrders, totalRegions] = await Promise.all([
+    // `local_shops` is the only shops table that exists; the previous dual
+    // probe against a non-existent `shops` table always contributed 0.
+    const [totalUsers, totalShops, totalOrders, totalRegions] = await Promise.all([
       getCount('SELECT COUNT(*) as count FROM users'),
-      getCount('SELECT COUNT(*) as count FROM shops'),
       getCount('SELECT COUNT(*) as count FROM local_shops'),
       getCount('SELECT COUNT(*) as count FROM orders'),
       getCount('SELECT COUNT(*) as count FROM regions')
     ]);
-
-    const totalShops = Math.max(totalShops1, totalShops2);
 
     let revenueYTD = 0;
     try {

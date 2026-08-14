@@ -10,7 +10,7 @@ async function calculateBreakdown({ shopId, cartTotal, pincode }) {
       `SELECT s.id, s.category_id, s.commission_override_percent, c.name as category_name
        FROM local_shops s
        LEFT JOIN shop_categories c ON s.category_id = c.id
-       WHERE s.id = ?`,
+       WHERE s.id = $1`,
       [shopId]
     );
 
@@ -45,7 +45,7 @@ async function calculateBreakdown({ shopId, cartTotal, pincode }) {
 
     if (pincode) {
       const franchise = await queryOne(
-        `SELECT id, commission_share_percent FROM franchise_partners WHERE territory_pincode = ? AND status = 'active'`,
+        `SELECT id, commission_share_percent FROM franchise_partners WHERE territory_pincode = $1 AND status = 'active'`,
         [pincode]
       );
       if (franchise) {

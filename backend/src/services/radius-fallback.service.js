@@ -29,7 +29,7 @@ class RadiusFallbackService {
     let sql = `SELECT ls.*, r.name as region_name, r.pincode as region_pincode
                FROM local_shops ls
                LEFT JOIN regions r ON ls.region_id = r.id
-               WHERE ls.is_active = 1`;
+               WHERE ls.is_active = true`;
     const params = [];
     let paramIdx = 1;
 
@@ -99,7 +99,7 @@ class RadiusFallbackService {
         SELECT ls.*, r.name as region_name, r.pincode as region_pincode
         FROM local_shops ls
         LEFT JOIN regions r ON ls.region_id = r.id
-        WHERE ls.is_active = 1
+        WHERE ls.is_active = true
         AND ls.region_id IN (
           SELECT legacy_region_id FROM legacy_region_territory_map 
           WHERE territory_id IN (${placeholders})

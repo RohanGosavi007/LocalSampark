@@ -89,7 +89,7 @@ async function processNotification(recipientId, notification) {
 async function sendToShopOwner(shopId, notification) {
   let shop = null;
   try {
-    shop = await queryOne('SELECT owner_id FROM shops WHERE id = $1', [shopId]);
+    shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
   } catch (e) {
     try {
       shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);

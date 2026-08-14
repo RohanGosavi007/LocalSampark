@@ -173,7 +173,7 @@ router.put('/admin/:kycId/review', authenticate, requireAdmin, async (req, res, 
     if (action === 'verified') {
       const kyc = await queryOne(`SELECT shop_id FROM vendor_kyc WHERE id = $1`, [kycId]);
       if (kyc) {
-        await query(`UPDATE local_shops SET is_verified = 1, is_active = 1 WHERE id = $1`,
+        await query(`UPDATE local_shops SET is_verified = true, is_active = true WHERE id = $1`,
           [kyc.shop_id]
         );
         logger.info(`✅ Shop ${kyc.shop_id} activated after KYC verification by admin ${adminId}`);

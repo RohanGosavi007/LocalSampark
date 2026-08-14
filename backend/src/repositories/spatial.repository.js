@@ -35,7 +35,7 @@ class SpatialRepository {
    * │ JOIN location_talukas lt ON t.taluka_id = lt.id                │
    * │ JOIN location_districts ld ON lt.district_id = ld.id           │
    * │ WHERE ST_Contains(t.boundary, ST_SetSRID(ST_Point($2,$1),4326))│
-   * │ AND t.is_active = 1                                            │
+   * │ AND t.is_active = true                                            │
    * │ LIMIT 1;                                                       │
    * └─────────────────────────────────────────────────────────────────┘
    */
@@ -47,7 +47,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.is_active = 1 AND t.boundary_geojson IS NOT NULL
+      WHERE t.is_active = true AND t.boundary_geojson IS NOT NULL
     `);
 
     const territories = result.rows || result;
@@ -81,7 +81,7 @@ class SpatialRepository {
    * │   t.centroid::geography,                                       │
    * │   ST_SetSRID(ST_Point($2,$1),4326)::geography                  │
    * │ ) / 1000.0 as distance_km                                      │
-   * │ FROM territories t WHERE t.is_active = 1                       │
+   * │ FROM territories t WHERE t.is_active = true                       │
    * │ ORDER BY t.centroid <-> ST_SetSRID(ST_Point($2,$1),4326)       │
    * │ LIMIT 1;                                                       │
    * └─────────────────────────────────────────────────────────────────┘
@@ -93,7 +93,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.is_active = 1
+      WHERE t.is_active = true
     `);
 
     const territories = result.rows || result;
@@ -134,7 +134,7 @@ class SpatialRepository {
    * │   ST_SetSRID(ST_Point($2,$1),4326)::geography                  │
    * │ ) / 1000.0 as distance_km                                      │
    * │ FROM territories t                                              │
-   * │ WHERE t.is_active = 1                                          │
+   * │ WHERE t.is_active = true                                          │
    * │ AND ST_DWithin(                                                │
    * │   t.centroid::geography,                                       │
    * │   ST_SetSRID(ST_Point($2,$1),4326)::geography,                │
@@ -149,7 +149,7 @@ class SpatialRepository {
       FROM territories t
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
-      WHERE t.is_active = 1
+      WHERE t.is_active = true
     `);
 
     const territories = result.rows || result;
@@ -281,7 +281,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.pincode = $1 AND t.is_active = 1
+      WHERE t.pincode = $1 AND t.is_active = true
     `, [pincode]);
   }
 
@@ -292,7 +292,7 @@ class SpatialRepository {
     const states = await query('SELECT * FROM location_states ORDER BY name');
     const districts = await query('SELECT * FROM location_districts ORDER BY name');
     const talukas = await query('SELECT * FROM location_talukas ORDER BY name');
-    const territories = await query('SELECT * FROM territories WHERE is_active = 1 ORDER BY name');
+    const territories = await query('SELECT * FROM territories WHERE is_active = true ORDER BY name');
 
     return {
       states: states.rows || states,

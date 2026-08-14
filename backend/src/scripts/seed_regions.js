@@ -90,7 +90,7 @@ async function insertRegion(region, parentId) {
     if (existing.rowCount > 0 || (existing.rows && existing.rows.length > 0)) {
       regionId = existing.rows ? existing.rows[0].id : existing[0].id;
       // Update missing hierarchy details
-      await query(`UPDATE regions SET region_type = $1, parent_id = $2, pincode = $3, is_active = 1 WHERE id = $4`, [
+      await query(`UPDATE regions SET region_type = $1, parent_id = $2, pincode = $3, is_active = true WHERE id = $4`, [
         region.type, parentId || null, region.pincode || null, regionId
       ]);
       console.log(`Updated region: ${region.name} (${region.type})`);

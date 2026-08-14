@@ -79,7 +79,7 @@ const getJobs = async (req, res, next) => {
       SELECT j.*, ls.name as employer_name, ls.address as location, ls.phone_number as contact_phone
       FROM job_vacancies j 
       LEFT JOIN local_shops ls ON j.shop_id = ls.id 
-      WHERE j.is_active = 1
+      WHERE j.is_active = true
     `;
     const params = [];
     let paramIdx = 1;

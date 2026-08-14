@@ -23,7 +23,7 @@ const getRoster = async (req, res, next) => {
             SELECT sgs.*, u.full_name as guard_name, u.phone_number 
             FROM society_guard_shifts sgs 
             JOIN users u ON sgs.guard_id = u.id 
-            WHERE sgs.society_id = ?
+            WHERE sgs.society_id = $1
         `;
         const params = [societyId];
         
@@ -53,7 +53,7 @@ const markShiftAttendance = async (req, res, next) => {
 };
 
 async function getSocietyIdForUser(userId) {
-    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = 1', [userId]);
+    const member = await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 AND is_active = true', [userId]);
     return member ? member.society_id : null;
 }
 

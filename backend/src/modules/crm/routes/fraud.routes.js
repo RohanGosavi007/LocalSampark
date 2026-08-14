@@ -117,11 +117,11 @@ router.put('/signals/:signalId/review', authenticate, requireAdmin, async (req, 
     if (action === 'confirmed') {
       const signal = await queryOne(`SELECT entity_type, entity_id FROM fraud_signals WHERE id = $1`, [signalId]);
       if (signal && signal.entity_type === 'shop') {
-        await query(`UPDATE local_shops SET is_active = 0 WHERE id = $1`, [signal.entity_id]);
+        await query(`UPDATE local_shops SET is_active = false WHERE id = $1`, [signal.entity_id]);
         logger.warn(`🚫 Shop ${signal.entity_id} suspended due to confirmed fraud signal ${signalId}`);
       }
       if (signal && signal.entity_type === 'user') {
-        await query(`UPDATE users SET is_active = 0 WHERE id = $1`, [signal.entity_id]);
+        await query(`UPDATE users SET is_active = false WHERE id = $1`, [signal.entity_id]);
         logger.warn(`🚫 User ${signal.entity_id} suspended due to confirmed fraud signal ${signalId}`);
       }
     }
@@ -149,7 +149,7 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
        GROUP BY signal_type ORDER BY count DESC`
     );
 
-    const blockedEntities = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_blocklist WHERE is_active = 1`
+    const blockedEntities = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_blocklist WHERE is_active = true`
     );
 
     res.json({

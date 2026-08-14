@@ -129,13 +129,13 @@ class ShopAnalyticsService {
     return cacheGetOrSet(cacheKey, async () => {
       const competitorCount = await queryOne(
         `SELECT COUNT(*) as cnt FROM local_shops
-         WHERE category = $1 AND region_id = $2 AND id != $3 AND is_active = 1`,
+         WHERE category = $1 AND region_id = $2 AND id != $3 AND is_active = true`,
         [category, regionId, shopId]
       );
 
       const avgRatingInZone = await queryOne(
         `SELECT AVG(rating) as avg_rating FROM local_shops
-         WHERE category = $1 AND region_id = $2 AND is_active = 1`,
+         WHERE category = $1 AND region_id = $2 AND is_active = true`,
         [category, regionId]
       );
 
@@ -193,11 +193,11 @@ class ShopAnalyticsService {
         `SELECT COUNT(*) as total FROM shop_products WHERE shop_id = $1`, [shopId]
       );
       const activeProducts = await queryOne(
-        `SELECT COUNT(*) as total FROM shop_products WHERE shop_id = $1 AND is_available = 1`, [shopId]
+        `SELECT COUNT(*) as total FROM shop_products WHERE shop_id = $1 AND is_available = true`, [shopId]
       );
       const outOfStock = await queryMany(
         `SELECT id, name, price FROM shop_products
-         WHERE shop_id = $1 AND is_available = 0
+         WHERE shop_id = $1 AND is_available = false
          ORDER BY name LIMIT 20`, [shopId]
       );
 

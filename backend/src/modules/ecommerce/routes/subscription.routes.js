@@ -7,7 +7,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 // GET all subscription plans
 router.get('/plans', async (req, res, next) => {
   try {
-    const plans = await query('SELECT * FROM subscription_plans WHERE is_active = 1');
+    const plans = await query('SELECT * FROM subscription_plans WHERE is_active = true');
     res.json({ success: true, data: plans.rows || plans });
   } catch (error) {
     next(error);
@@ -116,7 +116,7 @@ router.post('/vendor-saas/subscribe', authenticate, async (req, res, next) => {
 
     // Update shop commission override to 0% for SaaS subscribers and set expiry
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await query('UPDATE local_shops SET commission_override_percent = 0, is_verified = TRUE, is_premium = 1, premium_expires_at = $2 WHERE id = $1',
+    await query('UPDATE local_shops SET commission_override_percent = 0, is_verified = TRUE, is_premium = true, premium_expires_at = $2 WHERE id = $1',
       [shopId, expiresAt]
     );
 

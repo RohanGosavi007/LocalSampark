@@ -10,7 +10,7 @@ router.get('/plans', async (req, res, next) => {
   try {
     let plans;
     try {
-      const res = await query('SELECT * FROM saas_plans WHERE is_active = 1 OR is_active = true');
+      const res = await query('SELECT * FROM saas_plans WHERE is_active = true OR is_active = true');
       plans = res.rows || res || [];
     } catch (e) {
       plans = [];
@@ -52,7 +52,7 @@ router.post('/subscribe', authenticate, enforceMultiTenancy, async (req, res, ne
     const { planId } = req.body;
     if (!planId) return res.status(400).json({ error: 'planId is required' });
 
-    const plan = await queryOne('SELECT * FROM saas_plans WHERE id = $1 AND is_active = 1', [planId]);
+    const plan = await queryOne('SELECT * FROM saas_plans WHERE id = $1 AND is_active = true', [planId]);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
 
     // Mocking Razorpay/Stripe Checkout Session Generation

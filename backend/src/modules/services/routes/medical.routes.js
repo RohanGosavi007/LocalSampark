@@ -8,7 +8,7 @@ const crypto = require('crypto');
 router.get('/doctors', async (req, res, next) => {
   try {
     const { specialization, pincode } = req.query;
-    let sql = 'SELECT * FROM medical_doctors WHERE is_available = 1';
+    let sql = 'SELECT * FROM medical_doctors WHERE is_available = true';
     const params = [];
 
     if (specialization) {

@@ -7,7 +7,7 @@ const generateNOC = async (req, res, next) => {
              FROM society_members sm 
              JOIN societies s ON sm.society_id = s.id 
              JOIN users u ON sm.user_id = u.id 
-             WHERE sm.user_id = $1 AND sm.is_active = 1`,
+             WHERE sm.user_id = $1 AND sm.is_active = true`,
             [req.user.id]
         );
 

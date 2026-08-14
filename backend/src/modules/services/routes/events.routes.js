@@ -12,7 +12,7 @@ router.use(requireFeature('events'));
 router.get('/', async (req, res, next) => {
   try {
     const { category, lat, lng, radiusKm = 10 } = req.query;
-    let sql = 'SELECT * FROM local_events WHERE is_active = 1';
+    let sql = 'SELECT * FROM local_events WHERE is_active = true';
     const params = [];
 
     if (category) {

@@ -26,7 +26,7 @@ cron.schedule('0 3 * * *', async () => {
     // ─── Analysis 1: Empty shops (no products after 48+ hours) ───
     const emptyShops = await queryMany(
       `SELECT id, owner_id FROM local_shops
-       WHERE is_active = 1
+       WHERE is_active = true
          AND created_at < datetime('now', '-48 hours')
          AND id NOT IN (SELECT DISTINCT shop_id FROM shop_products)`
     );

@@ -16,19 +16,19 @@ class OfflineSyncService {
       query: `SELECT ls.*, sc.name as category_name, sc.icon as category_icon
               FROM local_shops ls
               LEFT JOIN shop_categories sc ON ls.category = sc.slug
-              WHERE ls.region_id = $1 AND ls.updated_at > $2 AND ls.is_active = 1
+              WHERE ls.region_id = $1 AND ls.updated_at > $2 AND ls.is_active = true
               ORDER BY ls.updated_at ASC LIMIT $3`,
       territoryScoped: true,
     },
     products: {
       query: `SELECT sp.* FROM shop_products sp
               JOIN local_shops ls ON sp.shop_id = ls.id
-              WHERE ls.region_id = $1 AND sp.updated_at > $2 AND ls.is_active = 1
+              WHERE ls.region_id = $1 AND sp.updated_at > $2 AND ls.is_active = true
               ORDER BY sp.updated_at ASC LIMIT $3`,
       territoryScoped: true,
     },
     categories: {
-      query: `SELECT * FROM shop_categories WHERE is_active = 1`,
+      query: `SELECT * FROM shop_categories WHERE is_active = true`,
       territoryScoped: false,
     },
   };

@@ -4,7 +4,7 @@ const { getIo } = require('../sockets/index');
 exports.getCatalogItems = async (req, res) => {
   try {
     const { shopId } = req.params;
-    const items = await queryMany('SELECT * FROM universal_catalog_items WHERE shop_id = ? AND is_active = 1 ORDER BY created_at DESC', [shopId]);
+    const items = await queryMany('SELECT * FROM universal_catalog_items WHERE shop_id = $1 AND is_active = true ORDER BY created_at DESC', [shopId]);
     res.json({ success: true, items });
   } catch (error) {
     console.error('Error fetching catalog:', error);
@@ -21,11 +21,13 @@ exports.addCatalogItem = async (req, res) => {
 
     const result = await query(
       `INSERT INTO universal_catalog_items (shop_id, item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id`,
       [shopId, item_type || 'physical_good', title, description, pricing_model || 'fixed', price, compare_at_price || null, inventory_count || 0, availability_matrix ? JSON.stringify(availability_matrix) : null, image_url || null, metadata ? JSON.stringify(metadata) : null]
     );
 
-    res.json({ success: true, message: 'Item added successfully', itemId: result.lastID });
+    const itemId = (result.rows && result.rows[0] && result.rows[0].id) ?? result.lastID;
+    res.json({ success: true, message: 'Item added successfully', itemId });
   } catch (error) {
     console.error('Error adding catalog item:', error);
     res.status(500).json({ success: false, message: 'Server error adding catalog item' });
@@ -49,7 +51,7 @@ exports.bulkAddCatalogItems = async (req, res) => {
       
       await query(
         `INSERT INTO universal_catalog_items (shop_id, item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [shopId, item_type || 'physical_good', title, description || null, pricing_model || 'fixed', price || 0, compare_at_price || null, inventory_count || 0, availability_matrix ? JSON.stringify(availability_matrix) : null, image_url || null, metadata ? JSON.stringify(metadata) : null]
       );
       addedCount++;
@@ -69,7 +71,7 @@ exports.trackLead = async (req, res) => {
     const userId = req.user.id;
 
     await query(
-      `INSERT INTO universal_leads (shop_id, user_id, lead_type, content) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO universal_leads (shop_id, user_id, lead_type, content) VALUES ($1, $2, $3, $4)`,
       [shopId, userId, leadType, content || '']
     );
 
@@ -125,12 +127,12 @@ exports.updateCatalogItem = async (req, res) => {
     const { title, description, price, compare_at_price, inventory_count, is_active, metadata } = req.body;
     
     await query(
-      `UPDATE universal_catalog_items SET title = ?, description = ?, price = ?, compare_at_price = ?, inventory_count = ?, is_active = ?, metadata = ? WHERE id = ?`,
+      `UPDATE universal_catalog_items SET title = $1, description = $2, price = $3, compare_at_price = $4, inventory_count = $5, is_active = $6, metadata = $7 WHERE id = $8`,
       [title, description, price, compare_at_price, inventory_count, is_active, metadata ? JSON.stringify(metadata) : null, itemId]
     );
 
     // Fetch the shopId for broadcasting
-    const item = await queryOne('SELECT shop_id FROM universal_catalog_items WHERE id = ?', [itemId]);
+    const item = await queryOne('SELECT shop_id FROM universal_catalog_items WHERE id = $1', [itemId]);
     if (item && item.shop_id) {
       try {
         getIo().to(`shop_${item.shop_id}`).emit('inventory_update', {
@@ -153,7 +155,7 @@ exports.updateCatalogItem = async (req, res) => {
 exports.deleteCatalogItem = async (req, res) => {
   try {
     const { itemId } = req.params;
-    await query(`DELETE FROM universal_catalog_items WHERE id = ?`, [itemId]);
+    await query(`DELETE FROM universal_catalog_items WHERE id = $1`, [itemId]);
     res.json({ success: true, message: 'Item deleted successfully' });
   } catch (error) {
     console.error('Error deleting catalog item:', error);

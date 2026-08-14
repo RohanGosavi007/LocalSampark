@@ -54,7 +54,7 @@ cron.schedule('*/30 * * * *', async () => {
 
             if (newLevel > currentLevel) {
                 // Escalate
-                await query('UPDATE society_complaints SET escalation_level = ? WHERE id = ?', [newLevel, complaint.id]);
+                await query('UPDATE society_complaints SET escalation_level = $1 WHERE id = $2', [newLevel, complaint.id]);
                 await logComplaintActivity(complaint.id, 'escalated', 'SYSTEM', `Escalated to Level ${newLevel}`);
 
                 console.log(`[Escalation] Complaint ${complaint.id} escalated to Level ${newLevel}`);
@@ -65,7 +65,7 @@ cron.schedule('*/30 * * * *', async () => {
                 }
                 
                 if (notifyRoles.includes('admin')) {
-                    const admins = await queryMany('SELECT user_id FROM society_admin_roles WHERE society_id = ? AND is_active = 1', [complaint.society_id]);
+                    const admins = await queryMany('SELECT user_id FROM society_admin_roles WHERE society_id = $1 AND is_active = true', [complaint.society_id]);
                     for (const admin of admins) {
                         await sendPushNotification(admin.user_id, { title: `SLA Breach L${newLevel}`, body: `Complaint "${complaint.title}" has breached SLA.` });
                     }

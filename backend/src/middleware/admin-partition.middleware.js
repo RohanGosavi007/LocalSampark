@@ -35,7 +35,7 @@ const loadAdminTerritories = async (req, res, next) => {
     let assignments = [];
     try {
       const result = await query(
-        'SELECT territory_id, district_id, role FROM admin_territory_assignments WHERE user_id = $1 AND is_active = 1',
+        'SELECT territory_id, district_id, role FROM admin_territory_assignments WHERE user_id = $1 AND is_active = true',
         [userId]
       );
       assignments = result.rows || result;
@@ -70,7 +70,7 @@ const loadAdminTerritories = async (req, res, next) => {
         const distTerritories = await query(
           `SELECT t.id FROM territories t 
            JOIN location_talukas lt ON t.taluka_id = lt.id 
-           WHERE lt.district_id = $1 AND t.is_active = 1`,
+           WHERE lt.district_id = $1 AND t.is_active = true`,
           [assignment.district_id]
         );
         const rows = distTerritories.rows || distTerritories;

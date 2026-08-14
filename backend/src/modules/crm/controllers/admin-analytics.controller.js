@@ -15,7 +15,7 @@ exports.getOverview = async (req, res, next) => {
     } catch (e) {}
 
     try {
-      const sRes = await queryOne('SELECT COUNT(*) as count FROM shops');
+      const sRes = await queryOne('SELECT COUNT(*) as count FROM local_shops');
       realShopCount = parseInt(sRes?.count || 0, 10);
     } catch (e) {
       try {

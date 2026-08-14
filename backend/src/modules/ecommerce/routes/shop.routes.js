@@ -75,7 +75,7 @@ router.get('/categories', async (req, res, next) => {
     AuditLogger.log('api_access', { endpoint: '/categories', ip: req.ip });
 
     const result = await CacheService.getOrSet('shop:categories:active', 3600, async () => {
-      const categories = await query("SELECT * FROM shop_categories WHERE is_active = 1 OR is_active = true ORDER BY display_order ASC");
+      const categories = await query("SELECT * FROM shop_categories WHERE is_active = true OR is_active = true ORDER BY display_order ASC");
       return categories.rows || categories;
     });
 
@@ -206,7 +206,7 @@ router.get('/nearby', async (req, res, next) => {
     const rawQuery = `
         SELECT *,
         earth_distance(ll_to_earth(${userLat}, ${userLng}), ll_to_earth(latitude, longitude)) / 1000 AS distance_km
-        FROM shops
+        FROM local_shops
         ${whereClause}
         ${orderClause}
         LIMIT 200
@@ -381,7 +381,7 @@ router.get('/:id/services', async (req, res, next) => {
       const category = shopRow ? shopRow.slug : 'default';
       return res.json(generateMockServices(category));
     }
-    const services = await query('SELECT * FROM shop_services WHERE shop_id = $1 AND is_available = 1 ORDER BY display_order ASC', [req.params.id]);
+    const services = await query('SELECT * FROM shop_services WHERE shop_id = $1 AND is_available = true ORDER BY display_order ASC', [req.params.id]);
     res.json(services.rows || services);
   } catch (error) {
     next(error);
@@ -448,7 +448,7 @@ router.get('/:id/staff/:sid/slots', async (req, res, next) => {
         if (!date) return res.status(400).json({error: "Date required"});
         const dayOfWeek = new Date(date).getDay();
 
-        let schedule = await queryOne('SELECT * FROM staff_availability WHERE staff_id = $1 AND day_of_week = $2 AND is_available = 1', [req.params.sid, dayOfWeek]);
+        let schedule = await queryOne('SELECT * FROM staff_availability WHERE staff_id = $1 AND day_of_week = $2 AND is_available = true', [req.params.sid, dayOfWeek]);
         if (!schedule) return res.json({ slots: [], message: 'Staff not available on this day' });
         
         let offDay = await queryOne('SELECT * FROM staff_off_days WHERE staff_id = $1 AND off_date = $2', [req.params.sid, date]);
@@ -468,7 +468,7 @@ router.get('/:id/staff/:sid/slots', async (req, res, next) => {
         const bookedSet = new Set((booked.rows||booked).map(b => b.time_slot));
 
         // Surge pricing
-        const surgeRules = await query('SELECT * FROM surge_pricing_rules WHERE shop_id = $1 AND (day_of_week = $2 OR day_of_week IS NULL) AND is_active = 1', [req.params.id, dayOfWeek]);
+        const surgeRules = await query('SELECT * FROM surge_pricing_rules WHERE shop_id = $1 AND (day_of_week = $2 OR day_of_week IS NULL) AND is_active = true', [req.params.id, dayOfWeek]);
         
         const slots = allSlots.filter(s => !bookedSet.has(s)).map(s => {
             let multiplier = 1.0;

@@ -11,8 +11,8 @@ async function processExpiredEvents() {
     // 1. Mark past events as completed
     await query(`
       UPDATE local_events 
-      SET is_active = 0 
-      WHERE event_date < $1 AND is_active = 1
+      SET is_active = false 
+      WHERE event_date < $1 AND is_active = true
     `, [todayStr]);
 
     // 2. Mark past unused tickets as expired

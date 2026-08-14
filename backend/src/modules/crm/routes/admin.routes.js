@@ -353,7 +353,7 @@ const os = require('os');
 router.get('/god-mode/metrics', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const usersCount = await queryOne('SELECT COUNT(*) as count FROM users');
-    const shopsCount = await queryOne('SELECT COUNT(*) as count FROM local_shops WHERE is_active = 1');
+    const shopsCount = await queryOne('SELECT COUNT(*) as count FROM local_shops WHERE is_active = true');
     const societiesCount = await queryOne('SELECT COUNT(*) as count FROM societies');
     const sosCount = await queryOne("SELECT COUNT(*) as count FROM sos_alerts WHERE status = 'active'");
     const activeDeliveries = await queryOne("SELECT COUNT(*) as count FROM shop_orders WHERE delivery_type = 'delivery' AND status IN ('accepted', 'out_for_delivery')");
@@ -413,7 +413,7 @@ router.get('/fraud-scan', authenticate, requireAdmin, async (req, res, next) => 
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const shopRes = await query(`
         SELECT s.id, s.name as shop_name, s.owner_id, COUNT(p.id) as payout_count
-        FROM shops s
+        FROM local_shops s
         JOIN payout_requests p ON s.id = p.shop_id
         WHERE p.created_at >= $1
         GROUP BY s.id, s.name, s.owner_id
@@ -959,7 +959,7 @@ router.put('/regions/:id', authenticate, requireAdmin, async (req, res, next) =>
 // DELETE soft-delete region
 router.delete('/regions/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const region = await queryOne('UPDATE regions SET is_active = 0 WHERE id = $1 RETURNING *', [req.params.id]);
+    const region = await queryOne('UPDATE regions SET is_active = false WHERE id = $1 RETURNING *', [req.params.id]);
     if (!region) return res.status(404).json({ error: 'Region not found' });
     
     await cacheDel('cache:/api/v1/admin/regions');
@@ -1062,7 +1062,7 @@ router.get('/regions/:id/stats', authenticate, requireAdmin, async (req, res, ne
     
     const usersCount = await queryOne('SELECT COUNT(*) as count FROM users WHERE region_id = $1', [regionId]);
     const shopsCount = await queryOne('SELECT COUNT(*) as count FROM local_shops WHERE region_id = $1', [regionId]);
-    const activeShops = await queryOne("SELECT COUNT(*) as count FROM local_shops WHERE region_id = $1 AND is_active = 1 AND approval_status = 'approved'", [regionId]);
+    const activeShops = await queryOne("SELECT COUNT(*) as count FROM local_shops WHERE region_id = $1 AND is_active = true AND approval_status = 'approved'", [regionId]);
     
     let revenueTotal = { total: 0 };
     try {
@@ -1099,9 +1099,9 @@ router.get('/regions/:id/stats', authenticate, requireAdmin, async (req, res, ne
 router.get('/regions/summary', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const totalRegions = await queryOne('SELECT COUNT(*) as count FROM regions');
-    const activeRegions = await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = 1');
+    const activeRegions = await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = true');
     const totalUsers = await queryOne('SELECT COUNT(*) as count FROM users');
-    const totalShops = await queryOne('SELECT COUNT(*) as count FROM local_shops WHERE is_active = 1');
+    const totalShops = await queryOne('SELECT COUNT(*) as count FROM local_shops WHERE is_active = true');
     const totalFranchises = await queryOne('SELECT COUNT(*) as count FROM franchise_partners');
     const activeFranchises = await queryOne("SELECT COUNT(*) as count FROM franchise_partners WHERE status = 'active'");
     
@@ -1127,10 +1127,10 @@ router.get('/regions/summary', authenticate, requireAdmin, async (req, res, next
   }
 });
 
-// DELETE soft-delete region (set is_active = 0)
+// DELETE soft-delete region (set is_active = false)
 router.delete('/regions/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const result = await queryOne('UPDATE regions SET is_active = 0 WHERE id = $1 RETURNING id, name', [req.params.id]);
+    const result = await queryOne('UPDATE regions SET is_active = false WHERE id = $1 RETURNING id, name', [req.params.id]);
     if (!result) return res.status(404).json({ error: 'Region not found' });
     
     await cacheDel('cache:/api/v1/admin/regions');
@@ -1376,7 +1376,7 @@ router.put('/shop-categories/:id', authenticate, requireAdmin, async (req, res, 
 
 router.delete('/shop-categories/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    await query(`UPDATE shop_categories SET is_active=0 WHERE id=$1`, [req.params.id]);
+    await query(`UPDATE shop_categories SET is_active=false WHERE id=$1`, [req.params.id]);
     res.json({ success: true, message: 'Category deactivated' });
   } catch (error) {
     next(error);
@@ -1410,7 +1410,7 @@ router.get('/shops/:id/full-details', authenticate, requireAdmin, async (req, re
 router.get('/delivery/overview', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const stats = {
-      activeAgents: (await queryOne('SELECT count(*) as count FROM delivery_agents WHERE is_active = 1')).count,
+      activeAgents: (await queryOne('SELECT count(*) as count FROM delivery_agents WHERE is_active = true')).count,
       pendingOrders: (await queryOne("SELECT count(*) as count FROM shop_orders WHERE delivery_type = 'delivery' AND status = 'accepted'")).count,
     };
     res.json(stats);
@@ -1503,7 +1503,7 @@ router.get('/premium/users', authenticate, requireAdmin, async (req, res, next) 
       SELECT DISTINCT u.id, u.full_name as user_name, u.phone_number, u.email 
       FROM users u
       JOIN user_subscriptions us ON u.id = us.user_id
-      WHERE u.is_active = 1 AND us.status = 'active'
+      WHERE u.is_active = true AND us.status = 'active'
       ORDER BY u.created_at DESC LIMIT 50
     `);
     res.json({ data: premium.rows || premium });
@@ -1610,7 +1610,7 @@ router.get('/territory-assignments', authenticate, requireAdmin, async (req, res
       JOIN users u ON ata.user_id = u.id
       LEFT JOIN territories t ON ata.territory_id = t.id
       LEFT JOIN location_districts ld ON ata.district_id = ld.id
-      WHERE ata.is_active = 1
+      WHERE ata.is_active = true
       ORDER BY ata.created_at DESC
     `);
     res.json({ success: true, data: result.rows || result });
@@ -1620,7 +1620,7 @@ router.get('/territory-assignments', authenticate, requireAdmin, async (req, res
 // DELETE /admin/territory-assignments/:id â€” Remove assignment
 router.delete('/territory-assignments/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    await query('UPDATE admin_territory_assignments SET is_active = 0 WHERE id = $1', [req.params.id]);
+    await query('UPDATE admin_territory_assignments SET is_active = false WHERE id = $1', [req.params.id]);
     res.json({ success: true, message: 'Assignment removed.' });
   } catch (error) { next(error); }
 });
@@ -3000,7 +3000,7 @@ router.get('/settings', authenticate, requireAdmin, async (req, res, next) => {
     ];
 
     for (const [k, v] of defaultSettings) {
-      await query(`INSERT OR IGNORE INTO admin_settings (key, value) VALUES ($1, $2)`, [k, v]);
+      await query(`INSERT INTO admin_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`, [k, v]);
     }
 
     const settingsRes = await query(`SELECT * FROM admin_settings`);

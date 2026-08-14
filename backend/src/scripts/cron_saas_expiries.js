@@ -10,7 +10,7 @@ async function checkExpiries() {
         const result = await query(
             `UPDATE local_shops 
              SET commission_override_percent = NULL, 
-                 is_premium = 0 
+                 is_premium = false 
              WHERE premium_expires_at IS NOT NULL 
                AND premium_expires_at < $1 
                AND commission_override_percent = 0

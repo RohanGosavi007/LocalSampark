@@ -12,7 +12,7 @@ router.get('/:zoneId/health-scores', authenticate, requireRole('franchise'), asy
     const result = await pool.query(`SELECT s.id, s.name, s.shop_category_slug,
         (SELECT COUNT(*) FROM orders o WHERE o.shop_id = s.id AND o.created_at >= NOW() - INTERVAL '7 days') as recent_orders,
         (SELECT COALESCE(SUM(total_amount), 0) FROM orders o WHERE o.shop_id = s.id AND o.created_at >= NOW() - INTERVAL '7 days') as recent_revenue
-       FROM shops s
+       FROM local_shops s
        WHERE s.zone_id = $1`,
       [zoneId]
     );

@@ -116,9 +116,16 @@ class CheckoutService {
         INSERT INTO orders 
         (user_id, shop_id, status, total_amount, delivery_fee, platform_fee, discount, payment_method, payment_status, fulfillment_method, delivery_lat, delivery_lng)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING id
       `;
       const orderRes = await dbClient.query(orderQuery, insertOrderParams);
-      const insertedOrderId = orderRes.lastID;
+      // Postgres reports the new key through RETURNING; lastID is SQLite-only
+      // and was silently undefined here, so order_items and order_tracking were
+      // being written against a null order id.
+      const insertedOrderId = (orderRes.rows && orderRes.rows[0] && orderRes.rows[0].id) ?? orderRes.lastID;
+      if (!insertedOrderId) {
+        throw new Error('Order insert did not return an id');
+      }
 
       for (const item of items) {
         await dbClient.query('INSERT INTO order_items (order_id, product_id, quantity, price_at_buy) VALUES ($1, $2, $3, $4)',

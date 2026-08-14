@@ -152,7 +152,7 @@ const getDashboardStats = async (req, res, next) => {
       const { queryOne } = require('../../../config/database');
       try {
         shopsCount = (await queryOne('SELECT COUNT(*) as count FROM local_shops'))?.count || 0;
-        activeRegions = (await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = 1'))?.count || 0;
+        activeRegions = (await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = true'))?.count || 0;
         totalRegions = (await queryOne('SELECT COUNT(*) as count FROM regions'))?.count || 0;
         totalUsers = (await queryOne('SELECT COUNT(*) as count FROM users'))?.count || 0;
         totalOrders = (await queryOne('SELECT COUNT(*) as count FROM orders'))?.count || 0;

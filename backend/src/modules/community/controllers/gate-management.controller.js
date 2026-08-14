@@ -53,7 +53,7 @@ const getUtilityHistory = async (req, res, next) => {
 const getGateDashboard = async (req, res, next) => {
     try {
         const { societyId } = req.query;
-        const gates = await queryMany('SELECT * FROM society_gates WHERE society_id = $1 AND is_active = 1', [societyId]);
+        const gates = await queryMany('SELECT * FROM society_gates WHERE society_id = $1 AND is_active = true', [societyId]);
         
         for (const gate of gates) {
             gate.todayVehicles = (await queryOne('SELECT COUNT(*) as cnt FROM society_vehicle_log WHERE gate_id = $1 AND date(created_at) = date("now")', [gate.id])).cnt;

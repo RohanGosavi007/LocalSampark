@@ -28,7 +28,10 @@ class SocketService {
     }
 
     if (this.socket) {
-      if (this.socket.connected) return;
+      if (this.socket.connected) {
+        if (shopId) this.joinShop(shopId);
+        return;
+      }
       this.socket.connect();
     } else {
       this.socket = io(SOCKET_URL, {

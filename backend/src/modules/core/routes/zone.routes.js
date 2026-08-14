@@ -86,7 +86,7 @@ router.get('/', async (req, res, next) => {
     const zones = await query(`
       SELECT r.*, 
              (SELECT config_value FROM admin_config WHERE config_key = 'territory_features_' || r.id) as features_json
-      FROM regions r WHERE r.is_active = 1 ORDER BY r.name ASC LIMIT $1 OFFSET $2
+      FROM regions r WHERE r.is_active = true ORDER BY r.name ASC LIMIT $1 OFFSET $2
     `, [parseInt(limit), parseInt(offset)]);
     
     const rows = zones.rows || zones;
@@ -107,7 +107,7 @@ router.get('/hierarchy', async (req, res, next) => {
       SELECT r.*, 
              (SELECT config_value FROM admin_config WHERE config_key = 'territory_features_' || r.id) as features_json
       FROM regions r
-      WHERE r.is_active = 1 
+      WHERE r.is_active = true 
       ORDER BY r.name ASC
     `);
     
@@ -157,7 +157,7 @@ router.get('/search', async (req, res, next) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query parameter q is required' });
     const searchTerm = `%${q}%`;
-    const zones = await query(`SELECT * FROM regions WHERE (name LIKE $1 OR pincode LIKE $1) AND is_active = 1 ORDER BY name ASC LIMIT 20`, [searchTerm]);
+    const zones = await query(`SELECT * FROM regions WHERE (name LIKE $1 OR pincode LIKE $1) AND is_active = true ORDER BY name ASC LIMIT 20`, [searchTerm]);
     res.json({ success: true, data: zones.rows || zones });
   } catch (error) { next(error); }
 });
@@ -178,7 +178,7 @@ router.get('/nearby', async (req, res, next) => {
             SELECT *, 
             ((latitude - $1)*(latitude - $1) + (longitude - $2)*(longitude - $2)) AS distance_approx
             FROM regions 
-            WHERE is_active = 1
+            WHERE is_active = true
             ORDER BY distance_approx ASC
             LIMIT $3
         `;
@@ -188,7 +188,7 @@ router.get('/nearby', async (req, res, next) => {
             SELECT *,
             earth_distance(ll_to_earth($1, $2), ll_to_earth(latitude, longitude)) / 1000 AS distance_km
             FROM regions 
-            WHERE is_active = 1
+            WHERE is_active = true
             ORDER BY ll_to_earth(latitude, longitude) <-> ll_to_earth($1, $2) ASC
             LIMIT $3
         `;
@@ -202,7 +202,7 @@ router.get('/nearby', async (req, res, next) => {
 // GET /api/v1/zones/by-district/:district
 router.get('/by-district/:district', async (req, res, next) => {
   try {
-    const zones = await query(`SELECT * FROM regions WHERE district = $1 AND is_active = 1 ORDER BY name ASC`, [req.params.district]);
+    const zones = await query(`SELECT * FROM regions WHERE district = $1 AND is_active = true ORDER BY name ASC`, [req.params.district]);
     res.json({ success: true, data: zones.rows || zones });
   } catch (error) { next(error); }
 });
@@ -210,7 +210,7 @@ router.get('/by-district/:district', async (req, res, next) => {
 // GET /api/v1/zones/by-state/:state
 router.get('/by-state/:state', async (req, res, next) => {
   try {
-    const zones = await query(`SELECT * FROM regions WHERE state = $1 AND is_active = 1 ORDER BY name ASC`, [req.params.state]);
+    const zones = await query(`SELECT * FROM regions WHERE state = $1 AND is_active = true ORDER BY name ASC`, [req.params.state]);
     res.json({ success: true, data: zones.rows || zones });
   } catch (error) { next(error); }
 });

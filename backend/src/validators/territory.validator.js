@@ -22,7 +22,7 @@ class TerritoryValidator {
     const result = await query(`
       SELECT id, name, pincode, boundary_geojson 
       FROM territories 
-      WHERE is_active = 1 AND boundary_geojson IS NOT NULL
+      WHERE is_active = true AND boundary_geojson IS NOT NULL
     `);
     const existing = result.rows || result;
     const conflicts = [];
@@ -99,7 +99,7 @@ class TerritoryValidator {
     const result = await query(`
       SELECT id, name, pincode, boundary_geojson 
       FROM territories 
-      WHERE is_active = 1 AND boundary_geojson IS NOT NULL
+      WHERE is_active = true AND boundary_geojson IS NOT NULL
     `);
     const territories = result.rows || result;
     const point = turf.point([lng, lat]);

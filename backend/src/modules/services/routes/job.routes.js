@@ -66,7 +66,7 @@ router.get('/vacancies', async (req, res, next) => {
     let sql = `SELECT jv.*, ls.name as shop_name, ls.address as shop_address 
        FROM job_vacancies jv
        JOIN local_shops ls ON jv.shop_id = ls.id
-       WHERE jv.is_active = 1`;
+       WHERE jv.is_active = true`;
     const params = [];
     
     if (region_id) {

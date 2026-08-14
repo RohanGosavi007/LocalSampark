@@ -21,7 +21,7 @@ cron.schedule('0 9 * * *', async () => {
             console.log(`[Alert] Police verification for ${record.person_name} (${record.flat_number}) expires in 30 days.`);
             
             // Notify flat owner (assume member_id is fetched via flat_number)
-            const members = await queryMany('SELECT user_id FROM society_members WHERE society_id = ? AND flat_number = ?', [record.society_id, record.flat_number]);
+            const members = await queryMany('SELECT user_id FROM society_members WHERE society_id = $1 AND flat_number = $2', [record.society_id, record.flat_number]);
             
             for (const member of members) {
                 await sendPushNotification(member.user_id, {
@@ -35,7 +35,7 @@ cron.schedule('0 9 * * *', async () => {
         const expiringLeases = await queryMany(`
             SELECT society_id, flat_number, tenant_name, member_id 
             FROM society_flat_ledger 
-            WHERE is_tenant = 1 
+            WHERE is_tenant = true 
             AND date(tenant_lease_end) = date('now', '+30 days')
         `);
         

@@ -4872,7 +4872,7 @@ INSERT OR IGNORE INTO localization_dictionaries (id, lang_code, translation_key,
 -- Universal Catalog Items for Polymorphic Ecommerce
 CREATE TABLE IF NOT EXISTS universal_catalog_items (
     id SERIAL PRIMARY KEY,
-    shop_id INTEGER NOT NULL,
+    shop_id UUID NOT NULL,
     item_type TEXT NOT NULL DEFAULT 'physical_good', -- physical_good, service, subscription, job_card
     title TEXT NOT NULL,
     description TEXT,
@@ -4882,17 +4882,17 @@ CREATE TABLE IF NOT EXISTS universal_catalog_items (
     inventory_count INTEGER DEFAULT 0,
     availability_matrix TEXT, -- JSON string for service slots
     image_url TEXT,
-    is_active BOOLEAN DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+    FOREIGN KEY (shop_id) REFERENCES local_shops(id) ON DELETE CASCADE
 );
 
 -- Universal Orders to unify all 66 categories
 CREATE TABLE IF NOT EXISTS universal_orders (
     id SERIAL PRIMARY KEY,
-    shop_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    shop_id UUID NOT NULL,
+    user_id UUID NOT NULL,
     status TEXT NOT NULL DEFAULT 'PENDING',
     total_amount REAL NOT NULL,
     order_type TEXT NOT NULL DEFAULT 'retail', -- retail, booking, job_card
@@ -4901,7 +4901,7 @@ CREATE TABLE IF NOT EXISTS universal_orders (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE,
+    FOREIGN KEY (shop_id) REFERENCES local_shops(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

@@ -46,7 +46,7 @@ const getDonors = async (req, res, next) => {
       SELECT d.*, u.full_name, u.phone 
       FROM medical_donors d
       JOIN users u ON d.user_id = u.id
-      WHERE d.is_active = 1
+      WHERE d.is_active = true
     `;
     const params = [];
     if (pincode) {

@@ -220,8 +220,8 @@ async function getShopOrders(req, res, next) {
       else if (status === 'DISPATCHED') status = 'OUT_FOR_DELIVERY'; // Map dispatched to out_for_delivery
     }
 
-    let sql = 'SELECT uo.*, u.name as customer_name, u.phone as customer_phone FROM universal_orders uo JOIN users u ON uo.user_id = u.id WHERE uo.shop_id = ?';
-    let countSql = 'SELECT COUNT(*) as count FROM universal_orders uo WHERE uo.shop_id = ?';
+    let sql = 'SELECT uo.*, u.name as customer_name, u.phone as customer_phone FROM universal_orders uo JOIN users u ON uo.user_id = u.id WHERE uo.shop_id = $1';
+    let countSql = 'SELECT COUNT(*) as count FROM universal_orders uo WHERE uo.shop_id = $1';
     const params = [shop.id];
 
     if (status) {
@@ -1128,51 +1128,7 @@ async function markNotificationRead(req, res, next) {
     res.json({ success: true });
   } catch (error) { next(error); }
 }
-// ─── DISPUTES & RETURNS ───────────────────────────────────────────────
-async function createDispute(req, res, next) {
-  try {
-    const { orderId, reason, description } = req.body;
-    if (!orderId || !reason) return res.status(400).json({ error: 'Order ID and reason are required' });
-    
-    // In a full implementation, this would insert into a `disputes` table.
-    // For now, we mock the creation and return success to integrate with Admin Dashboard.
-    res.status(201).json({
-      success: true,
-      dispute: {
-        id: `DSP-${Math.floor(Math.random() * 10000)}`,
-        order_id: orderId,
-        user_id: req.user.id,
-        reason,
-        description,
-        status: 'open',
-        created_at: new Date().toISOString()
-      },
-      message: 'Dispute created successfully. Admin will review it shortly.'
-    });
-  } catch (error) { next(error); }
-}
 
-async function createReturn(req, res, next) {
-  try {
-    const { orderId, reason, description } = req.body;
-    if (!orderId || !reason) return res.status(400).json({ error: 'Order ID and reason are required' });
-    
-    // Mock the creation of a return request
-    res.status(201).json({
-      success: true,
-      returnRequest: {
-        id: `RET-${Math.floor(Math.random() * 10000)}`,
-        order_id: orderId,
-        user_id: req.user.id,
-        reason,
-        description,
-        status: 'pending_approval',
-        created_at: new Date().toISOString()
-      },
-      message: 'Return request submitted successfully.'
-    });
-  } catch (error) { next(error); }
-}
 // ═══════════════════════════════════════════════════════════════════════
 // SECTION 13: LEAD CRM
 // ═══════════════════════════════════════════════════════════════════════

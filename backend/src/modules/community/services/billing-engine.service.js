@@ -14,7 +14,7 @@ class BillingEngineService {
         const activeFlatsCount = (await queryOne('SELECT COUNT(*) as count FROM society_flat_ledger WHERE society_id = $1', [societyId])).count;
         if (activeFlatsCount === 0) return 0;
 
-        const chargeHeads = await queryMany('SELECT * FROM society_charge_heads WHERE society_id = $1 AND category = "service_charge" AND is_active = 1', [societyId]);
+        const chargeHeads = await queryMany('SELECT * FROM society_charge_heads WHERE society_id = $1 AND category = "service_charge" AND is_active = true', [societyId]);
         
         let totalServiceCharge = 0;
         for (const head of chargeHeads) {
@@ -55,7 +55,7 @@ class BillingEngineService {
         const flat = await queryOne('SELECT member_id FROM society_flat_ledger WHERE society_id = $1 AND flat_number = $2', [societyId, flatNumber]);
         if (!flat || !flat.member_id) return 0;
 
-        const vehicles = await queryMany('SELECT vehicle_type FROM vehicles WHERE owner_id = $1 AND is_active = 1', [flat.member_id]);
+        const vehicles = await queryMany('SELECT vehicle_type FROM vehicles WHERE owner_id = $1 AND is_active = true', [flat.member_id]);
         
         let parkingCharge = 0;
         for (const v of vehicles) {

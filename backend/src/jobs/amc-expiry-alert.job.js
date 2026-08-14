@@ -23,7 +23,7 @@ cron.schedule('0 10 * * *', async () => {
             // Notify Facility Managers
             const facilityAdmins = await queryMany(`
                 SELECT user_id FROM society_admin_roles 
-                WHERE society_id = ? AND is_active = 1 
+                WHERE society_id = $1 AND is_active = true 
                 AND json_extract(permissions, '$.assets') = 1
             `, [asset.society_id]);
             

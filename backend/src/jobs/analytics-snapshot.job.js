@@ -23,7 +23,7 @@ cron.schedule('0 1 * * *', async () => {
 
     // Get all active shops
     const shops = await queryMany(
-      `SELECT id, region_id FROM local_shops WHERE is_active = 1`
+      `SELECT id, region_id FROM local_shops WHERE is_active = true`
     );
 
     let snapshotsCreated = 0;

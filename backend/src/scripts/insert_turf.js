@@ -4,9 +4,9 @@ const insertData = async () => {
     try {
         console.log('Inserting Turf & Grounds category...');
         await query(`
-            INSERT OR IGNORE INTO shop_categories 
+            INSERT INTO shop_categories 
             (id, name, slug, icon, business_model, is_active, display_order) 
-            VALUES ('cat_056', 'Turf & Grounds', 'turf-grounds', '⚽', 'appointment', 1, 100);
+            VALUES ('cat_056', 'Turf & Grounds', 'turf-grounds', '⚽', 'appointment', true, 100) ON CONFLICT DO NOTHING
         `);
         console.log('Category inserted.');
 
@@ -21,9 +21,9 @@ const insertData = async () => {
         // Turf 1
         const shop1Id = 'shop_turf_001';
         await query(`
-            INSERT OR IGNORE INTO local_shops 
+            INSERT INTO local_shops 
             (id, owner_id, region_id, category_id, name, description, category, phone_number, address, coordinate, latitude, longitude, opening_hours, photo_urls, shop_type, approval_status, is_verified, is_active, delivery_available)
-            VALUES (?, ?, ?, ?, ?, ?, ?, '+919999999999', ?, ST_GeomFromText('POINT(73.8967 18.5793)', 4326), ?, ?, '{"open":"09:00","close":"21:00"}', '[]', ?, 'approved', 1, 1, 1)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, '+919999999999', $8, ST_GeomFromText('POINT(73.8967 18.5793)', 4326), $9, $10, '{"open":"09:00","close":"21:00"}', '[]', $11, 'approved', true, true, true) ON CONFLICT DO NOTHING
         `, [
             shop1Id,
             ownerId,
@@ -40,9 +40,9 @@ const insertData = async () => {
         // Turf 2
         const shop2Id = 'shop_turf_002';
         await query(`
-            INSERT OR IGNORE INTO local_shops 
+            INSERT INTO local_shops 
             (id, owner_id, region_id, category_id, name, description, category, phone_number, address, coordinate, latitude, longitude, opening_hours, photo_urls, shop_type, approval_status, is_verified, is_active, delivery_available)
-            VALUES (?, ?, ?, ?, ?, ?, ?, '+919999999999', ?, ST_GeomFromText('POINT(73.9143 18.5679)', 4326), ?, ?, '{"open":"09:00","close":"21:00"}', '[]', ?, 'approved', 1, 1, 1)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, '+919999999999', $8, ST_GeomFromText('POINT(73.9143 18.5679)', 4326), $9, $10, '{"open":"09:00","close":"21:00"}', '[]', $11, 'approved', true, true, true) ON CONFLICT DO NOTHING
         `, [
             shop2Id,
             ownerId,
@@ -59,16 +59,22 @@ const insertData = async () => {
         console.log('Mock shops inserted. Adding services and staff (grounds)...');
 
         // Services (Time slots types) for Turf 1
-        await query(`INSERT OR IGNORE INTO shop_services (id, shop_id, name, price, duration_minutes, is_available) VALUES ('svc_turf_1_1', ?, '5v5 Football Turf (1 Hour)', 1200, 60, 1)`, [shop1Id]);
-        await query(`INSERT OR IGNORE INTO shop_services (id, shop_id, name, price, duration_minutes, is_available) VALUES ('svc_turf_1_2', ?, 'Box Cricket (1 Hour)', 1000, 60, 1)`, [shop1Id]);
+        await query(`INSERT INTO shop_services (id, shop_id, name, price, duration_minutes, is_available) VALUES ('svc_turf_1_1', $1, '5v5 Football Turf (1 Hour)', 1200, 60, true) ON CONFLICT DO NOTHING
+        `, [shop1Id]);
+        await query(`INSERT INTO shop_services (id, shop_id, name, price, duration_minutes, is_available) VALUES ('svc_turf_1_2', $1, 'Box Cricket (1 Hour)', 1000, 60, true) ON CONFLICT DO NOTHING
+        `, [shop1Id]);
         
         // Services for Turf 2
-        await query(`INSERT OR IGNORE INTO shop_services (id, shop_id, name, price, duration_minutes, is_available) VALUES ('svc_turf_2_1', ?, '7v7 Football (1 Hour)', 1500, 60, 1)`, [shop2Id]);
+        await query(`INSERT INTO shop_services (id, shop_id, name, price, duration_minutes, is_available) VALUES ('svc_turf_2_1', $1, '7v7 Football (1 Hour)', 1500, 60, true) ON CONFLICT DO NOTHING
+        `, [shop2Id]);
 
         // Staff (Representing the actual Grounds/Courts)
-        await query(`INSERT OR IGNORE INTO shop_staff (id, shop_id, name, role, is_active) VALUES ('stf_turf_1_1', ?, 'Ground A (5v5)', 'Turf', 1)`, [shop1Id]);
-        await query(`INSERT OR IGNORE INTO shop_staff (id, shop_id, name, role, is_active) VALUES ('stf_turf_1_2', ?, 'Ground B (Cricket)', 'Turf', 1)`, [shop1Id]);
-        await query(`INSERT OR IGNORE INTO shop_staff (id, shop_id, name, role, is_active) VALUES ('stf_turf_2_1', ?, 'Main Field (7v7)', 'Turf', 1)`, [shop2Id]);
+        await query(`INSERT INTO shop_staff (id, shop_id, name, role, is_active) VALUES ('stf_turf_1_1', $1, 'Ground A (5v5)', 'Turf', true) ON CONFLICT DO NOTHING
+        `, [shop1Id]);
+        await query(`INSERT INTO shop_staff (id, shop_id, name, role, is_active) VALUES ('stf_turf_1_2', $1, 'Ground B (Cricket)', 'Turf', true) ON CONFLICT DO NOTHING
+        `, [shop1Id]);
+        await query(`INSERT INTO shop_staff (id, shop_id, name, role, is_active) VALUES ('stf_turf_2_1', $1, 'Main Field (7v7)', 'Turf', true) ON CONFLICT DO NOTHING
+        `, [shop2Id]);
 
         console.log('All mock data inserted successfully.');
         process.exit(0);

@@ -110,7 +110,7 @@ class DPDPComplianceService {
 
       await query(
         `UPDATE users SET full_name = $1, phone_number = $2, email = $3, avatar_url = NULL,
-         bio = NULL, is_active = 0, updated_at = datetime('now')
+         bio = NULL, is_active = false, updated_at = datetime('now')
          WHERE id = $4`,
         [anonName, anonPhone, anonEmail, userId]
       );

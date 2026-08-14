@@ -29,7 +29,7 @@ exports.getFraudScan = async (req, res, next) => {
       // Query shops with high transaction activity
       const shopRes = await query(`
         SELECT s.id, s.name AS shop_name, COUNT(o.id) AS payout_count
-        FROM shops s
+        FROM local_shops s
         JOIN orders o ON o.shop_id = s.id
         GROUP BY s.id, s.name
         HAVING COUNT(o.id) > 10

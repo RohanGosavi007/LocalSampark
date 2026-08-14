@@ -11,7 +11,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
         // For demonstration, we assume we fetch staff and their attendance
         
         // Mock processing:
-        // const staffList = await queryMany('SELECT * FROM society_staff WHERE society_id = $1 AND is_active = 1', [societyId]);
+        // const staffList = await queryMany('SELECT * FROM society_staff WHERE society_id = $1 AND is_active = true', [societyId]);
         
         const id = uuidv4();
         await query(`INSERT INTO society_staff_payroll 

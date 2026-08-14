@@ -20,7 +20,7 @@ const createTopic = async (req, res, next) => {
 const getTopics = async (req, res, next) => {
     try {
         const { societyId, category } = req.query;
-        let sql = 'SELECT * FROM society_forum_topics WHERE society_id = ?';
+        let sql = 'SELECT * FROM society_forum_topics WHERE society_id = $1';
         const params = [societyId];
         
         if (category) {

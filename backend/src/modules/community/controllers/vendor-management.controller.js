@@ -19,7 +19,7 @@ const createVendor = async (req, res, next) => {
 const listVendors = async (req, res, next) => {
     try {
         const { societyId } = req.query;
-        const vendors = await queryMany('SELECT * FROM society_vendors WHERE society_id = $1 AND is_active = 1', [societyId]);
+        const vendors = await queryMany('SELECT * FROM society_vendors WHERE society_id = $1 AND is_active = true', [societyId]);
         res.json({ success: true, data: vendors });
     } catch (error) { next(error); }
 };
