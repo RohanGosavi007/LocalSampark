@@ -1177,7 +1177,11 @@ CREATE TABLE IF NOT EXISTS shop_categories (
     name TEXT NOT NULL UNIQUE,
     slug TEXT NOT NULL UNIQUE,
     icon TEXT,
-    business_model TEXT NOT NULL CHECK (business_model IN ('product', 'appointment', 'hybrid')),
+    -- Two seeds populate this table: an older one that sets business_model and
+    -- a newer archetype-based one that does not. A default keeps both valid
+    -- while preserving the constraint on the values themselves.
+    business_model TEXT NOT NULL DEFAULT 'product'
+        CHECK (business_model IN ('product', 'appointment', 'hybrid')),
     commission_percent REAL DEFAULT 5.0,
     convenience_fee REAL DEFAULT 0.0,
     is_active INTEGER DEFAULT 1,
@@ -1388,52 +1392,25 @@ CREATE INDEX IF NOT EXISTS idx_shop_orders_delivery ON shop_orders (delivery_typ
 -- ═══════════════════════════════════════════════════════════
 
 -- Product-Based Categories
-INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
-('cat_001', 'Grocery & Supermarkets', 'grocery-supermarkets', '🛒', 'product', 5.0, 10.0, 1, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":false}]'),
-('cat_002', 'Restaurants & Cafes', 'restaurants-cafes', '🍽️', 'product', 8.0, 15.0, 2, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":true},{"field":"cuisine_type","label":"Cuisine Type","type":"text","required":false}]'),
-('cat_003', 'Pharmacy & Healthcare', 'pharmacy-healthcare', '💊', 'product', 4.0, 5.0, 3, '[{"field":"drug_license","label":"Drug License No.","type":"text","required":true}]'),
-('cat_004', 'Fresh Produce & Meat', 'fresh-produce-meat', '🥩', 'product', 5.0, 10.0, 4, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":false}]'),
-('cat_005', 'Dairy, Sweets & Bakery', 'dairy-sweets-bakery', '🍰', 'product', 6.0, 10.0, 5, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":false}]'),
-('cat_006', 'Stationery, Gifts & Books', 'stationery-gifts-books', '📚', 'product', 7.0, 10.0, 6, '[]'),
-('cat_007', 'Florists & Nurseries', 'florists-nurseries', '💐', 'product', 8.0, 15.0, 7, '[]'),
-('cat_008', 'Pet Care & Supplies', 'pet-care-supplies', '🐾', 'product', 7.0, 10.0, 8, '[]'),
-('cat_009', 'Pooja Samagri & Religious', 'pooja-samagri-religious', '🪔', 'product', 5.0, 5.0, 9, '[]'),
-('cat_015', 'Hardware & Sanitary', 'hardware-sanitary', '🔧', 'product', 5.0, 10.0, 15, '[]'),
-('cat_016', 'Clothing & Fashion', 'clothing-fashion', '👗', 'product', 7.0, 10.0, 16, '[]') ON CONFLICT DO NOTHING;
+-- Superseded seed removed: it declared the same category slugs as the
+-- archetype seed below but with cat_NNN ids instead of cat-NNN. Because
+-- slug is UNIQUE and both used ON CONFLICT DO NOTHING, the two seeds
+-- silently half-populated the taxonomy and category_attributes, which
+-- references the cat-NNN ids, could not resolve its foreign keys.
 
 -- Appointment-Based Categories
-INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
-('cat_011', 'Home Services & Plumbers', 'home-services-plumbers', '🔧', 'appointment', 12.0, 20.0, 11, '[{"field":"service_area_pincodes","label":"Service Area Pincodes","type":"text","required":false}]'),
-('cat_012', 'Salon, Beauty & Spa', 'salon-beauty-spa', '💇', 'appointment', 10.0, 15.0, 12, '[]'),
-('cat_014', 'Tutors & Education', 'tutors-education', '📖', 'appointment', 10.0, 10.0, 14, '[{"field":"qualification","label":"Qualification / Degree","type":"text","required":false}]'),
-('cat_017', 'Gym & Fitness', 'gym-fitness', '💪', 'appointment', 8.0, 15.0, 17, '[{"field":"trainer_cert","label":"Trainer Certification","type":"text","required":false}]'),
-('cat_018', 'Real Estate & Brokers', 'real-estate-brokers', '🏠', 'appointment', 3.0, 50.0, 18, '[{"field":"rera_registration","label":"RERA Registration No.","type":"text","required":false}]'),
-('cat_020', 'Dentists & Orthodontists', 'dentists-orthodontists', '🦷', 'appointment', 10.0, 20.0, 20, '[{"field":"dental_reg","label":"Dental Registration No.","type":"text","required":true}]'),
-('cat_021', 'Pathology Labs & Diagnostics', 'pathology-labs-diagnostics', '🔬', 'appointment', 15.0, 20.0, 21, '[{"field":"lab_license","label":"Lab License No.","type":"text","required":true}]'),
-('cat_022', 'Physiotherapy & Chiropractic', 'physiotherapy-chiropractic', '🏥', 'appointment', 12.0, 15.0, 22, '[{"field":"practitioner_license","label":"Practitioner License","type":"text","required":true}]'),
-('cat_023', 'Ayurvedic & Homeopathic', 'ayurvedic-homeopathic', '🌿', 'appointment', 10.0, 10.0, 23, '[{"field":"ayush_reg","label":"AYUSH Registration","type":"text","required":false}]'),
-('cat_024', 'Pest Control Services', 'pest-control-services', '🐛', 'appointment', 12.0, 25.0, 24, '[{"field":"pest_license","label":"Pest Control License","type":"text","required":false}]'),
-('cat_025', 'Deep Cleaning Services', 'deep-cleaning-services', '🧹', 'appointment', 15.0, 25.0, 25, '[]'),
-('cat_026', 'AC & Appliance Repair', 'ac-appliance-repair', '❄️', 'appointment', 10.0, 20.0, 26, '[]'),
-('cat_027', 'RO & Water Purifier Service', 'ro-water-purifier-service', '💧', 'appointment', 10.0, 15.0, 27, '[]'),
-('cat_029', 'Tailoring & Boutiques', 'tailoring-boutiques', '🧵', 'appointment', 8.0, 10.0, 29, '[]'),
-('cat_030', 'Car & Bike Wash', 'car-bike-wash', '🚗', 'appointment', 10.0, 15.0, 30, '[]'),
-('cat_031', 'Driving Schools', 'driving-schools', '🚘', 'appointment', 5.0, 20.0, 31, '[{"field":"rto_affiliation","label":"RTO Affiliation","type":"text","required":false}]'),
-('cat_032', 'Catering & Party Services', 'catering-party-services', '🍳', 'appointment', 8.0, 30.0, 32, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":false}]'),
-('cat_033', 'Event Planners & Decorators', 'event-planners-decorators', '🎉', 'appointment', 10.0, 30.0, 33, '[]'),
-('cat_034', 'Photographers & Videographers', 'photographers-videographers', '📸', 'appointment', 10.0, 20.0, 34, '[{"field":"portfolio_link","label":"Portfolio Link","type":"text","required":false}]'),
-('cat_035', 'CAs & Tax Consultants', 'cas-tax-consultants', '📋', 'appointment', 5.0, 25.0, 35, '[{"field":"ca_membership","label":"CA Membership No.","type":"text","required":true}]'),
-('cat_036', 'Lawyers & Advocates', 'lawyers-advocates', '⚖️', 'appointment', 5.0, 25.0, 36, '[{"field":"bar_council_reg","label":"Bar Council Registration","type":"text","required":true}]'),
-('cat_037', 'Insurance Agents', 'insurance-agents', '🛡️', 'appointment', 5.0, 15.0, 37, '[{"field":"irda_license","label":"IRDA License No.","type":"text","required":true}]'),
-('cat_038', 'Yoga & Wellness', 'yoga-wellness', '🧘', 'appointment', 8.0, 10.0, 38, '[{"field":"yoga_cert","label":"Yoga Alliance Certification","type":"text","required":false}]'),
-('cat_039', 'Dieticians & Nutritionists', 'dieticians-nutritionists', '🥗', 'appointment', 10.0, 15.0, 39, '[{"field":"degree_cert","label":"Degree / Certification","type":"text","required":false}]') ON CONFLICT DO NOTHING;
+-- Superseded seed removed: it declared the same category slugs as the
+-- archetype seed below but with cat_NNN ids instead of cat-NNN. Because
+-- slug is UNIQUE and both used ON CONFLICT DO NOTHING, the two seeds
+-- silently half-populated the taxonomy and category_attributes, which
+-- references the cat-NNN ids, could not resolve its foreign keys.
 
 -- Hybrid Categories
-INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
-('cat_010', 'Eyewear & Opticians', 'eyewear-opticians', '👓', 'hybrid', 6.0, 10.0, 10, '[{"field":"optometrist_license","label":"Optometrist License","type":"text","required":false}]'),
-('cat_013', 'Electricians & Electronics', 'electricians-electronics', '⚡', 'hybrid', 8.0, 15.0, 13, '[]'),
-('cat_019', 'Automotive & Mechanic', 'automotive-mechanic', '🔩', 'hybrid', 8.0, 20.0, 19, '[{"field":"workshop_license","label":"Workshop License","type":"text","required":false}]'),
-('cat_028', 'Laundry & Dry Cleaning', 'laundry-dry-cleaning', '👔', 'hybrid', 8.0, 10.0, 28, '[]') ON CONFLICT DO NOTHING;
+-- Superseded seed removed: it declared the same category slugs as the
+-- archetype seed below but with cat_NNN ids instead of cat-NNN. Because
+-- slug is UNIQUE and both used ON CONFLICT DO NOTHING, the two seeds
+-- silently half-populated the taxonomy and category_attributes, which
+-- references the cat-NNN ids, could not resolve its foreign keys.
 
 
 -- =======================================
@@ -2105,28 +2082,11 @@ CREATE TABLE IF NOT EXISTS agent_payouts (
 -- SECTION 1: 16 NEW ESSENTIAL SHOP CATEGORIES
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
--- Hybrid Categories (New)
-('cat_040', 'Tiffin & Meal Subscription', 'tiffin-meal-subscription', '🍱', 'hybrid', 8.0, 15.0, 40, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":true},{"field":"cuisine_type","label":"Cuisine Type","type":"text","required":false}]'),
-('cat_041', 'Mobile & Computer Repair', 'mobile-computer-repair', '📱', 'hybrid', 10.0, 20.0, 41, '[{"field":"gst_number","label":"GST Number","type":"text","required":false}]'),
-('cat_044', 'Printing, Xerox & DTP', 'printing-xerox-dtp', '🖨️', 'hybrid', 8.0, 10.0, 44, '[]'),
-('cat_053', 'Security & CCTV', 'security-cctv', '🛡️', 'hybrid', 8.0, 20.0, 53, '[{"field":"security_license","label":"Security Agency License","type":"text","required":false}]'),
-
--- Product Categories (New)
-('cat_042', 'Courier & Parcel Services', 'courier-parcel-services', '📦', 'product', 5.0, 10.0, 42, '[{"field":"courier_partner","label":"Courier Partner (if any)","type":"text","required":false}]'),
-('cat_047', 'Water Tanker & Supply', 'water-tanker-supply', '🚰', 'product', 5.0, 5.0, 47, '[]'),
-('cat_048', 'Gas Cylinder & LPG', 'gas-cylinder-lpg', '🔥', 'product', 3.0, 5.0, 48, '[{"field":"gas_agency_license","label":"Gas Agency License","type":"text","required":true}]'),
-('cat_049', 'Jewellery & Gold', 'jewellery-gold', '💎', 'product', 3.0, 10.0, 49, '[{"field":"bis_hallmark","label":"BIS Hallmark License","type":"text","required":false},{"field":"gst_number","label":"GST Number","type":"text","required":true}]'),
-
--- Appointment Categories (New)
-('cat_043', 'Travel Agents & Visa', 'travel-agents-visa', '✈️', 'appointment', 5.0, 25.0, 43, '[{"field":"iata_code","label":"IATA Code (if applicable)","type":"text","required":false}]'),
-('cat_045', 'Locksmith & Key Maker', 'locksmith-key-maker', '🔑', 'appointment', 10.0, 15.0, 45, '[]'),
-('cat_046', 'Packers & Movers', 'packers-movers', '🚚', 'appointment', 5.0, 30.0, 46, '[{"field":"transport_license","label":"Transport License","type":"text","required":false}]'),
-('cat_050', 'Wedding & Party Planner', 'wedding-party-planner', '💒', 'appointment', 8.0, 30.0, 50, '[{"field":"portfolio_link","label":"Portfolio Link","type":"text","required":false}]'),
-('cat_051', 'Interior Design & Decor', 'interior-design-decor', '🎨', 'appointment', 8.0, 25.0, 51, '[{"field":"portfolio_link","label":"Portfolio Link","type":"text","required":false}]'),
-('cat_052', 'Painting & Renovation', 'painting-renovation', '🎨', 'appointment', 10.0, 20.0, 52, '[]'),
-('cat_054', 'Coaching & Test Prep', 'coaching-test-prep', '🎓', 'appointment', 8.0, 15.0, 54, '[{"field":"center_affiliation","label":"Board/University Affiliation","type":"text","required":false}]'),
-('cat_055', 'Astrologer & Pandit', 'astrologer-pandit', '🪷', 'appointment', 5.0, 10.0, 55, '[]') ON CONFLICT DO NOTHING;
+-- Superseded seed removed: it declared the same category slugs as the
+-- archetype seed below but with cat_NNN ids instead of cat-NNN. Because
+-- slug is UNIQUE and both used ON CONFLICT DO NOTHING, the two seeds
+-- silently half-populated the taxonomy and category_attributes, which
+-- references the cat-NNN ids, could not resolve its foreign keys.
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -2750,12 +2710,15 @@ CREATE TABLE IF NOT EXISTS cart_items (
     id SERIAL PRIMARY KEY,
     session_id TEXT NULL,
     user_id UUID NULL,
-    product_id INTEGER NOT NULL,
+    -- There is no `products` table; the catalogue is shop_products, whose id
+    -- is UUID. The old INTEGER column referencing products(id) meant this
+    -- table could never be created on Postgres.
+    product_id UUID NOT NULL,
     quantity INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (product_id) REFERENCES shop_products(id) ON DELETE CASCADE
 );
 
 -- NOTE: A second pair of orders/order_items definitions previously sat here,
@@ -2848,11 +2811,11 @@ VALUES
 ('med_2', 'City Pharmacy', 'Pharmacy', 'PHM-98765', 'East Zone', 'active', 1),
 ('med_3', 'HealthFirst Lab', 'Diagnostic', 'DIA-55555', 'South Zone', 'pending', 0) ON CONFLICT DO NOTHING;
 
-INSERT INTO crm_leads (id, first_name, last_name, phone, lead_source, status) 
-VALUES 
-('lead_1', 'Rajesh', 'Kumar', '+919876543210', 'Website Inquiry', 'new'),
-('lead_2', 'Sneha', 'Patel', '+919876543211', 'Referral', 'contacted'),
-('lead_3', 'Amit', 'Singh', '+919876543212', 'Social Media', 'converted') ON CONFLICT DO NOTHING;
+INSERT INTO crm_leads (first_name, last_name, phone, lead_source, status)
+VALUES
+('Rajesh', 'Kumar', '+919876543210', 'Website Inquiry', 'new'),
+('Sneha', 'Patel', '+919876543211', 'Referral', 'contacted'),
+('Amit', 'Singh', '+919876543212', 'Social Media', 'converted') ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -3140,14 +3103,12 @@ INSERT INTO job_postings (id, title, company_name, category, salary_range, locat
 ('job_2', 'Delivery Executive', 'LocalSampark Express', 'Logistics', '₹18,000 - ₹25,000/mo', '411001', 'Full-time', 'Hyperlocal delivery partner for neighborhood orders.', '9876543214') ON CONFLICT DO NOTHING;
 
 -- Properties Seed
-INSERT INTO property_listings (id, user_id, title, description, property_type, listing_type, price, deposit, amenities, is_verified, is_active) VALUES
-('prop_1', 'user_owner_1', 'Spacious 2BHK Apartment', 'Gated community with gym and security near MG Road.', 'flat', 'rent', 22000.00, 50000.00, '["gym", "parking"]', 1, 1),
-('prop_2', 'user_owner_2', 'Commercial Shop Space', 'Prime road facing retail shop in Main Market.', 'commercial', 'sale', 4500000.00, 0.00, '["main_road"]', 1, 1) ON CONFLICT DO NOTHING;
+-- Demo seed removed: it referenced owner ids that no user seed creates,
+-- so the foreign key could never be satisfied on Postgres.
 
 -- Events Seed
-INSERT INTO community_events (id, organizer_id, title, category, event_date, time_slot, venue_address, pincode, ticket_price, description) VALUES
-('evt_1', 'org_1', 'Neighborhood Organic Farming Workshop', 'Workshop', '2026-08-10', '10:00 AM - 01:00 PM', 'Community Hall, Sector 4', '411001', 0.00, 'Learn urban gardening techniques.'),
-('evt_2', 'org_2', 'Local Art & Craft Mela', 'Cultural', '2026-08-15', '04:00 PM - 09:00 PM', 'Town Square Ground', '411001', 50.00, 'Support local artisans and handicraft vendors.') ON CONFLICT DO NOTHING;
+-- Demo seed removed: it referenced owner ids that no user seed creates,
+-- so the foreign key could never be satisfied on Postgres.
 
 -- Multilingual Seed
 INSERT INTO localization_dictionaries (id, lang_code, translation_key, translation_value) VALUES
@@ -3906,18 +3867,40 @@ ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS eligible_voters TEXT;
 ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS min_quorum_percent REAL;
 ALTER TABLE society_polls ADD COLUMN IF NOT EXISTS result_visibility TEXT DEFAULT 'public';
 
--- Assuming society_move_passes exists based on move_passes referenced
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS requested_by TEXT;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS clearance_status TEXT;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS outstanding_dues REAL;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS gate_passcode TEXT;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS movers_company TEXT;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS movers_vehicle_number TEXT;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS admin_approved_at TIMESTAMP;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS admin_approved_by TEXT;
-ALTER TABLE society_move_passes ADD COLUMN IF NOT EXISTS notes TEXT;
+-- These columns belong to move_passes. They previously targeted a
+-- society_move_passes table that has never existed, so none of them applied.
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS requested_by TEXT;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS clearance_status TEXT;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS outstanding_dues REAL;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS gate_passcode TEXT;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS movers_company TEXT;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS movers_vehicle_number TEXT;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS admin_approved_at TIMESTAMP;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS admin_approved_by TEXT;
+ALTER TABLE move_passes ADD COLUMN IF NOT EXISTS notes TEXT;
 
--- Assuming society_vehicles exists
+-- society_vehicles was only ever assumed to exist; nothing declared it, so the
+-- gate lookup in guard-operations.controller.js always failed. Declared here in
+-- step with migration 061.
+CREATE TABLE IF NOT EXISTS society_vehicles (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id      UUID NOT NULL REFERENCES societies(id) ON DELETE CASCADE,
+    resident_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+    flat_number     TEXT NOT NULL,
+    vehicle_number  TEXT NOT NULL,
+    vehicle_type    TEXT,
+    make_model      TEXT,
+    colour          TEXT,
+    parking_slot    TEXT,
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT society_vehicles_unique UNIQUE (society_id, vehicle_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_society_vehicles_lookup
+    ON society_vehicles(society_id, vehicle_number) WHERE is_active;
+
 ALTER TABLE society_vehicles ADD COLUMN IF NOT EXISTS vehicle_photo_url TEXT;
 ALTER TABLE society_vehicles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1;
 
@@ -4258,10 +4241,10 @@ INSERT INTO shop_categories (id, slug, name, icon, archetype, requires_fssai, su
   ('cat-050', 'wedding-party-planner', 'Wedding & Party Planner', '💒', 'event_creative', FALSE, TRUE),
   ('cat-051', 'interior-design-decor', 'Interior Design & Decor', '🏡', 'event_creative', FALSE, TRUE),
   ('cat-052', 'painting-renovation', 'Painting & Renovation', '🎨', 'home_visit', FALSE, TRUE),
-  ('cat-053', 'security-cctv', 'Security & CCTV', '📹', 'home_visit', 0, 1),
-  ('cat-054', 'coaching-test-prep', 'Coaching & Test Prep', '🎓', 'education', 0, 1),
-  ('cat-055', 'astrologer-pandit', 'Astrologer & Pandit', '⭐', 'event_creative', 0, 1),
-  ('cat-056', 'turf-grounds', 'Turf & Grounds', '⚽', 'event_creative', 0, 1) ON CONFLICT DO NOTHING;
+  ('cat-053', 'security-cctv', 'Security & CCTV', '📹', 'home_visit', FALSE, TRUE),
+  ('cat-054', 'coaching-test-prep', 'Coaching & Test Prep', '🎓', 'education', FALSE, TRUE),
+  ('cat-055', 'astrologer-pandit', 'Astrologer & Pandit', '⭐', 'event_creative', FALSE, TRUE),
+  ('cat-056', 'turf-grounds', 'Turf & Grounds', '⚽', 'event_creative', FALSE, TRUE) ON CONFLICT DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- SEED: Category-specific attributes
@@ -4713,21 +4696,25 @@ ALTER TABLE universal_catalog_items ADD COLUMN IF NOT EXISTS metadata TEXT; -- J
 -- MIGRATION: 047_universal_leads.sqlite.sql
 -- =======================================
 
+-- The foreign keys here previously named Shop(id) and User(id): Prisma model
+-- names, not tables. `User` is also a reserved word, so this block was a syntax
+-- error and the table was never created. The real tables are local_shops and
+-- users, both UUID keyed. Kept in step with migration 061.
 CREATE TABLE IF NOT EXISTS universal_leads (
-    id SERIAL PRIMARY KEY,
-    shop_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    lead_type VARCHAR(50) NOT NULL, -- 'FAVORITE', 'ABANDONED_CART', 'INQUIRY'
-    lead_status VARCHAR(50) DEFAULT 'NEW', -- 'NEW', 'CONTACTED', 'CONVERTED'
-    content TEXT, -- JSON or string context about the lead
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (shop_id) REFERENCES Shop(id),
-    FOREIGN KEY (user_id) REFERENCES User(id)
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_id      UUID NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id      UUID REFERENCES users(id) ON DELETE SET NULL,
+    lead_type    TEXT NOT NULL DEFAULT 'enquiry',
+    content      TEXT,
+    lead_status  TEXT NOT NULL DEFAULT 'new',
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT universal_leads_status_valid
+        CHECK (lead_status IN ('new', 'contacted', 'qualified', 'converted', 'lost'))
 );
 
-CREATE INDEX idx_universal_leads_shop ON universal_leads(shop_id);
-CREATE INDEX idx_universal_leads_user ON universal_leads(user_id);
+CREATE INDEX IF NOT EXISTS idx_universal_leads_shop ON universal_leads(shop_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_universal_leads_user ON universal_leads(user_id);
 
 
 -- =======================================
