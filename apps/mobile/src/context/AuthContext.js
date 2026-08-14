@@ -118,7 +118,9 @@ export function AuthProvider({ children }) {
 
   const fetchWallet = async (token) => {
     try {
-      const res = await fetch(`${API_URL}/wallet/balance`, {
+      // /wallet/history returns { balance, transactions }; /wallet/balance has
+      // never existed, so this always fell through to the mock below.
+      const res = await fetch(`${API_URL}/wallet/history`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
