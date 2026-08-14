@@ -50,7 +50,7 @@ export default function DailyStreak() {
           claimed 
             ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
             : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)]'
-        }\`}
+        }`}
       >
         {claimed ? 'Claimed for Today' : 'Claim Daily Bonus'}
       </button>

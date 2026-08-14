@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Briefcase, MapPin, Clock, IndianRupee, Plus, CheckCircle, Search } from 'lucide-react';
 
 export default function LocalJobsBoard() {

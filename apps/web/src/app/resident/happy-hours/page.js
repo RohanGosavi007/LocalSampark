@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Clock, MapPin, Percent, Timer, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../../../context/CartContext';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../components/ui/Toast';
 
 export default function HappyHoursPage() {
   const { dispatch } = useCart();

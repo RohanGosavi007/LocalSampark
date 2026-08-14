@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../components/Header';
+import Header from '../components/Header';
 import { LifeBuoy, MessageSquare, Plus, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function SupportHelpdesk() {

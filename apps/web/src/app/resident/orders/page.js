@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Star, Package, MapPin, CheckCircle, Clock } from 'lucide-react';
 
 export default function ResidentOrdersPage() {

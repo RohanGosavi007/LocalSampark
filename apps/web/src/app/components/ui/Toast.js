@@ -42,3 +42,20 @@ export const toast = {
   dismiss: (id) => hotToast.dismiss(id),
   custom: (jsx) => hotToast.custom(jsx),
 };
+
+/**
+ * Several pages import `useToast` and call `addToast(message)`, but this module
+ * only ever exported `toast` and `ToastProvider`. The missing export threw at
+ * render, which is why those routes failed to prerender.
+ *
+ * A plain object is returned rather than a hook-managed one because the
+ * underlying react-hot-toast API is module-level and needs no React state; the
+ * hook shape exists only to match how callers already import it.
+ */
+export function useToast() {
+  return {
+    addToast: (msg, type = 'success') =>
+      typeof toast[type] === 'function' ? toast[type](msg) : toast.success(msg),
+    ...toast,
+  };
+}

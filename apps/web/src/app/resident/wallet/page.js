@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Coins, ArrowUpRight, ArrowDownRight, Gift, ShoppingBag, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DailyStreak from '../../../components/DailyStreak';

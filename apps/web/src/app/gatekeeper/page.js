@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import Header from '../../components/Header';
+import React, { useState, useEffect } from 'react';
+import Header from '../components/Header';
 import { UserPlus, Package, Car, Users, CheckCircle, XCircle, Languages, WifiOff } from 'lucide-react';
 import io from 'socket.io-client';
 import { useLanguage } from '../components/LanguageToggle';
@@ -113,7 +113,9 @@ export default function GatekeeperPortal() {
               onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
               className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
             >
-              <Languages size={14} /> {language.toUpperCase()}
+              {/* language is undefined during prerender, where the provider
+                  has not mounted, so it must be defaulted before use. */}
+              <Languages size={14} /> {(language || 'en').toUpperCase()}
             </button>
           </div>
           

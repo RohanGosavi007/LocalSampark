@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { PackageOpen, Sparkles, Sprout, Cookie, Gift, ArrowRight, CheckCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

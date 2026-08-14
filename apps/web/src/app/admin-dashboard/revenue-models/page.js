@@ -21,7 +21,7 @@ export default function RevenueModelsPage() {
   });
 
   const saveConfiguration = async (type) => {
-    toast.success(\`\${type} models updated successfully across all clusters.\`);
+    toast.success(`${type} models updated successfully across all clusters.`);
     // Ideally maps to PUT /api/v1/admin/revenue/models
   };
 

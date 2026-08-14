@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation } from '../../context/LocationContext';
+import { useLocation } from '../context/LocationContext';
 import { API_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, X, ChevronRight, Navigation, Loader2 } from 'lucide-react';

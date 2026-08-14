@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Gift, Copy, Check, Users, Coins, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -16,11 +16,11 @@ export default function ReferralPage() {
   };
 
   const handleShare = async () => {
-    const text = \`Join LocalSampark using my invite code \${inviteCode} and we both get 500 LocalCoins! 🚀\`;
+    const text = `Join LocalSampark using my invite code ${inviteCode} and we both get 500 LocalCoins! 🚀`;
     if (navigator.share) {
       await navigator.share({ title: 'Join LocalSampark', text });
     } else {
-      window.open(\`https://wa.me/?text=\${encodeURIComponent(text)}\`, '_blank');
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
   };
 

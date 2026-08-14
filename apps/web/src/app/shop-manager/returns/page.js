@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { PackageX, CheckCircle, XCircle, AlertTriangle, MessageSquare } from 'lucide-react';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../components/ui/Toast';
 
 export default function ShopReturnsDashboard() {
   const { addToast } = useToast();

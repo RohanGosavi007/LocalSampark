@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { UploadCloud, FileSpreadsheet, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

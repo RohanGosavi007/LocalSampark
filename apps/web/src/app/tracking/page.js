@@ -1,11 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import Header from '../../components/Header';
+import React, { useState, useEffect, Suspense } from 'react';
+import Header from '../components/Header';
 import { useSearchParams } from 'next/navigation';
 import { Package, Clock, Truck, CheckCircle, MapPin } from 'lucide-react';
 import io from 'socket.io-client';
 
-export default function TrackingPage() {
+function TrackingPageInner() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('order_id');
   
@@ -118,5 +118,14 @@ export default function TrackingPage() {
 
       </div>
     </div>
+  );
+}
+
+
+export default function TrackingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <TrackingPageInner />
+    </Suspense>
   );
 }

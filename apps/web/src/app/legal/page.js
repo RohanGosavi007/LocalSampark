@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../components/Header';
+import Header from '../components/Header';
 import { Shield, FileText, RefreshCcw, HelpCircle } from 'lucide-react';
 
 export default function LegalHub() {

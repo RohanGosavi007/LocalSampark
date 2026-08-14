@@ -185,7 +185,7 @@ export default function RolesManagementPage() {
                     <td key={role.id} className="p-6 text-center border-l border-slate-800/50">
                       <button 
                         onClick={() => togglePermission(idx, perm.key)}
-                        className={\`w-8 h-8 rounded-full inline-flex items-center justify-center transition \${role.permissions[perm.key] ? 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}\`}
+                        className={`w-8 h-8 rounded-full inline-flex items-center justify-center transition ${role.permissions[perm.key] ? 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}
                       >
                         {role.permissions[perm.key] ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
                       </button>

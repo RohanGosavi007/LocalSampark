@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../components/Header';
+import Header from '../components/Header';
 import { Users, FileText, Wallet, Settings, Bell, Search, Filter, Download } from 'lucide-react';
 import SocietyDataExport from './components/SocietyDataExport';
 

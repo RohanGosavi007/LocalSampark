@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { AdminAuthProvider } from '@/context/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Wallet, Users, Settings, LogOut, MapPin, Briefcase, 
@@ -99,6 +100,16 @@ const sidebarGroups = [
 ];
 
 export default function AdminLayout({ children }) {
+  // The dashboard pages call useAdminAuth, so the provider has to sit above
+  // them. Without it they would read the fallback shape and never see a user.
+  return (
+    <AdminAuthProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </AdminAuthProvider>
+  );
+}
+
+function AdminLayoutInner({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, activeRole, loading } = useAuth();

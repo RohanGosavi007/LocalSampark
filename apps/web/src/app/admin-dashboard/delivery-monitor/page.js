@@ -35,7 +35,7 @@ export default function DeliveryMonitorPage() {
   }, []);
 
   const toggleAgentStatus = (id, currentStatus) => {
-    toast.success(\`Agent \${id} status updated to \${currentStatus === 'active' ? 'paused' : 'active'}\`);
+    toast.success(`Agent ${id} status updated to ${currentStatus === 'active' ? 'paused' : 'active'}`);
     // Optimistic UI
     setAgents(agents.map(a => a.id === id ? { ...a, status: currentStatus === 'active' ? 'paused' : 'active' } : a));
   };
@@ -119,7 +119,7 @@ export default function DeliveryMonitorPage() {
                   </td>
                   <td className="p-4 text-slate-400">{a.location}</td>
                   <td className="p-4">
-                    <span className={\`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold \${a.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : a.status === 'idle' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'}\`}>
+                    <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold ${a.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : a.status === 'idle' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'}`}>
                       {a.status}
                     </span>
                   </td>
@@ -127,7 +127,7 @@ export default function DeliveryMonitorPage() {
                   <td className="p-4 text-right">
                     <button 
                       onClick={() => toggleAgentStatus(a.id, a.status)}
-                      className={\`p-2 rounded-xl transition shadow-lg flex items-center gap-2 ml-auto font-bold text-sm \${a.status === 'active' || a.status === 'idle' ? 'bg-amber-600/20 text-amber-500 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30'}\`}
+                      className={`p-2 rounded-xl transition shadow-lg flex items-center gap-2 ml-auto font-bold text-sm ${a.status === 'active' || a.status === 'idle' ? 'bg-amber-600/20 text-amber-500 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30'}`}
                     >
                       {a.status === 'active' || a.status === 'idle' ? <PauseCircle className="w-4 h-4"/> : <PlayCircle className="w-4 h-4"/>}
                       {a.status === 'active' || a.status === 'idle' ? 'Pause' : 'Resume'}

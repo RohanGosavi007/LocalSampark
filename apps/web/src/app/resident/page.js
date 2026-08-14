@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import Header from '../../components/Header';
+import Header from '../components/Header';
 import { Store, MessageSquare, Briefcase, FileText, Wallet, PhoneCall, Check, X, Car } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import io from 'socket.io-client';

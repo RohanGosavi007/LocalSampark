@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import Header from '../../components/Header';
+import Header from '../components/Header';
 import { Package, MapPin, CheckCircle, Navigation, Phone } from 'lucide-react';
 import io from 'socket.io-client';
 

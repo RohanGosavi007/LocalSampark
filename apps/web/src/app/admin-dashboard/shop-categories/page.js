@@ -38,7 +38,7 @@ export default function ShopCategoriesPage() {
     try {
       const token = localStorage.getItem('admin_token');
       // Assume endpoint for adding category exists based on Phase 3 plan
-      toast.success(\`Category "\${newCatName}" creation queued.\`);
+      toast.success(`Category "${newCatName}" creation queued.`);
       setNewCatName('');
       setNewCatSlug('');
     } catch (err) {

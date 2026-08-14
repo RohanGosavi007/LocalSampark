@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Check, Star, Zap, Shield, Crown } from 'lucide-react';
 
 export default function ShopBillingPage() {

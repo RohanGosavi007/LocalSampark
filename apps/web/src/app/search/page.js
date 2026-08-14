@@ -1,12 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import Header from '../../components/Header';
+import React, { useState, useEffect, Suspense } from 'react';
+import Header from '../components/Header';
 import ShareWidget from '../../components/ShareWidget';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Star, Megaphone, ShoppingCart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 
-export default function GlobalSearchPage() {
+function GlobalSearchPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
@@ -103,7 +103,7 @@ export default function GlobalSearchPage() {
                           onClick={() => {
                             if (dispatch) {
                               dispatch({ type: 'ADD_ITEM', payload: { ...p, quantity: 1 } });
-                              alert(\`\${p.name} added to cart from Sponsored Ad!\`);
+                              alert(`${p.name} added to cart from Sponsored Ad!`);
                             }
                           }}
                           className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition-colors"
@@ -163,5 +163,14 @@ export default function GlobalSearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+
+export default function GlobalSearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <GlobalSearchPageInner />
+    </Suspense>
   );
 }

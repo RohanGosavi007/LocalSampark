@@ -161,7 +161,7 @@ export default function UsersManagementPage() {
                     )}
                   </td>
                   <td className="p-4">
-                    <span className={\`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold \${user.is_active !== false ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}\`}>
+                    <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold ${user.is_active !== false ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
                       {user.is_active !== false ? 'Active' : 'Blocked'}
                     </span>
                   </td>
@@ -179,7 +179,7 @@ export default function UsersManagementPage() {
                       </button>
                       <button 
                         onClick={() => toggleStatus(user.id, user.is_active !== false)}
-                        className={\`p-2 rounded-lg transition \${user.is_active !== false ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}\`}
+                        className={`p-2 rounded-lg transition ${user.is_active !== false ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}`}
                         title={user.is_active !== false ? "Block User" : "Unblock User"}
                       >
                         {user.is_active !== false ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../components/Header';
+import Header from '../components/Header';
 import { MessageSquare, Image as ImageIcon, ThumbsUp, Share2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 export default function TownsquarePage() {

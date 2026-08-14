@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { ShoppingBag, Truck, MapPin, Store, CheckCircle, ChevronRight, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

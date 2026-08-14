@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Heart, MessageCircle, Share2, ShoppingCart, Plus, Volume2, VolumeX } from 'lucide-react';
 import { useCart } from '../../../context/CartContext';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../components/ui/Toast';
 
 export default function DiscoverReels() {
   const [muted, setMuted] = useState(true);

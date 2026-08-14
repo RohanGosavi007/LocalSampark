@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Map as MapIcon, Users, Store, TrendingUp, AlertTriangle } from 'lucide-react';
 
 

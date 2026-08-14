@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { ShieldAlert, Users, Car, CheckCircle, Video, PhoneCall, LogOut, Search, Clock, Box, Shield, X, Camera } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { API_URL } from '@/lib/api';
-import WebRTCIntercom from '../components/WebRTCIntercom';
+import WebRTCIntercom from '../../components/WebRTCIntercom';
 
 export default function SecurityDashboard() {
   const { token, user } = useAuth();

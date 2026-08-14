@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { Megaphone, TrendingUp, Target, Plus, BarChart2, DollarSign, SwitchCamera, Play, Pause, Trash2 } from 'lucide-react';
 
 export default function AdsManagerPage() {
@@ -129,7 +129,7 @@ export default function AdsManagerPage() {
                     <td className="p-4">
                       <p className="font-bold">₹{c.spent} <span className="text-slate-400 font-normal">/ ₹{c.budget}</span></p>
                       <div className="w-24 h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: \`\${(c.spent/c.budget)*100}%\` }}></div>
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(c.spent/c.budget)*100}%` }}></div>
                       </div>
                     </td>
                     <td className="p-4">

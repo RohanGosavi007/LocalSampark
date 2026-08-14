@@ -15,7 +15,7 @@ import {
   Clock, MapPin, Briefcase, CheckCircle, Eye, ArrowRight, Sparkles
 } from 'lucide-react';
 import StoriesRow from '../components/StoriesRow';
-import WebRTCIntercom from '../components/WebRTCIntercom';
+import WebRTCIntercom from '../../components/WebRTCIntercom';
 import { useAuth } from '@/context/AuthContext';
 
 // Map service IDs to lucide icons

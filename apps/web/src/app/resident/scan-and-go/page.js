@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import Header from '../../../components/Header';
+import Header from '../../components/Header';
 import { ScanLine, ShoppingBag, ArrowRight, Store, X, Plus, Minus, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
