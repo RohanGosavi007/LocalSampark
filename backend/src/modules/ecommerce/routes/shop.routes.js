@@ -975,6 +975,190 @@ router.get('/:id/reviews', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// ─── SHOP CHAT ───────────────────────────────────────────────────────────────
+// Conversation between the signed-in customer and the shop owner.
+router.get('/:id/chat', authenticate, async (req, res, next) => {
+  try {
+    const shop = await queryOne('SELECT id, owner_id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    const isOwner = String(shop.owner_id) === String(req.user.id);
+    // The owner reads the whole shop inbox; a customer sees only their thread.
+    const rows = await query(
+      isOwner
+        ? `SELECT * FROM shop_chat_messages WHERE shop_id = $1 ORDER BY created_at ASC LIMIT 200`
+        : `SELECT * FROM shop_chat_messages
+            WHERE shop_id = $1 AND (sender_id = $2 OR receiver_id = $2)
+            ORDER BY created_at ASC LIMIT 200`,
+      isOwner ? [req.params.id] : [req.params.id, req.user.id]
+    );
+
+    res.json(rows.rows || rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/chat', authenticate, async (req, res, next) => {
+  try {
+    const { message, messageType, referenceId } = req.body;
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ error: 'message is required' });
+    }
+
+    const shop = await queryOne('SELECT id, owner_id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    // A customer writes to the owner; the owner replies to the named customer.
+    const isOwner = String(shop.owner_id) === String(req.user.id);
+    const receiverId = isOwner ? (req.body.receiverId || null) : shop.owner_id;
+    if (isOwner && !receiverId) {
+      return res.status(400).json({ error: 'receiverId is required when the shop owner replies' });
+    }
+
+    const id = crypto.randomUUID();
+    await query(
+      `INSERT INTO shop_chat_messages
+         (id, shop_id, sender_id, receiver_id, message, message_type, reference_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, req.params.id, req.user.id, receiverId, message, messageType || 'text', referenceId || null]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`room:shop:${req.params.id}`).emit('SHOP_CHAT_MESSAGE', {
+        id, shopId: req.params.id, senderId: req.user.id, receiverId, message,
+      });
+    }
+
+    res.status(201).json({ success: true, id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── ORDER HISTORY, REVIEW, RIDER ASSIGNMENT ────────────────────────────────
+router.get('/:id/orders/history', authenticate, async (req, res, next) => {
+  try {
+    const shop = await queryOne('SELECT id, owner_id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    // Owners see every order for the shop; customers see only their own.
+    const isOwner = String(shop.owner_id) === String(req.user.id);
+    const rows = await query(
+      isOwner
+        ? `SELECT o.*, u.full_name AS customer_name
+             FROM orders o LEFT JOIN users u ON o.user_id = u.id
+            WHERE o.shop_id = $1 ORDER BY o.created_at DESC LIMIT 100`
+        : `SELECT o.* FROM orders o
+            WHERE o.shop_id = $1 AND o.user_id = $2
+            ORDER BY o.created_at DESC LIMIT 100`,
+      isOwner ? [req.params.id] : [req.params.id, req.user.id]
+    );
+
+    const orders = rows.rows || rows;
+    if (orders.length === 0) return res.json({ success: true, orders: [] });
+
+    // Single batched item fetch rather than one query per order.
+    const itemRows = await query(
+      `SELECT order_id, product_id, name, price, quantity
+         FROM order_items WHERE order_id = ANY($1::uuid[])`,
+      [orders.map((o) => o.id)]
+    );
+    const byOrder = new Map();
+    for (const it of itemRows.rows || itemRows) {
+      if (!byOrder.has(it.order_id)) byOrder.set(it.order_id, []);
+      byOrder.get(it.order_id).push(it);
+    }
+    for (const o of orders) o.items = byOrder.get(o.id) || [];
+
+    res.json({ success: true, orders });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/orders/:orderId/review', authenticate, async (req, res, next) => {
+  try {
+    const rating = parseInt(req.body.rating, 10);
+    const review = req.body.review || req.body.review_text || null;
+
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'rating must be an integer between 1 and 5' });
+    }
+
+    // Only the buyer of a delivered order may review it.
+    const order = await queryOne(
+      'SELECT id, user_id, order_status FROM orders WHERE id = $1 AND shop_id = $2',
+      [req.params.orderId, req.params.id]
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found for this shop' });
+    if (String(order.user_id) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'You can only review your own orders' });
+    }
+    if (order.order_status !== 'delivered') {
+      return res.status(400).json({ error: 'Only delivered orders can be reviewed' });
+    }
+
+    // shop_reviews is unique per (shop_id, user_id), so a second review from the
+    // same customer updates their existing rating rather than failing.
+    await query(
+      `INSERT INTO shop_reviews (shop_id, user_id, rating, review_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (shop_id, user_id) DO UPDATE
+         SET rating = EXCLUDED.rating, review_text = EXCLUDED.review_text`,
+      [req.params.id, req.user.id, rating, review]
+    );
+
+    res.status(201).json({ success: true, message: 'Review saved' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:id/orders/:orderId/assign-rider', authenticate, async (req, res, next) => {
+  try {
+    const { riderId } = req.body;
+    if (!riderId) return res.status(400).json({ error: 'riderId is required' });
+
+    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin) {
+      return res.status(403).json({ error: 'Only the shop owner can assign a rider' });
+    }
+
+    const order = await queryOne(
+      'SELECT id FROM orders WHERE id = $1 AND shop_id = $2',
+      [req.params.orderId, req.params.id]
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found for this shop' });
+
+    // order_tracking holds one row per order, created at checkout.
+    await query(
+      `INSERT INTO order_tracking (order_id, runner_id)
+       VALUES ($1, $2)
+       ON CONFLICT (order_id) DO UPDATE SET runner_id = EXCLUDED.runner_id`,
+      [req.params.orderId, riderId]
+    );
+
+    await query(
+      `UPDATE orders SET order_status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [req.params.orderId]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${req.params.orderId}`).emit('ORDER_RIDER_ASSIGNED', {
+        orderId: req.params.orderId, riderId,
+      });
+    }
+
+    res.json({ success: true, orderId: req.params.orderId, riderId });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ─── SHOP-SCOPED LOYALTY ─────────────────────────────────────────────────────
 const shopLoyalty = require('../services/shop-loyalty.service');
 

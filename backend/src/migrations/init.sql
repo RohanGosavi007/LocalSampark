@@ -2808,8 +2808,10 @@ CREATE TABLE IF NOT EXISTS cart_items (
 
 CREATE TABLE IF NOT EXISTS order_tracking (
     id SERIAL PRIMARY KEY,
-    order_id INTEGER NOT NULL UNIQUE,
-    runner_id INTEGER NULL,
+    -- orders.id is UUID and delivery_riders.id is TEXT; both were declared
+    -- INTEGER here, so the foreign key could never be satisfied.
+    order_id UUID NOT NULL UNIQUE,
+    runner_id TEXT NULL,
     current_lat REAL NULL,
     current_lng REAL NULL,
     estimated_arrival TIMESTAMP NULL,
@@ -5270,53 +5272,7 @@ CREATE INDEX IF NOT EXISTS idx_flash_sales_product_id ON flash_sales(product_id)
 CREATE INDEX IF NOT EXISTS idx_delivery_wallets_agent_id ON delivery_wallets(agent_id);
 CREATE INDEX IF NOT EXISTS idx_delivery_wallet_transactions_wallet_id ON delivery_wallet_transactions(wallet_id);
 CREATE INDEX IF NOT EXISTS idx_delivery_analytics_agent_id ON delivery_analytics(agent_id);
-CREATE INDEX IF NOT EXISTS idx_delivery_batches_FOREIGN ON delivery_batches(FOREIGN);
 CREATE INDEX IF NOT EXISTS idx_delivery_jobs_assigned_agent_id ON delivery_jobs(assigned_agent_id);
-CREATE INDEX IF NOT EXISTS idx_delivery_telemetry_FOREIGN ON delivery_telemetry(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_referrals_FOREIGN ON referrals(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_referrals_FOREIGN ON referrals(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_reward_coins_ledger_FOREIGN ON reward_coins_ledger(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_reviews_FOREIGN ON reviews(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_members_FOREIGN ON society_members(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_visitor_logs_FOREIGN ON visitor_logs(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_maintenance_bills_FOREIGN ON maintenance_bills(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_notices_FOREIGN ON society_notices(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_helpdesk_FOREIGN ON society_helpdesk(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_amenities_FOREIGN ON society_amenities(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_amenity_bookings_FOREIGN ON amenity_bookings(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_polls_FOREIGN ON society_polls(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_classifieds_FOREIGN ON society_classifieds(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_daily_staff_FOREIGN ON daily_staff(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_daily_staff_flats_FOREIGN ON daily_staff_flats(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_vehicles_FOREIGN ON vehicles(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_parcel_desk_FOREIGN ON parcel_desk(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_child_security_FOREIGN ON child_security(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_pet_registry_FOREIGN ON pet_registry(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_move_passes_FOREIGN ON move_passes(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_vault_FOREIGN ON society_vault(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_expenses_FOREIGN ON society_expenses(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_blood_donors_FOREIGN ON blood_donors(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_utility_meters_FOREIGN ON utility_meters(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_meter_recharges_FOREIGN ON meter_recharges(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_intercom_logs_FOREIGN ON intercom_logs(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_group_buy_campaigns_FOREIGN ON group_buy_campaigns(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_group_buy_orders_FOREIGN ON group_buy_orders(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_carpools_FOREIGN ON society_carpools(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_resident_directory_FOREIGN ON resident_directory(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_lost_and_found_FOREIGN ON lost_and_found(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_ev_charging_stations_FOREIGN ON ev_charging_stations(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_ev_charging_sessions_FOREIGN ON ev_charging_sessions(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_water_meters_FOREIGN ON water_meters(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_society_karma_ledger_FOREIGN ON society_karma_ledger(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_cpr_responders_FOREIGN ON cpr_responders(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_ai_cctv_alerts_FOREIGN ON ai_cctv_alerts(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_faceid_profiles_FOREIGN ON faceid_profiles(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_iot_waste_bins_FOREIGN ON iot_waste_bins(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_housekeeping_tasks_FOREIGN ON housekeeping_tasks(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_drone_pad_deliveries_FOREIGN ON drone_pad_deliveries(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_delivery_agents_FOREIGN ON delivery_agents(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_order_dispatch_FOREIGN ON order_dispatch(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_agent_payouts_FOREIGN ON agent_payouts(FOREIGN);
 CREATE INDEX IF NOT EXISTS idx_shop_disputes_shop_id ON shop_disputes(shop_id);
 CREATE INDEX IF NOT EXISTS idx_shop_disputes_initiator_id ON shop_disputes(initiator_id);
 CREATE INDEX IF NOT EXISTS idx_shop_disputes_resolved_by ON shop_disputes(resolved_by);
@@ -5366,25 +5322,8 @@ CREATE INDEX IF NOT EXISTS idx_locality_challenges_region_id ON locality_challen
 CREATE INDEX IF NOT EXISTS idx_user_challenge_progress_user_id ON user_challenge_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_challenge_progress_challenge_id ON user_challenge_progress(challenge_id);
 CREATE INDEX IF NOT EXISTS idx_file_uploads_uploader_id ON file_uploads(uploader_id);
-CREATE INDEX IF NOT EXISTS idx_scrap_pickups_FOREIGN ON scrap_pickups(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_cart_items_FOREIGN ON cart_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_cart_items_FOREIGN ON cart_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_orders_FOREIGN ON orders(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_orders_FOREIGN ON orders(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_order_items_FOREIGN ON order_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_order_items_FOREIGN ON order_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_order_tracking_FOREIGN ON order_tracking(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_product_variants_FOREIGN ON product_variants(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_user_addresses_FOREIGN ON user_addresses(FOREIGN);
 CREATE INDEX IF NOT EXISTS idx_vendor_subscriptions_shop_id ON vendor_subscriptions(shop_id);
 CREATE INDEX IF NOT EXISTS idx_vendor_subscriptions_plan_id ON vendor_subscriptions(plan_id);
-CREATE INDEX IF NOT EXISTS idx_home_service_providers_FOREIGN ON home_service_providers(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_home_service_bookings_FOREIGN ON home_service_bookings(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_home_service_bookings_FOREIGN ON home_service_bookings(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_medical_appointments_FOREIGN ON medical_appointments(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_job_applications_FOREIGN ON job_applications(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_property_inquiries_FOREIGN ON property_inquiries(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_event_rsvps_FOREIGN ON event_rsvps(FOREIGN);
 CREATE INDEX IF NOT EXISTS idx_location_districts_state_id ON location_districts(state_id);
 CREATE INDEX IF NOT EXISTS idx_location_talukas_district_id ON location_talukas(district_id);
 CREATE INDEX IF NOT EXISTS idx_territories_taluka_id ON territories(taluka_id);
@@ -5415,14 +5354,6 @@ CREATE INDEX IF NOT EXISTS idx_data_breach_log_reported_by ON data_breach_log(re
 CREATE INDEX IF NOT EXISTS idx_sync_watermarks_user_id ON sync_watermarks(user_id);
 CREATE INDEX IF NOT EXISTS idx_offline_mutations_user_id ON offline_mutations(user_id);
 CREATE INDEX IF NOT EXISTS idx_shop_analytics_daily_shop_id ON shop_analytics_daily(shop_id);
-CREATE INDEX IF NOT EXISTS idx_universal_catalog_items_FOREIGN ON universal_catalog_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_universal_orders_FOREIGN ON universal_orders(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_universal_orders_FOREIGN ON universal_orders(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_universal_order_items_FOREIGN ON universal_order_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_universal_order_items_FOREIGN ON universal_order_items(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_universal_leads_FOREIGN ON universal_leads(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_universal_leads_FOREIGN ON universal_leads(FOREIGN);
-CREATE INDEX IF NOT EXISTS idx_live_tracking_FOREIGN ON live_tracking(FOREIGN);
 
 -- Geospatial GIST Indexes
 CREATE INDEX IF NOT EXISTS idx_geo_societies_coordinate ON societies USING GIST (coordinate);
