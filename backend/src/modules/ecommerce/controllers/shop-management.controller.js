@@ -1256,15 +1256,17 @@ async function searchDirectory(req, res, next) {
       return res.json({ success: true, shops: [] });
     }
 
-    // Attempt to use FTS5 Virtual Table for fast search
+    // Full-text search via the tsvector column on local_shops. This replaced a
+    // query against a SQLite FTS5 virtual table, which cannot exist on Postgres.
     let shops = [];
     try {
       shops = await queryMany(`
-        SELECT s.id, s.name, s.description, s.category, s.cover_image, s.rating, s.total_ratings, s.is_promoted
-        FROM shop_search_index fts
-        JOIN local_shops s ON fts.shop_id = s.id
-        WHERE shop_search_index MATCH $1
-        ORDER BY s.is_promoted DESC, rank LIMIT 50
+        SELECT s.id, s.name, s.description, s.category, s.cover_image, s.rating, s.total_ratings, s.is_promoted,
+               ts_rank(s.search_vector, websearch_to_tsquery('english', $1)) AS rank
+        FROM local_shops s
+        WHERE s.search_vector @@ websearch_to_tsquery('english', $1)
+        ORDER BY s.is_promoted DESC, rank DESC
+        LIMIT 50
       `, [q]);
     } catch (ftsError) {
       // Fallback to standard wildcard search if FTS table does not exist or fails

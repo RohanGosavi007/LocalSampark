@@ -81,24 +81,17 @@ router.get('/', async (req, res, next) => {
     }
     params.push(limit);
 
-    // Targets local_services, the same table /nearby reads. NOTE: that table is
-    // not declared in migrations, so this returns an empty list until the
-    // services schema is added.
-    let data = [];
-    try {
-      const rows = await query(
-        `SELECT * FROM local_services
-          WHERE ${clauses.join(' AND ')}
-          ORDER BY name ASC
-          LIMIT $${params.length}`,
-        params
-      );
-      data = rows.rows || rows;
-    } catch (e) {
-      if (!/does not exist|no such table/i.test(e.message)) throw e;
-      console.warn('[SERVICES] local_services is not present in this database');
-    }
+    const rows = await query(
+      `SELECT id, name, category, description, provider_name, base_price,
+              duration_mins, pincode, image_url, rating, total_ratings, status
+         FROM local_services
+        WHERE ${clauses.join(' AND ')}
+        ORDER BY rating DESC, name ASC
+        LIMIT $${params.length}`,
+      params
+    );
 
+    const data = rows.rows || rows;
     res.json({ success: true, data, services: data });
   } catch (error) {
     next(error);

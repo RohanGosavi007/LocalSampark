@@ -864,27 +864,6 @@ CREATE TABLE IF NOT EXISTS society_notices (
 );
 
 -- ─── SOCIETY VISITORS ───────────────────────────────────────
-CREATE TABLE IF NOT EXISTS society_visitors (
-    id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    resident_id TEXT REFERENCES users(id),
-    guard_id TEXT REFERENCES users(id),
-    visitor_name TEXT NOT NULL,
-    visitor_phone TEXT,
-    purpose TEXT DEFAULT 'guest',
-    vehicle_number TEXT,
-    visitor_photo_url TEXT,
-    id_card_photo_url TEXT,
-    flat_number TEXT,
-    status TEXT DEFAULT 'pending',
-    approved_at TEXT,
-    checked_in_at TEXT,
-    checked_out_at TEXT,
-    qr_code TEXT,
-    expected_at TEXT,
-    notes TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
 
 -- ─── SOCIETY VISITOR LOG ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_visitor_log (
@@ -1026,23 +1005,6 @@ CREATE TABLE IF NOT EXISTS society_amenity_bookings (
 );
 
 -- ─── COMPLAINTS ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS society_complaints (
-    id TEXT PRIMARY KEY,
-    society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
-    filed_by TEXT REFERENCES users(id),
-    flat_number TEXT,
-    category TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    photo_urls TEXT DEFAULT '[]',
-    priority TEXT DEFAULT 'medium',
-    status TEXT DEFAULT 'open',
-    assigned_to TEXT,
-    admin_notes TEXT,
-    resolved_at TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
 
 -- ─── PACKAGES ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS society_packages (
@@ -1363,7 +1325,7 @@ CREATE INDEX IF NOT EXISTS idx_shop_orders_delivery ON shop_orders (delivery_typ
 -- ═══════════════════════════════════════════════════════════
 
 -- Product-Based Categories
-INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
+INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
 ('cat_001', 'Grocery & Supermarkets', 'grocery-supermarkets', '🛒', 'product', 5.0, 10.0, 1, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":false}]'),
 ('cat_002', 'Restaurants & Cafes', 'restaurants-cafes', '🍽️', 'product', 8.0, 15.0, 2, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":true},{"field":"cuisine_type","label":"Cuisine Type","type":"text","required":false}]'),
 ('cat_003', 'Pharmacy & Healthcare', 'pharmacy-healthcare', '💊', 'product', 4.0, 5.0, 3, '[{"field":"drug_license","label":"Drug License No.","type":"text","required":true}]'),
@@ -1374,10 +1336,10 @@ INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, com
 ('cat_008', 'Pet Care & Supplies', 'pet-care-supplies', '🐾', 'product', 7.0, 10.0, 8, '[]'),
 ('cat_009', 'Pooja Samagri & Religious', 'pooja-samagri-religious', '🪔', 'product', 5.0, 5.0, 9, '[]'),
 ('cat_015', 'Hardware & Sanitary', 'hardware-sanitary', '🔧', 'product', 5.0, 10.0, 15, '[]'),
-('cat_016', 'Clothing & Fashion', 'clothing-fashion', '👗', 'product', 7.0, 10.0, 16, '[]');
+('cat_016', 'Clothing & Fashion', 'clothing-fashion', '👗', 'product', 7.0, 10.0, 16, '[]') ON CONFLICT DO NOTHING;
 
 -- Appointment-Based Categories
-INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
+INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
 ('cat_011', 'Home Services & Plumbers', 'home-services-plumbers', '🔧', 'appointment', 12.0, 20.0, 11, '[{"field":"service_area_pincodes","label":"Service Area Pincodes","type":"text","required":false}]'),
 ('cat_012', 'Salon, Beauty & Spa', 'salon-beauty-spa', '💇', 'appointment', 10.0, 15.0, 12, '[]'),
 ('cat_014', 'Tutors & Education', 'tutors-education', '📖', 'appointment', 10.0, 10.0, 14, '[{"field":"qualification","label":"Qualification / Degree","type":"text","required":false}]'),
@@ -1401,14 +1363,14 @@ INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, com
 ('cat_036', 'Lawyers & Advocates', 'lawyers-advocates', '⚖️', 'appointment', 5.0, 25.0, 36, '[{"field":"bar_council_reg","label":"Bar Council Registration","type":"text","required":true}]'),
 ('cat_037', 'Insurance Agents', 'insurance-agents', '🛡️', 'appointment', 5.0, 15.0, 37, '[{"field":"irda_license","label":"IRDA License No.","type":"text","required":true}]'),
 ('cat_038', 'Yoga & Wellness', 'yoga-wellness', '🧘', 'appointment', 8.0, 10.0, 38, '[{"field":"yoga_cert","label":"Yoga Alliance Certification","type":"text","required":false}]'),
-('cat_039', 'Dieticians & Nutritionists', 'dieticians-nutritionists', '🥗', 'appointment', 10.0, 15.0, 39, '[{"field":"degree_cert","label":"Degree / Certification","type":"text","required":false}]');
+('cat_039', 'Dieticians & Nutritionists', 'dieticians-nutritionists', '🥗', 'appointment', 10.0, 15.0, 39, '[{"field":"degree_cert","label":"Degree / Certification","type":"text","required":false}]') ON CONFLICT DO NOTHING;
 
 -- Hybrid Categories
-INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
+INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
 ('cat_010', 'Eyewear & Opticians', 'eyewear-opticians', '👓', 'hybrid', 6.0, 10.0, 10, '[{"field":"optometrist_license","label":"Optometrist License","type":"text","required":false}]'),
 ('cat_013', 'Electricians & Electronics', 'electricians-electronics', '⚡', 'hybrid', 8.0, 15.0, 13, '[]'),
 ('cat_019', 'Automotive & Mechanic', 'automotive-mechanic', '🔩', 'hybrid', 8.0, 20.0, 19, '[{"field":"workshop_license","label":"Workshop License","type":"text","required":false}]'),
-('cat_028', 'Laundry & Dry Cleaning', 'laundry-dry-cleaning', '👔', 'hybrid', 8.0, 10.0, 28, '[]');
+('cat_028', 'Laundry & Dry Cleaning', 'laundry-dry-cleaning', '👔', 'hybrid', 8.0, 10.0, 28, '[]') ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -1644,18 +1606,6 @@ CREATE TABLE IF NOT EXISTS delivery_incentives (
 -- 013_engagement_engines.sqlite.sql
 
 -- 1. Referrals Table
-CREATE TABLE IF NOT EXISTS referrals (
-    id TEXT PRIMARY KEY,
-    referrer_id TEXT NOT NULL,
-    referee_id TEXT,
-    referral_code TEXT NOT NULL UNIQUE,
-    status TEXT DEFAULT 'pending', -- pending, completed
-    reward_issued INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (referrer_id) REFERENCES users(id),
-    FOREIGN KEY (referee_id) REFERENCES users(id)
-);
 
 -- 2. Reward Coins Ledger
 CREATE TABLE IF NOT EXISTS reward_coins_ledger (
@@ -1694,26 +1644,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 -- Contains 38 advanced tables for the ultimate smart city application
 
 -- 1. Core
-CREATE TABLE IF NOT EXISTS societies (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    region_id TEXT NOT NULL,
-    address TEXT,
-    subscription_fee REAL DEFAULT 0.0,
-    is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE IF NOT EXISTS society_members (
-    id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    flat_number TEXT NOT NULL,
-    role TEXT DEFAULT 'resident', -- 'admin', 'resident', 'guard', 'housekeeping'
-    status TEXT DEFAULT 'pending', -- 'pending', 'active', 'inactive'
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(society_id) REFERENCES societies(id)
-);
 
 CREATE TABLE IF NOT EXISTS visitor_logs (
     id TEXT PRIMARY KEY,
@@ -1743,15 +1674,6 @@ CREATE TABLE IF NOT EXISTS maintenance_bills (
     FOREIGN KEY(society_id) REFERENCES societies(id)
 );
 
-CREATE TABLE IF NOT EXISTS society_notices (
-    id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    content TEXT,
-    created_by TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(society_id) REFERENCES societies(id)
-);
 
 -- 2. Add-Ons Pack 1
 CREATE TABLE IF NOT EXISTS society_helpdesk (
@@ -1765,14 +1687,6 @@ CREATE TABLE IF NOT EXISTS society_helpdesk (
     FOREIGN KEY(society_id) REFERENCES societies(id)
 );
 
-CREATE TABLE IF NOT EXISTS society_amenities (
-    id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    hourly_rate REAL DEFAULT 0.0,
-    is_active INTEGER DEFAULT 1,
-    FOREIGN KEY(society_id) REFERENCES societies(id)
-);
 
 CREATE TABLE IF NOT EXISTS amenity_bookings (
     id TEXT PRIMARY KEY,
@@ -1785,15 +1699,6 @@ CREATE TABLE IF NOT EXISTS amenity_bookings (
     FOREIGN KEY(amenity_id) REFERENCES society_amenities(id)
 );
 
-CREATE TABLE IF NOT EXISTS society_polls (
-    id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
-    question TEXT NOT NULL,
-    options TEXT NOT NULL, -- JSON array of options
-    expires_at TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(society_id) REFERENCES societies(id)
-);
 
 CREATE TABLE IF NOT EXISTS society_classifieds (
     id TEXT PRIMARY KEY,
@@ -2099,18 +2004,6 @@ CREATE TABLE IF NOT EXISTS drone_pad_deliveries (
 
 -- Phase 9: Merchant Ecosystem & Hyperlocal Delivery Fleet
 
-CREATE TABLE IF NOT EXISTS delivery_agents (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    region_id TEXT NOT NULL,
-    vehicle_number TEXT,
-    status TEXT DEFAULT 'offline', -- 'offline', 'available', 'busy'
-    current_lat REAL,
-    current_lng REAL,
-    rating REAL DEFAULT 5.0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(region_id) REFERENCES regions(id)
-);
 
 CREATE TABLE IF NOT EXISTS order_dispatch (
     id TEXT PRIMARY KEY,
@@ -2149,7 +2042,7 @@ CREATE TABLE IF NOT EXISTS agent_payouts (
 -- SECTION 1: 16 NEW ESSENTIAL SHOP CATEGORIES
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
+INSERT INTO shop_categories (id, name, slug, icon, business_model, commission_percent, convenience_fee, display_order, registration_fields) VALUES
 -- Hybrid Categories (New)
 ('cat_040', 'Tiffin & Meal Subscription', 'tiffin-meal-subscription', '🍱', 'hybrid', 8.0, 15.0, 40, '[{"field":"fssai_license","label":"FSSAI License No.","type":"text","required":true},{"field":"cuisine_type","label":"Cuisine Type","type":"text","required":false}]'),
 ('cat_041', 'Mobile & Computer Repair', 'mobile-computer-repair', '📱', 'hybrid', 10.0, 20.0, 41, '[{"field":"gst_number","label":"GST Number","type":"text","required":false}]'),
@@ -2170,7 +2063,7 @@ INSERT OR IGNORE INTO shop_categories (id, name, slug, icon, business_model, com
 ('cat_051', 'Interior Design & Decor', 'interior-design-decor', '🎨', 'appointment', 8.0, 25.0, 51, '[{"field":"portfolio_link","label":"Portfolio Link","type":"text","required":false}]'),
 ('cat_052', 'Painting & Renovation', 'painting-renovation', '🎨', 'appointment', 10.0, 20.0, 52, '[]'),
 ('cat_054', 'Coaching & Test Prep', 'coaching-test-prep', '🎓', 'appointment', 8.0, 15.0, 54, '[{"field":"center_affiliation","label":"Board/University Affiliation","type":"text","required":false}]'),
-('cat_055', 'Astrologer & Pandit', 'astrologer-pandit', '🪷', 'appointment', 5.0, 10.0, 55, '[]');
+('cat_055', 'Astrologer & Pandit', 'astrologer-pandit', '🪷', 'appointment', 5.0, 10.0, 55, '[]') ON CONFLICT DO NOTHING;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -2719,7 +2612,9 @@ ALTER TABLE shop_reviews ADD COLUMN is_flagged INTEGER DEFAULT 0;
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Unified Order History View (orders + appointments for a user)
-CREATE VIEW IF NOT EXISTS visitor_order_history AS
+-- Postgres has no CREATE VIEW IF NOT EXISTS; CREATE OR REPLACE is the
+-- equivalent and is also re-runnable.
+CREATE OR REPLACE VIEW visitor_order_history AS
 SELECT
     o.id,
     'product_order' as type,
@@ -2884,17 +2779,17 @@ CREATE TABLE IF NOT EXISTS medical_providers (
 );
 
 -- Dummy data to populate the tables for demo
-INSERT OR IGNORE INTO medical_providers (id, provider_name, type, license_no, zone, status, is_verified) 
+INSERT INTO medical_providers (id, provider_name, type, license_no, zone, status, is_verified) 
 VALUES 
 ('med_1', 'Dr. Sharma Clinic', 'Clinic', 'MED-12345', 'North Zone', 'active', 1),
 ('med_2', 'City Pharmacy', 'Pharmacy', 'PHM-98765', 'East Zone', 'active', 1),
-('med_3', 'HealthFirst Lab', 'Diagnostic', 'DIA-55555', 'South Zone', 'pending', 0);
+('med_3', 'HealthFirst Lab', 'Diagnostic', 'DIA-55555', 'South Zone', 'pending', 0) ON CONFLICT DO NOTHING;
 
-INSERT OR IGNORE INTO crm_leads (id, first_name, last_name, phone, lead_source, status) 
+INSERT INTO crm_leads (id, first_name, last_name, phone, lead_source, status) 
 VALUES 
 ('lead_1', 'Rajesh', 'Kumar', '+919876543210', 'Website Inquiry', 'new'),
 ('lead_2', 'Sneha', 'Patel', '+919876543211', 'Referral', 'contacted'),
-('lead_3', 'Amit', 'Singh', '+919876543212', 'Social Media', 'converted');
+('lead_3', 'Amit', 'Singh', '+919876543212', 'Social Media', 'converted') ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -2959,21 +2854,21 @@ CREATE TABLE IF NOT EXISTS feature_flags (
 
 -- Seed Initial 10x GTM Rollout Matrix
 -- Phase 1 (The Wedge): Neighborhood Shops & Society Management (Active by default)
-INSERT OR IGNORE INTO feature_flags (feature_key, phase, is_enabled, title, description, coming_soon_headline, coming_soon_message) VALUES
+INSERT INTO feature_flags (feature_key, phase, is_enabled, title, description, coming_soon_headline, coming_soon_message) VALUES
 ('neighborhood_shops', 1, 1, 'Neighborhood Shops', 'Hyperlocal local store ordering & delivery', 'Shops Coming Soon', 'We are onboarding your local neighborhood stores.'),
-('society_management', 1, 1, 'Society Management', 'Gatekeeper, notices, maintenance & community management', 'Society Portal Coming Soon', 'Society management features are being enabled for your complex.');
+('society_management', 1, 1, 'Society Management', 'Gatekeeper, notices, maintenance & community management', 'Society Portal Coming Soon', 'Society management features are being enabled for your complex.') ON CONFLICT DO NOTHING;
 
 -- Phase 2 (The Expansion): Home Services & Medical (Locked by default)
-INSERT OR IGNORE INTO feature_flags (feature_key, phase, is_enabled, title, description, coming_soon_headline, coming_soon_message) VALUES
+INSERT INTO feature_flags (feature_key, phase, is_enabled, title, description, coming_soon_headline, coming_soon_message) VALUES
 ('home_services', 2, 0, 'Home Services', 'Plumbers, electricians, cleaners & technicians', 'Home Services Launching Soon!', 'We are handpicking verified local plumbers, electricians, and technicians in your area.'),
-('medical', 2, 0, 'Medical & Health', 'Doctor appointments, local pharmacies & diagnostics', 'Medical Care Coming Soon!', 'Local pharmacies and clinic booking will be available in your pincode soon.');
+('medical', 2, 0, 'Medical & Health', 'Doctor appointments, local pharmacies & diagnostics', 'Medical Care Coming Soon!', 'Local pharmacies and clinic booking will be available in your pincode soon.') ON CONFLICT DO NOTHING;
 
 -- Phase 3 (The Super-App): Jobs, Properties, Events, Multilingual (Locked by default)
-INSERT OR IGNORE INTO feature_flags (feature_key, phase, is_enabled, title, description, coming_soon_headline, coming_soon_message) VALUES
+INSERT INTO feature_flags (feature_key, phase, is_enabled, title, description, coming_soon_headline, coming_soon_message) VALUES
 ('jobs', 3, 0, 'Local Jobs', 'Hyperlocal job postings and candidate matching', 'Local Job Portal Arriving Soon!', 'Find jobs within 5km of your location soon.'),
 ('properties', 3, 0, 'Properties', 'Buy, sell, and rent local real estate without brokers', 'Local Real Estate Coming Soon!', 'Direct buyer-to-owner property listings are preparing to launch.'),
 ('events', 3, 0, 'Community Events', 'Local gatherings, workshops, and society events', 'Local Events Coming Soon!', 'Discover workshops and events happening in your neighborhood soon.'),
-('multilingual', 3, 0, 'Regional Languages', 'Support for regional local languages', 'Regional Languages Coming Soon!', 'Native language support will be enabled in an upcoming release.');
+('multilingual', 3, 0, 'Regional Languages', 'Support for regional local languages', 'Regional Languages Coming Soon!', 'Native language support will be enabled in an upcoming release.') ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -3042,12 +2937,12 @@ CREATE TABLE IF NOT EXISTS home_service_bookings (
 );
 
 -- Seed Default Categories
-INSERT OR IGNORE INTO home_service_categories (id, name, icon, description, base_inspection_fee) VALUES
+INSERT INTO home_service_categories (id, name, icon, description, base_inspection_fee) VALUES
 ('cat_plumbing', 'Plumbing & Pipe Repair', 'wrench', 'Fix leaks, blockages, taps, and sanitary fittings', 199.00),
 ('cat_electrical', 'Electrical Repair & Wiring', 'zap', 'Short circuits, fan installation, wiring, and switchboards', 199.00),
 ('cat_ac_service', 'AC Repair & Servicing', 'wind', 'Filter cleaning, gas refill, and cooling troubleshooting', 349.00),
 ('cat_deep_cleaning', 'Home & Sofa Cleaning', 'sparkles', 'Full home deep cleaning, sofa, and kitchen sanitization', 499.00),
-('cat_carpentry', 'Carpentry & Furniture', 'hammer', 'Door repair, furniture assembly, and wooden locks', 249.00);
+('cat_carpentry', 'Carpentry & Furniture', 'hammer', 'Door repair, furniture assembly, and wooden locks', 249.00) ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -3102,17 +2997,6 @@ CREATE TABLE IF NOT EXISTS job_postings (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS job_applications (
-    id TEXT PRIMARY KEY,
-    job_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    applicant_name TEXT NOT NULL,
-    applicant_phone TEXT NOT NULL,
-    experience_summary TEXT,
-    status TEXT DEFAULT 'submitted',
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(job_id) REFERENCES job_postings(id)
-);
 
 -- C. Direct Properties Module (Extending existing property_listings table if needed)
 CREATE TABLE IF NOT EXISTS property_inquiries (
@@ -3167,31 +3051,31 @@ CREATE TABLE IF NOT EXISTS localization_dictionaries (
 
 -- Seed Initial Default Data
 -- Medical Seed
-INSERT OR IGNORE INTO medical_doctors (id, name, specialization, consultation_fee, hospital_name, phone, experience_years, serviced_pincodes_json) VALUES
+INSERT INTO medical_doctors (id, name, specialization, consultation_fee, hospital_name, phone, experience_years, serviced_pincodes_json) VALUES
 ('doc_1', 'Dr. Rajesh Sharma', 'General Physician', 500.00, 'Care Clinic', '9876543211', 12, '["411001", "411002"]'),
-('doc_2', 'Dr. Priya Patel', 'Pediatrician', 600.00, 'Sunshine Children Clinic', '9876543212', 8, '["411001"]');
+('doc_2', 'Dr. Priya Patel', 'Pediatrician', 600.00, 'Sunshine Children Clinic', '9876543212', 8, '["411001"]') ON CONFLICT DO NOTHING;
 
 -- Jobs Seed
-INSERT OR IGNORE INTO job_postings (id, title, company_name, category, salary_range, location_pincode, job_type, description, contact_phone) VALUES
+INSERT INTO job_postings (id, title, company_name, category, salary_range, location_pincode, job_type, description, contact_phone) VALUES
 ('job_1', 'Retail Store Cashier', 'SuperMart Local', 'Retail', '₹15,000 - ₹18,000/mo', '411001', 'Full-time', 'Manage POS counter and inventory sorting.', '9876543213'),
-('job_2', 'Delivery Executive', 'LocalSampark Express', 'Logistics', '₹18,000 - ₹25,000/mo', '411001', 'Full-time', 'Hyperlocal delivery partner for neighborhood orders.', '9876543214');
+('job_2', 'Delivery Executive', 'LocalSampark Express', 'Logistics', '₹18,000 - ₹25,000/mo', '411001', 'Full-time', 'Hyperlocal delivery partner for neighborhood orders.', '9876543214') ON CONFLICT DO NOTHING;
 
 -- Properties Seed
-INSERT OR IGNORE INTO property_listings (id, user_id, title, description, property_type, listing_type, price, deposit, amenities, is_verified, is_active) VALUES
+INSERT INTO property_listings (id, user_id, title, description, property_type, listing_type, price, deposit, amenities, is_verified, is_active) VALUES
 ('prop_1', 'user_owner_1', 'Spacious 2BHK Apartment', 'Gated community with gym and security near MG Road.', 'flat', 'rent', 22000.00, 50000.00, '["gym", "parking"]', 1, 1),
-('prop_2', 'user_owner_2', 'Commercial Shop Space', 'Prime road facing retail shop in Main Market.', 'commercial', 'sale', 4500000.00, 0.00, '["main_road"]', 1, 1);
+('prop_2', 'user_owner_2', 'Commercial Shop Space', 'Prime road facing retail shop in Main Market.', 'commercial', 'sale', 4500000.00, 0.00, '["main_road"]', 1, 1) ON CONFLICT DO NOTHING;
 
 -- Events Seed
-INSERT OR IGNORE INTO community_events (id, organizer_id, title, category, event_date, time_slot, venue_address, pincode, ticket_price, description) VALUES
+INSERT INTO community_events (id, organizer_id, title, category, event_date, time_slot, venue_address, pincode, ticket_price, description) VALUES
 ('evt_1', 'org_1', 'Neighborhood Organic Farming Workshop', 'Workshop', '2026-08-10', '10:00 AM - 01:00 PM', 'Community Hall, Sector 4', '411001', 0.00, 'Learn urban gardening techniques.'),
-('evt_2', 'org_2', 'Local Art & Craft Mela', 'Cultural', '2026-08-15', '04:00 PM - 09:00 PM', 'Town Square Ground', '411001', 50.00, 'Support local artisans and handicraft vendors.');
+('evt_2', 'org_2', 'Local Art & Craft Mela', 'Cultural', '2026-08-15', '04:00 PM - 09:00 PM', 'Town Square Ground', '411001', 50.00, 'Support local artisans and handicraft vendors.') ON CONFLICT DO NOTHING;
 
 -- Multilingual Seed
-INSERT OR IGNORE INTO localization_dictionaries (id, lang_code, translation_key, translation_value) VALUES
+INSERT INTO localization_dictionaries (id, lang_code, translation_key, translation_value) VALUES
 ('loc_1', 'hi', 'welcome_headline', 'लोकल संपर्क में आपका स्वागत है'),
 ('loc_2', 'mr', 'welcome_headline', 'लोकल संपर्क मध्ये आपले स्वागत आहे'),
 ('loc_3', 'hi', 'search_placeholder', 'दुकानें, सेवाएं और जॉब्स खोजें'),
-('loc_4', 'mr', 'search_placeholder', 'दुकाने, सेवा आणि नोकऱ्या शोधा');
+('loc_4', 'mr', 'search_placeholder', 'दुकाने, सेवा आणि नोकऱ्या शोधा') ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -3215,40 +3099,7 @@ CREATE INDEX IF NOT EXISTS idx_shops_approval_lat_lng ON local_shops(approval_st
 
 -- Migration: Medical & Health Schema
 
-CREATE TABLE IF NOT EXISTS medical_doctors (
-    id TEXT PRIMARY KEY,
-    user_id TEXT,
-    name TEXT NOT NULL,
-    specialization TEXT NOT NULL,
-    qualification TEXT NOT NULL,
-    license_no TEXT UNIQUE NOT NULL,
-    clinic_name TEXT NOT NULL,
-    address TEXT NOT NULL,
-    latitude REAL,
-    longitude REAL,
-    geohash TEXT,
-    consultation_fee REAL DEFAULT 500.0,
-    rating REAL DEFAULT 5.0,
-    is_available INTEGER DEFAULT 1,
-    is_verified INTEGER DEFAULT 0,
-    serviced_pincodes_json TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE IF NOT EXISTS medical_appointments (
-    id TEXT PRIMARY KEY,
-    appointment_ref TEXT UNIQUE NOT NULL,
-    user_id TEXT NOT NULL,
-    doctor_id TEXT NOT NULL,
-    appointment_date TEXT NOT NULL,
-    time_slot TEXT NOT NULL,
-    patient_name TEXT NOT NULL,
-    patient_phone TEXT NOT NULL,
-    consultation_fee REAL NOT NULL,
-    status TEXT DEFAULT 'confirmed',
-    payment_status TEXT DEFAULT 'paid',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE INDEX IF NOT EXISTS idx_doctors_specialization ON medical_doctors(specialization);
 CREATE INDEX IF NOT EXISTS idx_doctors_geohash ON medical_doctors(geohash);
@@ -3276,16 +3127,6 @@ CREATE TABLE IF NOT EXISTS local_job_postings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS job_applications (
-    id TEXT PRIMARY KEY,
-    job_id TEXT NOT NULL,
-    applicant_id TEXT NOT NULL,
-    applicant_name TEXT NOT NULL,
-    applicant_phone TEXT NOT NULL,
-    experience_summary TEXT,
-    status TEXT DEFAULT 'applied',
-    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE INDEX IF NOT EXISTS idx_jobs_category ON local_job_postings(category);
 CREATE INDEX IF NOT EXISTS idx_jobs_geohash ON local_job_postings(geohash);
@@ -3325,44 +3166,8 @@ CREATE INDEX IF NOT EXISTS idx_properties_geohash ON local_property_listings(geo
 
 -- Migration: Home Services Schema
 
-CREATE TABLE IF NOT EXISTS home_service_categories (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    icon TEXT,
-    base_inspection_fee REAL DEFAULT 199.0,
-    is_active INTEGER DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE IF NOT EXISTS home_service_providers (
-    id TEXT PRIMARY KEY,
-    user_id TEXT,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    category_id TEXT NOT NULL,
-    experience_years INTEGER DEFAULT 3,
-    rating REAL DEFAULT 4.8,
-    is_available INTEGER DEFAULT 1,
-    serviced_pincodes_json TEXT DEFAULT '[]',
-    geohash TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE IF NOT EXISTS home_service_bookings (
-    id TEXT PRIMARY KEY,
-    booking_ref TEXT UNIQUE NOT NULL,
-    user_id TEXT NOT NULL,
-    provider_id TEXT NOT NULL,
-    category_id TEXT NOT NULL,
-    booking_date TEXT NOT NULL,
-    time_slot TEXT NOT NULL,
-    service_address TEXT NOT NULL,
-    pincode TEXT NOT NULL,
-    problem_description TEXT,
-    inspection_fee REAL NOT NULL,
-    status TEXT DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE INDEX IF NOT EXISTS idx_hs_providers_category ON home_service_providers(category_id);
 CREATE INDEX IF NOT EXISTS idx_hs_bookings_user ON home_service_bookings(user_id);
@@ -3393,16 +3198,6 @@ CREATE TABLE IF NOT EXISTS local_events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS event_tickets (
-    id TEXT PRIMARY KEY,
-    ticket_ref TEXT UNIQUE NOT NULL,
-    event_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    quantity INTEGER DEFAULT 1,
-    total_amount REAL NOT NULL,
-    status TEXT DEFAULT 'confirmed',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE INDEX IF NOT EXISTS idx_events_category ON local_events(category);
 CREATE INDEX IF NOT EXISTS idx_events_geohash ON local_events(geohash);
@@ -4058,16 +3853,6 @@ ALTER TABLE society_settings ADD COLUMN cab_preapproval_enabled INTEGER DEFAULT 
 -- MIGRATION: 035_community_notices.sqlite.sql
 -- =======================================
 
-CREATE TABLE IF NOT EXISTS society_notices (
-    id TEXT PRIMARY KEY,
-    society_id TEXT NOT NULL,
-    posted_by TEXT NOT NULL,
-    title TEXT NOT NULL,
-    content TEXT,
-    document_url TEXT,
-    is_urgent INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE TABLE IF NOT EXISTS society_notice_receipts (
     id TEXT PRIMARY KEY,
@@ -4289,32 +4074,6 @@ CREATE INDEX IF NOT EXISTS idx_payout_items_payout ON payout_line_items(payout_i
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- Master category table with archetype mapping
-CREATE TABLE IF NOT EXISTS shop_categories (
-    id TEXT PRIMARY KEY,
-    slug TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    name_mr TEXT,
-    name_hi TEXT,
-    icon TEXT,
-    archetype TEXT NOT NULL DEFAULT 'retail',
-    parent_category_id TEXT REFERENCES shop_categories(id),
-    display_order INTEGER DEFAULT 0,
-    is_active INTEGER DEFAULT 1,
-
-    -- Category-level configuration
-    requires_fssai INTEGER DEFAULT 0,
-    requires_gst INTEGER DEFAULT 0,
-    requires_drug_license INTEGER DEFAULT 0,
-    supports_delivery INTEGER DEFAULT 1,
-    supports_pickup INTEGER DEFAULT 1,
-    supports_appointment INTEGER DEFAULT 0,
-    supports_subscription INTEGER DEFAULT 0,
-    supports_table_booking INTEGER DEFAULT 0,
-    default_commission_pct REAL DEFAULT 10.0,
-    min_order_amount REAL DEFAULT 0,
-
-    created_at TEXT DEFAULT (TIMESTAMP('now'))
-);
 
 CREATE INDEX IF NOT EXISTS idx_shop_categories_slug ON shop_categories(slug);
 CREATE INDEX IF NOT EXISTS idx_shop_categories_archetype ON shop_categories(archetype);
@@ -4363,7 +4122,7 @@ CREATE INDEX IF NOT EXISTS idx_shop_attrs_attr ON shop_attribute_values(attribut
 -- SEED: All 55+ categories from ARCHETYPE_MAP
 -- ═══════════════════════════════════════════════════════════════════════
 
-INSERT OR IGNORE INTO shop_categories (id, slug, name, icon, archetype, requires_fssai, supports_appointment) VALUES
+INSERT INTO shop_categories (id, slug, name, icon, archetype, requires_fssai, supports_appointment) VALUES
   ('cat-001', 'grocery-supermarkets', 'Grocery & Supermarket', '🛒', 'retail', 0, 0),
   ('cat-002', 'restaurants-cafes', 'Restaurants & Cafes', '🍽️', 'restaurant', 1, 0),
   ('cat-003', 'pharmacy-healthcare', 'Pharmacy & Healthcare', '💊', 'pharmacy', 0, 0),
@@ -4419,57 +4178,57 @@ INSERT OR IGNORE INTO shop_categories (id, slug, name, icon, archetype, requires
   ('cat-053', 'security-cctv', 'Security & CCTV', '📹', 'home_visit', 0, 1),
   ('cat-054', 'coaching-test-prep', 'Coaching & Test Prep', '🎓', 'education', 0, 1),
   ('cat-055', 'astrologer-pandit', 'Astrologer & Pandit', '⭐', 'event_creative', 0, 1),
-  ('cat-056', 'turf-grounds', 'Turf & Grounds', '⚽', 'event_creative', 0, 1);
+  ('cat-056', 'turf-grounds', 'Turf & Grounds', '⚽', 'event_creative', 0, 1) ON CONFLICT DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- SEED: Category-specific attributes
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- Restaurant attributes
-INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
+INSERT INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
   ('attr-r01', 'cat-002', 'cuisine_type', 'Cuisine Type', 'multiselect', '["North Indian","South Indian","Chinese","Italian","Mughlai","Street Food","Continental","Maharashtrian","Punjabi","Bengali","Gujarati","Rajasthani"]', 1, 1),
   ('attr-r02', 'cat-002', 'veg_nonveg', 'Food Type', 'select', '["Pure Veg","Non-Veg","Both","Vegan","Jain"]', 1, 1),
   ('attr-r03', 'cat-002', 'meal_type', 'Meal Types', 'multiselect', '["Breakfast","Lunch","Dinner","Snacks","All Day"]', 1, 0),
   ('attr-r04', 'cat-002', 'avg_prep_time', 'Avg Preparation Time (mins)', 'number', NULL, 0, 0),
   ('attr-r05', 'cat-002', 'seating_capacity', 'Seating Capacity', 'number', NULL, 0, 0),
   ('attr-r06', 'cat-002', 'has_ac', 'AC Available', 'boolean', NULL, 1, 0),
-  ('attr-r07', 'cat-002', 'accepts_online_order', 'Accepts Online Orders', 'boolean', NULL, 1, 0);
+  ('attr-r07', 'cat-002', 'accepts_online_order', 'Accepts Online Orders', 'boolean', NULL, 1, 0) ON CONFLICT DO NOTHING;
 
 -- Electrician attributes
-INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
+INSERT INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
   ('attr-e01', 'cat-013', 'hourly_rate', 'Hourly Rate (₹)', 'number', NULL, 1, 0),
   ('attr-e02', 'cat-013', 'service_types', 'Service Types', 'multiselect', '["Wiring","Fuse Box","Fan/AC Installation","Appliance Repair","Smart Home","Industrial","Solar Panel"]', 1, 1),
   ('attr-e03', 'cat-013', 'emergency_available', '24/7 Emergency Available', 'boolean', NULL, 1, 0),
   ('attr-e04', 'cat-013', 'certifications', 'Certifications', 'multiselect', '["Licensed Electrician","NSDC Certified","ITI Diploma","Wire Man License"]', 0, 0),
-  ('attr-e05', 'cat-013', 'service_radius_km', 'Service Radius (km)', 'number', NULL, 0, 0);
+  ('attr-e05', 'cat-013', 'service_radius_km', 'Service Radius (km)', 'number', NULL, 0, 0) ON CONFLICT DO NOTHING;
 
 -- Real Estate attributes
-INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
+INSERT INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
   ('attr-re01', 'cat-018', 'property_types', 'Property Types', 'multiselect', '["1 BHK","2 BHK","3 BHK","4+ BHK","Studio","Penthouse","Villa","Plot","Commercial","PG","Warehouse"]', 1, 1),
   ('attr-re02', 'cat-018', 'price_range', 'Price Range', 'text', NULL, 1, 0),
   ('attr-re03', 'cat-018', 'amenities', 'Amenities', 'multiselect', '["Parking","Gym","Swimming Pool","Garden","Security","Power Backup","Lift","Club House","Children Play Area"]', 1, 0),
-  ('attr-re04', 'cat-018', 'rera_registered', 'RERA Registered', 'boolean', NULL, 1, 0);
+  ('attr-re04', 'cat-018', 'rera_registered', 'RERA Registered', 'boolean', NULL, 1, 0) ON CONFLICT DO NOTHING;
 
 -- Healthcare/Pathology attributes
-INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
+INSERT INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
   ('attr-h01', 'cat-021', 'home_collection', 'Home Sample Collection', 'boolean', NULL, 1, 0),
   ('attr-h02', 'cat-021', 'report_delivery_hrs', 'Report Delivery Time (hours)', 'number', NULL, 1, 0),
   ('attr-h03', 'cat-021', 'nabl_accredited', 'NABL Accredited', 'boolean', NULL, 1, 0),
-  ('attr-h04', 'cat-021', 'test_count', 'Number of Tests Available', 'number', NULL, 0, 0);
+  ('attr-h04', 'cat-021', 'test_count', 'Number of Tests Available', 'number', NULL, 0, 0) ON CONFLICT DO NOTHING;
 
 -- Gym/Fitness attributes
-INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
+INSERT INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
   ('attr-g01', 'cat-017', 'membership_plans', 'Membership Plans', 'multiselect', '["Monthly","Quarterly","Half-Yearly","Annual","Per Session"]', 1, 0),
   ('attr-g02', 'cat-017', 'facilities', 'Facilities', 'multiselect', '["Cardio","Weight Training","Crossfit","Yoga","Zumba","Steam/Sauna","Personal Trainer","Parking"]', 1, 1),
   ('attr-g03', 'cat-017', 'trial_available', 'Free Trial Available', 'boolean', NULL, 1, 0),
-  ('attr-g04', 'cat-017', 'monthly_price', 'Monthly Fee (₹)', 'number', NULL, 1, 0);
+  ('attr-g04', 'cat-017', 'monthly_price', 'Monthly Fee (₹)', 'number', NULL, 1, 0) ON CONFLICT DO NOTHING;
 
 -- Tiffin/Meal Subscription attributes
-INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
+INSERT INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
   ('attr-t01', 'cat-040', 'meal_plans', 'Meal Plans', 'multiselect', '["Daily","Weekly","Monthly","Lunch Only","Dinner Only","Both"]', 1, 0),
   ('attr-t02', 'cat-040', 'cuisine', 'Cuisine', 'multiselect', '["Maharashtrian","North Indian","South Indian","Gujarati","Jain","Vegan"]', 1, 1),
   ('attr-t03', 'cat-040', 'price_per_meal', 'Price Per Meal (₹)', 'number', NULL, 1, 0),
-  ('attr-t04', 'cat-040', 'delivery_time', 'Delivery Schedule', 'text', NULL, 0, 0);
+  ('attr-t04', 'cat-040', 'delivery_time', 'Delivery Schedule', 'text', NULL, 0, 0) ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -4759,16 +4518,6 @@ CREATE INDEX IF NOT EXISTS idx_zone_analytics_date ON zone_analytics_daily(date)
 -- 044_missing_tables.sqlite.sql
 -- Fix missing tables for admin dashboard and multilingual features
 
-CREATE TABLE IF NOT EXISTS local_job_postings (
-    id TEXT PRIMARY KEY,
-    shop_id TEXT,
-    title TEXT,
-    description TEXT,
-    salary REAL,
-    status TEXT DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- NOTE: A second medical_providers definition (name, address, contact_number)
 -- previously sat here. CREATE TABLE IF NOT EXISTS meant it never took effect,
@@ -4786,16 +4535,6 @@ CREATE TABLE IF NOT EXISTS shop_subscriptions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS society_emergency_alerts (
-    id TEXT PRIMARY KEY,
-    triggered_by TEXT,
-    society_id TEXT,
-    alert_type TEXT,
-    status TEXT DEFAULT 'active',
-    resolved_by TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE TABLE IF NOT EXISTS utility_payments (
     id TEXT PRIMARY KEY,
@@ -4809,29 +4548,13 @@ CREATE TABLE IF NOT EXISTS utility_payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS feature_flags (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    phase INTEGER,
-    is_enabled BOOLEAN DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE IF NOT EXISTS localization_dictionaries (
-    id TEXT PRIMARY KEY,
-    lang_code TEXT,
-    translation_key TEXT,
-    translation_value TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Seed basic dictionaries for hindi to prevent 500 error
-INSERT OR IGNORE INTO localization_dictionaries (id, lang_code, translation_key, translation_value) VALUES 
+INSERT INTO localization_dictionaries (id, lang_code, translation_key, translation_value) VALUES 
 ('dict_hi_1', 'hi', 'greeting', 'नमस्ते'),
 ('dict_hi_2', 'hi', 'search_placeholder', 'दुकानें और सेवाएँ खोजें...'),
-('dict_hi_3', 'hi', 'home', 'होम');
+('dict_hi_3', 'hi', 'home', 'होम') ON CONFLICT DO NOTHING;
 
 
 -- =======================================
@@ -4932,34 +4655,8 @@ CREATE INDEX idx_universal_leads_user ON universal_leads(user_id);
 -- Creates tables for Shop Staff, Reviews, and pre-calculated Analytics snapshots.
 
 -- Staff Table (Administrative use by Shop Owner)
-CREATE TABLE IF NOT EXISTS shop_staff (
-  id SERIAL PRIMARY KEY,
-  shop_id INTEGER NOT NULL,
-  name TEXT NOT NULL,
-  role TEXT NOT NULL,
-  phone TEXT,
-  email TEXT,
-  status TEXT DEFAULT 'Active',
-  shift TEXT,
-  commission REAL DEFAULT 0.0,
-  joined_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Reviews Table
-CREATE TABLE IF NOT EXISTS shop_reviews (
-  id SERIAL PRIMARY KEY,
-  shop_id INTEGER NOT NULL,
-  user_id INTEGER,
-  customer_name TEXT,
-  rating INTEGER NOT NULL,
-  comment TEXT,
-  reply TEXT,
-  status TEXT DEFAULT 'Published',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Analytics Snapshots Table
 CREATE TABLE IF NOT EXISTS shop_analytics_snapshots (
@@ -4984,41 +4681,39 @@ CREATE TABLE IF NOT EXISTS shop_analytics_snapshots (
 -- Creates a Full-Text Search virtual table for hyper-fast directory searches.
 
 -- 1. Create FTS5 Virtual Table
-CREATE VIRTUAL TABLE IF NOT EXISTS shop_search_index USING fts5(
-  shop_id UNINDEXED,
-  shop_name,
-  shop_description,
-  category,
-  tags,
-  tokenize='porter'
-);
+-- Postgres-native full-text search over shops.
+--
+-- This replaced a SQLite FTS5 virtual table and three SQLite-syntax triggers.
+-- Neither construct exists in Postgres, so the original block aborted the
+-- schema load. Postgres does this with a tsvector column, a GIN index and a
+-- trigger function.
 
--- 2. Populate FTS5 table with existing shops
-INSERT INTO shop_search_index(shop_id, shop_name, shop_description, category, tags)
-SELECT id, name, description, category, tags FROM local_shops;
+ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS search_vector tsvector;
 
--- 3. Triggers to keep FTS index updated when a shop is created, updated, or deleted.
+CREATE INDEX IF NOT EXISTS idx_local_shops_search ON local_shops USING GIN (search_vector);
 
-CREATE TRIGGER IF NOT EXISTS after_shop_insert
-AFTER INSERT ON local_shops
+CREATE OR REPLACE FUNCTION local_shops_search_vector_update() RETURNS trigger AS $$
 BEGIN
-  INSERT INTO shop_search_index(shop_id, shop_name, shop_description, category, tags)
-  VALUES (new.id, new.name, new.description, new.category, new.tags);
+  NEW.search_vector :=
+      setweight(to_tsvector('english', coalesce(NEW.name, '')), 'A')
+   || setweight(to_tsvector('english', coalesce(NEW.category, '')), 'B')
+   || setweight(to_tsvector('english', coalesce(NEW.description, '')), 'C');
+  RETURN NEW;
 END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS after_shop_update
-AFTER UPDATE ON local_shops
-BEGIN
-  DELETE FROM shop_search_index WHERE shop_id = old.id;
-  INSERT INTO shop_search_index(shop_id, shop_name, shop_description, category, tags)
-  VALUES (new.id, new.name, new.description, new.category, new.tags);
-END;
+DROP TRIGGER IF EXISTS trg_local_shops_search ON local_shops;
+CREATE TRIGGER trg_local_shops_search
+  BEFORE INSERT OR UPDATE OF name, description, category ON local_shops
+  FOR EACH ROW EXECUTE FUNCTION local_shops_search_vector_update();
 
-CREATE TRIGGER IF NOT EXISTS after_shop_delete
-AFTER DELETE ON local_shops
-BEGIN
-  DELETE FROM shop_search_index WHERE shop_id = old.id;
-END;
+-- Backfill rows that predate the trigger.
+UPDATE local_shops SET search_vector =
+     setweight(to_tsvector('english', coalesce(name, '')), 'A')
+  || setweight(to_tsvector('english', coalesce(category, '')), 'B')
+  || setweight(to_tsvector('english', coalesce(description, '')), 'C')
+WHERE search_vector IS NULL;
+
 
 
 -- =======================================
