@@ -191,6 +191,23 @@ class CheckoutService {
       await query('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
     }
 
+    // Award shop loyalty points. Deliberately outside the order transaction and
+    // non-fatal: a loyalty failure must never roll back a paid order. The unique
+    // index on earn rows makes this safe to retry.
+    if (userId) {
+      try {
+        const shopLoyalty = require('./shop-loyalty.service');
+        await shopLoyalty.awardForOrder({
+          shopId,
+          userId,
+          orderTotal: finalAmount,
+          orderId,
+        });
+      } catch (loyaltyError) {
+        console.error('[LOYALTY] Could not award points for order', orderId, loyaltyError.message);
+      }
+    }
+
     // Payment Gateway Strategy Integration
     let paymentData = await this.initiatePaymentGateway({ paymentMethod, finalAmount, orderId, userId });
 

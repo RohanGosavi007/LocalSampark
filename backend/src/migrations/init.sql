@@ -4768,16 +4768,10 @@ CREATE TABLE IF NOT EXISTS local_job_postings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS medical_providers (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    type TEXT,
-    address TEXT,
-    contact_number TEXT,
-    status TEXT DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- NOTE: A second medical_providers definition (name, address, contact_number)
+-- previously sat here. CREATE TABLE IF NOT EXISTS meant it never took effect,
+-- because the canonical definition above already created the table. Its two
+-- distinct columns are added to that table by migration 056.
 
 CREATE TABLE IF NOT EXISTS shop_subscriptions (
     id TEXT PRIMARY KEY,

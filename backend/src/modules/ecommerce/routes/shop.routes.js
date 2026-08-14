@@ -975,5 +975,85 @@ router.get('/:id/reviews', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// ─── SHOP-SCOPED LOYALTY ─────────────────────────────────────────────────────
+const shopLoyalty = require('../services/shop-loyalty.service');
+
+// A customer's standing at this shop. Returns a zeroed summary for a first-time
+// visitor rather than 404, so the shop page renders without special-casing.
+router.get('/:id/loyalty', authenticate, async (req, res, next) => {
+  try {
+    const shop = await queryOne('SELECT id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    res.json(await shopLoyalty.getSummary(req.params.id, req.user.id));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/loyalty/redeem', authenticate, async (req, res, next) => {
+  try {
+    const points = parseInt(req.body.points, 10);
+    if (!Number.isInteger(points) || points <= 0) {
+      return res.status(400).json({ error: 'points must be a positive integer' });
+    }
+
+    const result = await shopLoyalty.redeem({
+      shopId: req.params.id,
+      userId: req.user.id,
+      points,
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: error.message });
+    next(error);
+  }
+});
+
+// Shop owners configure their own earn and burn rates.
+router.put('/:id/loyalty/program', authenticate, async (req, res, next) => {
+  try {
+    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin) {
+      return res.status(403).json({ error: 'Only the shop owner can change the loyalty programme' });
+    }
+
+    const d = shopLoyalty.DEFAULT_PROGRAM;
+    const b = req.body || {};
+    const saved = await queryOne(
+      `INSERT INTO shop_loyalty_programs
+         (shop_id, is_enabled, points_per_hundred, point_value, min_order_amount,
+          min_redeem_points, welcome_bonus, points_expire_days)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (shop_id) DO UPDATE SET
+         is_enabled         = EXCLUDED.is_enabled,
+         points_per_hundred = EXCLUDED.points_per_hundred,
+         point_value        = EXCLUDED.point_value,
+         min_order_amount   = EXCLUDED.min_order_amount,
+         min_redeem_points  = EXCLUDED.min_redeem_points,
+         welcome_bonus      = EXCLUDED.welcome_bonus,
+         points_expire_days = EXCLUDED.points_expire_days,
+         updated_at         = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        req.params.id,
+        b.isEnabled ?? d.is_enabled,
+        b.pointsPerHundred ?? d.points_per_hundred,
+        b.pointValue ?? d.point_value,
+        b.minOrderAmount ?? d.min_order_amount,
+        b.minRedeemPoints ?? d.min_redeem_points,
+        b.welcomeBonus ?? d.welcome_bonus,
+        b.pointsExpireDays ?? d.points_expire_days,
+      ]
+    );
+
+    res.json({ success: true, program: saved });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
 

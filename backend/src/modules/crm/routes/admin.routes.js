@@ -1477,9 +1477,17 @@ router.get('/marketplace/products', authenticate, requireAdmin, async (req, res,
 
 router.get('/medical/records', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const records = await query(`SELECT * FROM medical_providers ORDER BY created_at DESC LIMIT 50`);
+    // The tab renders item.name, but the canonical column is provider_name, so
+    // every row displayed a dash. Alias it rather than reshaping the client.
+    const records = await query(
+      `SELECT id, provider_name, provider_name AS name, type, license_no, zone,
+              address, contact_number, status, is_verified, created_at
+         FROM medical_providers
+        ORDER BY created_at DESC
+        LIMIT 50`
+    );
     res.json({ data: records.rows || records });
-  } catch (e) { 
+  } catch (e) {
     console.warn('Medical query failed:', e.message);
     res.json({ data: [] });
   }
