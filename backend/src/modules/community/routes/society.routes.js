@@ -141,4 +141,62 @@ router.get('/module/:module_name', authenticate, async (req, res) => {
     }
 });
 
+// ─── NOTICES ─────────────────────────────────────────────────────────────────
+// The society page reads /society/notices; this router is also mounted there.
+router.get('/notices', authenticate, async (req, res, next) => {
+  try {
+    const societyId = req.query.societyId
+      || req.user.society_id
+      || (await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 LIMIT 1', [req.user.id]))?.society_id;
+
+    if (!societyId) {
+      return res.status(403).json({ success: false, message: 'No society is associated with this account' });
+    }
+
+    const rows = await query(
+      `SELECT n.id, n.title, n.content, n.priority, n.created_at, u.full_name AS posted_by_name
+         FROM society_notices n
+         LEFT JOIN users u ON n.posted_by = u.id
+        WHERE n.society_id = $1 AND n.is_active = true
+        ORDER BY
+          CASE WHEN n.priority = 'urgent' THEN 0 WHEN n.priority = 'high' THEN 1 ELSE 2 END,
+          n.created_at DESC
+        LIMIT 100`,
+      [societyId]
+    );
+
+    res.json({ success: true, data: rows.rows || rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/notices', authenticate, async (req, res, next) => {
+  try {
+    const { title, content, priority, societyId: bodySocietyId } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ success: false, message: 'Title and content are required' });
+    }
+
+    const societyId = bodySocietyId
+      || req.user.society_id
+      || (await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 LIMIT 1', [req.user.id]))?.society_id;
+    if (!societyId) {
+      return res.status(403).json({ success: false, message: 'No society is associated with this account' });
+    }
+
+    const VALID = ['normal', 'high', 'urgent'];
+    const id = uuidv4();
+    await query(
+      `INSERT INTO society_notices (id, society_id, posted_by, title, content, priority, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, true)`,
+      [id, societyId, req.user.id, title, content, VALID.includes(priority) ? priority : 'normal']
+    );
+
+    res.status(201).json({ success: true, id, message: 'Notice posted' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

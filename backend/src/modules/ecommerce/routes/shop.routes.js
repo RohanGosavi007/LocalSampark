@@ -975,6 +975,40 @@ router.get('/:id/reviews', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// ─── SHOP CREATION ───────────────────────────────────────────────────────────
+// The mobile dashboard submits new shops here; only GET / existed.
+router.post('/', authenticate, async (req, res, next) => {
+  try {
+    const { name, category, description, address, phone_number, pincode } = req.body;
+    if (!name || !category) {
+      return res.status(400).json({ error: 'name and category are required' });
+    }
+
+    // New shops are unverified and inactive until an admin approves them, so a
+    // self-serve submission cannot put an unvetted shop in front of customers.
+    const created = await queryOne(
+      `INSERT INTO local_shops
+         (owner_id, name, category, description, address, phone_number, pincode,
+          approval_status, is_verified, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', false, false)
+       RETURNING id, name, category, approval_status`,
+      [
+        req.user.id,
+        name,
+        category,
+        description || null,
+        address || null,
+        phone_number || null,
+        pincode || null,
+      ]
+    );
+
+    res.status(201).json({ success: true, ...created, status: 'pending' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ─── SHOP CHAT ───────────────────────────────────────────────────────────────
 // Conversation between the signed-in customer and the shop owner.
 router.get('/:id/chat', authenticate, async (req, res, next) => {

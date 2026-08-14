@@ -50,4 +50,48 @@ router.get('/search-users', authenticate, async (req, res, next) => {
     }
 });
 
+// ─── CONVERSATIONS ───────────────────────────────────────────────────────────
+// The chat page has always called this; it was never implemented, so the page
+// fell back to demo conversations. Threads are derived from chat_messages:
+// one row per counterparty with the latest message and unread count.
+router.get('/conversations', authenticate, async (req, res, next) => {
+  try {
+    const rows = await query(
+      `WITH threads AS (
+         SELECT
+           CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END AS peer_id,
+           message,
+           created_at,
+           is_read,
+           receiver_id,
+           ROW_NUMBER() OVER (
+             PARTITION BY CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END
+             ORDER BY created_at DESC
+           ) AS rn
+         FROM chat_messages
+         WHERE sender_id = $1 OR receiver_id = $1
+       )
+       SELECT t.peer_id                AS user_id,
+              u.full_name              AS name,
+              u.avatar_url,
+              t.message                AS last_message,
+              t.created_at             AS last_message_at,
+              (SELECT COUNT(*) FROM chat_messages m
+                WHERE m.sender_id = t.peer_id
+                  AND m.receiver_id = $1
+                  AND (m.is_read = false OR m.is_read = 0)) AS unread_count
+         FROM threads t
+         LEFT JOIN users u ON u.id = t.peer_id
+        WHERE t.rn = 1 AND t.peer_id IS NOT NULL
+        ORDER BY t.created_at DESC
+        LIMIT 50`,
+      [req.user.id]
+    );
+
+    res.json(rows.rows || rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

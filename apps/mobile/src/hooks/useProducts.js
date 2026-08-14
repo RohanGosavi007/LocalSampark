@@ -11,7 +11,7 @@ export const useAllProducts = () => {
 export const useProducts = (shopId) => {
   return useQuery({
     queryKey: ['products', shopId],
-    queryFn: async () => await apiGet(/shops//products),
+    queryFn: async () => await apiGet(`/shops/${shopId}/products`),
     enabled: !!shopId,
   });
 };

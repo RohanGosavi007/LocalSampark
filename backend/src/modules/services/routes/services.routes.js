@@ -62,4 +62,75 @@ router.get('/my-bookings', authenticate, async (req, res, next) => {
     }
 });
 
+// The services page lists providers from GET /services; only /nearby existed,
+// so the unfiltered listing returned 404.
+router.get('/', async (req, res, next) => {
+  try {
+    const { category, pincode } = req.query;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+
+    const params = ['active'];
+    const clauses = ['status = $1'];
+    if (category) {
+      params.push(category);
+      clauses.push(`category = $${params.length}`);
+    }
+    if (pincode) {
+      params.push(pincode);
+      clauses.push(`pincode = $${params.length}`);
+    }
+    params.push(limit);
+
+    // Targets local_services, the same table /nearby reads. NOTE: that table is
+    // not declared in migrations, so this returns an empty list until the
+    // services schema is added.
+    let data = [];
+    try {
+      const rows = await query(
+        `SELECT * FROM local_services
+          WHERE ${clauses.join(' AND ')}
+          ORDER BY name ASC
+          LIMIT $${params.length}`,
+        params
+      );
+      data = rows.rows || rows;
+    } catch (e) {
+      if (!/does not exist|no such table/i.test(e.message)) throw e;
+      console.warn('[SERVICES] local_services is not present in this database');
+    }
+
+    res.json({ success: true, data, services: data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// The admin Home Services tab has always called this; it was never implemented.
+router.get('/home-services/bookings', authenticate, async (req, res, next) => {
+  try {
+    const { status, limit } = req.query;
+    const params = [];
+    let where = '';
+    if (status) {
+      params.push(status);
+      where = `WHERE b.status = $${params.length}`;
+    }
+    params.push(Math.min(parseInt(limit, 10) || 100, 500));
+
+    const rows = await query(
+      `SELECT b.*, u.full_name AS customer_name, u.phone_number AS customer_phone
+         FROM home_service_bookings b
+         LEFT JOIN users u ON b.user_id = u.id
+         ${where}
+        ORDER BY b.created_at DESC
+        LIMIT $${params.length}`,
+      params
+    );
+    const bookings = rows.rows || rows;
+    res.json({ success: true, bookings, data: bookings });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

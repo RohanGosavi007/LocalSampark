@@ -24,6 +24,9 @@ router.use('/token-queue', require('../modules/core/routes/token-queue.routes'))
 router.use('/feed', apiCache(300), require('../modules/community/routes/feed.routes'));
 router.use('/chat', require('../modules/community/routes/chat.routes'));
 router.use('/societies', require('../modules/community/routes/society.routes'));
+// The web society page calls /society/notices, so the same router is also
+// reachable in the singular.
+router.use('/society', require('../modules/community/routes/society.routes'));
 router.use('/events', apiCache(3600), require('../modules/community/routes/event.routes'));
 router.use('/pets', require('../modules/community/routes/pet.routes'));
 router.use('/stories', require('../modules/community/routes/story.routes'));
@@ -60,6 +63,9 @@ router.use('/shops', (req, res, next) => {
 
 router.use('/', require('../modules/ecommerce/routes/unified-superapp.routes'));
 router.use('/marketplace', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
+// The mobile marketplace screen reads a flat /products list.
+router.use('/products', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
+router.use('/dashboard', require('../modules/core/routes/dashboard.routes'));
 router.use('/payments', paymentLimiter, require('../modules/ecommerce/routes/payment.routes'));
 router.use('/subscriptions', require('../modules/ecommerce/routes/subscription.routes'));
 router.use('/bills', require('../modules/ecommerce/routes/bills.routes'));

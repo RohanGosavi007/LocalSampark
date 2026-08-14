@@ -34,5 +34,62 @@ router.post('/', authenticate, async (req, res, next) => {
   }
 });
 
+// ─── TICKETS ─────────────────────────────────────────────────────────────────
+// The events page has always posted here; it was never implemented.
+router.post('/:id/tickets', authenticate, async (req, res, next) => {
+  try {
+    const count = parseInt(req.body.ticket_count, 10) || 1;
+    if (count < 1 || count > 20) {
+      return res.status(400).json({ error: 'ticket_count must be between 1 and 20' });
+    }
+
+    const event = await queryOne('SELECT * FROM events WHERE id = $1', [req.params.id]);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    const capacity = event.capacity ?? event.max_attendees ?? null;
+    const price = Number(event.ticket_price ?? event.price ?? 0);
+
+    // Capacity is checked inside the transaction so two simultaneous bookings
+    // cannot together oversell the last seats.
+    const { withTransaction } = require('../../../config/database');
+    const ticketId = await withTransaction(async (client) => {
+      if (capacity !== null) {
+        const sold = await client.query(
+          `SELECT COALESCE(SUM(ticket_count), 0) AS taken
+             FROM event_tickets
+            WHERE event_id = $1 AND status IN ('valid', 'used')`,
+          [req.params.id]
+        );
+        const taken = parseInt(sold.rows[0].taken, 10) || 0;
+        if (taken + count > capacity) {
+          throw Object.assign(
+            new Error(`Only ${Math.max(capacity - taken, 0)} ticket(s) remain`),
+            { status: 409 }
+          );
+        }
+      }
+
+      const inserted = await client.query(
+        `INSERT INTO event_tickets (event_id, user_id, ticket_count, total_price, qr_code, status)
+         VALUES ($1, $2, $3, $4, $5, 'valid')
+         RETURNING id`,
+        [req.params.id, req.user.id, count, price * count, crypto.randomUUID()]
+      );
+      return inserted.rows[0].id;
+    });
+
+    res.status(201).json({
+      success: true,
+      ticketId,
+      ticketCount: count,
+      totalPrice: price * count,
+      message: 'Tickets booked',
+    });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: error.message });
+    next(error);
+  }
+});
+
 module.exports = router;
 console.log('--- DEBUG: event.routes.js successfully loaded ---');

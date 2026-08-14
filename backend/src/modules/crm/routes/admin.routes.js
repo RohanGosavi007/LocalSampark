@@ -101,6 +101,60 @@ router.put('/medical/requests/:id/status', authenticate, requireAdmin, adminMedi
 router.put('/medical/requests/:id/dispatch', authenticate, requireAdmin, adminMedicalController.toggleDispatch);
 router.put('/medical/doctors/:id/verify', authenticate, requireAdmin, adminMedicalController.toggleDoctorVerification);
 
+// --- COMMUNITY POST MODERATION ---
+// The admin Community tab already called both of these; neither existed.
+router.get('/community/posts', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { category, limit } = req.query;
+    const params = [];
+    let where = '';
+    if (category) {
+      params.push(category);
+      where = `WHERE category = $${params.length}`;
+    }
+    params.push(Math.min(parseInt(limit, 10) || 100, 500));
+
+    const rows = await query(
+      `SELECT id, author_id, author_name, category, content, media_url, pincode,
+              likes_count, comments_count, created_at
+         FROM community_posts
+         ${where}
+        ORDER BY created_at DESC
+        LIMIT $${params.length}`,
+      params
+    );
+    const posts = rows.rows || rows;
+    res.json({ success: true, posts, data: posts });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/community/posts/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const post = await queryOne('SELECT id FROM community_posts WHERE id = $1', [req.params.id]);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    await query('DELETE FROM community_posts WHERE id = $1', [req.params.id]);
+
+    // Moderation is a privileged destructive action, so record who did it.
+    try {
+      await query(
+        `INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [crypto.randomUUID(), req.user.id || req.user.userId, 'DELETE_COMMUNITY_POST',
+         'community', req.params.id, 'Post removed by moderator']
+      );
+    } catch (e) {
+      console.error('[MODERATION] Could not write audit row:', e.message);
+    }
+
+    res.json({ success: true, message: 'Post removed' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // --- MARKETING (Phase 22) ---
 // Push broadcasts reach every device, so they need a tighter guard than the
 // generic admin check.
