@@ -14,6 +14,7 @@ const LINKS = {
     { href: '/pets', label: 'Pet Adoption' },
   ],
   'Services': [
+    { href: '/carpool', label: 'Ride Sharing & Carpool' },
     { href: '/delivery', label: 'Local Logistics' },
     { href: '/order-tracking', label: 'Order Tracking' },
     { href: '/equipment', label: 'Equipment Rentals' },

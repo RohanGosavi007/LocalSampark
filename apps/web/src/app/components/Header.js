@@ -433,6 +433,8 @@ export default function Header() {
                 <div className="flex flex-col gap-2">
                   <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Platform</p>
                   <a href="/shops" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_shops_dir')}</a>
+                  <a href="/marketplace" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_market')}</a>
+                  <a href="/carpool" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_carpool')}</a>
                   <a href="/features" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">Features</a>
                   <a href="/jobs" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_jobs')}</a>
                   <a href="/franchise" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_franchise_header')}</a>
