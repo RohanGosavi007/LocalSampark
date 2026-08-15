@@ -12,7 +12,7 @@ const crypto = require('crypto');
 router.get('/', async (req, res, next) => {
   try {
     const { category, condition, min_price, max_price, search, sort = 'newest', lat, lng, radius = 10, page = 1, limit = 24 } = req.query;
-    let sql = `SELECT l.*, u.full_name as seller_name, u.profile_photo as seller_photo FROM marketplace_listings l LEFT JOIN users u ON l.seller_id = u.id WHERE l.status = 'active'`;
+    let sql = `SELECT l.*, u.full_name as seller_name, NULL as seller_photo FROM marketplace_listings l LEFT JOIN users u ON l.seller_id = u.id WHERE l.status = 'active'`;
     const params = [];
 
     if (category) { params.push(category); sql += ` AND l.category = $${params.length}`; }
@@ -73,7 +73,7 @@ router.get('/flash-deals', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     if (req.params.id === 'categories' || req.params.id === 'flash-deals' || req.params.id === 'saved' || req.params.id === 'auctions' || req.params.id === 'price-alerts') return next();
-    const listing = await queryOne(`SELECT l.*, u.full_name as seller_name, u.profile_photo as seller_photo, u.phone_number as seller_phone
+    const listing = await queryOne(`SELECT l.*, u.full_name as seller_name, NULL as seller_photo, u.phone_number as seller_phone
       FROM marketplace_listings l LEFT JOIN users u ON l.seller_id = u.id WHERE l.id = $1`, [req.params.id]);
     if (!listing) return res.status(404).json({ error: 'Listing not found' });
 
