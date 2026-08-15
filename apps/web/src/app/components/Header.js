@@ -6,7 +6,7 @@ import LanguageToggle, { useLanguage } from './LanguageToggle';
 import { 
   Search, Bell, MapPin, ChevronDown, User, Store, Bike, ChefHat, HeartHandshake,
   Wrench, Building2, Car, Users, ShieldAlert, ShoppingCart, LogOut, Settings, Leaf, Map,
-  MessageSquare, Wallet, Gift, Crown, Building, ShoppingBag, Package, Dog, Calendar, Heart, Trash2, Activity, Stethoscope, Menu, X, Mic
+  MessageSquare, Wallet, Gift, Crown, Building, ShoppingBag, Package, Dog, Calendar, Heart, Trash2, Activity, Stethoscope, Menu, X, Mic, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -109,6 +109,10 @@ export default function Header() {
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                   className="absolute top-full left-0 mt-2 w-64 glass-card p-2 rounded-xl border border-border shadow-2xl z-50 flex flex-col gap-1"
                 >
+                  <a href="/advanced" className="flex items-center gap-3 p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors">
+                    <div className="p-2 bg-cyan-500/20 text-cyan-400 rounded-md"><Sparkles className="w-4 h-4" /></div>
+                    <div><p className="text-sm font-bold text-cyan-400">⚡ Advanced Hub</p><p className="text-xs text-text-muted">Auctions, Splitter & Quizzes</p></div>
+                  </a>
                   <a href="/shops" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                     <div className="p-2 bg-primary/10 text-primary rounded-md"><Store className="w-4 h-4" /></div>
                     <div><p className="text-sm font-semibold">{t('nav_shops_dir')}</p><p className="text-xs text-text-muted">Local stores & groceries</p></div>
