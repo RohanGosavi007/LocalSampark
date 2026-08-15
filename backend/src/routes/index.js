@@ -105,6 +105,9 @@ router.use('/multilingual', require('../modules/services/routes/multilingual.rou
 // ─── PHASE A: ADVANCED TRI-CATEGORY FEATURES ────────────
 router.use('/', require('../modules/services/routes/advanced.routes'));
 
+// ─── PHASE B: AUCTIONS, QUIZZES, GAMIFICATION ───────────
+router.use('/', require('../modules/services/routes/advanced-b.routes'));
+
 // ─── 10x NEW: SHOP ANALYTICS & VENDOR MANAGEMENT ─────────
 router.use('/shops', require('../modules/ecommerce/routes/shop-analytics.routes'));
 router.use('/shops', require('../modules/ecommerce/routes/payout.routes'));

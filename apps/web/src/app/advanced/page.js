@@ -17,7 +17,340 @@ const TABS = [
   { key: 'skill-gap', label: '📈 Skill Gap', icon: TrendingUp },
   { key: 'alerts', label: '🔔 Job Alerts', icon: Bell },
   { key: 'employer', label: '👔 Employer', icon: Briefcase },
+  { key: 'auctions', label: '🔨 Auctions', icon: Zap },
+  { key: 'quizzes', label: '📝 Skill Quiz', icon: CheckCircle2 },
+  { key: 'gamify', label: '🏆 Gamification', icon: Award },
+  { key: 'groups', label: '👥 Ride Groups', icon: Users },
 ];
+
+// ═══ PHASE B COMPONENTS ═══
+
+function AuctionsTab({ authHeaders, API_URL, Card, Btn, Label, Input }) {
+  const [auctions, setAuctions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAuction, setSelectedAuction] = useState(null);
+  const [bidAmount, setBidAmount] = useState('');
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/marketplace/auctions`, { headers: authHeaders }).then(r => r.json()).then(d => { setAuctions(d.auctions || []); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const placeBid = async (auctionId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/marketplace/auctions/${auctionId}/bid`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify({ bid_amount: parseFloat(bidAmount) })
+      });
+      const data = await res.json();
+      if (data.success) { alert('Bid placed!'); setBidAmount(''); setSelectedAuction(null); }
+      else alert(data.error);
+    } catch (e) { alert('Failed'); }
+  };
+
+  const formatTime = (secs) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-black text-text">🔨 Live Auctions</h2>
+        <span className="text-xs text-text-muted bg-card-bg border border-border px-3 py-1 rounded-full">{auctions.length} active</span>
+      </div>
+      {loading ? <p className="text-text-muted text-center py-8">Loading...</p> : auctions.length === 0 ? (
+        <Card className="text-center py-12"><p className="text-4xl mb-3">🔨</p><p className="text-text-muted">No active auctions. Create one from Marketplace!</p></Card>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {auctions.map(a => (
+            <Card key={a.id} className="hover:border-amber-500/30 transition cursor-pointer" onClick={() => setSelectedAuction(a)}>
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-text font-bold text-sm">{a.title || 'Auction Item'}</h3>
+                  <p className="text-text-muted text-[10px]">{a.category}</p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${a.seconds_remaining < 3600 ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-amber-500/20 text-amber-400'}`}>
+                  ⏱ {formatTime(a.seconds_remaining)}
+                </span>
+              </div>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center mb-3">
+                <p className="text-text-muted text-[10px]">Current Bid</p>
+                <p className="text-2xl font-black text-amber-400">₹{(a.current_bid || 0).toLocaleString()}</p>
+                <p className="text-text-muted text-[10px]">{a.total_bids || 0} bids</p>
+              </div>
+              <div className="flex gap-2">
+                <input type="number" placeholder={`Min ₹${(a.current_bid || 0) + a.bid_increment}`} value={selectedAuction?.id === a.id ? bidAmount : ''}
+                  onChange={e => { setSelectedAuction(a); setBidAmount(e.target.value); }} onClick={e => e.stopPropagation()}
+                  className="flex-1 bg-background-alt text-text rounded-lg px-3 py-2 text-sm border border-border outline-none" />
+                <button onClick={(e) => { e.stopPropagation(); placeBid(a.id); }}
+                  className="px-4 py-2 rounded-lg bg-amber-500 text-white font-bold text-sm hover:bg-amber-400 transition">Bid</button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function QuizzesTab({ authHeaders, API_URL, Card, Btn }) {
+  const [assessments, setAssessments] = useState([]);
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [answers, setAnswers] = useState([]);
+  const [quizResult, setQuizResult] = useState(null);
+  const [currentQ, setCurrentQ] = useState(0);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/jobs/assessments`, { headers: authHeaders }).then(r => r.json()).then(d => setAssessments(d.assessments || [])).catch(() => {});
+  }, []);
+
+  const startQuiz = (assessment) => {
+    setActiveQuiz(assessment);
+    setAnswers(new Array(assessment.total_questions).fill(-1));
+    setCurrentQ(0);
+    setQuizResult(null);
+  };
+
+  const submitQuiz = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/jobs/assessments/${activeQuiz.id}/submit`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify({ answers })
+      });
+      const data = await res.json();
+      setQuizResult(data.result);
+    } catch (e) { alert('Failed'); }
+  };
+
+  if (quizResult) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <Card className="max-w-2xl mx-auto">
+          <div className="text-center mb-6">
+            <p className="text-5xl mb-3">{quizResult.passed ? '🎉' : '📚'}</p>
+            <h2 className="text-2xl font-black text-text">{quizResult.passed ? 'You Passed!' : 'Keep Practicing!'}</h2>
+            <div className="w-20 h-20 rounded-full border-4 mx-auto my-4 flex items-center justify-center" style={{ borderColor: quizResult.passed ? '#10b981' : '#ef4444' }}>
+              <span className="text-2xl font-black text-text">{quizResult.score}%</span>
+            </div>
+            <p className="text-text-muted text-sm">{quizResult.correct}/{quizResult.total} correct</p>
+            {quizResult.badge && <p className="text-emerald-400 font-bold mt-2">{quizResult.badge}</p>}
+          </div>
+          <div className="space-y-2 mb-4">
+            {quizResult.breakdown?.map((r, i) => (
+              <div key={i} className={`rounded-lg p-3 text-sm ${r.correct ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                <p className="text-text font-bold text-xs mb-1">{r.question}</p>
+                <p className="text-text-muted text-[10px]">Your: {r.your_answer} {r.correct ? '✅' : `❌ → ${r.correct_answer}`}</p>
+              </div>
+            ))}
+          </div>
+          <Btn onClick={() => { setActiveQuiz(null); setQuizResult(null); }} className="w-full">Back to Quizzes</Btn>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  if (activeQuiz) {
+    const q = activeQuiz.questions[currentQ];
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <Card className="max-w-2xl mx-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-black text-text">{activeQuiz.skill_name} Quiz</h3>
+            <span className="text-xs text-text-muted bg-background-alt px-3 py-1 rounded-full">{currentQ + 1}/{activeQuiz.total_questions}</span>
+          </div>
+          <div className="w-full bg-background-alt rounded-full h-1.5 mb-6"><div className="bg-cyan-500 h-1.5 rounded-full transition-all" style={{ width: `${((currentQ + 1) / activeQuiz.total_questions) * 100}%` }} /></div>
+          <p className="text-text font-bold mb-4">{q?.q}</p>
+          <div className="space-y-2 mb-6">
+            {q?.opts?.map((opt, oi) => (
+              <button key={oi} onClick={() => { const n = [...answers]; n[currentQ] = oi; setAnswers(n); }}
+                className={`w-full text-left p-3 rounded-xl border text-sm font-medium transition ${answers[currentQ] === oi ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400' : 'bg-background-alt border-border text-text hover:border-cyan-500/30'}`}>
+                {String.fromCharCode(65 + oi)}. {opt}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3">
+            {currentQ > 0 && <button onClick={() => setCurrentQ(currentQ - 1)} className="flex-1 py-3 rounded-xl border border-border text-text-muted font-bold text-sm">← Back</button>}
+            {currentQ < activeQuiz.total_questions - 1 ? (
+              <Btn onClick={() => setCurrentQ(currentQ + 1)} className="flex-1">Next →</Btn>
+            ) : (
+              <Btn onClick={submitQuiz} color="emerald" className="flex-1">Submit Quiz ✅</Btn>
+            )}
+          </div>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <h2 className="text-xl font-black text-text mb-2">📝 Skill Assessment Quizzes</h2>
+      <p className="text-text-muted text-sm mb-6">Pass a quiz to get a Verified Skill ✅ badge on your profile</p>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {assessments.map(a => (
+          <Card key={a.id} className="hover:border-cyan-500/30 transition">
+            <h3 className="text-text font-bold mb-1">{a.skill_name}</h3>
+            <p className="text-text-muted text-xs mb-3">{a.total_questions} questions · {Math.round(a.time_limit_seconds / 60)}min · Pass: {a.passing_score}%</p>
+            <Btn onClick={() => startQuiz(a)} className="w-full">Start Quiz 📝</Btn>
+          </Card>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function GamificationTab({ authHeaders, API_URL, Card }) {
+  const [profile, setProfile] = useState(null);
+  const [leaderboard, setLeaderboard] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/gamification/profile`, { headers: authHeaders }).then(r => r.json()).then(d => setProfile(d.profile)).catch(() => {});
+    fetch(`${API_URL}/api/v1/gamification/leaderboard`, { headers: authHeaders }).then(r => r.json()).then(d => setLeaderboard(d.leaderboard)).catch(() => {});
+  }, []);
+
+  if (!profile) return <Card className="text-center py-12"><p className="text-text-muted">Loading...</p></Card>;
+
+  const progress = Math.min(100, (profile.coins / profile.next_level_coins) * 100);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {/* Profile Card */}
+      <Card className="mb-6 bg-gradient-to-br from-card-bg to-amber-500/5">
+        <div className="text-center mb-6">
+          <p className="text-5xl mb-2">{profile.level_emoji}</p>
+          <h2 className="text-2xl font-black text-text">{profile.name || 'User'}</h2>
+          <p className="text-amber-400 font-bold">{profile.level} Level</p>
+        </div>
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 text-center mb-4">
+          <p className="text-4xl font-black text-amber-400">🪙 {profile.coins}</p>
+          <p className="text-text-muted text-xs mt-1">Total Coins</p>
+          <div className="w-full bg-background-alt rounded-full h-2 mt-3"><div className="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} /></div>
+          <p className="text-text-muted text-[10px] mt-1">{profile.coins}/{profile.next_level_coins} to next level</p>
+        </div>
+        <div className="grid grid-cols-5 gap-2 mb-4">
+          {Object.entries(profile.stats).map(([k, v]) => (
+            <div key={k} className="bg-background-alt rounded-lg p-2 text-center">
+              <p className="text-text font-bold text-lg">{v}</p>
+              <p className="text-text-muted text-[8px] font-bold">{k.replace(/_/g, ' ')}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Badges */}
+      <Card className="mb-6">
+        <h3 className="text-lg font-black text-text mb-4">🏅 Badges ({profile.badges.length})</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {profile.badges.map(b => (
+            <div key={b.name} className="bg-background-alt rounded-xl p-3 text-center border border-border hover:border-amber-500/30 transition">
+              <p className="text-2xl mb-1">{b.icon}</p>
+              <p className="text-text font-bold text-xs">{b.name}</p>
+              <p className="text-text-muted text-[9px]">{b.description}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Leaderboard */}
+      {leaderboard && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card>
+            <h3 className="text-lg font-black text-text mb-3">🚗 Top Drivers</h3>
+            {leaderboard.top_drivers?.map(d => (
+              <div key={d.rank} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{d.rank === 1 ? '🥇' : d.rank === 2 ? '🥈' : d.rank === 3 ? '🥉' : `#${d.rank}`}</span>
+                  <span className="text-text text-sm font-bold">{d.name}</span>
+                </div>
+                <span className="text-text-muted text-xs">{d.rides} rides</span>
+              </div>
+            ))}
+          </Card>
+          <Card>
+            <h3 className="text-lg font-black text-text mb-3">🛍️ Top Sellers</h3>
+            {leaderboard.top_sellers?.map(s => (
+              <div key={s.rank} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : `#${s.rank}`}</span>
+                  <span className="text-text text-sm font-bold">{s.name}</span>
+                </div>
+                <span className="text-text-muted text-xs">{s.sold} sold</span>
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function GroupsTab({ authHeaders, API_URL, Card, Btn, Label, Input }) {
+  const [groups, setGroups] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ name: '', description: '', from_location: '', to_location: '', departure_time: '08:00', group_type: 'commute' });
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/carpool/groups`, { headers: authHeaders }).then(r => r.json()).then(d => setGroups(d.groups || [])).catch(() => {});
+  }, []);
+
+  const createGroup = async () => {
+    try {
+      await fetch(`${API_URL}/api/v1/carpool/groups`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify(form)
+      });
+      setShowCreate(false);
+      const r = await fetch(`${API_URL}/api/v1/carpool/groups`, { headers: authHeaders });
+      const d = await r.json();
+      setGroups(d.groups || []);
+    } catch (e) { alert('Failed'); }
+  };
+
+  const joinGroup = async (groupId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/carpool/groups/${groupId}/join`, { method: 'POST', headers: authHeaders });
+      const d = await res.json();
+      alert(d.message || 'Joined!');
+    } catch (e) { alert('Failed'); }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div className="flex items-center justify-between mb-6">
+        <div><h2 className="text-xl font-black text-text">👥 Ride Sharing Groups</h2><p className="text-text-muted text-xs">Join or create commute groups</p></div>
+        <Btn onClick={() => setShowCreate(!showCreate)}>+ Create Group</Btn>
+      </div>
+
+      {showCreate && (
+        <Card className="mb-6">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div><Label>Group Name</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g., IT Park Commuters" /></div>
+            <div><Label>Type</Label>
+              <select value={form.group_type} onChange={e => setForm({...form, group_type: e.target.value})} className="w-full bg-background-alt text-text rounded-xl px-4 py-3 border border-border text-sm outline-none">
+                <option value="commute">🏢 Office Commute</option><option value="school">🏫 School Run</option><option value="weekend">🌄 Weekend Trip</option>
+              </select>
+            </div>
+            <div><Label>From</Label><Input value={form.from_location} onChange={e => setForm({...form, from_location: e.target.value})} placeholder="Pickup area" /></div>
+            <div><Label>To</Label><Input value={form.to_location} onChange={e => setForm({...form, to_location: e.target.value})} placeholder="Drop area" /></div>
+          </div>
+          <Btn onClick={createGroup} className="mt-4">Create Group 👥</Btn>
+        </Card>
+      )}
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {groups.map(g => (
+          <Card key={g.id}>
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-text font-bold">{g.name}</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-bold">{g.group_type}</span>
+            </div>
+            <p className="text-text-muted text-xs mb-1">📍 {g.from_location} → {g.to_location}</p>
+            <p className="text-text-muted text-xs mb-3">👥 {g.member_count}/{g.max_members} members · by {g.creator_name}</p>
+            <button onClick={() => joinGroup(g.id)} className="w-full py-2 rounded-xl bg-cyan-600/20 text-cyan-400 font-bold text-sm hover:bg-cyan-600/30 transition">Join Group</button>
+          </Card>
+        ))}
+        {groups.length === 0 && <Card className="col-span-full text-center py-8"><p className="text-3xl mb-2">👥</p><p className="text-text-muted">No groups yet. Create the first one!</p></Card>}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function AdvancedFeaturesPage() {
   const [activeTab, setActiveTab] = useState('cost-calc');
@@ -591,6 +924,19 @@ export default function AdvancedFeaturesPage() {
             )}
           </motion.div>
         )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* 🔨 AUCTIONS */}
+        {activeTab === 'auctions' && <AuctionsTab authHeaders={authHeaders} API_URL={API_URL} Card={Card} Btn={Btn} Label={Label} Input={Input} />}
+
+        {/* 📝 SKILL QUIZZES */}
+        {activeTab === 'quizzes' && <QuizzesTab authHeaders={authHeaders} API_URL={API_URL} Card={Card} Btn={Btn} />}
+
+        {/* 🏆 GAMIFICATION */}
+        {activeTab === 'gamify' && <GamificationTab authHeaders={authHeaders} API_URL={API_URL} Card={Card} />}
+
+        {/* 👥 RIDE GROUPS */}
+        {activeTab === 'groups' && <GroupsTab authHeaders={authHeaders} API_URL={API_URL} Card={Card} Btn={Btn} Label={Label} Input={Input} />}
 
       </main>
       <Footer />
