@@ -71,6 +71,9 @@ router.get('/animal/stats', authenticate, requireAdmin, ecoController.getAnimalS
 router.get('/civic/stats', authenticate, requireAdmin, ecoController.getCivicStats);
 router.get('/rewards/campaigns', authenticate, requireAdmin, ecoController.getRewardsStats);
 
+// --- TRI-CATEGORY GOD-MODE CONTROLS (Carpool, Marketplace, Jobs) ---
+router.use('/tri-category', require('./admin-tri-category.routes'));
+
 // --- CRM & SUPPORT (Phase 17) ---
 router.get('/crm/users', authenticate, requireAdmin, adminCrmController.getUsers);
 router.post('/crm/loyalty', authenticate, requireAdmin, adminCrmController.adjustLoyalty);

@@ -72,7 +72,7 @@ router.get('/flash-deals', async (req, res, next) => {
 // GET /:id — Single listing detail
 router.get('/:id', async (req, res, next) => {
   try {
-    if (req.params.id === 'categories' || req.params.id === 'flash-deals' || req.params.id === 'saved') return next();
+    if (req.params.id === 'categories' || req.params.id === 'flash-deals' || req.params.id === 'saved' || req.params.id === 'auctions' || req.params.id === 'price-alerts') return next();
     const listing = await queryOne(`SELECT l.*, u.full_name as seller_name, u.profile_photo as seller_photo, u.phone_number as seller_phone
       FROM marketplace_listings l LEFT JOIN users u ON l.seller_id = u.id WHERE l.id = $1`, [req.params.id]);
     if (!listing) return res.status(404).json({ error: 'Listing not found' });

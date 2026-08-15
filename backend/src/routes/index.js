@@ -102,10 +102,15 @@ router.use('/home-services', require('../modules/services/routes/home-services.r
 router.use('/community', require('../modules/services/routes/community.routes'));
 router.use('/multilingual', require('../modules/services/routes/multilingual.routes'));
 
-// ─── PHASE A: ADVANCED TRI-CATEGORY FEATURES ────────────
+// ─── PHASE A & B: ADVANCED TRI-CATEGORY FEATURES ────────────
+router.use('/carpool', require('../modules/services/routes/advanced.routes'));
+router.use('/marketplace', require('../modules/services/routes/advanced.routes'));
+router.use('/jobs', require('../modules/services/routes/advanced.routes'));
 router.use('/', require('../modules/services/routes/advanced.routes'));
 
-// ─── PHASE B: AUCTIONS, QUIZZES, GAMIFICATION ───────────
+router.use('/carpool', require('../modules/services/routes/advanced-b.routes'));
+router.use('/marketplace', require('../modules/services/routes/advanced-b.routes'));
+router.use('/jobs', require('../modules/services/routes/advanced-b.routes'));
 router.use('/', require('../modules/services/routes/advanced-b.routes'));
 
 // ─── 10x NEW: SHOP ANALYTICS & VENDOR MANAGEMENT ─────────
