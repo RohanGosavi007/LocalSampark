@@ -58,6 +58,28 @@ export default function ResidentDashboard({ user }) {
             <StoriesRow />
           </View>
 
+          {/* SuperApp Tri-Category Quick Hub */}
+          <View style={{ marginBottom: 24, paddingHorizontal: SPACING.md }}>
+            <Text style={[s.sectionTitle, { paddingHorizontal: 0, marginBottom: 12 }]}>🚀 Neighborhood SuperApp</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity onPress={() => router.push('/advanced')} style={{ flex: 1, backgroundColor: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.3)', borderWidth: 1, borderRadius: 16, padding: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginBottom: 4 }}>🚗</Text>
+                <Text style={{ color: '#06b6d4', fontWeight: '800', fontSize: 12 }}>Carpool</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 9, textAlign: 'center', marginTop: 2 }}>Split & Track</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/advanced')} style={{ flex: 1, backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)', borderWidth: 1, borderRadius: 16, padding: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginBottom: 4 }}>🛍️</Text>
+                <Text style={{ color: '#f59e0b', fontWeight: '800', fontSize: 12 }}>Auctions</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 9, textAlign: 'center', marginTop: 2 }}>Bid & Escrow</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/advanced')} style={{ flex: 1, backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)', borderWidth: 1, borderRadius: 16, padding: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginBottom: 4 }}>💼</Text>
+                <Text style={{ color: '#3b82f6', fontWeight: '800', fontSize: 12 }}>Jobs & Quiz</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 9, textAlign: 'center', marginTop: 2 }}>Skills & Badges</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Urgent Actions Banner */}
           <View style={s.urgentRow}>
             <TouchableOpacity style={[s.urgentCard, { backgroundColor: 'rgba(255, 59, 48, 0.1)', borderColor: 'rgba(255, 59, 48, 0.2)' }]} onPress={() => router.push('/modules/sos')}>
