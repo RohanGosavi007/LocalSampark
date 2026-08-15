@@ -1,208 +1,547 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Heart, MapPin, Eye, MessageCircle, Send, X, Camera, Tag, Clock, Filter, ChevronDown, Sparkles, ShoppingBag, Star, Shield, Truck, Plus, AlertTriangle, CheckCircle2, DollarSign } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
-const CATEGORIES = ['All', 'Electronics', 'Furniture', 'Home Appliances', 'Sports', 'Books', 'Clothing', 'Vehicles', 'Kitchen'];
-
-const ITEMS = [
-  { id: 1, title: 'Hero Bicycle (24T) — Barely Used', price: 3500, category: 'Sports', condition: 'Good', icon: '🚲', seller: 'Rahul K.', zone: 'Dhanori', time: '2 hrs ago', views: 42 },
-  { id: 2, title: 'Wooden Study Table + Ergonomic Chair', price: 2200, category: 'Furniture', condition: 'Like New', icon: '🪑', seller: 'Meera S.', zone: 'Viman Nagar', time: '5 hrs ago', views: 28 },
-  { id: 3, title: 'Sony ExtraBass Bluetooth Speaker', price: 1500, category: 'Electronics', condition: 'Fair', icon: '🔊', seller: 'Amit P.', zone: 'Dhanori', time: '1 day ago', views: 71 },
-  { id: 4, title: 'LG Washing Machine 6.5Kg — Excellent', price: 9000, category: 'Home Appliances', condition: 'Excellent', icon: '🫧', seller: 'Sunita R.', zone: 'Kharadi', time: '2 days ago', views: 56 },
-  { id: 5, title: 'Microwave Oven (Samsung 23L)', price: 4500, category: 'Kitchen', condition: 'Good', icon: '📦', seller: 'Priya N.', zone: 'Baner', time: '3 days ago', views: 33 },
-  { id: 6, title: 'MTB Trek 3-speed Mountain Bike', price: 7500, category: 'Sports', condition: 'Good', icon: '🚵', seller: 'Sanjay V.', zone: 'Dhanori', time: '4 days ago', views: 19 },
-  { id: 7, title: 'iPhone 12 — Pristine (64GB)', price: 22000, category: 'Electronics', condition: 'Like New', icon: '📱', seller: 'Kavita M.', zone: 'Kalyani Nagar', time: '5 days ago', views: 145 },
-  { id: 8, title: 'Ikea Kallax Shelf — 4 Cubes', price: 1800, category: 'Furniture', condition: 'Good', icon: '📚', seller: 'Rohan D.', zone: 'Aundh', time: '6 days ago', views: 22 },
+const CONDITION_COLORS = { 'Like New': '#10b981', 'Excellent': '#6366f1', 'Good': '#f97316', 'Fair': '#eab308' };
+const CONDITIONS = ['Like New', 'Excellent', 'Good', 'Fair'];
+const DEFAULT_SORT = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'popular', label: 'Most Viewed' },
+  { value: 'price-asc', label: 'Price: Low → High' },
+  { value: 'price-desc', label: 'Price: High → Low' },
 ];
 
-const conditionColor = { 'Like New': '#10b981', 'Excellent': '#4f46e5', 'Good': '#f97316', 'Fair': '#f59e0b' };
-
 export default function MarketplacePage() {
-  const [selectedCat, setSelectedCat] = useState('All');
+  const [listings, setListings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCat, setSelectedCat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [searchQ, setSearchQ] = useState('');
-  const [maxPrice, setMaxPrice] = useState(50000);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ title: '', price: '', category: '', condition: 'Good', desc: '', phone: '' });
-  const [submitted, setSubmitted] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(100000);
+  const [selectedCondition, setSelectedCondition] = useState('');
+  const [activeTab, setActiveTab] = useState('browse'); // browse, post, saved
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [savedIds, setSavedIds] = useState(new Set());
+  const [savedItems, setSavedItems] = useState([]);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerMessage, setOfferMessage] = useState('');
+  const [offerSubmitted, setOfferSubmitted] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [flashDeals, setFlashDeals] = useState([]);
+  const [postForm, setPostForm] = useState({ title: '', price: '', category: '', condition: 'Good', description: '', is_negotiable: true, delivery_available: false, photo_urls: [] });
+  const [postSubmitted, setPostSubmitted] = useState(false);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  const authHeaders = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  const filtered = ITEMS
-    .filter(i => selectedCat === 'All' || i.category === selectedCat)
-    .filter(i => i.title.toLowerCase().includes(searchQ.toLowerCase()) || i.seller.toLowerCase().includes(searchQ.toLowerCase()))
-    .filter(i => i.price <= maxPrice)
-    .sort((a, b) => {
-      if (sortBy === 'price-asc') return a.price - b.price;
-      if (sortBy === 'price-desc') return b.price - a.price;
-      if (sortBy === 'popular') return b.views - a.views;
-      return 0; // newest
-    });
+  const fetchListings = useCallback(async () => {
+    setLoading(true);
+    try {
+      let url = `${API_URL}/api/v1/marketplace?sort=${sortBy}&limit=40`;
+      if (selectedCat) url += `&category=${selectedCat}`;
+      if (selectedCondition) url += `&condition=${selectedCondition}`;
+      if (maxPrice < 100000) url += `&max_price=${maxPrice}`;
+      if (searchQ) url += `&search=${encodeURIComponent(searchQ)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setListings(data.listings || data.rows || (Array.isArray(data) ? data : []));
+    } catch (e) { setListings([]); }
+    setLoading(false);
+  }, [sortBy, selectedCat, selectedCondition, maxPrice, searchQ]);
 
-  const handlePost = (e) => {
+  useEffect(() => { fetchListings(); }, [fetchListings]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/marketplace/categories`).then(r => r.json()).then(d => setCategories(d.categories || [])).catch(() => {});
+    fetch(`${API_URL}/api/v1/marketplace/flash-deals`).then(r => r.json()).then(d => setFlashDeals(d.deals || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'saved' && token) {
+      fetch(`${API_URL}/api/v1/marketplace/saved`, { headers: authHeaders }).then(r => r.json()).then(d => {
+        setSavedItems(d.saved || []);
+        setSavedIds(new Set((d.saved || []).map(s => s.id)));
+      }).catch(() => {});
+    }
+  }, [activeTab]);
+
+  const toggleSave = async (listingId) => {
+    if (!token) { alert('Please login to save items'); return; }
+    try {
+      const res = await fetch(`${API_URL}/api/v1/marketplace/${listingId}/save`, { method: 'POST', headers: authHeaders });
+      const data = await res.json();
+      setSavedIds(prev => { const next = new Set(prev); data.saved ? next.add(listingId) : next.delete(listingId); return next; });
+    } catch (e) {}
+  };
+
+  const openDetail = async (listing) => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/marketplace/${listing.id}`);
+      const data = await res.json();
+      setSelectedListing(data.listing || listing);
+    } catch (e) { setSelectedListing(listing); }
+    setShowDetail(true);
+  };
+
+  const submitOffer = async () => {
+    if (!token || !offerAmount) return;
+    try {
+      await fetch(`${API_URL}/api/v1/marketplace/${selectedListing.id}/offer`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify({ offer_amount: parseFloat(offerAmount), message: offerMessage })
+      });
+      setOfferSubmitted(true);
+      setTimeout(() => { setShowOfferModal(false); setOfferSubmitted(false); setOfferAmount(''); setOfferMessage(''); }, 2000);
+    } catch (e) { alert('Failed'); }
+  };
+
+  const loadChat = async (listingId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/marketplace/${listingId}/chat`, { headers: authHeaders });
+      const data = await res.json();
+      setChatMessages(data.messages || []);
+      setShowChat(true);
+    } catch (e) {}
+  };
+
+  const sendChat = async () => {
+    if (!chatInput.trim() || !selectedListing) return;
+    try {
+      await fetch(`${API_URL}/api/v1/marketplace/${selectedListing.id}/chat`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify({ message: chatInput })
+      });
+      setChatInput('');
+      loadChat(selectedListing.id);
+    } catch (e) {}
+  };
+
+  const handlePost = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setShowForm(false);
+    if (!token) { alert('Please login'); return; }
+    try {
+      const res = await fetch(`${API_URL}/api/v1/marketplace`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify(postForm)
+      });
+      const data = await res.json();
+      if (data.success) { setPostSubmitted(true); setTimeout(() => { setPostSubmitted(false); setActiveTab('browse'); fetchListings(); }, 2000); }
+    } catch (e) { alert('Failed'); }
+  };
+
+  const ListingCard = ({ item, i }) => {
+    const photos = item.photo_urls || [];
+    const condColor = CONDITION_COLORS[item.condition] || '#888';
+    const isSaved = savedIds.has(item.id);
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+        className="bg-card-bg border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all group cursor-pointer"
+        onClick={() => openDetail(item)}>
+        {/* Image */}
+        <div className="relative h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
+          {photos.length > 0 ? (
+            <img src={photos[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          ) : (
+            <span className="text-5xl">{getCategoryIcon(item.category)}</span>
+          )}
+          <span className="absolute top-3 right-3 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: condColor + '22', color: condColor }}>{item.condition}</span>
+          <button onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}
+            className="absolute top-3 left-3 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition">
+            <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+          </button>
+          {item.flash_deal_until && <span className="absolute bottom-2 left-2 text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">⚡ Flash Deal</span>}
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full">
+            <Eye className="w-3 h-3" /> {item.views_count || 0}
+          </div>
+        </div>
+        {/* Content */}
+        <div className="p-4">
+          {item.category && <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{item.category}</span>}
+          <h3 className="text-sm font-bold text-text mt-2 mb-1 line-clamp-2 leading-snug">{item.title}</h3>
+          <p className="text-xs text-text-muted mb-3 flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> {item.zone || 'Local'} · <Clock className="w-3 h-3" /> {item.created_at ? timeAgo(item.created_at) : 'Recently'}
+          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-lg font-black text-primary">₹{(item.price || 0).toLocaleString()}</span>
+              {item.is_negotiable ? <span className="text-[10px] text-amber-400 ml-1.5">Negotiable</span> : null}
+            </div>
+            <span className="text-xs text-text-muted">{item.seller_name || 'Seller'}</span>
+          </div>
+        </div>
+      </motion.div>
+    );
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <>
       <Header />
-      <main style={{ flex: 1, padding: '4rem 0' }}>
-        <div className="container">
-
-          {/* Page Header */}
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <span className="badge badge-primary" style={{ marginBottom: '1rem' }}>Pillar 5 — Buy & Sell</span>
-            <h1 style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '1rem' }}>
+      <main className="min-h-screen bg-background pt-20 pb-16">
+        {/* Hero */}
+        <section className="relative overflow-hidden py-12 px-4 border-b border-border">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
+          <div className="max-w-6xl mx-auto relative z-10 text-center">
+            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-bold text-text mb-3">
               Neighborhood <span className="gradient-text">Marketplace</span>
-            </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '560px', margin: '0 auto 2rem' }}>
-              Buy &amp; sell pre-loved items with verified neighbors. Zero platform fee, 100% direct deals.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => setShowForm(true)} className="btn btn-primary">+ Post an Item</button>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                🔒 OTP-verified sellers only
-              </span>
+            </motion.h1>
+            <p className="text-text-muted text-lg mb-6 max-w-2xl mx-auto">Buy & sell pre-loved items with verified neighbors. Zero platform fee, 100% direct deals.</p>
+            <div className="flex items-center gap-4 justify-center text-sm text-text-muted">
+              <span className="flex items-center gap-1"><Shield className="w-4 h-4 text-emerald-500" /> Verified sellers</span>
+              <span className="flex items-center gap-1"><Tag className="w-4 h-4 text-amber-500" /> Price negotiation</span>
+              <span className="flex items-center gap-1"><Truck className="w-4 h-4 text-blue-500" /> Local delivery</span>
             </div>
           </div>
+        </section>
 
-          {submitted && (
-            <div style={{ background: 'var(--accent-light)', border: '1px solid var(--accent)', borderRadius: '0.75rem', padding: '1rem 1.5rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>✅</span>
-              <div>
-                <strong style={{ color: 'var(--accent)' }}>Listing submitted!</strong>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>Your item will be live after quick moderation (usually &lt;1 hour).</p>
-              </div>
-            </div>
-          )}
+        {/* Tabs */}
+        <div className="max-w-6xl mx-auto px-4 mt-6 mb-6">
+          <div className="flex gap-2 bg-card-bg rounded-2xl p-1.5 border border-border max-w-lg mx-auto">
+            {[{ id: 'browse', label: '🛍️ Browse' }, { id: 'post', label: '📸 Sell Item' }, { id: 'saved', label: '❤️ Saved' }].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg' : 'text-text-muted hover:text-text'}`}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Post Item Modal */}
-          {showForm && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-              <div className="glass-card" style={{ width: '100%', maxWidth: '560px', padding: '2.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                  <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Post a New Item</h2>
-                  <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+        <div className="max-w-6xl mx-auto px-4">
+          {/* ═══ BROWSE TAB ═══ */}
+          {activeTab === 'browse' && (
+            <>
+              {/* Flash Deals */}
+              {flashDeals.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-text mb-3 flex items-center gap-2"><Sparkles className="w-5 h-5 text-amber-400" /> Flash Deals</h3>
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                    {flashDeals.map((deal, i) => (
+                      <div key={deal.id} className="min-w-[200px] bg-gradient-to-br from-red-500/10 to-amber-500/10 border border-red-500/20 rounded-2xl p-4 cursor-pointer hover:border-red-500/40 transition" onClick={() => openDetail(deal)}>
+                        <span className="text-2xl">{getCategoryIcon(deal.category)}</span>
+                        <h4 className="text-sm font-bold text-text mt-2 line-clamp-1">{deal.title}</h4>
+                        <p className="text-lg font-black text-red-400 mt-1">₹{(deal.price||0).toLocaleString()}</p>
+                        <span className="text-[10px] text-amber-400">⏰ Limited time</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <form onSubmit={handlePost} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Item Title *</label>
-                    <input type="text" className="form-input" placeholder="e.g. Hero Bicycle 24T" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
+              )}
+
+              {/* Filters Bar */}
+              <div className="bg-card-bg border border-border rounded-2xl p-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="flex-1 flex items-center gap-2 bg-background-alt rounded-xl px-3 py-2.5 border border-border">
+                    <Search className="text-text-muted w-4 h-4 flex-shrink-0" />
+                    <input type="text" placeholder="Search items..." value={searchQ} onChange={e => setSearchQ(e.target.value)} className="bg-transparent text-text w-full outline-none text-sm" />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label">Asking Price (₹) *</label>
-                      <input type="number" className="form-input" placeholder="e.g. 2500" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
-                    </div>
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label">Category *</label>
-                      <select className="form-input" required value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
-                        <option value="">Select</option>
-                        {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Condition *</label>
-                    <select className="form-input" value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })}>
-                      {['Like New', 'Excellent', 'Good', 'Fair'].map(c => <option key={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Description</label>
-                    <textarea className="form-input" rows={3} placeholder="Describe the item, usage, reason for selling..." value={formData.desc} onChange={e => setFormData({ ...formData, desc: e.target.value })} style={{ resize: 'vertical' }} />
-                  </div>
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">WhatsApp / Contact *</label>
-                    <input type="tel" className="form-input" placeholder="+91 XXXXX XXXXX" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                  </div>
-                  <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '1rem' }}>Submit Listing</button>
-                </form>
+                  <select value={selectedCat} onChange={e => setSelectedCat(e.target.value)} className="bg-background-alt text-text rounded-xl px-3 py-2.5 border border-border text-sm outline-none">
+                    <option value="">All Categories</option>
+                    {categories.map(c => <option key={c.id} value={c.name}>{c.icon} {c.name}</option>)}
+                  </select>
+                  <select value={selectedCondition} onChange={e => setSelectedCondition(e.target.value)} className="bg-background-alt text-text rounded-xl px-3 py-2.5 border border-border text-sm outline-none">
+                    <option value="">Any Condition</option>
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-background-alt text-text rounded-xl px-3 py-2.5 border border-border text-sm outline-none">
+                    {DEFAULT_SORT.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <span className="text-xs text-text-muted">Max ₹{maxPrice.toLocaleString()}</span>
+                  <input type="range" min={500} max={100000} step={500} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)}
+                    className="flex-1" style={{ accentColor: 'var(--primary)' }} />
+                </div>
               </div>
-            </div>
-          )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '2.5rem', alignItems: 'start' }}>
-            {/* Sidebar */}
-            <div className="glass-card" style={{ padding: '1.75rem', position: 'sticky', top: '6rem' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>🔍 Search</h3>
-              <input type="text" className="form-input" placeholder="Item or seller name..." value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ marginBottom: '1.5rem' }} />
-
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>📂 Category</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.5rem' }}>
-                {CATEGORIES.map(cat => (
-                  <button key={cat} onClick={() => setSelectedCat(cat)} style={{
-                    background: selectedCat === cat ? 'var(--primary)' : 'transparent',
-                    color: selectedCat === cat ? 'white' : 'var(--text-muted)',
-                    border: 'none', borderRadius: '0.5rem', padding: '0.45rem 0.75rem',
-                    textAlign: 'left', cursor: 'pointer', fontWeight: selectedCat === cat ? 700 : 400,
-                    fontSize: '0.88rem', transition: 'all 0.2s'
-                  }}>{cat}</button>
+              {/* Category Pills */}
+              <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+                <button onClick={() => setSelectedCat('')} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition ${!selectedCat ? 'bg-primary text-white' : 'bg-card-bg text-text-muted border border-border hover:text-text'}`}>All</button>
+                {categories.map(c => (
+                  <button key={c.id} onClick={() => setSelectedCat(c.name)}
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition ${selectedCat === c.name ? 'bg-primary text-white' : 'bg-card-bg text-text-muted border border-border hover:text-text'}`}>
+                    {c.icon} {c.name}
+                  </button>
                 ))}
               </div>
 
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>💰 Max Price: ₹{maxPrice.toLocaleString()}</h3>
-              <input type="range" min={500} max={50000} step={500} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} style={{ width: '100%', accentColor: 'var(--primary)' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                <span>₹500</span><span>₹50,000</span>
-              </div>
-            </div>
+              {/* Results count */}
+              <p className="text-sm text-text-muted mb-4">{listings.length} items found</p>
 
-            {/* Grid */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{filtered.length} items found</span>
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="form-input" style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                  <option value="newest">Newest First</option>
-                  <option value="popular">Most Viewed</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                </select>
-              </div>
-
-              {filtered.length === 0 ? (
-                <div className="glass-card" style={{ textAlign: 'center', padding: '4rem' }}>
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔍</div>
-                  <h3>No items match your filters</h3>
-                  <p style={{ color: 'var(--text-muted)' }}>Try adjusting the category or price range.</p>
+              {/* Grid */}
+              {loading ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-64 bg-card-bg border border-border rounded-2xl animate-pulse" />)}
+                </div>
+              ) : listings.length === 0 ? (
+                <div className="text-center py-16">
+                  <ShoppingBag className="w-16 h-16 text-text-muted mx-auto mb-4 opacity-30" />
+                  <h3 className="text-xl text-text font-semibold mb-2">No items found</h3>
+                  <p className="text-text-muted mb-4">Try adjusting your filters or be the first to list!</p>
+                  <button onClick={() => setActiveTab('post')} className="px-6 py-3 bg-primary text-white font-bold rounded-xl">Post an Item</button>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-                  {filtered.map(item => (
-                    <div key={item.id} className="glass-card card-3d" style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
-                      {/* Image placeholder */}
-                      <div style={{ height: '150px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', position: 'relative' }}>
-                        {item.icon}
-                        <span style={{
-                          position: 'absolute', top: '0.75rem', right: '0.75rem',
-                          background: conditionColor[item.condition] + '22',
-                          color: conditionColor[item.condition],
-                          padding: '0.2rem 0.5rem', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 700
-                        }}>{item.condition}</span>
-                        <span style={{ position: 'absolute', bottom: '0.75rem', left: '0.75rem', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '0.15rem 0.4rem', borderRadius: '50px', fontSize: '0.7rem' }}>👁 {item.views}</span>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {listings.map((item, i) => <ListingCard key={item.id || i} item={item} i={i} />)}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ═══ POST TAB ═══ */}
+          {activeTab === 'post' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-xl mx-auto">
+              {postSubmitted ? (
+                <div className="text-center py-16">
+                  <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-text mb-2">Listing Created!</h3>
+                  <p className="text-text-muted">Your item is now live on the marketplace.</p>
+                </div>
+              ) : (
+                <form onSubmit={handlePost} className="bg-card-bg border border-border rounded-3xl p-8 space-y-5">
+                  <h2 className="text-2xl font-bold text-text text-center mb-2">Sell Your Item</h2>
+
+                  <div>
+                    <label className="text-xs text-text-muted mb-1 block">Title *</label>
+                    <input type="text" required placeholder="e.g. iPhone 12 — Pristine (64GB)" value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})}
+                      className="w-full bg-background-alt text-text rounded-xl p-4 border border-border outline-none focus:border-primary text-sm" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">Price (₹) *</label>
+                      <input type="number" required placeholder="e.g. 2500" value={postForm.price} onChange={e => setPostForm({...postForm, price: e.target.value})}
+                        className="w-full bg-background-alt text-text rounded-xl p-4 border border-border outline-none focus:border-primary text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">Category *</label>
+                      <select required value={postForm.category} onChange={e => setPostForm({...postForm, category: e.target.value})}
+                        className="w-full bg-background-alt text-text rounded-xl p-4 border border-border outline-none text-sm">
+                        <option value="">Select</option>
+                        {categories.map(c => <option key={c.id} value={c.name}>{c.icon} {c.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-muted mb-1 block">Condition</label>
+                    <div className="flex gap-2">
+                      {CONDITIONS.map(c => (
+                        <button key={c} type="button" onClick={() => setPostForm({...postForm, condition: c})}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition border ${postForm.condition === c ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted hover:text-text'}`}>
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-muted mb-1 block">Description</label>
+                    <textarea rows={3} placeholder="Describe item condition, usage, reason for selling..." value={postForm.description} onChange={e => setPostForm({...postForm, description: e.target.value})}
+                      className="w-full bg-background-alt text-text rounded-xl p-4 border border-border outline-none focus:border-primary text-sm resize-none" />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-text text-sm cursor-pointer">
+                      <input type="checkbox" checked={postForm.is_negotiable} onChange={e => setPostForm({...postForm, is_negotiable: e.target.checked})} className="w-5 h-5 accent-primary rounded" />
+                      🤝 Price negotiable
+                    </label>
+                    <label className="flex items-center gap-2 text-text text-sm cursor-pointer">
+                      <input type="checkbox" checked={postForm.delivery_available} onChange={e => setPostForm({...postForm, delivery_available: e.target.checked})} className="w-5 h-5 accent-primary rounded" />
+                      🚚 Delivery available
+                    </label>
+                  </div>
+
+                  <button type="submit" className="w-full py-4 bg-gradient-to-r from-primary to-blue-600 text-white font-bold rounded-xl hover:shadow-lg transition text-lg">
+                    Publish Listing 🚀
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          )}
+
+          {/* ═══ SAVED TAB ═══ */}
+          {activeTab === 'saved' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {!token ? (
+                <div className="text-center py-16"><p className="text-text-muted">Please login to see saved items</p></div>
+              ) : savedItems.length === 0 ? (
+                <div className="text-center py-16">
+                  <Heart className="w-16 h-16 text-text-muted mx-auto mb-4 opacity-30" />
+                  <h3 className="text-xl text-text font-semibold mb-2">No saved items</h3>
+                  <p className="text-text-muted">Browse the marketplace and save items you love!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {savedItems.map((item, i) => <ListingCard key={item.id} item={item} i={i} />)}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
+
+        {/* ═══ LISTING DETAIL MODAL ═══ */}
+        <AnimatePresence>
+          {showDetail && selectedListing && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowDetail(false)}>
+              <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}
+                className="bg-card-bg border border-border rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                {/* Image */}
+                <div className="relative h-56 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                  {(selectedListing.photo_urls || []).length > 0 ? (
+                    <img src={selectedListing.photo_urls[0]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-6xl">{getCategoryIcon(selectedListing.category)}</span>
+                  )}
+                  <button onClick={() => setShowDetail(false)} className="absolute top-3 right-3 p-2 bg-black/50 rounded-full"><X className="w-5 h-5 text-white" /></button>
+                  <button onClick={() => toggleSave(selectedListing.id)} className="absolute top-3 left-3 p-2 bg-black/50 rounded-full">
+                    <Heart className={`w-5 h-5 ${savedIds.has(selectedListing.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                  </button>
+                </div>
+                {/* Content */}
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      {selectedListing.condition && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: (CONDITION_COLORS[selectedListing.condition]||'#888')+'22', color: CONDITION_COLORS[selectedListing.condition] }}>{selectedListing.condition}</span>}
+                      {selectedListing.category && <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-1">{selectedListing.category}</span>}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-text-muted"><Eye className="w-3 h-3" /> {selectedListing.views_count || 0} views</div>
+                  </div>
+
+                  <h2 className="text-xl font-bold text-text mb-2">{selectedListing.title}</h2>
+                  <p className="text-2xl font-black text-primary mb-1">₹{(selectedListing.price||0).toLocaleString()}</p>
+                  {selectedListing.is_negotiable ? <span className="text-xs text-amber-400 font-bold">🤝 Price is negotiable</span> : null}
+
+                  {selectedListing.description && <p className="text-sm text-text-muted mt-4 mb-4 whitespace-pre-line">{selectedListing.description}</p>}
+
+                  {/* Seller Info */}
+                  <div className="bg-background-alt rounded-2xl p-4 mb-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                      {(selectedListing.seller_name || 'S')[0]}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-text font-bold text-sm">{selectedListing.seller_name || 'Seller'}</p>
+                      <p className="text-text-muted text-xs flex items-center gap-1"><MapPin className="w-3 h-3" /> {selectedListing.zone || 'Local Area'}</p>
+                    </div>
+                    {selectedListing.seller_verified ? <span className="text-emerald-400 text-xs flex items-center gap-0.5"><Shield className="w-3 h-3" /> Verified</span> : null}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button onClick={() => { if (!token) { alert('Login first'); return; } loadChat(selectedListing.id); }}
+                      className="flex-1 py-3 bg-background-alt text-text font-bold rounded-xl border border-border hover:bg-border/40 transition flex items-center justify-center gap-2 text-sm">
+                      <MessageCircle className="w-4 h-4" /> Chat with Seller
+                    </button>
+                    {selectedListing.is_negotiable ? (
+                      <button onClick={() => { if (!token) { alert('Login first'); return; } setOfferAmount(String(Math.round((selectedListing.price||1000)*0.85))); setShowOfferModal(true); }}
+                        className="py-3 px-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition text-sm">
+                        Make Offer
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {selectedListing.delivery_available ? (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400"><Truck className="w-3 h-3" /> Delivery available in your area</div>
+                  ) : null}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ OFFER MODAL ═══ */}
+        <AnimatePresence>
+          {showOfferModal && selectedListing && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowOfferModal(false)}>
+              <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-card-bg border border-border rounded-3xl w-full max-w-sm p-8">
+                {offerSubmitted ? (
+                  <div className="text-center py-8">
+                    <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-text">Offer Sent!</h3>
+                    <p className="text-text-muted mt-2">Seller will review your offer.</p>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold text-text mb-2">Make an Offer</h3>
+                    <p className="text-text-muted text-sm mb-6">Listed at: <span className="text-text font-bold">₹{(selectedListing.price||0).toLocaleString()}</span></p>
+                    <div className="bg-background-alt rounded-2xl p-6 mb-4 text-center">
+                      <input type="number" value={offerAmount} onChange={e => setOfferAmount(e.target.value)} placeholder="₹ Your offer"
+                        className="bg-transparent text-text text-3xl font-black text-center w-full outline-none" />
+                    </div>
+                    <textarea value={offerMessage} onChange={e => setOfferMessage(e.target.value)} placeholder="Add a message (optional)"
+                      className="w-full bg-background-alt text-text rounded-xl p-3 border border-border text-sm outline-none resize-none h-16 mb-4" />
+                    <button onClick={submitOffer} className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition text-lg">
+                      Submit Offer 🤝
+                    </button>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ CHAT DRAWER ═══ */}
+        <AnimatePresence>
+          {showChat && selectedListing && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={() => setShowChat(false)}>
+              <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} onClick={e => e.stopPropagation()} className="bg-card-bg border border-border rounded-t-3xl md:rounded-3xl w-full max-w-md h-[70vh] flex flex-col">
+                <div className="p-4 border-b border-border flex justify-between items-center">
+                  <div>
+                    <h3 className="text-text font-bold text-sm">{selectedListing.title}</h3>
+                    <p className="text-text-muted text-xs">₹{(selectedListing.price||0).toLocaleString()}</p>
+                  </div>
+                  <button onClick={() => setShowChat(false)} className="p-1 rounded-lg hover:bg-background-alt"><X className="w-5 h-5 text-text-muted" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {chatMessages.length === 0 ? (
+                    <div className="text-center py-8">
+                      <MessageCircle className="w-10 h-10 text-text-muted mx-auto mb-2 opacity-30" />
+                      <p className="text-text-muted text-sm">Start chatting with the seller</p>
+                      <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                        {['Is this still available?', 'Can you lower the price?', 'Where can I pick it up?'].map(q => (
+                          <button key={q} onClick={() => { setChatInput(q); }} className="text-xs bg-background-alt text-text px-3 py-1.5 rounded-full border border-border hover:bg-border/40">{q}</button>
+                        ))}
                       </div>
-                      <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span className="badge badge-secondary" style={{ fontSize: '0.7rem', alignSelf: 'flex-start', marginBottom: '0.5rem' }}>{item.category}</span>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem', lineHeight: 1.3 }}>{item.title}</h3>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 0.75rem' }}>📍 {item.zone} · {item.time}</p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                          <h2 style={{ color: 'var(--primary)', fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>₹{item.price.toLocaleString()}</h2>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>By {item.seller}</span>
-                        </div>
-                        <a href="/download" className="btn btn-primary" style={{ width: '100%', padding: '0.55rem', fontSize: '0.85rem', marginTop: '1rem' }}>
-                          💬 Chat with Seller
-                        </a>
+                    </div>
+                  ) : chatMessages.map(msg => (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="max-w-[80%] bg-background-alt text-text rounded-2xl px-4 py-2 text-sm">
+                        <p className="font-bold text-xs mb-0.5 opacity-70">{msg.sender_name}</p>
+                        <p>{msg.message}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+                <div className="p-4 border-t border-border flex gap-2">
+                  <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendChat()}
+                    placeholder="Type a message..." className="flex-1 bg-background-alt text-text rounded-xl px-4 py-3 border border-border text-sm outline-none" />
+                  <button onClick={sendChat} className="p-3 bg-primary text-white rounded-xl hover:opacity-90"><Send className="w-5 h-5" /></button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       <Footer />
-    </div>
+    </>
   );
+}
+
+// Helpers
+function getCategoryIcon(cat) {
+  const map = { Electronics: '📱', Furniture: '🪑', 'Home Appliances': '🫧', 'Sports & Fitness': '🏏', 'Books & Stationery': '📚', 'Clothing & Fashion': '👕', Vehicles: '🚗', 'Kitchen & Dining': '🍳', 'Baby & Kids': '👶', 'Garden & Outdoor': '🌿', 'Tools & Hardware': '🔧' };
+  return map[cat] || '📦';
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
