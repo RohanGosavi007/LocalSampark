@@ -30,6 +30,17 @@ function translateQuery(sql, params = []) {
   // Remove FOR UPDATE (unsupported in SQLite)
   cleanSql = cleanSql.replace(/\s+FOR\s+UPDATE\b/gi, "");
 
+  // Replace PostgreSQL NOW() with SQLite datetime('now')
+  cleanSql = cleanSql.replace(/\bNOW\(\)/gi, "datetime('now')");
+
+  // Replace PostgreSQL INTERVAL patterns: NOW() - INTERVAL '30 days' -> datetime('now', '-30 days')
+  cleanSql = cleanSql.replace(/datetime\('now'\)\s*-\s*INTERVAL\s*'(\d+)\s+(\w+)'/gi, (match, n, unit) => {
+    return `datetime('now', '-${n} ${unit}')`;
+  });
+  cleanSql = cleanSql.replace(/datetime\('now'\)\s*\+\s*INTERVAL\s*'(\d+)\s+(\w+)'/gi, (match, n, unit) => {
+    return `datetime('now', '+${n} ${unit}')`;
+  });
+
   // If no params, return as is
   if (!params || params.length === 0) {
     return { sql: cleanSql, params: [] };
@@ -58,7 +69,7 @@ function prepareInsert(sql, params) {
     
     // If the table has an id primary key, and 'id' is not in the columns being inserted,
     // we can prepend a generated UUID to the params and insert it.
-    const autoIncTables = ['users', 'admin_roles'];
+    const autoIncTables = ['users', 'admin_roles', 'universal_orders'];
     if (!columns.includes('id') && !autoIncTables.includes(tableName)) {
       const id = uuidv4();
       const newSql = sql

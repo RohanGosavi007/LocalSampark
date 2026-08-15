@@ -31,40 +31,40 @@ export default function SecurityPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:bg-slate-900">
+    <div className="min-h-screen bg-background flex flex-col md:bg-card-bg">
       <div className="hidden md:block"><Header /></div>
       
       {/* Mobile Frame Container */}
-      <div className="flex-1 max-w-md w-full mx-auto bg-slate-950 md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-slate-800 md:shadow-2xl overflow-hidden relative flex flex-col">
+      <div className="flex-1 max-w-md w-full mx-auto bg-background md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-border md:shadow-2xl overflow-hidden relative flex flex-col">
         
         {/* App Bar */}
-        <div className="bg-slate-900 p-6 border-b border-slate-800 z-10 flex justify-between items-center">
+        <div className="bg-card-bg p-6 border-b border-border z-10 flex justify-between items-center">
           <button onClick={() => router.back()} className="text-blue-500 font-bold">← Back</button>
-          <h1 className="text-lg font-bold text-white">Security & Privacy</h1>
-          <Lock className="text-slate-400" size={20} />
+          <h1 className="text-lg font-bold text-text">Security & Privacy</h1>
+          <Lock className="text-text-muted" size={20} />
         </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           
           <div>
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
               <Download className="text-blue-500" />
               Data Export
             </h2>
-            <p className="text-slate-400 text-sm mb-4 leading-relaxed">
+            <p className="text-text-muted text-sm mb-4 leading-relaxed">
               Under the DPDP Act and GDPR, you have the right to request a copy of your personal data. We will package your order history, profile data, and saved locations into a downloadable JSON file.
             </p>
             <button 
               onClick={handleDataExport}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors border border-slate-700 flex items-center justify-center gap-2"
+              className="w-full bg-card-bg hover:bg-background-alt text-text font-bold py-3 rounded-xl transition-colors border border-border flex items-center justify-center gap-2"
             >
               <Download size={18} />
               Download My Data
             </button>
           </div>
 
-          <div className="pt-8 border-t border-slate-800">
+          <div className="pt-8 border-t border-border">
             <h2 className="text-xl font-bold text-red-500 mb-4 flex items-center gap-2">
               <ShieldAlert />
               Danger Zone
@@ -88,7 +88,7 @@ export default function SecurityPage() {
                   value={deleteConfirm}
                   onChange={(e) => setDeleteConfirm(e.target.value)}
                   placeholder="DELETE"
-                  className="w-full bg-slate-950 border border-red-500/30 rounded-xl px-4 py-3 text-red-500 outline-none focus:border-red-500 transition-colors uppercase font-mono" 
+                  className="w-full bg-background border border-red-500/30 rounded-xl px-4 py-3 text-red-500 outline-none focus:border-red-500 transition-colors uppercase font-mono" 
                 />
               </div>
 

@@ -64,38 +64,38 @@ export default function SmartCartPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-text text-center">
         <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 border border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
           <CheckCircle size={48} className="text-emerald-500" />
         </div>
         <h1 className="text-4xl font-black mb-4">Multi-Vendor Order Placed!</h1>
-        <p className="text-slate-400 text-lg mb-8 max-w-md mx-auto">
+        <p className="text-text-muted text-lg mb-8 max-w-md mx-auto">
           Our smart logistics engine has dispatched a single rider to pick up from Balaji SuperMart, Apollo, and Pune Baking Co.
         </p>
-        
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm mb-8 text-left">
+
+        <div className="bg-card-bg border border-border rounded-2xl p-6 w-full max-w-sm mb-8 text-left">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
               <Truck size={24} className="text-blue-500" />
             </div>
             <div>
-              <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Rider Assigned</p>
-              <h3 className="text-white font-bold text-lg">Ramesh Kumar</h3>
+              <p className="text-text-muted text-sm font-bold uppercase tracking-wider">Rider Assigned</p>
+              <h3 className="text-text font-bold text-lg">Ramesh Kumar</h3>
             </div>
           </div>
-          
-          <div className="relative pl-6 border-l-2 border-slate-700 space-y-6">
+
+          <div className="relative pl-6 border-l-2 border-border space-y-6">
             <div className="relative">
-              <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-blue-500"></div>
-              <p className="text-sm font-bold text-slate-300">Pickup 1: Pune Baking Co.</p>
+              <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-card-bg border-2 border-blue-500"></div>
+              <p className="text-sm font-bold text-text-muted">Pickup 1: Pune Baking Co.</p>
             </div>
             <div className="relative">
-              <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-blue-500"></div>
-              <p className="text-sm font-bold text-slate-300">Pickup 2: Balaji SuperMart</p>
+              <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-card-bg border-2 border-blue-500"></div>
+              <p className="text-sm font-bold text-text-muted">Pickup 2: Balaji SuperMart</p>
             </div>
             <div className="relative">
-              <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-blue-500"></div>
-              <p className="text-sm font-bold text-slate-300">Pickup 3: Apollo Pharmacy</p>
+              <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-card-bg border-2 border-blue-500"></div>
+              <p className="text-sm font-bold text-text-muted">Pickup 3: Apollo Pharmacy</p>
             </div>
             <div className="relative">
               <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse"></div>
@@ -112,7 +112,7 @@ export default function SmartCartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-white pb-20">
+    <div className="min-h-screen bg-background font-sans text-text pb-20">
       <Header />
       
       <div className="max-w-6xl mx-auto px-4 pt-8">
@@ -122,7 +122,7 @@ export default function SmartCartPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black">Multi-Vendor Smart Cart</h1>
-            <p className="text-slate-400 text-sm">Combine orders from multiple local shops into a single delivery.</p>
+            <p className="text-text-muted text-sm">Combine orders from multiple local shops into a single delivery.</p>
           </div>
         </div>
 
@@ -131,15 +131,15 @@ export default function SmartCartPage() {
           {/* Vendors List */}
           <div className="lg:col-span-2 space-y-6">
             {vendors.map((vendor, index) => (
-              <div key={vendor.id} className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <div className="bg-slate-800/50 p-4 border-b border-slate-700/50 flex items-center justify-between">
+              <div key={vendor.id} className="bg-card-bg border border-border rounded-3xl overflow-hidden shadow-xl">
+                <div className="bg-background-alt p-4 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
-                      <Store size={18} className="text-slate-300" />
+                    <div className="w-10 h-10 bg-background-alt rounded-full flex items-center justify-center">
+                      <Store size={18} className="text-text-muted" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{vendor.name}</h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                      <p className="text-xs text-text-muted flex items-center gap-1">
                         {vendor.type} • <MapPin size={12} /> {vendor.distance}
                       </p>
                     </div>
@@ -148,17 +148,17 @@ export default function SmartCartPage() {
                     Pickup #{index + 1}
                   </div>
                 </div>
-                
+
                 <div className="p-4 space-y-4">
                   {vendor.items.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-xs font-bold text-slate-400">
+                        <div className="w-8 h-8 bg-background-alt rounded-lg flex items-center justify-center text-xs font-bold text-text-muted">
                           {item.qty}x
                         </div>
-                        <span className="font-medium text-slate-200">{item.name}</span>
+                        <span className="font-medium text-text-muted">{item.name}</span>
                       </div>
-                      <span className="font-bold text-slate-300">₹{item.price * item.qty}</span>
+                      <span className="font-bold text-text-muted">₹{item.price * item.qty}</span>
                     </div>
                   ))}
                 </div>
@@ -168,39 +168,39 @@ export default function SmartCartPage() {
 
           {/* Smart Checkout Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl sticky top-24">
-              <h3 className="text-xl font-bold text-white mb-6 border-b border-slate-800 pb-4">Smart Checkout</h3>
-              
+            <div className="bg-card-bg border border-border rounded-3xl p-6 shadow-xl sticky top-24">
+              <h3 className="text-xl font-bold text-text mb-6 border-b border-border pb-4">Smart Checkout</h3>
+
               <div className="space-y-4 mb-6 text-sm">
-                <div className="flex justify-between text-slate-300">
+                <div className="flex justify-between text-text-muted">
                   <span>Item Total (3 Shops)</span>
                   <span>₹{totalItems}</span>
                 </div>
-                
-                <div className="flex justify-between text-slate-400 line-through">
+
+                <div className="flex justify-between text-text-muted line-through">
                   <span>Standard Delivery Fee (3x)</span>
                   <span>₹{standardDeliveryFee}</span>
                 </div>
-                
+
                 <div className="flex justify-between text-blue-400 font-bold items-center">
                   <span className="flex items-center gap-1"><Zap size={14} /> Smart Routing Fee</span>
                   <span>₹{smartDeliveryFee}</span>
                 </div>
-                
-                <div className="flex justify-between text-slate-300">
+
+                <div className="flex justify-between text-text-muted">
                   <span>Platform Fee</span>
                   <span>₹{platformFee}</span>
                 </div>
 
-                <div className="border-t border-slate-800 pt-4 flex justify-between items-end">
-                  <span className="text-slate-400">Total to Pay</span>
-                  <span className="text-3xl font-black text-white">₹{finalTotal}</span>
+                <div className="border-t border-border pt-4 flex justify-between items-end">
+                  <span className="text-text-muted">Total to Pay</span>
+                  <span className="text-3xl font-black text-text">₹{finalTotal}</span>
                 </div>
               </div>
 
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6">
                 <p className="text-emerald-400 text-xs font-bold mb-1 flex items-center gap-1"><CheckCircle size={14} /> You Saved ₹{savings}!</p>
-                <p className="text-slate-400 text-xs">Our logistics engine grouped your 3 orders into a single delivery route.</p>
+                <p className="text-text-muted text-xs">Our logistics engine grouped your 3 orders into a single delivery route.</p>
               </div>
 
               <button 

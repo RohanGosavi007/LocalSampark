@@ -95,23 +95,23 @@ export default function GatekeeperPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:bg-slate-900">
+    <div className="min-h-screen bg-background flex flex-col md:bg-card-bg">
       {/* Hidden desktop header to simulate a mobile app view */}
       <div className="hidden md:block"><Header /></div>
       
       {/* Mobile Frame Container */}
-      <div className="flex-1 max-w-md w-full mx-auto bg-slate-950 md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-slate-800 md:shadow-2xl overflow-hidden relative flex flex-col">
+      <div className="flex-1 max-w-md w-full mx-auto bg-background md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-border md:shadow-2xl overflow-hidden relative flex flex-col">
         
         {/* App Bar */}
-        <div className="bg-slate-900 p-6 shadow-md border-b border-slate-800 z-10 flex flex-col gap-4">
+        <div className="bg-card-bg p-6 shadow-md border-b border-border z-10 flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">{t('gatekeeper.title')}</h1>
-              <p className="text-slate-400 text-sm">{t('gatekeeper.subtitle')}</p>
+              <h1 className="text-xl font-bold text-text tracking-tight">{t('gatekeeper.title')}</h1>
+              <p className="text-text-muted text-sm">{t("gatekeeper.subtitle")}</p>
             </div>
             <button 
               onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+              className="flex items-center gap-2 bg-card-bg hover:bg-background-alt text-text px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
             >
               {/* language is undefined during prerender, where the provider
                   has not mounted, so it must be defaulted before use. */}
@@ -132,7 +132,7 @@ export default function GatekeeperPortal() {
         <div className="flex-1 overflow-y-auto p-6">
           
           {/* Quick Actions Tabs */}
-          <div className="flex gap-2 bg-slate-900 p-1 rounded-xl mb-8 border border-slate-800">
+          <div className="flex gap-2 bg-card-bg p-1 rounded-xl mb-8 border border-border">
             {[
               { id: 'guest', icon: UserPlus, label: t('gatekeeper.tabs.guest') },
               { id: 'delivery', icon: Package, label: t('gatekeeper.tabs.delivery') },
@@ -145,7 +145,7 @@ export default function GatekeeperPortal() {
                 className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-lg transition-all ${
                   activeTab === tab.id 
                     ? 'bg-blue-600 shadow-lg' 
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                     : "text-text-muted hover:bg-background-alt hover:text-text"
                 }`}
               >
                 <tab.icon size={20} className={activeTab === tab.id ? 'text-white' : ''} />
@@ -159,64 +159,64 @@ export default function GatekeeperPortal() {
               {status === 'waiting' && (
                 <>
                   <div className="w-20 h-20 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-6"></div>
-                  <h2 className="text-xl font-bold text-white">{t('gatekeeper.status.calling')} {form.host_flat}</h2>
-                  <p className="text-slate-400 text-sm mt-2">{t('gatekeeper.status.waiting')}</p>
+                  <h2 className="text-xl font-bold text-text">{t("gatekeeper.status.calling")} {form.host_flat}</h2>
+                  <p className="text-text-muted text-sm mt-2">{t("gatekeeper.status.waiting")}</p>
                 </>
               )}
               {status === 'approved' && (
                 <>
                   <CheckCircle size={80} className="text-green-500 mb-6 drop-shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-bounce" />
                   <h2 className="text-2xl font-bold text-green-400">{t('gatekeeper.status.approved')}</h2>
-                  <p className="text-slate-300 mt-2">{t('gatekeeper.status.approved_desc')}</p>
-                  <button onClick={resetForm} className="mt-8 bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-700">{t('gatekeeper.status.log_another')}</button>
+                  <p className="text-text-muted mt-2">{t("gatekeeper.status.approved_desc")}</p>
+                  <button onClick={resetForm} className="mt-8 bg-card-bg text-text px-8 py-3 rounded-xl font-bold hover:bg-background-alt">{t("gatekeeper.status.log_another")}</button>
                 </>
               )}
               {status === 'denied' && (
                 <>
                   <XCircle size={80} className="text-red-500 mb-6 drop-shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
                   <h2 className="text-2xl font-bold text-red-400">{t('gatekeeper.status.denied')}</h2>
-                  <p className="text-slate-300 mt-2">{t('gatekeeper.status.denied_desc')}</p>
-                  <button onClick={resetForm} className="mt-8 bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-700">{t('gatekeeper.status.go_back')}</button>
+                  <p className="text-text-muted mt-2">{t("gatekeeper.status.denied_desc")}</p>
+                  <button onClick={resetForm} className="mt-8 bg-card-bg text-text px-8 py-3 rounded-xl font-bold hover:bg-background-alt">{t("gatekeeper.status.go_back")}</button>
                 </>
               )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
-              <h2 className="text-lg font-bold text-white mb-6">{t('gatekeeper.log_new')}</h2>
+              <h2 className="text-lg font-bold text-text mb-6">{t('gatekeeper.log_new')}</h2>
               
               <div>
-                <label className="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wider">{t('gatekeeper.form.flat_no')}</label>
+                <label className="block text-text-muted text-xs font-bold mb-2 uppercase tracking-wider">{t('gatekeeper.form.flat_no')}</label>
                 <input 
                   type="text" 
                   required
                   placeholder="e.g. A-402"
                   value={form.host_flat}
                   onChange={e => setForm({...form, host_flat: e.target.value})}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-5 py-4 text-white text-lg font-bold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:font-normal" 
+                  className="w-full bg-card-bg border border-border rounded-xl px-5 py-4 text-text text-lg font-bold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:font-normal" 
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wider">{t('gatekeeper.form.visitor_name')}</label>
+                <label className="block text-text-muted text-xs font-bold mb-2 uppercase tracking-wider">{t('gatekeeper.form.visitor_name')}</label>
                 <input 
                   type="text" 
                   required
                   placeholder="John Doe"
                   value={form.name}
                   onChange={e => setForm({...form, name: e.target.value})}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-5 py-4 text-white outline-none focus:border-blue-500 transition-all" 
+                  className="w-full bg-card-bg border border-border rounded-xl px-5 py-4 text-text outline-none focus:border-blue-500 transition-all" 
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wider">{t('gatekeeper.form.phone')}</label>
+                <label className="block text-text-muted text-xs font-bold mb-2 uppercase tracking-wider">{t('gatekeeper.form.phone')}</label>
                 <input 
                   type="tel" 
                   required
                   placeholder="+91"
                   value={form.phone}
                   onChange={e => setForm({...form, phone: e.target.value})}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-5 py-4 text-white outline-none focus:border-blue-500 transition-all" 
+                  className="w-full bg-card-bg border border-border rounded-xl px-5 py-4 text-text outline-none focus:border-blue-500 transition-all" 
                 />
               </div>
 

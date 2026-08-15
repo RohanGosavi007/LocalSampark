@@ -57,9 +57,9 @@ export default function HappyHoursPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-white pb-20">
+    <div className="min-h-screen bg-background font-sans text-text pb-20">
       <Header />
-      
+
       {/* Hero Section */}
       <div className="pt-24 pb-12 bg-gradient-to-b from-purple-900/40 to-slate-950 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -70,7 +70,7 @@ export default function HappyHoursPage() {
           <p className="text-slate-300 text-lg max-w-xl mx-auto mb-8">
             Help local bakeries and grocers clear their daily fresh inventory before closing. Save up to 70% on premium items!
           </p>
-          
+
           <div className="inline-flex flex-col items-center p-4 bg-slate-900 border-2 border-purple-500/50 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.2)]">
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><Timer size={14} /> Deals End In</span>
             <span className="text-3xl font-black text-purple-400 font-mono">{timeLeft}</span>
@@ -84,14 +84,14 @@ export default function HappyHoursPage() {
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Percent className="text-purple-500" /> Live Deals Near You
           </h2>
-          <span className="text-slate-400 text-sm">Showing 2 results</span>
+          <span className="text-text-muted text-sm">Showing 2 results</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {deals.map(deal => {
             const discount = Math.round(((deal.product.originalPrice - deal.product.price) / deal.product.originalPrice) * 100);
             return (
-              <div key={deal.id} className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-purple-500/50 transition-colors group">
+              <div key={deal.id} className="bg-card-bg border border-border rounded-3xl overflow-hidden shadow-xl hover:border-purple-500/50 transition-colors group">
                 <div className="h-48 relative overflow-hidden">
                   <img src={deal.image} alt={deal.product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-4 left-4 bg-red-500 text-white font-black text-sm px-3 py-1 rounded-full shadow-lg">
@@ -105,18 +105,18 @@ export default function HappyHoursPage() {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{deal.shop}</p>
-                      <h3 className="text-lg font-bold text-white leading-tight">{deal.product.name}</h3>
+                      <p className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1">{deal.shop}</p>
+                      <h3 className="text-lg font-bold text-text leading-tight">{deal.product.name}</h3>
                     </div>
                   </div>
                   
                   <div className="flex items-end gap-3 mb-6 mt-4">
                     <span className="text-3xl font-black text-purple-400">₹{deal.product.price}</span>
-                    <span className="text-slate-500 font-medium line-through mb-1">₹{deal.product.originalPrice}</span>
+                    <span className="text-text-muted font-medium line-through mb-1">₹{deal.product.originalPrice}</span>
                   </div>
                   
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden mr-4">
+                    <div className="w-full bg-background-alt h-2 rounded-full overflow-hidden mr-4">
                       <div 
                         className="bg-gradient-to-r from-orange-500 to-red-500 h-full rounded-full"
                         style={{ width: `${(deal.left / 20) * 100}%` }}

@@ -7,10 +7,10 @@ import { Star, MapPin, Clock, ArrowRight } from 'lucide-react';
 const ShopCard = memo(({ shop, style }) => {
   return (
     <div style={style} className="p-2">
-      <div className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-4 h-full flex flex-col justify-between transition-all group shadow-md hover:shadow-emerald-500/5">
+      <div className="bg-background border border-border hover:border-emerald-500/50 rounded-xl p-4 h-full flex flex-col justify-between transition-all group shadow-md hover:shadow-emerald-500/5">
         <div>
           {/* Header Banner & Logo */}
-          <div className="relative h-24 rounded-lg bg-slate-950 overflow-hidden mb-3">
+          <div className="relative h-24 rounded-lg bg-background overflow-hidden mb-3">
             {shop.bannerUrl ? (
               <img
                 src={shop.bannerUrl}
@@ -31,10 +31,10 @@ const ShopCard = memo(({ shop, style }) => {
           </div>
 
           {/* Shop Title & Category */}
-          <h3 className="font-bold text-white text-sm truncate group-hover:text-emerald-400 transition-colors">
+          <h3 className="font-bold text-text text-sm truncate group-hover:text-emerald-400 transition-colors">
             {shop.name}
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5 flex items-center justify-between">
+          <p className="text-xs text-text-muted mt-0.5 flex items-center justify-between">
             <span>{shop.category?.name || 'General'}</span>
             <span className="flex items-center text-amber-400 text-[11px] font-semibold">
               <Star className="w-3 h-3 fill-amber-400 mr-0.5" />
@@ -44,9 +44,9 @@ const ShopCard = memo(({ shop, style }) => {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+        <div className="mt-3 pt-2 border-t border-border/80 flex items-center justify-between text-[11px] text-text-muted">
           <span className="flex items-center truncate max-w-[120px]">
-            <MapPin className="w-3 h-3 mr-1 shrink-0 text-slate-400" />
+            <MapPin className="w-3 h-3 mr-1 shrink-0 text-text-muted" />
             {shop.locality}
           </span>
           <span className="flex items-center text-emerald-400 font-medium">
@@ -64,8 +64,8 @@ ShopCard.displayName = 'ShopCard';
 export default function VirtualizedShopDirectoryGrid({ shops = [] }) {
   if (!shops || shops.length === 0) {
     return (
-      <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
-        <p className="text-slate-400 text-sm">No shops found for this pincode filter.</p>
+      <div className="text-center py-12 border border-dashed border-border rounded-xl">
+        <p className="text-text-muted text-sm">No shops found for this pincode filter.</p>
       </div>
     );
   }

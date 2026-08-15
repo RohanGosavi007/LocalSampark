@@ -51,7 +51,7 @@ export default function MedicalPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-950 pt-20 pb-16">
+      <main className="min-h-screen bg-background pt-20 pb-16">
         {/* Emergency Banner */}
         <AnimatePresence>
           {showEmergency && (
@@ -76,21 +76,21 @@ export default function MedicalPage() {
         </AnimatePresence>
 
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-16 px-4 border-b border-slate-800">
+        <section className="relative overflow-hidden py-16 px-4 border-b border-border">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-emerald-600/10" />
           <div className="max-w-6xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="flex-1 text-center md:text-left">
-                <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-bold text-white mb-4">
+                <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-bold text-text mb-4">
                   Neighborhood <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Health Directory</span>
                 </motion.h1>
-                <p className="text-slate-400 text-lg mb-8 max-w-xl mx-auto md:mx-0">
+                <p className="text-text-muted text-lg mb-8 max-w-xl mx-auto md:mx-0">
                   Find verified doctors, clinics, pharmacies and 24x7 emergency services near you.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center gap-4 max-w-xl">
-                  <div className="flex-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3">
-                    <Search className="text-slate-500 w-5 h-5" />
-                    <input type="text" placeholder="Search doctors, specialties..." className="bg-transparent text-white w-full outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <div className="flex-1 w-full bg-card-bg border border-border rounded-xl px-4 py-3 flex items-center gap-3">
+                    <Search className="text-text-muted w-5 h-5" />
+                    <input type="text" placeholder="Search doctors, specialties..." className="bg-transparent text-text w-full outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
                   {!showEmergency && (
                     <button onClick={() => setShowEmergency(true)} className="w-full sm:w-auto px-6 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500 hover:text-white transition flex items-center justify-center gap-2">
@@ -110,10 +110,10 @@ export default function MedicalPage() {
         </section>
 
         {/* Categories */}
-        <div className="max-w-6xl mx-auto px-4 py-8 overflow-x-auto hide-scrollbar border-b border-slate-800 mb-8">
+        <div className="max-w-6xl mx-auto px-4 py-8 overflow-x-auto hide-scrollbar border-b border-border mb-8">
           <div className="flex gap-3 min-w-max pb-2">
             {CATEGORIES.map(c => (
-              <button key={c.id} onClick={() => setCategory(c.id)} className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${category === c.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700'}`}>
+              <button key={c.id} onClick={() => setCategory(c.id)} className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${category === c.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'  : "bg-card-bg text-text-muted hover:bg-background-alt border border-border"}`}>
                 {c.label}
               </button>
             ))}
@@ -125,27 +125,27 @@ export default function MedicalPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1,2,3,4,5,6].map(i => (
-                <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-64 animate-pulse" />
+                <div key={i} className="bg-card-bg border border-border rounded-3xl p-6 h-64 animate-pulse" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <Stethoscope className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-xl text-slate-400 font-semibold">No providers found</h3>
-              <p className="text-slate-500 mt-2">Try a different search or category.</p>
+              <h3 className="text-xl text-text-muted font-semibold">No providers found</h3>
+              <p className="text-text-muted mt-2">Try a different search or category.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((provider, i) => (
-                <motion.div key={provider.id || i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 hover:border-blue-500/30 hover:bg-slate-800/50 transition-all flex flex-col">
+                <motion.div key={provider.id || i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card-bg border border-border rounded-3xl p-6 hover:border-blue-500/30 hover:bg-background-alt/50 transition-all flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex gap-4 items-center">
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${provider.type === 'hospital' ? 'bg-red-500/10 text-red-500' : provider.type === 'pharmacy' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
                         {provider.type === 'hospital' ? <Activity className="w-7 h-7" /> : provider.type === 'pharmacy' ? <ShieldPlus className="w-7 h-7" /> : <Stethoscope className="w-7 h-7" />}
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white leading-tight mb-1 line-clamp-2">{provider.name}</h3>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{provider.type?.replace('_', ' ')}</span>
+                        <h3 className="text-lg font-bold text-text leading-tight mb-1 line-clamp-2">{provider.name}</h3>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">{provider.type?.replace('_', ' ')}</span>
                       </div>
                     </div>
                   </div>
@@ -154,18 +154,18 @@ export default function MedicalPage() {
                     {provider.specialization && (
                       <p className="text-sm text-blue-400 font-medium">{provider.specialization}</p>
                     )}
-                    <p className="text-sm text-slate-400 flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-text-muted flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
                       <span className="line-clamp-2">{provider.address}</span>
                     </p>
-                    <p className="text-sm text-slate-400 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+                    <p className="text-sm text-text-muted flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-text-muted shrink-0" />
                       {provider.is_24x7 ? <span className="text-emerald-400 font-bold">24x7 Open</span> : <span>Standard Hours</span>}
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-800 flex items-center gap-3">
-                    <a href={`tel:${provider.phone}`} className="flex-1 py-2.5 bg-slate-800 text-white font-semibold rounded-xl text-center hover:bg-slate-700 transition border border-slate-700 flex items-center justify-center gap-2">
+                  <div className="pt-4 border-t border-border flex items-center gap-3">
+                    <a href={`tel:${provider.phone}`} className="flex-1 py-2.5 bg-card-bg text-text font-semibold rounded-xl text-center hover:bg-background-alt transition border border-border flex items-center justify-center gap-2">
                       <Phone className="w-4 h-4" /> Call
                     </a>
                     {provider.emergency_phone && (

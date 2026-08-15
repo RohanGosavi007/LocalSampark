@@ -6,7 +6,13 @@ async function createCheckoutOrder(req, res, next) {
     const { shopId, cart, name, phone, address } = req.body;
     
     // 1. Check Shop Payment Flow Settings
-    const settingsRaw = await queryOne('SELECT settings FROM shop_settings WHERE shop_id = $1', [shopId]);
+    let settingsRaw = null;
+    try {
+      settingsRaw = await queryOne('SELECT settings FROM shop_settings WHERE shop_id = $1', [shopId]);
+    } catch (e) {
+      // shop_settings table may not exist yet — proceed with defaults
+      console.warn('[checkout] shop_settings query failed, using defaults:', e.message);
+    }
     let settings = {};
     if (settingsRaw && settingsRaw.settings) {
       try { 
@@ -28,11 +34,11 @@ async function createCheckoutOrder(req, res, next) {
     const initialStatus = paymentFlow === 'instant' ? 'pending_payment' : 'pending_approval';
 
     // The SQLite database logic. 'query' might just return the changes or nothing if RETURNING is not used natively, so we'll do an INSERT and assume we can query it back or just use the orderRef.
-    await query(`INSERT INTO universal_orders (shop_id, user_id, type, amount, status, metadata) VALUES ($1, $2, $3, $4, $5, $6)`,
+    await query(`INSERT INTO universal_orders (shop_id, user_id, order_type, total_amount, status, notes) VALUES ($1, $2, $3, $4, $5, $6)`,
       [shopId, req.user ? req.user.id : null, 'ecom', totalAmount, initialStatus, JSON.stringify({ name, phone, address, items: itemsJson, ref: orderRef })]
     );
 
-    const insertedOrder = await queryOne('SELECT id FROM universal_orders WHERE metadata LIKE $1 ORDER BY created_at DESC LIMIT 1', [`%${orderRef}%`]);
+    const insertedOrder = await queryOne('SELECT id FROM universal_orders WHERE notes LIKE $1 ORDER BY created_at DESC LIMIT 1', [`%${orderRef}%`]);
 
     // 4. Broadcast via Socket.io
     const io = req.app.get('io');

@@ -13,8 +13,12 @@ backend/.env
 *.sqlite
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 database.sqlite
 localsampark.db
+.claude/
+NUL
 
 # Build outputs
 .next/

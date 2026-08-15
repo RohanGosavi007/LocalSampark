@@ -57,10 +57,15 @@ export default function ShopDetailPage() {
   const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
+    let scriptLoaded = false;
+    let scriptElement = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (!scriptElement) {
+      scriptElement = document.createElement('script');
+      scriptElement.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      scriptElement.async = true;
+      document.body.appendChild(scriptElement);
+      scriptLoaded = true;
+    }
 
     async function fetchShopData() {
       try {
@@ -136,8 +141,12 @@ export default function ShopDetailPage() {
     });
 
     return () => {
-      document.body.removeChild(script);
-      socket.disconnect();
+      if (scriptLoaded && scriptElement && scriptElement.parentNode) {
+        scriptElement.parentNode.removeChild(scriptElement);
+      }
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, [id]);
 

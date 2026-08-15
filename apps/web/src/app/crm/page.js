@@ -44,15 +44,15 @@ export default function CRMPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-950 pt-20 pb-16">
-        <section className="relative overflow-hidden py-12 px-4 border-b border-slate-800">
+      <main className="min-h-screen bg-background pt-20 pb-16">
+        <section className="relative overflow-hidden py-12 px-4 border-b border-border">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Shop <span className="text-blue-500">CRM</span></h1>
-              <p className="text-slate-400">Manage your customers, track engagement, and boost sales.</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-text mb-2">Shop <span className="text-blue-500">CRM</span></h1>
+              <p className="text-text-muted">Manage your customers, track engagement, and boost sales.</p>
             </div>
             <div className="flex gap-3">
-              <button className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:bg-slate-700 transition">
+              <button className="p-3 bg-card-bg rounded-xl text-text-muted hover:bg-slate-700 transition">
                 <Bell className="w-5 h-5" />
               </button>
               <button className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition flex items-center gap-2">
@@ -72,7 +72,7 @@ export default function CRMPage() {
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'tasks', label: 'Tasks', icon: Calendar },
             ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${activeTab === tab.id ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${activeTab === tab.id ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'text-text-muted hover:bg-card-bg hover:text-text'}`}>
                 <tab.icon className="w-5 h-5" />
                 <span className="font-medium">{tab.label}</span>
               </button>
@@ -91,10 +91,10 @@ export default function CRMPage() {
                     { label: 'Avg Order Value', value: '₹1,250', trend: '+8%', color: 'text-amber-500' },
                     { label: 'Retention Rate', value: '68%', trend: '-2%', color: 'text-red-500' },
                   ].map((stat, i) => (
-                    <div key={i} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                      <p className="text-slate-400 text-sm mb-2">{stat.label}</p>
+                    <div key={i} className="bg-card-bg border border-border p-6 rounded-2xl">
+                      <p className="text-text-muted text-sm mb-2">{stat.label}</p>
                       <div className="flex justify-between items-end">
-                        <span className="text-3xl font-black text-white">{stat.value}</span>
+                        <span className="text-3xl font-black text-text">{stat.value}</span>
                         <span className={`text-sm font-bold ${stat.color}`}>{stat.trend}</span>
                       </div>
                     </div>
@@ -103,33 +103,33 @@ export default function CRMPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Customer List */}
-                  <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                  <div className="lg:col-span-2 bg-card-bg border border-border rounded-2xl p-6">
                     <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-xl font-bold text-white">Recent Activity</h3>
+                      <h3 className="text-xl font-bold text-text">Recent Activity</h3>
                       <button className="text-blue-500 hover:text-blue-400 text-sm font-bold flex items-center gap-1">
                         View All <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="space-y-4">
                       {customers.map(c => (
-                        <div key={c.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-blue-500/30 transition">
+                        <div key={c.id} className="flex items-center justify-between p-4 bg-background-alt rounded-xl border border-border hover:border-blue-500/30 transition">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 font-bold">
                               {c.name[0]}
                             </div>
                             <div>
-                              <p className="text-white font-bold">{c.name}</p>
+                              <p className="text-text font-bold">{c.name}</p>
                               <div className="flex gap-2 text-xs">
                                 <span className={`px-2 py-0.5 rounded-full ${c.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : c.status === 'Inactive' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}`}>
                                   {c.status}
                                 </span>
-                                <span className="text-slate-500">{c.lastContact}</span>
+                                <span className="text-text-muted">{c.lastContact}</span>
                               </div>
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <button className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"><Phone className="w-4 h-4" /></button>
-                            <button className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"><Mail className="w-4 h-4" /></button>
+                            <button className="p-2 rounded-lg bg-card-bg text-text-muted hover:text-text hover:bg-slate-700 transition"><Phone className="w-4 h-4" /></button>
+                            <button className="p-2 rounded-lg bg-card-bg text-text-muted hover:text-text hover:bg-slate-700 transition"><Mail className="w-4 h-4" /></button>
                           </div>
                         </div>
                       ))}
@@ -137,8 +137,8 @@ export default function CRMPage() {
                   </div>
 
                   {/* Tasks */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-6">Today's Tasks</h3>
+                  <div className="bg-card-bg border border-border rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-text mb-6">Today's Tasks</h3>
                     <div className="space-y-4">
                       {[
                         { title: 'Follow up with Priya', time: '10:00 AM' },
@@ -148,8 +148,8 @@ export default function CRMPage() {
                         <div key={i} className="flex gap-3">
                           <div className="mt-1"><div className="w-4 h-4 rounded-full border-2 border-slate-600"></div></div>
                           <div>
-                            <p className="text-white text-sm font-medium">{t.title}</p>
-                            <p className="text-slate-500 text-xs">{t.time}</p>
+                            <p className="text-text text-sm font-medium">{t.title}</p>
+                            <p className="text-text-muted text-xs">{t.time}</p>
                           </div>
                         </div>
                       ))}
@@ -160,9 +160,9 @@ export default function CRMPage() {
             )}
 
             {activeTab !== 'dashboard' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-16 text-center">
-                <h2 className="text-2xl font-bold text-white mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h2>
-                <p className="text-slate-400">Detailed implementation for this module is in progress.</p>
+              <div className="bg-card-bg border border-border rounded-2xl p-16 text-center">
+                <h2 className="text-2xl font-bold text-text mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h2>
+                <p className="text-text-muted">Detailed implementation for this module is in progress.</p>
               </div>
             )}
           </div>

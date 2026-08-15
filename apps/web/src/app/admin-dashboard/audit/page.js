@@ -49,7 +49,7 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      <div className="bg-slate-900 border rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+      <div className="bg-white dark:bg-slate-900 border rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
         <div className="p-4 border-b flex gap-4" style={{ borderColor: 'var(--border-color)' }}>
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
@@ -69,7 +69,7 @@ export default function AuditLogsPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm" style={{ color: 'var(--text-main)' }}>
-            <thead className="bg-slate-950/50 text-xs uppercase" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+            <thead className="bg-slate-50 dark:bg-slate-950/50 text-xs uppercase" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
               <tr>
                 <th className="px-6 py-4 font-bold tracking-wider">Timestamp</th>
                 <th className="px-6 py-4 font-bold tracking-wider">Admin ID</th>
@@ -92,7 +92,7 @@ export default function AuditLogsPage() {
                 </tr>
               ) : (
                 filteredLogs.map(log => (
-                  <tr key={log.id} className="border-b hover:bg-slate-800/20 transition" style={{ borderColor: 'var(--border-color)' }}>
+                  <tr key={log.id} className="border-b hover:bg-slate-100/20 dark:hover:bg-slate-800/20 transition" style={{ borderColor: 'var(--border-color)' }}>
                     <td className="px-6 py-4 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
                     <td className="px-6 py-4 font-mono text-xs">{log.admin_id}</td>
                     <td className="px-6 py-4">

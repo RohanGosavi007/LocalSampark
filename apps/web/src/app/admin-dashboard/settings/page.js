@@ -90,7 +90,7 @@ export default function SettingsDashboard() {
   };
 
   if (loading) {
-    return <div className="text-center py-20 text-slate-500">Loading Configuration Engine...</div>;
+    return <div className="text-center py-20 text-slate-500 dark:text-slate-400">Loading Configuration Engine...</div>;
   }
 
   return (
@@ -98,7 +98,7 @@ export default function SettingsDashboard() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-black mb-1 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
-            <Settings className="text-slate-400" /> Global Configuration Hub
+            <Settings className="text-slate-500 dark:text-slate-400" /> Global Configuration Hub
           </h1>
           <p style={{ color: 'var(--text-muted)' }}>Master switches, external API integrations, and platform-wide parameters.</p>
         </div>
@@ -116,19 +116,19 @@ export default function SettingsDashboard() {
         
         {/* Core Platform Toggles */}
         <div className="space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <ShieldAlert className="w-5 h-5 text-rose-500" /> Platform God-Switches
             </h2>
 
             <div className="space-y-8">
               
-              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: maintenanceMode ? 'rgba(244,63,94,0.4)' : 'var(--border-color)' }}>
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-100 dark:bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: maintenanceMode ? 'rgba(244,63,94,0.4)' : 'var(--border-color)' }}>
                 <div>
-                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                     Maintenance Mode
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm">Blocks all regular users from accessing the app, displaying a "Down for Maintenance" screen. Super Admins bypass this.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">Blocks all regular users from accessing the app, displaying a "Down for Maintenance" screen. Super Admins bypass this.</p>
                 </div>
                 <button 
                   onClick={() => setMaintenanceMode(!maintenanceMode)}
@@ -138,12 +138,12 @@ export default function SettingsDashboard() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: pauseRegistrations ? 'rgba(245,158,11,0.4)' : 'var(--border-color)' }}>
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-100 dark:bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: pauseRegistrations ? 'rgba(245,158,11,0.4)' : 'var(--border-color)' }}>
                 <div>
-                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                     Pause New Registrations
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm">Current users can still log in, but the signup flow for completely new users and shops is temporarily disabled.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">Current users can still log in, but the signup flow for completely new users and shops is temporarily disabled.</p>
                 </div>
                 <button 
                   onClick={() => setPauseRegistrations(!pauseRegistrations)}
@@ -153,17 +153,17 @@ export default function SettingsDashboard() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-100 dark:bg-slate-800/30 transition-all hover:bg-slate-800/50" style={{ borderColor: 'var(--border-color)' }}>
                 <div>
-                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                     <Globe className="w-5 h-5 text-sky-500"/> Default Platform Language
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm">Fallback language if user's device locale is unsupported.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">Fallback language if user's device locale is unsupported.</p>
                 </div>
                 <select 
                   value={defaultLang}
                   onChange={e => setDefaultLang(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-white text-sm font-bold rounded-lg px-4 py-2 outline-none"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold rounded-lg px-4 py-2 outline-none"
                 >
                   <option value="en">English</option>
                   <option value="hi">Hindi (हिंदी)</option>
@@ -178,7 +178,7 @@ export default function SettingsDashboard() {
 
         {/* Third-Party API Keys */}
         <div className="space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Key className="w-5 h-5 text-purple-500" /> External API Keys
             </h2>
@@ -193,7 +193,7 @@ export default function SettingsDashboard() {
             <div className="space-y-6">
               
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-400">
+                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-500 dark:text-slate-400">
                   Razorpay Live Secret
                   <button onClick={() => setShowRzp(!showRzp)} className="text-sky-500 flex items-center gap-1 hover:text-sky-400">
                     {showRzp ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>} {showRzp ? 'Hide' : 'Reveal'}
@@ -213,7 +213,7 @@ export default function SettingsDashboard() {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-400">
+                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-500 dark:text-slate-400">
                   Google Maps API Key
                   <button onClick={() => setShowGmaps(!showGmaps)} className="text-sky-500 flex items-center gap-1 hover:text-sky-400">
                     {showGmaps ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>} {showGmaps ? 'Hide' : 'Reveal'}

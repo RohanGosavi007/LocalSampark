@@ -93,7 +93,7 @@ export default function JobsDashboard() {
         
         {/* Job Posting Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Plus className="w-5 h-5 text-emerald-500" /> Post Free Listing
             </h2>
@@ -152,22 +152,22 @@ export default function JobsDashboard() {
 
         {/* Live Job Listings Grid */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Briefcase className="w-5 h-5 text-orange-500" /> Job Board Overview
             </h2>
 
             {loading ? (
-              <div className="text-center py-12 text-slate-500">Loading listings...</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-500">Loading listings...</div>
             ) : jobs.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">No active job listings.</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-500">No active job listings.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {jobs.map(job => (
                   <div key={job.id} className="p-4 border rounded-2xl flex flex-col justify-between" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-base)' }}>
                     <div>
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-white truncate max-w-[150px]">{job.title}</h4>
+                        <h4 className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{job.title}</h4>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1 ${
                           job.status === 'active' ? 'bg-emerald-500/20 text-emerald-500' :
                           job.status === 'expired' ? 'bg-amber-500/20 text-amber-500' : 'bg-red-500/20 text-red-500'
@@ -178,13 +178,13 @@ export default function JobsDashboard() {
                           {job.status}
                         </span>
                       </div>
-                      <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">{job.shop_name || 'Direct Employer'}</p>
+                      <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-500 mb-2">{job.shop_name || 'Direct Employer'}</p>
                       <p className="text-sm font-black text-orange-400 mb-2">{job.salary || 'Salary Not Specified'}</p>
-                      <p className="text-xs text-slate-400 line-clamp-2">{job.description}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{job.description}</p>
                     </div>
 
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50">
-                      <span className="text-[10px] text-slate-500">
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/50">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-500">
                         {new Date(job.created_at).toLocaleDateString()}
                       </span>
                       <div className="flex gap-2">

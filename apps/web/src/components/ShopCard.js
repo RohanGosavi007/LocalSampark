@@ -35,7 +35,7 @@ const ShopCardComponent = ({ shop, category, index, onQuickView }) => {
       maxTilt={7}
       scale={1.02}
       radius="rounded-3xl"
-      className="glass-card hover:shadow-2xl hover:shadow-primary/20 transition-shadow duration-300 flex flex-col h-full border border-white/20 dark:border-white/10 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 overflow-hidden group"
+      className="glass-card hover:shadow-2xl hover:shadow-primary/20 transition-shadow duration-300 flex flex-col h-full border border-white/20 dark:border-white/10 backdrop-blur-xl bg-white/70 dark:bg-background/70 overflow-hidden group"
     >
       {shop.is_premium === 1 && (
         <div className="absolute top-4 right-4 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 text-black px-3.5 py-1 rounded-full text-xs font-black z-10 shadow-lg shadow-amber-500/30 flex items-center gap-1.5 backdrop-blur-md">

@@ -47,17 +47,17 @@ export default function ResidentSuperApp() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:bg-slate-900">
+    <div className="min-h-screen bg-background flex flex-col md:bg-background-alt">
       <div className="hidden md:block"><Header /></div>
-      
+
       {/* Mobile Frame Container */}
-      <div className="flex-1 max-w-md w-full mx-auto bg-slate-950 md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-slate-800 md:shadow-2xl overflow-hidden relative flex flex-col">
-        
+      <div className="flex-1 max-w-md w-full mx-auto bg-background md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-border md:shadow-2xl overflow-hidden relative flex flex-col">
+
         {/* App Bar */}
-        <div className="bg-slate-900 p-6 border-b border-slate-800 z-10 flex justify-between items-center">
+        <div className="bg-background-alt p-6 border-b border-border z-10 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-white">Green Valley</h1>
-            <p className="text-slate-400 text-sm">Flat A-402 • Rahul Sharma</p>
+            <h1 className="text-xl font-bold text-text">Green Valley</h1>
+            <p className="text-text-muted text-sm">Flat A-402 • Rahul Sharma</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
             R
@@ -70,44 +70,44 @@ export default function ResidentSuperApp() {
           {/* Quick Pay Card */}
           <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 border border-blue-500/30 rounded-2xl p-6 mb-8 relative overflow-hidden">
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/20 blur-3xl rounded-full"></div>
-            <p className="text-slate-300 text-sm mb-1">Maintenance Due (Aug)</p>
-            <h2 className="text-3xl font-black text-white mb-4">₹4,250</h2>
+            <p className="text-text-muted text-sm mb-1">Maintenance Due (Aug)</p>
+            <h2 className="text-3xl font-black text-text mb-4">₹4,250</h2>
             <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 rounded-xl text-sm transition-colors shadow-lg">
               Pay Now
             </button>
           </div>
 
-          <h3 className="text-white font-bold mb-4 px-1">Quick Actions</h3>
+          <h3 className="text-text font-bold mb-4 px-1">Quick Actions</h3>
           <div className="grid grid-cols-3 gap-4 mb-8">
             {services.map((s, i) => (
-              <button 
-                key={i} 
+              <button
+                key={i}
                 onClick={() => router.push(s.route)}
-                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl p-4 flex flex-col items-center gap-3 transition-colors group"
+                className="bg-background-alt hover:bg-card-bg border border-border rounded-xl p-4 flex flex-col items-center gap-3 transition-colors group"
               >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-950 border border-slate-800 group-hover:border-slate-600 transition-colors">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-background border border-border group-hover:border-border transition-colors">
                   <s.icon size={20} style={{ color: s.color }} />
                 </div>
-                <span className="text-slate-300 text-xs font-bold whitespace-nowrap">{s.title}</span>
+                <span className="text-text-muted text-xs font-bold whitespace-nowrap">{s.title}</span>
               </button>
             ))}
           </div>
 
           {/* Recent Activity */}
-          <h3 className="text-white font-bold mb-4 px-1">Recent Activity</h3>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1 divide-y divide-slate-800/50">
+          <h3 className="text-text font-bold mb-4 px-1">Recent Activity</h3>
+          <div className="bg-background-alt border border-border rounded-2xl p-1 divide-y divide-border/50">
             {[
               { text: 'Water Supply Notice posted', time: '2h ago', icon: FileText, color: 'text-blue-400' },
               { text: 'Zomato Delivery entered', time: 'Yesterday', icon: Store, color: 'text-green-400' },
               { text: 'Maintenance paid successfully', time: 'Aug 2', icon: Wallet, color: 'text-purple-400' },
             ].map((a, i) => (
               <div key={i} className="flex items-center gap-4 p-4">
-                <div className="w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center">
                   <a.icon size={16} className={a.color} />
                 </div>
                 <div>
-                  <p className="text-white text-sm">{a.text}</p>
-                  <p className="text-slate-500 text-xs mt-0.5">{a.time}</p>
+                  <p className="text-text text-sm">{a.text}</p>
+                  <p className="text-text-muted text-xs mt-0.5">{a.time}</p>
                 </div>
               </div>
             ))}
@@ -123,22 +123,22 @@ export default function ResidentSuperApp() {
             
             <PhoneCall size={64} className="text-blue-400 mb-8 animate-bounce" />
             
-            <h2 className="text-3xl font-black text-white text-center mb-2">Gatekeeper Alert</h2>
+            <h2 className="text-3xl font-black text-text text-center mb-2">Gatekeeper Alert</h2>
             <p className="text-blue-400 font-bold mb-8 text-center uppercase tracking-widest text-sm">Visitor at Main Gate</p>
 
-            <div className="bg-slate-900 border border-blue-500/30 rounded-3xl p-8 w-full shadow-2xl mb-12">
+            <div className="bg-background-alt border border-blue-500/30 rounded-3xl p-8 w-full shadow-2xl mb-12">
               <div className="text-center mb-6">
-                <p className="text-slate-400 text-sm mb-1 uppercase tracking-wider font-bold">Name</p>
-                <p className="text-2xl font-bold text-white">{intercomCall.name}</p>
+                <p className="text-text-muted text-sm mb-1 uppercase tracking-wider font-bold">Name</p>
+                <p className="text-2xl font-bold text-text">{intercomCall.name}</p>
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-slate-400 text-xs mb-1 uppercase tracking-wider font-bold">Purpose</p>
-                  <p className="text-white font-bold">{intercomCall.purpose}</p>
+                  <p className="text-text-muted text-xs mb-1 uppercase tracking-wider font-bold">Purpose</p>
+                  <p className="text-text font-bold">{intercomCall.purpose}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs mb-1 uppercase tracking-wider font-bold">Phone</p>
-                  <p className="text-white font-bold">{intercomCall.phone}</p>
+                  <p className="text-text-muted text-xs mb-1 uppercase tracking-wider font-bold">Phone</p>
+                  <p className="text-text font-bold">{intercomCall.phone}</p>
                 </div>
               </div>
             </div>

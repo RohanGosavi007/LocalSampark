@@ -89,7 +89,39 @@ router.get('/categories', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
   try {
     const { limit = 20, cursor, search = '', status } = req.query;
-    
+
+    // SQLite fallback — Prisma targets the remote PostgreSQL database which
+    // is unreachable in local dev mode. Use the SQLite query layer instead.
+    if (process.env.USE_SQLITE === 'true') {
+      const params = [];
+      let where = '';
+      const conditions = [];
+      let pIdx = 0;
+      if (search) {
+        pIdx++;
+        conditions.push(`(name LIKE $${pIdx}`);
+        params.push(`%${search}%`);
+        pIdx++;
+        conditions[conditions.length - 1] += ` OR description LIKE $${pIdx})`;
+        params.push(`%${search}%`);
+      }
+      if (status) {
+        pIdx++;
+        conditions.push(`approval_status = $${pIdx}`);
+        params.push(status);
+      }
+      if (conditions.length) where = 'WHERE ' + conditions.join(' AND ');
+      pIdx++;
+      params.push(parseInt(limit));
+      const rows = await query(
+        `SELECT * FROM local_shops ${where} ORDER BY created_at DESC LIMIT $${pIdx}`,
+        params
+      );
+      const shops = rows.rows || rows || [];
+      const nextCursor = shops.length === parseInt(limit) && shops.length > 0 ? shops[shops.length - 1].id : null;
+      return res.json({ data: shops, nextCursor, limit: parseInt(limit) });
+    }
+
     let where = {};
     
     if (search) {
@@ -954,7 +986,7 @@ router.get('/:id/reviews', async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await query(`SELECT sr.id, sr.rating, sr.review_text, sr.photo_urls, sr.created_at,
-              u.name as user_name, u.avatar_url as user_avatar
+              u.full_name as user_name, u.avatar_url as user_avatar
        FROM shop_reviews sr
        LEFT JOIN users u ON sr.user_id = u.id
        WHERE sr.shop_id = $1

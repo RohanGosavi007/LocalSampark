@@ -14,7 +14,7 @@ exports.getUsers = async (req, res, next) => {
     const params = [];
 
     if (search) {
-      whereClause = 'WHERE phone_number LIKE $1 OR full_name ILIKE $2';
+      whereClause = 'WHERE phone_number LIKE $1 OR full_name LIKE $2';
       params.push(`%${search}%`, `%${search}%`);
     }
 
@@ -22,7 +22,7 @@ exports.getUsers = async (req, res, next) => {
     const total = parseInt(countRes.rows ? countRes.rows[0].count : countRes[0].count);
 
     const queryStr = `
-      SELECT id, phone, full_name, profile_status, created_at, role, is_active
+      SELECT id, phone_number AS phone, full_name, is_verified, created_at, role, is_active
       FROM users
       ${whereClause}
       ORDER BY created_at DESC

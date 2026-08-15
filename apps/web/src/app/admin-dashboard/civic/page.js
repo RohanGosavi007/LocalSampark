@@ -118,18 +118,18 @@ export default function CivicDashboard() {
         
         {/* Request Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Plus className="w-5 h-5 text-emerald-500" /> Log Issue
             </h2>
 
             <div className="space-y-4">
-              
-              <div className="flex gap-2 p-1 bg-slate-800 rounded-xl mb-4">
-                <button onClick={() => { setCategory('Civic'); setIssueType('Pothole'); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${category === 'Civic' ? 'bg-indigo-500 text-white shadow' : 'text-slate-400'}`}>
+
+              <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4">
+                <button onClick={() => { setCategory('Civic'); setIssueType('Pothole'); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${category === 'Civic' ? 'bg-indigo-500 text-white shadow' : 'text-slate-500 dark:text-slate-400'}`}>
                   Civic Complaint
                 </button>
-                <button onClick={() => { setCategory('Legal'); setIssueType('Property Dispute'); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${category === 'Legal' ? 'bg-purple-500 text-white shadow' : 'text-slate-400'}`}>
+                <button onClick={() => { setCategory('Legal'); setIssueType('Property Dispute'); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${category === 'Legal' ? 'bg-purple-500 text-white shadow' : 'text-slate-500 dark:text-slate-400'}`}>
                   Legal Request
                 </button>
               </div>
@@ -229,23 +229,23 @@ export default function CivicDashboard() {
 
         {/* Live Requests Grid */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
-                {activeTab === 'Civic' ? <Hammer className="w-5 h-5 text-indigo-500" /> : <Scale className="w-5 h-5 text-purple-500"/>} 
+                {activeTab === 'Civic' ? <Hammer className="w-5 h-5 text-indigo-500" /> : <Scale className="w-5 h-5 text-purple-500"/>}
                 Active {activeTab} Board
               </h2>
 
-              <div className="flex bg-slate-800 p-1 rounded-xl">
-                <button onClick={() => setActiveTab('Civic')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${activeTab === 'Civic' ? 'bg-indigo-500 text-white shadow' : 'text-slate-400'}`}>Civic</button>
-                <button onClick={() => setActiveTab('Legal')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${activeTab === 'Legal' ? 'bg-purple-500 text-white shadow' : 'text-slate-400'}`}>Legal</button>
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button onClick={() => setActiveTab('Civic')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${activeTab === 'Civic' ? 'bg-indigo-500 text-white shadow' : 'text-slate-500 dark:text-slate-400'}`}>Civic</button>
+                <button onClick={() => setActiveTab('Legal')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${activeTab === 'Legal' ? 'bg-purple-500 text-white shadow' : 'text-slate-500 dark:text-slate-400'}`}>Legal</button>
               </div>
             </div>
 
             {loading ? (
-              <div className="text-center py-12 text-slate-500">Loading records...</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading records...</div>
             ) : displayedIssues.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">No pending {activeTab.toLowerCase()} requests.</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">No pending {activeTab.toLowerCase()} requests.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayedIssues.map(req => (
@@ -260,7 +260,7 @@ export default function CivicDashboard() {
                     <div className="pt-2">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex flex-col">
-                          <h4 className="font-bold text-white text-lg flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                             {req.issue_type}
                           </h4>
                           <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 mt-1 rounded border inline-block w-max ${
@@ -277,15 +277,15 @@ export default function CivicDashboard() {
                         </span>
                       </div>
                       
-                      <div className="bg-slate-800/50 p-3 rounded-xl mt-4 border border-slate-700/50">
-                        <span className="text-xs font-bold text-slate-400 block mb-1">Reporter</span>
+                      <div className="bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl mt-4 border border-slate-200 dark:border-slate-700/50">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Reporter</span>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-bold text-slate-200">{req.reporter_name}</span>
-                          <span className="text-xs text-slate-400 font-mono flex items-center gap-1"><Phone className="w-3 h-3"/> {req.phone}</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{req.reporter_name}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1"><Phone className="w-3 h-3"/> {req.phone}</span>
                         </div>
                       </div>
 
-                      <div className="mt-3 text-xs text-slate-400">
+                      <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                         <p className="line-clamp-3">{req.description}</p>
                       </div>
                       
@@ -294,7 +294,7 @@ export default function CivicDashboard() {
                           <button 
                             onClick={() => toggleEscalation(req.id, req.escalated)}
                             disabled={req.status === 'resolved'}
-                            className={`flex-1 text-[10px] font-bold flex items-center justify-center gap-1 px-2 py-2 rounded-xl transition ${req.escalated ? 'bg-red-600/20 text-red-500 border border-red-500/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-red-400 disabled:opacity-50'}`}
+                            className={`flex-1 text-[10px] font-bold flex items-center justify-center gap-1 px-2 py-2 rounded-xl transition ${req.escalated ? 'bg-red-600/20 text-red-500 border border-red-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-red-400 disabled:opacity-50'}`}
                           >
                             <AlertTriangle className="w-3 h-3"/> {req.escalated ? 'Escalated to Govt' : 'Escalate to Govt'}
                           </button>
@@ -310,8 +310,8 @@ export default function CivicDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50 relative z-10">
-                      <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/50 relative z-10">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3"/>
                         {new Date(req.created_at).toLocaleDateString()}
                       </span>

@@ -44,7 +44,7 @@ export default function CreatorStudioPage() {
         <div className="bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col md:flex-row">
           
           {/* Left Panel: Preview Phone */}
-          <div className="w-full md:w-1/2 bg-slate-900 p-8 flex flex-col items-center justify-center border-r border-slate-200/10">
+          <div className="w-full md:w-1/2 bg-background p-8 flex flex-col items-center justify-center border-r border-slate-200/10">
             <div className="w-[280px] h-[580px] bg-black rounded-[3rem] border-[8px] border-slate-800 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center">
               
               {/* Notch */}

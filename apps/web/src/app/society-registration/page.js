@@ -43,7 +43,7 @@ export default function SocietyRegistration() {
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-gray-900">Register Society (God-Tier Edition)</h1>
-            <p className="text-gray-500 mt-2">Onboard a new society with all 30 features</p>
+            <p className="text-text-muted mt-2">Onboard a new society with all 30 features</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -73,7 +73,7 @@ export default function SocietyRegistration() {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Monthly Subscription Fee (₹)</label>
-              <p className="text-xs text-gray-500 mb-2">Dynamic pricing based on size and features requested.</p>
+              <p className="text-xs text-text-muted mb-2">Dynamic pricing based on size and features requested.</p>
               <input 
                 required
                 type="number"

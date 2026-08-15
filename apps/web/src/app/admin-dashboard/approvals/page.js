@@ -60,67 +60,67 @@ export default function ApprovalsCenterPage() {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Universal Approvals Center</h1>
-          <p className="text-slate-400">Review and moderate pending registrations and KYCs.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Universal Approvals Center</h1>
+          <p className="text-slate-500 dark:text-slate-400">Review and moderate pending registrations and KYCs.</p>
         </div>
       </div>
 
       <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
         <button 
           onClick={() => setActiveTab('shops')} 
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition whitespace-nowrap ${activeTab === 'shops' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition whitespace-nowrap ${activeTab === 'shops' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
         >
-          <Store className="w-5 h-5"/> Pending Shops 
-          <span className="bg-slate-950 px-2 py-0.5 rounded-full text-xs">{approvals.shops?.length || 0}</span>
+          <Store className="w-5 h-5"/> Pending Shops
+          <span className="bg-slate-200 dark:bg-slate-950 px-2 py-0.5 rounded-full text-xs">{approvals.shops?.length || 0}</span>
         </button>
         <button 
           onClick={() => setActiveTab('franchises')} 
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition whitespace-nowrap ${activeTab === 'franchises' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition whitespace-nowrap ${activeTab === 'franchises' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
         >
           <Shield className="w-5 h-5"/> Pending Franchises
-          <span className="bg-slate-950 px-2 py-0.5 rounded-full text-xs">{approvals.franchises?.length || 0}</span>
+          <span className="bg-slate-200 dark:bg-slate-950 px-2 py-0.5 rounded-full text-xs">{approvals.franchises?.length || 0}</span>
         </button>
         <button 
           onClick={() => setActiveTab('usersKyc')} 
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition whitespace-nowrap ${activeTab === 'usersKyc' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition whitespace-nowrap ${activeTab === 'usersKyc' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
         >
           <UserCheck className="w-5 h-5"/> KYC Verifications
-          <span className="bg-slate-950 px-2 py-0.5 rounded-full text-xs">{approvals.usersKyc?.length || 0}</span>
+          <span className="bg-slate-200 dark:bg-slate-950 px-2 py-0.5 rounded-full text-xs">{approvals.usersKyc?.length || 0}</span>
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-sm uppercase tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">
                 <th className="p-4 font-semibold">Entity Details</th>
                 <th className="p-4 font-semibold">Submitted</th>
                 <th className="p-4 font-semibold">Status</th>
                 <th className="p-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="text-slate-300">
+            <tbody className="text-slate-600 dark:text-slate-300">
               {loading ? (
-                <tr><td colSpan="4" className="p-8 text-center text-slate-500">Loading requests...</td></tr>
+                <tr><td colSpan="4" className="p-8 text-center text-slate-500 dark:text-slate-400">Loading requests...</td></tr>
               ) : currentList.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-16 text-center text-slate-500">
-                    <CheckCircle2 className="w-12 h-12 mx-auto text-slate-700 mb-4" />
+                  <td colSpan="4" className="p-16 text-center text-slate-500 dark:text-slate-400">
+                    <CheckCircle2 className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
                     <p className="text-lg">You're all caught up!</p>
                     <p className="text-sm">No pending approvals for this category.</p>
                   </td>
                 </tr>
               ) : currentList.map(item => (
-                <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition group">
+                <tr key={item.id} className="border-b border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-100/20 dark:hover:bg-slate-800/20 transition group">
                   <td className="p-4">
-                    <div className="font-bold text-white text-lg">{item.name || item.title}</div>
-                    <div className="text-sm text-slate-400 flex items-center gap-2 mt-1">
+                    <div className="font-bold text-slate-900 dark:text-white text-lg">{item.name || item.title}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
                       <FileText className="w-4 h-4"/> ID: {item.id} | {item.category || item.pincode || item.phone_number}
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-sm">
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
                       <Clock className="w-4 h-4" />
                       {new Date(item.created_at).toLocaleString()}
                     </div>

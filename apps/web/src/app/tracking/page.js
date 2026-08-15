@@ -43,17 +43,17 @@ function TrackingPageInner() {
   const currentStepIndex = steps.findIndex(s => s.id === status) >= 0 ? steps.findIndex(s => s.id === status) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-2xl mx-auto pt-24 px-4 pb-20">
         
-        <h1 className="text-2xl font-bold text-white mb-2">Track Order</h1>
-        <p className="text-slate-400 mb-8">#{orderId}</p>
+        <h1 className="text-2xl font-bold text-text mb-2">Track Order</h1>
+        <p className="text-text-muted mb-8">#{orderId}</p>
 
         {/* Progress Tracker */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8">
+        <div className="bg-background border border-border rounded-2xl p-8 mb-8">
           <div className="relative">
-            <div className="absolute left-[28px] top-0 bottom-0 w-1 bg-slate-800 rounded"></div>
+            <div className="absolute left-[28px] top-0 bottom-0 w-1 bg-card-bg rounded"></div>
             <div className="space-y-8 relative">
               {steps.map((step, index) => {
                 const isCompleted = index <= currentStepIndex;
@@ -62,11 +62,11 @@ function TrackingPageInner() {
                 
                 return (
                   <div key={step.id} className="flex items-center gap-6 relative z-10">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 border-slate-900 transition-colors ${isCompleted ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 border-background transition-colors ${isCompleted ? 'bg-blue-600 text-white' : 'bg-card-bg text-text-muted'}`}>
                       <Icon size={24} />
                     </div>
                     <div>
-                      <h3 className={`text-lg font-bold ${isCompleted ? 'text-white' : 'text-slate-500'}`}>{step.label}</h3>
+                      <h3 className={`text-lg font-bold ${isCompleted ? 'text-text' : 'text-text-muted'}`}>{step.label}</h3>
                       {isCurrent && <p className="text-blue-400 text-sm mt-1">Happening right now</p>}
                     </div>
                   </div>
@@ -78,39 +78,39 @@ function TrackingPageInner() {
 
         {/* Live Map Box */}
         {status === 'dispatched' && (
-          <div className="bg-slate-900 border border-blue-500/30 rounded-2xl p-6 relative overflow-hidden shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+          <div className="bg-background border border-blue-500/30 rounded-2xl p-6 relative overflow-hidden shadow-[0_0_15px_rgba(59,130,246,0.15)]">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">Live Tracking</h2>
+              <h2 className="text-lg font-bold text-text">Live Tracking</h2>
               <span className="flex items-center gap-2 text-xs font-bold text-blue-400 bg-blue-900/30 px-3 py-1 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Live
               </span>
             </div>
             
-            <div className="w-full h-64 bg-slate-800 rounded-xl relative flex items-center justify-center border border-slate-700 overflow-hidden">
+            <div className="w-full h-64 bg-card-bg rounded-xl relative flex items-center justify-center border border-border overflow-hidden">
               {/* Mock Map Background */}
               <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
               
               {riderLocation ? (
                 <div className="text-center relative z-10">
                   <MapPin size={48} className="text-blue-500 mx-auto animate-bounce" />
-                  <p className="mt-4 font-bold text-white bg-slate-900/80 px-4 py-2 rounded-full border border-slate-700">
+                  <p className="mt-4 font-bold text-text bg-background/80 px-4 py-2 rounded-full border border-border">
                     Rider is {Math.floor(Math.random() * 5 + 1)} mins away
                   </p>
-                  <p className="text-xs text-slate-400 mt-2">Lat: {riderLocation.lat.toFixed(4)} | Lng: {riderLocation.lng.toFixed(4)}</p>
+                  <p className="text-xs text-text-muted mt-2">Lat: {riderLocation.lat.toFixed(4)} | Lng: {riderLocation.lng.toFixed(4)}</p>
                 </div>
               ) : (
-                <div className="text-center relative z-10 text-slate-400">
+                <div className="text-center relative z-10 text-text-muted">
                   <MapPin size={32} className="mx-auto mb-2 opacity-50" />
                   Waiting for rider location...
                 </div>
               )}
             </div>
             
-            <div className="mt-4 pt-4 border-t border-slate-800 flex items-center gap-4">
-              <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-xl">👤</div>
+            <div className="mt-4 pt-4 border-t border-border flex items-center gap-4">
+              <div className="w-12 h-12 bg-card-bg rounded-full flex items-center justify-center text-xl">👤</div>
               <div>
-                <p className="font-bold text-white">Rahul (Delivery Partner)</p>
-                <p className="text-sm text-slate-400">+91 98765 43210</p>
+                <p className="font-bold text-text">Rahul (Delivery Partner)</p>
+                <p className="text-sm text-text-muted">+91 98765 43210</p>
               </div>
             </div>
           </div>

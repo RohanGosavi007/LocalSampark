@@ -61,18 +61,18 @@ function GlobalSearchPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-4xl mx-auto p-6 pt-24">
-        <h1 className="text-3xl font-bold text-white mb-8">Search Directory</h1>
-        
+        <h1 className="text-3xl font-bold text-text mb-8">Search Directory</h1>
+
         <form onSubmit={onSubmit} className="flex gap-4 mb-12">
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search for groceries, electronics, services..." 
-            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-6 py-4 text-white outline-none text-lg"
+            placeholder="Search for groceries, electronics, services..."
+            className="flex-1 bg-card-bg border border-border rounded-xl px-6 py-4 text-text outline-none text-lg"
           />
           <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-xl transition-colors">
             Search
@@ -80,7 +80,7 @@ function GlobalSearchPageInner() {
         </form>
 
         {loading ? (
-          <div className="text-center text-slate-500 py-12">Searching global directory...</div>
+          <div className="text-center text-text-muted py-12">Searching global directory...</div>
         ) : (
           <div className="space-y-8">
             
@@ -93,10 +93,10 @@ function GlobalSearchPageInner() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {sponsoredProducts.map(p => (
-                    <div key={p.id} className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex flex-col hover:border-blue-500 transition-colors">
+                    <div key={p.id} className="bg-card-bg border border-border rounded-xl p-4 flex flex-col hover:border-blue-500 transition-colors">
                       <div className="bg-blue-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded self-start mb-2">Ad</div>
-                      <h4 className="font-bold text-white mb-1 line-clamp-1">{p.name}</h4>
-                      <p className="text-xs text-slate-400 mb-3">{p.shop}</p>
+                      <h4 className="font-bold text-text mb-1 line-clamp-1">{p.name}</h4>
+                      <p className="text-xs text-text-muted mb-3">{p.shop}</p>
                       <div className="mt-auto flex items-center justify-between">
                         <span className="font-black text-lg text-blue-400">₹{p.price}</span>
                         <button 
@@ -119,15 +119,15 @@ function GlobalSearchPageInner() {
 
             {results.length > 0 ? (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-slate-300 mb-6">Found {results.length} local shops</h2>
+                <h2 className="text-xl font-bold text-text-muted mb-6">Found {results.length} local shops</h2>
             {results.map(shop => (
-              <div 
-                key={shop.id} 
-                className={`bg-slate-900 border p-6 rounded-xl flex gap-6 transition-colors ${shop.is_promoted ? 'border-yellow-500/50 hover:border-yellow-400 bg-yellow-500/5' : 'border-slate-800 hover:border-blue-500'}`}
+              <div
+                key={shop.id}
+                className={`bg-card-bg border p-6 rounded-xl flex gap-6 transition-colors ${shop.is_promoted ? 'border-yellow-500/50 hover:border-yellow-400 bg-yellow-500/5' : 'border-border hover:border-blue-500'}`}
               >
-                <div 
+                <div
                     onClick={() => router.push(`/shop/${shop.id}`)}
-                    className="w-24 h-24 bg-slate-800 rounded-lg flex items-center justify-center text-3xl shrink-0 cursor-pointer"
+                    className="w-24 h-24 bg-background-alt rounded-lg flex items-center justify-center text-3xl shrink-0 cursor-pointer"
                 >
                   🏪
                 </div>
@@ -135,14 +135,14 @@ function GlobalSearchPageInner() {
                   <div className="flex justify-between items-start">
                     <div onClick={() => router.push(`/shop/${shop.id}`)} className="cursor-pointer">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-white hover:text-blue-400">{shop.name}</h3>
+                        <h3 className="text-xl font-bold text-text hover:text-blue-400">{shop.name}</h3>
                         {shop.is_promoted ? (
                           <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
                             Ad
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-slate-400 mb-2">{shop.description || 'Local shop in your area.'}</p>
+                      <p className="text-text-muted mb-2">{shop.description || 'Local shop in your area.'}</p>
                     </div>
                     <ShareWidget shopName={shop.name} shopSlug={shop.id} />
                   </div>
@@ -154,7 +154,7 @@ function GlobalSearchPageInner() {
             ))}
           </div>
             ) : query ? (
-              <div className="text-center text-slate-500 py-12 bg-slate-900/50 rounded-2xl border border-slate-800">
+              <div className="text-center text-text-muted py-12 bg-background-alt rounded-2xl border border-border">
                 <p>No organic shops found for "{query}".</p>
                 <p className="text-sm mt-2">Try a broader term or check the sponsored products above!</p>
               </div>

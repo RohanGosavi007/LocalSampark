@@ -31,16 +31,16 @@ export default function UpiGateway({ amount, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/90 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden relative">
         
         {/* Header */}
-        <div className="bg-slate-900 p-6 flex justify-between items-center">
+        <div className="bg-background p-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <ShieldCheck className="text-green-500" size={24} />
-            <h2 className="text-white font-bold text-lg">Secure Checkout</h2>
+            <h2 className="text-text font-bold text-lg">Secure Checkout</h2>
           </div>
-          <button onClick={onClose} disabled={status !== 'pending'} className="text-slate-400 hover:text-white transition-colors disabled:opacity-50">
+          <button onClick={onClose} disabled={status !== 'pending'} className="text-text-muted hover:text-text transition-colors disabled:opacity-50">
             <X size={24} />
           </button>
         </div>
@@ -48,20 +48,20 @@ export default function UpiGateway({ amount, onClose, onSuccess }) {
         {/* Content */}
         <div className="p-8 text-center text-slate-900">
           
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-1">Total Amount</p>
+          <p className="text-text-muted text-sm font-bold uppercase tracking-wider mb-1">Total Amount</p>
           <h3 className="text-4xl font-black text-slate-900 mb-6">₹{amount}</h3>
 
           {status === 'success' ? (
             <div className="py-8 animate-fade-in flex flex-col items-center">
               <CheckCircle size={64} className="text-green-500 mb-4" />
               <h4 className="text-xl font-bold text-green-600 mb-1">Payment Successful</h4>
-              <p className="text-slate-500 text-sm">Redirecting to order confirmation...</p>
+              <p className="text-text-muted text-sm">Redirecting to order confirmation...</p>
             </div>
           ) : status === 'processing' ? (
             <div className="py-8 animate-fade-in flex flex-col items-center">
               <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
               <h4 className="text-xl font-bold text-blue-600 mb-1">Processing Payment...</h4>
-              <p className="text-slate-500 text-sm">Waiting for bank confirmation</p>
+              <p className="text-text-muted text-sm">Waiting for bank confirmation</p>
             </div>
           ) : (
             <div className="animate-fade-in">
@@ -77,7 +77,7 @@ export default function UpiGateway({ amount, onClose, onSuccess }) {
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-px bg-slate-200 flex-1"></div>
-                <span className="text-slate-400 text-xs font-bold uppercase">OR</span>
+                <span className="text-text-muted text-xs font-bold uppercase">OR</span>
                 <div className="h-px bg-slate-200 flex-1"></div>
               </div>
 
@@ -99,7 +99,7 @@ export default function UpiGateway({ amount, onClose, onSuccess }) {
         
         {/* Footer */}
         <div className="bg-slate-50 py-3 text-center border-t border-slate-200">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex justify-center items-center gap-1">
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest flex justify-center items-center gap-1">
             <ShieldCheck size={12} /> Powered by LocalSampark Payments
           </p>
         </div>

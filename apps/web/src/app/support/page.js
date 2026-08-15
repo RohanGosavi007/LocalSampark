@@ -13,7 +13,7 @@ export default function SupportHelpdesk() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-white">
+    <div className="min-h-screen bg-background font-sans text-text">
       <Header />
       
       <div className="max-w-5xl mx-auto p-6 pt-24">
@@ -24,7 +24,7 @@ export default function SupportHelpdesk() {
               <LifeBuoy className="text-blue-500" size={32} />
               Helpdesk & Support
             </h1>
-            <p className="text-slate-400 mt-2 font-medium">Manage disputes, missing items, and platform queries.</p>
+            <p className="text-text-muted mt-2 font-medium">Manage disputes, missing items, and platform queries.</p>
           </div>
           
           <button 
@@ -37,7 +37,7 @@ export default function SupportHelpdesk() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 bg-slate-900 p-1 rounded-xl w-fit border border-slate-800">
+        <div className="flex gap-2 mb-8 bg-background p-1 rounded-xl w-fit border border-border">
           {[
             { id: 'open', label: 'Open Tickets' },
             { id: 'resolved', label: 'Resolved' }
@@ -47,8 +47,8 @@ export default function SupportHelpdesk() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-6 py-2 rounded-lg font-bold transition-colors ${
                 activeTab === tab.id 
-                  ? 'bg-slate-800 text-white shadow-sm border border-slate-700' 
-                  : 'text-slate-500 hover:text-slate-300'
+                  ? 'bg-card-bg text-text shadow-sm border border-border' 
+                  : 'text-text-muted hover:text-text-muted'
               }`}
             >
               {tab.label}
@@ -57,15 +57,15 @@ export default function SupportHelpdesk() {
         </div>
 
         {/* Content Area */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 min-h-[400px]">
+        <div className="bg-background border border-border rounded-3xl p-6 min-h-[400px]">
           
           {activeTab === 'new' ? (
             <div className="max-w-2xl mx-auto py-8 animate-fade-in">
               <h2 className="text-2xl font-bold mb-6">Submit a Request</h2>
               <form className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Issue Type</label>
-                  <select className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500">
+                  <label className="block text-sm font-bold text-text-muted mb-2 uppercase tracking-wider">Issue Type</label>
+                  <select className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text outline-none focus:border-blue-500">
                     <option>Order Issue (Missing/Damaged)</option>
                     <option>Payment/Payout Issue</option>
                     <option>Account Access</option>
@@ -73,12 +73,12 @@ export default function SupportHelpdesk() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Subject</label>
-                  <input type="text" placeholder="Brief description of the issue" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500" />
+                  <label className="block text-sm font-bold text-text-muted mb-2 uppercase tracking-wider">Subject</label>
+                  <input type="text" placeholder="Brief description of the issue" className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text outline-none focus:border-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Details</label>
-                  <textarea rows={5} placeholder="Provide order numbers, screenshots, or any relevant details..." className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500"></textarea>
+                  <label className="block text-sm font-bold text-text-muted mb-2 uppercase tracking-wider">Details</label>
+                  <textarea rows={5} placeholder="Provide order numbers, screenshots, or any relevant details..." className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text outline-none focus:border-blue-500"></textarea>
                 </div>
                 <button type="button" onClick={() => setActiveTab('open')} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg">
                   Submit Ticket
@@ -88,13 +88,13 @@ export default function SupportHelpdesk() {
           ) : (
             <div className="space-y-4">
               {tickets.filter(t => t.status === activeTab).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                <div className="flex flex-col items-center justify-center py-20 text-text-muted">
                   <CheckCircle size={48} className="mb-4 opacity-50" />
                   <p className="font-bold">No {activeTab} tickets found.</p>
                 </div>
               ) : (
                 tickets.filter(t => t.status === activeTab).map(ticket => (
-                  <div key={ticket.id} className="group bg-slate-950 border border-slate-800 hover:border-slate-600 rounded-2xl p-5 flex items-center justify-between transition-all cursor-pointer">
+                  <div key={ticket.id} className="group bg-background border border-border hover:border-border rounded-2xl p-5 flex items-center justify-between transition-all cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className={`mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                         ticket.priority === 'high' ? 'bg-red-500/10 text-red-500' : 
@@ -104,16 +104,16 @@ export default function SupportHelpdesk() {
                       </div>
                       <div>
                         <div className="flex items-center gap-3 mb-1">
-                          <span className="font-mono text-xs font-bold text-slate-500">{ticket.id}</span>
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">{ticket.from}</span>
+                          <span className="font-mono text-xs font-bold text-text-muted">{ticket.id}</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-card-bg text-text-muted">{ticket.from}</span>
                         </div>
                         <h3 className="font-bold text-lg group-hover:text-blue-400 transition-colors">{ticket.subject}</h3>
-                        <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
+                        <p className="text-text-muted text-sm mt-1 flex items-center gap-2">
                           <MessageSquare size={14} /> Updated {ticket.date}
                         </p>
                       </div>
                     </div>
-                    <button className="hidden sm:block px-4 py-2 bg-slate-900 border border-slate-700 hover:border-slate-500 rounded-lg text-sm font-bold text-slate-300 transition-colors">
+                    <button className="hidden sm:block px-4 py-2 bg-background border border-border hover:border-slate-500 rounded-lg text-sm font-bold text-text-muted transition-colors">
                       View Thread
                     </button>
                   </div>

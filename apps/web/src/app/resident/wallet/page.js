@@ -18,16 +18,16 @@ export default function LoyaltyWalletPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:bg-slate-900">
+    <div className="min-h-screen bg-background flex flex-col md:bg-background-alt">
       <div className="hidden md:block"><Header /></div>
-      
+
       {/* Mobile Frame Container */}
-      <div className="flex-1 max-w-md w-full mx-auto bg-slate-950 md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-slate-800 md:shadow-2xl overflow-hidden relative flex flex-col">
-        
+      <div className="flex-1 max-w-md w-full mx-auto bg-background md:mt-24 md:mb-12 md:rounded-[2rem] md:border-[8px] md:border-border md:shadow-2xl overflow-hidden relative flex flex-col">
+
         {/* App Bar */}
-        <div className="bg-slate-900 p-6 border-b border-slate-800 z-10 flex justify-between items-center">
+        <div className="bg-card-bg p-6 border-b border-border z-10 flex justify-between items-center">
           <button onClick={() => router.back()} className="text-blue-500 font-bold">← Back</button>
-          <h1 className="text-lg font-bold text-white">My Wallet</h1>
+          <h1 className="text-lg font-bold text-text">My Wallet</h1>
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
             R
           </div>
@@ -59,40 +59,40 @@ export default function LoyaltyWalletPage() {
           <DailyStreak />
 
           {/* Missions */}
-          <h3 className="text-white font-bold mb-4 px-1">Daily Missions</h3>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-8">
+          <h3 className="text-text font-bold mb-4 px-1">Daily Missions</h3>
+          <div className="bg-card-bg border border-border rounded-2xl p-4 mb-8">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center">
                   <MapPin size={20} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-sm">Shop at 3 Local Stores</h4>
-                  <p className="text-slate-500 text-xs mt-0.5">Progress: 1/3</p>
+                  <h4 className="font-bold text-text text-sm">Shop at 3 Local Stores</h4>
+                  <p className="text-text-muted text-xs mt-0.5">Progress: 1/3</p>
                 </div>
               </div>
               <span className="text-yellow-500 font-black text-sm">+100 LC</span>
             </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-background-alt rounded-full overflow-hidden">
               <div className="w-1/3 h-full bg-blue-500 rounded-full"></div>
             </div>
           </div>
 
           {/* Transaction History */}
-          <h3 className="text-white font-bold mb-4 px-1">Recent Transactions</h3>
+          <h3 className="text-text font-bold mb-4 px-1">Recent Transactions</h3>
           <div className="space-y-3">
             {transactions.map(txn => (
-              <div key={txn.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between hover:border-slate-700 transition-colors">
+              <div key={txn.id} className="bg-card-bg border border-border rounded-2xl p-4 flex items-center justify-between hover:border-border transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${txn.type === 'credit' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                     <txn.icon size={18} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-200 text-sm">{txn.title}</h4>
-                    <p className="text-slate-500 text-xs mt-0.5">{txn.date}</p>
+                    <h4 className="font-bold text-text text-sm">{txn.title}</h4>
+                    <p className="text-text-muted text-xs mt-0.5">{txn.date}</p>
                   </div>
                 </div>
-                <span className={`font-black ${txn.type === 'credit' ? 'text-green-500' : 'text-slate-300'}`}>
+                <span className={`font-black ${txn.type === 'credit' ? 'text-green-500' : 'text-text-muted'}`}>
                   {txn.type === 'credit' ? '+' : '-'}{txn.amount}
                 </span>
               </div>

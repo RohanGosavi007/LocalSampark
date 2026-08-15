@@ -14,8 +14,8 @@ import { Badge } from '../components/ui/Badge';
 const SOSMap = dynamic(() => import('./components/SOSMap'), { 
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-slate-800 animate-pulse flex items-center justify-center rounded-3xl border border-slate-700">
-      <div className="flex flex-col items-center gap-2 text-slate-500">
+    <div className="w-full h-full bg-card-bg animate-pulse flex items-center justify-center rounded-3xl border border-border">
+      <div className="flex flex-col items-center gap-2 text-text-muted">
         <Navigation className="w-6 h-6 animate-bounce" />
         <span className="font-bold">Loading Live Radar...</span>
       </div>
@@ -44,13 +44,13 @@ export default function SOSDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-slate-200 flex flex-col font-sans">
       <Header />
       
       <main className="flex-1 py-8 lg:py-12">
         <div className="container max-w-7xl">
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-slate-800 pb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-border pb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <div className="relative flex h-4 w-4">
@@ -59,23 +59,23 @@ export default function SOSDashboard() {
                 </div>
                 <Badge className="bg-red-500/10 text-red-500 border-red-500/20 px-3 uppercase tracking-wider font-bold">Live Feed</Badge>
               </div>
-              <h1 className="text-3xl lg:text-5xl font-black text-white">Emergency Response Radar</h1>
-              <p className="text-slate-400 mt-2 text-lg">Monitoring real-time SOS alerts and critical community requests.</p>
+              <h1 className="text-3xl lg:text-5xl font-black text-text">Emergency Response Radar</h1>
+              <p className="text-text-muted mt-2 text-lg">Monitoring real-time SOS alerts and critical community requests.</p>
             </div>
             
             <div className="flex gap-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+                <div className="bg-background border border-border rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500"><AlertTriangle className="w-6 h-6"/></div>
                     <div>
-                        <div className="text-sm text-slate-400 font-bold uppercase">Active SOS</div>
-                        <div className="text-2xl font-black text-white">{alerts.filter(a => a.type !== 'Blood').length}</div>
+                        <div className="text-sm text-text-muted font-bold uppercase">Active SOS</div>
+                        <div className="text-2xl font-black text-text">{alerts.filter(a => a.type !== 'Blood').length}</div>
                     </div>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+                <div className="bg-background border border-border rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500"><Droplet className="w-6 h-6"/></div>
                     <div>
-                        <div className="text-sm text-slate-400 font-bold uppercase">Blood Requests</div>
-                        <div className="text-2xl font-black text-white">{alerts.filter(a => a.type === 'Blood').length}</div>
+                        <div className="text-sm text-text-muted font-bold uppercase">Blood Requests</div>
+                        <div className="text-2xl font-black text-text">{alerts.filter(a => a.type === 'Blood').length}</div>
                     </div>
                 </div>
             </div>
@@ -87,18 +87,18 @@ export default function SOSDashboard() {
             <div className="col-span-1 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
               {loading ? (
                 <div className="flex items-center justify-center h-40">
-                    <div className="w-8 h-8 border-4 border-slate-800 border-t-red-500 rounded-full animate-spin"></div>
+                    <div className="w-8 h-8 border-4 border-border border-t-red-500 rounded-full animate-spin"></div>
                 </div>
               ) : alerts.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center h-full flex flex-col items-center justify-center">
+                <div className="bg-background border border-border rounded-3xl p-8 text-center h-full flex flex-col items-center justify-center">
                     <ShieldAlert className="w-16 h-16 text-emerald-500/50 mb-4" />
-                    <h3 className="text-xl font-bold text-white mb-2">All Clear</h3>
-                    <p className="text-slate-400">No active emergencies in your monitored zones.</p>
+                    <h3 className="text-xl font-bold text-text mb-2">All Clear</h3>
+                    <p className="text-text-muted">No active emergencies in your monitored zones.</p>
                 </div>
               ) : (
                 <AnimatePresence>
                     {alerts.map(alert => (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }} key={alert.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden group hover:border-slate-700 transition-colors shadow-lg">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }} key={alert.id} className="bg-background border border-border rounded-3xl p-6 relative overflow-hidden group hover:border-border transition-colors shadow-lg">
                             {alert.type !== 'Blood' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />}
                             {alert.type === 'Blood' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-pink-500" />}
                             
@@ -109,21 +109,21 @@ export default function SOSDashboard() {
                                     ) : (
                                         <Badge className="bg-red-500/10 text-red-500 border-red-500/20 px-3 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"><Activity className="w-3 h-3"/> Medical Emergency</Badge>
                                     )}
-                                    <h3 className="text-xl font-bold text-white">{alert.full_name}</h3>
+                                    <h3 className="text-xl font-bold text-text">{alert.full_name}</h3>
                                 </div>
-                                <div className="text-xs font-bold text-slate-500 bg-slate-950 px-2 py-1 rounded-md">
+                                <div className="text-xs font-bold text-text-muted bg-background px-2 py-1 rounded-md">
                                     {new Date(alert.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                 </div>
                             </div>
                             
-                            <div className="space-y-3 mb-6 bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
+                            <div className="space-y-3 mb-6 bg-background/50 p-4 rounded-2xl border border-border/50">
                                 <div className="flex items-center gap-3 text-sm">
-                                    <Phone className="w-4 h-4 text-slate-400" />
-                                    <span className="font-mono text-slate-300">{alert.phone}</span>
+                                    <Phone className="w-4 h-4 text-text-muted" />
+                                    <span className="font-mono text-text-muted">{alert.phone}</span>
                                 </div>
                                 <div className="flex items-start gap-3 text-sm">
-                                    <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                                    <span className="text-slate-300 leading-tight">{alert.location}</span>
+                                    <MapPin className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
+                                    <span className="text-text-muted leading-tight">{alert.location}</span>
                                 </div>
                             </div>
 
@@ -131,7 +131,7 @@ export default function SOSDashboard() {
                                 <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white" onClick={() => handleResolve(alert.id, 'resolved')}>
                                     <CheckCircle className="w-4 h-4 mr-2"/> Resolved
                                 </Button>
-                                <Button size="sm" variant="outline" className="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white" onClick={() => handleResolve(alert.id, 'false alarm')}>
+                                <Button size="sm" variant="outline" className="border-border text-text-muted hover:bg-card-bg hover:text-white" onClick={() => handleResolve(alert.id, 'false alarm')}>
                                     Mark Fake
                                 </Button>
                             </div>
@@ -142,13 +142,13 @@ export default function SOSDashboard() {
             </div>
 
             {/* Right Side: Map */}
-            <div className="col-span-1 lg:col-span-2 rounded-3xl border border-slate-800 overflow-hidden bg-slate-900 shadow-2xl relative">
+            <div className="col-span-1 lg:col-span-2 rounded-3xl border border-border overflow-hidden bg-background shadow-2xl relative">
                 <SOSMap alerts={alerts} />
                 
                 {/* Map Overlay Controls */}
                 <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
-                    <div className="bg-slate-900/90 backdrop-blur border border-slate-700 p-4 rounded-2xl shadow-lg w-48">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Legend</h4>
+                    <div className="bg-background/90 backdrop-blur border border-border p-4 rounded-2xl shadow-lg w-48">
+                        <h4 className="text-xs font-bold text-text-muted uppercase mb-3">Legend</h4>
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm"><span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span> Medical SOS</div>
                             <div className="flex items-center gap-2 text-sm"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span> Blood Request</div>

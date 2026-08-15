@@ -20,24 +20,24 @@ export default function BulkUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-white">
+    <div className="min-h-screen bg-background font-sans text-text">
       <Header />
-      
+
       <div className="max-w-4xl mx-auto p-6 pt-24">
-        
+
         <div className="flex items-center gap-3 mb-8">
           <FileSpreadsheet className="text-green-500" size={32} />
           <div>
-            <h1 className="text-3xl font-black text-white">Bulk Catalog Upload</h1>
-            <p className="text-slate-400 mt-1 font-medium">Import thousands of products instantly via CSV or Excel.</p>
+            <h1 className="text-3xl font-black text-text">Bulk Catalog Upload</h1>
+            <p className="text-text-muted mt-1 font-medium">Import thousands of products instantly via CSV or Excel.</p>
           </div>
         </div>
 
         {uploadComplete ? (
-          <div className="bg-slate-900 border-2 border-green-500 rounded-3xl p-12 text-center shadow-[0_0_50px_rgba(34,197,94,0.15)] animate-fade-in">
+          <div className="bg-card-bg border-2 border-green-500 rounded-3xl p-12 text-center shadow-[0_0_50px_rgba(34,197,94,0.15)] animate-fade-in">
             <CheckCircle size={64} className="text-green-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-black text-white mb-2">Upload Successful!</h2>
-            <p className="text-slate-400 mb-8">Successfully imported 1,248 products into your catalog.</p>
+            <h2 className="text-3xl font-black text-text mb-2">Upload Successful!</h2>
+            <p className="text-text-muted mb-8">Successfully imported 1,248 products into your catalog.</p>
             <button 
               onClick={() => router.push('/shop-dashboard')}
               className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-xl transition-colors"
@@ -49,21 +49,21 @@ export default function BulkUploadPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             <div className="md:col-span-2">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
-                <input 
-                  type="file" 
+              <div className="bg-card-bg border border-border rounded-3xl p-8 relative overflow-hidden">
+                <input
+                  type="file"
                   accept=".csv, .xlsx"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   onChange={handleUpload}
                 />
                 <div className="flex flex-col items-center justify-center py-12 text-center pointer-events-none">
-                  <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 transition-all ${isUploading ? 'bg-blue-500/20 text-blue-500 animate-pulse' : 'bg-slate-800 text-slate-400'}`}>
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 transition-all ${isUploading ? 'bg-blue-500/20 text-blue-500 animate-pulse' : 'bg-background-alt text-text-muted'}`}>
                     <UploadCloud size={40} />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">
+                  <h3 className="text-2xl font-bold text-text mb-2">
                     {isUploading ? 'Processing File...' : 'Drag & Drop CSV File'}
                   </h3>
-                  <p className="text-slate-400">
+                  <p className="text-text-muted">
                     {isUploading ? 'Mapping columns and inserting products...' : 'or click anywhere to browse your computer'}
                   </p>
                 </div>

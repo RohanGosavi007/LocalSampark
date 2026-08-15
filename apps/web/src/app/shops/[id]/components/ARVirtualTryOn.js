@@ -63,18 +63,18 @@ export default function ARVirtualTryOn({ item, onClose }) {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="relative w-full max-w-lg bg-gray-900 rounded-2xl overflow-hidden border border-gray-700 shadow-2xl"
+        className="relative w-full max-w-lg bg-card-bg rounded-2xl overflow-hidden border border-border shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/50">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-black/50">
           <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <h3 className="text-lg font-bold text-text flex items-center gap-2">
               <Camera className="w-5 h-5 text-primary" />
               AR Virtual Try-On
             </h3>
-            <p className="text-xs text-gray-400">Trying on: {item?.name || 'Aviator Glasses'}</p>
+            <p className="text-xs text-text-muted">Trying on: {item?.name || 'Aviator Glasses'}</p>
           </div>
-          <button onClick={onClose} className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 text-white transition-colors">
+          <button onClick={onClose} className="p-2 bg-card-bg rounded-full hover:bg-gray-700 text-text transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -87,7 +87,7 @@ export default function ARVirtualTryOn({ item, onClose }) {
                 <Camera className="w-8 h-8 text-red-500" />
               </div>
               <p className="text-red-400 font-medium">{error}</p>
-              <button onClick={startCamera} className="mt-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700">
+              <button onClick={startCamera} className="mt-4 px-4 py-2 bg-card-bg text-text rounded-lg hover:bg-gray-700">
                 Try Again
               </button>
             </div>
@@ -144,12 +144,12 @@ export default function ARVirtualTryOn({ item, onClose }) {
 
         {/* Controls */}
         {!error && (
-          <div className="p-6 bg-gray-900 border-t border-gray-800">
+          <div className="p-6 bg-card-bg border-t border-border">
             {snapshot ? (
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={retake}
-                  className="flex-1 py-3 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 py-3 bg-card-bg text-text rounded-xl font-medium hover:bg-gray-700 flex items-center justify-center gap-2 transition-colors"
                 >
                   <RefreshCcw className="w-5 h-5" /> Retake
                 </button>
@@ -169,7 +169,7 @@ export default function ARVirtualTryOn({ item, onClose }) {
                 >
                   <div className="w-12 h-12 bg-white rounded-full group-hover:bg-primary transition-colors"></div>
                 </button>
-                <p className="text-gray-400 text-sm mt-3 font-medium">Tap to capture</p>
+                <p className="text-text-muted text-sm mt-3 font-medium">Tap to capture</p>
               </div>
             )}
           </div>

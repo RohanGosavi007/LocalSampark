@@ -90,15 +90,15 @@ export default function CRMDashboard() {
               placeholder="Search by name or phone..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border outline-none font-bold bg-slate-900 shadow-xl"
+              className="w-full pl-12 pr-4 py-4 rounded-2xl border outline-none font-bold bg-white dark:bg-slate-900 shadow-xl"
               style={{ borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
             />
           </div>
 
-          <div className="bg-slate-900 border rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-950 text-slate-500">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-500">
                   <tr>
                     <th className="p-4 font-bold uppercase tracking-wider text-[10px]">User</th>
                     <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Contact</th>
@@ -106,19 +106,19 @@ export default function CRMDashboard() {
                     <th className="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {loading ? (
-                    <tr><td colSpan="4" className="text-center py-8 text-slate-500">Loading directory...</td></tr>
+                    <tr><td colSpan="4" className="text-center py-8 text-slate-500 dark:text-slate-400">Loading directory...</td></tr>
                   ) : filteredUsers.length === 0 ? (
-                    <tr><td colSpan="4" className="text-center py-8 text-slate-500">No users found.</td></tr>
+                    <tr><td colSpan="4" className="text-center py-8 text-slate-500 dark:text-slate-400">No users found.</td></tr>
                   ) : (
                     filteredUsers.map(user => (
-                      <tr key={user.id} className="hover:bg-slate-800/50 transition-colors">
+                      <tr key={user.id} className="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="p-4">
-                          <div className="font-bold text-white">{user.full_name || 'Anonymous'}</div>
-                          <div className="text-[10px] uppercase text-slate-500">{user.role}</div>
+                          <div className="font-bold text-slate-900 dark:text-white">{user.full_name || 'Anonymous'}</div>
+                          <div className="text-[10px] uppercase text-slate-500 dark:text-slate-400">{user.role}</div>
                         </td>
-                        <td className="p-4 font-mono text-xs text-slate-300">{user.phone_number}</td>
+                        <td className="p-4 font-mono text-xs text-slate-600 dark:text-slate-300">{user.phone_number}</td>
                         <td className="p-4">
                           <span className="flex items-center gap-1 font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded w-max">
                             <Star className="w-3 h-3"/> {user.loyalty_points || 0}
@@ -147,15 +147,15 @@ export default function CRMDashboard() {
             <div className="space-y-6">
               
               {/* User Profile Card */}
-              <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+              <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
                 <div className="w-16 h-16 rounded-2xl bg-cyan-600/20 text-cyan-500 flex items-center justify-center font-black text-2xl mb-4">
                   {(selectedUser.full_name || 'U')[0].toUpperCase()}
                 </div>
-                <h2 className="text-xl font-bold text-white">{selectedUser.full_name || 'Anonymous'}</h2>
-                <p className="text-sm font-mono text-slate-400">{selectedUser.phone_number}</p>
-                
-                <div className="mt-6 pt-6 border-t border-slate-800 flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase text-slate-500">Current Balance</span>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedUser.full_name || 'Anonymous'}</h2>
+                <p className="text-sm font-mono text-slate-500 dark:text-slate-400">{selectedUser.phone_number}</p>
+
+                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                  <span className="text-xs font-bold uppercase text-slate-500 dark:text-slate-500">Current Balance</span>
                   <span className="text-xl font-black text-yellow-500 flex items-center gap-1">
                     <Star className="w-5 h-5"/> {selectedUser.loyalty_points || 0}
                   </span>
@@ -163,30 +163,30 @@ export default function CRMDashboard() {
               </div>
 
               {/* Loyalty Controls */}
-              <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
-                <h3 className="font-bold flex items-center gap-2 mb-4 text-white">
+              <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+                <h3 className="font-bold flex items-center gap-2 mb-4 text-slate-900 dark:text-white">
                   <Award className="w-4 h-4 text-cyan-500" /> Adjust Points
                 </h3>
-                
+
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Points (Use - to deduct)</label>
-                    <input 
-                      type="number" 
+                    <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-500 mb-1 block">Points (Use - to deduct)</label>
+                    <input
+                      type="number"
                       value={loyaltyPoints}
                       onChange={e => setLoyaltyPoints(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl border bg-transparent outline-none font-mono text-white focus:border-cyan-500"
+                      className="w-full px-4 py-2 rounded-xl border bg-transparent outline-none font-mono text-slate-900 dark:text-white focus:border-cyan-500"
                       style={{ borderColor: 'var(--border-color)' }}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Reason for adjustment</label>
-                    <input 
-                      type="text" 
+                    <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-500 mb-1 block">Reason for adjustment</label>
+                    <input
+                      type="text"
                       placeholder="e.g. Apology for late delivery"
                       value={loyaltyReason}
                       onChange={e => setLoyaltyReason(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl border bg-transparent outline-none text-sm text-white focus:border-cyan-500"
+                      className="w-full px-4 py-2 rounded-xl border bg-transparent outline-none text-sm text-slate-900 dark:text-white focus:border-cyan-500"
                       style={{ borderColor: 'var(--border-color)' }}
                     />
                   </div>
@@ -202,9 +202,9 @@ export default function CRMDashboard() {
 
             </div>
           ) : (
-            <div className="bg-slate-900 border rounded-3xl p-8 shadow-xl text-center flex flex-col items-center justify-center min-h-[400px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
-              <ShieldAlert className="w-12 h-12 text-slate-700 mb-4" />
-              <p className="text-slate-500 font-bold">Select a user to manage</p>
+            <div className="bg-white dark:bg-slate-900 border rounded-3xl p-8 shadow-xl text-center flex flex-col items-center justify-center min-h-[400px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+              <ShieldAlert className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-4" />
+              <p className="text-slate-500 dark:text-slate-500 font-bold">Select a user to manage</p>
             </div>
           )}
         </div>

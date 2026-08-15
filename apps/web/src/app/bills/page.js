@@ -68,7 +68,7 @@ export default function BillsPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-950 pt-20 pb-16">
+      <main className="min-h-screen bg-background pt-20 pb-16">
         <section className="relative overflow-hidden py-16 px-4">
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/20 to-teal-600/20" />
           <div className="max-w-4xl mx-auto relative z-10 text-center">
@@ -82,26 +82,26 @@ export default function BillsPage() {
         </section>
 
         <div className="max-w-4xl mx-auto px-4 py-8 relative z-20 -mt-10">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-10 shadow-2xl">
-            
+          <div className="bg-card-bg border border-border rounded-3xl p-6 md:p-10 shadow-2xl">
+
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                  <h2 className="text-2xl font-bold text-white mb-6">Select Biller Category</h2>
-                  
+                  <h2 className="text-2xl font-bold text-text mb-6">Select Biller Category</h2>
+
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                     {CATEGORIES.map(c => (
-                      <button key={c.id} onClick={() => setCategory(c.id)} className={`p-4 rounded-2xl border flex flex-col items-center justify-center transition-all ${category === c.id ? 'bg-slate-800 border-emerald-500 shadow-lg shadow-emerald-500/10' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'}`}>
+                      <button key={c.id} onClick={() => setCategory(c.id)} className={`p-4 rounded-2xl border flex flex-col items-center justify-center transition-all ${category === c.id ? 'bg-background-alt border-emerald-500 shadow-lg shadow-emerald-500/10' : 'bg-background-alt/50 border-border hover:border-slate-500'}`}>
                         <c.icon className={`w-8 h-8 mb-2 ${c.color}`} />
-                        <span className="text-white font-medium text-sm">{c.label}</span>
+                        <span className="text-text font-medium text-sm">{c.label}</span>
                       </button>
                     ))}
                   </div>
 
                   <form onSubmit={handleFetchBill} className="space-y-4">
                     <div>
-                      <label className="text-slate-400 text-sm block mb-1">State / Provider</label>
-                      <select required value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-slate-800 text-white rounded-xl p-3.5 border border-slate-700 focus:border-emerald-500 outline-none">
+                      <label className="text-text-muted text-sm block mb-1">State / Provider</label>
+                      <select required value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-background-alt text-text rounded-xl p-3.5 border border-border focus:border-emerald-500 outline-none">
                         <option value="">Select Biller...</option>
                         <option value="mahavitaran">Mahavitaran (MSEDCL)</option>
                         <option value="adani">Adani Electricity</option>
@@ -109,8 +109,8 @@ export default function BillsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-slate-400 text-sm block mb-1">Consumer Number</label>
-                      <input required type="text" value={consumerNumber} onChange={(e) => setConsumerNumber(e.target.value)} placeholder="e.g. 17001928374" className="w-full bg-slate-800 text-white rounded-xl p-3.5 border border-slate-700 focus:border-emerald-500 outline-none" />
+                      <label className="text-text-muted text-sm block mb-1">Consumer Number</label>
+                      <input required type="text" value={consumerNumber} onChange={(e) => setConsumerNumber(e.target.value)} placeholder="e.g. 17001928374" className="w-full bg-background-alt text-text rounded-xl p-3.5 border border-border focus:border-emerald-500 outline-none" />
                     </div>
                     <button type="submit" disabled={loading} className="w-full py-4 mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
                       {loading ? 'Fetching Bill...' : <><Zap className="w-5 h-5" /> Fetch Bill</>}
@@ -121,27 +121,27 @@ export default function BillsPage() {
 
               {step === 2 && billDetails && (
                 <motion.div key="step2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                  <h2 className="text-2xl font-bold text-white mb-6">Bill Details</h2>
-                  <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-8">
-                    <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
-                      <span className="text-slate-400">Customer Name</span>
-                      <span className="text-white font-bold">{billDetails.name}</span>
+                  <h2 className="text-2xl font-bold text-text mb-6">Bill Details</h2>
+                  <div className="bg-background-alt border border-border rounded-2xl p-6 mb-8">
+                    <div className="flex justify-between items-center border-b border-border pb-4 mb-4">
+                      <span className="text-text-muted">Customer Name</span>
+                      <span className="text-text font-bold">{billDetails.name}</span>
                     </div>
-                    <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
-                      <span className="text-slate-400">Bill Month</span>
-                      <span className="text-white font-bold">{billDetails.billMonth}</span>
+                    <div className="flex justify-between items-center border-b border-border pb-4 mb-4">
+                      <span className="text-text-muted">Bill Month</span>
+                      <span className="text-text font-bold">{billDetails.billMonth}</span>
                     </div>
-                    <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
-                      <span className="text-slate-400">Due Date</span>
+                    <div className="flex justify-between items-center border-b border-border pb-4 mb-4">
+                      <span className="text-text-muted">Due Date</span>
                       <span className="text-red-400 font-bold">{billDetails.dueDate}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2">
-                      <span className="text-slate-400 text-lg">Total Amount</span>
-                      <span className="text-4xl font-black text-white">₹{billDetails.amount}</span>
+                      <span className="text-text-muted text-lg">Total Amount</span>
+                      <span className="text-4xl font-black text-text">₹{billDetails.amount}</span>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <button onClick={() => setStep(1)} className="px-6 py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition">Cancel</button>
+                    <button onClick={() => setStep(1)} className="px-6 py-4 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">Cancel</button>
                     <button onClick={handlePayBill} disabled={loading} className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center">
                       {loading ? 'Processing...' : `Pay ₹${billDetails.amount}`}
                     </button>
@@ -152,9 +152,9 @@ export default function BillsPage() {
               {step === 3 && (
                 <motion.div key="step3" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10">
                   <CheckCircle2 className="w-24 h-24 text-emerald-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-bold text-white mb-2">Payment Successful!</h2>
-                  <p className="text-slate-400 mb-8">Your {category} bill of ₹{billDetails?.amount} has been paid.</p>
-                  <button onClick={() => { setStep(1); setConsumerNumber(''); setProvider(''); }} className="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition">
+                  <h2 className="text-3xl font-bold text-text mb-2">Payment Successful!</h2>
+                  <p className="text-text-muted mb-8">Your {category} bill of ₹{billDetails?.amount} has been paid.</p>
+                  <button onClick={() => { setStep(1); setConsumerNumber(''); setProvider(''); }} className="px-8 py-3 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">
                     Pay Another Bill
                   </button>
                 </motion.div>

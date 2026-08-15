@@ -11,8 +11,8 @@ const NeighborhoodMap = dynamic(() => import('./components/MapComponent'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[600px] bg-gray-100 animate-pulse flex flex-col items-center justify-center rounded-3xl border border-gray-200">
-      <Map className="w-12 h-12 text-gray-400 mb-4 animate-bounce" />
-      <span className="font-bold text-gray-500">Loading Neighborhood Map...</span>
+      <Map className="w-12 h-12 text-text-muted mb-4 animate-bounce" />
+      <span className="font-bold text-text-muted">Loading Neighborhood Map...</span>
     </div>
   )
 });
@@ -39,12 +39,12 @@ export default function NeighborhoodPage() {
               <Navigation className="w-8 h-8 text-primary" />
               Explore Dhanori
             </h1>
-            <p className="text-gray-500 mt-2 font-medium">Discover local businesses, services, and live events around you.</p>
+            <p className="text-text-muted mt-2 font-medium">Discover local businesses, services, and live events around you.</p>
           </div>
           
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 flex gap-1 items-center">
-              <Filter className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+              <Filter className="w-4 h-4 text-text-muted ml-2 shrink-0" />
               <div className="w-px h-6 bg-gray-200 mx-1"></div>
               {filters.map(filter => {
                 const Icon = filter.icon;

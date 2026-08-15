@@ -114,7 +114,7 @@ export default function KrishiDashboard() {
         
         {/* Posting Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Plus className="w-5 h-5 text-emerald-500" /> Create Listing
             </h2>
@@ -123,10 +123,10 @@ export default function KrishiDashboard() {
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Listing Type</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setType('crop')} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition ${type === 'crop' ? 'bg-green-600 border-green-500 text-white' : 'bg-transparent border-slate-700 text-slate-400'}`}>
+                  <button onClick={() => setType('crop')} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition ${type === 'crop' ? 'bg-green-600 border-green-500 text-white' : 'bg-transparent border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400'}`}>
                     <Leaf className="w-4 h-4 mx-auto mb-1" /> Crops / Seeds
                   </button>
-                  <button onClick={() => setType('equipment')} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition ${type === 'equipment' ? 'bg-orange-600 border-orange-500 text-white' : 'bg-transparent border-slate-700 text-slate-400'}`}>
+                  <button onClick={() => setType('equipment')} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition ${type === 'equipment' ? 'bg-orange-600 border-orange-500 text-white' : 'bg-transparent border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400'}`}>
                     <Tractor className="w-4 h-4 mx-auto mb-1" /> Equipment
                   </button>
                 </div>
@@ -158,8 +158,8 @@ export default function KrishiDashboard() {
 
               <div className="flex items-center justify-between p-3 border rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Auto-Expire</h4>
-                  <p className="text-[10px] text-slate-400">Expire after 60 days</p>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Auto-Expire</h4>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Expire after 60 days</p>
                 </div>
                 <button 
                   onClick={() => setAutoExpire(!autoExpire)}
@@ -189,9 +189,9 @@ export default function KrishiDashboard() {
             </h2>
 
             {loading ? (
-              <div className="text-center py-12 text-slate-500">Loading listings...</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-500">Loading listings...</div>
             ) : listings.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">No active Krishi listings.</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-500">No active Krishi listings.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {listings.map(item => (
@@ -200,7 +200,7 @@ export default function KrishiDashboard() {
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
                           {item.type === 'crop' ? <Leaf className="w-4 h-4 text-green-500"/> : <Tractor className="w-4 h-4 text-orange-500"/>}
-                          <h4 className="font-bold text-white truncate max-w-[120px]">{item.title}</h4>
+                          <h4 className="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{item.title}</h4>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1 ${
                           item.status === 'active' ? 'bg-emerald-500/20 text-emerald-500' :
@@ -220,14 +220,14 @@ export default function KrishiDashboard() {
                         </button>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                        <Clock className="w-3 h-3"/> 
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-500 font-mono">
+                        <Clock className="w-3 h-3"/>
                         {item.auto_expire ? 'Auto-Expires in 60d' : 'No Expiry (Manual)'}
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold text-ellipsis overflow-hidden whitespace-nowrap max-w-[100px]">
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/50">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-500 uppercase font-bold text-ellipsis overflow-hidden whitespace-nowrap max-w-[100px]">
                         By: {item.seller_name || 'System'}
                       </span>
                       <div className="flex gap-2">

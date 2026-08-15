@@ -34,14 +34,14 @@ export default function TrustFeed({ zoneId }) {
           <ShieldCheck className="text-emerald-500" size={32} />
           Community Trust Feed
         </h2>
-        <p className="text-slate-500 mt-2">Verified video reviews from real neighbors.</p>
+        <p className="text-text-muted mt-2">Verified video reviews from real neighbors.</p>
       </div>
 
       {feed.length === 0 ? (
         <div className="bg-slate-50 p-12 text-center rounded-2xl border border-slate-200">
           <Star className="mx-auto text-slate-300 mb-4" size={48} />
           <h3 className="text-xl font-bold text-slate-700">No reviews yet</h3>
-          <p className="text-slate-500 mt-2">Be the first to review a shop in your area!</p>
+          <p className="text-text-muted mt-2">Be the first to review a shop in your area!</p>
         </div>
       ) : (
         feed.map(review => (
@@ -57,7 +57,7 @@ export default function TrustFeed({ zoneId }) {
                     {review.user_name}
                     {review.is_verified_buyer && <BadgeCheck className="text-blue-500 w-4 h-4" />}
                   </h4>
-                  <p className="text-xs text-slate-500">Reviewed <span className="font-bold text-slate-700">{review.shop_name}</span></p>
+                  <p className="text-xs text-text-muted">Reviewed <span className="font-bold text-slate-700">{review.shop_name}</span></p>
                 </div>
               </div>
               <div className="flex bg-amber-50 px-2 py-1 rounded-lg">
@@ -85,14 +85,14 @@ export default function TrustFeed({ zoneId }) {
             {/* Interaction Bar */}
             <div className="p-4 flex justify-between items-center bg-slate-50 border-t border-slate-100">
               <div className="flex gap-6">
-                <button className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors font-medium">
+                <button className="flex items-center gap-2 text-text-muted hover:text-red-500 transition-colors font-medium">
                   <Heart size={20} /> <span className="text-sm">Helpful</span>
                 </button>
-                <button className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors font-medium">
+                <button className="flex items-center gap-2 text-text-muted hover:text-blue-500 transition-colors font-medium">
                   <MessageCircle size={20} /> <span className="text-sm">Comment</span>
                 </button>
               </div>
-              <button className="text-slate-500 hover:text-slate-900">
+              <button className="text-text-muted hover:text-slate-900">
                 <Share2 size={20} />
               </button>
             </div>

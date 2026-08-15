@@ -56,14 +56,14 @@ export default function WelcomeTour() {
   const current = tourContent[step];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fade-in">
       
-      <div className="w-full max-w-sm bg-slate-900 border-2 border-slate-700 rounded-3xl shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-sm bg-background border-2 border-border rounded-3xl shadow-2xl relative overflow-hidden">
         
         {/* Skip Button */}
         <button 
           onClick={completeTour}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors"
         >
           <X size={20} />
         </button>
@@ -75,8 +75,8 @@ export default function WelcomeTour() {
             <current.icon className={current.color} size={40} />
           </div>
 
-          <h2 className="text-2xl font-black text-white mb-3">{current.title}</h2>
-          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+          <h2 className="text-2xl font-black text-text mb-3">{current.title}</h2>
+          <p className="text-text-muted text-sm leading-relaxed mb-8">
             {current.desc}
           </p>
 
@@ -85,7 +85,7 @@ export default function WelcomeTour() {
             {[0, 1, 2].map(i => (
               <div 
                 key={i} 
-                className={`h-2 rounded-full transition-all ${i === step ? 'w-8 bg-blue-500' : 'w-2 bg-slate-700'}`}
+                className={`h-2 rounded-full transition-all ${i === step ? 'w-8 bg-blue-500' : 'w-2 bg-border'}`}
               ></div>
             ))}
           </div>

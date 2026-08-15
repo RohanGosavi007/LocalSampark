@@ -25,17 +25,17 @@ export default function PayoutsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-7xl mx-auto p-6 pt-24">
         
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Financial Ledger</h1>
-          <p className="text-slate-400 mt-1">Real-time Razorpay split settlements</p>
+          <h1 className="text-3xl font-bold text-text">Financial Ledger</h1>
+          <p className="text-text-muted mt-1">Real-time Razorpay split settlements</p>
         </div>
 
         {/* Mock Role Selector for Demo Purposes */}
-        <div className="flex gap-2 mb-8 bg-slate-900 p-1 rounded-xl w-fit border border-slate-800">
+        <div className="flex gap-2 mb-8 bg-card-bg p-1 rounded-xl w-fit border border-border">
           {['franchise', 'shop', 'rider'].map(role => (
             <button
               key={role}
@@ -43,7 +43,7 @@ export default function PayoutsDashboard() {
               className={`px-6 py-2 rounded-lg font-bold capitalize transition-colors ${
                 activeTab === role 
                   ? 'bg-blue-600 text-white' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                   : "text-text-muted hover:text-text hover:bg-background-alt"
               }`}
             >
               {role} View
@@ -54,23 +54,23 @@ export default function PayoutsDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {stats[activeTab].map(stat => (
-            <div key={stat.label} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
+            <div key={stat.label} className="bg-card-bg border border-border rounded-2xl p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-current to-transparent opacity-5 group-hover:opacity-10 rounded-bl-full transition-opacity" style={{ color: stat.color }}></div>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
                 <stat.icon size={24} />
               </div>
-              <h3 className="text-3xl font-black text-white">{stat.value}</h3>
-              <p className="text-slate-400 font-bold mt-1 text-sm">{stat.label}</p>
+              <h3 className="text-3xl font-black text-text">{stat.value}</h3>
+              <p className="text-text-muted font-bold mt-1 text-sm">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* Ledger Table */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Recent Transactions</h2>
+        <div className="bg-card-bg border border-border rounded-2xl p-6">
+          <h2 className="text-xl font-bold text-text mb-6">Recent Transactions</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase font-bold tracking-wider">
+              <thead className="bg-background-alt/50 text-text-muted text-xs uppercase font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4 rounded-tl-xl">Transaction ID</th>
                   <th className="px-6 py-4">Date & Time</th>
@@ -80,16 +80,16 @@ export default function PayoutsDashboard() {
                   <th className="px-6 py-4 rounded-tr-xl">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-border text-text-muted">
                 {[1, 2, 3, 4, 5].map(i => {
                   const amt = Math.floor(Math.random() * 2000) + 500;
                   const fee = Math.floor(amt * 0.02);
                   const net = amt - fee;
                   return (
-                    <tr key={i} className="hover:bg-slate-800/20 transition-colors">
+                    <tr key={i} className="hover:bg-background-alt/20 transition-colors">
                       <td className="px-6 py-4 font-mono text-blue-400">TXN-882{i}9A</td>
                       <td className="px-6 py-4">Aug 11, 2026 • 14:30</td>
-                      <td className="px-6 py-4 font-bold text-white">₹{amt}</td>
+                      <td className="px-6 py-4 font-bold text-text">₹{amt}</td>
                       <td className="px-6 py-4 text-red-400">-₹{fee}</td>
                       <td className="px-6 py-4 font-bold text-green-400">₹{net}</td>
                       <td className="px-6 py-4">

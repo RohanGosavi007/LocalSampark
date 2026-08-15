@@ -37,22 +37,13 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setDarkMode(true);
-      document.body.classList.add('dark-mode');
-    }
+    setDarkMode(document.body.classList.contains('dark-mode'));
   }, []);
 
   const toggleTheme = () => {
-    if (darkMode) {
-      document.body.classList.remove('dark-mode');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.body.classList.add('dark-mode');
-      localStorage.setItem('theme', 'dark');
-    }
-    setDarkMode(!darkMode);
+    localStorage.setItem('theme', darkMode ? 'light' : 'dark');
+    // Full reload so every page/section (which may read theme only on mount) re-renders consistently
+    window.location.reload();
   };
 
   const handleSaveLocation = (e) => {

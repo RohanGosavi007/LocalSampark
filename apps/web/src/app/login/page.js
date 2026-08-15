@@ -1,72 +1,73 @@
 'use client';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Store, ShieldCheck, User, Bike, Key, ChevronRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { mockLogin } = useAuth();
   const [selectedRole, setSelectedRole] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const roles = [
-    { id: 'consumer', label: 'Resident / Consumer', icon: User, path: '/resident', desc: 'Shop locally & manage society' },
-    { id: 'shop', label: 'Shop Owner', icon: Store, path: '/shop-manager', desc: 'Manage your local store' },
-    { id: 'rider', label: 'Delivery Partner', icon: Bike, path: '/rider', desc: 'Deliver local orders' },
-    { id: 'gatekeeper', label: 'Gatekeeper', icon: Key, path: '/gatekeeper', desc: 'Society visitor management' },
-    { id: 'admin', label: 'Franchise Admin', icon: ShieldCheck, path: '/admin', desc: 'Super admin dashboard' },
+    { id: 'user', label: 'Resident / Consumer', icon: User, path: '/resident', desc: 'Shop locally & manage society' },
+    { id: 'shop_owner', label: 'Shop Owner', icon: Store, path: '/shop-dashboard', desc: 'Manage your local store' },
+    { id: 'delivery_agent', label: 'Delivery Partner', icon: Bike, path: '/delivery-dashboard', desc: 'Deliver local orders' },
+    { id: 'security_guard', label: 'Gatekeeper', icon: Key, path: '/gatekeeper', desc: 'Society visitor management' },
+    { id: 'super_admin', label: 'Franchise Admin', icon: ShieldCheck, path: '/admin-dashboard', desc: 'Super admin dashboard' },
   ];
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (!selectedRole) return;
     setLoading(true);
-    // Mock login delay for staging environment
+    const role = roles.find(r => r.id === selectedRole);
+    mockLogin(role.id);
+    // Full reload so AuthContext/localStorage state is picked up by the guarded route immediately
     setTimeout(() => {
-      const role = roles.find(r => r.id === selectedRole);
-      router.push(role.path);
-    }, 1500);
+      window.location.href = role.path;
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
-        
+
         {/* Logo Area */}
         <div className="text-center mb-10">
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(37,99,235,0.4)]">
             <Store size={32} className="text-white" />
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">LocalSampark</h1>
-          <p className="text-slate-400 mt-2 font-bold">The Hyper-Local Super App</p>
+          <h1 className="text-3xl font-black text-text tracking-tight">LocalSampark</h1>
+          <p className="text-text-muted mt-2 font-bold">The Hyper-Local Super App</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        <div className="bg-card-bg border border-border rounded-3xl p-8 shadow-2xl relative overflow-hidden">
           {/* Subtle gradient blob */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
 
-          <h2 className="text-xl font-bold text-white mb-6">Select your portal</h2>
-          
+          <h2 className="text-xl font-bold text-text mb-6">Select your portal</h2>
+
           <form onSubmit={handleLogin}>
             <div className="space-y-3 mb-8">
               {roles.map(role => (
-                <div 
+                <div
                   key={role.id}
                   onClick={() => setSelectedRole(role.id)}
                   className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border ${
-                    selectedRole === role.id 
-                      ? 'bg-blue-600/10 border-blue-500 text-blue-400' 
-                      : 'bg-slate-950 border-slate-800 hover:border-slate-600 text-slate-300'
+                    selectedRole === role.id
+                      ? 'bg-blue-600/10 border-blue-500 text-blue-400'
+                      : 'bg-background border-border hover:border-primary/40 text-text-muted'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    selectedRole === role.id ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
+                    selectedRole === role.id ? 'bg-blue-600 text-white' : 'bg-background-alt text-text-muted'
                   }`}>
                     <role.icon size={20} />
                   </div>
                   <div className="flex-1">
-                    <h3 className={`font-bold ${selectedRole === role.id ? 'text-white' : ''}`}>{role.label}</h3>
-                    <p className={`text-xs ${selectedRole === role.id ? 'text-blue-200' : 'text-slate-500'}`}>{role.desc}</p>
+                    <h3 className={`font-bold ${selectedRole === role.id ? 'text-white' : 'text-text'}`}>{role.label}</h3>
+                    <p className={`text-xs ${selectedRole === role.id ? 'text-blue-200' : 'text-text-muted'}`}>{role.desc}</p>
                   </div>
                   {selectedRole === role.id && (
                     <ChevronRight size={20} className="text-blue-500" />
@@ -75,8 +76,8 @@ export default function LoginPage() {
               ))}
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={!selectedRole || loading}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2"
             >
@@ -87,8 +88,8 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-          
-          <p className="text-center text-slate-500 text-xs mt-6">
+
+          <p className="text-center text-text-muted text-xs mt-6">
             Authentication is currently bypassed for Staging Mode. Select a role to proceed.
           </p>
         </div>

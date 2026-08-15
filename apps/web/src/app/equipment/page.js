@@ -52,19 +52,19 @@ export default function EquipmentPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-950 pt-20 pb-16">
+      <main className="min-h-screen bg-background pt-20 pb-16">
         <section className="relative overflow-hidden py-16 px-4">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-600/20 to-orange-600/20" />
           <div className="max-w-6xl mx-auto relative z-10 text-center">
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-bold text-white mb-4">
+            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-bold text-text mb-4">
               Equipment <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">Rentals</span>
             </motion.h1>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-8">
+            <p className="text-text-muted text-lg max-w-2xl mx-auto mb-8">
               Rent tools, machinery, and equipment for your next project directly from local shops.
             </p>
-            <div className="flex items-center gap-3 max-w-xl mx-auto bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-700 px-4 py-3">
-              <Search className="text-slate-400 w-5 h-5 flex-shrink-0" />
-              <input type="text" placeholder="Search for drills, mixers, cameras..." className="bg-transparent text-white flex-1 outline-none placeholder:text-slate-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <div className="flex items-center gap-3 max-w-xl mx-auto bg-background-alt/80 backdrop-blur-md rounded-2xl border border-border px-4 py-3">
+              <Search className="text-text-muted w-5 h-5 flex-shrink-0" />
+              <input type="text" placeholder="Search for drills, mixers, cameras..." className="bg-transparent text-text flex-1 outline-none placeholder:text-text-muted" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
         </section>
@@ -72,14 +72,14 @@ export default function EquipmentPage() {
         <div className="max-w-6xl mx-auto px-4 py-12">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1,2,3,4].map(i => <div key={i} className="h-64 bg-slate-800/60 rounded-3xl animate-pulse" />)}
+              {[1,2,3,4].map(i => <div key={i} className="h-64 bg-background-alt/60 rounded-3xl animate-pulse" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {filtered.map((item, i) => (
-                <motion.div key={item.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 hover:border-amber-500/50 transition-all flex flex-col">
-                  <div className="h-40 bg-slate-800 rounded-2xl mb-4 flex items-center justify-center">
-                    <Wrench className="w-12 h-12 text-slate-600" />
+                <motion.div key={item.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-card-bg border border-border rounded-3xl p-5 hover:border-amber-500/50 transition-all flex flex-col">
+                  <div className="h-40 bg-background-alt rounded-2xl mb-4 flex items-center justify-center">
+                    <Wrench className="w-12 h-12 text-text-muted" />
                   </div>
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-amber-500 uppercase">{item.category}</span>
@@ -87,15 +87,15 @@ export default function EquipmentPage() {
                       {item.available ? 'Available' : 'Rented Out'}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2 leading-tight">{item.title}</h3>
-                  <div className="mt-auto space-y-3 pt-4 border-t border-slate-800">
+                  <h3 className="text-lg font-bold text-text mb-2 leading-tight">{item.title}</h3>
+                  <div className="mt-auto space-y-3 pt-4 border-t border-border">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-400">Rent</span>
-                      <span className="text-white font-bold">₹{item.price_per_day}/day</span>
+                      <span className="text-text-muted">Rent</span>
+                      <span className="text-text font-bold">₹{item.price_per_day}/day</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-400">Security Dep.</span>
-                      <span className="text-white font-medium">₹{item.deposit}</span>
+                      <span className="text-text-muted">Security Dep.</span>
+                      <span className="text-text font-medium">₹{item.deposit}</span>
                     </div>
                     <button disabled={!item.available} className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-500 transition disabled:opacity-50 mt-2">
                       {item.available ? 'Request Rental' : 'Notify When Available'}

@@ -24,7 +24,7 @@ export default function StockAlerts() {
 
       <div className="space-y-3">
         {lowStockItems.map(item => (
-          <div key={item.id} className="bg-slate-900 border border-red-500/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div key={item.id} className="bg-background border border-red-500/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
             <div>
               <h4 className="font-bold text-slate-200">{item.name}</h4>
               <p className="text-red-400 text-xs font-bold mt-1 flex items-center gap-1">
@@ -33,7 +33,7 @@ export default function StockAlerts() {
             </div>
             <Link 
               href="/shop-manager/inventory"
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+              className="bg-card-bg hover:bg-slate-700 border border-border text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
             >
               Update Stock
             </Link>

@@ -115,11 +115,12 @@ router.get('/community/posts', authenticate, requireAdmin, async (req, res, next
     params.push(Math.min(parseInt(limit, 10) || 100, 500));
 
     const rows = await query(
-      `SELECT id, author_id, author_name, category, content, media_url, pincode,
-              likes_count, comments_count, created_at
-         FROM community_posts
+      `SELECT cp.id, cp.author_id, u.full_name as author_name, cp.type as category, cp.content, NULL as media_url, cp.pincode,
+              cp.likes as likes_count, cp.comments as comments_count, cp.created_at
+         FROM community_posts cp
+         LEFT JOIN users u ON cp.author_id = u.id
          ${where}
-        ORDER BY created_at DESC
+        ORDER BY cp.created_at DESC
         LIMIT $${params.length}`,
       params
     );
@@ -1534,8 +1535,8 @@ router.get('/medical/records', authenticate, requireAdmin, async (req, res, next
     // The tab renders item.name, but the canonical column is provider_name, so
     // every row displayed a dash. Alias it rather than reshaping the client.
     const records = await query(
-      `SELECT id, provider_name, provider_name AS name, type, license_no, zone,
-              address, contact_number, status, is_verified, created_at
+      `SELECT id, name AS provider_name, name, type, NULL AS license_no, NULL AS zone,
+              address, contact_number, status, NULL AS is_verified, created_at
          FROM medical_providers
         ORDER BY created_at DESC
         LIMIT 50`

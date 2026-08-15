@@ -51,20 +51,20 @@ export default function AdminDisputesDashboard() {
 
   return (
     <>
-      <main className="min-h-screen bg-slate-950 pt-20 pb-16 flex">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-20 pb-16 flex">
         <div className="p-6 lg:p-10 w-full">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Dispute Management</h1>
-              <p className="text-slate-400">Handle customer and partner disputes effectively to maintain trust.</p>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Dispute Management</h1>
+              <p className="text-slate-500 dark:text-slate-400">Handle customer and partner disputes effectively to maintain trust.</p>
             </div>
-            
+
             <div className="flex gap-3">
               <div className="relative">
-                <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" placeholder="Search ID or Name" className="pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 w-64" />
+                <Search className="w-5 h-5 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input type="text" placeholder="Search ID or Name" className="pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white outline-none focus:border-red-500 w-64" />
               </div>
-              <button className="p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-300 hover:bg-slate-800 transition">
+              <button className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                 <Filter className="w-5 h-5" />
               </button>
             </div>
@@ -72,30 +72,30 @@ export default function AdminDisputesDashboard() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10"><AlertOctagon className="w-24 h-24 text-red-500" /></div>
-              <p className="text-slate-400 text-sm font-medium mb-1">Open Disputes</p>
-              <h3 className="text-4xl font-black text-white mb-2">{disputes.filter(d => d.status === 'open').length}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Open Disputes</p>
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-2">{disputes.filter(d => d.status === 'open').length}</h3>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10"><Clock className="w-24 h-24 text-amber-500" /></div>
-              <p className="text-slate-400 text-sm font-medium mb-1">Investigating</p>
-              <h3 className="text-4xl font-black text-white mb-2">{disputes.filter(d => d.status === 'investigating').length}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Investigating</p>
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-2">{disputes.filter(d => d.status === 'investigating').length}</h3>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle className="w-24 h-24 text-emerald-500" /></div>
-              <p className="text-slate-400 text-sm font-medium mb-1">Resolved (Total)</p>
-              <h3 className="text-4xl font-black text-white mb-2">{disputes.filter(d => d.status === 'resolved').length}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Resolved (Total)</p>
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-2">{disputes.filter(d => d.status === 'resolved').length}</h3>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-4 mb-6 border-b border-slate-800 pb-px">
+          <div className="flex gap-4 mb-6 border-b border-slate-200 dark:border-slate-800 pb-px">
             {['open', 'investigating', 'resolved'].map(t => (
-              <button 
+              <button
                 key={t}
                 onClick={() => setActiveTab(t)}
-                className={`pb-4 px-2 font-bold capitalize transition border-b-2 ${activeTab === t ? 'border-red-500 text-red-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                className={`pb-4 px-2 font-bold capitalize transition border-b-2 ${activeTab === t ? 'border-red-500 text-red-400' : 'border-transparent text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
                 {t} Disputes
               </button>
@@ -104,11 +104,11 @@ export default function AdminDisputesDashboard() {
 
           {/* Dispute List */}
           <div className="space-y-4">
-            {loading ? <p className="text-slate-400 py-8">Loading disputes...</p> : filteredDisputes.map((d) => (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={d.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between gap-6 hover:border-slate-600 transition">
+            {loading ? <p className="text-slate-500 dark:text-slate-400 py-8">Loading disputes...</p> : filteredDisputes.map((d) => (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={d.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between gap-6 hover:border-slate-300 dark:hover:border-slate-600 transition">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-white font-bold text-lg">{d.id}</span>
+                    <span className="text-slate-900 dark:text-white font-bold text-lg">{d.id}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                       d.status === 'open' ? 'bg-red-500/10 text-red-400' :
                       d.status === 'investigating' ? 'bg-amber-500/10 text-amber-400' :
@@ -116,25 +116,25 @@ export default function AdminDisputesDashboard() {
                     }`}>
                       {d.status.toUpperCase()}
                     </span>
-                    <span className="text-slate-500 text-sm flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(d.created_at).toLocaleString()}</span>
+                    <span className="text-slate-500 dark:text-slate-500 text-sm flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(d.created_at).toLocaleString()}</span>
                   </div>
                   <h4 className="text-red-400 font-medium mb-4">{d.type} {d.total_amount ? `• ₹${d.total_amount}` : ''}</h4>
-                  
+
                   <div className="flex gap-8 text-sm">
                     <div>
-                      <p className="text-slate-500 mb-1">Customer</p>
-                      <p className="text-slate-300 font-medium">{d.user_name || d.user_id}</p>
+                      <p className="text-slate-500 dark:text-slate-500 mb-1">Customer</p>
+                      <p className="text-slate-600 dark:text-slate-300 font-medium">{d.user_name || d.user_id}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500 mb-1">Partner / Shop</p>
-                      <p className="text-slate-300 font-medium">{d.shop_name || d.shop_id}</p>
+                      <p className="text-slate-500 dark:text-slate-500 mb-1">Partner / Shop</p>
+                      <p className="text-slate-600 dark:text-slate-300 font-medium">{d.shop_name || d.shop_id}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500 mb-1">Order Ref</p>
+                      <p className="text-slate-500 dark:text-slate-500 mb-1">Order Ref</p>
                       <p className="text-blue-400 font-medium hover:underline cursor-pointer">{d.order_id}</p>
                     </div>
                   </div>
-                  {d.description && <p className="mt-4 text-slate-400 italic">"{d.description}"</p>}
+                  {d.description && <p className="mt-4 text-slate-500 dark:text-slate-400 italic">"{d.description}"</p>}
                 </div>
 
                 <div className="flex flex-col gap-2 min-w-[200px]">
@@ -148,7 +148,7 @@ export default function AdminDisputesDashboard() {
                       <button onClick={() => handleResolve(d.id)} className="w-full py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-500 transition shadow-lg shadow-red-500/20">
                         Resolve & Refund
                       </button>
-                      <button className="w-full py-2.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-slate-700">
+                      <button className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700">
                         <MessageSquare className="w-4 h-4" /> Message Parties
                       </button>
                     </>
@@ -156,12 +156,12 @@ export default function AdminDisputesDashboard() {
                 </div>
               </motion.div>
             ))}
-            
+
             {!loading && filteredDisputes.length === 0 && (
-              <div className="text-center py-12 bg-slate-900 border border-slate-800 rounded-3xl">
+              <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
                 <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                <h3 className="text-xl text-white font-bold mb-2">All Caught Up!</h3>
-                <p className="text-slate-400">No {activeTab} disputes at the moment.</p>
+                <h3 className="text-xl text-slate-900 dark:text-white font-bold mb-2">All Caught Up!</h3>
+                <p className="text-slate-500 dark:text-slate-400">No {activeTab} disputes at the moment.</p>
               </div>
             )}
           </div>

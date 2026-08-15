@@ -13,7 +13,7 @@ export default function KDSManager({ shopId }) {
   };
 
   return (
-    <div className="p-6 bg-slate-900 min-h-screen text-white rounded-3xl">
+    <div className="p-6 bg-background min-h-screen text-text rounded-3xl">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Clock className="text-emerald-400" /> Store Quick-Pack KDS (Target: 120s)
@@ -25,14 +25,14 @@ export default function KDSManager({ shopId }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {orders.map((ord) => (
-          <div key={ord.id} className="bg-slate-800 border border-slate-700 p-5 rounded-2xl">
+          <div key={ord.id} className="bg-card-bg border border-border p-5 rounded-2xl">
             <div className="flex justify-between items-center mb-3">
               <span className="font-bold text-lg text-amber-400">{ord.id}</span>
               <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1">
                 <Clock className="w-3 h-3" /> {ord.timerSec}s left
               </span>
             </div>
-            <ul className="space-y-1 mb-4 text-sm text-slate-300">
+            <ul className="space-y-1 mb-4 text-sm text-text-muted">
               {ord.items.map((it, idx) => (
                 <li key={idx} className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400"></span> {it}
@@ -47,7 +47,7 @@ export default function KDSManager({ shopId }) {
                 <PackageCheck className="w-4 h-4" /> Mark Order Packed
               </button>
             ) : (
-              <div className="w-full bg-slate-700 text-slate-400 text-center py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+              <div className="w-full bg-card-bg text-text-muted text-center py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
                 <CheckCircle className="w-4 h-4 text-emerald-400" /> Ready for Driver Pickup
               </div>
             )}

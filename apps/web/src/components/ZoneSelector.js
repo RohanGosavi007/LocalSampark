@@ -43,7 +43,7 @@ export default function ZoneSelector() {
           </div>
           
           <div className="max-h-64 overflow-y-auto p-2">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2 pt-2">
+            <div className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-2 pt-2">
               Popular Zones
             </div>
             {availableZones.map(zone => (
@@ -61,9 +61,9 @@ export default function ZoneSelector() {
               >
                 <div className="flex justify-between items-center">
                   <span>{zone.name}</span>
-                  <span className="text-xs text-gray-400">{zone.pincode}</span>
+                  <span className="text-xs text-text-muted">{zone.pincode}</span>
                 </div>
-                <div className="text-xs text-gray-500">{zone.city}, {zone.state}</div>
+                <div className="text-xs text-text-muted">{zone.city}, {zone.state}</div>
               </button>
             ))}
           </div>

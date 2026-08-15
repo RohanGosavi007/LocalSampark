@@ -90,7 +90,7 @@ export default function AdCampaignsPage() {
         
         {/* Upload Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Plus className="w-5 h-5 text-emerald-500" /> New Banner Ad
             </h2>
@@ -99,7 +99,7 @@ export default function AdCampaignsPage() {
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Banner Image URL</label>
                 <div className="relative">
-                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <input 
                     type="url" 
                     placeholder="https://example.com/banner.png"
@@ -114,7 +114,7 @@ export default function AdCampaignsPage() {
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Routing Deep Link</label>
                 <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <input 
                     type="text" 
                     placeholder="localsampark://shop/offer/1"
@@ -140,7 +140,7 @@ export default function AdCampaignsPage() {
 
         {/* Live Banners Grid */}
         <div className="lg:col-span-2">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Activity className="w-5 h-5 text-blue-500" /> Live Campaign Dashboard
             </h2>
@@ -193,7 +193,7 @@ export default function AdCampaignsPage() {
 
                         <button 
                           onClick={() => toggleStatus(banner.id, banner.status)}
-                          className={`px-4 py-2 rounded-lg text-xs font-bold transition ${banner.status === 'active' ? 'bg-slate-800 text-red-400 hover:bg-slate-700' : 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30'}`}
+                          className={`px-4 py-2 rounded-lg text-xs font-bold transition ${banner.status === 'active' ? 'bg-slate-100 dark:bg-slate-800 text-red-400 hover:bg-slate-200 dark:hover:bg-slate-700' : 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30'}`}
                         >
                           {banner.status === 'active' ? 'Pause Campaign' : 'Activate Campaign'}
                         </button>

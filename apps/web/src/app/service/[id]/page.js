@@ -60,14 +60,14 @@ export default function ServiceBookingWeb({ params }) {
           <div 
             key={s.id} 
             onClick={() => toggleService(s)}
-            className={`p-6 rounded-xl border-2 cursor-pointer transition-colors flex justify-between items-center ${isSelected ? 'bg-blue-900/20 border-blue-500' : 'bg-slate-900 border-slate-800 hover:border-slate-600'}`}
+            className={`p-6 rounded-xl border-2 cursor-pointer transition-colors flex justify-between items-center ${isSelected ? 'bg-blue-900/20 border-blue-500' : 'bg-card-bg border-border hover:border-slate-600'}`}
           >
             <div>
-              <h3 className="text-lg font-bold text-white">{s.name}</h3>
-              <p className="text-slate-400 text-sm mt-1">{s.desc}</p>
+              <h3 className="text-lg font-bold text-text">{s.name}</h3>
+              <p className="text-text-muted text-sm mt-1">{s.desc}</p>
               <div className="flex items-center space-x-4 mt-3">
                 <span className="text-green-400 font-bold">₹{s.price}</span>
-                <span className="text-slate-500 text-sm">⏱️ {s.duration} mins</span>
+                <span className="text-text-muted text-sm">⏱️ {s.duration} mins</span>
               </div>
             </div>
             <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-600 text-transparent'}`}>
@@ -83,17 +83,17 @@ export default function ServiceBookingWeb({ params }) {
     <div className="space-y-12">
       {/* Staff */}
       <div>
-        <h3 className="text-xl font-bold text-white mb-6">Choose Professional</h3>
+        <h3 className="text-xl font-bold text-text mb-6">Choose Professional</h3>
         <div className="grid grid-cols-4 gap-4">
           {staffList.map(st => (
-            <div 
-              key={st.id} 
+            <div
+              key={st.id}
               onClick={() => setSelectedStaff(st.id)}
-              className={`p-4 rounded-xl border-2 text-center cursor-pointer transition-colors ${selectedStaff === st.id ? 'bg-blue-900/20 border-blue-500' : 'bg-slate-900 border-slate-800 hover:border-slate-600'}`}
+              className={`p-4 rounded-xl border-2 text-center cursor-pointer transition-colors ${selectedStaff === st.id ? 'bg-blue-900/20 border-blue-500' : 'bg-card-bg border-border hover:border-slate-600'}`}
             >
-              <div className="w-16 h-16 bg-slate-800 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl">👤</div>
-              <div className="font-bold text-white">{st.name}</div>
-              <div className="text-xs text-slate-400">{st.role}</div>
+              <div className="w-16 h-16 bg-card-bg rounded-full mx-auto mb-3 flex items-center justify-center text-2xl">👤</div>
+              <div className="font-bold text-text">{st.name}</div>
+              <div className="text-xs text-text-muted">{st.role}</div>
             </div>
           ))}
         </div>
@@ -101,13 +101,13 @@ export default function ServiceBookingWeb({ params }) {
 
       {/* Date & Time */}
       <div>
-        <h3 className="text-xl font-bold text-white mb-6">Select Date & Time</h3>
+        <h3 className="text-xl font-bold text-text mb-6">Select Date & Time</h3>
         <div className="flex space-x-4 mb-6">
           {['today', 'tomorrow', 'wednesday'].map(d => (
-            <button 
-              key={d} 
+            <button
+              key={d}
               onClick={() => { setSelectedDate(d); setSelectedTime(null); }}
-              className={`px-6 py-3 rounded-lg border-2 font-medium capitalize ${selectedDate === d ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'}`}
+              className={`px-6 py-3 rounded-lg border-2 font-medium capitalize ${selectedDate === d ? 'bg-blue-600 border-blue-600 text-white' : 'bg-card-bg border-border text-text-muted hover:bg-background-alt'}`}
             >
               {d}
             </button>
@@ -115,11 +115,11 @@ export default function ServiceBookingWeb({ params }) {
         </div>
         <div className="grid grid-cols-4 gap-4">
           {timeSlots.map(slot => (
-            <button 
+            <button
               key={slot.time}
               disabled={!slot.active}
               onClick={() => setSelectedTime(slot.time)}
-              className={`py-3 rounded-lg border-2 font-medium transition-colors ${!slot.active ? 'bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed' : selectedTime === slot.time ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-400'}`}
+              className={`py-3 rounded-lg border-2 font-medium transition-colors ${!slot.active ? 'bg-background border-border text-text-muted cursor-not-allowed' : selectedTime === slot.time ? 'bg-blue-600 border-blue-600 text-white' : 'bg-card-bg border-border text-text-muted hover:border-blue-400'}`}
             >
               {slot.time} {!slot.active && '(Booked)'}
             </button>
@@ -133,35 +133,35 @@ export default function ServiceBookingWeb({ params }) {
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
         <div className="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">✓</div>
-        <h2 className="text-3xl font-bold text-white">Booking Confirmed!</h2>
-        <p className="text-slate-400 mt-2">Your appointment has been secured.</p>
+        <h2 className="text-3xl font-bold text-text">Booking Confirmed!</h2>
+        <p className="text-text-muted mt-2">Your appointment has been secured.</p>
       </div>
 
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden">
-        <div className="bg-slate-800 p-6 text-center">
-          <h3 className="text-xl font-bold text-white">{shop.name}</h3>
-          <p className="text-slate-400 text-sm">Booking ID: APT-7281</p>
+      <div className="bg-card-bg border border-border rounded-2xl overflow-hidden">
+        <div className="bg-background-alt p-6 text-center">
+          <h3 className="text-xl font-bold text-text">{shop.name}</h3>
+          <p className="text-text-muted text-sm">Booking ID: APT-7281</p>
         </div>
         <div className="p-6 space-y-4">
-          <div className="flex justify-between border-b border-slate-800 pb-4">
-            <span className="text-slate-400">Date & Time</span>
-            <span className="text-white font-bold capitalize">{selectedDate}, {selectedTime}</span>
+          <div className="flex justify-between border-b border-border pb-4">
+            <span className="text-text-muted">Date & Time</span>
+            <span className="text-text font-bold capitalize">{selectedDate}, {selectedTime}</span>
           </div>
-          <div className="flex justify-between border-b border-slate-800 pb-4">
-            <span className="text-slate-400">Professional</span>
-            <span className="text-white font-bold">{staffList.find(s => s.id === selectedStaff)?.name}</span>
+          <div className="flex justify-between border-b border-border pb-4">
+            <span className="text-text-muted">Professional</span>
+            <span className="text-text font-bold">{staffList.find(s => s.id === selectedStaff)?.name}</span>
           </div>
-          <div className="flex justify-between border-b border-slate-800 pb-4">
-            <span className="text-slate-400">Services</span>
-            <span className="text-white font-bold text-right">{selectedServices.map(s => s.name).join(', ')}</span>
+          <div className="flex justify-between border-b border-border pb-4">
+            <span className="text-text-muted">Services</span>
+            <span className="text-text font-bold text-right">{selectedServices.map(s => s.name).join(', ')}</span>
           </div>
           <div className="flex justify-between pt-2">
-            <span className="text-slate-400">Total Amount</span>
+            <span className="text-text-muted">Total Amount</span>
             <span className="text-green-400 font-bold text-xl">₹{totalAmount}</span>
           </div>
         </div>
-        <div className="bg-slate-950 p-6 text-center border-t border-slate-800">
-          <p className="text-sm text-slate-500 mb-4">Show this QR code at the counter</p>
+        <div className="bg-background p-6 text-center border-t border-border">
+          <p className="text-sm text-text-muted mb-4">Show this QR code at the counter</p>
           <div className="w-40 h-40 bg-white rounded-lg mx-auto flex items-center justify-center text-6xl">📱</div>
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function ServiceBookingWeb({ params }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 pb-24">
+    <div className="min-h-screen bg-background text-text pb-24">
       <Header />
       
       {/* Banner */}
@@ -187,13 +187,13 @@ export default function ServiceBookingWeb({ params }) {
         <div className="flex-1">
           {step === 1 && (
             <>
-              <h2 className="text-2xl font-bold text-white mb-6">1. Select Services</h2>
+              <h2 className="text-2xl font-bold text-text mb-6">1. Select Services</h2>
               {renderStep1()}
             </>
           )}
           {step === 2 && (
             <>
-              <h2 className="text-2xl font-bold text-white mb-6">2. Select Staff & Time</h2>
+              <h2 className="text-2xl font-bold text-text mb-6">2. Select Staff & Time</h2>
               {renderStep2()}
             </>
           )}
@@ -203,28 +203,28 @@ export default function ServiceBookingWeb({ params }) {
         {/* Sidebar Summary (Only on Step 1 & 2) */}
         {step < 3 && (
           <div className="w-96">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 sticky top-24">
-              <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-800 pb-4">Booking Summary</h2>
-              
+            <div className="bg-card-bg border border-border rounded-xl p-6 sticky top-24">
+              <h2 className="text-xl font-bold text-text mb-6 border-b border-border pb-4">Booking Summary</h2>
+
               {selectedServices.length === 0 ? (
-                <div className="text-slate-500 text-center py-8">Select a service to proceed</div>
+                <div className="text-text-muted text-center py-8">Select a service to proceed</div>
               ) : (
                 <>
                   <div className="space-y-3 mb-6">
                     {selectedServices.map(s => (
                       <div key={s.id} className="flex justify-between text-sm">
-                        <span className="text-slate-300">{s.name}</span>
-                        <span className="text-white font-medium">₹{s.price}</span>
+                        <span className="text-text-muted">{s.name}</span>
+                        <span className="text-text font-medium">₹{s.price}</span>
                       </div>
                     ))}
                   </div>
-                  
-                  <div className="border-t border-slate-800 pt-4 space-y-2">
-                    <div className="flex justify-between font-bold text-white text-lg">
+
+                  <div className="border-t border-border pt-4 space-y-2">
+                    <div className="flex justify-between font-bold text-text text-lg">
                       <span>Total Amount</span>
                       <span className="text-green-400">₹{totalAmount}</span>
                     </div>
-                    <div className="flex justify-between text-slate-400 text-sm">
+                    <div className="flex justify-between text-text-muted text-sm">
                       <span>Duration</span>
                       <span>~{totalDuration} mins</span>
                     </div>

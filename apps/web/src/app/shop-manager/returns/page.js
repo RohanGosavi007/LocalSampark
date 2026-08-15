@@ -38,18 +38,18 @@ export default function ShopReturnsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-white">
+    <div className="min-h-screen bg-background font-sans text-text">
       <Header />
-      
+
       <div className="max-w-5xl mx-auto p-6 pt-24">
-        
+
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
             <PackageX className="text-orange-500" size={24} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white">Disputes & Returns</h1>
-            <p className="text-slate-400 mt-1 font-medium">Review customer refund requests and manage chargebacks.</p>
+            <h1 className="text-3xl font-black text-text">Disputes & Returns</h1>
+            <p className="text-text-muted mt-1 font-medium">Review customer refund requests and manage chargebacks.</p>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function ShopReturnsDashboard() {
           
           <div className="lg:col-span-2 space-y-6">
             {returns.map(req => (
-              <div key={req.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 overflow-hidden relative">
+              <div key={req.id} className="bg-card-bg border border-border rounded-3xl p-6 overflow-hidden relative">
                 
                 {req.status === 'approved' && (
                   <div className="absolute top-4 right-4 bg-green-500/20 text-green-500 text-xs font-black uppercase px-3 py-1 rounded-full flex items-center gap-1">
@@ -70,20 +70,20 @@ export default function ShopReturnsDashboard() {
                   </div>
                 )}
 
-                <div className="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
+                <div className="flex justify-between items-start mb-6 border-b border-border pb-4">
                   <div>
-                    <h3 className="text-xl font-bold text-white">{req.item}</h3>
-                    <p className="text-slate-400 text-sm">Order: {req.orderId} • {req.customer}</p>
+                    <h3 className="text-xl font-bold text-text">{req.item}</h3>
+                    <p className="text-text-muted text-sm">Order: {req.orderId} • {req.customer}</p>
                   </div>
                   <div className="text-right mt-8 lg:mt-0">
                     <p className="text-orange-500 font-bold text-xl">₹{req.amount}</p>
-                    <p className="text-slate-500 text-xs">{req.time}</p>
+                    <p className="text-text-muted text-xs">{req.time}</p>
                   </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-6 mb-6">
                   {req.image && (
-                    <div className="w-full md:w-48 h-48 bg-slate-800 rounded-xl overflow-hidden shrink-0 border border-slate-700">
+                    <div className="w-full md:w-48 h-48 bg-card-bg rounded-xl overflow-hidden shrink-0 border border-border">
                       <img src={req.image} alt="Proof" className="w-full h-full object-cover" />
                     </div>
                   )}
@@ -99,7 +99,7 @@ export default function ShopReturnsDashboard() {
                 </div>
 
                 {req.status === 'pending' && (
-                  <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-800">
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border">
                     <button 
                       onClick={() => handleAction(req.id, 'approved')}
                       className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2"
@@ -122,19 +122,19 @@ export default function ShopReturnsDashboard() {
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-              <h3 className="font-bold text-white mb-4">Dispute Metrics</h3>
+            <div className="bg-card-bg border border-border rounded-3xl p-6">
+              <h3 className="font-bold text-text mb-4">Dispute Metrics</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 text-sm">Return Rate (30d)</span>
-                  <span className="text-white font-bold">1.2%</span>
+                  <span className="text-text-muted text-sm">Return Rate (30d)</span>
+                  <span className="text-text font-bold">1.2%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 text-sm">Total Refunded</span>
+                  <span className="text-text-muted text-sm">Total Refunded</span>
                   <span className="text-red-400 font-bold">₹1,240</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 text-sm">Pending Actions</span>
+                  <span className="text-text-muted text-sm">Pending Actions</span>
                   <span className="text-orange-500 font-bold bg-orange-500/20 px-2 py-0.5 rounded-full">1 Request</span>
                 </div>
               </div>

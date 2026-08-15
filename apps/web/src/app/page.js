@@ -158,7 +158,7 @@ function BentoCard({ pillar, index }) {
       
       {/* Badge pill */}
       {pillar.badge && (
-        <div className="absolute top-4 right-4 badge-pill-glow bg-white/80 text-[10px] text-text font-black z-10">
+        <div className="absolute top-4 right-4 badge-pill-glow bg-white/80 text-[10px] text-slate-900 font-black z-10">
           {pillar.badge}
         </div>
       )}

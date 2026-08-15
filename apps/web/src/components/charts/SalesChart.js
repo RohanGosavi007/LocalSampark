@@ -22,7 +22,7 @@ export default function SalesChart({ data }) {
           return (
             <div key={i} className="flex flex-col items-center flex-1 group">
               {/* Tooltip */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1 px-2 rounded mb-2 whitespace-nowrap z-10 pointer-events-none">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card-bg text-white text-xs py-1 px-2 rounded mb-2 whitespace-nowrap z-10 pointer-events-none">
                 ₹{d.value}
               </div>
               
@@ -36,9 +36,9 @@ export default function SalesChart({ data }) {
       </div>
       
       {/* Labels */}
-      <div className="flex justify-between gap-2 px-2 mt-4 border-t border-slate-800 pt-2">
+      <div className="flex justify-between gap-2 px-2 mt-4 border-t border-border pt-2">
         {data.map((d, i) => (
-          <div key={i} className="flex-1 text-center text-xs text-slate-500 font-bold uppercase tracking-wider">
+          <div key={i} className="flex-1 text-center text-xs text-text-muted font-bold uppercase tracking-wider">
             {d.label}
           </div>
         ))}

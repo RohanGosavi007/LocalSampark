@@ -39,11 +39,11 @@ export default function VoiceSearch({ onClose }) {
   }, [status, router, onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-end md:justify-center bg-slate-950/90 backdrop-blur-md animate-fade-in pb-12 md:pb-0">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-end md:justify-center bg-background/90 backdrop-blur-md animate-fade-in pb-12 md:pb-0">
       
       <button 
         onClick={onClose}
-        className="absolute top-6 right-6 w-12 h-12 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        className="absolute top-6 right-6 w-12 h-12 bg-card-bg/50 rounded-full flex items-center justify-center text-text-muted hover:text-white hover:bg-card-bg transition-colors"
       >
         <X size={24} />
       </button>
@@ -69,7 +69,7 @@ export default function VoiceSearch({ onClose }) {
 
         {/* Text Area */}
         <div className="h-24">
-          <h2 className="text-2xl font-black text-white mb-2">
+          <h2 className="text-2xl font-black text-text mb-2">
             {status === 'listening' ? 'Listening...' : status === 'processing' ? 'Finding products...' : 'Done!'}
           </h2>
           <p className="text-blue-400 font-medium text-lg min-h-[1.75rem] transition-all">

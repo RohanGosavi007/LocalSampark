@@ -40,28 +40,28 @@ export default function SystemHealthDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-white">
+    <div className="min-h-screen bg-background font-sans text-text">
       <Header />
-      
+
       <div className="max-w-7xl mx-auto p-6 pt-24">
-        
+
         <div className="flex items-center gap-3 mb-8">
           <Server className="text-blue-500" size={32} />
           <div>
-            <h1 className="text-3xl font-black text-white">System Health & DevOps</h1>
-            <p className="text-slate-400 mt-1 font-medium">Real-time infrastructure monitoring and event logs.</p>
+            <h1 className="text-3xl font-black text-text">System Health & DevOps</h1>
+            <p className="text-text-muted mt-1 font-medium">Real-time infrastructure monitoring and event logs.</p>
           </div>
         </div>
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {metrics.map(metric => (
-            <div key={metric.label} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center justify-between shadow-lg">
+            <div key={metric.label} className="bg-card-bg border border-border rounded-2xl p-6 flex items-center justify-between shadow-lg">
               <div>
-                <p className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-1">{metric.label}</p>
+                <p className="text-text-muted text-sm font-bold uppercase tracking-wider mb-1">{metric.label}</p>
                 <h3 className={`text-2xl font-black ${metric.color}`}>{metric.value}</h3>
               </div>
-              <div className={`p-3 rounded-xl bg-slate-950 border border-slate-800 ${metric.color}`}>
+              <div className={`p-3 rounded-xl bg-background border border-border ${metric.color}`}>
                 <metric.icon size={24} />
               </div>
             </div>
@@ -69,8 +69,8 @@ export default function SystemHealthDashboard() {
         </div>
 
         {/* Live Logs Terminal */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[500px]">
-          <div className="bg-slate-950 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+        <div className="bg-card-bg border border-border rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[500px]">
+          <div className="bg-background px-6 py-4 border-b border-border flex justify-between items-center">
             <h2 className="font-bold flex items-center gap-2">
               <Activity size={18} className="text-blue-500" />
               Live Event Stream

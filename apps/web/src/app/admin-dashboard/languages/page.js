@@ -87,7 +87,7 @@ export default function LocalizationDashboard() {
     }
   };
 
-  if (loading) return <div className="text-center py-12 text-slate-500">Loading Localization Engine...</div>;
+  if (loading) return <div className="text-center py-12 text-slate-500 dark:text-slate-500">Loading Localization Engine...</div>;
 
   return (
     <div className="max-w-7xl mx-auto pb-12 space-y-8">
@@ -101,7 +101,7 @@ export default function LocalizationDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Language Toggles */}
-        <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+        <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
             <Languages className="w-5 h-5 text-indigo-500" /> Active Languages
           </h2>
@@ -113,11 +113,11 @@ export default function LocalizationDashboard() {
                 <div 
                   key={lang.code}
                   onClick={() => toggleLanguage(lang.code)}
-                  className={`p-4 border rounded-2xl flex items-center justify-between cursor-pointer transition-all ${isActive ? 'bg-indigo-600/10 border-indigo-500/50' : 'bg-slate-950 border-slate-800 opacity-60 hover:opacity-100'}`}
+                  className={`p-4 border rounded-2xl flex items-center justify-between cursor-pointer transition-all ${isActive ? 'bg-indigo-600/10 border-indigo-500/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100'}`}
                   style={!isActive ? { backgroundColor: 'var(--bg-base)', borderColor: 'var(--border-color)' } : {}}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                       {lang.code.toUpperCase()}
                     </div>
                     <div>
@@ -139,7 +139,7 @@ export default function LocalizationDashboard() {
 
         {/* Dictionary Overrides */}
         <div className="space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl flex flex-col h-full" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl flex flex-col h-full" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <FileJson className="w-5 h-5 text-emerald-500" /> Dictionary Overrides
             </h2>
@@ -147,8 +147,8 @@ export default function LocalizationDashboard() {
               Force update specific translations without an app update. Must be valid JSON.
             </p>
 
-            <div className="flex-1 bg-slate-950 rounded-xl border overflow-hidden flex flex-col" style={{ borderColor: 'var(--border-color)' }}>
-              <div className="bg-slate-900 px-4 py-2 border-b text-[10px] font-mono flex gap-4" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+            <div className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-xl border overflow-hidden flex flex-col" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="bg-white dark:bg-slate-900 px-4 py-2 border-b text-[10px] font-mono flex gap-4" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
                 <span>File: overrides.json</span>
                 <span>Language Map: {`{"hi": {"Cart": "झोला"}}`}</span>
               </div>

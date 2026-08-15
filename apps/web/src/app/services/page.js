@@ -112,7 +112,7 @@ export default function ServicesPage() {
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                   selectedCategory === c.value
                     ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                    : 'bg-card-bg text-text-muted hover:bg-background-alt border border-border'
                 }`}>
                 <span className="mr-1">{c.icon}</span>{c.label}
               </button>
@@ -125,18 +125,18 @@ export default function ServicesPage() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3,4,5,6].map(i => (
-                <div key={i} className="bg-slate-800/60 rounded-2xl p-6 animate-pulse">
-                  <div className="w-16 h-16 rounded-full bg-slate-700 mb-4" />
-                  <div className="h-5 bg-slate-700 rounded w-2/3 mb-3" />
-                  <div className="h-4 bg-slate-700 rounded w-1/2" />
+                <div key={i} className="bg-card-bg rounded-2xl p-6 animate-pulse">
+                  <div className="w-16 h-16 rounded-full bg-background-alt mb-4" />
+                  <div className="h-5 bg-background-alt rounded w-2/3 mb-3" />
+                  <div className="h-4 bg-background-alt rounded w-1/2" />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <Wrench className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-xl text-slate-400 font-semibold">No Service Providers Found</h3>
-              <p className="text-slate-500 mt-2">Try a different category or check back later</p>
+              <h3 className="text-xl text-text-muted font-semibold">No Service Providers Found</h3>
+              <p className="text-text-muted mt-2">Try a different category or check back later</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -144,14 +144,14 @@ export default function ServicesPage() {
                 <motion.div key={provider.id || i}
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-slate-800/70 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/10 transition-all cursor-pointer"
+                  className="bg-card-bg backdrop-blur-sm border border-border rounded-2xl p-6 hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/10 transition-all cursor-pointer"
                   onClick={() => { setSelectedProvider(provider); setShowBooking(true); }}>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white font-bold text-xl">
                       {(provider.full_name || provider.name || 'S')[0].toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-white font-bold text-lg">{provider.full_name || provider.name}</h3>
+                      <h3 className="text-text font-bold text-lg">{provider.full_name || provider.name}</h3>
                       <p className="text-violet-400 text-sm font-medium">{provider.skill_name || provider.category || 'Professional'}</p>
                     </div>
                   </div>
@@ -187,39 +187,39 @@ export default function ServicesPage() {
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
               onClick={() => setShowBooking(false)}>
               <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-                className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-8"
+                className="bg-card-bg border border-border rounded-3xl max-w-md w-full p-8"
                 onClick={(e) => e.stopPropagation()}>
                 {booked ? (
                   <div className="text-center py-8">
                     <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-white">Service Booked!</h3>
-                    <p className="text-slate-400 mt-2">{selectedProvider.full_name || selectedProvider.name} will contact you shortly</p>
+                    <h3 className="text-xl font-bold text-text">Service Booked!</h3>
+                    <p className="text-text-muted mt-2">{selectedProvider.full_name || selectedProvider.name} will contact you shortly</p>
                   </div>
                 ) : (
                   <>
                     <div className="flex justify-between items-start mb-6">
                       <div>
-                        <h3 className="text-xl font-bold text-white">Book Service</h3>
+                        <h3 className="text-xl font-bold text-text">Book Service</h3>
                         <p className="text-violet-400 text-sm mt-1">{selectedProvider.full_name || selectedProvider.name} — {selectedProvider.skill_name || selectedProvider.category}</p>
                       </div>
-                      <button onClick={() => setShowBooking(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+                      <button onClick={() => setShowBooking(false)} className="text-text-muted hover:text-text"><X className="w-5 h-5" /></button>
                     </div>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-slate-300 text-sm font-medium mb-1 block">Preferred Date</label>
+                        <label className="text-text-muted text-sm font-medium mb-1 block">Preferred Date</label>
                         <input type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
-                          className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 border border-slate-700 focus:border-violet-500 outline-none" />
+                          className="w-full bg-background-alt text-text rounded-xl px-4 py-3 border border-border focus:border-violet-500 outline-none" />
                       </div>
                       <div>
-                        <label className="text-slate-300 text-sm font-medium mb-1 block">Preferred Time</label>
+                        <label className="text-text-muted text-sm font-medium mb-1 block">Preferred Time</label>
                         <input type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)}
-                          className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 border border-slate-700 focus:border-violet-500 outline-none" />
+                          className="w-full bg-background-alt text-text rounded-xl px-4 py-3 border border-border focus:border-violet-500 outline-none" />
                       </div>
                       <div>
-                        <label className="text-slate-300 text-sm font-medium mb-1 block">Notes</label>
+                        <label className="text-text-muted text-sm font-medium mb-1 block">Notes</label>
                         <textarea value={bookingNotes} onChange={(e) => setBookingNotes(e.target.value)}
                           placeholder="Describe your requirement..."
-                          className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 border border-slate-700 focus:border-violet-500 outline-none resize-none h-24" />
+                          className="w-full bg-background-alt text-text rounded-xl px-4 py-3 border border-border focus:border-violet-500 outline-none resize-none h-24" />
                       </div>
                       <button onClick={handleBookService}
                         className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-violet-500/30 transition-all">

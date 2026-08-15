@@ -10,8 +10,12 @@ export const useUIStore = create((set) => ({
       localStorage.setItem('theme', theme);
       if (theme === 'dark') {
         document.body.classList.add('dark-mode');
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.add('dark');
       } else {
         document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.remove('dark');
       }
     }
     set({ theme });
@@ -22,8 +26,12 @@ export const useUIStore = create((set) => ({
       localStorage.setItem('theme', newTheme);
       if (newTheme === 'dark') {
         document.body.classList.add('dark-mode');
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.add('dark');
       } else {
         document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.remove('dark');
       }
     }
     return { theme: newTheme };

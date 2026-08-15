@@ -29,7 +29,7 @@ export default function PendingModule({ title, description, moduleKey }) {
   return (
     <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center">
       <div className="relative mb-8">
-        <div className="w-24 h-24 rounded-3xl bg-slate-800/50 border border-slate-700 flex items-center justify-center shadow-2xl relative z-10 backdrop-blur-sm">
+        <div className="w-24 h-24 rounded-3xl bg-card-bg border border-border flex items-center justify-center shadow-2xl relative z-10 backdrop-blur-sm">
           {status === 'checking' ? (
             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
           ) : status === 'mounted' ? (

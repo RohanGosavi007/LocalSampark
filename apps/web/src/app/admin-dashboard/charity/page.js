@@ -135,7 +135,7 @@ export default function CharityDashboard() {
         
         {/* Campaign Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Plus className="w-5 h-5 text-emerald-500" /> Start Campaign
             </h2>
@@ -191,15 +191,15 @@ export default function CharityDashboard() {
 
         {/* Live Campaigns Grid */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <Heart className="w-5 h-5 text-rose-500" /> Active Campaigns
             </h2>
 
             {loading ? (
-              <div className="text-center py-12 text-slate-500">Loading campaigns...</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading campaigns...</div>
             ) : campaigns.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">No active charity campaigns.</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">No active charity campaigns.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {campaigns.map(camp => {
@@ -213,7 +213,7 @@ export default function CharityDashboard() {
 
                       <div className="relative z-10">
                         <div className="flex justify-between items-start mb-2 mt-2">
-                          <h4 className="font-bold text-white truncate max-w-[140px]">{camp.title}</h4>
+                          <h4 className="font-bold text-slate-900 dark:text-white truncate max-w-[140px]">{camp.title}</h4>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1 ${
                             camp.status === 'active' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'
                           }`}>
@@ -221,19 +221,19 @@ export default function CharityDashboard() {
                           </span>
                         </div>
                         
-                        <p className="text-[10px] uppercase font-bold text-slate-500 mb-4 flex items-center gap-1">
-                          {camp.ngo_name} 
+                        <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
+                          {camp.ngo_name}
                           {camp.verified_ngo ? <ShieldCheck className="w-3 h-3 text-emerald-500" /> : null}
                         </p>
-                        
-                        <div className="bg-slate-800/50 p-3 rounded-xl mb-4 border border-slate-700/50">
+
+                        <div className="bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl mb-4 border border-slate-200 dark:border-slate-700/50">
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-400">Raised</span>
-                            <span className="text-slate-400">Goal</span>
+                            <span className="text-slate-500 dark:text-slate-400">Raised</span>
+                            <span className="text-slate-500 dark:text-slate-400">Goal</span>
                           </div>
                           <div className="flex justify-between font-bold">
                             <span className="text-emerald-400 cursor-pointer border-b border-dashed border-emerald-400/50" onClick={() => adjustRaisedAmount(camp.id, camp.raised_amount)}>₹{camp.raised_amount}</span>
-                            <span className="text-slate-300">₹{camp.goal_amount}</span>
+                            <span className="text-slate-600 dark:text-slate-300">₹{camp.goal_amount}</span>
                           </div>
                           <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
                             <div className="bg-rose-500 h-full rounded-full" style={{ width: `${progress}%` }}></div>
@@ -243,15 +243,15 @@ export default function CharityDashboard() {
                         <div className="mt-2 flex gap-2">
                           <button 
                             onClick={() => toggleVerification(camp.id, camp.verified_ngo)}
-                            className={`flex-1 text-[10px] font-bold flex items-center justify-center gap-1 px-2 py-2 rounded-xl transition border ${camp.verified_ngo ? 'bg-emerald-600/10 text-emerald-500 border-emerald-500/30' : 'bg-transparent text-slate-400 border-slate-700 hover:bg-slate-800'}`}
+                            className={`flex-1 text-[10px] font-bold flex items-center justify-center gap-1 px-2 py-2 rounded-xl transition border ${camp.verified_ngo ? 'bg-emerald-600/10 text-emerald-500 border-emerald-500/30' : 'bg-transparent text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                           >
                             <ShieldCheck className="w-3 h-3"/> {camp.verified_ngo ? 'Verified NGO' : 'Verify NGO'}
                           </button>
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50 relative z-10">
-                        <span className="text-[10px] text-slate-500">
+                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/50 relative z-10">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
                           {new Date(camp.created_at).toLocaleDateString()}
                         </span>
                         <div className="flex gap-2">

@@ -32,7 +32,7 @@ export default function AnalyticsDashboard() {
   }, [duration]);
 
   if (loading && !data) {
-    return <div className="text-center py-20 text-slate-500">Loading Global Analytics...</div>;
+    return <div className="text-center py-20 text-slate-500 dark:text-slate-400">Loading Global Analytics...</div>;
   }
 
   const { metrics, chartData } = data || {};
@@ -51,12 +51,12 @@ export default function AnalyticsDashboard() {
           <p style={{ color: 'var(--text-muted)' }}>Macro-level health, revenue, and user engagement metrics across all regions.</p>
         </div>
         
-        <div className="bg-slate-900 border rounded-xl p-1 flex shadow-lg" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
+        <div className="bg-white dark:bg-slate-900 border rounded-xl p-1 flex shadow-lg" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
           {['day', 'week', 'month'].map(opt => (
-            <button 
+            <button
               key={opt}
               onClick={() => setDuration(opt)}
-              className={`px-6 py-2 text-sm font-bold rounded-lg capitalize transition-all ${duration === opt ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+              className={`px-6 py-2 text-sm font-bold rounded-lg capitalize transition-all ${duration === opt ? 'bg-purple-600 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
             >
               {opt}
             </button>
@@ -69,13 +69,13 @@ export default function AnalyticsDashboard() {
         <div className="p-6 rounded-3xl border shadow-xl flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Users</h3>
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Users</h3>
             <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
               <Users className="w-5 h-5 text-blue-500"/>
             </div>
           </div>
           <div>
-            <div className="text-3xl font-black text-white">
+            <div className="text-3xl font-black text-slate-900 dark:text-white">
               {(metrics?.totalUsers ?? 0).toLocaleString()}
             </div>
             <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
@@ -87,13 +87,13 @@ export default function AnalyticsDashboard() {
         <div className="p-6 rounded-3xl border shadow-xl flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Financial Vol.</h3>
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Financial Vol.</h3>
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-purple-500"/>
             </div>
           </div>
           <div>
-            <div className="text-3xl font-black text-white">
+            <div className="text-3xl font-black text-slate-900 dark:text-white">
               ₹{(metrics?.financialVolume ?? 0).toLocaleString()}
             </div>
             <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
@@ -105,13 +105,13 @@ export default function AnalyticsDashboard() {
         <div className="p-6 rounded-3xl border shadow-xl flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Active Merchants</h3>
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Merchants</h3>
             <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
               <Map className="w-5 h-5 text-orange-500"/>
             </div>
           </div>
           <div>
-            <div className="text-3xl font-black text-white">
+            <div className="text-3xl font-black text-slate-900 dark:text-white">
               {(metrics?.activeMerchants ?? 0).toLocaleString()}
             </div>
             <div className="text-sm text-rose-400 font-bold flex items-center gap-1 mt-2">
@@ -123,13 +123,13 @@ export default function AnalyticsDashboard() {
         <div className="p-6 rounded-3xl border shadow-xl flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Avg. SLA Time</h3>
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg. SLA Time</h3>
             <div className="w-10 h-10 rounded-full bg-sky-500/20 flex items-center justify-center">
               <Clock className="w-5 h-5 text-sky-500"/>
             </div>
           </div>
           <div>
-            <div className="text-3xl font-black text-white">
+            <div className="text-3xl font-black text-slate-900 dark:text-white">
               {metrics?.slaTime || '24 mins'}
             </div>
             <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
@@ -145,26 +145,26 @@ export default function AnalyticsDashboard() {
         <div className="p-8 rounded-3xl border shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
                 <ArrowUpRight className="text-emerald-500" /> Revenue Growth
               </h2>
-              <p className="text-sm text-slate-400">Total volume processed across all verticals</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Total volume processed across all verticals</p>
             </div>
           </div>
-          
+
           <div className="h-64 flex items-end justify-between gap-2 relative">
-            {loading && <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center z-10 rounded-xl">Loading...</div>}
+            {loading && <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 flex items-center justify-center z-10 rounded-xl">Loading...</div>}
             {chartData?.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                 <div 
                   className="w-full bg-emerald-500/20 hover:bg-emerald-500/40 rounded-t-lg transition-all relative"
                   style={{ height: `${Math.max((d.revenue / maxRevenue) * 100, 5)}%` }}
                 >
-                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition shadow-xl pointer-events-none whitespace-nowrap z-20">
+                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition shadow-xl pointer-events-none whitespace-nowrap z-20">
                     ₹{d.revenue.toLocaleString()}
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono mt-2 truncate w-full text-center">{d.label}</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-2 truncate w-full text-center">{d.label}</div>
               </div>
             ))}
           </div>
@@ -174,26 +174,26 @@ export default function AnalyticsDashboard() {
         <div className="p-8 rounded-3xl border shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
                 <Activity className="text-blue-500" /> Active Users
               </h2>
-              <p className="text-sm text-slate-400">Unique active sessions across the platform</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Unique active sessions across the platform</p>
             </div>
           </div>
-          
+
           <div className="h-64 flex items-end justify-between gap-2 relative">
-             {loading && <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center z-10 rounded-xl">Loading...</div>}
+             {loading && <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 flex items-center justify-center z-10 rounded-xl">Loading...</div>}
             {chartData?.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                 <div 
                   className="w-full bg-blue-500/20 hover:bg-blue-500/40 rounded-t-lg transition-all relative"
                   style={{ height: `${Math.max((d.users / maxUsers) * 100, 5)}%` }}
                 >
-                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition shadow-xl pointer-events-none whitespace-nowrap z-20">
+                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition shadow-xl pointer-events-none whitespace-nowrap z-20">
                     {d.users.toLocaleString()} Users
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono mt-2 truncate w-full text-center">{d.label}</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-2 truncate w-full text-center">{d.label}</div>
               </div>
             ))}
           </div>

@@ -116,7 +116,7 @@ export default function AnimalWelfareDashboard() {
         
         {/* Request Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
               <AlertTriangle className="w-5 h-5 text-amber-500" /> Log Rescue Request
             </h2>
@@ -204,15 +204,15 @@ export default function AnimalWelfareDashboard() {
 
         {/* Live Requests Grid (Sorted by Priority) */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+          <div className="bg-white dark:bg-slate-900 border rounded-3xl p-6 shadow-xl min-h-[500px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold flex items-center gap-2 mb-6" style={{ color: 'var(--text-main)' }}>
               <Activity className="w-5 h-5 text-pink-500" /> Rescue Dispatch Board
             </h2>
 
             {loading ? (
-              <div className="text-center py-12 text-slate-500">Loading cases...</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading cases...</div>
             ) : requests.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">No pending rescue requests.</div>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">No pending rescue requests.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {requests.map(req => (
@@ -228,7 +228,7 @@ export default function AnimalWelfareDashboard() {
                     <div className="pl-3">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex flex-col">
-                          <h4 className="font-bold text-white text-lg flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                             {req.animal_type}
                             <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded border ${
                               req.severity === 'Critical' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 
@@ -248,15 +248,15 @@ export default function AnimalWelfareDashboard() {
                         </span>
                       </div>
                       
-                      <div className="bg-slate-800/50 p-3 rounded-xl mt-4 border border-slate-700/50">
-                        <span className="text-xs font-bold text-slate-400 block mb-1">Reporter</span>
+                      <div className="bg-slate-100/50 dark:bg-slate-800/50 p-3 rounded-xl mt-4 border border-slate-200/50 dark:border-slate-700/50">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Reporter</span>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-bold text-slate-200">{req.reporter_name}</span>
-                          <span className="text-xs text-slate-400 font-mono flex items-center gap-1"><Phone className="w-3 h-3"/> {req.phone}</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{req.reporter_name}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1"><Phone className="w-3 h-3"/> {req.phone}</span>
                         </div>
                       </div>
 
-                      <div className="mt-3 flex items-start gap-2 text-xs text-slate-400">
+                      <div className="mt-3 flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5"/>
                         <p className="line-clamp-2">{req.location}</p>
                       </div>
@@ -265,15 +265,15 @@ export default function AnimalWelfareDashboard() {
                         <button 
                           onClick={() => toggleDispatch(req.id, req.dispatched)}
                           disabled={req.status === 'completed' || req.status === 'cancelled'}
-                          className={`w-full text-[10px] font-bold flex items-center justify-center gap-1 px-2 py-2 rounded-xl transition ${req.dispatched ? 'bg-sky-600/20 text-sky-400 border border-sky-500/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 disabled:opacity-50'}`}
+                          className={`w-full text-[10px] font-bold flex items-center justify-center gap-1 px-2 py-2 rounded-xl transition ${req.dispatched ? 'bg-sky-600/20 text-sky-400 border border-sky-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50'}`}
                         >
                           <Truck className="w-3 h-3"/> {req.dispatched ? 'NGO Rescue Team Dispatched' : 'Dispatch Rescue Team'}
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50 relative z-10 pl-3">
-                      <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 relative z-10 pl-3">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3"/>
                         {new Date(req.created_at).toLocaleDateString()}
                       </span>

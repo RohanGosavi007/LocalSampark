@@ -1,7 +1,9 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const prisma = require('../../../../prisma/client');
 const { optionalAuth } = require('../../../middleware/auth.middleware');
+const { query, queryOne } = require('../../../config/database');
+const useSqlite = process.env.USE_SQLITE === 'true';
 
 // GET Cart Items
 router.get('/', optionalAuth, async (req, res, next) => {
@@ -68,6 +70,49 @@ router.post('/', optionalAuth, async (req, res, next) => {
 
     if ((!userId && !sessionId) || !productId || quantity === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // SQLite fallback — Prisma targets the remote PostgreSQL database
+    if (useSqlite) {
+      // Stock check against local shop_products
+      if (quantity > 0) {
+        const product = await queryOne(
+          'SELECT stock_qty FROM shop_products WHERE id = $1',
+          [productId]
+        );
+        if (product && product.stock_qty !== null && product.stock_qty < quantity) {
+          return res.status(400).json({ error: 'Insufficient inventory', available: product.stock_qty });
+        }
+      }
+
+      const customOptionsStr = customOptions ? JSON.stringify(customOptions) : null;
+      const ownerCol = userId ? 'user_id' : 'session_id';
+      const ownerVal = userId || sessionId;
+
+      // Check for existing cart item
+      const existing = await queryOne(
+        `SELECT id, quantity FROM cart_items WHERE product_id = $1 AND ${ownerCol} = $2`,
+        [productId, ownerVal]
+      );
+
+      if (existing) {
+        if (quantity === 0) {
+          await query('DELETE FROM cart_items WHERE id = $1', [existing.id]);
+          return res.json({ success: true, message: 'Item removed' });
+        } else {
+          await query('UPDATE cart_items SET quantity = $1 WHERE id = $2', [quantity, existing.id]);
+          return res.json({ success: true, cartItem: { id: existing.id, productId, quantity } });
+        }
+      } else if (quantity > 0) {
+        await query(
+          `INSERT INTO cart_items (user_id, session_id, product_id, quantity, custom_options)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [userId, sessionId, productId, quantity, customOptionsStr]
+        );
+        return res.json({ success: true, cartItem: { productId, quantity } });
+      } else {
+        return res.json({ success: true, message: 'Quantity is 0, nothing added' });
+      }
     }
 
     if (quantity > 0) {

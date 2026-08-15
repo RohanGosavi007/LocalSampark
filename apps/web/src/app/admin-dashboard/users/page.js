@@ -86,8 +86,8 @@ export default function UsersManagementPage() {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
-          <p className="text-slate-400">Manage all platform users, roles, and access statuses.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">User Management</h1>
+          <p className="text-slate-500 dark:text-slate-400">Manage all platform users, roles, and access statuses.</p>
         </div>
         <button 
           onClick={() => {
@@ -100,19 +100,19 @@ export default function UsersManagementPage() {
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl mb-6">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl mb-6">
         <div className="flex gap-4 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 w-5 h-5" />
             <input 
               type="text" 
               placeholder="Search by phone or name..." 
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 pl-12 pr-4 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition"
             />
           </div>
-          <button className="px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 flex items-center gap-2">
+          <button className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl hover:bg-slate-700 flex items-center gap-2">
             <Filter className="w-4 h-4" /> Filter
           </button>
         </div>
@@ -120,7 +120,7 @@ export default function UsersManagementPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-sm uppercase tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">
                 <th className="p-4 font-semibold">User</th>
                 <th className="p-4 font-semibold">Phone</th>
                 <th className="p-4 font-semibold">Role</th>
@@ -129,12 +129,12 @@ export default function UsersManagementPage() {
                 <th className="p-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="text-slate-300">
+            <tbody className="text-slate-600 dark:text-slate-300">
               {loading ? (
-                <tr><td colSpan="6" className="p-8 text-center text-slate-500">Loading users...</td></tr>
+                <tr><td colSpan="6" className="p-8 text-center text-slate-500 dark:text-slate-400">Loading users...</td></tr>
               ) : users.map(user => (
-                <tr key={user.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition group">
-                  <td className="p-4 font-medium text-white">{user.full_name || 'Anonymous'}</td>
+                <tr key={user.id} className="border-b border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-800/20 transition group">
+                  <td className="p-4 font-medium text-slate-900 dark:text-white">{user.full_name || 'Anonymous'}</td>
                   <td className="p-4">{user.phone}</td>
                   <td className="p-4">
                     {editingUserId === user.id ? (
@@ -142,7 +142,7 @@ export default function UsersManagementPage() {
                         <select 
                           value={editRole} 
                           onChange={e => setEditRole(e.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-sm text-white"
+                          className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-sm text-slate-900 dark:text-white"
                         >
                           <option value="user">User</option>
                           <option value="admin">Admin</option>
@@ -154,7 +154,7 @@ export default function UsersManagementPage() {
                         <button onClick={() => setEditingUserId(null)} className="text-red-500 hover:text-red-400 p-1"><XCircle className="w-4 h-4"/></button>
                       </div>
                     ) : (
-                      <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold inline-flex items-center gap-1">
+                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold inline-flex items-center gap-1">
                         {user.role === 'admin' && <ShieldAlert className="w-3 h-3 text-purple-500"/>}
                         {user.role || 'user'}
                       </span>
@@ -165,14 +165,14 @@ export default function UsersManagementPage() {
                       {user.is_active !== false ? 'Active' : 'Blocked'}
                     </span>
                   </td>
-                  <td className="p-4 text-slate-500 text-sm">
+                  <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">
                     {new Date(user.created_at).toLocaleDateString()}
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
                       <button 
                         onClick={() => { setEditingUserId(user.id); setEditRole(user.role || 'user'); }}
-                        className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
+                        className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-700 transition"
                         title="Edit Role"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -193,20 +193,20 @@ export default function UsersManagementPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-between items-center mt-6 pt-6 border-t border-slate-800">
-          <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
+        <div className="flex justify-between items-center mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+          <span className="text-sm text-slate-500 dark:text-slate-400">Page {page} of {totalPages}</span>
           <div className="flex gap-2">
             <button 
               disabled={page === 1} 
               onClick={() => setPage(p => p - 1)}
-              className="px-4 py-2 bg-slate-800 text-white rounded-lg disabled:opacity-50 hover:bg-slate-700"
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg disabled:opacity-50 hover:bg-slate-700"
             >
               Previous
             </button>
             <button 
               disabled={page === totalPages || totalPages === 0} 
               onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 bg-slate-800 text-white rounded-lg disabled:opacity-50 hover:bg-slate-700"
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg disabled:opacity-50 hover:bg-slate-700"
             >
               Next
             </button>

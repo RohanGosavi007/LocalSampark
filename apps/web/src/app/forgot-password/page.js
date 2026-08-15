@@ -87,9 +87,9 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-950 flex items-center justify-center pt-20 pb-16 px-4">
+      <main className="min-h-screen bg-background flex items-center justify-center pt-20 pb-16 px-4">
         <div className="w-full max-w-md">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card-bg border border-border rounded-3xl p-8 shadow-2xl relative overflow-hidden">
             {/* Background elements */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl"></div>

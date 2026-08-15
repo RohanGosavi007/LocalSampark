@@ -42,7 +42,7 @@ export default function ShareWidget({ shopName, shopSlug, offerText }) {
       </button>
       <button 
         onClick={handleNativeShare}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-card-bg text-text-muted hover:bg-slate-700 hover:text-white transition-colors"
         title="Share Link"
       >
         <Share2 size={16} />

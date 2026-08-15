@@ -63,16 +63,16 @@ export default function ShopBillingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-background flex">
       {/* Reused Sidebar from ShopManager (simplified for demo) */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:block">
+      <aside className="w-64 bg-card-bg border-r border-border hidden md:block">
         <div className="p-6">
-          <h1 className="text-2xl font-black text-white">LocalSampark</h1>
-          <p className="text-xs text-slate-500 font-bold tracking-widest mt-1 uppercase">Merchant Portal</p>
+          <h1 className="text-2xl font-black text-text">LocalSampark</h1>
+          <p className="text-xs text-text-muted font-bold tracking-widest mt-1 uppercase">Merchant Portal</p>
         </div>
         <nav className="mt-6 px-4 space-y-2">
           {['Dashboard', 'Orders', 'Inventory', 'Staff', 'Settings'].map((item) => (
-            <div key={item} className="px-4 py-3 text-slate-400 font-bold hover:bg-slate-800 rounded-xl cursor-pointer transition-colors">
+            <div key={item} className="px-4 py-3 text-text-muted font-bold hover:bg-background-alt rounded-xl cursor-pointer transition-colors">
               {item}
             </div>
           ))}
@@ -89,11 +89,11 @@ export default function ShopBillingPage() {
           <div className="max-w-6xl mx-auto">
             
             <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-4xl font-black text-white mb-4">Supercharge Your Local Shop</h2>
-              <p className="text-slate-400 text-lg mb-8">Unlock advanced analytics, auto-delivery assignments, and premium promoted placements to 10x your hyper-local sales.</p>
-              
+              <h2 className="text-4xl font-black text-text mb-4">Supercharge Your Local Shop</h2>
+              <p className="text-text-muted text-lg mb-8">Unlock advanced analytics, auto-delivery assignments, and premium promoted placements to 10x your hyper-local sales.</p>
+
               {/* Billing Toggle */}
-              <div className="inline-flex items-center bg-slate-900 border border-slate-800 p-1 rounded-2xl relative">
+              <div className="inline-flex items-center bg-card-bg border border-border p-1 rounded-2xl relative">
                 <button 
                   onClick={() => setBillingCycle('monthly')}
                   className={`px-8 py-3 rounded-xl font-bold transition-all relative z-10 ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500 hover:text-white'}`}
@@ -120,7 +120,7 @@ export default function ShopBillingPage() {
                   className={`relative rounded-3xl p-8 transition-transform hover:-translate-y-2 ${
                     plan.popular 
                       ? 'bg-gradient-to-b from-blue-900/50 to-slate-900 border-2 border-blue-500 shadow-[0_0_40px_rgba(37,99,235,0.2)]' 
-                      : 'bg-slate-900 border border-slate-800'
+                      : 'bg-card-bg border border-border'
                   }`}
                 >
                   {plan.popular && (
@@ -129,16 +129,16 @@ export default function ShopBillingPage() {
                     </div>
                   )}
                   
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-slate-950 border border-slate-800`}>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-background border border-border`}>
                     <plan.icon size={28} className={plan.color} />
                   </div>
-                  
-                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                  <p className="text-slate-400 text-sm h-10 mb-6">{plan.description}</p>
-                  
+
+                  <h3 className="text-2xl font-bold text-text mb-2">{plan.name}</h3>
+                  <p className="text-text-muted text-sm h-10 mb-6">{plan.description}</p>
+
                   <div className="flex items-end gap-1 mb-8">
-                    <span className="text-5xl font-black text-white">₹{plan.price[billingCycle]}</span>
-                    <span className="text-slate-500 font-bold mb-2">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                    <span className="text-5xl font-black text-text">₹{plan.price[billingCycle]}</span>
+                    <span className="text-text-muted font-bold mb-2">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
                   </div>
 
                   <button className={`w-full py-4 rounded-xl font-bold transition-colors mb-8 ${
@@ -150,11 +150,11 @@ export default function ShopBillingPage() {
                   </button>
 
                   <div className="space-y-4">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Features Included</p>
+                    <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-4">Features Included</p>
                     {plan.features.map((feature, i) => (
                       <div key={i} className="flex items-start gap-3">
                         <div className="mt-0.5"><Check size={18} className="text-green-500" /></div>
-                        <span className="text-slate-300 text-sm font-medium">{feature}</span>
+                        <span className="text-text-muted text-sm font-medium">{feature}</span>
                       </div>
                     ))}
                   </div>

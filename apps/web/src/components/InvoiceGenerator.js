@@ -31,32 +31,32 @@ export default function InvoiceGenerator({ order }) {
       <div className="flex justify-between items-start mb-8 border-b-2 border-slate-200 pb-8">
         <div>
           <h1 className="text-3xl font-black text-blue-900 tracking-tight">TAX INVOICE</h1>
-          <p className="text-slate-500 font-bold mt-1">Invoice #{order?.id || 'INV-2026-0892'}</p>
-          <p className="text-slate-500 text-sm">Date: {new Date().toLocaleDateString()}</p>
+          <p className="text-text-muted font-bold mt-1">Invoice #{order?.id || 'INV-2026-0892'}</p>
+          <p className="text-text-muted text-sm">Date: {new Date().toLocaleDateString()}</p>
         </div>
         <div className="text-right">
           <h2 className="text-xl font-bold text-slate-800">{order?.shopName || 'Balaji SuperMart'}</h2>
-          <p className="text-slate-500 text-sm">Dhanori Main Road, Pune, 411015</p>
-          <p className="text-slate-500 text-sm font-bold mt-1">GSTIN: 27AADCB2230M1Z2</p>
+          <p className="text-text-muted text-sm">Dhanori Main Road, Pune, 411015</p>
+          <p className="text-text-muted text-sm font-bold mt-1">GSTIN: 27AADCB2230M1Z2</p>
         </div>
       </div>
 
       {/* Billed To */}
       <div className="mb-8">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Billed To</p>
+        <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Billed To</p>
         <h3 className="font-bold text-slate-800">{order?.customerName || 'Rahul Sharma'}</h3>
-        <p className="text-slate-500 text-sm">Flat 402, Ganga Acropolis, Wakad</p>
-        <p className="text-slate-500 text-sm">Phone: +91-9876543210</p>
+        <p className="text-text-muted text-sm">Flat 402, Ganga Acropolis, Wakad</p>
+        <p className="text-text-muted text-sm">Phone: +91-9876543210</p>
       </div>
 
       {/* Items Table */}
       <table className="w-full mb-8">
         <thead>
           <tr className="border-b-2 border-slate-200 text-left">
-            <th className="py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</th>
-            <th className="py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Qty</th>
-            <th className="py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Rate</th>
-            <th className="py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+            <th className="py-3 text-xs font-bold text-text-muted uppercase tracking-wider">Item Description</th>
+            <th className="py-3 text-xs font-bold text-text-muted uppercase tracking-wider text-center">Qty</th>
+            <th className="py-3 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Rate</th>
+            <th className="py-3 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Amount</th>
           </tr>
         </thead>
         <tbody className="text-slate-700">
@@ -104,7 +104,7 @@ export default function InvoiceGenerator({ order }) {
       </div>
 
       {/* Footer */}
-      <div className="mt-16 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
+      <div className="mt-16 pt-8 border-t border-slate-200 text-center text-xs text-text-muted">
         <p>This is a computer-generated invoice and does not require a signature.</p>
         <p className="mt-1 font-bold">Thank you for shopping locally via LocalSampark!</p>
       </div>
