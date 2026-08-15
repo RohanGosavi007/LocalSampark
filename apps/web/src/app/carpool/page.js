@@ -274,12 +274,26 @@ export default function CarpoolPage() {
 
         {/* Tabs */}
         <div className="max-w-6xl mx-auto px-4 mt-6 mb-6">
-          <div className="flex gap-2 bg-card-bg rounded-2xl p-1.5 border border-border max-w-2xl mx-auto">
-            {[{ id: 'find', label: '🔍 Find Ride' }, { id: 'offer', label: '🚗 Offer Ride' }, { id: 'my-rides', label: '📋 My Rides' }, { id: 'vehicles', label: '🚘 Vehicles' }].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'text-text-muted hover:text-text hover:bg-background-alt'}`}>
-                {tab.label}
-              </button>
+          <div className="flex flex-wrap gap-2 bg-card-bg rounded-2xl p-1.5 border border-border max-w-3xl mx-auto justify-center">
+            {[
+              { id: 'find', label: '🔍 Find Ride' },
+              { id: 'offer', label: '🚗 Offer Ride' },
+              { id: 'my-rides', label: '📋 My Rides' },
+              { id: 'vehicles', label: '🚘 Vehicles' },
+              { id: 'calculator', label: '🧮 Cost Splitter', isLink: '/advanced' },
+              { id: 'groups', label: '👥 Commute Groups', isLink: '/advanced' }
+            ].map(tab => (
+              tab.isLink ? (
+                <a key={tab.id} href={tab.isLink}
+                  className="py-2.5 px-4 rounded-xl text-sm font-bold text-cyan-400 hover:bg-cyan-500/10 border border-cyan-500/20 transition-all flex items-center gap-1">
+                  {tab.label}
+                </a>
+              ) : (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'text-text-muted hover:text-text hover:bg-background-alt'}`}>
+                  {tab.label}
+                </button>
+              )
             ))}
           </div>
         </div>

@@ -277,12 +277,28 @@ export default function JobsPage() {
 
         {/* Tabs */}
         <div className="max-w-6xl mx-auto px-4 mt-4 mb-6">
-          <div className="flex gap-1.5 bg-card-bg rounded-2xl p-1.5 border border-border overflow-x-auto scrollbar-hide">
-            {[{ id: 'browse', label: '🔍 Jobs' }, { id: 'applications', label: '📋 Applications' }, { id: 'saved', label: '🔖 Saved' }, { id: 'resume', label: '📄 Resume' }, { id: 'salary', label: '💰 Insights' }, { id: 'post', label: '📝 Post Job' }].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap px-3 ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-text-muted hover:text-text'}`}>
-                {tab.label}
-              </button>
+          <div className="flex flex-wrap gap-1.5 bg-card-bg rounded-2xl p-1.5 border border-border justify-center">
+            {[
+              { id: 'browse', label: '🔍 Jobs' },
+              { id: 'applications', label: '📋 Applications' },
+              { id: 'saved', label: '🔖 Saved' },
+              { id: 'resume', label: '📄 Resume' },
+              { id: 'salary', label: '💰 Insights' },
+              { id: 'post', label: '📝 Post Job' },
+              { id: 'quizzes', label: '📝 Skill Quizzes', isLink: '/advanced' },
+              { id: 'gap', label: '📈 Gap Analyzer', isLink: '/advanced' }
+            ].map(tab => (
+              tab.isLink ? (
+                <a key={tab.id} href={tab.isLink}
+                  className="py-2.5 px-3 rounded-xl text-sm font-bold text-cyan-400 hover:bg-cyan-500/10 border border-cyan-500/20 transition-all flex items-center gap-1">
+                  {tab.label}
+                </a>
+              ) : (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap px-3 ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-text-muted hover:text-text'}`}>
+                  {tab.label}
+                </button>
+              )
             ))}
           </div>
         </div>

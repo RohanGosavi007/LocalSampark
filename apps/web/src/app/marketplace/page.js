@@ -201,12 +201,25 @@ export default function MarketplacePage() {
 
         {/* Tabs */}
         <div className="max-w-6xl mx-auto px-4 mt-6 mb-6">
-          <div className="flex gap-2 bg-card-bg rounded-2xl p-1.5 border border-border max-w-lg mx-auto">
-            {[{ id: 'browse', label: '🛍️ Browse' }, { id: 'post', label: '📸 Sell Item' }, { id: 'saved', label: '❤️ Saved' }].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg' : 'text-text-muted hover:text-text'}`}>
-                {tab.label}
-              </button>
+          <div className="flex flex-wrap gap-2 bg-card-bg rounded-2xl p-1.5 border border-border max-w-2xl mx-auto justify-center">
+            {[
+              { id: 'browse', label: '🛍️ Browse' },
+              { id: 'post', label: '📸 Sell Item' },
+              { id: 'saved', label: '❤️ Saved' },
+              { id: 'auctions', label: '🔨 Live Auctions', isLink: '/advanced' },
+              { id: 'escrow', label: '🛡️ Safe-Pay', isLink: '/advanced' }
+            ].map(tab => (
+              tab.isLink ? (
+                <a key={tab.id} href={tab.isLink}
+                  className="py-2.5 px-4 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/10 border border-amber-500/20 transition-all flex items-center gap-1">
+                  {tab.label}
+                </a>
+              ) : (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg' : 'text-text-muted hover:text-text'}`}>
+                  {tab.label}
+                </button>
+              )
             ))}
           </div>
         </div>
