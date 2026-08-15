@@ -6,10 +6,12 @@ import BouncyButton from './BouncyButton';
 const CATEGORIES = [
   { id: '1', name: 'Grocery', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082008.png' },
   { id: '2', name: 'Fresh Fruits', icon: 'https://cdn-icons-png.flaticon.com/512/3194/3194591.png' },
-  { id: '3', name: 'Meat', icon: 'https://cdn-icons-png.flaticon.com/512/3143/3143645.png' },
-  { id: '4', name: 'Pharmacy', icon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png' },
-  { id: '5', name: 'Bakery', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081993.png' },
-  { id: '6', name: 'Pet Care', icon: 'https://cdn-icons-png.flaticon.com/512/2990/2990714.png' },
+  { id: '3', name: 'Carpool', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', route: '/advanced' },
+  { id: '4', name: 'Marketplace', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png', route: '/advanced' },
+  { id: '5', name: 'Jobs & Gigs', icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', route: '/advanced' },
+  { id: '6', name: 'Pharmacy', icon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png' },
+  { id: '7', name: 'Bakery', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081993.png' },
+  { id: '8', name: 'Pet Care', icon: 'https://cdn-icons-png.flaticon.com/512/2990/2990714.png' },
 ];
 
 export default function ShopByCategory() {
@@ -18,7 +20,12 @@ export default function ShopByCategory() {
       <Text style={styles.title}>Shop by Category</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {CATEGORIES.map((cat) => (
-          <BouncyButton key={cat.id} style={styles.categoryCard} scaleTo={0.92}>
+          <BouncyButton key={cat.id} style={styles.categoryCard} scaleTo={0.92} onPress={() => {
+            if (cat.route) {
+              const { router } = require('expo-router');
+              router.push(cat.route);
+            }
+          }}>
             <View style={styles.iconContainer}>
               <Image source={{ uri: cat.icon }} style={styles.icon} />
             </View>
