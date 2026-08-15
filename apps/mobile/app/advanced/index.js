@@ -11,9 +11,12 @@ const TABS = [
   { k: 'carbon', l: '🌿 Carbon' },
   { k: 'price', l: '💰 AI Price' },
   { k: 'escrow', l: '🛡️ Safe Pay' },
-  { k: 'resume', l: '📄 Resume' },
   { k: 'gap', l: '📈 Skill Gap' },
   { k: 'alerts', l: '🔔 Alerts' },
+  { k: 'auctions', l: '🔨 Auctions' },
+  { k: 'quizzes', l: '📝 Quizzes' },
+  { k: 'gamify', l: '🏆 Rewards' },
+  { k: 'groups', l: '👥 Groups' },
 ];
 
 export default function AdvancedScreen() {
@@ -46,6 +49,19 @@ export default function AdvancedScreen() {
   // Alerts
   const [alertForm, setAlertForm] = useState({ keywords: '', job_type: '', min_salary: '', frequency: 'daily' });
   const [alerts, setAlerts] = useState([]);
+
+  // Phase B state
+  const [auctions, setAuctions] = useState([]);
+  const [bidAmount, setBidAmount] = useState('');
+  const [assessments, setAssessments] = useState([]);
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [quizAnswers, setQuizAnswers] = useState([]);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [quizResult, setQuizResult] = useState(null);
+  const [gamifyProfile, setGamifyProfile] = useState(null);
+  const [groups, setGroups] = useState([]);
+  const [groupForm, setGroupForm] = useState({ name: '', from_location: '', to_location: '', group_type: 'commute' });
+  const [showGroupForm, setShowGroupForm] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -111,9 +127,24 @@ export default function AdvancedScreen() {
     } catch (e) {}
   };
 
+  // Phase B handlers
+  const loadAuctions = async () => { try { const d = await apiGet('/marketplace/auctions'); setAuctions(d?.auctions || []); } catch(e){} };
+  const placeBid = async (auctionId) => { try { await apiPost(`/marketplace/auctions/${auctionId}/bid`, { bid_amount: parseFloat(bidAmount) }); Alert.alert('Success', 'Bid placed!'); setBidAmount(''); loadAuctions(); } catch(e){ Alert.alert('Error','Failed'); } };
+  const loadAssessments = async () => { try { const d = await apiGet('/jobs/assessments'); setAssessments(d?.assessments || []); } catch(e){} };
+  const startQuiz = (a) => { setActiveQuiz(a); setQuizAnswers(new Array(a.total_questions).fill(-1)); setCurrentQ(0); setQuizResult(null); };
+  const submitQuiz = async () => { try { const d = await apiPost(`/jobs/assessments/${activeQuiz.id}/submit`, { answers: quizAnswers }); setQuizResult(d?.result); } catch(e){ Alert.alert('Error','Failed'); } };
+  const loadGamify = async () => { try { const d = await apiGet('/gamification/profile'); setGamifyProfile(d?.profile); } catch(e){} };
+  const loadGroups = async () => { try { const d = await apiGet('/carpool/groups'); setGroups(d?.groups || []); } catch(e){} };
+  const createGroup = async () => { try { await apiPost('/carpool/groups', groupForm); setShowGroupForm(false); loadGroups(); } catch(e){ Alert.alert('Error','Failed'); } };
+  const joinGroup = async (id) => { try { const d = await apiPost(`/carpool/groups/${id}/join`); Alert.alert('Success', d?.message || 'Joined!'); } catch(e){ Alert.alert('Error','Failed'); } };
+
   React.useEffect(() => {
     if (tab === 'carbon') loadCarbon();
     if (tab === 'alerts') loadAlerts();
+    if (tab === 'auctions') loadAuctions();
+    if (tab === 'quizzes') loadAssessments();
+    if (tab === 'gamify') loadGamify();
+    if (tab === 'groups') loadGroups();
   }, [tab]);
 
   const FormInput = ({ label, value, onChangeText, ...props }) => (
@@ -326,6 +357,153 @@ export default function AdvancedScreen() {
               <Text style={{ color: '#06b6d4', fontWeight: '700', fontSize: 13 }}>Use web app for PDF upload</Text>
               <Text style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>Visit /advanced on desktop</Text>
             </View>
+          </View>
+        )}
+
+        {/* 🔨 AUCTIONS */}
+        {tab === 'auctions' && (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>🔨 Live Auctions</Text>
+            {auctions.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 24 }}><Text style={{ fontSize: 36, marginBottom: 8 }}>🔨</Text><Text style={{ color: '#94a3b8' }}>No active auctions</Text></View>
+            ) : auctions.map(a => (
+              <View key={a.id} style={{ backgroundColor: '#0f172a', borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#334155' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={{ color: '#e2e8f0', fontWeight: '700', fontSize: 13 }}>{a.title || 'Auction'}</Text>
+                  <Text style={{ color: a.seconds_remaining < 3600 ? '#ef4444' : '#f59e0b', fontSize: 10, fontWeight: '700' }}>⏱ {Math.floor(a.seconds_remaining/3600)}h {Math.floor((a.seconds_remaining%3600)/60)}m</Text>
+                </View>
+                <View style={[s.statBox, { borderColor: '#f59e0b33', backgroundColor: '#f59e0b11', marginBottom: 8 }]}>
+                  <Text style={{ fontSize: 22, fontWeight: '900', color: '#f59e0b' }}>₹{(a.current_bid || 0).toLocaleString()}</Text>
+                  <Text style={s.statLabel}>{a.total_bids || 0} bids</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder={`Min ₹${(a.current_bid||0) + a.bid_increment}`} placeholderTextColor="#94a3b8" value={bidAmount} onChangeText={setBidAmount} keyboardType="numeric" />
+                  <TouchableOpacity onPress={() => placeBid(a.id)} style={[s.btnPrimary, { backgroundColor: '#f59e0b', paddingHorizontal: 20 }]}><Text style={s.btnText}>Bid</Text></TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* 📝 QUIZZES */}
+        {tab === 'quizzes' && (
+          <View style={s.card}>
+            {quizResult ? (
+              <View>
+                <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 48, marginBottom: 8 }}>{quizResult.passed ? '🎉' : '📚'}</Text>
+                  <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900' }}>{quizResult.passed ? 'You Passed!' : 'Keep Practicing!'}</Text>
+                  <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: quizResult.passed ? '#10b981' : '#ef4444', justifyContent: 'center', alignItems: 'center', marginTop: 12 }}>
+                    <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>{quizResult.score}%</Text>
+                  </View>
+                  {quizResult.badge && <Text style={{ color: '#10b981', fontWeight: '700', marginTop: 8 }}>{quizResult.badge}</Text>}
+                </View>
+                <TouchableOpacity onPress={() => { setActiveQuiz(null); setQuizResult(null); }} style={s.btnPrimary}><Text style={s.btnText}>Back to Quizzes</Text></TouchableOpacity>
+              </View>
+            ) : activeQuiz ? (
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>{activeQuiz.skill_name}</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 11 }}>{currentQ+1}/{activeQuiz.total_questions}</Text>
+                </View>
+                <View style={{ backgroundColor: '#334155', borderRadius: 6, height: 4, marginBottom: 16 }}><View style={{ backgroundColor: '#06b6d4', borderRadius: 6, height: 4, width: `${((currentQ+1)/activeQuiz.total_questions)*100}%` }} /></View>
+                <Text style={{ color: '#e2e8f0', fontWeight: '700', fontSize: 14, marginBottom: 12 }}>{activeQuiz.questions[currentQ]?.q}</Text>
+                {activeQuiz.questions[currentQ]?.opts?.map((opt, oi) => (
+                  <TouchableOpacity key={oi} onPress={() => { const n = [...quizAnswers]; n[currentQ] = oi; setQuizAnswers(n); }}
+                    style={{ backgroundColor: quizAnswers[currentQ] === oi ? '#06b6d422' : '#0f172a', borderWidth: 1, borderColor: quizAnswers[currentQ] === oi ? '#06b6d4' : '#334155', borderRadius: 12, padding: 12, marginBottom: 6 }}>
+                    <Text style={{ color: quizAnswers[currentQ] === oi ? '#06b6d4' : '#e2e8f0', fontWeight: '600', fontSize: 13 }}>{String.fromCharCode(65+oi)}. {opt}</Text>
+                  </TouchableOpacity>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                  {currentQ > 0 && <TouchableOpacity onPress={() => setCurrentQ(currentQ-1)} style={[s.btnPrimary, { flex: 1, backgroundColor: '#334155' }]}><Text style={s.btnText}>← Back</Text></TouchableOpacity>}
+                  {currentQ < activeQuiz.total_questions - 1 ? (
+                    <TouchableOpacity onPress={() => setCurrentQ(currentQ+1)} style={[s.btnPrimary, { flex: 1 }]}><Text style={s.btnText}>Next →</Text></TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={submitQuiz} style={[s.btnPrimary, { flex: 1, backgroundColor: '#10b981' }]}><Text style={s.btnText}>Submit ✅</Text></TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <View>
+                <Text style={s.cardTitle}>📝 Skill Quizzes</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 12 }}>Pass to earn Verified Skill ✅ badges</Text>
+                {assessments.map(a => (
+                  <TouchableOpacity key={a.id} onPress={() => startQuiz(a)} style={{ backgroundColor: '#0f172a', borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#334155' }}>
+                    <Text style={{ color: '#e2e8f0', fontWeight: '700', fontSize: 14 }}>{a.skill_name}</Text>
+                    <Text style={{ color: '#94a3b8', fontSize: 10, marginTop: 2 }}>{a.total_questions} Qs · {Math.round(a.time_limit_seconds/60)}min · Pass: {a.passing_score}%</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 🏆 GAMIFICATION */}
+        {tab === 'gamify' && (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>🏆 Gamification</Text>
+            {gamifyProfile ? (
+              <View>
+                <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 48, marginBottom: 4 }}>{gamifyProfile.level_emoji}</Text>
+                  <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900' }}>{gamifyProfile.name || 'User'}</Text>
+                  <Text style={{ color: '#f59e0b', fontWeight: '700' }}>{gamifyProfile.level} Level</Text>
+                </View>
+                <View style={[s.statBox, { borderColor: '#f59e0b33', backgroundColor: '#f59e0b11', marginBottom: 12 }]}>
+                  <Text style={{ fontSize: 28, fontWeight: '900', color: '#f59e0b' }}>🪙 {gamifyProfile.coins}</Text>
+                  <Text style={s.statLabel}>Total Coins</Text>
+                  <View style={{ width: '100%', backgroundColor: '#334155', borderRadius: 4, height: 6, marginTop: 8 }}><View style={{ backgroundColor: '#f59e0b', borderRadius: 4, height: 6, width: `${Math.min(100, (gamifyProfile.coins / gamifyProfile.next_level_coins) * 100)}%` }} /></View>
+                </View>
+                {gamifyProfile.badges?.length > 0 && (
+                  <View>
+                    <Text style={{ color: '#e2e8f0', fontWeight: '700', fontSize: 13, marginBottom: 8 }}>🏅 Badges ({gamifyProfile.badges.length})</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {gamifyProfile.badges.map(b => (
+                        <View key={b.name} style={{ backgroundColor: '#0f172a', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#334155' }}>
+                          <Text style={{ fontSize: 16 }}>{b.icon}</Text>
+                          <Text style={{ color: '#e2e8f0', fontSize: 9, fontWeight: '700' }}>{b.name}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center', paddingVertical: 24 }}><ActivityIndicator color="#06b6d4" /><Text style={{ color: '#94a3b8', marginTop: 8 }}>Loading...</Text></View>
+            )}
+          </View>
+        )}
+
+        {/* 👥 GROUPS */}
+        {tab === 'groups' && (
+          <View style={s.card}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={s.cardTitle}>👥 Ride Groups</Text>
+              <TouchableOpacity onPress={() => setShowGroupForm(!showGroupForm)} style={[s.btnPrimary, { paddingHorizontal: 14, paddingVertical: 8 }]}><Text style={[s.btnText, { fontSize: 11 }]}>+ Create</Text></TouchableOpacity>
+            </View>
+            {showGroupForm && (
+              <View style={{ backgroundColor: '#0f172a', borderRadius: 14, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#334155' }}>
+                <FormInput label="Group Name" value={groupForm.name} onChangeText={v => setGroupForm({...groupForm, name: v})} placeholder="IT Park Commuters" />
+                <FormInput label="From" value={groupForm.from_location} onChangeText={v => setGroupForm({...groupForm, from_location: v})} placeholder="Pickup area" />
+                <FormInput label="To" value={groupForm.to_location} onChangeText={v => setGroupForm({...groupForm, to_location: v})} placeholder="Drop area" />
+                <TouchableOpacity onPress={createGroup} style={s.btnPrimary}><Text style={s.btnText}>Create Group 👥</Text></TouchableOpacity>
+              </View>
+            )}
+            {groups.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 24 }}><Text style={{ fontSize: 36, marginBottom: 8 }}>👥</Text><Text style={{ color: '#94a3b8' }}>No groups yet</Text></View>
+            ) : groups.map(g => (
+              <View key={g.id} style={{ backgroundColor: '#0f172a', borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#334155' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: '#e2e8f0', fontWeight: '700', fontSize: 13 }}>{g.name}</Text>
+                  <Text style={{ color: '#06b6d4', fontSize: 9, fontWeight: '700', backgroundColor: '#06b6d411', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>{g.group_type}</Text>
+                </View>
+                <Text style={{ color: '#94a3b8', fontSize: 10 }}>📍 {g.from_location} → {g.to_location}</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 10, marginBottom: 8 }}>👥 {g.member_count}/{g.max_members} · by {g.creator_name}</Text>
+                <TouchableOpacity onPress={() => joinGroup(g.id)} style={{ backgroundColor: '#06b6d422', borderRadius: 10, paddingVertical: 8, alignItems: 'center' }}>
+                  <Text style={{ color: '#06b6d4', fontWeight: '700', fontSize: 12 }}>Join Group</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
         )}
 
