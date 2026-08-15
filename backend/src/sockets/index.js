@@ -5,6 +5,9 @@ const tokenQueueSocket = require('./tokenQueueSocket');
 const trackingSocket = require('./trackingSocket');
 const chatSocket = require('./chatSocket');
 const inventorySocket = require('./inventorySocket');
+const carpoolSocket = require('./carpoolSocket');
+const marketplaceSocket = require('./marketplaceSocket');
+const jobsSocket = require('./jobsSocket');
 
 let io;
 
@@ -80,6 +83,9 @@ const initSockets = (server) => {
     trackingSocket(io, socket);
     chatSocket.register(io, socket);
     inventorySocket(io, socket);
+    carpoolSocket(io, socket);
+    marketplaceSocket(io, socket);
+    jobsSocket(io, socket);
 
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);

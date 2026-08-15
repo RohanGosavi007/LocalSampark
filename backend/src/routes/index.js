@@ -102,6 +102,9 @@ router.use('/home-services', require('../modules/services/routes/home-services.r
 router.use('/community', require('../modules/services/routes/community.routes'));
 router.use('/multilingual', require('../modules/services/routes/multilingual.routes'));
 
+// ─── PHASE A: ADVANCED TRI-CATEGORY FEATURES ────────────
+router.use('/', require('../modules/services/routes/advanced.routes'));
+
 // ─── 10x NEW: SHOP ANALYTICS & VENDOR MANAGEMENT ─────────
 router.use('/shops', require('../modules/ecommerce/routes/shop-analytics.routes'));
 router.use('/shops', require('../modules/ecommerce/routes/payout.routes'));
