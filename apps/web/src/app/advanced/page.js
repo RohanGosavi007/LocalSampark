@@ -732,6 +732,28 @@ export default function AdvancedFeaturesPage() {
                   <div className="flex justify-between"><span className="text-text-muted">Escrow ID</span><span className="text-text font-mono text-xs">{escrowResult.id?.substring(0, 12)}...</span></div>
                 </div>
                 <p className="mt-4 text-xs text-emerald-400 font-bold bg-emerald-500/10 rounded-lg p-3">{escrowResult.message}</p>
+                <div className="flex gap-2 mt-4">
+                  <button onClick={async () => {
+                    try {
+                      const res = await fetch(`${API_URL}/api/v1/marketplace/escrow/${escrowResult.id}/release`, { method: 'POST', headers: authHeaders });
+                      const data = await res.json();
+                      alert(data.message || 'Payment released to seller!');
+                    } catch (e) { alert('Failed'); }
+                  }} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow-lg">
+                    Confirm & Release Pay ✅
+                  </button>
+                  <button onClick={async () => {
+                    try {
+                      const res = await fetch(`${API_URL}/api/v1/marketplace/escrow/${escrowResult.id}/dispute`, {
+                        method: 'POST', headers: authHeaders, body: JSON.stringify({ reason: 'Item not as described' })
+                      });
+                      const data = await res.json();
+                      alert(data.message || 'Dispute raised. Admin will review within 48h.');
+                    } catch (e) { alert('Failed'); }
+                  }} className="py-2.5 px-4 bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30 font-bold rounded-xl text-xs transition">
+                    Raise Dispute ⚠️
+                  </button>
+                </div>
               </Card>
             )}
           </motion.div>

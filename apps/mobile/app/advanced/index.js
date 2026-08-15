@@ -280,6 +280,24 @@ export default function AdvancedScreen() {
                 <View style={[s.infoRow, { marginTop: 8 }]}><Text style={s.infoLabel}>Fee</Text><Text style={s.infoValue}>₹{escrowResult.platform_fee}</Text></View>
                 <View style={s.infoRow}><Text style={s.infoLabel}>Seller gets</Text><Text style={[s.infoValue, { color: '#10b981' }]}>₹{escrowResult.net_to_seller}</Text></View>
                 <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700', marginTop: 8 }}>{escrowResult.message}</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                  <TouchableOpacity onPress={async () => {
+                    try {
+                      const d = await apiPost(`/marketplace/escrow/${escrowResult.id}/release`);
+                      Alert.alert('Success', d?.message || 'Payment released to seller!');
+                    } catch(e) { Alert.alert('Error', 'Failed'); }
+                  }} style={[s.btnPrimary, { flex: 1, backgroundColor: '#10b981' }]}>
+                    <Text style={s.btnText}>Release Pay ✅</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={async () => {
+                    try {
+                      const d = await apiPost(`/marketplace/escrow/${escrowResult.id}/dispute`, { reason: 'Item not received' });
+                      Alert.alert('Dispute Raised', d?.message || 'Dispute registered with admin');
+                    } catch(e) { Alert.alert('Error', 'Failed'); }
+                  }} style={[s.btnPrimary, { flex: 1, backgroundColor: '#ef4444' }]}>
+                    <Text style={s.btnText}>Dispute ⚠️</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
