@@ -82,6 +82,25 @@ export default function JobsScreen() {
     setShowApplyModal(null);
   };
 
+  // Referenced by the "Confirm Request" button on the book-a-skilled-worker
+  // modal but never defined, crashing on tap. No backend route for booking a
+  // skilled-service request exists yet either (checked src/routes) — this
+  // mirrors handleRegisterFreelancer's shape so it fails gracefully via the
+  // existing error Alert instead of throwing, until that endpoint is built.
+  const handleBookService = async () => {
+    try {
+      const data = await apiPost('/jobs/skills/book', newBooking);
+      if (data.success) {
+        Alert.alert('Success', data.message || 'Request sent to the provider.');
+        setShowBookingModal(false);
+      } else {
+        Alert.alert('Error', data.error || 'Failed to send booking request.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not send booking request.');
+    }
+  };
+
   const handleRegisterFreelancer = async () => {
     try {
       const token = await AsyncStorage.getItem('token');

@@ -10,9 +10,9 @@
  * drift apart.
  */
 import { Platform } from 'react-native';
-import tokens from '../../../../packages/shared/design-tokens';
+import tokens from './design-tokens';
 
-const { brand, neutral, category, glass, mesh, motion, type, radius } = tokens;
+const { brand, neutral, category, glass, mesh, motion, type, radius, gradients } = tokens;
 
 export const colors = {
   primary: brand.primary,
@@ -57,10 +57,13 @@ export const typography = {
   body: type.body,
   size: type.scale,
   weight: type.weight,
+  lineHeight: type.lineHeight,
   // React Native takes letterSpacing in points, not ems, so the shared
   // fractional tracking is scaled per size at the call site.
   tracking: (size, key = 'tight') => size * type.tracking[key],
 };
+
+export { gradients };
 
 /**
  * Elevation. iOS and Android express depth differently: iOS reads shadow
@@ -103,6 +106,6 @@ export const timing = {
   bezier: motion.easing,
 };
 
-export const theme = { colors, spacing, radii, typography, elevation, glow, timing };
+export const theme = { colors, spacing, radii, typography, elevation, glow, timing, gradients };
 
 export default theme;

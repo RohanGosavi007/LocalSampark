@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import * as api from '../../src/lib/api';
+import { apiPost } from '../../src/lib/api';
 
 export default function VisitorEntryScreen() {
     const [passcode, setPasscode] = useState('');
@@ -10,22 +10,24 @@ export default function VisitorEntryScreen() {
         if (passcode.length !== 6) return Alert.alert('Error', 'Enter 6-digit passcode');
         
         try {
-            const res = await api.post('/society-preapproval/pre-approve/verify', {
+            const res = await apiPost('/society-preapproval/pre-approve/verify', {
                 societyId: 'dummy-society',
                 passcode
             });
 
-            if (res.data.success) {
-                const { flatNumber, visitorName, leaveAtGate } = res.data.data;
+            if (res.success) {
+                const { flatNumber, visitorName, leaveAtGate } = res.data;
                 let msg = `${visitorName} is verified for Flat ${flatNumber}.`;
                 if (leaveAtGate) {
                     msg += '\n\n⚠️ INSTRUCTION: Resident has requested to leave the delivery at the gate.';
                 }
                 Alert.alert('Access Granted', msg);
                 setPasscode('');
+            } else {
+                Alert.alert('Error', res.error || 'Verification failed');
             }
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.error || 'Verification failed');
+            Alert.alert('Error', error.message || 'Verification failed');
         }
     };
 

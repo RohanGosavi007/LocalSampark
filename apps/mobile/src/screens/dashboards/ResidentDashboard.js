@@ -13,7 +13,9 @@ import HomeHeader from '../../components/HomeHeader';
 import PromoCarousel from '../../components/PromoCarousel';
 import ShopByCategory from '../../components/ShopByCategory';
 import TrendingHighlights from '../../components/TrendingHighlights';
-import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../../theme/theme';
+import SwipeableCardDeck from '../../components/SwipeableCardDeck';
+import { useShops } from '../../hooks/useShops';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, theme } from '../../theme/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +25,8 @@ export default function ResidentDashboard({ user }) {
   const { getItemCount, getCartTotal } = useCartStore();
   const [feedPosts, setFeedPosts] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
+  const { data: shopsData } = useShops({ zoneId: activeZone?.id });
+  const exploreShops = Array.isArray(shopsData?.shops) ? shopsData.shops : (Array.isArray(shopsData) ? shopsData : []);
 
   useEffect(() => {
     const loadFeed = async () => {
@@ -49,7 +53,18 @@ export default function ResidentDashboard({ user }) {
           <PromoCarousel />
           
           <ShopByCategory />
-          
+
+          {exploreShops.length > 0 && (
+            <View style={{ marginBottom: theme.spacing.xl }}>
+              <Text style={[s.sectionTitle, theme.typography.h2, { marginBottom: theme.spacing.md }]}>Explore Nearby</Text>
+              <SwipeableCardDeck
+                shops={exploreShops}
+                onPress={(shop) => router.push(`/shops/${shop.id}`)}
+                onSwipe={() => {}}
+              />
+            </View>
+          )}
+
           <TrendingHighlights />
 
           {/* Stories */}

@@ -3,7 +3,6 @@ import { useAuth } from '../../src/context/AuthContext';
 import { Text, Platform, View } from 'react-native';
 import { getTabsForRole, ROLES, ROLE_ICONS } from '../../src/utils/permissions';
 import RoleSwitcher from '../../src/components/RoleSwitcher';
-import AnimatedBottomTabs from '../../src/navigation/AnimatedBottomTabs';
 import MorphingBottomTabs from '../../src/navigation/MorphingBottomTabs';
 
 export default function TabLayout() {

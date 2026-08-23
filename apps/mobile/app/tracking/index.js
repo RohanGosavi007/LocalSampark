@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator , StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AuthContext } from '../../src/context/AuthContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { apiGet } from '../../src/lib/api';
 import { ChevronLeft, Truck, Package, CheckCircle2, MapPin, Navigation, PhoneCall, Star } from 'lucide-react-native';
 
@@ -10,7 +10,12 @@ export default function TrackingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const orderId = id || 'ORD-1234';
-  const { socket, API_URL } = useContext(AuthContext);
+  // `socket` isn't provided by AuthContext today (no realtime order-tracking
+  // socket is wired up anywhere in the app yet); every call site below
+  // already null-guards it, so this degrades to polling-only behaviour
+  // instead of crashing.
+  const { API_URL } = useAuth();
+  const socket = undefined;
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);

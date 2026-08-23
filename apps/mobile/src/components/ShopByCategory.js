@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import { theme } from '../theme/theme';
 import BouncyButton from './BouncyButton';
 
@@ -19,18 +20,20 @@ export default function ShopByCategory() {
     <View style={styles.container}>
       <Text style={styles.title}>Shop by Category</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {CATEGORIES.map((cat) => (
-          <BouncyButton key={cat.id} style={styles.categoryCard} scaleTo={0.92} onPress={() => {
-            if (cat.route) {
-              const { router } = require('expo-router');
-              router.push(cat.route);
-            }
-          }}>
-            <View style={styles.iconContainer}>
-              <Image source={{ uri: cat.icon }} style={styles.icon} />
-            </View>
-            <Text style={styles.name} numberOfLines={2}>{cat.name}</Text>
-          </BouncyButton>
+        {CATEGORIES.map((cat, index) => (
+          <Animated.View key={cat.id} entering={FadeInRight.delay(index * 60).springify().damping(16)}>
+            <BouncyButton style={styles.categoryCard} scaleTo={0.92} onPress={() => {
+              if (cat.route) {
+                const { router } = require('expo-router');
+                router.push(cat.route);
+              }
+            }}>
+              <View style={styles.iconContainer}>
+                <Image source={{ uri: cat.icon }} style={styles.icon} />
+              </View>
+              <Text style={styles.name} numberOfLines={2}>{cat.name}</Text>
+            </BouncyButton>
+          </Animated.View>
         ))}
       </ScrollView>
     </View>

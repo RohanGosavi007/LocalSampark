@@ -119,7 +119,7 @@ export default function TownSquareScreen() {
   const handleVote = async (pollId, optionId) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const data = await apiPost('/townsquare/polls/${pollId}/vote', { optionId });
+      const data = await apiPost(`/townsquare/polls/${pollId}/vote`, { optionId });
       if (data.success) {
         Alert.alert('Success', data.message);
         const updatedVotes = [...votedPolls, pollId];
@@ -132,16 +132,34 @@ export default function TownSquareScreen() {
     } catch(e) {}
   };
 
+  // handleAdminAction (approve/reject a news item) and createAdminPoll
+  // (publish a poll) were merged into one function under the wrong name and
+  // wrong body — the approve/reject buttons called a function that actually
+  // built a poll payload from `options`, a variable that was never declared,
+  // while the "Publish Poll" button referenced a `createAdminPoll` that
+  // didn't exist anywhere. Both crashed on tap. Split back into two; no
+  // matching backend route exists for either yet (checked src/routes), so
+  // both still resolve through the existing try/catch no-op on failure.
   const handleAdminAction = async (id, action) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const data = await apiPost('/townsquare/news/${id}/${action}', { question: newPollQuestion, options, rewardCoins: 5 });
-      Alert.alert('Success', data.message);
+      await apiPost(`/townsquare/news/${id}/${action}`, {});
+      fetchPolls();
+    } catch (e) {}
+  };
+
+  const createAdminPoll = async () => {
+    try {
+      const data = await apiPost('/townsquare/polls', {
+        question: newPollQuestion,
+        options: [newPollOption1, newPollOption2].filter(Boolean),
+        rewardCoins: 5,
+      });
+      Alert.alert('Success', data.message || 'Poll published.');
       setNewPollQuestion('');
       setNewPollOption1('');
       setNewPollOption2('');
       fetchPolls();
-    } catch(e) {}
+    } catch (e) {}
   };
 
   if (loading) {

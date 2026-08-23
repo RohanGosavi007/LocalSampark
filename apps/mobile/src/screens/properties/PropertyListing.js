@@ -124,11 +124,10 @@ export default function PropertyListingScreen() {
 
         <View style={s.s29}>
           <Text style={s.s30}>Description</Text>
-          <TextInput 
-            style={s.s31} 
-            multiline 
-            style={{ textAlignVertical: 'top' }}
-            placeholder="Describe the amenities, furnishings, etc." 
+          <TextInput
+            style={[s.s31, { textAlignVertical: 'top' }]}
+            multiline
+            placeholder="Describe the amenities, furnishings, etc."
             placeholderTextColor="#64748b"
             value={form.description}
             onChangeText={(t) => updateForm('description', t)}

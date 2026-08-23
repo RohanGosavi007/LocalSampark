@@ -86,7 +86,7 @@ export default function ProfileScreen() {
                 thumbColor="#fff"
               />
             </View>
-            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/merchant/ShopDashboard')} style={[styles.adminPanelBtn, { marginBottom: 0 }]}>
+            <TouchableOpacity onPress={() => router.push('/modules/merchant/ShopDashboard')} style={[styles.adminPanelBtn, { marginBottom: 0 }]}>
               <Text style={{fontSize: 24, marginRight: 12}}>🏪</Text>
               <View style={{flex: 1}}>
                 <Text style={styles.adminTitle}>Merchant Dashboard</Text>

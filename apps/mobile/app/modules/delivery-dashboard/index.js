@@ -45,8 +45,25 @@ export default function DeliveryDashboardScreen() {
 
   const handleAcceptJob = async (jobId) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const json = await apiPost('/delivery/jobs/${jobId}/accept', { otp: otpModal.otp });
+      const json = await apiPost(`/delivery/jobs/${jobId}/accept`, {});
+      if (json.success) {
+        Alert.alert('Job Accepted', 'Head to the pickup location to start the run.');
+        fetchJobs();
+      } else {
+        Alert.alert('Error', json.error || 'Failed to accept job.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Error accepting job');
+    }
+  };
+
+  // This was previously the body of handleAcceptJob (an accept action calling
+  // an OTP-verifying completion message) while the OTP modal's confirm button
+  // referenced a `handleCompleteJob` that didn't exist anywhere — crashing on
+  // tap. Splitting them: accept has no OTP step, completion does.
+  const handleCompleteJob = async () => {
+    try {
+      const json = await apiPost(`/delivery/jobs/${otpModal.jobId}/complete`, { otp: otpModal.otp });
       if (json.success) {
         Alert.alert('Delivered! 🎉', 'Delivery Completed Successfully! Payment added to wallet.');
         setOtpModal({ show: false, jobId: null, otp: '' });

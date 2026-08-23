@@ -26,6 +26,12 @@ dist/
 build/
 out/
 
+# Accidentally-committed bundler/Metro output — regenerate via
+# `npm run bundle:android`, never hand-edit.
+apps/mobile/expo_compiled.js
+apps/mobile/index_compiled.js
+apps/mobile/test_hermes.js
+
 # JVM crash logs
 hs_err_pid*.log
 replay_pid*.log

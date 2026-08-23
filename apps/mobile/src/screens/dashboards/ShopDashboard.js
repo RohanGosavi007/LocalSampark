@@ -36,6 +36,20 @@ export default function ShopDashboard({ user }) {
   const [shopCategoryType, setShopCategoryType] = useState('PRODUCT'); // PRODUCT, APPOINTMENT, HYBRID
   const [viewMode, setViewMode] = useState('live'); // 'live' | 'catalog'
 
+  // `shop` is what CatalogManagerView needs (shop?.id / shop?.ownerToken) to
+  // call the catalog API — it was previously referenced below without ever
+  // being defined, crashing the moment a shop owner opened Catalog view.
+  const shop = { id: user?.shop_id || user?.id, ownerToken: user?.token };
+
+  const fetchShopData = () => {
+    setLoading(true);
+    // Mock fetch dashboard setup
+    setTimeout(() => {
+      setShopStats({ todaySales: '12,450', activeOrders: 8 });
+      setLoading(false);
+    }, 1000);
+  };
+
   useEffect(() => {
     let unsubscribe;
     if (NetInfo) {
@@ -43,12 +57,8 @@ export default function ShopDashboard({ user }) {
         setIsOffline(!(state.isConnected && state.isInternetReachable));
       });
     }
-    
-    // Mock fetch dashboard setup
-    setTimeout(() => {
-      setShopStats({ todaySales: '12,450', activeOrders: 8 });
-      setLoading(false);
-    }, 1000);
+
+    fetchShopData();
 
     return () => unsubscribe?.();
   }, []);

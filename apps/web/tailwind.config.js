@@ -65,6 +65,21 @@ module.exports = {
         heading: ['Outfit', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
       },
+      // Mirrors the --text-* custom properties in globals.css as real
+      // utilities, so components can write text-xl instead of
+      // text-[length:var(--text-xl)].
+      fontSize: {
+        xs: 'var(--text-xs)',
+        sm: 'var(--text-sm)',
+        base: 'var(--text-base)',
+        lg: 'var(--text-lg)',
+        xl: 'var(--text-xl)',
+        '2xl': 'var(--text-2xl)',
+        '3xl': 'var(--text-3xl)',
+        '4xl': 'var(--text-4xl)',
+        '5xl': 'var(--text-5xl)',
+        '6xl': 'var(--text-6xl)',
+      },
       borderRadius: {
         'sm-token': 'var(--radius-sm)',
         'token': 'var(--radius)',
@@ -234,6 +249,10 @@ module.exports = {
           'linear-gradient(115deg, #00C880 0%, #00D9F5 22%, #7C5CFF 46%, #FF2D55 70%, #FF6A00 100%)',
         'glass-sheen':
           'linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.22) 48%, transparent 58%)',
+        // Cursor-follow glow for the R3F/tilt hover cards in Phase 2 — driven
+        // by --spotlight-x/y custom properties set from pointer move handlers.
+        'spotlight':
+          'radial-gradient(600px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%), rgba(124,92,255,0.20), transparent 70%)',
       },
 
       transitionTimingFunction: {

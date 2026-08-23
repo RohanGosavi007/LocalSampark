@@ -22,6 +22,7 @@ jobs:
       - name: Install Dependencies
         run: |
           cd apps/web && npm ci || npm install
+          cd ../mobile && npm ci || npm install
           cd ../../backend && npm ci || npm install
 
       - name: Backend - Lint & Test
@@ -32,6 +33,17 @@ jobs:
           cd backend
           npm run lint --if-present
           npm test --if-present
+
+      - name: Mobile - Lint
+        # The original ~350 pre-existing errors (broken .eslintrc.js env,
+        # unhandled Detox globals, compiled/binary files being linted, and a
+        # string of real undefined-reference crash bugs) have all been fixed
+        # or deliberately excluded — 0 errors remain, so this is now a real
+        # merge gate. ~1129 unused-var/hook-dependency warnings still remain
+        # and don't fail the build.
+        run: |
+          cd apps/mobile
+          npm run lint
 
       - name: Web App - Production Build Check
         run: |

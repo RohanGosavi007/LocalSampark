@@ -112,6 +112,10 @@ export default function DynamicIcon({ name, categorySlug, size = 24, color = '#0
 
     // Phosphor
     if (iconTheme === 'phosphor') {
+        // Intentional dynamic lookup keyed by CATEGORY_ICONS; import/namespace
+        // can't statically verify a computed member access into a namespace
+        // import, so it's suppressed on the line below rather than reworked.
+        // eslint-disable-next-line import/namespace
         const PhosphorComponent = PhosphorIcons[resolvedName];
         if (PhosphorComponent) {
             return <PhosphorComponent size={resolvedSize} color={resolvedColor} style={style} weight={weight} />;

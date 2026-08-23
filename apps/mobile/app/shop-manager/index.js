@@ -45,7 +45,7 @@ export default function NativeShopManagerScreen() {
   const renderMetricCard = (label, value, IconComponent, colorHex) => (
     <View style={s.s0}>
       <View style={s.s1}>
-        <View style={{ backgroundColor: `${colorHex}20` }} style={s.s2}>
+        <View style={[s.s2, { backgroundColor: `${colorHex}20` }]}>
           <IconComponent size={20} color={colorHex} />
         </View>
         {label === 'Pending' && parseInt(value) > 0 && (

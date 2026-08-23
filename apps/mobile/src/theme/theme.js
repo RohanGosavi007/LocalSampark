@@ -2,11 +2,15 @@
 // Spatial Design System v2.0 — Unified with Web Design Language
 
 export const COLORS = {
-  // Brand Colors (Vibrant Swiggy/Blinkit style)
-  primary: '#fc8019',       // Vibrant Orange
-  primaryLight: '#fff0e5',
-  primaryDark: '#d8650a',
-  secondary: '#1b1b1b',     // Deep almost-black for strong contrast
+  // Brand Colors — retuned to the shared emerald/indigo system in
+  // theme/design-tokens.js. This file previously carried its own orange
+  // Swiggy/Blinkit-style brand, which put the 8 screens still importing
+  // theme.js (ShopByCategory, ResidentDashboard, CheckoutScreen, etc.) out
+  // of sync with everything reading theme/index.js.
+  primary: '#00C880',       // Emerald
+  primaryLight: '#E6FBF3',
+  primaryDark: '#00A468',
+  secondary: '#FF6A00',     // Hyper orange, now the secondary accent
   
   // Backgrounds
   background: '#F8F9FA',    // Off-white for overall app background
@@ -17,7 +21,11 @@ export const COLORS = {
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
   textInverse: '#FFFFFF',
-  
+  // Aliases some screens (ResidentDashboard, etc.) read directly.
+  text: '#1E1E1E',
+  textMuted: '#6B7280',
+  cardBg: '#FFFFFF',
+
   // Semantic Colors
   success: '#10B981',       // Crisp green
   successLight: '#D1FAE5',
@@ -25,7 +33,9 @@ export const COLORS = {
   errorLight: '#FEE2E2',
   warning: '#F59E0B',
   warningLight: '#FEF3C7',
-  
+  info: '#3B82F6',
+  infoLight: '#DBEAFE',
+
   // Structural
   border: '#E5E7EB',
   divider: '#F3F4F6',
@@ -52,8 +62,8 @@ export const GRADIENTS = {
   meshWarm: ['#0F172A', '#7C2D12', '#78350F', '#0F172A'],
 
   // CTA buttons
-  primary: ['#fc8019', '#f97316', '#ea580c'],
-  primaryGlow: ['#fc8019', '#f59e0b'],
+  primary: ['#00C880', '#00D9A6', '#00A468'],
+  primaryGlow: ['#00C880', '#00D9F5'],
   success: ['#10B981', '#059669'],
   violet: ['#8B5CF6', '#6366F1', '#4F46E5'],
   rose: ['#EC4899', '#E11D48'],
@@ -107,7 +117,7 @@ export const GLASS = {
 // Colored glow shadow presets
 export const SPATIAL = {
   glowPrimary: {
-    shadowColor: '#fc8019',
+    shadowColor: '#00C880',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -177,6 +187,10 @@ export const TYPOGRAPHY = {
   body2: { fontSize: 14, fontWeight: '400', color: COLORS.textSecondary },
   caption: { fontSize: 12, fontWeight: '400', color: COLORS.textTertiary },
   button: { fontSize: 16, fontWeight: '600', color: COLORS.textInverse },
+  // Bare font-size lookup for screens that only need the number, e.g.
+  // `fontSize: TYPOGRAPHY.sizes.h3` inside a StyleSheet.create() call where
+  // spreading the full style object (with its own `color`) isn't wanted.
+  sizes: { h1: 24, h2: 20, h3: 18, body1: 16, body2: 14, caption: 12, button: 16 },
 };
 
 export const SHADOWS = {

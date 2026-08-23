@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
-import { PackagePlus, CalendarPlus, Settings, Trash2 } from 'lucide-react-native';
-import { API_BASE } from '../../../config';
+import { PackagePlus, CalendarPlus, Trash2 } from 'lucide-react-native';
+import { API_BASE } from '../../../lib/api';
 
 export default function CatalogManagerView({ shop, shopCategoryType, themeColor = '#0ea5e9', onRefresh }) {
   const [activeTab, setActiveTab] = useState(shopCategoryType === 'APPOINTMENT' ? 'services' : 'products');

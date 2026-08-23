@@ -8,6 +8,7 @@ services:
     plan: starter
     buildCommand: npm ci --prefix backend
     startCommand: npm start --prefix backend
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -63,6 +64,7 @@ services:
     plan: starter
     buildCommand: npm ci && npm run build:web
     startCommand: npm run start --workspace=apps/web
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production

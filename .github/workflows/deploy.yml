@@ -57,8 +57,35 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Apply Production DB Migrations
+        # Render's deploy hook only rebuilds and restarts the app; it does not
+        # run migrations. Without this step, schema changes merged to main
+        # never reach the production database until someone runs it by hand.
+        #
+        # Two separate migration systems exist and both must run: Prisma
+        # (prisma/schema.prisma, ~12 models) and the raw-SQL runner
+        # (src/migrations/*.sql, ~300 tables — everything from `posts` to
+        # `local_shops` to `carpool_rides`). Running only `prisma migrate
+        # deploy` silently skips the second, larger schema entirely.
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          cd backend
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run migrate
+
       - name: Trigger Render Deploy Hook
         run: |
           # Trigger deployment to Render

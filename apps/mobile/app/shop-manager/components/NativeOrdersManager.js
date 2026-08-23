@@ -106,11 +106,10 @@ export default function NativeOrdersManager() {
           return (
             <TouchableOpacity
               onPress={() => setActiveTab(item)}
-              style={{ backgroundColor: isActive ? config.bg : 'transparent', borderColor: isActive ? config.color : '#334155' }}
-              style={[s.s40, !(isActive) && s.s41]}
+              style={[s.s40, !(isActive) && s.s41, { backgroundColor: isActive ? config.bg : 'transparent', borderColor: isActive ? config.color : '#334155' }]}
             >
               <Icon size={14} color={isActive ? config.color : '#94a3b8'} style={{ marginRight: 6 }} />
-              <Text style={{ color: isActive ? config.color : '#94a3b8' }} style={s.s1}>
+              <Text style={[s.s1, { color: isActive ? config.color : '#94a3b8' }]}>
                 {config.label}
               </Text>
             </TouchableOpacity>
@@ -128,18 +127,18 @@ export default function NativeOrdersManager() {
     try { orderItems = JSON.parse(item.items || '[]'); } catch (e) {}
 
     return (
-      <View style={{ borderColor: `${config.color}30` }} style={s.s2}>
+      <View style={[s.s2, { borderColor: `${config.color}30` }]}>
         {/* Header */}
         <TouchableOpacity onPress={() => toggleExpand(item.id)} style={s.s3}>
           <View style={s.s4}>
-            <View style={{ backgroundColor: config.bg }} style={s.s5}>
+            <View style={[s.s5, { backgroundColor: config.bg }]}>
               <Icon size={20} color={config.color} />
             </View>
             <View>
               <View style={s.s6}>
                 <Text style={s.s7}>#{item.id?.substring(0,8).toUpperCase()}</Text>
-                <View style={{ backgroundColor: config.bg }} style={s.s8}>
-                  <Text style={{ color: config.color }} style={s.s9}>
+                <View style={[s.s8, { backgroundColor: config.bg }]}>
+                  <Text style={[s.s9, { color: config.color }]}>
                     {item.order_type === 'dine_in' ? '🍽️ Dine-in' : item.delivery_type === 'delivery' ? '🚴 Delivery' : '🏃 Pickup'}
                   </Text>
                 </View>
@@ -203,8 +202,7 @@ export default function NativeOrdersManager() {
               {config.action && (
                 <TouchableOpacity
                   onPress={() => handleStatusUpdate(item.id, config.nextStatus)}
-                  style={{ backgroundColor: config.color }}
-                  style={s.s31}
+                  style={[s.s31, { backgroundColor: config.color }]}
                 >
                   <Text style={s.s32}>{config.action}</Text>
                   <ArrowRight size={16} color="#fff" />
