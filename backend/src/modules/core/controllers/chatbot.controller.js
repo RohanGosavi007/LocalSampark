@@ -49,17 +49,24 @@ exports.handleChatMessage = async (req, res, next) => {
       try {
         const crypto = require('crypto');
         const leadId = crypto.randomUUID();
+        // This wrote to `leads`, a table that does not exist, then fell back to
+        // crm_leads naming `name` and `source`, which are not its columns
+        // either -- and swallowed that second failure with .catch(() => {}).
+        // Every lead captured by the chatbot was discarded. crm_leads stores the
+        // visitor name in first_name and the origin in lead_source.
         await query(
-          `INSERT INTO leads (id, name, phone, email, status, source, notes, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-          [leadId, visitorDetails.name || 'Chat Visitor', visitorDetails.phone || '', visitorDetails.email || '', 'NEW', 'CHATBOT', visitorDetails.notes || 'Inquiry via resident chatbot']
-        ).catch(async () => {
-          await query(
-            `INSERT INTO crm_leads (id, name, phone, email, status, source)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [leadId, visitorDetails.name || 'Chat Visitor', visitorDetails.phone || '', visitorDetails.email || '', 'NEW', 'CHATBOT']
-          ).catch(() => {});
-        });
+          `INSERT INTO crm_leads (id, first_name, phone, email, status, lead_source, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            leadId,
+            visitorDetails.name || 'Chat Visitor',
+            visitorDetails.phone || '',
+            visitorDetails.email || '',
+            'NEW',
+            'CHATBOT',
+            visitorDetails.notes || 'Inquiry via resident chatbot',
+          ]
+        );
       } catch (err) {
         console.warn('Failed to persist chatbot lead to db:', err.message);
       }

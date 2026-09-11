@@ -450,16 +450,21 @@ ALTER TABLE society_polls ADD COLUMN eligible_voters TEXT;
 ALTER TABLE society_polls ADD COLUMN min_quorum_percent REAL;
 ALTER TABLE society_polls ADD COLUMN result_visibility TEXT DEFAULT 'public';
 
--- Assuming society_move_passes exists based on move_passes referenced
-ALTER TABLE society_move_passes ADD COLUMN requested_by TEXT;
-ALTER TABLE society_move_passes ADD COLUMN clearance_status TEXT;
-ALTER TABLE society_move_passes ADD COLUMN outstanding_dues REAL;
-ALTER TABLE society_move_passes ADD COLUMN gate_passcode TEXT;
-ALTER TABLE society_move_passes ADD COLUMN movers_company TEXT;
-ALTER TABLE society_move_passes ADD COLUMN movers_vehicle_number TEXT;
-ALTER TABLE society_move_passes ADD COLUMN admin_approved_at DATETIME;
-ALTER TABLE society_move_passes ADD COLUMN admin_approved_by TEXT;
-ALTER TABLE society_move_passes ADD COLUMN notes TEXT;
+-- These columns belong to move_passes, the table 014 declares and the table the
+-- application queries. They previously targeted society_move_passes, which has
+-- never existed anywhere -- the original comment here said as much ("Assuming
+-- society_move_passes exists based on move_passes referenced"), so every one of
+-- these statements failed on every migration run and none of the columns were
+-- ever added. The PostgreSQL side was corrected in init.sql; this is the match.
+ALTER TABLE move_passes ADD COLUMN requested_by TEXT;
+ALTER TABLE move_passes ADD COLUMN clearance_status TEXT;
+ALTER TABLE move_passes ADD COLUMN outstanding_dues REAL;
+ALTER TABLE move_passes ADD COLUMN gate_passcode TEXT;
+ALTER TABLE move_passes ADD COLUMN movers_company TEXT;
+ALTER TABLE move_passes ADD COLUMN movers_vehicle_number TEXT;
+ALTER TABLE move_passes ADD COLUMN admin_approved_at DATETIME;
+ALTER TABLE move_passes ADD COLUMN admin_approved_by TEXT;
+ALTER TABLE move_passes ADD COLUMN notes TEXT;
 
 -- Assuming society_vehicles exists
 ALTER TABLE society_vehicles ADD COLUMN vehicle_photo_url TEXT;

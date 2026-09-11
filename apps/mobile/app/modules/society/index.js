@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Modal } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../src/context/AuthContext';
 import { withRoleGuard } from '../../../src/utils/permissions';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -79,7 +79,13 @@ function SocietyModule() {
   const { user } = useAuth();
   const internalRole = ROLES_MAP[user?.role] || 'resident';
   
-  const [activeTab, setActiveTab] = useState('visitors');
+  // The guard terminal deep-links straight to a tab (?tab=packages and so on).
+  // Without this the link silently landed on Visitors every time.
+  const { tab: requestedTab } = useLocalSearchParams();
+
+  const [activeTab, setActiveTab] = useState(
+    typeof requestedTab === 'string' && requestedTab ? requestedTab : 'visitors'
+  );
   const availableTabs = tabsByRole[internalRole] || tabsByRole['resident'];
 
   // Ensure active tab is always valid for the current role

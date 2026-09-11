@@ -5,6 +5,40 @@ apply plugin: "com.facebook.react"
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 /**
+ * Sentry JS source-map upload.
+ *
+ * Without this, crash reports arrive with minified Hermes frames like
+ * "index.android.bundle:1:3125598" instead of a file and line.
+ *
+ * @sentry/react-native's config plugin would normally wire this during
+ * `expo prebuild`, but this project builds from the committed android/ folder,
+ * so the plugin never runs against it — the apply has to be explicit.
+ *
+ * It is deliberately conditional. sentry.gradle shells out to sentry-cli, which
+ * needs SENTRY_AUTH_TOKEN plus SENTRY_ORG/SENTRY_PROJECT; with no credentials
+ * the upload task fails and takes the whole release build down with it. Gating
+ * on the token means a build without Sentry configured is completely unaffected,
+ * and uploads start happening the moment the credentials exist — no code change
+ * needed. Set them in the environment, or in android/sentry.properties.
+ */
+def sentryAuthToken = System.getenv('SENTRY_AUTH_TOKEN') ?: project.findProperty('sentryAuthToken')
+def sentryPropertiesFile = rootProject.file('sentry.properties')
+
+if (sentryAuthToken || sentryPropertiesFile.exists()) {
+    def sentryPackageJson = ["node", "--print", "require.resolve('@sentry/react-native/package.json')"]
+        .execute(null, rootDir).text.trim()
+    def sentryGradle = new File(new File(sentryPackageJson).getParentFile(), "sentry.gradle")
+    if (sentryGradle.exists()) {
+        println "Sentry: credentials detected, enabling source-map upload."
+        apply from: sentryGradle
+    } else {
+        println "Sentry: sentry.gradle not found at ${sentryGradle}, skipping source-map upload."
+    }
+} else {
+    println "Sentry: no SENTRY_AUTH_TOKEN and no android/sentry.properties - source-map upload disabled (build unaffected)."
+}
+
+/**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
  */
@@ -88,6 +122,47 @@ def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 def appVersionCode = (project.findProperty('appVersionCode') ?: '1').toString().toInteger()
 def appVersionName = (project.findProperty('appVersionName') ?: '1.0.0').toString()
 
+/**
+ * Upload-keystore credentials.
+ *
+ * These four values used to live in android/gradle.properties, which is a
+ * tracked file — the release signing password was committed to the repository.
+ * They now come from android/keystore.properties, which is gitignored.
+ *
+ * Resolution order, most specific first:
+ *   1. a Gradle project property (-PMYAPP_UPLOAD_... or ORG_GRADLE_PROJECT_*),
+ *      so CI can inject them from its secret store with no file on disk;
+ *   2. android/keystore.properties, for local release builds;
+ *   3. nothing — the release signingConfig below then fails loudly rather than
+ *      silently falling back to the debug keystore.
+ */
+def signingProps = [:]
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) {
+    def loaded = new Properties()
+    keystorePropsFile.withInputStream { loaded.load(it) }
+    loaded.stringPropertyNames().each { signingProps[it] = loaded.getProperty(it) }
+}
+['MYAPP_UPLOAD_STORE_FILE', 'MYAPP_UPLOAD_STORE_PASSWORD',
+ 'MYAPP_UPLOAD_KEY_ALIAS', 'MYAPP_UPLOAD_KEY_PASSWORD'].each { name ->
+    def override = project.findProperty(name)
+    if (override != null) signingProps[name] = override.toString()
+}
+
+/**
+ * Short staging path for CMake/ninja native intermediates, used only where the
+ * project path would otherwise be too long or contain spaces (Windows).
+ * Override with -PcxxStagingDirectory=<path>, or set it to "default" to force
+ * the standard in-project app/.cxx location.
+ */
+def cxxStagingDirectory = {
+    def override = project.findProperty('cxxStagingDirectory')
+    if (override != null) {
+        return override.toString().equalsIgnoreCase('default') ? null : override.toString()
+    }
+    return System.getProperty('os.name').toLowerCase().contains('windows') ? 'C:/tmp/cxx_app' : null
+}()
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -104,7 +179,14 @@ android {
         versionCode appVersionCode
         versionName appVersionName
         ndk {
-            abiFilters "arm64-v8a"
+            // armeabi-v7a covers 32-bit handsets, which remain a meaningful
+            // share of the low-end Android base this app targets. Dropping it
+            // makes the app uninstallable on those devices rather than merely
+            // slower. Keep this list in sync with reactNativeArchitectures in
+            // gradle.properties — that property controls which ABIs the native
+            // libraries are actually compiled for, and an ABI listed here but
+            // not built there yields an APK with no .so files for it.
+            abiFilters "arm64-v8a", "armeabi-v7a"
         }
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -117,11 +199,11 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-                storeFile file(MYAPP_UPLOAD_STORE_FILE)
-                storePassword MYAPP_UPLOAD_STORE_PASSWORD
-                keyAlias MYAPP_UPLOAD_KEY_ALIAS
-                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            if (signingProps.containsKey('MYAPP_UPLOAD_STORE_FILE')) {
+                storeFile file(signingProps['MYAPP_UPLOAD_STORE_FILE'])
+                storePassword signingProps['MYAPP_UPLOAD_STORE_PASSWORD']
+                keyAlias signingProps['MYAPP_UPLOAD_KEY_ALIAS']
+                keyPassword signingProps['MYAPP_UPLOAD_KEY_PASSWORD']
             } else {
                 // No upload keystore configured. This block previously fell back
                 // to debug.keystore, which produced a debug-signed "release"
@@ -137,7 +219,8 @@ android {
                         "Refusing to sign a release build with the debug keystore.\n" +
                         "Set MYAPP_UPLOAD_STORE_FILE, MYAPP_UPLOAD_STORE_PASSWORD, " +
                         "MYAPP_UPLOAD_KEY_ALIAS and MYAPP_UPLOAD_KEY_PASSWORD in " +
-                        "~/.gradle/gradle.properties or pass them with -P."
+                        "android/keystore.properties (gitignored), in " +
+                        "~/.gradle/gradle.properties, or pass them with -P."
                     )
                 }
             }
@@ -171,8 +254,33 @@ android {
 
     externalNativeBuild {
         cmake {
-            buildStagingDirectory file("C:/tmp/cxx_app")
+            // CMake/ninja on Windows break on this project's long, space-bearing
+            // path ("...\localsampark 14-08-2026\localsampark 12-08-2026\..."),
+            // so native intermediates are staged under a short path there. On
+            // other platforms the default (app/.cxx) is correct and keeps the
+            // intermediates inside the project, where `clean` can reach them.
+            if (cxxStagingDirectory != null) {
+                buildStagingDirectory file(cxxStagingDirectory)
+            }
         }
+    }
+}
+
+/**
+ * `clean` deletes app/build — including the generated codegen JNI sources that
+ * build/generated/autolinking/.../Android-autolinking.cmake points at — but it
+ * cannot reach buildStagingDirectory when that lives outside the project tree.
+ * The stale ninja state left behind then makes externalNativeBuildClean* re-run
+ * a CMake configure against directories that no longer exist, and the whole
+ * clean fails. Wiping the staging directory first leaves that task nothing to
+ * do, so it no-ops instead of erroring.
+ */
+if (cxxStagingDirectory != null) {
+    tasks.register('cleanCxxStagingDirectory', Delete) {
+        delete cxxStagingDirectory
+    }
+    tasks.matching { it.name.startsWith('externalNativeBuildClean') }.configureEach {
+        dependsOn 'cleanCxxStagingDirectory'
     }
 }
 

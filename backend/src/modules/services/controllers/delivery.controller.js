@@ -1,5 +1,56 @@
+const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { query, queryOne } = require('../../../config/database');
+
+const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+
+/**
+ * The delivery job flow.
+ *
+ * getJobs, acceptJob, getMyJobs and completeJob all worked through
+ * prisma.deliveryRoute, mapped to a table named `delivery_routes` that no
+ * migration creates, joined to `shops`, `addresses` and `user.name`/
+ * `user.phone` — none of which match the schema either (the real ones are
+ * local_shops, and users.full_name/phone_number). The entire delivery-agent
+ * API therefore failed on any database built from the migrations, which is why
+ * the rider screens in the mobile app were driving off hardcoded jobs.
+ *
+ * They now run on `orders`, the table checkout writes and the merchant queue
+ * and customer tracking already read. It carries everything the flow needs:
+ * assigned_agent_id, otp_code, order_status and delivered_at.
+ *
+ * The old completeJob checked only that the OTP was four digits long and never
+ * compared it — its own comment said "If we had OTP stored in DB". It is stored,
+ * in orders.otp_code, so a rider could previously close out any assigned
+ * delivery with 0000 and no customer involvement.
+ */
+
+/** Shape a raw order row into the job payload the rider app renders. */
+function toJob(row) {
+  return {
+    id: String(row.id),
+    order_id: String(row.id),
+    status: String(row.order_status || 'pending').toLowerCase(),
+    type: row.fulfillment_method || 'delivery',
+    pickup: row.shop_name || null,
+    pickup_address: row.shop_address || null,
+    dropoff: row.delivery_address || null,
+    customer_name: row.customer_name || null,
+    customer_phone: row.customer_phone || null,
+    // The rider's cut is the delivery fee on the order. It was previously a
+    // fixed ₹45 printed by the app.
+    earnings: Number(row.delivery_fee) || 0,
+    total_amount: Number(row.total_amount) || 0,
+    created_at: row.created_at,
+  };
+}
+
+const JOB_COLUMNS = `
+  o.id, o.order_status, o.fulfillment_method, o.delivery_address, o.delivery_fee,
+  o.total_amount, o.created_at, o.assigned_agent_id,
+  s.name AS shop_name, s.address AS shop_address,
+  u.full_name AS customer_name, u.phone_number AS customer_phone`;
 const SurgeEngine = require('../../../services/surge.engine');
 const RoutingService = require('../services/routing.service');
 
@@ -117,151 +168,142 @@ const requestDelivery = async (req, res, next) => {
   }
 };
 
-// autoCreateShopDelivery: Creates DeliveryRoute during checkout
-const autoCreateShopDelivery = async (orderId, shopLat, shopLng, dropLat, dropLng, distanceKm) => {
-  try {
-    return await prisma.deliveryRoute.create({
-      data: {
-        orderId,
-        status: 'PENDING',
-        pickupLatitude: shopLat,
-        pickupLongitude: shopLng,
-        dropLatitude: dropLat,
-        dropLongitude: dropLng,
-        distanceKm: distanceKm || 3.0,
-        estimatedMinutes: Math.round((distanceKm || 3.0) * 5 + 10)
-      }
-    });
-  } catch (e) {
-    console.error('Failed to create delivery route:', e);
-    return null;
-  }
-};
-
-/**
- * Get active/pending delivery jobs in pincode
- */
 const getJobs = async (req, res, next) => {
   try {
     const { pincode } = req.query;
-    const routes = await prisma.deliveryRoute.findMany({
-      where: { status: 'PENDING' },
-      include: {
-        order: {
-          include: {
-            shop: { select: { name: true, addressLine1: true, locality: true, pincode: true } },
-            deliveryAddress: true,
-            user: { select: { name: true, phone: true } }
-          }
-        }
-      }
-    });
 
-    const filtered = pincode 
-      ? routes.filter(r => r.order?.shop?.pincode === pincode || r.order?.deliveryAddress?.pincode === pincode)
-      : routes;
+    // A job is available once the shop has marked the order ready and no rider
+    // has taken it.
+    const params = [];
+    let where = `WHERE LOWER(o.order_status) = 'ready' AND o.assigned_agent_id IS NULL`;
+    if (pincode) {
+      params.push(pincode);
+      where += ` AND s.pincode = $${params.length}`;
+    }
 
-    res.json({ success: true, data: filtered });
+    const rows = await query(
+      `SELECT ${JOB_COLUMNS}
+         FROM orders o
+         LEFT JOIN local_shops s ON s.id = o.shop_id
+         LEFT JOIN users u ON u.id = o.user_id
+         ${where}
+        ORDER BY o.created_at ASC
+        LIMIT 100`,
+      params
+    );
+
+    res.json({ success: true, data: (rows.rows || rows || []).map(toJob) });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * Accept a delivery job (First come, first serve)
- */
 const acceptJob = async (req, res, next) => {
   try {
-    const { jobId } = req.params; // jobId is DeliveryRoute.id
+    const { jobId } = req.params;
     const userId = req.user.id;
 
-    const result = await prisma.$transaction(async (tx) => {
-      const route = await tx.deliveryRoute.findUnique({ where: { id: jobId } });
-      if (!route || route.status !== 'PENDING') {
-        throw { status: 400, message: 'This job has already been accepted or is no longer available.' };
-      }
+    // Conditional update rather than read-then-write: two riders tapping Accept
+    // at the same moment cannot both win.
+    const claimed = await query(
+      `UPDATE orders
+          SET assigned_agent_id = $1, order_status = 'assigned', updated_at = ${NOW}
+        WHERE id = $2 AND assigned_agent_id IS NULL AND LOWER(order_status) = 'ready'`,
+      [userId, jobId]
+    );
 
-      const updatedRoute = await tx.deliveryRoute.update({
-        where: { id: jobId },
-        data: { status: 'ASSIGNED', runnerId: userId }
+    const affected = claimed?.rowCount ?? claimed?.changes ?? 0;
+    if (!affected) {
+      return res.status(400).json({
+        error: 'This job has already been accepted or is no longer available.',
       });
+    }
 
-      await tx.order.update({
-        where: { id: route.orderId },
-        data: { status: 'OUT_FOR_DELIVERY' }
-      });
+    const row = await queryOne(
+      `SELECT ${JOB_COLUMNS}
+         FROM orders o
+         LEFT JOIN local_shops s ON s.id = o.shop_id
+         LEFT JOIN users u ON u.id = o.user_id
+        WHERE o.id = $1`,
+      [jobId]
+    );
 
-      return updatedRoute;
-    });
-
-    res.json({ success: true, message: 'You have accepted the delivery job!', data: result });
+    res.json({ success: true, message: 'Job accepted.', data: toJob(row) });
   } catch (error) {
-    if (error.status) return res.status(error.status).json({ error: error.message });
     next(error);
   }
 };
 
-/**
- * Complete Delivery
- */
 const completeJob = async (req, res, next) => {
   try {
     const { jobId } = req.params;
-    const { otp, lat, lng } = req.body;
+    const { otp } = req.body;
     const userId = req.user.id;
 
-    const result = await prisma.$transaction(async (tx) => {
-      const route = await tx.deliveryRoute.findUnique({ 
-          where: { id: jobId },
-          include: { order: true } 
-      });
-      
-      // Strict State Machine: Must be in transit to be delivered
-      if (!route || route.runnerId !== userId || route.status !== 'IN_TRANSIT') {
-        throw { status: 400, message: 'Job must be marked IN_TRANSIT before it can be delivered.' };
-      }
+    const order = await queryOne(
+      'SELECT id, user_id, shop_id, assigned_agent_id, order_status, otp_code, delivery_fee FROM orders WHERE id = $1',
+      [jobId]
+    );
 
-      // Geo-Fencing Placeholder
-      if (!lat || !lng) {
-        throw { status: 400, message: 'Delivery location telemetry is required to complete trip.' };
-      }
+    if (!order || String(order.assigned_agent_id) !== String(userId)) {
+      return res.status(403).json({ error: 'This job is not assigned to you.' });
+    }
 
-      // OTP Verification Enforcement (Phase 57)
-      if (!otp || otp.toString().length !== 4) {
-        throw { status: 403, message: 'A valid 4-digit Delivery OTP is required to complete this order.' };
-      }
-      
-      // If we had OTP stored in DB:
-      // if (otp !== route.order.delivery_otp) throw { status: 403, message: 'Invalid OTP' };
-      
-      const updatedRoute = await tx.deliveryRoute.update({
-        where: { id: jobId },
-        data: { status: 'DELIVERED', deliveredAt: new Date() }
-      });
+    const status = String(order.order_status || '').toLowerCase();
+    if (!['assigned', 'out_for_delivery'].includes(status)) {
+      return res.status(400).json({ error: `A job in status "${status}" cannot be completed.` });
+    }
 
-      await tx.order.update({
-        where: { id: route.orderId },
-        data: { status: 'DELIVERED', deliveredAt: new Date() }
-      });
-      
-      // Update Agent Profile Delivery Count safely
-      try {
-        await tx.deliveryAgentProfile.upsert({
-          where: { userId },
-          create: { userId, totalDeliveries: 1, isAvailable: true },
-          update: { totalDeliveries: { increment: 1 } }
-        });
-      } catch (agentErr) {
-        console.warn('Could not update agent profile stats:', agentErr.message);
-      }
+    // The handover code is compared, not merely counted. The previous version
+    // checked only that the OTP was four characters long and never compared it
+    // — its own comment read "If we had OTP stored in DB" — so any four digits
+    // closed out any assigned delivery with no customer involvement. It is
+    // stored, in orders.otp_code.
+    const expected = String(order.otp_code || '');
+    const supplied = String(otp || '');
+    if (!expected) {
+      return res.status(409).json({ error: 'This order has no handover code recorded. Contact support.' });
+    }
+    // Length is compared first because timingSafeEqual throws on a mismatch.
+    if (
+      supplied.length !== expected.length ||
+      !crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
+    ) {
+      return res.status(403).json({ error: 'Incorrect handover code.' });
+    }
 
-      return updatedRoute;
-    });
+    await query(
+      `UPDATE orders
+          SET order_status = 'delivered', delivered_at = ${NOW}, updated_at = ${NOW}
+        WHERE id = $1 AND assigned_agent_id = $2`,
+      [jobId, userId]
+    );
+
+    // Credit the rider the delivery fee. The mobile screen used to announce
+    // "Earnings (₹45) added to your wallet" with nothing behind it.
+    const earnings = Number(order.delivery_fee) || 0;
+    if (earnings > 0) {
+      let wallet = await queryOne('SELECT id FROM wallets WHERE user_id = $1 LIMIT 1', [userId]);
+      if (!wallet) {
+        const walletId = crypto.randomUUID();
+        await query('INSERT INTO wallets (id, user_id, balance) VALUES ($1, $2, 0)', [walletId, userId]);
+        wallet = { id: walletId };
+      }
+      await query(
+        `UPDATE wallets SET balance = balance + $1, updated_at = ${NOW} WHERE id = $2`,
+        [earnings, wallet.id]
+      );
+      await query(
+        `INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [crypto.randomUUID(), wallet.id, earnings, 'credit', 'delivery_earnings', 'completed']
+      );
+    }
 
     res.json({
       success: true,
-      message: `Delivery completed successfully!`,
-      data: result
+      message: 'Delivery completed successfully!',
+      data: { orderId: jobId, earnings },
     });
   } catch (error) {
     if (error.status) return res.status(error.status).json({ error: error.message });
@@ -270,61 +312,117 @@ const completeJob = async (req, res, next) => {
 };
 
 /**
- * Get Agent's accepted jobs
+ * Kept as a no-op for its two call sites in shop.routes.js.
+ *
+ * It created a row in delivery_routes, a table no migration defines, inside a
+ * try/catch that swallowed the failure and returned null — so checkout has never
+ * produced a delivery job, silently, on every order.
+ *
+ * It could not have worked even with the table: shop.routes.js calls it as
+ * (orderId, shopId, userId, lat, lng, address, items) while the signature reads
+ * (orderId, shopLat, shopLng, dropLat, dropLng, distanceKm), so a shop id landed
+ * in shopLat and a user id in shopLng.
+ *
+ * A delivery job is no longer a separate record: getJobs derives available work
+ * from orders that the shop has marked ready and no rider has claimed, so there
+ * is nothing to create here.
  */
-const getMyJobs = async (req, res, next) => {
+const autoCreateShopDelivery = async () => null;
+
+/**
+ * Move an accepted job along the lifecycle short of delivery.
+ *
+ * There was no endpoint for this at all, so a rider had no way to tell anyone
+ * they had collected the order — the customer's tracking screen stayed on
+ * "assigned" until the delivery was completed outright.
+ */
+const updateJobStatus = async (req, res, next) => {
   try {
+    const { jobId } = req.params;
+    const { status } = req.body;
     const userId = req.user.id;
-    const jobs = await prisma.deliveryRoute.findMany({
-      where: { runnerId: userId, status: { in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'] } },
-      include: {
-        order: {
-          include: {
-            shop: { select: { name: true, addressLine1: true, locality: true } },
-            deliveryAddress: true,
-            user: { select: { name: true, phone: true } }
-          }
-        }
-      }
-    });
-    res.json({ success: true, data: jobs });
+
+    // Completion goes through completeJob, which verifies the handover code.
+    // Allowing 'delivered' here would be a way around it.
+    const ALLOWED = ['out_for_delivery'];
+    if (!ALLOWED.includes(String(status || '').toLowerCase())) {
+      return res.status(400).json({ error: `status must be one of: ${ALLOWED.join(', ')}` });
+    }
+
+    const updated = await query(
+      `UPDATE orders
+          SET order_status = $1, updated_at = ${NOW}
+        WHERE id = $2 AND assigned_agent_id = $3 AND LOWER(order_status) = 'assigned'`,
+      [status, jobId, userId]
+    );
+
+    const affected = updated?.rowCount ?? updated?.changes ?? 0;
+    if (!affected) {
+      return res.status(400).json({ error: 'This job is not assigned to you, or is not awaiting pickup.' });
+    }
+
+    res.json({ success: true, status });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * Submit KYC details for Driver Onboarding
- */
+const getMyJobs = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const rows = await query(
+      `SELECT ${JOB_COLUMNS}
+         FROM orders o
+         LEFT JOIN local_shops s ON s.id = o.shop_id
+         LEFT JOIN users u ON u.id = o.user_id
+        WHERE o.assigned_agent_id = $1
+          AND LOWER(o.order_status) IN ('assigned', 'out_for_delivery')
+        ORDER BY o.created_at ASC`,
+      [userId]
+    );
+
+    res.json({ success: true, data: (rows.rows || rows || []).map(toJob) });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const onboarding = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { vehicleNumber, dlNumber, aadharNumber, profileImage, dlImage, rcImage } = req.body;
-        
-        await prisma.deliveryAgentProfile.upsert({
-            where: { userId: userId },
-            update: {
-                vehicleNumber,
-                licenseNumber: dlNumber,
-                isKycVerified: false
-            },
-            create: {
-                userId,
-                vehicleNumber,
-                licenseNumber: dlNumber,
-                isKycVerified: false
-            }
-        });
-        
-        // Mark user role
-        await prisma.user.update({
-            where: { id: userId },
-            data: { role: 'DELIVERY' }
-        });
-        
+        const { vehicleNumber, vehicleType, dlNumber } = req.body;
+
+        // prisma.deliveryAgentProfile maps to delivery_agent_profiles, which no
+        // migration creates; the rider record lives in delivery_agents. The role
+        // update also wrote 'DELIVERY', while every role check in this codebase
+        // compares against the lowercase 'delivery_agent'.
+        const existing = await queryOne('SELECT id FROM delivery_agents WHERE user_id = $1', [userId]);
+
+        if (existing) {
+            await query(
+                `UPDATE delivery_agents
+                    SET vehicle_number = $1, vehicle_type = $2, updated_at = ${NOW}
+                  WHERE user_id = $3`,
+                [vehicleNumber || null, vehicleType || 'motorcycle', userId]
+            );
+        } else {
+            await query(
+                `INSERT INTO delivery_agents (id, user_id, vehicle_type, vehicle_number, status)
+                 VALUES ($1, $2, $3, $4, 'offline')`,
+                [crypto.randomUUID(), userId, vehicleType || 'motorcycle', vehicleNumber || null]
+            );
+        }
+
+        await query('UPDATE users SET role = $1 WHERE id = $2', ['delivery_agent', userId]);
+
         res.status(200).json({
             success: true,
-            message: 'KYC Application submitted successfully.'
+            message: 'KYC Application submitted successfully.',
+            // The old handler reported success for a KYC review that nothing
+            // queues; say plainly that it is pending rather than implying it is
+            // done.
+            kycStatus: 'pending',
         });
     } catch (error) {
         next(error);
@@ -337,18 +435,60 @@ const onboarding = async (req, res, next) => {
 const getAnalytics = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const agent = await prisma.deliveryAgentProfile.findUnique({ where: { userId } });
-        
-        if (!agent) {
-            return res.status(404).json({ error: 'Driver profile not found' });
-        }
-        
+
+        const agent = await queryOne('SELECT * FROM delivery_agents WHERE user_id = $1', [userId]);
+        if (!agent) return res.status(404).json({ error: 'Driver profile not found' });
+
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const since = todayStart.toISOString();
+
+        // Wallet balance, lifetime earnings and today's numbers were all
+        // hardcoded to zero, so a rider who had completed deliveries was shown
+        // an empty ledger.
+        const [walletRow, lifetimeRow, todayRow, txRows] = await Promise.all([
+            queryOne('SELECT id, balance FROM wallets WHERE user_id = $1 LIMIT 1', [userId]),
+            queryOne(
+                `SELECT COUNT(*) as deliveries, COALESCE(SUM(delivery_fee), 0) as earnings
+                   FROM orders
+                  WHERE assigned_agent_id = $1 AND LOWER(order_status) = 'delivered'`,
+                [userId]
+            ),
+            queryOne(
+                `SELECT COUNT(*) as deliveries, COALESCE(SUM(delivery_fee), 0) as earnings
+                   FROM orders
+                  WHERE assigned_agent_id = $1 AND LOWER(order_status) = 'delivered'
+                    AND delivered_at >= $2`,
+                [userId, since]
+            ),
+            query(
+                `SELECT wt.id, wt.amount, wt.transaction_type, wt.purpose, wt.created_at
+                   FROM wallet_transactions wt
+                   JOIN wallets w ON w.id = wt.wallet_id
+                  WHERE w.user_id = $1
+                  ORDER BY wt.created_at DESC
+                  LIMIT 20`,
+                [userId]
+            ),
+        ]);
+
         res.json({
             success: true,
             data: {
-                wallet: { balance: 0, total_earned: 0 },
-                todayAnalytics: { total_deliveries: agent.totalDeliveries, total_earnings: 0 },
-                transactions: []
+                wallet: {
+                    balance: Number(walletRow?.balance) || 0,
+                    total_earned: Number(lifetimeRow?.earnings) || 0,
+                },
+                todayAnalytics: {
+                    total_deliveries: Number(todayRow?.deliveries) || 0,
+                    total_earnings: Number(todayRow?.earnings) || 0,
+                },
+                lifetime: {
+                    total_deliveries: Number(lifetimeRow?.deliveries) || 0,
+                    total_earnings: Number(lifetimeRow?.earnings) || 0,
+                },
+                rating: agent.rating != null ? Number(agent.rating) : null,
+                transactions: txRows.rows || txRows || [],
             }
         });
     } catch (error) {
@@ -362,6 +502,7 @@ module.exports = {
   getJobs,
   acceptJob,
   completeJob,
+  updateJobStatus,
   getMyJobs,
   autoCreateShopDelivery,
   onboarding,

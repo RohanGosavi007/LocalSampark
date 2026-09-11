@@ -51,17 +51,18 @@ export default function TrustFeedScreen() {
         <View style={styles.bottomContent}>
           <View style={styles.userInfo}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.user_name.charAt(0)}</Text>
+              {/* A review row with no linked account would have crashed here. */}
+              <Text style={styles.avatarText}>{(item.user_name || '?').charAt(0)}</Text>
             </View>
             <View>
               <Text style={styles.userName}>
-                {item.user_name} 
+                {item.user_name || 'Reviewer'} 
                 {item.is_verified_buyer && <Ionicons name="checkmark-circle" size={14} color="#3b82f6" />}
               </Text>
               <Text style={styles.shopName}>Reviewed {item.shop_name}</Text>
             </View>
           </View>
-          <Text style={styles.reviewText}>"{item.review_text}"</Text>
+          {item.review_text ? <Text style={styles.reviewText}>&quot;{item.review_text}&quot;</Text> : null}
           <View style={styles.stars}>
             {[...Array(5)].map((_, i) => (
               <Ionicons key={i} name={i < item.rating ? "star" : "star-outline"} size={16} color="#fbbf24" />
@@ -98,18 +99,32 @@ export default function TrustFeedScreen() {
 
   return (
     <View style={styles.container}>
+      {/* An empty feed fell back to one invented review — "Rahul K." giving
+          "Sharma Grocery" five stars for "Excellent quality and fast delivery!",
+          flagged as a verified buyer. A feed with nothing in it says so. */}
       <FlashList
-        data={feed.length > 0 ? feed : [{ id: 1, user_name: 'Rahul K.', shop_name: 'Sharma Grocery', review_text: 'Excellent quality and fast delivery!', rating: 5, is_verified_buyer: true }]}
+        data={feed}
         renderItem={renderItem}
         estimatedItemSize={height}
         pagingEnabled
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No reviews yet</Text>
+            <Text style={styles.emptyBody}>
+              Verified reviews from your neighbourhood will appear here.
+            </Text>
+          </View>
+        }
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  emptyBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#ffffff', marginBottom: 8, textAlign: 'center' },
+  emptyBody: { fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 20 },
   container: { flex: 1, backgroundColor: '#000' },
   loadingContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   videoContainer: { width, height },

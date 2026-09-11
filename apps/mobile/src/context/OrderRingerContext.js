@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Platform , Alert } from 'react-native';
+import { apiPut } from '../lib/api';
 
 // Dynamic import of expo-av to prevent crash if native module is missing
 let Audio = null;
@@ -68,29 +69,48 @@ export function OrderRingerProvider({ children }) {
     return sound ? () => { stopSound(); } : undefined;
   }, [sound]);
 
-  // Trigger a new order
+  /**
+   * Ring the merchant for an incoming order.
+   *
+   * Called with no argument this used to invent one — a random order number for
+   * "Priya Sharma, ₹850, 4 items" — and sound the new-order alarm. A merchant
+   * would be pulled to the counter by a ringing phone for an order that did not
+   * exist, and would have no way to tell it from a real one.
+   *
+   * There is now nothing to ring about unless a real order is passed in.
+   */
   const triggerNewOrder = (orderData) => {
-    setIncomingOrder(orderData || {
-      id: `ORD-${Math.floor(Math.random() * 10000)}`,
-      customer: 'Priya Sharma',
-      amount: '₹850',
-      items: 4,
-      time: 'Just now'
-    });
+    if (!orderData || !orderData.id) {
+      console.warn('[OrderRinger] triggerNewOrder called without an order; ignoring.');
+      return;
+    }
+    setIncomingOrder(orderData);
     playSound();
   };
 
-  const acceptOrder = () => {
+  /**
+   * Accept and decline both said "Ideally update backend status here" and did
+   * not: the overlay closed, the alarm stopped, and the order stayed exactly as
+   * it was on the server. A merchant who accepted an order had not accepted it,
+   * and a customer waiting on that acceptance was never told.
+   */
+  const respondToOrder = async (orderId, status) => {
     stopSound();
     setIncomingOrder(null);
-    // Ideally update backend status here
+    try {
+      await apiPut(`/shops/my-shop/orders/${orderId}/status`, { status });
+    } catch (err) {
+      // The merchant has to know the server did not take it, or they will start
+      // preparing an order the customer still sees as pending.
+      Alert.alert(
+        status === 'accepted' ? 'Order not accepted' : 'Order not declined',
+        `${err?.message || 'The update could not be sent.'} Open the order and try again.`
+      );
+    }
   };
 
-  const declineOrder = () => {
-    stopSound();
-    setIncomingOrder(null);
-    // Ideally update backend status here
-  };
+  const acceptOrder = () => respondToOrder(incomingOrder?.id, 'accepted');
+  const declineOrder = () => respondToOrder(incomingOrder?.id, 'cancelled');
 
   return (
     <OrderRingerContext.Provider value={{ triggerNewOrder }}>

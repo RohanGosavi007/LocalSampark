@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { SecureTokenStorage } from '../context/AuthContext';
+import { SecureTokenStorage } from './secureStorage';
 
 const isDev = __DEV__;
 
@@ -63,6 +63,66 @@ export async function getAuthHeaders() {
 }
 
 /**
+ * Silent token refresh.
+ *
+ * The backend has always issued a refresh token (30d) alongside the access
+ * token and exposes POST /auth/refresh-token, but the mobile client discarded
+ * it — `refreshToken` appeared nowhere in the app. A 401 therefore deleted the
+ * session outright, which made the access token's full lifetime the real
+ * session length and blocked shortening it (a 1h access token would have
+ * logged everyone out hourly).
+ *
+ * Single-flight: a burst of parallel requests hitting 401 together must trigger
+ * one refresh, not one per request, otherwise they race and all but one of the
+ * resulting tokens is discarded.
+ */
+let refreshInFlight = null;
+
+async function refreshAccessToken() {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      const refreshToken = await SecureTokenStorage.getToken('refreshToken');
+      if (!refreshToken) return null;
+
+      // Deliberately a bare fetch, not request(): routing a refresh through the
+      // interceptor would recurse on its own 401.
+      const res = await fetch(`${API_BASE}/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      const nextAccess = data?.accessToken;
+      if (!nextAccess) return null;
+
+      await SecureTokenStorage.setToken('authToken', nextAccess);
+      // Rotated refresh tokens must be persisted or the next refresh fails.
+      if (data.refreshToken) {
+        await SecureTokenStorage.setToken('refreshToken', data.refreshToken);
+      }
+      return nextAccess;
+    } catch (e) {
+      console.warn('[API Auth] token refresh failed:', e?.message);
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
+async function clearSession() {
+  await SecureTokenStorage.deleteToken('authToken');
+  await SecureTokenStorage.deleteToken('refreshToken');
+  await AsyncStorage.multiRemove(['user', 'activeRole', 'assignedRoles']);
+}
+
+/**
  * Enhanced fetch wrapper with error handling, timeout, and auto-logout interceptors
  */
 async function request(endpoint, options = {}) {
@@ -106,9 +166,17 @@ async function request(endpoint, options = {}) {
     if (!response.ok) {
       // Auto-logout on token expiration / unauthorized access
       if (response.status === 401) {
-        console.warn('[API Auth] 401 Unauthorized received, clearing credentials...');
-        await SecureTokenStorage.deleteToken('authToken');
-        await AsyncStorage.multiRemove(['user', 'activeRole', 'assignedRoles']);
+        // Try a silent refresh once before destroying the session. _retried
+        // guards against looping when the retried request 401s again.
+        if (!options._retried) {
+          const nextToken = await refreshAccessToken();
+          if (nextToken) {
+            console.log('[API Auth] token refreshed, retrying request');
+            return request(endpoint, { ...options, _retried: true });
+          }
+        }
+        console.warn('[API Auth] 401 and refresh unavailable, clearing credentials...');
+        await clearSession();
         // Note: Global app state notification or navigation redirect can be triggered here
       }
       

@@ -1,5 +1,6 @@
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/secrets');
 const orderSocket = require('./orderSocket');
 const tokenQueueSocket = require('./tokenQueueSocket');
 const trackingSocket = require('./trackingSocket');
@@ -38,8 +39,14 @@ const initSockets = (server) => {
         return next();
       }
       
-      const secret = process.env.JWT_SECRET || 'localsampark_jwt_secret_dev';
-      const decoded = jwt.verify(token, secret);
+      // config/secrets centralises this and fails closed in production. Reading
+      // process.env directly with a literal fallback — the pattern that used to
+      // be here — meant this socket handshake would verify tokens against
+      // 'localsampark_jwt_secret_dev', a key published in this repository, on
+      // any deploy where JWT_SECRET was missing. It also disagreed with the
+      // dev fallback the rest of the app uses, so locally issued tokens failed
+      // to verify here for reasons that looked like a socket bug.
+      const decoded = jwt.verify(token, getJwtSecret());
       socket.user = decoded;
       next();
     } catch (error) {

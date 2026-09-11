@@ -21,7 +21,9 @@ export default function NativeSubscriptionsScreen() {
   const fetchPlans = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiGet('/subscription/plans');
+      // Router mounts this module at '/subscriptions' (plural). The singular
+      // form 404s, which the catch below swallowed into an empty plan list.
+      const data = await apiGet('/subscriptions/plans');
       const items = data.data || data.rows || (Array.isArray(data) ? data : []);
       setPlans(items);
     } catch (err) {
@@ -43,7 +45,7 @@ export default function NativeSubscriptionsScreen() {
 
     setSubmitting(true);
     try {
-      const data = await apiPost('/subscription/subscribe', {
+      const data = await apiPost('/subscriptions/subscribe', {
         planId: selectedPlan.id,
         deliveryAddress
       });

@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
   const [activeTier, setActiveTier] = useState('tier1'); // 'tier1' (Global/Franchise), 'tier2' (Shop Staff), 'tier3' (Society/Delivery)
@@ -7,6 +9,7 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState(null);
 
   // Styles
   const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
@@ -31,14 +34,15 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/users?limit=50`, {
+      const data = await fetchJson(`${API_BASE}/admin/users?limit=50`, {
         headers: authHeaders()
       });
-      const data = await res.json();
       if (data.users) setUsers(data.users);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setError(error);
     }
     setLoading(false);
   };
@@ -54,6 +58,7 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
       setEditingUser(null);
     } catch (error) {
       console.error('Failed to update role:', error);
+      setError(error);
     }
   };
 
@@ -81,6 +86,7 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       {/* Header & Description */}
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Activity, Users, DollarSign, Clock, TrendingUp, TrendingDown, Map, ArrowUpRight } from 'lucide-react';
+import { Activity, Users, DollarSign, Clock, Map, ArrowUpRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { API_BASE } from '@/lib/api';
 
@@ -38,8 +38,8 @@ export default function AnalyticsDashboard() {
   const { metrics, chartData } = data || {};
 
   // Find max values for simple inline CSS charts
-  const maxRevenue = chartData ? Math.max(...chartData.map(d => d.revenue)) : 1;
-  const maxUsers = chartData ? Math.max(...chartData.map(d => d.users)) : 1;
+  const maxRevenue = Math.max(1, ...(chartData || []).map(d => d.revenue));
+  const maxUsers = Math.max(1, ...(chartData || []).map(d => d.users));
 
   return (
     <div className="max-w-7xl mx-auto pb-12 space-y-8">
@@ -78,9 +78,6 @@ export default function AnalyticsDashboard() {
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               {(metrics?.totalUsers ?? 0).toLocaleString()}
             </div>
-            <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
-              <TrendingUp className="w-4 h-4"/> +14.2% this {duration}
-            </div>
           </div>
         </div>
 
@@ -95,9 +92,6 @@ export default function AnalyticsDashboard() {
           <div>
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               ₹{(metrics?.financialVolume ?? 0).toLocaleString()}
-            </div>
-            <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
-              <TrendingUp className="w-4 h-4"/> +8.7% this {duration}
             </div>
           </div>
         </div>
@@ -114,9 +108,6 @@ export default function AnalyticsDashboard() {
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               {(metrics?.activeMerchants ?? 0).toLocaleString()}
             </div>
-            <div className="text-sm text-rose-400 font-bold flex items-center gap-1 mt-2">
-              <TrendingDown className="w-4 h-4"/> -1.2% this {duration}
-            </div>
           </div>
         </div>
 
@@ -130,10 +121,7 @@ export default function AnalyticsDashboard() {
           </div>
           <div>
             <div className="text-3xl font-black text-slate-900 dark:text-white">
-              {metrics?.slaTime || '24 mins'}
-            </div>
-            <div className="text-sm text-emerald-400 font-bold flex items-center gap-1 mt-2">
-              <TrendingUp className="w-4 h-4"/> Improved by 12%
+              {metrics?.slaTime || '—'}
             </div>
           </div>
         </div>
@@ -175,9 +163,9 @@ export default function AnalyticsDashboard() {
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                <Activity className="text-blue-500" /> Active Users
+                <Activity className="text-blue-500" /> New Users
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Unique active sessions across the platform</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Accounts created in each period</p>
             </div>
           </div>
 
@@ -190,7 +178,7 @@ export default function AnalyticsDashboard() {
                   style={{ height: `${Math.max((d.users / maxUsers) * 100, 5)}%` }}
                 >
                   <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition shadow-xl pointer-events-none whitespace-nowrap z-20">
-                    {d.users.toLocaleString()} Users
+                    {d.users.toLocaleString()} new
                   </div>
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-2 truncate w-full text-center">{d.label}</div>

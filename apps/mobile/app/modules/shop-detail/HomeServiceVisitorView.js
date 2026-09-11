@@ -5,9 +5,9 @@ import VisitorLayout from './components/VisitorLayout';
 
 export default function HomeServiceVisitorView({ shop }) {
   return (
-    <VisitorLayout 
-      shopName={shop.name || 'QuickFix AC & Appliances'} 
-      shopAddress="Serves Pune City"
+    <VisitorLayout shop={shop} 
+      shopName={shop.name || 'Home Services'} 
+      shopAddress={shop.address || ''}
       shopIcon="🔧"
       cartCount={0}
       onCheckout={() => {}}

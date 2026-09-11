@@ -1,26 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { withRoleGuard } from '../../../src/utils/permissions';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Animated, Linking } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Animated, Linking, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { apiGet, apiPost } from '../../../src/lib/api';
 
-const HOSPITALS = [
-  { name: 'Dhanori Lifeline Hospital', type: 'Multi-Specialty', dist: '0.8 km', phone: '+91 98765 43212', beds: '24/7 Emergency', icon: '🏥' },
-  { name: 'Pune District Hospital', type: 'Government', dist: '3.2 km', phone: '020 2612 5600', beds: 'Free OPD', icon: '🏨' },
-  { name: 'Surya Mother & Child Care', type: 'Maternity', dist: '1.5 km', phone: '+91 98765 43214', beds: 'NICU Available', icon: '🍼' },
-];
+/**
+ * This screen listed three hospitals, three doctors and three pharmacies —
+ * every one invented, each with a phone number and a "📞 Call" button wired to
+ * Linking.openURL.
+ *
+ *   "Dhanori Lifeline Hospital, Multi-Specialty, 0.8 km, +91 98765 43212,
+ *    24/7 Emergency"
+ *   "Surya Mother & Child Care, Maternity, NICU Available"
+ *   "Dr. Ajay Patil, General Physician, Goodwill Square Clinic,
+ *    +91 98765 11110, Mon–Sat 9AM–1PM"
+ *
+ * Somebody with a sick child could have read "NICU Available, 1.5 km" and set
+ * out, or dialled a number belonging to a stranger while looking for a
+ * cardiologist. Distances, opening hours and specialities were all made up too.
+ *
+ * Doctors come from /medical/doctors and pharmacies from the shop directory.
+ * Hospitals have no source in the backend at all, so that tab says so rather
+ * than inventing three.
+ */
 
-const DOCTORS = [
-  { name: 'Dr. Ajay Patil', spec: 'General Physician', clinic: 'Goodwill Square Clinic', phone: '+91 98765 11110', timing: 'Mon–Sat, 9AM–1PM', icon: '👨‍⚕️' },
-  { name: 'Dr. Shalini Deshmukh', spec: 'Pediatrician', clinic: 'Tingre Nagar Rd Clinic', phone: '+91 98765 22220', timing: 'Mon–Sat, 10AM–2PM', icon: '👩‍⚕️' },
-  { name: 'Dr. Ravi Bhosale', spec: 'Cardiologist', clinic: 'Dhanori Heart Center', phone: '+91 98765 33330', timing: 'Tue & Thu, 11AM–4PM', icon: '❤️' },
-];
-
-const PHARMACIES = [
-  { name: 'Goodwill Pharmacy', note: '24/7 Open', phone: '+91 98765 43213', icon: '💊' },
-  { name: 'Pune Wellness Chemist', note: 'Daily 7AM–11PM', phone: '+91 98765 55550', icon: '🧴' },
-  { name: 'Jan Aushadhi Store', note: 'Generic Medicines', phone: '1800 111 255', icon: '🏷️' },
-];
-
+// The national emergency numbers are facts about India, not records about this
+// app's users, and they are the one thing on this screen that was always safe
+// to dial.
 const EMERGENCY_CONTACTS = [
   { label: 'Medical Ambulance', number: '108', color: '#ef4444' },
   { label: 'Police', number: '100', color: '#4f46e5' },
@@ -31,16 +37,97 @@ const EMERGENCY_CONTACTS = [
 function HealthModule() {
   const [sosActive, setSosActive] = useState(false);
   const [sosConfirmed, setSosConfirmed] = useState(false);
-  const [activeTab, setActiveTab] = useState('hospitals');
+  const [activeTab, setActiveTab] = useState('doctors');
+  const [doctors, setDoctors] = useState([]);
+  const [pharmacies, setPharmacies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+      const [docRes, pharmRes] = await Promise.allSettled([
+        apiGet('/medical/doctors'),
+        apiGet('/shops?category=pharmacy-healthcare'),
+      ]);
+
+      if (docRes.status === 'fulfilled') {
+        setDoctors(
+          (docRes.value?.doctors ?? []).map((d) => ({
+            name: d.name,
+            spec: d.specialization || null,
+            clinic: d.clinic_name || null,
+            phone: d.phone || d.contact_number || null,
+            timing: d.consulting_hours || null,
+            icon: '🩺',
+          }))
+        );
+      } else {
+        setDoctors([]);
+      }
+
+      if (pharmRes.status === 'fulfilled') {
+        const rows = pharmRes.value?.shops ?? pharmRes.value?.data ?? [];
+        setPharmacies(
+          (Array.isArray(rows) ? rows : []).map((p) => ({
+            name: p.name,
+            note: p.address || null,
+            phone: p.phone_number || p.phone || null,
+            icon: '💊',
+          }))
+        );
+      } else {
+        setPharmacies([]);
+      }
+
+      if (docRes.status === 'rejected' && pharmRes.status === 'rejected') {
+        setLoadError('Could not load medical services. Check your connection.');
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  /**
+   * This was a two-second setTimeout that then announced "SOS BROADCAST SENT —
+   * All neighbors within 5km radius alerted. Local ambulance dispatched." No
+   * neighbour was alerted and no ambulance was dispatched; nothing was called.
+   */
   const handleSOS = () => {
-    setSosActive(true);
-    setTimeout(() => {
-      setSosActive(false);
-      setSosConfirmed(true);
-      Alert.alert('🚨 SOS BROADCAST SENT', 'All neighbors within 5km radius alerted. Local ambulance dispatched.');
-      setTimeout(() => setSosConfirmed(false), 6000);
-    }, 2000);
+    Alert.alert('🚨 Raise a medical emergency alert?', 'Your emergency contacts and local responders will be notified.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'RAISE ALERT',
+        style: 'destructive',
+        onPress: async () => {
+          setSosActive(true);
+          try {
+            const res = await apiPost('/sos/trigger', { type: 'medical' });
+            const notified = res?.data?.emergencyContacts?.length ?? 0;
+            setSosConfirmed(true);
+            setTimeout(() => setSosConfirmed(false), 6000);
+            Alert.alert(
+              'Alert raised',
+              notified > 0
+                ? `Recorded and sent to ${notified} emergency contact${notified === 1 ? '' : 's'}.\n\nFor an ambulance, call 108.`
+                : 'Recorded. You have no emergency contacts saved.\n\nFor an ambulance, call 108.'
+            );
+          } catch (err) {
+            Alert.alert(
+              'Alert NOT sent',
+              `${err?.message || 'Network error'}.\n\nCall 108 for an ambulance now.`,
+              [
+                { text: 'Close', style: 'cancel' },
+                { text: 'Call 108', onPress: () => dialNumber('108') },
+              ]
+            );
+          } finally {
+            setSosActive(false);
+          }
+        },
+      },
+    ]);
   };
 
   const dialNumber = (phone) => {
@@ -82,8 +169,7 @@ function HealthModule() {
         {/* Tabs */}
         <View style={styles.tabContainer}>
           {[
-            { id: 'hospitals', label: '🏥 Hospitals' },
-            { id: 'doctors', label: '👨‍⚕️ Doctors' },
+            { id: 'doctors', label: '🩺 Doctors' },
             { id: 'pharmacies', label: '💊 Pharmacies' },
           ].map(tab => (
             <TouchableOpacity 
@@ -99,50 +185,67 @@ function HealthModule() {
         {/* Content */}
         <View style={styles.tabContent}>
           
-          {activeTab === 'hospitals' && HOSPITALS.map((h, i) => (
-            <View key={i} style={styles.card}>
-              <View style={styles.cardRow}>
-                <View style={styles.iconBox}><Text style={styles.iconText}>{h.icon}</Text></View>
-                <View style={styles.cardBody}>
-                  <Text style={styles.itemName}>{h.name}</Text>
-                  <Text style={styles.itemMeta}>{h.type} • 📍 {h.dist}</Text>
-                  <Text style={styles.itemMeta}>{h.beds}</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => dialNumber(h.phone)}>
-                <Text style={styles.actionBtnText}>📞 {h.phone}</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+          {loading ? (
+            <View style={styles.stateBox}><ActivityIndicator color="#ef4444" /></View>
+          ) : null}
 
-          {activeTab === 'doctors' && DOCTORS.map((d, i) => (
+          {!loading && activeTab === 'doctors' && doctors.length === 0 ? (
+            <View style={styles.stateBox}>
+              <Text style={styles.stateTitle}>
+                {loadError ? 'Could not load doctors' : 'No doctors listed yet'}
+              </Text>
+              <Text style={styles.stateBody}>
+                {loadError || 'Doctors in your area will appear here once they are listed. For an emergency, use the numbers above.'}
+              </Text>
+            </View>
+          ) : null}
+
+          {!loading && activeTab === 'doctors' && doctors.map((d, i) => (
             <View key={i} style={styles.card}>
               <View style={styles.cardRow}>
                 <View style={styles.iconBox}><Text style={styles.iconText}>{d.icon}</Text></View>
                 <View style={styles.cardBody}>
                   <Text style={styles.itemName}>{d.name}</Text>
-                  <Text style={styles.itemMeta}><Text style={{color: '#3b82f6'}}>{d.spec}</Text></Text>
-                  <Text style={styles.itemMeta}>{d.clinic}</Text>
-                  <Text style={styles.itemMeta}>🕒 {d.timing}</Text>
+                  {/* Speciality, clinic and hours print only when recorded. */}
+                  {d.spec ? <Text style={styles.itemMeta}><Text style={{color: '#3b82f6'}}>{d.spec}</Text></Text> : null}
+                  {d.clinic ? <Text style={styles.itemMeta}>{d.clinic}</Text> : null}
+                  {d.timing ? <Text style={styles.itemMeta}>🕒 {d.timing}</Text> : null}
                 </View>
               </View>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => dialNumber(d.phone)}>
-                <Text style={styles.actionBtnText}>📞 Book Appointment</Text>
-              </TouchableOpacity>
+              {d.phone ? (
+                <TouchableOpacity style={styles.actionBtn} onPress={() => dialNumber(d.phone)}>
+                  <Text style={styles.actionBtnText}>📞 Call clinic</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ))}
 
-          {activeTab === 'pharmacies' && PHARMACIES.map((p, i) => (
+          {!loading && activeTab === 'pharmacies' && pharmacies.length === 0 ? (
+            <View style={styles.stateBox}>
+              <Text style={styles.stateTitle}>
+                {loadError ? 'Could not load pharmacies' : 'No pharmacies listed yet'}
+              </Text>
+              <Text style={styles.stateBody}>
+                {loadError || 'Pharmacies in your area will appear here once they join.'}
+              </Text>
+            </View>
+          ) : null}
+
+          {!loading && activeTab === 'pharmacies' && pharmacies.map((p, i) => (
             <View key={i} style={styles.card}>
               <View style={styles.cardRow}>
                 <View style={styles.iconBox}><Text style={styles.iconText}>{p.icon}</Text></View>
                 <View style={styles.cardBody}>
                   <Text style={styles.itemName}>{p.name}</Text>
-                  <Text style={styles.itemMeta}>✨ {p.note}</Text>
+                  {p.note ? <Text style={styles.itemMeta}>📍 {p.note}</Text> : null}
                 </View>
               </View>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => dialNumber(p.phone)}>
-                <Text style={styles.actionBtnText}>📞 Call Pharmacy</Text>
+              <TouchableOpacity
+                style={[styles.actionBtn, !p.phone && { opacity: 0.45 }]}
+                disabled={!p.phone}
+                onPress={() => dialNumber(p.phone)}
+              >
+                <Text style={styles.actionBtnText}>{p.phone ? '📞 Call Pharmacy' : 'No number listed'}</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -155,6 +258,9 @@ function HealthModule() {
 }
 
 const styles = StyleSheet.create({
+  stateBox: { backgroundColor: '#ffffff', borderRadius: 12, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   header: { padding: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#ffffff', flexDirection: 'row', alignItems: 'center' },
   backBtn: { marginRight: 12 }, backBtnText: { color: '#3b82f6', fontWeight: 'bold', fontSize: 16 },

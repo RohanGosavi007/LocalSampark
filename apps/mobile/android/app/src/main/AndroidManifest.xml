@@ -11,6 +11,15 @@
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
+  <!-- react-native-callkeep. Telecom refuses registerPhoneAccount() unless the
+       app ships a ConnectionService guarded by BIND_TELECOM_CONNECTION_SERVICE
+       (declared on the <service> below); without it setup() threw
+       java.lang.SecurityException on the native modules thread, which is
+       uncatchable from JS and killed the process at startup.
+       FOREGROUND_SERVICE_MICROPHONE pairs with the only foregroundServiceType
+       VoiceConnectionService actually uses (Constants.FOREGROUND_SERVICE_TYPE_MICROPHONE). -->
+  <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
   <!-- Scoped storage replaced this from Android 10; declaring it unbounded
        triggers a Play Console policy warning. -->
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
@@ -39,6 +48,45 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="localsampark"/>
       </intent-filter>
+      <!--
+        Android App Links for https://localsampark.in.
+
+        Only the localsampark:// custom scheme was registered, so a shared web
+        link always opened the browser rather than the app.
+
+        autoVerify="true" makes Android fetch
+        https://localsampark.in/.well-known/assetlinks.json at install time and
+        check that it lists this package with the signing certificate SHA-256.
+        That file is served from apps/web/public/.well-known/assetlinks.json.
+        If verification fails the links simply fall back to the browser -- it
+        cannot break the app -- but they will not open it either, so the
+        fingerprint in that file has to match whatever key actually signs the
+        shipped build (see android/KEYSTORE.md).
+      -->
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="https" android:host="localsampark.in"/>
+        <data android:scheme="https" android:host="www.localsampark.in"/>
+      </intent-filter>
     </activity>
+    <!-- react-native-callkeep ships this class but deliberately does not declare
+         it: the ConnectionService must be registered by the app so Telecom can
+         verify the BIND_TELECOM_CONNECTION_SERVICE guard. It was missing here
+         entirely, so RNCallKeep.setup() -> registerPhoneAccount() threw
+         SecurityException and crashed the app. android:exported must be true so
+         the system Telecom stack can bind it; the android:permission guard is
+         what keeps anything else out. -->
+    <service
+        android:name="io.wazo.callkeep.VoiceConnectionService"
+        android:label="@string/app_name"
+        android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE"
+        android:foregroundServiceType="microphone"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.telecom.ConnectionService"/>
+      </intent-filter>
+    </service>
   </application>
 </manifest>

@@ -44,9 +44,9 @@ const markShiftAttendance = async (req, res, next) => {
         if (!shift) return res.status(404).json({ error: 'Shift not found' });
 
         if (action === 'check_in') {
-            await query('UPDATE society_guard_shifts SET check_in_time = CURRENT_TIMESTAMP WHERE id = $1', [shiftId]);
+            await query('UPDATE society_guard_shifts SET actual_start = CURRENT_TIMESTAMP WHERE id = $1', [shiftId]);
         } else if (action === 'check_out') {
-            await query('UPDATE society_guard_shifts SET check_out_time = CURRENT_TIMESTAMP WHERE id = $1', [shiftId]);
+            await query('UPDATE society_guard_shifts SET actual_end = CURRENT_TIMESTAMP WHERE id = $1', [shiftId]);
         }
         res.json({ success: true, message: `Shift ${action === 'check_in' ? 'checked in' : 'checked out'}` });
     } catch (error) { next(error); }

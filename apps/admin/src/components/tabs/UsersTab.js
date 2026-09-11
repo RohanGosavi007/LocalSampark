@@ -1,10 +1,13 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 export default function UsersTab({ API_BASE, authHeaders }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(null);
 
   const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
   const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600, borderBottom: '1px solid #334155' };
@@ -16,14 +19,15 @@ export default function UsersTab({ API_BASE, authHeaders }) {
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/users?limit=50`, {
+      const data = await fetchJson(`${API_BASE}/admin/users?limit=50`, {
         headers: authHeaders()
       });
-      const data = await res.json();
       if (data.users) setUsers(data.users);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setError(error);
     }
     setLoading(false);
   };
@@ -36,6 +40,7 @@ export default function UsersTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>

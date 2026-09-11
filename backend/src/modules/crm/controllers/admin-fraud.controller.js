@@ -9,10 +9,10 @@ exports.getFraudScan = async (req, res, next) => {
     try {
       // Query users with highest order velocity
       const userRes = await query(`
-        SELECT u.id, u.name AS full_name, u.phone AS phone_number, COUNT(o.id) AS order_count
+        SELECT u.id, u.full_name AS full_name, u.phone AS phone_number, COUNT(o.id) AS order_count
         FROM users u
         JOIN orders o ON o.user_id = u.id
-        GROUP BY u.id, u.name, u.phone
+        GROUP BY u.id, u.full_name, u.phone
         HAVING COUNT(o.id) > 10
         ORDER BY order_count DESC
         LIMIT 5

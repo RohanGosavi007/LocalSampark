@@ -24,8 +24,21 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          cache-dependency-path: package-lock.json
       - run: npm ci --ignore-scripts
-      - run: npx eslint backend/src --ext .js --max-warnings 0 || true
+      # This was `npx eslint backend/src --ext .js --max-warnings 0 || true`,
+      # which never linted anything: there was no ESLint config for the
+      # backend, so eslint exited with "couldn't find a configuration file",
+      # and the trailing `|| true` turned that into a green check. ESLint was
+      # not a dependency of the root workspace either, so `npx` would have
+      # tried to download it on every run.
+      #
+      # backend/.eslintrc.js now exists and eslint is a root devDependency.
+      # The rule set is correctness-focused (no-undef, no-unreachable,
+      # no-empty and friends); it found four genuine ReferenceError crashes on
+      # its first run. Style rules are warnings and do not block.
+      - name: Backend lint
+        run: npm run lint --workspace=backend
 
   # ── Job 2: Unit Tests ───────────────────────────────────────
   unit-tests:
@@ -120,6 +133,15 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # This is currently a no-op gate, on two counts, and is left permissive
+      # on purpose until baselines exist:
+      #   1. Every committed baseline under
+      #      tests/e2e/visual/web-pages.spec.js-snapshots/ is suffixed
+      #      -win32.png. On ubuntu-latest Playwright looks for -linux.png,
+      #      finds nothing, and has no baseline to compare against.
+      #   2. --update-snapshots then writes fresh images and always passes.
+      # To make this a real gate: download the linux snapshots from this
+      # job's artifact, commit them, and drop --update-snapshots.
       - run: npx playwright test --project=visual --update-snapshots || true
       - name: Upload Screenshots
         uses: actions/upload-artifact@v4
@@ -180,8 +202,28 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
-      - run: npm run dev:backend &
-      - run: sleep 10
+      # Each `run:` step gets its own shell, and `npm run dev:backend` starts
+      # nodemon under the workflow-level NODE_ENV=test — under which
+      # server.js deliberately never calls startServer(), so nothing ever
+      # listened and artillery measured a closed port. Start the server
+      # directly, with NODE_ENV unset to 'development', and wait for /health
+      # instead of a fixed sleep.
+      - name: Start backend and wait for health
+        env:
+          NODE_ENV: development
+          USE_SQLITE: 'true'
+          PORT: '5000'
+        run: |
+          node backend/src/server.js &
+          echo $! > /tmp/backend.pid
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:5000/health > /dev/null; then
+              echo "backend up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::backend failed to become healthy within 30s"; exit 1
+      - run: mkdir -p test-results
       - run: npx artillery run backend/load-tests/critical-flow.yml --output test-results/load-report.json
       - name: Upload Load Test Report
         uses: actions/upload-artifact@v4

@@ -96,8 +96,63 @@
 -keep class kotlin.Metadata { *; }
 -dontwarn kotlin.**
 
-# ─── Stripe (transitively present, not used) ────────────────────────────────
+# ─── Razorpay (react-native-razorpay) ───────────────────────────────────────
+# The Razorpay checkout SDK is the primary payment path. Its Activity, the
+# native bridge (com.razorpay.rn) and the SDK itself are all reached
+# reflectively, and checkout runs in a WebView that calls back into Java over
+# an @JavascriptInterface bridge. R8 renames those bridge methods unless
+# JavascriptInterface is kept as an attribute, which silently breaks the
+# payment callback in release while debug works fine.
+-keep class com.razorpay.** { *; }
+-keep class com.razorpay.rn.** { *; }
+-dontwarn com.razorpay.**
+-keepattributes JavascriptInterface
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+# Razorpay bundles proguard.annotation markers on classes it needs preserved.
+-keep class proguard.annotation.Keep
+-keep class proguard.annotation.KeepClassMembers
+-keep @proguard.annotation.Keep class * { *; }
+-keepclassmembers class * { @proguard.annotation.KeepClassMembers *; }
+
+# ─── Stripe (@stripe/stripe-react-native) ───────────────────────────────────
+# Declared in package.json and wired through app.json's plugin list, so the
+# native SDK really is in the APK. It uses Kotlin serialization and reflection
+# throughout; keeping only the pushProvisioning dontwarn was not enough.
+-keep class com.reactnativestripesdk.** { *; }
+-keep class com.stripe.android.** { *; }
+-dontwarn com.stripe.android.**
 -dontwarn com.stripe.android.pushProvisioning.**
+
+# ─── react-native-webrtc (intercom / voice) ─────────────────────────────────
+# org.webrtc is the prebuilt native AAR: every class there is bound over JNI
+# from libjingle_peerconnection_so, so obfuscating it breaks the linkage at
+# runtime with UnsatisfiedLinkError.
+-keep class org.webrtc.** { *; }
+-keep class com.oney.WebRTCModule.** { *; }
+-dontwarn org.webrtc.**
+-dontwarn com.oney.WebRTCModule.**
+
+# ─── react-native-webview ───────────────────────────────────────────────────
+-keep class com.reactnativecommunity.webview.** { *; }
+
+# ─── react-native-vision-camera / Nitro modules ─────────────────────────────
+# Nitro resolves hybrid objects by their registered class names from C++.
+-keep class com.margelo.nitro.** { *; }
+-keep class com.mrousavy.camera.** { *; }
+-dontwarn com.margelo.nitro.**
+
+# ─── react-native-worklets ──────────────────────────────────────────────────
+-keep class com.swmansion.worklets.** { *; }
+-dontwarn com.swmansion.worklets.**
+
+# ─── Sentry ─────────────────────────────────────────────────────────────────
+# Keeping line numbers alone is not enough: Sentry's own integrations are
+# instantiated by name from the manifest/options.
+-keep class io.sentry.** { *; }
+-dontwarn io.sentry.**
 
 # ─── Readable release stack traces ──────────────────────────────────────────
 # Without these, a production crash report is unmappable line noise.

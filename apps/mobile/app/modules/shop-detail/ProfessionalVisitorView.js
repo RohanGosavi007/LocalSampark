@@ -5,9 +5,9 @@ import VisitorLayout from './components/VisitorLayout';
 
 export default function ProfessionalVisitorView({ shop }) {
   return (
-    <VisitorLayout 
-      shopName={shop.name || 'Verma & Associates (CA)'} 
-      shopAddress="Office 402, Business Bay"
+    <VisitorLayout shop={shop} 
+      shopName={shop.name || 'Practice'} 
+      shopAddress={shop.address || ''}
       shopIcon="💼"
       cartCount={0}
       onCheckout={() => {}}

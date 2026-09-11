@@ -75,6 +75,11 @@ if (!_EventEmitter) {
 }
 
 export { type EventSubscription };
+// expo-modules-core/src/index.ts re-exports these as NAMED bindings
+// (\`export { EventEmitter } from './EventEmitter'\`). Emitting only a default
+// export made every one of them resolve to \`undefined\` downstream — which is
+// what produced "right operand of 'instanceof' is not an object" at startup.
+export { _EventEmitter as EventEmitter };
 export default _EventEmitter as typeof EventEmitter;
 `;
 
@@ -97,6 +102,8 @@ if (!_SharedObject) {
   _SharedObject = function SharedObjectStub() {};
 }
 
+// Named export required by expo-modules-core/src/index.ts — see EventEmitter.
+export { _SharedObject as SharedObject };
 export default _SharedObject as typeof SharedObjectType;
 `;
 
@@ -119,6 +126,10 @@ if (!_SharedRef) {
   _SharedRef = function SharedRefStub() {};
 }
 
+// Named export required by expo-modules-core/src/index.ts. This specific one
+// is what expo-image's isImageRef() checks with \`value instanceof SharedRef\`,
+// so its absence crashed every <Image> render.
+export { _SharedRef as SharedRef };
 export default _SharedRef as typeof SharedRefType;
 `;
 
@@ -137,7 +148,12 @@ try {
   _NativeModule = (globalThis as any).expo?.NativeModule;
 } catch (_e) {}
 
-export default (_NativeModule ?? {}) as typeof NativeModule;
+// Named export required by expo-modules-core/src/index.ts — see EventEmitter.
+// Kept as a function so "class X extends NativeModule" and "instanceof" both
+// stay legal when the JSI object is unavailable; a plain {} satisfies neither.
+const _NativeModuleSafe = typeof _NativeModule === 'function' ? _NativeModule : function NativeModuleStub() {};
+export { _NativeModuleSafe as NativeModule };
+export default _NativeModuleSafe as typeof NativeModule;
 `;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -293,13 +309,31 @@ export function requireOptionalNativeModule<ModuleType = any>(
 // ═══════════════════════════════════════════════════════════════════════════
 // Apply all patches
 // ═══════════════════════════════════════════════════════════════════════════
+/**
+ * Bump whenever the patch bodies below change.
+ *
+ * Detection used to key off a content marker such as 'EventEmitterStub', which
+ * meant an already-patched tree was skipped forever — so a corrected patch
+ * never reached an existing node_modules, only a fresh install. A version stamp
+ * makes the patches re-apply when, and only when, their content actually
+ * changes.
+ *
+ * v2: restore the NAMED exports that expo-modules-core/src/index.ts re-exports
+ *     (export { SharedRef } from './SharedRef', etc). v1 emitted default-only
+ *     exports, so SharedRef/SharedObject/NativeModule/EventEmitter all resolved
+ *     to undefined downstream and expo-image's `value instanceof SharedRef`
+ *     threw "right operand of 'instanceof' is not an object" on every render.
+ */
+const PATCH_VERSION = 'v2-named-exports';
+const PATCH_STAMP = `\n// @localsampark-expo-patch ${PATCH_VERSION}\n`;
+
 const patches = [
-  { file: 'EventEmitter.ts', content: eventEmitterContent, detect: 'EventEmitterStub' },
-  { file: 'SharedObject.ts', content: sharedObjectContent, detect: 'SharedObjectStub' },
-  { file: 'SharedRef.ts', content: sharedRefContent, detect: 'SharedRefStub' },
-  { file: 'NativeModule.ts', content: nativeModuleContent, detect: 'try {' },
-  { file: 'ensureNativeModulesAreInstalled.ts', content: ensureContent, detect: '_isExpoObjectHealthy' },
-  { file: 'requireNativeModule.ts', content: requireNativeModuleContent, detect: '_stub' },
+  { file: 'EventEmitter.ts', content: eventEmitterContent },
+  { file: 'SharedObject.ts', content: sharedObjectContent },
+  { file: 'SharedRef.ts', content: sharedRefContent },
+  { file: 'NativeModule.ts', content: nativeModuleContent },
+  { file: 'ensureNativeModulesAreInstalled.ts', content: ensureContent },
+  { file: 'requireNativeModule.ts', content: requireNativeModuleContent },
 ];
 
 let applied = 0;
@@ -314,12 +348,12 @@ for (const patch of patches) {
       continue;
     }
     const existing = fs.readFileSync(filePath, 'utf8');
-    if (existing.includes(patch.detect)) {
-      console.log(`  OK:   ${patch.file} (already patched)`);
+    if (existing.includes(PATCH_STAMP.trim())) {
+      console.log(`  OK:   ${patch.file} (already at ${PATCH_VERSION})`);
       skipped++;
     } else {
-      fs.writeFileSync(filePath, patch.content, 'utf8');
-      console.log(`  DONE: ${patch.file} patched ✓`);
+      fs.writeFileSync(filePath, patch.content + PATCH_STAMP, 'utf8');
+      console.log(`  DONE: ${patch.file} patched -> ${PATCH_VERSION}`);
       applied++;
     }
   } catch (err) {
@@ -328,3 +362,58 @@ for (const patch of patches) {
 }
 
 console.log(`[postinstall] Complete: ${applied} patched, ${skipped} skipped.`);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Self-check: every named binding that expo-modules-core/src/index.ts
+// re-exports must still exist in the file it comes from.
+//
+// These patches rewrite vendor files wholesale, so a mistake here is invisible
+// until runtime — v1 emitted default-only exports, which made SharedRef,
+// SharedObject, NativeModule and EventEmitter all resolve to `undefined` for
+// every consumer. expo-image's `value instanceof SharedRef` then threw
+// "right operand of 'instanceof' is not an object" and took down every screen
+// rendering an <Image>. Failing loudly here is far cheaper than a 55-minute
+// release build and a device install.
+// ═══════════════════════════════════════════════════════════════════════════
+try {
+  const indexPath = path.join(expoModulesCoreSrc, 'index.ts');
+  if (fs.existsSync(indexPath)) {
+    const indexSrc = fs.readFileSync(indexPath, 'utf8');
+    const reExport = /export\s*\{([^}]*)\}\s*from\s*['"]\.\/([^'"]+)['"]/g;
+    const broken = [];
+    let match;
+
+    while ((match = reExport.exec(indexSrc))) {
+      const targetFile = path.join(expoModulesCoreSrc, match[2] + '.ts');
+      if (!fs.existsSync(targetFile)) continue;
+      const targetSrc = fs.readFileSync(targetFile, 'utf8');
+
+      for (const raw of match[1].split(',').map((s) => s.trim()).filter(Boolean)) {
+        if (raw.startsWith('type ')) continue; // erased at runtime
+        if (raw.startsWith('default as ')) {
+          if (!/export\s+default/.test(targetSrc)) broken.push(`${raw} (${match[2]}.ts)`);
+          continue;
+        }
+        const name = raw.includes(' as ') ? raw.split(' as ')[1].trim() : raw;
+        const ok =
+          new RegExp('export\\s*\\{[^}]*\\b' + name + '\\b[^}]*\\}').test(targetSrc) ||
+          new RegExp(
+            'export\\s+(?:declare\\s+)?(?:abstract\\s+)?(?:const|let|var|function|class)\\s+' + name + '\\b'
+          ).test(targetSrc);
+        if (!ok) broken.push(`${name} (${match[2]}.ts)`);
+      }
+    }
+
+    if (broken.length) {
+      console.error('\n[postinstall] FATAL: patched files dropped named exports that');
+      console.error('[postinstall] expo-modules-core/src/index.ts re-exports:');
+      for (const b of broken) console.error('  - ' + b);
+      console.error('[postinstall] These would be `undefined` at runtime. Fix the');
+      console.error('[postinstall] patch bodies above and bump PATCH_VERSION.\n');
+      process.exit(1);
+    }
+    console.log('[postinstall] Export contract verified: all named re-exports resolve.');
+  }
+} catch (err) {
+  console.warn('[postinstall] Export self-check skipped:', err.message);
+}

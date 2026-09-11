@@ -33,7 +33,7 @@ class LogisticsBatching {
         SELECT id, dropoff_lat, dropoff_lng, created_at 
         FROM orders 
         WHERE shop_id = $1 
-          AND status IN ('PENDING', 'PACKED') 
+          AND order_status IN ('PENDING', 'PACKED') 
           AND created_at >= NOW() - INTERVAL '3 minutes'
           AND batch_id IS NULL
         ORDER BY created_at DESC

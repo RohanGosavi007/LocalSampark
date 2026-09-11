@@ -56,7 +56,7 @@ export default function MobileCommunityGarage() {
   const handleRentEquipment = async () => {
     try {
       const payload = { days: Number(bookingData.days), useCoins: bookingData.useCoins };
-      const data = await apiPost('/equipment/rent/${bookingModal.id}', payload);
+      const data = await apiPost(`/equipment/rent/${bookingModal.id}`, payload);
       if (data.success) {
         Alert.alert('Success', data.message);
         setBookingModal(null);
@@ -69,7 +69,7 @@ export default function MobileCommunityGarage() {
 
   const handleConfirmReturn = async (rentalId) => {
     try {
-      const data = await apiPost('/equipment/rentals/${rentalId}/return');
+      const data = await apiPost(`/equipment/rentals/${rentalId}/return`);
       if (data.success) {
         Alert.alert('Item Returned', data.message);
         fetchMyRentals();

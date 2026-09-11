@@ -101,7 +101,11 @@ router.post('/carpool/rides/:rideId/generate-otp', authenticate, async (req, res
     const otps = [];
 
     for (const booking of bookings) {
-      const otp = String(Math.floor(1000 + Math.random() * 9000)); // 4-digit OTP
+      // crypto.randomInt, not Math.random: this OTP is what the driver checks
+      // to confirm the right passenger is boarding, and a predictable code lets
+      // someone claim a seat that is not theirs. randomInt is also unbiased,
+      // which Math.floor(min + random*range) is not.
+      const otp = String(crypto.randomInt(1000, 10000)); // 4-digit OTP
       try {
         await query(
           `INSERT INTO carpool_ride_otps (ride_id, booking_id, otp_code, expires_at) VALUES ($1, $2, $3, datetime('now', '+30 minutes'))
@@ -176,7 +180,11 @@ router.get('/carpool/carbon-dashboard', async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'your-jwt-secret');
+        // Was `process.env.JWT_SECRET || 'your-jwt-secret'` — a literal in this
+        // repository. config/secrets is the single resolver and throws in
+        // production rather than verifying against a known key.
+        const { getJwtSecret } = require('../../../config/secrets');
+        const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
         userId = decoded.id || decoded.userId;
       } catch (e) {}
     }

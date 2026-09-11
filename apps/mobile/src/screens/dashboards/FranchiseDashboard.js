@@ -1,32 +1,78 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { apiGet } from '../../lib/api';
 import { Map, Users, Store, TrendingUp, IndianRupee, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+/**
+ * A franchise partner's landing screen.
+ *
+ * "₹1.4L territory revenue, 156 managed shops, 12 active agents, ₹14,500
+ * commission" were all literals, and the greeting fell back to "Welcome Partner,
+ * Rahul" — a name belonging to nobody in particular.
+ *
+ * Below them, two shops awaiting the partner's approval ("Sanjay Provision
+ * Store", "Dr. Mehta Clinic") that had not applied, and two payouts marked
+ * Credited — ₹4,500 and ₹10,000 — that were never paid. A partner could have
+ * reconciled their bank statement against those.
+ */
 export default function FranchiseDashboard({ user }) {
+  const [figures, setFigures] = useState(null);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    Promise.allSettled([
+      apiGet('/dashboards/territory/dashboard'),
+      apiGet('/territory/pending-approvals'),
+    ]).then(([statsRes, approvalsRes]) => {
+      if (statsRes.status === 'fulfilled') {
+        setFigures(statsRes.value?.stats ?? null);
+      } else {
+        setFigures(null);
+        setError(statsRes.reason?.message || 'Could not load your territory.');
+      }
+
+      if (approvalsRes.status === 'fulfilled') {
+        setPendingApprovals(
+          (approvalsRes.value?.data ?? [])
+            .filter((a) => a.approval_status === 'pending')
+            .map((a) => ({
+              id: String(a.id),
+              name: a.name || 'Shop',
+              type: a.category || '',
+              location: a.pincode || '',
+            }))
+        );
+      } else {
+        setPendingApprovals([]);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const money = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`;
+
   const stats = [
-    { label: 'Territory Revenue', value: '₹1.4L', icon: TrendingUp, color: '#10b981' },
-    { label: 'Managed Shops', value: '156', icon: Store, color: '#3b82f6' },
-    { label: 'Active Agents', value: '12', icon: Users, color: '#8b5cf6' },
-    { label: 'Your Commission', value: '₹14,500', icon: IndianRupee, color: '#f59e0b' }
+    { label: 'Territory Revenue', value: money(figures?.monthlyRevenue), icon: TrendingUp, color: '#10b981' },
+    { label: 'Managed Shops', value: String(Number(figures?.totalShops) || 0), icon: Store, color: '#3b82f6' },
+    { label: 'Active Agents', value: String(Number(figures?.activeAgents) || 0), icon: Users, color: '#8b5cf6' },
+    { label: 'Your Commission', value: money(figures?.commissionEarned), icon: IndianRupee, color: '#f59e0b' },
   ];
 
-  const pendingApprovals = [
-    { id: 1, name: 'Sanjay Provision Store', type: 'Retail', location: 'Sector 4' },
-    { id: 2, name: 'Dr. Mehta Clinic', type: 'Medical', location: 'Sector 1' },
-  ];
-
-  const recentPayouts = [
-    { id: 1, date: '15 Jul', amount: '₹4,500', status: 'Credited' },
-    { id: 2, date: '01 Jul', amount: '₹10,000', status: 'Credited' },
-  ];
+  // Payout history has no per-partner read endpoint. The Payouts screen shows
+  // what is pending; inventing a credited history here is what the previous
+  // version did.
+  const recentPayouts = [];
 
   return (
     <ScrollView style={s.container} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
       <View style={{ marginBottom: 24, marginTop: 8 }}>
         <View style={s.headerLeft}><Map color="#f59e0b" size={24} style={{ marginRight: 8 }} /><Text style={s.headerTitle}>Territory Franchise</Text></View>
-        <Text style={s.headerSubtitle}>Welcome Partner, {user?.name || 'Rahul'}</Text>
+        {/* The fallback greeted an unnamed partner as "Rahul". */}
+        <Text style={s.headerSubtitle}>Welcome Partner{user?.name ? `, ${user.name}` : ''}</Text>
       </View>
 
       {/* Primary KPI */}
@@ -52,7 +98,15 @@ export default function FranchiseDashboard({ user }) {
       {/* Pending Approvals */}
       <View style={{ marginBottom: 24 }}>
         <View style={s.sectionHeader}><Text style={s.sectionTitle}>Pending Approvals</Text><TouchableOpacity><Text style={s.linkText}>View All</Text></TouchableOpacity></View>
-        {pendingApprovals.map(approval => (
+        {loading ? (
+          <View style={s.emptyRow}><ActivityIndicator color="#f59e0b" /></View>
+        ) : pendingApprovals.length === 0 ? (
+          <View style={s.emptyRow}>
+            <Text style={s.emptyText}>
+              {error || 'Shops applying in your territory will appear here.'}
+            </Text>
+          </View>
+        ) : pendingApprovals.map(approval => (
           <View key={approval.id} style={s.approvalCard}>
             <View style={s.approvalLeft}>
               <View style={s.approvalIcon}><AlertCircle size={20} color="#f59e0b" /></View>
@@ -67,7 +121,11 @@ export default function FranchiseDashboard({ user }) {
       <View style={{ marginBottom: 24 }}>
         <Text style={s.sectionTitle}>Recent Payouts</Text>
         <View style={s.listContainer}>
-          {recentPayouts.map((payout, idx) => (
+          {recentPayouts.length === 0 ? (
+            <View style={s.emptyRow}>
+              <Text style={s.emptyText}>Your settled payouts will be listed here.</Text>
+            </View>
+          ) : recentPayouts.map((payout, idx) => (
             <View key={payout.id} style={[s.listItem, idx !== recentPayouts.length - 1 && s.listBorder]}>
               <View style={s.listLeft}>
                 <View style={s.listIcon}><CheckCircle2 size={20} color="#10b981" /></View>
@@ -86,6 +144,8 @@ export default function FranchiseDashboard({ user }) {
 }
 
 const s = StyleSheet.create({
+  emptyRow: { padding: 20, alignItems: 'center' },
+  emptyText: { color: '#94a3b8', fontSize: 13, textAlign: 'center', lineHeight: 19 },
   container: { flex: 1, backgroundColor: '#020617' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   headerTitle: { fontSize: 24, fontWeight: '900', color: '#ffffff' },

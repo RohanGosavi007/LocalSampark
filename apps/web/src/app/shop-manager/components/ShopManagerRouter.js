@@ -128,6 +128,24 @@ const CATEGORY_ARCHETYPE = {
   
   // Religious
   'astrologer-pandit':        'consultation',
+
+  // ── Categories that were missing from this map ─────────────────────
+  // These seven exist in shop_categories but had no entry, so they fell to
+  // `|| 'retail'`. That still rendered a working GenericManager, but with the
+  // wrong tabs: a physiotherapy clinic was given an "Orders" tab and no
+  // "Appointments" one, because only the retail archetype is in `useOrders`.
+  //
+  // Six are near-duplicate rows of a category already mapped above
+  // (`pest-control` vs `pest-control-services`, and so on) — worth collapsing
+  // in the database, but mapped here so they behave correctly meanwhile.
+  'catering-party-services':    'event_creative',
+  'deep-cleaning-services':     'home_service',
+  'pathology-labs-diagnostics': 'healthcare',
+  'pest-control-services':      'home_service',
+  'physiotherapy-chiropractic': 'healthcare',
+  'ro-water-purifier-service':  'garage',
+  // Booked by the hour, so it needs the appointments panel rather than orders.
+  'turf-grounds':               'turf',
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -140,7 +158,7 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
   
   // Determine which panels this archetype uses
   const useOrders = ['retail', 'supply', 'logistics'].includes(archetype);
-  const useAppointments = ['healthcare', 'consultation', 'home_service', 'driving_school', 'car_wash', 'travel', 'tailoring', 'print_counter', 'event_creative'].includes(archetype);
+  const useAppointments = ['healthcare', 'consultation', 'home_service', 'driving_school', 'car_wash', 'travel', 'tailoring', 'print_counter', 'event_creative', 'turf'].includes(archetype);
   const useJobCards = ['garage', 'laundry'].includes(archetype);
 
   const tabs = [

@@ -9,12 +9,36 @@ CREATE TABLE IF NOT EXISTS shop_categories (
     name TEXT NOT NULL UNIQUE,
     slug TEXT NOT NULL UNIQUE,
     icon TEXT,
-    business_model TEXT NOT NULL CHECK (business_model IN ('product', 'appointment', 'hybrid')),
+    -- Defaulted because migration 040 seeds this table without naming the
+    -- column; without a default the whole 55-category seed failed on NOT NULL.
+    business_model TEXT NOT NULL DEFAULT 'product' CHECK (business_model IN ('product', 'appointment', 'hybrid')),
     commission_percent REAL DEFAULT 5.0,
     convenience_fee REAL DEFAULT 0.0,
     is_active INTEGER DEFAULT 1,
     display_order INTEGER DEFAULT 0,
     registration_fields TEXT DEFAULT '[]',
+
+    -- The columns below are declared again by migration 040, whose own
+    -- CREATE TABLE IF NOT EXISTS never executes because this one runs first and
+    -- the table already exists. 040 then seeds 55 categories naming `archetype`
+    -- and fails, which in turn orphaned every category_attributes row that
+    -- references those categories. Declaring them here is what makes 040's seed
+    -- actually apply; migrations 076 and 079 add them again harmlessly.
+    name_mr TEXT,
+    name_hi TEXT,
+    archetype TEXT NOT NULL DEFAULT 'retail',
+    parent_category_id TEXT REFERENCES shop_categories(id),
+    requires_fssai INTEGER DEFAULT 0,
+    requires_gst INTEGER DEFAULT 0,
+    requires_drug_license INTEGER DEFAULT 0,
+    supports_delivery INTEGER DEFAULT 1,
+    supports_pickup INTEGER DEFAULT 1,
+    supports_appointment INTEGER DEFAULT 0,
+    supports_subscription INTEGER DEFAULT 0,
+    supports_table_booking INTEGER DEFAULT 0,
+    default_commission_pct REAL DEFAULT 10.0,
+    min_order_amount REAL DEFAULT 0,
+
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );

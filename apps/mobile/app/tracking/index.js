@@ -26,21 +26,30 @@ export default function TrackingScreen() {
       try {
         const data = await apiGet(`/orders/${orderId}`);
         if (data && data.success) {
+          // This screen fetched the real order and then overwrote half of it
+          // with fiction: the shop was renamed "LocalSampark Shop" whatever it
+          // really was, the handover OTP was fixed at "4921", the ETA was always
+          // "12 mins", and the rider was always "Ramesh Kumar, 4.8 stars,
+          // MH 12 AB 1234" — a named person and a vehicle registration attached
+          // to someone else's delivery. Every field now comes from the response,
+          // and anything the server did not send is simply absent.
           setOrder({
             id: data.order.id,
-            shop_name: 'LocalSampark Shop',
+            shop_name: data.order.shop_name || 'Shop',
             total_amount: data.order.total_amount,
-            status: data.order.status.toLowerCase(),
+            status: String(data.order.status || '').toLowerCase(),
             delivery_type: data.order.fulfillment_method?.toLowerCase() || 'delivery',
-            tracking_otp: '4921',
-            eta: '12 mins',
-            items: [],
-            driver: {
-                name: 'Ramesh Kumar',
-                rating: 4.8,
-                vehicle: 'MH 12 AB 1234',
-                image: 'https://ui-avatars.com/api/?name=Ramesh+Kumar&background=3b82f6&color=fff'
-            }
+            tracking_otp: data.order.tracking_otp || null,
+            eta: data.order.eta || data.order.estimated_delivery_time || null,
+            items: data.items || [],
+            driver: data.order.delivery_agent_name
+              ? {
+                  name: data.order.delivery_agent_name,
+                  rating: data.order.delivery_agent_rating ?? null,
+                  vehicle: data.order.delivery_agent_vehicle || null,
+                  phone: data.order.delivery_agent_phone || null,
+                }
+              : null,
           });
         }
       } catch (e) {

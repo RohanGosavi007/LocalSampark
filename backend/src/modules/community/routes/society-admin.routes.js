@@ -2,12 +2,21 @@
 const router = express.Router();
 const db = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const crypto = require('crypto');
 
 // Pre-approve visitor
 router.post('/visitors', authenticate, async (req, res, next) => {
   try {
     const { societyId, residentId, visitorName, visitorPhone, purpose, vehicleNumber, expectedAt } = req.body;
-    const passCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // This value is stored as the visitor qr_code and is what the gate guard
+    // checks to admit someone into the society, so it is a physical-access
+    // credential. Math.random() made it guessable from other issued passes.
+    // Base32-ish alphabet with I/O/0/1 removed so a guard reading it off a
+    // phone screen cannot confuse characters.
+    const PASS_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const passCode = Array.from(crypto.randomBytes(8))
+      .map((byte) => PASS_ALPHABET[byte % PASS_ALPHABET.length])
+      .join('');
     const result = await db.query(`INSERT INTO society_visitors (society_id, resident_id, visitor_name, visitor_phone, purpose, vehicle_number, qr_code, status, expected_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'expected', $8) RETURNING *`,
       [societyId, residentId, visitorName, visitorPhone, purpose, vehicleNumber, passCode, expectedAt]

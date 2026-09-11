@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, getJwtRefreshSecret } = require('../config/secrets');
 
 let _prisma = null;
 const getPrisma = () => {
@@ -25,7 +26,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
+    const decoded = jwt.verify(token, getJwtSecret());
     const targetUserId = decoded.userId || decoded.id || decoded.sub;
 
     // config/database already abstracts SQLite and Postgres, so there is no
@@ -47,6 +48,26 @@ const authenticate = async (req, res, next) => {
       return res.status(403).json({ error: 'Account is deactivated.' });
     }
 
+    // Session revocation.
+    //
+    // generateTokens() embeds the user's token_version in every access token,
+    // and admin.routes.js exposes a "log everyone out" action that runs
+    //     UPDATE users SET token_version = token_version + 1
+    // to invalidate outstanding sessions. verifyRole() enforced that check, but
+    // authenticate() — which nearly every route in the app actually uses — did
+    // not, so revocation had no effect on them: a stolen or leaked token stayed
+    // valid for the full token lifetime regardless.
+    //
+    // Both sides are coalesced to 0. The column is DEFAULT 0 and migration 072
+    // backfills nulls, but a row created before it (or by a driver that returns
+    // NULL for an unset integer) would otherwise compare NULL !== 0 and log a
+    // legitimate user out.
+    const storedVersion = Number(user.token_version ?? user.tokenVersion ?? 0);
+    const tokenVersion = Number(decoded.tokenVersion ?? 0);
+    if (storedVersion !== tokenVersion) {
+      return res.status(401).json({ error: 'Session invalidated. Please login again.' });
+    }
+
     req.user = user;
     next();
   } catch (error) {
@@ -66,7 +87,7 @@ const optionalAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
+      const decoded = jwt.verify(token, getJwtSecret());
       const targetUserId = decoded.userId || decoded.id || decoded.sub;
       
       // Same reasoning as authenticate(): config/database already handles both
@@ -158,8 +179,8 @@ const requireRole = (...roles) => {
 
 // Generate tokens
 function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
-  const jwtSecret = (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026') || 'fallback_secret_key_change_in_prod';
-  const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret;
+  const jwtSecret = getJwtSecret();
+  const jwtRefreshSecret = getJwtRefreshSecret();
 
   const payload = {
     userId,
@@ -193,7 +214,7 @@ const verifyRole = (allowedRoles) => {
       }
 
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, (process.env.JWT_SECRET || 'fallback_localsampark_secret_key_2026'));
+      const decoded = jwt.verify(token, getJwtSecret());
 
       const userRole = decoded.role;
       if (!userRole) {

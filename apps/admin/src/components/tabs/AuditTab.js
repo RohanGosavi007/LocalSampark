@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -16,6 +18,7 @@ const StatusBadge = ({ status }) => {
 
 export default function AuditTab({ API_BASE, authHeaders }) {
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/admin/audit`, { headers: authHeaders() })
@@ -25,11 +28,14 @@ export default function AuditTab({ API_BASE, authHeaders }) {
   }, [API_BASE, authHeaders]);
 
   const loadLogs = async () => {
-    try { 
-      const r = await fetch(`${API_BASE}/admin/audit`, { headers: authHeaders() }); 
-      let data = await r.json(); 
+    setError(null);
+    try {
+      const data = await fetchJson(`${API_BASE}/admin/audit`, { headers: authHeaders() });
       setAdminAuditLogs(Array.isArray(data) ? data : []);
-    } catch(e){ console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e);
+    }
   };
 
   const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
@@ -37,6 +43,7 @@ export default function AuditTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3 style={{ fontSize: '1.1rem', margin: 0 }}>📋 Admin Audit Trail</h3>

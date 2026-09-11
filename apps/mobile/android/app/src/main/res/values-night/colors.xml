@@ -1,1 +1,20 @@
-<resources/>
+<resources>
+  <!--
+    Dark-theme overrides. This file existed but was empty (<resources/>), so a
+    device in dark mode resolved the light values from values/colors.xml: a
+    white splash flashed before a dark app, and AppTheme's
+    Theme.AppCompat.DayNight parent had no dark ground to pick up.
+
+    Only tokens that must change are redefined; the rest inherit from
+    values/colors.xml. Deliberately NOT overridden here:
+      - iconBackground, which backs the adaptive launcher icon
+        (mipmap-anydpi-v26/ic_launcher.xml). A launcher icon that changes with
+        the system theme is inconsistent branding and is icon-cached anyway.
+  -->
+  <color name="splashscreen_background">#0f172a</color>
+  <color name="statusBarBackground">#0f172a</color>
+  <!-- Lightened so it keeps contrast on a dark ground; the light-theme #023c69
+       is close to unreadable against #0f172a. -->
+  <color name="colorPrimary">#7cb4e0</color>
+  <color name="colorPrimaryDark">#0f172a</color>
+</resources>

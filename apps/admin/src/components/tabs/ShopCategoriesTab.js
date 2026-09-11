@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 export default function ShopCategoriesTab({ API_BASE, authHeaders }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchCategories();
@@ -10,14 +13,15 @@ export default function ShopCategoriesTab({ API_BASE, authHeaders }) {
 
   const fetchCategories = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/shop-categories`, {
+      const data = await fetchJson(`${API_BASE}/admin/shop-categories`, {
         headers: authHeaders()
       });
-      const data = await res.json();
       if (Array.isArray(data)) setCategories(data);
     } catch (error) {
       console.error('Failed to fetch shop categories:', error);
+      setError(error);
     }
     setLoading(false);
   };
@@ -27,6 +31,7 @@ export default function ShopCategoriesTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3 style={{ fontSize: '1.1rem', margin: 0 }}>🏪 Shop Categories Manager</h3>

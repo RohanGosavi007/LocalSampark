@@ -24,6 +24,28 @@ const RECOMMENDED_VARS = [
   'SMTP_PASS',
 ];
 
+/**
+ * Secrets whose absence does not stop the server but does silently disable a
+ * security control. Each one is reported individually in production, because
+ * "recommended variable not set" buried in a list of eleven is exactly how
+ * PAYMENT_WEBHOOK_SECRET stayed unset in a live deployment while
+ * payment.gateway.js quietly HMACed with a hardcoded 'mocksecret'.
+ *
+ * These are deliberately NOT in REQUIRED_PRODUCTION_VARS: exiting the process
+ * would take the whole super-app — community, society, jobs — offline because
+ * one gateway lacks a key. The affected routes already fail closed on their own
+ * (they return 503/400 rather than trusting an unverified payload), so a loud
+ * startup error is the right escalation, not a boot failure.
+ */
+const SECURITY_CRITICAL_PRODUCTION_VARS = {
+  PAYMENT_WEBHOOK_SECRET:
+    'Razorpay/Cashfree payment webhooks will be REJECTED (POST /payments/webhook/:provider returns 400).',
+  SAAS_WEBHOOK_SECRET:
+    'SaaS billing webhooks will be REJECTED (POST /saas/webhook/billing returns 503). Falls back to PAYMENT_WEBHOOK_SECRET.',
+  STRIPE_WEBHOOK_SECRET:
+    'Stripe webhooks will be REJECTED (POST /webhooks/stripe returns 401).',
+};
+
 function validateEnv() {
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -78,6 +100,19 @@ function validateEnv() {
     if (missingRecommended.length > 0) {
       console.warn('⚠️  Recommended environment variables not set (features may be limited):');
       missingRecommended.forEach(key => console.warn(`  - ${key}`));
+    }
+
+    // Security controls that are silently off when unset. Reported separately
+    // and per-variable so the consequence is visible, not just the name.
+    const missingSecurity = Object.keys(SECURITY_CRITICAL_PRODUCTION_VARS)
+      .filter(key => !process.env[key] || process.env[key].trim() === '');
+
+    if (missingSecurity.length > 0) {
+      console.error('🔓 SECURITY: webhook secrets missing in production. Affected endpoints fail closed:');
+      missingSecurity.forEach(key => {
+        console.error(`  - ${key}: ${SECURITY_CRITICAL_PRODUCTION_VARS[key]}`);
+      });
+      console.error('   Set them in the Render dashboard (they are declared sync:false in render.yaml).');
     }
 
     console.log('✅ Production environment variables sanity check passed.');

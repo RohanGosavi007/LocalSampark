@@ -6,49 +6,41 @@ import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../theme';
 import BouncyButton from '../../../src/components/BouncyButton';
 
-const MOCK_PRODUCTS = [
-  { 
-    id: 1, 
-    name: 'Amul Taaza Homogenised Milk', 
-    description: 'Fresh toned milk, homogenised for thickness',
-    price: 68, 
-    oldPrice: 72, 
-    inStock: true, 
-    image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=400&h=400',
-    variants: [
-      { id: 'v1', size: '1L', price: 68 },
-      { id: 'v2', size: '500ml', price: 34 }
-    ]
-  },
-  { 
-    id: 2, 
-    name: 'Ashirvaad Shudh Chakki Atta', 
-    description: '100% whole wheat chakki atta',
-    price: 240, 
-    oldPrice: 260, 
-    inStock: true, 
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400&h=400',
-    variants: [
-      { id: 'v3', size: '5kg', price: 240 },
-      { id: 'v4', size: '10kg', price: 470 }
-    ]
-  },
-  { 
-    id: 3, 
-    name: 'Farm Fresh Tomatoes', 
-    description: 'Freshly picked red tomatoes',
-    price: 45, 
-    oldPrice: 55, 
-    inStock: true, 
-    image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400&h=400',
-    variants: [
-      { id: 'v5', size: '1kg', price: 45 },
-      { id: 'v6', size: '500g', price: 25 }
-    ]
-  },
-];
+// MOCK_PRODUCTS lived here: "Amul Taaza Homogenised Milk ₹68 (was ₹72)",
+// "Ashirvaad Shudh Chakki Atta ₹240", "Farm Fresh Tomatoes" — named third-party
+// goods at specific prices with variant sizes and struck-through "old" prices,
+// shown as the catalogue of whichever shop the customer had opened. The router
+// above now fetches the shop's real products and passes them in.
 
-export default function RetailVisitorView({ shop }) {
+
+/**
+ * shop_products rows do not have the shape the mock did. The mock supplied
+ * `image`, `inStock`, `oldPrice` and a `variants` array; a real row carries
+ * `image_url`, `is_available` / `inventory_count`, `mrp`, and no variants at
+ * all. Reading the mock's field names off a real row silently produced a
+ * broken image, an always-in-stock badge and `₹undefined` struck through.
+ */
+function normalise(p) {
+  const price = Number(p.price) || 0;
+  const mrp = Number(p.mrp) || 0;
+  const tracked = Number(p.track_inventory) === 1;
+  return {
+    id: String(p.id),
+    name: p.name || '',
+    description: p.description || '',
+    image: p.image_url || p.image || null,
+    price,
+    // Only shown when the shop actually recorded a higher MRP. The mock printed
+    // a struck-through "old price" on every tile whether or not one existed.
+    oldPrice: mrp > price ? mrp : null,
+    inStock: (p.is_available === undefined || !!Number(p.is_available)) &&
+             (!tracked || Number(p.inventory_count ?? 0) > 0),
+    variants: Array.isArray(p.variants) ? p.variants : [],
+  };
+}
+
+export default function RetailVisitorView({ shop, products = [] }) {
+  const items = useMemo(() => products.map(normalise), [products]);
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   
@@ -60,6 +52,13 @@ export default function RetailVisitorView({ shop }) {
   };
 
   const openVariantSheet = useCallback((product) => {
+    // Real catalogue rows carry no variants. Opening a "Select Variant" sheet
+    // with nothing in it — which is what the mock's shape guaranteed once the
+    // data was real — is worse than adding the product directly.
+    if (!product.variants || product.variants.length === 0) {
+      setCart((prev) => [...prev, { ...product }]);
+      return;
+    }
     setSelectedProduct(product);
     bottomSheetRef.current?.expand();
   }, []);
@@ -83,20 +82,39 @@ export default function RetailVisitorView({ shop }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <VisitorLayout 
-        shopName={shop.name || 'Sharma Grocery'} 
-        shopAddress="Block A, Dhanori Market, Pune"
+      <VisitorLayout shop={shop} 
+        /* The fallbacks here were a made-up business: "Sharma Grocery" at
+            "Block A, Dhanori Market, Pune". A shop with no name or address on
+            record should show neither. */
+        shopName={shop.name || 'Shop'} 
+        shopAddress={shop.address || ''}
         shopIcon="🏪"
         cartCount={cart.length}
         onCheckout={handleCheckout}
       >
         <View style={{ padding: SPACING.md }}>
-          <Text style={styles.sectionTitle}>Bestsellers</Text>
+          {/* "Bestsellers" asserted a ranking nothing computes. */}
+          <Text style={styles.sectionTitle}>Products</Text>
+
+          {items.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>No products listed yet</Text>
+              <Text style={styles.emptyBody}>
+                This shop has not added anything to its catalogue.
+              </Text>
+            </View>
+          ) : (
           <View style={styles.gridContainer}>
-            {MOCK_PRODUCTS.map(prod => (
+            {items.map(prod => (
               <View key={prod.id} style={styles.productCard}>
                 <View style={styles.imageContainer}>
-                  <Image source={{ uri: prod.image }} style={styles.productImage} />
+                  {prod.image ? (
+                    <Image source={{ uri: prod.image }} style={styles.productImage} />
+                  ) : (
+                    <View style={[styles.productImage, styles.imagePlaceholder]}>
+                      <Text style={styles.imagePlaceholderText}>📦</Text>
+                    </View>
+                  )}
                   {!prod.inStock && (
                     <View style={styles.outOfStockOverlay}>
                       <Text style={styles.outOfStockText}>SOLD OUT</Text>
@@ -115,12 +133,15 @@ export default function RetailVisitorView({ shop }) {
                   <Text style={styles.prodDesc} numberOfLines={1}>{prod.description}</Text>
                   <View style={styles.priceRow}>
                     <Text style={styles.prodPrice}>₹{prod.price}</Text>
-                    <Text style={styles.prodOldPrice}>₹{prod.oldPrice}</Text>
+                    {prod.oldPrice ? (
+                      <Text style={styles.prodOldPrice}>₹{prod.oldPrice}</Text>
+                    ) : null}
                   </View>
                 </View>
               </View>
             ))}
           </View>
+          )}
         </View>
       </VisitorLayout>
 
@@ -138,7 +159,7 @@ export default function RetailVisitorView({ shop }) {
             <Text style={styles.sheetTitle}>Select Variant</Text>
             <Text style={styles.sheetSubTitle}>{selectedProduct.name}</Text>
             
-            {selectedProduct.variants.map((v) => (
+            {(selectedProduct.variants || []).map((v) => (
               <TouchableOpacity key={v.id} style={styles.variantRow} onPress={() => handleAddVariant(v)}>
                 <View>
                   <Text style={styles.variantSize}>{v.size}</Text>
@@ -174,6 +195,11 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center' },
   prodPrice: { fontSize: TYPOGRAPHY.sizes.subtext, fontWeight: '900', color: COLORS.text, marginRight: 6 },
   prodOldPrice: { fontSize: 11, color: COLORS.textMuted, textDecorationLine: 'line-through' },
+  imagePlaceholder: { backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
+  imagePlaceholderText: { fontSize: 32 },
+  emptyBox: { backgroundColor: COLORS.card, borderRadius: BORDER_RADIUS.md, padding: SPACING.lg, alignItems: 'center', ...SHADOWS.sm },
+  emptyTitle: { fontSize: TYPOGRAPHY.sizes.body, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  emptyBody: { fontSize: TYPOGRAPHY.sizes.caption, color: COLORS.textMuted, textAlign: 'center' },
   
   // Sheet Styles
   sheetBackground: { backgroundColor: COLORS.card, borderRadius: BORDER_RADIUS.lg },

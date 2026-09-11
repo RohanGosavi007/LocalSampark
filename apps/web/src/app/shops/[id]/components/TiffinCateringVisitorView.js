@@ -11,8 +11,45 @@ import {
 // What visitors see: plans, daily menu, subscribe, review delivery modes
 // ═══════════════════════════════════════════════════════════════════════
 
+// Shown only when a vendor has published no plans of their own. The prices are
+// deliberately absent here — a placeholder must not quote a number the kitchen
+// never set.
+const PLAN_PRESENTATION = [
+  { icon: '🍛', per: '/meal', color: '#22c55e' },
+  { icon: '📅', per: '/week', color: '#3b82f6' },
+  { icon: '📦', per: '/month', color: '#f97316' },
+];
+const FALLBACK_PLANS = [
+  { name: 'Daily', price: null, per: '/meal', icon: '🍛', desc: 'Pay as you go', color: '#22c55e', savings: null },
+  { name: 'Weekly', price: null, per: '/week', icon: '📅', desc: '7 meals', color: '#3b82f6', savings: null },
+  { name: 'Monthly', price: null, per: '/month', icon: '📦', desc: '30 meals', color: '#f97316', savings: null },
+];
+
 export default function EnhancedTiffinVisitorView({ shop, products = [], onSubscribe }) {
   const [selectedPlan, setSelectedPlan] = useState(null);
+
+  // `products` was destructured and never referenced: the vendor's real meal
+  // plans and prices were fetched, passed down and discarded, while every
+  // tiffin shop on the platform advertised the same hardcoded ₹80/meal,
+  // ₹520/week and ₹2000/month — with "Save ₹40" and "Save ₹400" claims that
+  // were equally invented. A customer could subscribe expecting a price the
+  // kitchen had never quoted.
+  const plans = products.length
+    ? products.map((p, i) => {
+        const presentation = PLAN_PRESENTATION[i % PLAN_PRESENTATION.length];
+        return {
+          name: p.name || `Plan ${i + 1}`,
+          price: p.price ?? (p.pricePaise != null ? p.pricePaise / 100 : null),
+          per: p.unit ? `/${p.unit}` : presentation.per,
+          icon: presentation.icon,
+          desc: p.description || '',
+          color: presentation.color,
+          // Only a real, vendor-supplied saving is ever shown.
+          savings: p.savings || null,
+          popular: Boolean(p.isPopular),
+        };
+      })
+    : FALLBACK_PLANS;
   const [selectedDiet, setSelectedDiet] = useState('all');
   const [deliveryMode, setDeliveryMode] = useState('delivery');
 
@@ -86,11 +123,7 @@ export default function EnhancedTiffinVisitorView({ shop, products = [], onSubsc
 
         {/* Plan Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { name: 'Daily', price: 80, per: '/meal', icon: '🍛', desc: 'Pay as you go', color: '#22c55e', savings: null },
-            { name: 'Weekly', price: 520, per: '/week', icon: '📅', desc: '7 meals • Save ₹40', color: '#3b82f6', savings: '₹40 saved', popular: true },
-            { name: 'Monthly', price: 2000, per: '/month', icon: '📦', desc: '30 meals • Save ₹400', color: '#f97316', savings: '₹400 saved' },
-          ].map((plan, i) => (
+          {plans.map((plan, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -110,8 +143,16 @@ export default function EnhancedTiffinVisitorView({ shop, products = [], onSubsc
               <span className="text-3xl">{plan.icon}</span>
               <h3 className="text-lg font-bold text-text mt-2">{plan.name}</h3>
               <div className="mt-2">
-                <span className="text-3xl font-black" style={{ color: plan.color }}>₹{plan.price}</span>
-                <span className="text-text-muted text-sm">{plan.per}</span>
+                {/* A plan the vendor has not priced shows "Ask for price"
+                    rather than a number this component invented. */}
+                {plan.price != null ? (
+                  <>
+                    <span className="text-3xl font-black" style={{ color: plan.color }}>₹{plan.price}</span>
+                    <span className="text-text-muted text-sm">{plan.per}</span>
+                  </>
+                ) : (
+                  <span className="text-lg font-bold text-text-muted">Ask for price</span>
+                )}
               </div>
               <p className="text-xs text-text-muted mt-1">{plan.desc}</p>
               {plan.savings && (
@@ -167,7 +208,12 @@ export default function EnhancedTiffinVisitorView({ shop, products = [], onSubsc
           >
             <div className="flex-1">
               <p className="font-bold">{selectedPlan.name} Plan</p>
-              <p className="text-orange-200 text-sm">₹{selectedPlan.price}{selectedPlan.per} • {deliveryMode === 'delivery' ? '🚴 Delivery' : deliveryMode === 'pickup' ? '🏠 Pickup' : '🍽️ Dine-in'}</p>
+              {/* Guarded for the same reason as the plan card: an unpriced plan
+                  would otherwise render the literal "₹undefined" here. */}
+              <p className="text-orange-200 text-sm">
+                {selectedPlan.price != null ? `₹${selectedPlan.price}${selectedPlan.per} • ` : ''}
+                {deliveryMode === 'delivery' ? '🚴 Delivery' : deliveryMode === 'pickup' ? '🏠 Pickup' : '🍽️ Dine-in'}
+              </p>
             </div>
             <button
               onClick={() => onSubscribe?.({ plan: selectedPlan, deliveryMode })}

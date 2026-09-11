@@ -1,5 +1,5 @@
 const { Worker } = require('bullmq');
-const { query } = require('../config/database');
+const { query, withTransaction } = require('../config/database');
 const logger = require('../config/logger');
 
 // Execute maintenance logic (extracted for reuse across BullMQ and In-Memory fallback)
@@ -24,32 +24,61 @@ async function runHourlyMaintenance() {
     const rows = activeSubs.rows || activeSubs || [];
     for (const sub of rows) {
       try {
-        await query(
-          `UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`,
-          [sub.price, sub.user_id]
-        );
-        await query(
-          `INSERT INTO wallet_transactions (wallet_id, amount, type, purpose, status)
-           VALUES ((SELECT id FROM wallets WHERE user_id = $1), $2, 'debit', 'order_payment', 'completed')`,
-          [sub.user_id, sub.price]
-        );
-        await query(
-          `INSERT INTO orders (user_id, shop_id, total_amount, delivery_fee, payment_method, payment_status, order_status, delivery_address, delivery_coordinate)
-           VALUES ($1, $2, $3, 20.00, 'wallet', 'paid', 'confirmed', $4, $5)`,
-          [sub.user_id, sub.shop_id, sub.price, sub.delivery_address, sub.delivery_coordinate]
-        );
-        const currentNext = new Date(sub.next_delivery_date);
-        currentNext.setDate(currentNext.getDate() + 1);
-        const nextDateStr = currentNext.toISOString().split('T')[0];
+        // Each subscription is settled in a single transaction.
+        //
+        // Previously these four statements ran as bare, unwrapped queries:
+        // the wallet was debited first, and if the orders INSERT then threw
+        // (a missing shop_id, a NOT NULL violation on delivery_address) the
+        // debit stood while no order existed — the customer paid for
+        // nothing, and the next hourly run charged them again because
+        // next_delivery_date had not advanced either.
+        //
+        // The debit was also unguarded: `balance = balance - price` with no
+        // predicate, against a wallets.balance column that carries no CHECK
+        // constraint. Any active subscription drove the balance negative
+        // forever, silently extending unlimited credit.
+        await withTransaction(async (client) => {
+          const debit = await client.query(
+            `UPDATE wallets SET balance = balance - $1
+              WHERE user_id = $2 AND balance >= $1`,
+            [sub.price, sub.user_id]
+          );
 
-        await query(
-          `UPDATE user_subscriptions 
-           SET next_delivery_date = $2,
-               total_deliveries = total_deliveries + 1
-           WHERE id = $1`,
-          [sub.id, nextDateStr]
-        );
-        logger.info(`📦 Auto-delivery order created for subscription ${sub.id}`);
+          // Zero rows means the balance did not cover the charge. Skip the
+          // delivery and leave next_delivery_date where it is so the run
+          // retries once the wallet is topped up.
+          if (!debit.rowCount) {
+            logger.warn(
+              `💸 Subscription ${sub.id} skipped: wallet for user ${sub.user_id} ` +
+              `has insufficient balance for ₹${sub.price}.`
+            );
+            return;
+          }
+
+          await client.query(
+            `INSERT INTO wallet_transactions (wallet_id, amount, type, purpose, status)
+             VALUES ((SELECT id FROM wallets WHERE user_id = $1), $2, 'debit', 'order_payment', 'completed')`,
+            [sub.user_id, sub.price]
+          );
+          await client.query(
+            `INSERT INTO orders (user_id, shop_id, total_amount, delivery_fee, payment_method, payment_status, order_status, delivery_address, delivery_coordinate)
+             VALUES ($1, $2, $3, 20.00, 'wallet', 'paid', 'confirmed', $4, $5)`,
+            [sub.user_id, sub.shop_id, sub.price, sub.delivery_address, sub.delivery_coordinate]
+          );
+
+          const currentNext = new Date(sub.next_delivery_date);
+          currentNext.setDate(currentNext.getDate() + 1);
+          const nextDateStr = currentNext.toISOString().split('T')[0];
+
+          await client.query(
+            `UPDATE user_subscriptions
+             SET next_delivery_date = $2,
+                 total_deliveries = total_deliveries + 1
+             WHERE id = $1`,
+            [sub.id, nextDateStr]
+          );
+          logger.info(`📦 Auto-delivery order created for subscription ${sub.id}`);
+        });
       } catch (subErr) {
         logger.error(`❌ Failed processing subscription ${sub.id}: ` + subErr.message);
       }

@@ -74,14 +74,28 @@ router.post('/', optionalAuth, async (req, res, next) => {
 
     // SQLite fallback — Prisma targets the remote PostgreSQL database
     if (useSqlite) {
-      // Stock check against local shop_products
+      // Stock check against local shop_products.
+      //
+      // This selected `stock_qty`, a column that exists in no migration and no
+      // schema, so SQLite raised "no such column" and every add-to-cart on the
+      // SQLite path returned 500 before an item could ever be added. The real
+      // stock columns are `inventory_count` gated by `track_inventory`, which is
+      // exactly what checkout.service.js checks and decrements — so the cart
+      // guard now agrees with the guard that actually blocks the order.
       if (quantity > 0) {
         const product = await queryOne(
-          'SELECT stock_qty FROM shop_products WHERE id = $1',
+          'SELECT inventory_count, track_inventory FROM shop_products WHERE id = $1',
           [productId]
         );
-        if (product && product.stock_qty !== null && product.stock_qty < quantity) {
-          return res.status(400).json({ error: 'Insufficient inventory', available: product.stock_qty });
+        if (
+          product &&
+          Number(product.track_inventory) === 1 &&
+          Number(product.inventory_count ?? 0) < quantity
+        ) {
+          return res.status(400).json({
+            error: 'Insufficient inventory',
+            available: Number(product.inventory_count ?? 0),
+          });
         }
       }
 

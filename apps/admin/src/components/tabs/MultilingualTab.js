@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
 
 export default function MultilingualTab({ API_BASE, authHeaders }) {
   const [languages, setLanguages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchTranslations = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const res = await fetch(`${API_BASE}/multilingual/dictionary/hi`, { headers: authHeaders() });
-        if (res.ok) {
-          const body = await res.json();
-          setLanguages(Object.entries(body.dictionary || {}));
-        }
+        // Was `if (res.ok) { ... }` with no else, so a failed load silently
+        // rendered an empty dictionary.
+        const body = await fetchJson(`${API_BASE}/multilingual/dictionary/hi`, { headers: authHeaders() });
+        setLanguages(Object.entries(body.dictionary || {}));
       } catch (e) {
         console.error('Failed to fetch dictionary:', e);
+        setError(e);
       } finally {
         setLoading(false);
       }
@@ -26,6 +30,7 @@ export default function MultilingualTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div>
         <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>🌐 Regional Languages (i18n)</h2>
         <p style={{ color: '#94a3b8', margin: 0 }}>Manage translations and regional language support for the platform.</p>

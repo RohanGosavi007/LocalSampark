@@ -3,11 +3,26 @@
  * Territory Interceptor Middleware
  * ═══════════════════════════════════════════════════════════════════════
  * 
- * Physically prevents cross-territory data leakage by injecting
- * territory_id filtering into all shop/product queries.
- * 
- * Applied BEFORE shop and product route handlers.
- * SuperAdmin bypasses this restriction.
+ * ⚠️ THIS MIDDLEWARE DOES NOT FILTER ANY QUERIES.
+ *
+ * The previous header claimed it "physically prevents cross-territory data
+ * leakage by injecting territory_id filtering into all shop/product queries".
+ * It does not, and never did. All it does is resolve a territory id from the
+ * query string or x-territory-id header onto req, and 400 when one is required
+ * and absent. Actually scoping a query is left to each route handler.
+ *
+ * That claim mattered: it is the reason isolation was believed to be handled.
+ * As of the pre-launch audit this middleware was mounted in zero places and
+ * req.territoryFilter was read in zero places, so it contributed no isolation
+ * whatsoever.
+ *
+ * Do NOT "fix" this by mounting it globally. It would reject every non-admin
+ * request that lacks a territory header while still filtering nothing. Real
+ * isolation means each route that returns tenant-owned rows filtering on
+ * req.territoryScope with a bound parameter. Run
+ * `node scripts/audit-tenant-isolation.js` to list the routes that still don't.
+ *
+ * SuperAdmin bypasses the territory requirement.
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -61,12 +76,19 @@ const territoryInterceptor = (options = {}) => {
       ? { column: 'territory_id', value: req.territoryId }
       : null;
 
-    // SQL fragment helpers for route handlers
-    req.territorySqlWhere = req.territoryId
-      ? ` AND territory_id = '${req.territoryId}'`
-      : '';
-    
-    req.territorySqlParam = req.territoryId || null;
+    // req.territorySqlWhere used to be built here by interpolating
+    // req.territoryId straight into a SQL fragment:
+    //
+    //     ` AND territory_id = '${req.territoryId}'`
+    //
+    // That value comes from req.query.territory_id or the x-territory-id
+    // header — attacker-controlled — so any handler concatenating it would
+    // have had a SQL injection. It was never consumed anywhere, so removing it
+    // breaks nothing and closes the hole before someone reaches for it.
+    // Scope queries with the parameterised value instead:
+    //
+    //     query('SELECT ... WHERE territory_id = $1', [req.territoryScope])
+    req.territoryScope = req.territoryId || null;
 
     next();
   };

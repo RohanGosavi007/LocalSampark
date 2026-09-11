@@ -14,7 +14,10 @@ import { API_URL } from '@/lib/api';
  * For: Tractor/Ag-Machinery, Borewell, Construction Equipment, Party/Tent, Vehicle Rentals, Scaffolding
  * Features: Duration rate calculator, availability calendar, security deposit breakdown
  */
-export default function RentalVisitorView({ shop, products = [] }) {
+// This view does not take a products prop: rental stock is fleet assets, which
+// it loads itself from /fleet-assets/:shopId below. Declaring products here
+// implied the shop catalogue drove this screen when it never did.
+export default function RentalVisitorView({ shop }) {
   const [assets, setAssets] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [durationType, setDurationType] = useState('daily');

@@ -4,7 +4,7 @@ import VisitorLayout from './components/VisitorLayout';
 
 export default function GarageVisitorView({ shop }) {
   return (
-    <VisitorLayout shopName={shop.name || 'Speedy Garage'} shopAddress="Pune City" shopIcon="🔧" cartCount={0}>
+    <VisitorLayout shop={shop} shopName={shop.name || 'Garage'} shopAddress={shop.address || ''} shopIcon="🔧" cartCount={0}>
       <View style={{ padding: 16 }}>
         <Text style={styles.title}>Our Services</Text>
         <TouchableOpacity style={styles.card}>

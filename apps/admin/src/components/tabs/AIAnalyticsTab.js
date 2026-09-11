@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155', flex: 1 };
 const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
@@ -6,12 +8,13 @@ const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'n
 export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchAnalytics = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/analytics/overview`, { headers: authHeaders() });
-      const resData = await res.json();
+      const resData = await fetchJson(`${API_BASE}/admin/analytics/overview`, { headers: authHeaders() });
       setData(resData.analytics || null);
     } catch (e) {
       console.error('Failed to fetch analytics:', e);
@@ -21,7 +24,9 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
         service_bookings: 38,
         active_leads: 14,
         top_categories: [
-          { category: 'Grocery & Staples', revenue: 45000, growth: '+18%' },
+          { category: 'Grocery & Staples', revenue: 45000, growth: '+18%'
+      setError(e);
+    },
           { category: 'Home Services & Plumbing', revenue: 22000, growth: '+24%' },
           { category: 'Local Events', revenue: 12500, growth: '+12%' }
         ]
@@ -49,6 +54,7 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: '#f8fafc' }}>🤖 Territory AI Performance & Intelligence</h3>

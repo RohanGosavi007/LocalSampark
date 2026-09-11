@@ -18,7 +18,7 @@ class DarkStoreSyncService {
     // 2. Update Database asynchronously
     try {
       await query(
-        'UPDATE shop_products SET stock_qty = $1, updated_at = NOW() WHERE shop_id = $2 AND id = $3',
+        'UPDATE shop_products SET stock_quantity = $1, updated_at = NOW() WHERE shop_id = $2 AND id = $3',
         [newStockQty, storeId, productId]
       );
     } catch (err) {

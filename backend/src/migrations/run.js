@@ -2,6 +2,50 @@ const fs = require('fs');
 const path = require('path');
 const { pool, connectDB } = require('../config/database');
 
+/**
+ * Split a migration file into statements.
+ *
+ * The previous implementation was `sql.split(/;\s*[\r\n]+/)`, which tears a
+ * CREATE TRIGGER apart: its body is a BEGIN ... END block containing its own
+ * semicolons, so each inner statement was executed as though it were top level
+ * and the trigger was never created. The database contained zero triggers as a
+ * result — every migration that tried to define one reported success and
+ * silently did nothing.
+ *
+ * A BEGIN ... END block is therefore treated as opaque, and only the `END;`
+ * that closes it terminates the statement. Everything else splits on `;` at end
+ * of line exactly as before.
+ */
+function splitSqlStatements(sql) {
+  const statements = [];
+  let current = '';
+  let blockDepth = 0;
+
+  for (const rawLine of sql.split(/\r?\n/)) {
+    const line = rawLine;
+    const bare = line.trim();
+
+    // Ignore comment-only lines when tracking block structure, so the word
+    // BEGIN inside an explanatory comment does not open a phantom block.
+    const code = bare.startsWith('--') ? '' : bare;
+
+    current += (current ? '\n' : '') + line;
+
+    if (/\bBEGIN\b/i.test(code) && !/\bEND\b/i.test(code)) blockDepth++;
+    if (/\bEND\s*;?\s*$/i.test(code) && blockDepth > 0) blockDepth--;
+
+    if (blockDepth === 0 && /;\s*$/.test(code)) {
+      const trimmed = current.trim().replace(/;$/, '');
+      if (trimmed) statements.push(trimmed);
+      current = '';
+    }
+  }
+
+  const tail = current.trim().replace(/;$/, '');
+  if (tail) statements.push(tail);
+  return statements;
+}
+
 async function runMigration() {
   try {
     await connectDB();
@@ -26,7 +70,7 @@ async function runMigration() {
         console.log(`Running migration: ${file}...`);
         const sql = fs.readFileSync(path.join(__dirname, file), 'utf8');
         try {
-          const statements = sql.split(/;\s*[\r\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+          const statements = splitSqlStatements(sql);
           for (let statement of statements) {
             try {
               await new Promise((resolve, reject) => {
@@ -37,7 +81,11 @@ async function runMigration() {
               });
             } catch (err) {
               if (!err.message.includes('duplicate column') && !err.message.includes('already exists')) {
-                console.log(`⚠️ Statement warning:`, err.message);
+                // Include the statement itself. Reporting only the message made
+                // failures genuinely hard to trace: "no such column: user_id"
+                // gives no clue which of several hundred statements produced it.
+                const snippet = statement.trim().replace(/\s+/g, ' ').slice(0, 140);
+                console.log(`⚠️ Statement warning: ${err.message}\n    in: ${snippet}`);
               }
             }
           }

@@ -22,7 +22,7 @@ async function getDriverRating(driverId) {
 }
 
 async function enrichRide(ride) {
-  const driver = await queryOne('SELECT id, full_name, phone_number, profile_photo FROM users WHERE id = $1', [ride.driver_id]);
+  const driver = await queryOne('SELECT id, full_name, phone_number, avatar_url FROM users WHERE id = $1', [ride.driver_id]);
   const vehicle = ride.vehicle_id ? await queryOne('SELECT * FROM carpool_vehicles WHERE id = $1', [ride.vehicle_id]) : null;
   const waypoints = await queryMany('SELECT * FROM carpool_ride_waypoints WHERE ride_id = $1 ORDER BY stop_order', [ride.id]);
   const rating = await getDriverRating(ride.driver_id);
@@ -30,7 +30,7 @@ async function enrichRide(ride) {
   const bookedSeats = bookings.reduce((s, b) => s + (b.seats_booked || 1), 0);
   return {
     ...ride,
-    driver: driver ? { id: driver.id, full_name: driver.full_name, profile_photo: driver.profile_photo } : null,
+    driver: driver ? { id: driver.id, full_name: driver.full_name, avatar_url: driver.avatar_url } : null,
     vehicle,
     waypoints,
     driver_rating: rating,
@@ -214,7 +214,7 @@ router.post('/rides/:id/bid', authenticate, async (req, res, next) => {
 // GET /rides/:id/bids — List all bids for a ride
 router.get('/rides/:id/bids', authenticate, async (req, res, next) => {
   try {
-    const bids = await queryMany(`SELECT b.*, u.full_name as bidder_name, u.profile_photo FROM carpool_bids b
+    const bids = await queryMany(`SELECT b.*, u.full_name as bidder_name, u.avatar_url FROM carpool_bids b
       LEFT JOIN users u ON b.bidder_id = u.id WHERE b.ride_id = $1 ORDER BY b.created_at DESC`, [req.params.id]);
     res.json({ success: true, bids });
   } catch (err) { next(err); }

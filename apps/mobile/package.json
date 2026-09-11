@@ -13,7 +13,9 @@
     "test:e2e:test": "detox test -c android.emu.debug",
     "postinstall": "node scripts/postinstall.js && patch-package",
     "bundle:android": "npx expo export:embed --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/",
-    "build:android:release": "npm run bundle:android && cd android && gradlew assembleRelease"
+    "build:android:release": "npm run bundle:android && cd android && gradlew assembleRelease",
+    "symbolicate": "node scripts/symbolicate.js",
+    "test": "jest --config jest.config.js"
   },
   "dependencies": {
     "@expo/config-plugins": "^57.0.7",
@@ -22,6 +24,7 @@
     "@nozbe/with-observables": "^1.6.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.4.1",
+    "@sentry/react-native": "~7.2.0",
     "@shopify/flash-list": "2.0.2",
     "@stripe/stripe-react-native": "0.50.3",
     "@supabase/supabase-js": "^2.110.7",
@@ -51,6 +54,7 @@
     "i18n-js": "^4.5.3",
     "lucide-react-native": "^1.23.0",
     "phosphor-react-native": "^3.0.6",
+    "promise": "^8.3.0",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-callkeep": "^4.3.16",

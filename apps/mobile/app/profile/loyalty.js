@@ -1,27 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Award, Star, Clock, ChevronRight, Gift } from 'lucide-react-native';
+import { apiGet } from '../../src/lib/api';
+
+/**
+ * Coin tiers. The screen used to hardcode "Community Champion" progressing to
+ * "Local Legend" with "250 pts left" and a progress bar pinned at 80% — three
+ * numbers that had no relationship to each other or to the user. The thresholds
+ * live here so the tier, the next tier, the gap and the bar are all derived from
+ * the one balance the server reports.
+ */
+const TIERS = [
+  { name: 'Neighbour', min: 0 },
+  { name: 'Regular', min: 500 },
+  { name: 'Community Champion', min: 1500 },
+  { name: 'Local Legend', min: 5000 },
+];
+
+function tierFor(points) {
+  let current = TIERS[0];
+  for (const t of TIERS) if (points >= t.min) current = t;
+  const next = TIERS[TIERS.indexOf(current) + 1] || null;
+  const span = next ? next.min - current.min : 0;
+  return {
+    tier: current.name,
+    nextTier: next ? next.name : null,
+    pointsToNext: next ? next.min - points : 0,
+    progress: next && span > 0 ? Math.min(100, Math.round(((points - current.min) / span) * 100)) : 100,
+  };
+}
 
 export default function MobileLoyaltyDashboard() {
   const [loading, setLoading] = useState(true);
   const [loyaltyData, setLoyaltyData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulated fetch
-    setTimeout(() => {
-      setLoyaltyData({
-        points: 1250,
-        tier: 'Community Champion',
-        nextTier: 'Local Legend',
-        pointsToNext: 250,
-        spinsAvailable: 2,
-        recentEarned: [
-          { id: '1', reason: 'Order from Sharma Grocery', points: '+50', date: 'July 5, 2026' },
-          { id: '2', reason: 'Referral Bonus', points: '+500', date: 'July 1, 2026' }
-        ]
-      });
-      setLoading(false);
-    }, 800);
+    // A setTimeout used to hand back 1,250 points, a tier, two spins and an
+    // earning history containing "Order from Sharma Grocery +50" — a reward
+    // balance and a transaction log for purchases the user never made.
+    // /loyalty/balance has existed the whole time.
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiGet('/loyalty/balance');
+        const d = res?.data ?? res;
+        const points = Number(d?.totalCoins) || 0;
+        setLoyaltyData({
+          points,
+          ...tierFor(points),
+          recentEarned: (d?.recentTransactions ?? []).map((t) => ({
+            id: String(t.id),
+            reason: t.source || t.type,
+            points: `${t.type === 'burned' ? '-' : '+'}${Number(t.amount) || 0}`,
+            date: t.date ? new Date(t.date).toLocaleDateString(undefined, {
+              day: 'numeric', month: 'long', year: 'numeric',
+            }) : '',
+          })),
+        });
+      } catch (err) {
+        setLoyaltyData(null);
+        setError(err?.message || 'Could not load your rewards.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   if (loading) {
@@ -29,6 +74,17 @@ export default function MobileLoyaltyDashboard() {
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#4f46e5" />
       </View>
+    );
+  }
+
+  if (!loyaltyData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Rewards unavailable</Text>
+          <Text style={styles.errorBody}>{error}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -54,15 +110,18 @@ export default function MobileLoyaltyDashboard() {
             </View>
             
             {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-              <View style={styles.progressTextRow}>
-                <Text style={styles.progressSubText}>Next: {loyaltyData.nextTier}</Text>
-                <Text style={styles.progressSubText}>{loyaltyData.pointsToNext} pts left</Text>
+            {loyaltyData.nextTier ? (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressTextRow}>
+                  <Text style={styles.progressSubText}>Next: {loyaltyData.nextTier}</Text>
+                  <Text style={styles.progressSubText}>{loyaltyData.pointsToNext} pts left</Text>
+                </View>
+                <View style={styles.progressBarBg}>
+                  {/* The fill was hardcoded to 80% regardless of the balance. */}
+                  <View style={[styles.progressBarFill, { width: `${loyaltyData.progress}%` }]} />
+                </View>
               </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: '80%' }]} />
-              </View>
-            </View>
+            ) : null}
           </View>
         </View>
 
@@ -71,7 +130,10 @@ export default function MobileLoyaltyDashboard() {
           <View style={styles.spinIconWrap}><Gift size={24} color="#ea580c" /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.spinTitle}>Spin the Wheel!</Text>
-            <Text style={styles.spinDesc}>You have {loyaltyData.spinsAvailable} spins available. Win cashback!</Text>
+            {/* "You have 2 spins available" was invented; nothing counted
+                spins. The wheel allows one a day, which is a statement the
+                server can actually keep. */}
+            <Text style={styles.spinDesc}>One free spin every day. Win cashback!</Text>
           </View>
           <ChevronRight size={20} color="#ea580c" />
         </TouchableOpacity>
@@ -80,7 +142,11 @@ export default function MobileLoyaltyDashboard() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <View style={styles.historyCard}>
-            {loyaltyData.recentEarned.map((item, index) => (
+            {loyaltyData.recentEarned.length === 0 ? (
+              <View style={styles.historyItem}>
+                <Text style={styles.historyDate}>No activity yet. Points you earn will appear here.</Text>
+              </View>
+            ) : loyaltyData.recentEarned.map((item, index) => (
               <View key={item.id} style={[styles.historyItem, index !== loyaltyData.recentEarned.length -1 && styles.borderBottom]}>
                 <View style={styles.historyIconWrap}><Clock size={16} color="#6b7280" /></View>
                 <View style={{ flex: 1 }}>
@@ -100,7 +166,9 @@ export default function MobileLoyaltyDashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  errorTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },
+  errorBody: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
   header: { padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   title: { fontSize: 24, fontWeight: '900', color: '#111827', marginBottom: 16 },
   

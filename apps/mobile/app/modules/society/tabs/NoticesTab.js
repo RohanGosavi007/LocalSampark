@@ -1,12 +1,44 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { apiGet } from '../../../../src/lib/api';
 
+/**
+ * Three notices were hardcoded here — a water-supply interruption on the 18th,
+ * new gym equipment, and an AGM described as "mandatory for all flat owners".
+ * Every resident of every society saw the same three, and a resident could
+ * reasonably have stored water for a cut that was not happening or set aside a
+ * Sunday for a meeting nobody had called.
+ */
 export default function NoticesTab({ role }) {
-  const [notices] = useState([
-    { id: 1, title: 'Water Supply Interruption', date: '15 Jun 2026', content: 'Due to municipal maintenance, water supply will be affected on 18 Jun from 10 AM to 4 PM. Please store sufficient water.', priority: 'High' },
-    { id: 2, title: 'New Gym Equipment', date: '12 Jun 2026', content: 'We have installed 2 new treadmills in the clubhouse gym. The gym timings remain unchanged (6 AM to 10 PM).', priority: 'Normal' },
-    { id: 3, title: 'Annual General Meeting', date: '10 Jun 2026', content: 'The AGM is scheduled for the last Sunday of this month at the Amphitheater. Attendance is mandatory for all flat owners.', priority: 'High' }
-  ]);
+  const [notices, setNotices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiGet('/society/notices');
+        const rows = res?.notices ?? res?.data ?? (Array.isArray(res) ? res : []);
+        setNotices(
+          rows.map((n) => ({
+            id: String(n.id),
+            title: n.title || 'Notice',
+            date: n.created_at
+              ? new Date(n.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+              : '',
+            content: n.content || n.body || '',
+            priority: n.priority || 'Normal',
+          }))
+        );
+      } catch (err) {
+        setNotices([]);
+        setError(err?.message || 'Could not load notices.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
@@ -26,7 +58,18 @@ export default function NoticesTab({ role }) {
           <Text style={{fontSize: 24}}>📋</Text>
         </View>
         
-        {notices.map(notice => (
+        {loading ? (
+          <View style={styles.stateBox}><ActivityIndicator color="#3b82f6" /></View>
+        ) : notices.length === 0 ? (
+          <View style={styles.stateBox}>
+            <Text style={styles.stateTitle}>
+              {error ? 'Could not load notices' : 'No notices yet'}
+            </Text>
+            <Text style={styles.stateBody}>
+              {error || 'Notices your committee publishes will appear here.'}
+            </Text>
+          </View>
+        ) : notices.map(notice => (
           <View key={notice.id} style={styles.noticeCard}>
             <View style={styles.noticeHeader}>
               <Text style={styles.nTitle}>{notice.title}</Text>
@@ -46,6 +89,9 @@ export default function NoticesTab({ role }) {
 }
 
 const styles = StyleSheet.create({
+  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   card: { backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 16, elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
   sectionTitle: { color: '#0f172a', fontSize: 18, fontWeight: '900' },
   subtitle: { color: '#64748b', fontSize: 13, marginBottom: 20, fontWeight: '500', lineHeight: 18 },

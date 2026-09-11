@@ -60,6 +60,27 @@ module.exports = {
         'cat-primary': 'var(--cat-primary, var(--primary))',
         'cat-primary-light': 'var(--cat-primary-light, var(--primary-light))',
         'cat-primary-glass': 'var(--cat-primary-glass, var(--primary-glass))',
+
+        // ── Quick-commerce surface layer ──────────────────────────────────
+        // Everything above is the expressive system — aurora, holo, mesh, glow.
+        // It suits a landing page. It works against a browse-and-buy grid,
+        // where the product photograph must be the brightest thing on screen
+        // and ambient motion competes with it for attention and for frames.
+        // This repo's own category-engine review flagged the mesh and
+        // backdrop-blur work as a High performance risk on the low-end Android
+        // hardware this app targets.
+        //
+        // These are the flat, dense register the storefront should use. They
+        // sit alongside the expressive set — a surface opts in — because 303
+        // routes are built on the tokens above.
+        'commerce-surface': '#FFFFFF',
+        'commerce-sunken': '#FAFAFA',    // zinc-50
+        'commerce-hairline': '#E4E4E7',  // zinc-200
+        'commerce-ink': '#18181B',       // zinc-900
+        'commerce-ink-muted': '#71717A', // zinc-500
+        'commerce-action': '#00C880',    // the existing brand primary
+        'commerce-action-hover': '#00A468',
+        'commerce-urgent': '#FF2D55',    // genuine urgency only
       },
       fontFamily: {
         heading: ['Outfit', 'sans-serif'],
@@ -106,6 +127,9 @@ module.exports = {
         'amber-glow': '0 8px 32px -8px rgba(245, 158, 11, 0.5)',
         'glass-inner': 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.1)',
         'glass-glow': '0 0 0 1px rgba(255,255,255,0.05), 0 20px 50px -12px rgba(0,0,0,0.4)',
+        // Quick-commerce cards lift; they do not glow.
+        'commerce': '0 1px 2px rgba(24,24,27,0.04), 0 4px 12px -6px rgba(24,24,27,0.10)',
+        'commerce-raised': '0 2px 4px rgba(24,24,27,0.06), 0 12px 28px -12px rgba(24,24,27,0.18)',
       },
       animation: {
         'shimmer': 'shimmer 4s linear infinite',
@@ -260,6 +284,7 @@ module.exports = {
         exit: 'cubic-bezier(0.7, 0, 0.84, 0)',
         spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
+
 
       perspective: {
         near: '600px',

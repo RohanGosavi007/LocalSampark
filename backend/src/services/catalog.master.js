@@ -40,7 +40,7 @@ class MasterCatalogService {
    */
   static async getAggregatedVariants(masterSkuId, shopId) {
     const sql = `
-      SELECT gc.variant_label, gc.weight, sp.price, sp.stock_qty, gc.image_url 
+      SELECT gc.variant_label, gc.weight, sp.price, sp.stock_quantity, gc.image_url 
       FROM shop_products sp
       JOIN global_catalog gc ON sp.master_sku_id = gc.id
       WHERE gc.parent_group_id = (SELECT parent_group_id FROM global_catalog WHERE id = $1)

@@ -142,46 +142,46 @@ INSERT OR IGNORE INTO shop_categories (id, slug, name, icon, archetype, requires
 
 -- Restaurant attributes
 INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
-  ('attr-r01', 'cat-002', 'cuisine_type', 'Cuisine Type', 'multiselect', '["North Indian","South Indian","Chinese","Italian","Mughlai","Street Food","Continental","Maharashtrian","Punjabi","Bengali","Gujarati","Rajasthani"]', 1, 1),
-  ('attr-r02', 'cat-002', 'veg_nonveg', 'Food Type', 'select', '["Pure Veg","Non-Veg","Both","Vegan","Jain"]', 1, 1),
-  ('attr-r03', 'cat-002', 'meal_type', 'Meal Types', 'multiselect', '["Breakfast","Lunch","Dinner","Snacks","All Day"]', 1, 0),
-  ('attr-r04', 'cat-002', 'avg_prep_time', 'Avg Preparation Time (mins)', 'number', NULL, 0, 0),
-  ('attr-r05', 'cat-002', 'seating_capacity', 'Seating Capacity', 'number', NULL, 0, 0),
-  ('attr-r06', 'cat-002', 'has_ac', 'AC Available', 'boolean', NULL, 1, 0),
-  ('attr-r07', 'cat-002', 'accepts_online_order', 'Accepts Online Orders', 'boolean', NULL, 1, 0);
+  ('attr-r01', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'cuisine_type', 'Cuisine Type', 'multiselect', '["North Indian","South Indian","Chinese","Italian","Mughlai","Street Food","Continental","Maharashtrian","Punjabi","Bengali","Gujarati","Rajasthani"]', 1, 1),
+  ('attr-r02', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'veg_nonveg', 'Food Type', 'select', '["Pure Veg","Non-Veg","Both","Vegan","Jain"]', 1, 1),
+  ('attr-r03', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'meal_type', 'Meal Types', 'multiselect', '["Breakfast","Lunch","Dinner","Snacks","All Day"]', 1, 0),
+  ('attr-r04', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'avg_prep_time', 'Avg Preparation Time (mins)', 'number', NULL, 0, 0),
+  ('attr-r05', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'seating_capacity', 'Seating Capacity', 'number', NULL, 0, 0),
+  ('attr-r06', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'has_ac', 'AC Available', 'boolean', NULL, 1, 0),
+  ('attr-r07', (SELECT id FROM shop_categories WHERE slug = 'restaurants-cafes'), 'accepts_online_order', 'Accepts Online Orders', 'boolean', NULL, 1, 0);
 
 -- Electrician attributes
 INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
-  ('attr-e01', 'cat-013', 'hourly_rate', 'Hourly Rate (₹)', 'number', NULL, 1, 0),
-  ('attr-e02', 'cat-013', 'service_types', 'Service Types', 'multiselect', '["Wiring","Fuse Box","Fan/AC Installation","Appliance Repair","Smart Home","Industrial","Solar Panel"]', 1, 1),
-  ('attr-e03', 'cat-013', 'emergency_available', '24/7 Emergency Available', 'boolean', NULL, 1, 0),
-  ('attr-e04', 'cat-013', 'certifications', 'Certifications', 'multiselect', '["Licensed Electrician","NSDC Certified","ITI Diploma","Wire Man License"]', 0, 0),
-  ('attr-e05', 'cat-013', 'service_radius_km', 'Service Radius (km)', 'number', NULL, 0, 0);
+  ('attr-e01', (SELECT id FROM shop_categories WHERE slug = 'electricians-electronics'), 'hourly_rate', 'Hourly Rate (₹)', 'number', NULL, 1, 0),
+  ('attr-e02', (SELECT id FROM shop_categories WHERE slug = 'electricians-electronics'), 'service_types', 'Service Types', 'multiselect', '["Wiring","Fuse Box","Fan/AC Installation","Appliance Repair","Smart Home","Industrial","Solar Panel"]', 1, 1),
+  ('attr-e03', (SELECT id FROM shop_categories WHERE slug = 'electricians-electronics'), 'emergency_available', '24/7 Emergency Available', 'boolean', NULL, 1, 0),
+  ('attr-e04', (SELECT id FROM shop_categories WHERE slug = 'electricians-electronics'), 'certifications', 'Certifications', 'multiselect', '["Licensed Electrician","NSDC Certified","ITI Diploma","Wire Man License"]', 0, 0),
+  ('attr-e05', (SELECT id FROM shop_categories WHERE slug = 'electricians-electronics'), 'service_radius_km', 'Service Radius (km)', 'number', NULL, 0, 0);
 
 -- Real Estate attributes
 INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
-  ('attr-re01', 'cat-018', 'property_types', 'Property Types', 'multiselect', '["1 BHK","2 BHK","3 BHK","4+ BHK","Studio","Penthouse","Villa","Plot","Commercial","PG","Warehouse"]', 1, 1),
-  ('attr-re02', 'cat-018', 'price_range', 'Price Range', 'text', NULL, 1, 0),
-  ('attr-re03', 'cat-018', 'amenities', 'Amenities', 'multiselect', '["Parking","Gym","Swimming Pool","Garden","Security","Power Backup","Lift","Club House","Children Play Area"]', 1, 0),
-  ('attr-re04', 'cat-018', 'rera_registered', 'RERA Registered', 'boolean', NULL, 1, 0);
+  ('attr-re01', (SELECT id FROM shop_categories WHERE slug = 'real-estate-brokers'), 'property_types', 'Property Types', 'multiselect', '["1 BHK","2 BHK","3 BHK","4+ BHK","Studio","Penthouse","Villa","Plot","Commercial","PG","Warehouse"]', 1, 1),
+  ('attr-re02', (SELECT id FROM shop_categories WHERE slug = 'real-estate-brokers'), 'price_range', 'Price Range', 'text', NULL, 1, 0),
+  ('attr-re03', (SELECT id FROM shop_categories WHERE slug = 'real-estate-brokers'), 'amenities', 'Amenities', 'multiselect', '["Parking","Gym","Swimming Pool","Garden","Security","Power Backup","Lift","Club House","Children Play Area"]', 1, 0),
+  ('attr-re04', (SELECT id FROM shop_categories WHERE slug = 'real-estate-brokers'), 'rera_registered', 'RERA Registered', 'boolean', NULL, 1, 0);
 
 -- Healthcare/Pathology attributes
 INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
-  ('attr-h01', 'cat-021', 'home_collection', 'Home Sample Collection', 'boolean', NULL, 1, 0),
-  ('attr-h02', 'cat-021', 'report_delivery_hrs', 'Report Delivery Time (hours)', 'number', NULL, 1, 0),
-  ('attr-h03', 'cat-021', 'nabl_accredited', 'NABL Accredited', 'boolean', NULL, 1, 0),
-  ('attr-h04', 'cat-021', 'test_count', 'Number of Tests Available', 'number', NULL, 0, 0);
+  ('attr-h01', (SELECT id FROM shop_categories WHERE slug = 'pathology-labs'), 'home_collection', 'Home Sample Collection', 'boolean', NULL, 1, 0),
+  ('attr-h02', (SELECT id FROM shop_categories WHERE slug = 'pathology-labs'), 'report_delivery_hrs', 'Report Delivery Time (hours)', 'number', NULL, 1, 0),
+  ('attr-h03', (SELECT id FROM shop_categories WHERE slug = 'pathology-labs'), 'nabl_accredited', 'NABL Accredited', 'boolean', NULL, 1, 0),
+  ('attr-h04', (SELECT id FROM shop_categories WHERE slug = 'pathology-labs'), 'test_count', 'Number of Tests Available', 'number', NULL, 0, 0);
 
 -- Gym/Fitness attributes
 INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
-  ('attr-g01', 'cat-017', 'membership_plans', 'Membership Plans', 'multiselect', '["Monthly","Quarterly","Half-Yearly","Annual","Per Session"]', 1, 0),
-  ('attr-g02', 'cat-017', 'facilities', 'Facilities', 'multiselect', '["Cardio","Weight Training","Crossfit","Yoga","Zumba","Steam/Sauna","Personal Trainer","Parking"]', 1, 1),
-  ('attr-g03', 'cat-017', 'trial_available', 'Free Trial Available', 'boolean', NULL, 1, 0),
-  ('attr-g04', 'cat-017', 'monthly_price', 'Monthly Fee (₹)', 'number', NULL, 1, 0);
+  ('attr-g01', (SELECT id FROM shop_categories WHERE slug = 'gym-fitness'), 'membership_plans', 'Membership Plans', 'multiselect', '["Monthly","Quarterly","Half-Yearly","Annual","Per Session"]', 1, 0),
+  ('attr-g02', (SELECT id FROM shop_categories WHERE slug = 'gym-fitness'), 'facilities', 'Facilities', 'multiselect', '["Cardio","Weight Training","Crossfit","Yoga","Zumba","Steam/Sauna","Personal Trainer","Parking"]', 1, 1),
+  ('attr-g03', (SELECT id FROM shop_categories WHERE slug = 'gym-fitness'), 'trial_available', 'Free Trial Available', 'boolean', NULL, 1, 0),
+  ('attr-g04', (SELECT id FROM shop_categories WHERE slug = 'gym-fitness'), 'monthly_price', 'Monthly Fee (₹)', 'number', NULL, 1, 0);
 
 -- Tiffin/Meal Subscription attributes
 INSERT OR IGNORE INTO category_attributes (id, category_id, attribute_key, attribute_label, attribute_type, options, is_filterable, is_searchable) VALUES
-  ('attr-t01', 'cat-040', 'meal_plans', 'Meal Plans', 'multiselect', '["Daily","Weekly","Monthly","Lunch Only","Dinner Only","Both"]', 1, 0),
-  ('attr-t02', 'cat-040', 'cuisine', 'Cuisine', 'multiselect', '["Maharashtrian","North Indian","South Indian","Gujarati","Jain","Vegan"]', 1, 1),
-  ('attr-t03', 'cat-040', 'price_per_meal', 'Price Per Meal (₹)', 'number', NULL, 1, 0),
-  ('attr-t04', 'cat-040', 'delivery_time', 'Delivery Schedule', 'text', NULL, 0, 0);
+  ('attr-t01', (SELECT id FROM shop_categories WHERE slug = 'tiffin-meal-subscription'), 'meal_plans', 'Meal Plans', 'multiselect', '["Daily","Weekly","Monthly","Lunch Only","Dinner Only","Both"]', 1, 0),
+  ('attr-t02', (SELECT id FROM shop_categories WHERE slug = 'tiffin-meal-subscription'), 'cuisine', 'Cuisine', 'multiselect', '["Maharashtrian","North Indian","South Indian","Gujarati","Jain","Vegan"]', 1, 1),
+  ('attr-t03', (SELECT id FROM shop_categories WHERE slug = 'tiffin-meal-subscription'), 'price_per_meal', 'Price Per Meal (₹)', 'number', NULL, 1, 0),
+  ('attr-t04', (SELECT id FROM shop_categories WHERE slug = 'tiffin-meal-subscription'), 'delivery_time', 'Delivery Schedule', 'text', NULL, 0, 0);

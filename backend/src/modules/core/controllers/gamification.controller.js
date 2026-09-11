@@ -28,7 +28,7 @@ exports.getGamificationProfile = async (req, res, next) => {
 
         // Check if spin wheel is available (e.g., 1 spin per 3 orders)
         let availableSpins = Math.floor(orderCount / 3);
-        const usedSpinsResult = await query("SELECT COUNT(*) as count FROM wallet_transactions WHERE user_id = $1 AND purpose = 'spin_wheel_reward'", [userId]);
+        const usedSpinsResult = await query("SELECT COUNT(*) as count FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1) AND purpose = 'spin_wheel_reward'", [userId]);
         const usedSpins = parseInt(usedSpinsResult.rows?.[0]?.count || 0, 10);
         
         availableSpins = Math.max(0, availableSpins - usedSpins);

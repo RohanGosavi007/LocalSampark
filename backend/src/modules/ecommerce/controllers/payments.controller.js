@@ -1,5 +1,6 @@
 const { query, queryOne } = require('../../../config/database');
 const crypto = require('crypto');
+const { safeCompare } = require('../../../utils/webhookSignature');
 
 async function createCheckoutOrder(req, res, next) {
   try {
@@ -70,13 +71,25 @@ async function verifyPayment(req, res, next) {
       return res.status(400).json({ success: false, error: 'Missing payment signature parameters' });
     }
 
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'mocksecret';
+    // The 'mocksecret' fallback was a production forgery hole: with
+    // RAZORPAY_KEY_SECRET unset, signatures verified against a constant that is
+    // in the source tree, so anyone could sign their own payment confirmation.
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[payments] RAZORPAY_KEY_SECRET not configured; refusing to verify');
+        return res.status(503).json({ success: false, error: 'Payment verification unavailable' });
+      }
+      console.warn('[payments] RAZORPAY_KEY_SECRET not set — using dev secret (non-production only)');
+    }
+
     const generated_signature = crypto
-      .createHmac('sha256', secret)
+      .createHmac('sha256', secret || 'mocksecret')
       .update(razorpay_order_id + '|' + razorpay_payment_id)
       .digest('hex');
 
-    if (generated_signature !== razorpay_signature) {
+    // Constant-time: string !== short-circuits on the first differing byte.
+    if (!safeCompare(generated_signature, razorpay_signature)) {
       return res.status(403).json({ success: false, error: 'Invalid payment signature' });
     }
 

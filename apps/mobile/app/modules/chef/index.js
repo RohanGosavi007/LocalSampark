@@ -50,7 +50,7 @@ export default function MobileHomeChef() {
         deliveryOption: checkoutData.deliveryOption,
         dropoffLocation: checkoutData.dropoffLocation
       };
-      const data = await apiPost('/chef/meals/${checkoutModal.id}/order', payload);
+      const data = await apiPost(`/chef/meals/${checkoutModal.id}/order`, payload);
       if (data.success) {
         Alert.alert(
           'Order Confirmed!', 

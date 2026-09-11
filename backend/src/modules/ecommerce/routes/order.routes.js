@@ -172,4 +172,78 @@ router.put('/:orderId/status', authenticate, async (req, res, next) => {
   }
 });
 
+/**
+ * GET /my-orders — the signed-in user's order history.
+ *
+ * apps/mobile/app/orders/index.js has always called this; only
+ * /orders/user/:userId existed, which the screen has no user id to fill in.
+ * It is declared ahead of any '/:id' route so the literal path is matched
+ * first rather than being captured as an id.
+ *
+ * items_count is aggregated here because the list renders it per row;
+ * fetching order_items separately would be N+1 across the whole history.
+ */
+router.get('/my-orders', authenticate, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT o.id,
+              o.total_amount,
+              o.order_status AS status,
+              o.created_at,
+              o.fulfillment_method,
+              COALESCE(s.name, 'LocalSampark') AS shop_name,
+              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count
+         FROM orders o
+         LEFT JOIN local_shops s ON s.id = o.shop_id
+        WHERE o.user_id = $1
+        ORDER BY o.created_at DESC
+        LIMIT 100`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: result.rows || result || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /:orderId — a single order.
+ *
+ * The tracking screen calls /orders/:id expecting `data.order`. The only
+ * per-order route in the codebase was GET /tracking/:orderId, which returns a
+ * deliveryRoute row and a completely different shape.
+ *
+ * Scoped to the requesting user: order ids are UUIDs, but that is obscurity,
+ * not authorisation.
+ */
+router.get('/:orderId', authenticate, async (req, res, next) => {
+  try {
+    const order = await queryOne(
+      `SELECT o.*,
+              COALESCE(s.name, 'LocalSampark') AS shop_name
+         FROM orders o
+         LEFT JOIN local_shops s ON s.id = o.shop_id
+        WHERE o.id = $1 AND o.user_id = $2`,
+      [req.params.orderId, req.user.id]
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const items = await query(
+      'SELECT * FROM order_items WHERE order_id = $1',
+      [req.params.orderId]
+    );
+
+    res.json({
+      success: true,
+      order: { ...order, status: order.order_status || order.status },
+      items: items.rows || items || [],
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

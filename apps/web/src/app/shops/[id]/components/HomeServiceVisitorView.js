@@ -107,11 +107,11 @@ export default function EnhancedHomeServiceVisitorView({ shop, services = [], st
           <Users className="w-5 h-5 text-indigo-500" /> Our Technicians
         </h2>
         <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-          {(staff.length > 0 ? staff : [
-            { id: 1, name: 'Rajesh K.', specialization: 'Plumbing Expert', experience_years: 12, avg_rating: 4.7, jobs_completed: 850 },
-            { id: 2, name: 'Sunil M.', specialization: 'Electrical', experience_years: 8, avg_rating: 4.5, jobs_completed: 620 },
-            { id: 3, name: 'Amit P.', specialization: 'AC Specialist', experience_years: 10, avg_rating: 4.8, jobs_completed: 730 },
-          ]).map((tech, i) => (
+          {/* Same fabrication as the clinic's doctor list: three invented
+              technicians with invented experience, ratings and job counts,
+              shown under "Our Technicians" for any provider that had not
+              listed staff. Named people are never invented. */}
+          {staff.map((tech, i) => (
             <div key={tech.id || i} className="min-w-[180px] p-4 rounded-xl border border-border text-center hover:shadow-md transition-all">
               <div className="w-14 h-14 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center text-xl mb-2">👷</div>
               <p className="font-bold text-sm text-text">{tech.name}</p>
@@ -129,6 +129,11 @@ export default function EnhancedHomeServiceVisitorView({ shop, services = [], st
               )}
             </div>
           ))}
+          {staff.length === 0 && (
+            <p className="text-sm text-text-muted py-4">
+              This provider has not listed individual technicians yet.
+            </p>
+          )}
         </div>
       </div>
 

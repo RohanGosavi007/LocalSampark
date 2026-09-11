@@ -453,11 +453,11 @@ router.get('/fraud-scan', authenticate, requireAdmin, async (req, res, next) => 
     try {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const userRes = await query(`
-        SELECT u.id, COALESCE(u.name, 'Resident') as full_name, u.phone as phone_number, COUNT(o.id) as order_count 
+        SELECT u.id, COALESCE(u.full_name, 'Resident') as full_name, u.phone as phone_number, COUNT(o.id) as order_count 
         FROM users u
         JOIN orders o ON u.id = o.user_id
         WHERE o.created_at >= $1
-        GROUP BY u.id, u.name, u.phone
+        GROUP BY u.id, u.full_name, u.phone
         HAVING COUNT(o.id) > 5
         ORDER BY order_count DESC
         LIMIT 20
@@ -793,8 +793,10 @@ router.get('/dashboard', authenticate, requireAdmin, getDashboardStats);
 // matching layer.
 
 // ─── GOD MODE: APPROVALS & PAYOUTS ────────────────────────
-router.get('/approvals/pending', authenticate, requireAdmin, getPendingApprovals);
-router.put('/approvals/:type/:id', authenticate, requireAdmin, updateApprovalStatus);
+// NOTE: GET /approvals/pending and PUT /approvals/:type/:id are registered
+// above (see the adminApprovalsController block). Express matches the first
+// registration, so the duplicates that used to sit here never ran — editing
+// them looked like a fix that did nothing. Removed; change them above.
 
 // ─── GOD MODE: USERS, ROLES, REGIONS ──────────────────────
 router.get('/users', authenticate, requireAdmin, getUsers);
@@ -1388,7 +1390,6 @@ router.post('/skilled-bookings/:id/assign', authenticate, requireAdmin, async (r
 
 // â”€â”€â”€ Approvals â”€â”€â”€
 router.get('/approvals', authenticate, requireAdmin, getPendingApprovals);
-router.put('/approvals/:type/:id', authenticate, requireAdmin, updateApprovalStatus);
 
 // â”€â”€â”€ Revenue Models â”€â”€â”€
 router.get('/revenue-models', authenticate, requireAdmin, getRevenueModels);
@@ -1469,7 +1470,8 @@ router.get('/shops/:id/full-details', authenticate, requireAdmin, async (req, re
 router.get('/delivery/overview', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const stats = {
-      activeAgents: (await queryOne('SELECT count(*) as count FROM delivery_agents WHERE is_active = true')).count,
+      // delivery_agents tracks availability as is_online; there is no is_active.
+      activeAgents: (await queryOne('SELECT count(*) as count FROM delivery_agents WHERE is_online = true')).count,
       pendingOrders: (await queryOne("SELECT count(*) as count FROM shop_orders WHERE delivery_type = 'delivery' AND status = 'accepted'")).count,
     };
     res.json(stats);
@@ -1822,17 +1824,11 @@ router.get('/jobs', authenticate, requireAdmin, async (req, res, next) => {
       return res.status(403).json({ error: 'Vertical Manager access required.' });
     }
 
-    await query(`
-      CREATE TABLE IF NOT EXISTS admin_jobs (
-        id TEXT PRIMARY KEY,
-        shop_id TEXT,
-        title TEXT NOT NULL,
-        description TEXT,
-        salary TEXT,
-        status TEXT DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).catch(() => {});
+    // admin_jobs is declared by migration 082. This runtime CREATE never ran
+    // once the table existed, and it described a different shape from the real
+    // one -- a shop_id the table does not have, and no shop_name or admin_id
+    // that it does. Keeping a second, wrong definition around only invites the
+    // two to drift further apart.
 
     // Expire jobs older than 60 days
     await query(`
@@ -1841,10 +1837,12 @@ router.get('/jobs', authenticate, requireAdmin, async (req, res, next) => {
       WHERE status = 'active' AND created_at <= datetime('now', '-60 days')
     `);
 
+    // admin_jobs has no shop_id to join on, and local_shops has `name`, not
+    // `shop_name` -- so this join was wrong on both sides. admin_jobs already
+    // stores shop_name denormalised, which is what the join was reaching for.
     const jobs = await query(`
-      SELECT j.*, s.shop_name 
+      SELECT j.*
       FROM admin_jobs j
-      LEFT JOIN local_shops s ON j.shop_id = s.id
       ORDER BY j.created_at DESC
     `);
     res.json({ success: true, data: jobs.rows || jobs || [] });
@@ -1864,17 +1862,11 @@ router.post('/jobs', authenticate, requireAdmin, async (req, res, next) => {
     const { v4: uuidv4 } = require('uuid');
     const jobId = uuidv4();
 
-    await query(`
-      CREATE TABLE IF NOT EXISTS admin_jobs (
-        id TEXT PRIMARY KEY,
-        shop_id TEXT,
-        title TEXT NOT NULL,
-        description TEXT,
-        salary TEXT,
-        status TEXT DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).catch(() => {});
+    // admin_jobs is declared by migration 082. This runtime CREATE never ran
+    // once the table existed, and it described a different shape from the real
+    // one -- a shop_id the table does not have, and no shop_name or admin_id
+    // that it does. Keeping a second, wrong definition around only invites the
+    // two to drift further apart.
 
     await query(`
       INSERT INTO admin_jobs (id, shop_id, title, description, salary, status)
@@ -2762,7 +2754,7 @@ router.get('/search', authenticate, requireAdmin, async (req, res, next) => {
     await Promise.all([
       // Jobs
       searchTable(
-        `SELECT id, job_title as title, company_name as subtitle FROM admin_jobs WHERE job_title LIKE $1 OR company_name LIKE $1 LIMIT 5`,
+        `SELECT id, title, shop_name as subtitle FROM admin_jobs WHERE title LIKE $1 OR shop_name LIKE $1 LIMIT 5`,
         [searchQuery],
         r => ({ id: r.id, title: r.title, subtitle: r.subtitle, type: 'Job Listing' })
       ),

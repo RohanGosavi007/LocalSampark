@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 
 export default function ComplaintsTab({ role }) {
-  const [complaints] = useState([
-    { id: 1, type: 'Plumbing', title: 'Leaking tap in kitchen', status: 'In Progress', date: 'Yesterday' },
-    { id: 2, type: 'Electrical', title: 'Corridor light flickering', status: 'Resolved', date: '12 Jun 2026' }
-  ]);
+  // Two complaints were hardcoded, one shown as "In Progress" — so a resident
+  // saw somebody already working on a leak nobody had reported.
+  // /society-admin/complaints accepts a complaint; there is no endpoint that
+  // lists them back, so this stays empty until there is.
+  const [complaints] = useState([]);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
@@ -22,7 +23,14 @@ export default function ComplaintsTab({ role }) {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>{role === 'admin' ? 'All Society Tickets' : 'My Tickets'}</Text>
-        {complaints.map(comp => (
+        {complaints.length === 0 ? (
+          <View style={styles.stateBox}>
+            <Text style={styles.stateTitle}>No complaints raised</Text>
+            <Text style={styles.stateBody}>
+              Complaints you raise will appear here once the committee can list them back.
+            </Text>
+          </View>
+        ) : complaints.map(comp => (
           <View key={comp.id} style={styles.compRow}>
             <View style={styles.iconContainer}>
               <Text style={styles.icon}>{comp.type === 'Plumbing' ? '🚰' : '⚡'}</Text>
@@ -44,6 +52,9 @@ export default function ComplaintsTab({ role }) {
 }
 
 const styles = StyleSheet.create({
+  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
   sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
   input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, color: '#0f172a', padding: 12, marginBottom: 12 },

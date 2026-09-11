@@ -1,20 +1,58 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { apiGet } from '../../lib/api';
 import { Briefcase, Target, Users, IndianRupee, Store, CheckCircle2, ChevronRight, FileText } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+/**
+ * A field agent's landing screen.
+ *
+ * The four figures were literals — "42 shops onboarded, 14 active leads, 3
+ * pending KYC, ₹2,100 bounty earned" — and the weekly target below them read
+ * "12 / 15 Shops" with the progress bar hardcoded to 80% and "Just 3 more to
+ * earn ₹500 bonus!". An agent on their first day saw a fortnight of work they
+ * had not done and a bonus they were three shops from earning.
+ *
+ * "Recent Onboards" listed two shops they had not registered, one already
+ * "KYC Verified".
+ *
+ * /dashboards/territory/field-dashboard reports what they have actually done.
+ */
 export default function FieldDashboard({ user }) {
-  const stats = [
-    { label: 'Onboarded Shops', value: '42', icon: Store, color: '#3b82f6' },
-    { label: 'Active Leads', value: '14', icon: Users, color: '#8b5cf6' },
-    { label: 'Pending KYC', value: '3', icon: FileText, color: '#f59e0b' },
-    { label: 'Bounty Earned', value: '₹2,100', icon: IndianRupee, color: '#10b981' }
-  ];
+  const [figures, setFigures] = useState(null);
+  const [recentOnboards, setRecentOnboards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const recentOnboards = [
-    { id: 1, name: 'Laxmi Supermarket', type: 'Retail', status: 'KYC Verified' },
-    { id: 2, name: 'Priya Beauty Parlour', type: 'Service', status: 'Pending Approval' },
+  useEffect(() => {
+    apiGet('/dashboards/territory/field-dashboard')
+      .then((res) => {
+        setFigures(res?.stats ?? null);
+        setRecentOnboards(
+          (res?.recent ?? []).map((r) => ({
+            id: String(r.id),
+            name: r.shopName || 'Shop',
+            type: r.owner && r.owner !== '—' ? r.owner : '',
+            status: r.status || 'pending',
+          }))
+        );
+      })
+      .catch((err) => {
+        setFigures(null);
+        setRecentOnboards([]);
+        setError(err?.message || 'Could not load your dashboard.');
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const stats = [
+    { label: 'Onboarded Shops', value: String(Number(figures?.shopsOnboarded) || 0), icon: Store, color: '#3b82f6' },
+    { label: 'Pending Leads', value: String(Number(figures?.pendingLeads) || 0), icon: Users, color: '#8b5cf6' },
+    { label: 'Conversion', value: figures?.conversionRate || '0%', icon: FileText, color: '#f59e0b' },
+    // The endpoint reports 0 until field-agent payouts are settled through the
+    // commissions module; "₹2,100 bounty earned" was invented.
+    { label: 'Bounty Earned', value: `₹${Number(figures?.earnings) || 0}`, icon: IndianRupee, color: '#10b981' },
   ];
 
   return (
@@ -24,13 +62,10 @@ export default function FieldDashboard({ user }) {
         <Text style={s.headerSubtitle}>Welcome back, {user?.name || 'Agent'}</Text>
       </View>
 
-      {/* Target Progress */}
-      <View style={s.targetCard}>
-        <View style={s.targetHeader}><Text style={s.targetLabel}>Weekly Target</Text><Target size={20} color="#5eead4" /></View>
-        <View style={s.targetValueRow}><Text style={s.targetBigValue}>12</Text><Text style={s.targetSuffix}>/ 15 Shops</Text></View>
-        <View style={s.progressBar}><View style={[s.progressFill, { width: '80%' }]} /></View>
-        <Text style={s.targetHint}>Just 3 more to earn ₹500 bonus!</Text>
-      </View>
+      {/* The weekly target card claimed "12 / 15 Shops" with an 80% bar and a
+          ₹500 bonus three shops away. No target is set anywhere in the backend —
+          monthlyTarget comes back as 0 — so the card is gone rather than
+          showing a goal the agent was never given. */}
 
       <View style={s.statsGrid}>
         {stats.map((st, i) => {
@@ -49,17 +84,34 @@ export default function FieldDashboard({ user }) {
 
       <View style={{ marginBottom: 24 }}>
         <Text style={s.sectionTitle}>Recent Onboards</Text>
+        {loading ? (
+          <View style={s.listContainer}>
+            <View style={s.listItem}><ActivityIndicator color="#14b8a6" /></View>
+          </View>
+        ) : recentOnboards.length === 0 ? (
+          <View style={s.listContainer}>
+            <View style={s.listItem}>
+              <Text style={s.listMeta}>
+                {error || 'Shops you register will appear here.'}
+              </Text>
+            </View>
+          </View>
+        ) : (
         <View style={s.listContainer}>
           {recentOnboards.map((shop, idx) => (
             <View key={shop.id} style={[s.listItem, idx !== recentOnboards.length - 1 && s.listBorder]}>
               <View style={s.listLeft}>
-                <View style={s.listIcon}><CheckCircle2 size={20} color={shop.status.includes('Verified') ? '#10b981' : '#f59e0b'} /></View>
-                <View><Text style={s.listTitle}>{shop.name}</Text><Text style={s.listMeta}>{shop.type} • {shop.status}</Text></View>
+                <View style={s.listIcon}><CheckCircle2 size={20} color={String(shop.status).toLowerCase() === 'approved' ? '#10b981' : '#f59e0b'} /></View>
+                <View>
+                  <Text style={s.listTitle}>{shop.name}</Text>
+                  <Text style={s.listMeta}>{[shop.type, shop.status].filter(Boolean).join(' • ')}</Text>
+                </View>
               </View>
               <ChevronRight size={16} color="#64748b" />
             </View>
           ))}
         </View>
+        )}
       </View>
     </ScrollView>
   );

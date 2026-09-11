@@ -1,45 +1,39 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Image } from 'expo-image';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import ManagerLayout from './components/ManagerLayout';
 
-const PrescriptionApprovalsTab = () => {
-  return (
-    <ScrollView style={styles.tabContainer}>
-      <Text style={styles.sectionTitle}>Pending Prescriptions (2)</Text>
-      
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.patientName}>Rahul Sharma</Text>
-          <Text style={styles.timeText}>10 mins ago</Text>
-        </View>
-        <Text style={styles.cardDetail}>Uploaded: Prescription_1.jpg</Text>
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.btn, styles.approveBtn]}><Text style={styles.btnTextApprove}>Approve & Fill</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, styles.rejectBtn]}><Text style={styles.btnTextReject}>Reject</Text></TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.patientName}>Priya Singh</Text>
-          <Text style={styles.timeText}>1 hour ago</Text>
-        </View>
-        <Text style={styles.cardDetail}>Uploaded: Doc_Image_Final.png</Text>
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.btn, styles.approveBtn]}><Text style={styles.btnTextApprove}>Approve & Fill</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, styles.rejectBtn]}><Text style={styles.btnTextReject}>Reject</Text></TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
-  );
-};
+/**
+ * Pharmacy manager — prescription approvals.
+ *
+ * This tab showed "Pending Prescriptions (2)" with two patients by name —
+ * "Rahul Sharma, 10 mins ago, Prescription_1.jpg" and "Priya Singh, 1 hour ago"
+ * — and Approve & Fill / Reject buttons that had no handlers. A pharmacist
+ * would have opened this to a queue of people who had never sent anything, and
+ * tapping Approve did nothing to any of them.
+ *
+ * There is no prescription endpoint in the backend: nothing accepts an upload,
+ * stores one, or queues it for a pharmacist. The customer-facing upload screen
+ * now says as much too. Until that exists, this tab states what it is rather
+ * than presenting an invented workload.
+ */
+const PrescriptionApprovalsTab = () => (
+  <ScrollView style={styles.tabContainer}>
+    <View style={styles.stateBox}>
+      <Text style={styles.stateTitle}>Prescription approvals are not connected yet</Text>
+      <Text style={styles.stateBody}>
+        Customers cannot send prescriptions through the app yet, so there is
+        nothing here to approve. They are asked to contact your shop directly in
+        the meantime.
+      </Text>
+    </View>
+  </ScrollView>
+);
 
 export default function PharmacyManager() {
   const tabs = [
     { name: 'Prescription Approvals', component: PrescriptionApprovalsTab },
     { name: 'Batch & Expiry' },
-    { name: 'Delivery Tracking' }
+    { name: 'Delivery Tracking' },
   ];
 
   return <ManagerLayout title="Pharmacy" icon="medical" tabs={tabs} />;
@@ -47,16 +41,7 @@ export default function PharmacyManager() {
 
 const styles = StyleSheet.create({
   tabContainer: { paddingVertical: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
-  card: { backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e2e8f0' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  patientName: { fontSize: 16, fontWeight: 'bold' },
-  timeText: { fontSize: 12, color: '#94a3b8' },
-  cardDetail: { fontSize: 14, color: '#64748b', marginBottom: 16 },
-  actionRow: { flexDirection: 'row', gap: 12 },
-  btn: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1 },
-  approveBtn: { backgroundColor: '#10b981', borderColor: '#10b981' },
-  btnTextApprove: { color: '#fff', fontWeight: 'bold' },
-  rejectBtn: { backgroundColor: '#fff', borderColor: '#ef4444' },
-  btnTextReject: { color: '#ef4444', fontWeight: 'bold' }
+  stateBox: { backgroundColor: '#fff', padding: 24, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
 });

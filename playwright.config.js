@@ -124,22 +124,57 @@ module.exports = defineConfig({
       reuseExistingServer: true,
       timeout: 30000,
       env: {
-        NODE_ENV: 'test',
+        // NOT 'test'. server.js ends with
+        //     if (process.env.NODE_ENV !== 'test') { startServer()... }
+        // — the usual guard so Jest/Supertest can import `app` without
+        // binding a port. Launching this webServer with NODE_ENV=test meant
+        // startServer() was never called, nothing ever listened on 5000, and
+        // Playwright sat on http://localhost:5000/health until it timed out.
+        // Every e2e/visual/a11y/api job failed there, before any spec ran.
+        //
+        // 'development' keeps the SQLite branch (selected by USE_SQLITE
+        // below) while leaving the guard untouched for the unit tests.
+        NODE_ENV: 'development',
         PORT: '5000',
-        USE_SQLITE: 'false',
+        // Was 'false', which pointed the query layer at a PostgreSQL
+        // instance that CI never provisions (.github/workflows/test.yml
+        // declares no postgres service for the e2e jobs), so the backend
+        // never came up and every Playwright job died waiting on /health.
+        //
+        // It was also self-contradictory: server.js already takes the SQLite
+        // branch whenever NODE_ENV === 'test', while src/config/database.js
+        // keys purely off USE_SQLITE — so the server booted SQLite while the
+        // repositories loaded a Postgres pool.
+        USE_SQLITE: 'true',
         DB_NAME: 'localsampark_test',
         JWT_SECRET: 'test-jwt-secret-key-localsampark-2026',
         JWT_REFRESH_SECRET: 'test-jwt-refresh-secret-key-localsampark-2026',
       },
     },
     {
-      command: 'cd apps/web && npm run dev',
+      command: 'npm run dev --workspace=apps/web',
       url: 'http://localhost:3000',
       reuseExistingServer: true,
       timeout: 60000,
       env: {
-        NODE_ENV: 'test',
+        // `next dev` manages NODE_ENV itself; pinning it to 'test' here made
+        // Next warn about a non-standard value on every boot.
         PORT: '3000',
+        // apps/web/src/lib/api.js appends /api/v1 to this origin.
+        NEXT_PUBLIC_API_URL: 'http://localhost:5000',
+      },
+    },
+    {
+      // The 'admin-chromium' project has baseURL http://localhost:3001, but
+      // nothing ever started the admin app — tests/e2e/admin could only fail
+      // with ERR_CONNECTION_REFUSED. apps/admin's dev script already binds
+      // 3001.
+      command: 'npm run dev --workspace=apps/admin',
+      url: 'http://localhost:3001',
+      reuseExistingServer: true,
+      timeout: 60000,
+      env: {
+        NEXT_PUBLIC_API_URL: 'http://localhost:5000',
       },
     },
   ],

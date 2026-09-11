@@ -1,5 +1,5 @@
 'use client';
-import { API_URL } from '@/lib/api';
+import { API_URL, getAuthHeaders } from '@/lib/api';
 import { io } from 'socket.io-client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -306,9 +306,16 @@ export default function ShopDetailPage() {
                       // Optional slot ID or default
                       const slotId = slot?.id || 'slot_default';
                       
+                      // getAuthHeaders() attaches the bearer token. This was a
+                      // bare fetch sending only Content-Type, and the endpoint
+                      // resolved the customer as "userId from the body, else
+                      // the first CUSTOMER row in the table" — so every booking
+                      // made from this page was filed against one arbitrary
+                      // user. The endpoint now requires authentication and takes
+                      // the customer from the token.
                       const res = await fetch(`${API_URL}/api/v1/book`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({
                           shopId: shop.id,
                           serviceSlotId: slotId,
@@ -317,7 +324,9 @@ export default function ShopDetailPage() {
                         }),
                       });
                       const json = await res.json();
-                      if (json.success) {
+                      if (res.status === 401) {
+                        alert('Please sign in to book an appointment.');
+                      } else if (json.success) {
                         alert(`Booking Confirmed!\nReference: ${json.appointment?.bookingNumber || 'N/A'}`);
                       } else {
                         alert(`Booking Failed: ${json.error || 'Unknown error'}`);

@@ -4,32 +4,9 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useCartStore } from '../../../src/store/cartStore';
 import { apiGet } from '../../../src/lib/api';
-import DemoBadge from '../../../src/components/DemoBadge';
 import SkeletonLoader from '../../../src/components/SkeletonLoader';
 
-// ── Mock fallback data (shown when API is unreachable) ──
-const MOCK_SHOP = {
-  id: 'mock-shop-1',
-  name: 'Sharma Grocery & Daily Needs',
-  category: 'Grocery & Supermarket',
-  category_name: 'Grocery & Supermarket',
-  rating: 4.8,
-  reviews_count: 124,
-  distance: '1.2 km',
-  delivery_time: '15-20 mins',
-  has_delivery: true,
-  address: 'Dhanori, Pune',
-  image_url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=600&auto=format&fit=crop',
-};
 
-const MOCK_PRODUCTS = [
-  { id: 'mock-p1', name: 'Amul Taaza Milk 500ml', price: 28, category_name: 'Dairy', description: 'Fresh standardized milk', track_inventory: 0, inventory_count: 99 },
-  { id: 'mock-p2', name: 'Aashirvaad Atta 5kg', price: 240, category_name: 'Groceries', description: '100% whole wheat chakki atta', track_inventory: 0, inventory_count: 99 },
-  { id: 'mock-p3', name: 'Maggi 2-Min Noodles', price: 14, category_name: 'Snacks', description: 'Masala noodles single pack', track_inventory: 0, inventory_count: 99 },
-  { id: 'mock-p4', name: 'Amul Butter 100g', price: 58, category_name: 'Dairy', description: 'Pasteurised butter', track_inventory: 0, inventory_count: 99 },
-  { id: 'mock-p5', name: 'Tata Salt 1kg', price: 28, category_name: 'Groceries', description: 'Iodised vacuum evaporated salt', track_inventory: 0, inventory_count: 99 },
-  { id: 'mock-p6', name: 'Fortune Sunlite Oil 1L', price: 155, category_name: 'Groceries', description: 'Refined sunflower oil', track_inventory: 0, inventory_count: 99 },
-];
 
 export default function ShopDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -38,7 +15,6 @@ export default function ShopDetailScreen() {
   const [shop, setShop] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
   const [error, setError] = useState(null);
 
   // ── Fetch real data from backend API ──
@@ -64,15 +40,24 @@ export default function ShopDetailScreen() {
           const resolvedProducts = productsData?.products || productsData?.rows || productsData;
           setProducts(Array.isArray(resolvedProducts) ? resolvedProducts : []);
         } catch (prodErr) {
-          console.warn('[ShopDetail] Products API failed, using mock products:', prodErr.message);
-          setProducts(MOCK_PRODUCTS);
-          setIsDemo(true);
+          // MOCK_PRODUCTS used to fill in here. Those are named third-party
+          // goods at specific prices — "Amul Taaza Milk 500ml ₹28",
+          // "Aashirvaad Atta 5kg ₹240" — and the tiles are wired to the real
+          // cart, so a customer could add mock-p1 to their persisted basket and
+          // carry a product that does not exist through to checkout. The DEMO
+          // badge did not prevent that; it only labelled it.
+          console.warn('[ShopDetail] Products API failed:', prodErr.message);
+          setProducts([]);
+          setError('Could not load this shop\'s products.');
         }
       } catch (shopErr) {
-        console.warn('[ShopDetail] Shop API failed, using mock data:', shopErr.message);
-        setShop({ ...MOCK_SHOP, id: id || MOCK_SHOP.id });
-        setProducts(MOCK_PRODUCTS);
-        setIsDemo(true);
+        console.warn('[ShopDetail] Shop API failed:', shopErr.message);
+        // A real shop id that fails to load is an error, not an invitation to
+        // invent a shop. Showing MOCK_SHOP here meant a customer opening a link
+        // to a specific shop saw a different, fictional one.
+        setShop(null);
+        setProducts([]);
+        setError('Could not load this shop. Check your connection and try again.');
       } finally {
         setLoading(false);
       }
@@ -81,9 +66,9 @@ export default function ShopDetailScreen() {
     if (id) {
       loadShopData();
     } else {
-      setShop(MOCK_SHOP);
-      setProducts(MOCK_PRODUCTS);
-      setIsDemo(true);
+      setShop(null);
+      setProducts([]);
+      setError('No shop was specified.');
       setLoading(false);
     }
   }, [id]);
@@ -121,8 +106,13 @@ export default function ShopDetailScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>🏪</Text>
-          <Text style={styles.errorTitle}>Shop Not Found</Text>
-          <Text style={styles.errorMessage}>This shop may have been removed or is temporarily unavailable.</Text>
+          <Text style={styles.errorTitle}>Shop unavailable</Text>
+          {/* The specific reason, rather than always implying the shop was
+              removed — a network failure and a deleted shop need different
+              actions from the customer. */}
+          <Text style={styles.errorMessage}>
+            {error || 'This shop may have been removed or is temporarily unavailable.'}
+          </Text>
           <TouchableOpacity style={styles.errorBtn} onPress={() => router.back()}>
             <Text style={styles.errorBtnText}>Go Back</Text>
           </TouchableOpacity>
@@ -136,7 +126,6 @@ export default function ShopDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DemoBadge visible={isDemo} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header Image & Back Button */}

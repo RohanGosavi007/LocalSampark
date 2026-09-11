@@ -5,11 +5,24 @@ import dynamic from 'next/dynamic';
 
 const loadingFallback = () => <div className="p-8 text-center"><div className="animate-pulse flex flex-col space-y-4"><div className="h-4 bg-slate-800 rounded w-3/4 mx-auto"></div><div className="h-4 bg-slate-800 rounded w-1/2 mx-auto"></div></div></div>;
 
+// Orphaned by the taxonomy change, so deliberately NOT imported here. Their
+// files remain under ./ and can be wired back the moment a matching category
+// exists — importing them while nothing renders them only implies a coverage
+// that does not exist:
+//
+//   DoctorVisitorView       — a video-consultation view. No teleconsultation
+//                             category exists; the practitioner categories
+//                             (dentist, physio, dietician) are served by
+//                             HospitalVisitorView, whose own header names them.
+//   TwoWheelerVisitorView   — 36-line "Track My Vehicle Repair" stubs. The one
+//   FourWheelerVisitorView    live vehicle category, automotive-mechanic, is
+//                             better served by the full GarageVisitorView.
+//
+// RentalVisitorView is a third case: the switch below still has a 'rental' arm,
+// but no category maps to it. The arm is kept so adding a rental category is a
+// one-line map entry.
 const HospitalVisitorView = dynamic(() => import('./HospitalVisitorView'), { loading: loadingFallback });
 const RetailVisitorView = dynamic(() => import('./RetailVisitorView'), { loading: loadingFallback });
-const TwoWheelerVisitorView = dynamic(() => import('./TwoWheelerVisitorView'), { loading: loadingFallback });
-const FourWheelerVisitorView = dynamic(() => import('./FourWheelerVisitorView'), { loading: loadingFallback });
-const DoctorVisitorView = dynamic(() => import('./DoctorVisitorView'), { loading: loadingFallback });
 const BeautyVisitorView = dynamic(() => import('./BeautyVisitorView'), { loading: loadingFallback });
 const HomeServiceVisitorView = dynamic(() => import('./HomeServiceVisitorView'), { loading: loadingFallback });
 const ProfessionalVisitorView = dynamic(() => import('./ProfessionalVisitorView'), { loading: loadingFallback });
@@ -23,96 +36,137 @@ const RentalVisitorView = dynamic(() => import('./RentalVisitorView'), { loading
 const LeadDirectoryVisitorView = dynamic(() => import('./LeadDirectoryVisitorView'), { loading: loadingFallback });
 
 // ═══════════════════════════════════════════════════════════════════════
-// VISITOR VIEW ROUTER — Maps 55 categories → correct visitor experience
+// VISITOR VIEW ROUTER — Maps every shop_categories.slug → visitor experience
 // ═══════════════════════════════════════════════════════════════════════
-
+//
+// The keys here MUST be `shop_categories.slug` values, because the shop page
+// passes `shop.category_details.slug` straight through with no normalisation.
+//
+// This map previously held 66 snake_case keys (`kirana_grocery`, `restaurant`,
+// `salon_spa`) from a taxonomy that was replaced by the current kebab-case one.
+// Not one of them matched a row in shop_categories, so *every* shop — clinic,
+// salon, garage, pharmacy — fell through `|| 'retail'` and rendered
+// RetailVisitorView. The specialised views existed and were simply never
+// reached, and because the fallback is silent there was nothing in the console
+// to show it.
+//
+// ShopManagerRouter.ARCHETYPE_MAP and the backend's ARCHETYPE_MAP in
+// shop-management.controller.js were both already on the correct slugs; only
+// this file was stale. Keep all three in step when categories change.
 const CATEGORY_VIEW_MAP = {
-  // Retail
-  'kirana_grocery':             'retail',
-  'pharmacy':                   'pharmacy',
-  'bakery_sweets':              'retail',
-  'dairy_milk_booth':           'retail',
-  'meat_fish_poultry':          'retail',
-  'fruit_vegetable':            'retail',
-  'electronics':                'retail',
-  'clothing_fashion':           'retail',
-  'hardware_paint':             'retail',
-  'stationery_bookstore':       'retail',
-  'florist':                    'retail',
-  'jewellery':                  'retail',
-  'sports_fitness':             'retail',
-  'home_decor':                 'retail',
-  'general_retail':             'retail',
-  'pet_store':                  'retail',
-  'cosmetics_beauty':           'retail',
-  'furniture':                  'retail',
-  'mattress_bedding':           'retail',
-  'kitchenware_utensils':       'retail',
-  'electrical_plumbing_supply': 'retail',
-  'tyre_battery':               'retail',
-  'pan_betel_shop':             'retail',
-  'liquor_wine':                'retail',
-  'ice_cream_dessert':          'retail',
-  'juice_smoothie_bar':         'retail',
-  'mobile_recharge_dth':        'retail',
-  'gift_novelty':               'retail',
-  'toy_store':                  'retail',
-  'nursery_garden':             'retail',
-  'pooja_religious':            'retail',
-  'fuel_station':               'retail',
-  'farm_agri_input':            'retail',
-  'recycling_scrap':            'lead_directory',
+  // ── Retail counters ────────────────────────────────────────────────
+  'grocery-supermarkets':       'retail',
+  'fresh-produce-meat':         'retail',
+  'dairy-sweets-bakery':        'retail',
+  'stationery-gifts-books':     'retail',
+  'pooja-samagri-religious':    'retail',
+  'hardware-sanitary':          'retail',
+  'clothing-fashion':           'retail',
+  'pet-care-supplies':          'retail',
+  'jewellery-gold':             'retail',
+  'florists-nurseries':         'retail',
+  'eyewear-opticians':          'retail',
+  'gas-cylinder-lpg':           'retail',
+  'printing-xerox-dtp':         'retail',
+  'tailoring-boutiques':        'retail',
 
-  // Restaurant & Food
-  'restaurant':                 'restaurant',
-  'tiffin_catering':            'tiffin',
-  'tea_coffee_cafe':            'restaurant',
+  // ── Food ───────────────────────────────────────────────────────────
+  'restaurants-cafes':          'restaurant',
+  'tiffin-meal-subscription':   'tiffin',
+  'catering-party':             'tiffin',
+  'catering-party-services':    'tiffin',
 
-  // Salon / Spa / Beauty
-  'salon_spa':                  'beauty',
+  // ── Pharmacy (prescription upload flow) ────────────────────────────
+  'pharmacy-healthcare':        'pharmacy',
 
-  // Healthcare & Clinics
-  'medical_clinic':             'hospital',
-  'dental_clinic':              'hospital',
-  'pathology_diagnostic_lab':   'hospital',
-  'physiotherapy_rehab':        'hospital',
-  'ayurveda_homeopathy':        'hospital',
-  'veterinary_clinic':          'hospital',
-  'optical':                    'retail',
+  // ── Clinical (token queue + slot booking) ──────────────────────────
+  'dentists-orthodontists':     'hospital',
+  'pathology-labs':             'hospital',
+  'pathology-labs-diagnostics': 'hospital',
+  'physiotherapy':              'hospital',
+  'physiotherapy-chiropractic': 'hospital',
+  'ayurvedic-homeopathic':      'hospital',
+  'dieticians-nutritionists':   'hospital',
 
-  // Coaching & Education
-  'coaching_tuition':           'education',
+  // ── Salon / wellness (specialist + combo booking) ──────────────────
+  'salon-beauty-spa':           'beauty',
+  'yoga-wellness':              'beauty',
+  'gym-fitness':                'beauty', // class/session booking shares this UX
 
-  // Garage & Auto
-  'garage_auto':                'garage',
-  'car_bike_dealer':            'retail',
+  // ── Repair bays (job cards, drop-off) ──────────────────────────────
+  'automotive-mechanic':        'garage',
+  'mobile-computer-repair':     'garage',
+  'ac-appliance-repair':        'garage',
+  'ro-water-purifier':          'garage',
+  'ro-water-purifier-service':  'garage',
+  'car-bike-wash':              'garage',
 
-  // Home Services & Repair
-  'computer_mobile_repair':     'garage',
-  'ac_appliance_repair':        'garage',
-  'water_purifier_ro':          'garage',
-  'pest_control':               'home_service',
-  'packers_movers':             'home_service',
-  'laundry_dryclean':           'home_service',
-  'cobbler_shoe_repair':        'home_service',
-  'key_locksmith':              'home_service',
-  'tailoring_alteration':       'retail',
+  // ── Visit-my-home services (quote request) ─────────────────────────
+  'home-services-plumbers':     'home_service',
+  'electricians-electronics':   'home_service',
+  'pest-control':               'home_service',
+  'pest-control-services':      'home_service',
+  'deep-cleaning':              'home_service',
+  'deep-cleaning-services':     'home_service',
+  'painting-renovation':        'home_service',
+  'security-cctv':              'home_service',
+  'locksmith-key-maker':        'home_service',
+  'laundry-dry-cleaning':       'home_service',
+  'packers-movers':             'home_service',
+  'courier-parcel-services':    'home_service',
+  'water-tanker-supply':        'home_service',
 
-  // Professionals & Planners
-  'photography_studio':         'education',
-  'ca_legal_services':          'professional',
-  'insurance_financial':        'professional',
-  'travel_agent':               'professional',
-  'event_wedding_planner':      'education',
-  'interior_designer':          'professional',
-  
-  // Logistics & Printing
-  'courier_logistics':          'retail',
-  'printing_xerox':             'retail',
+  // ── Consultations (appointment with a professional) ────────────────
+  'cas-tax-consultants':        'professional',
+  'lawyers-advocates':          'professional',
+  'insurance-agents':           'professional',
+  'travel-agents-visa':         'professional',
+  'interior-design-decor':      'professional',
+  'astrologer-pandit':          'professional',
 
-  // Fitness
-  'gym_yoga_studio':            'beauty', // Reusing beauty for fitness classes
+  // ── Education & events (batches, packages, portfolios) ─────────────
+  'tutors-education':           'education',
+  'coaching-test-prep':         'education',
+  'driving-schools':            'education',
+  'event-planners-decorators':  'education',
+  'wedding-party-planner':      'education',
+  'photographers-videographers':'education',
+
+  // ── Slot-by-the-hour grounds ───────────────────────────────────────
+  // Restores TurfVisitorView, which the switch below handled but no category
+  // reached.
+  'turf-grounds':               'turf',
+
+  // ── Enquiry-led listings (no cart, contact the lister) ─────────────
+  'real-estate-brokers':        'lead_directory',
 };
+
+/**
+ * Resolve a category slug to a view type.
+ *
+ * Falling back to 'retail' is the right runtime behaviour — a shop page must
+ * still render — but doing it *silently* is how the entire map came to be
+ * mismatched without anyone noticing. Outside production an unmapped slug now
+ * says so, naming the file to edit.
+ *
+ * Warnings are de-duplicated because this runs on every render of every card.
+ */
+const warnedSlugs = new Set();
+
+function resolveViewType(categorySlug) {
+  const viewType = CATEGORY_VIEW_MAP[categorySlug];
+  if (viewType) return viewType;
+
+  if (process.env.NODE_ENV !== 'production' && categorySlug && !warnedSlugs.has(categorySlug)) {
+    warnedSlugs.add(categorySlug);
+    console.warn(
+      `[VisitorViewRouter] No view mapped for category "${categorySlug}" — ` +
+      'falling back to the generic retail view. Add it to CATEGORY_VIEW_MAP in ' +
+      'apps/web/src/app/shops/[id]/components/VisitorViewRouter.js.'
+    );
+  }
+  return 'retail';
+}
 
 /**
  * VisitorViewRouter — Resolves category slug → correct visitor view component
@@ -136,7 +190,7 @@ const VisitorViewRouterComponent = ({
   onRequestService,
   onAddToCart,
 }) => {
-  const viewType = CATEGORY_VIEW_MAP[categorySlug] || 'retail';
+  const viewType = resolveViewType(categorySlug);
 
   const renderView = () => {
     switch (viewType) {
@@ -148,9 +202,15 @@ const VisitorViewRouterComponent = ({
       case 'garage': return <GarageVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} onRequestService={onRequestService} />;
       case 'home_service': return <HomeServiceVisitorView shop={shop} services={services} staff={staff} onRequestQuote={onRequestQuote} />;
       case 'professional': return <ProfessionalVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
-      case 'education': return <EducationEventsVisitorView shop={shop} services={services} onBookAppointment={onBookAppointment} />;
+      // EducationEventsVisitorView takes onEnroll, not onBookAppointment. It was
+      // handed onBookAppointment, so `onEnroll?.(selectedPkg)` behind its Enrol
+      // button resolved to undefined and the optional chaining swallowed the
+      // call — the button did nothing, with no error in the console. Enrolling
+      // in a batch or booking an event package is the same action as booking an
+      // appointment, so it maps onto the handler the page already supplies.
+      case 'education': return <EducationEventsVisitorView shop={shop} services={services} onEnroll={onBookAppointment} />;
       case 'turf': return <TurfVisitorView shop={shop} services={services} staff={staff} onBookAppointment={onBookAppointment} />;
-      case 'rental': return <RentalVisitorView shop={shop} products={products} />;
+      case 'rental': return <RentalVisitorView shop={shop} />;
       case 'lead_directory': return <LeadDirectoryVisitorView shop={shop} />;
       case 'retail':
       default: return <RetailVisitorView shop={shop} products={products} onAddToCart={onAddToCart} />;
@@ -179,5 +239,8 @@ export default React.memo(VisitorViewRouterComponent, (prevProps, nextProps) => 
  * Get the view type for a category
  */
 export function getVisitorViewType(categorySlug) {
-  return CATEGORY_VIEW_MAP[categorySlug] || 'retail';
+  return resolveViewType(categorySlug);
 }
+
+// Exported so a test can assert every shop_categories.slug is covered.
+export { CATEGORY_VIEW_MAP };

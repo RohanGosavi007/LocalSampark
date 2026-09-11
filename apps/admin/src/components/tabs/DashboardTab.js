@@ -1,6 +1,10 @@
 'use client';
 import React from 'react';
 
+// Presentational only: summaryStats and pendingShops are fetched by the parent
+// page and passed in, so there is no request here to fail and no error state
+// of its own. The parent surfaces load failures.
+
 export default function DashboardTab({ summaryStats, pendingShops, API_BASE, authHeaders, approveShop, rejectShop }) {
   const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
   const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600, borderBottom: '1px solid #334155' };

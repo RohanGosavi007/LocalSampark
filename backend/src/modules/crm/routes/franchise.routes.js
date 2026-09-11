@@ -1,13 +1,25 @@
 ﻿const express = require('express');
 const router = express.Router();
 const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+
+/**
+ * Roles are stored lower case ('super_admin', 'admin'); every comparison in this
+ * file was written against upper case, so none of them ever matched. That made
+ * enforceTerritoryBounds a no-op and, more seriously, made the ?franchiseId
+ * override on /dashboard available to every authenticated user rather than to
+ * admins — any signed-in customer could read any partner's earnings by guessing
+ * an id.
+ */
+const isAdmin = (req) =>
+    ['super_admin', 'admin', 'territory_admin'].includes(String(req.user?.role || '').toLowerCase()) ||
+    ['SUPER_ADMIN', 'ADMIN', 'TERRITORY_ADMIN'].includes(String(req.adminRole?.role || ''));
 
 // Middleware to enforce territory bounds
 const enforceTerritoryBounds = async (req, res, next) => {
     try {
-        if (req.user.role === 'FRANCHISE_OWNER') {
+        if (String(req.user.role || '').toLowerCase() === 'franchise_owner') {
             const franchise = await queryOne('SELECT territory_pincode FROM franchise_partners WHERE user_id = $1 LIMIT 1', [req.user.id]);
             if (!franchise) return res.status(403).json({ error: 'Franchise not found' });
             req.franchise_pincode = franchise.territory_pincode;
@@ -24,8 +36,12 @@ router.get('/dashboard', authenticate, enforceTerritoryBounds, async (req, res, 
         let franchiseQuery = 'SELECT * FROM franchise_partners WHERE user_id = $1 LIMIT 1';
         let franchiseParams = [req.user.id];
         
-        // If a superadmin is querying a specific franchise dashboard
-        if (req.user.role !== 'FRANCHISE_OWNER' && req.query.franchiseId) {
+        // If an admin is querying a specific franchise dashboard. This branch
+        // used to be reachable by any authenticated caller.
+        if (req.query.franchiseId) {
+            if (!isAdmin(req)) {
+                return res.status(403).json({ error: 'Only an administrator can view another partner\'s dashboard.' });
+            }
             franchiseQuery = 'SELECT * FROM franchise_partners WHERE id = $1 LIMIT 1';
             franchiseParams = [req.query.franchiseId];
         }
@@ -84,7 +100,7 @@ router.post('/register', authenticate, async (req, res, next) => {
 });
 
 // GET /all - List all franchise partners (admin-only)
-router.get('/all', authenticate, async (req, res, next) => {
+router.get('/all', authenticate, requireAdmin, async (req, res, next) => {
     try {
         const franchises = await query(`
             SELECT fp.*, u.full_name as partner_name, u.phone_number as partner_phone, u.email as partner_email
@@ -100,15 +116,43 @@ router.get('/all', authenticate, async (req, res, next) => {
 // PUT /:id/status - Update franchise status
 router.put('/:id/status', authenticate, async (req, res, next) => {
     try {
-        // Enforce Admin only
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
-            return res.status(403).json({ error: 'Unauthorized' });
-        }
+        // Was compared against upper-case role names that are never stored, so
+        // this rejected every caller including real administrators.
+        if (!isAdmin(req)) return res.status(403).json({ error: 'Unauthorized' });
+
         const { status } = req.body;
         if (!status) return res.status(400).json({ error: 'status is required' });
-        
-        await queryOne('UPDATE franchise_partners SET status = $1 WHERE id = $2', [status, req.params.id]);
+
+        await query('UPDATE franchise_partners SET status = $1 WHERE id = $2', [status, req.params.id]);
         res.json({ success: true, message: 'Status updated' });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Set a partner's revenue split.
+ *
+ * The admin app had an "Edit Revenue Split" dialog that called nothing: it
+ * changed a number in React state and then told the operator "Franchise revenue
+ * split updated successfully." Reopening the screen showed the old rate, and
+ * the partner was still paid at it — the operator had been told a commission
+ * change had been applied to money when it had not.
+ */
+router.put('/:id/commission', authenticate, async (req, res, next) => {
+    try {
+        if (!isAdmin(req)) return res.status(403).json({ error: 'Unauthorized' });
+
+        const rate = Number(req.body?.commissionRate);
+        if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+            return res.status(400).json({ error: 'commissionRate must be a number between 0 and 100.' });
+        }
+
+        const existing = await queryOne('SELECT id FROM franchise_partners WHERE id = $1', [req.params.id]);
+        if (!existing) return res.status(404).json({ error: 'Franchise partner not found.' });
+
+        await query('UPDATE franchise_partners SET commission_rate = $1 WHERE id = $2', [rate, req.params.id]);
+        res.json({ success: true, commissionRate: rate });
     } catch (err) {
         next(err);
     }
@@ -133,7 +177,7 @@ router.post('/payouts/claim', authenticate, async (req, res, next) => {
             }
 
             // Append-only withdrawal debit
-            await dbClient.query('INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status) VALUES ($1, $2, $3, $4, $5, $6)',
+            await dbClient.query('INSERT INTO wallet_transactions (id, wallet_id, amount, type, purpose, status) VALUES ($1, $2, $3, $4, $5, $6)',
                 [crypto.randomUUID(), walletId, -amountToClaim, 'debit', 'withdrawal', 'pending']
             );
             

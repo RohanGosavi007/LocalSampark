@@ -1,26 +1,67 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, ActivityIndicator, RefreshControl } from 'react-native';
+import { apiGet } from '../../src/lib/api';
 
+/**
+ * Merchant appointment book.
+ *
+ * The list was three invented bookings — "Priya Sharma, Haircut + Spa, Today
+ * 4:00 PM with Meera", "Rohan Patil, Beard Trim", "Sneha Gupta, Facial" — named
+ * customers with named staff, shown to every salon owner as their diary for the
+ * day. Reschedule and Mark Complete had no handlers, so a merchant could not
+ * have acted on them even if they had been real.
+ *
+ * /shops/my-shop/appointments now reads shop_appointments, the table bookings
+ * are actually written to. It previously queried a Prisma model mapped to a
+ * table no migration creates, so it had never returned anything.
+ */
 export default function AppointmentsScreen() {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [slotsEnabled, setSlotsEnabled] = useState(true);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const mockAppointments = [
-    { id: 'APT-109', customer: 'Priya Sharma', service: 'Haircut + Spa', time: 'Today, 4:00 PM', staff: 'Meera', status: 'Upcoming' },
-    { id: 'APT-110', customer: 'Rohan Patil', service: 'Beard Trim', time: 'Today, 5:30 PM', staff: 'Rahul', status: 'Upcoming' },
-    { id: 'APT-108', customer: 'Sneha Gupta', service: 'Facial', time: 'Yesterday, 2:00 PM', staff: 'Meera', status: 'Completed' }
-  ];
+  const load = useCallback(async ({ isRefresh = false } = {}) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError(null);
+    try {
+      const res = await apiGet('/shops/my-shop/appointments');
+      const rows = res?.appointments ?? [];
+      setAppointments(
+        rows.map((a) => {
+          const when = a.appointment_date ? new Date(a.appointment_date) : null;
+          const day = when && !Number.isNaN(when.getTime())
+            ? when.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+            : '';
+          const done = ['completed', 'cancelled', 'no_show'].includes(String(a.status || '').toLowerCase());
+          return {
+            id: String(a.id),
+            // Never a placeholder name: a walk-in booked without an account
+            // shows as Customer.
+            customer: a.customer_name || 'Customer',
+            service: a.service_name || '',
+            time: [day, a.time_slot].filter(Boolean).join(', '),
+            staff: a.staff_name || '',
+            status: done ? 'Completed' : 'Upcoming',
+          };
+        })
+      );
+    } catch (err) {
+      setAppointments([]);
+      setError(err?.message || 'Could not load your appointments.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  const timeSlots = [
-    { time: '09:00 AM', active: true },
-    { time: '10:00 AM', active: true },
-    { time: '11:00 AM', active: false }, // booked
-    { time: '12:00 PM', active: true },
-    { time: '01:00 PM', active: false }, // lunch break
-    { time: '02:00 PM', active: true },
-    { time: '03:00 PM', active: true },
-    { time: '04:00 PM', active: false }, // booked
-  ];
+  useEffect(() => { load(); }, [load]);
+
+  const visible = appointments.filter((a) =>
+    activeTab === 'upcoming' ? a.status === 'Upcoming' : a.status === 'Completed'
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,32 +98,52 @@ export default function AppointmentsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.listContainer}>
+      <ScrollView
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load({ isRefresh: true })} tintColor="#3b82f6" />
+        }
+      >
         {activeTab === 'slots' ? (
           <View style={styles.slotsSection}>
             <Text style={styles.sectionTitle}>Today's Availability</Text>
-            <Text style={styles.sectionSubtitle}>Tap to block/unblock specific time slots</Text>
             
-            <View style={styles.slotsGrid}>
-              {timeSlots.map((slot, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={[styles.slotChip, !slot.active && styles.slotChipInactive]}
-                >
-                  <Text style={[styles.slotText, !slot.active && styles.slotTextInactive]}>{slot.time}</Text>
-                  {!slot.active && <Text style={styles.slotBadge}>Blocked</Text>}
-                </TouchableOpacity>
-              ))}
+            
+            {/* The slot grid was eight fixed times with three marked blocked —
+                two "booked", one "lunch break" — none of which came from this
+                shop's schedule, and neither the chips nor "Save Configuration"
+                had a handler. Service slots are managed through
+                /shops/my-shop/service-slots; until this screen calls it, it says
+                so rather than showing a schedule that is not the merchant's. */}
+            <View style={styles.stateBox}>
+              <Text style={styles.stateTitle}>Slot management is not wired up yet</Text>
+              <Text style={styles.stateBody}>
+                Your bookable slots are set on your shop profile. This tab will
+                show and edit them here in a future update.
+              </Text>
             </View>
-
-            <TouchableOpacity style={styles.saveSlotsBtn}>
-              <Text style={styles.saveSlotsBtnText}>Save Configuration</Text>
-            </TouchableOpacity>
           </View>
         ) : (
-          mockAppointments
-            .filter(a => activeTab === 'upcoming' ? a.status === 'Upcoming' : a.status === 'Completed')
-            .map(apt => (
+          loading ? (
+            <View style={styles.stateBox}><ActivityIndicator color="#3b82f6" /></View>
+          ) : visible.length === 0 ? (
+            <View style={styles.stateBox}>
+              <Text style={styles.stateTitle}>
+                {error ? 'Could not load your appointments' : 'Nothing to show'}
+              </Text>
+              <Text style={styles.stateBody}>
+                {error || (activeTab === 'upcoming'
+                  ? 'Bookings customers make will appear here.'
+                  : 'Completed appointments will appear here.')}
+              </Text>
+              {error ? (
+                <TouchableOpacity style={styles.retryBtn} onPress={() => load({ isRefresh: true })}>
+                  <Text style={styles.retryBtnText}>Retry</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : (
+            visible.map(apt => (
               <View key={apt.id} style={styles.aptCard}>
                 <View style={styles.aptHeader}>
                   <Text style={styles.aptId}>{apt.id}</Text>
@@ -102,10 +163,12 @@ export default function AppointmentsScreen() {
                     <Text style={styles.detailIcon}>🕒</Text>
                     <Text style={styles.detailText}>{apt.time}</Text>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>👤</Text>
-                    <Text style={styles.detailText}>Staff: {apt.staff}</Text>
-                  </View>
+                  {apt.staff ? (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailIcon}>👤</Text>
+                      <Text style={styles.detailText}>Staff: {apt.staff}</Text>
+                    </View>
+                  ) : null}
                 </View>
 
                 {activeTab === 'upcoming' && (
@@ -120,6 +183,7 @@ export default function AppointmentsScreen() {
                 )}
               </View>
             ))
+          )
         )}
       </ScrollView>
     </SafeAreaView>
@@ -128,6 +192,11 @@ export default function AppointmentsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  stateBox: { backgroundColor: '#ffffff', borderRadius: 12, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
+  retryBtn: { marginTop: 20, backgroundColor: '#3b82f6', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, minHeight: 44, justifyContent: 'center' },
+  retryBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 13 },
   header: { padding: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#ffffff' },
   headerTitle: { color: '#0f172a', fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
   headerToggle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: 12, borderRadius: 12 },
@@ -167,13 +236,5 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#0f172a', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   sectionSubtitle: { color: '#64748b', fontSize: 13, marginBottom: 20 },
   
-  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
-  slotChip: { width: '48%', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 1, borderColor: '#10b981', paddingVertical: 14, borderRadius: 12, alignItems: 'center', position: 'relative' },
-  slotChipInactive: { backgroundColor: '#f8fafc', borderColor: '#e2e8f0' },
-  slotText: { color: '#10b981', fontWeight: 'bold', fontSize: 15 },
-  slotTextInactive: { color: '#64748b' },
-  slotBadge: { position: 'absolute', top: -8, right: -8, backgroundColor: '#ef4444', color: '#0f172a', fontSize: 10, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' },
   
-  saveSlotsBtn: { backgroundColor: '#3b82f6', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-  saveSlotsBtnText: { color: '#0f172a', fontWeight: 'bold', fontSize: 15 }
 });

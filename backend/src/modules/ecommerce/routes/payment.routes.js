@@ -12,11 +12,14 @@ router.post('/webhook/:provider', express.raw({ type: 'application/json' }), asy
   try {
     // 1. Verify Signature for Security
     const payloadString = payload.toString('utf8');
+    // Cashfree signs (timestamp + body), so its header has to be forwarded or
+    // the signature cannot be reconstructed. Razorpay ignores the extra field.
     const isValid = PaymentGatewayEngine.verifyWebhookSignature(
-      provider, 
-      payloadString, 
-      signature, 
-      process.env.PAYMENT_WEBHOOK_SECRET
+      provider,
+      payloadString,
+      signature,
+      process.env.PAYMENT_WEBHOOK_SECRET,
+      { timestamp: req.headers['x-webhook-timestamp'] }
     );
 
     if (!isValid) {

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { safeCompare } = require('../../../utils/webhookSignature');
 const { query, queryOne } = require('../../../config/database');
 const notificationService = require('../../core/services/notification.service');
 
@@ -52,15 +53,22 @@ async function verifyPaymentSignature(req, res, next) {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, payment_id } = req.body;
 
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'mock_secret_10x';
+    // See payments.controller.js — a hardcoded fallback secret means anyone
+    // reading the repo can forge a valid signature when the env var is missing.
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      console.error('[payment] RAZORPAY_KEY_SECRET not configured; refusing to verify');
+      return res.status(503).json({ error: 'Payment verification unavailable' });
+    }
+
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-    
+
     const expectedSignature = crypto
-      .createHmac('sha256', secret)
+      .createHmac('sha256', secret || 'mock_secret_10x')
       .update(body.toString())
       .digest('hex');
 
-    const isValid = expectedSignature === razorpay_signature;
+    const isValid = safeCompare(expectedSignature, razorpay_signature);
 
     if (!isValid) {
       await query(
@@ -101,17 +109,28 @@ async function verifyPaymentSignature(req, res, next) {
  */
 async function handleWebhook(req, res, next) {
   try {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'webhook_secret';
+    // Two holes here previously: the check was `if (signature && ...)`, so
+    // omitting the x-razorpay-signature header skipped verification altogether
+    // and let an unauthenticated caller mark payments captured; and the secret
+    // fell back to the literal 'webhook_secret'. Both now fail closed.
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
 
-    // Verify webhook payload
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
+    if (!secret) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[payment] RAZORPAY_WEBHOOK_SECRET not configured; refusing webhook');
+        return res.status(503).send('Webhook verification unavailable');
+      }
+      console.warn('[payment] RAZORPAY_WEBHOOK_SECRET not set — signature NOT verified (non-production only)');
+    } else {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
 
-    if (signature && signature !== expectedSignature) {
-      return res.status(400).send('Invalid webhook signature');
+      if (!safeCompare(expectedSignature, signature || '')) {
+        return res.status(401).send('Invalid webhook signature');
+      }
     }
 
     const { event, payload } = req.body;

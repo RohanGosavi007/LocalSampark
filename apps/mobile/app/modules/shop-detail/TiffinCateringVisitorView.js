@@ -14,9 +14,9 @@ export default function TiffinCateringVisitorView({ shop }) {
   ];
 
   return (
-    <VisitorLayout 
-      shopName={shop.name || 'Maa Ki Rasoi Tiffin'} 
-      shopAddress="Kalyani Nagar, Pune"
+    <VisitorLayout shop={shop} 
+      shopName={shop.name || 'Tiffin Service'} 
+      shopAddress={shop.address || ''}
       shopIcon="🍱"
       cartCount={selectedPlan ? 1 : 0}
       onCheckout={() => router.push('/modules/checkout')}

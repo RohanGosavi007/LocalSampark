@@ -168,7 +168,8 @@ class CheckoutService {
 
       // 2. Platform Revenue
       const netPlatformRevenue = platformCommission - franchiseCommission;
-      await dbClient.query('INSERT INTO revenue_transactions (id, type, gross_amount, platform_share, franchise_share, region_id, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      // revenue_transactions classifies rows with source_type, not type.
+      await dbClient.query('INSERT INTO revenue_transactions (id, source_type, gross_amount, platform_share, franchise_share, region_id, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [crypto.randomUUID(), 'order_commission', platformCommission, netPlatformRevenue, franchiseCommission, shop.region_id, 'completed']
       );
 

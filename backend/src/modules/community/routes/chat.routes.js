@@ -7,9 +7,9 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 router.get('/contacts', authenticate, async (req, res, next) => {
     try {
         const result = await query(`
-            SELECT DISTINCT u.id, u.name, u.role, u.user_type
+            SELECT DISTINCT u.id, u.full_name, u.role, u.role
             FROM users u
-            JOIN chat_messages c ON (c.sender_id = u.id OR c.receiver_id = u.id)
+            JOIN messages c ON (c.sender_id = u.id OR c.receiver_id = u.id)
             WHERE (c.sender_id = $1 OR c.receiver_id = $1) AND u.id != $1
         `, [req.user.id]);
         res.json({ success: true, data: result.rows || result });
@@ -23,7 +23,7 @@ router.get('/messages/:userId', authenticate, async (req, res, next) => {
     try {
         const { userId } = req.params;
         const result = await query(`
-            SELECT * FROM chat_messages 
+            SELECT * FROM messages 
             WHERE (sender_id = $1 AND receiver_id = $2) 
                OR (sender_id = $2 AND receiver_id = $1)
             ORDER BY created_at ASC
@@ -40,8 +40,8 @@ router.get('/search-users', authenticate, async (req, res, next) => {
         const { q } = req.query;
         if (!q) return res.json({ success: true, data: [] });
         const result = await query(`
-            SELECT id, name, role, user_type FROM users 
-            WHERE (name LIKE $1 OR id LIKE $1) AND id != $2 
+            SELECT id, full_name, role FROM users 
+            WHERE (full_name LIKE $1 OR id LIKE $1) AND id != $2 
             LIMIT 10
         `, [`%${q}%`, req.user.id]);
         res.json({ success: true, data: result.rows || result });
@@ -52,7 +52,7 @@ router.get('/search-users', authenticate, async (req, res, next) => {
 
 // ─── CONVERSATIONS ───────────────────────────────────────────────────────────
 // The chat page has always called this; it was never implemented, so the page
-// fell back to demo conversations. Threads are derived from chat_messages:
+// fell back to demo conversations. Threads are derived from messages:
 // one row per counterparty with the latest message and unread count.
 router.get('/conversations', authenticate, async (req, res, next) => {
   try {
@@ -60,7 +60,7 @@ router.get('/conversations', authenticate, async (req, res, next) => {
       `WITH threads AS (
          SELECT
            CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END AS peer_id,
-           message,
+           message_text,
            created_at,
            is_read,
            receiver_id,
@@ -68,15 +68,15 @@ router.get('/conversations', authenticate, async (req, res, next) => {
              PARTITION BY CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END
              ORDER BY created_at DESC
            ) AS rn
-         FROM chat_messages
+         FROM messages
          WHERE sender_id = $1 OR receiver_id = $1
        )
        SELECT t.peer_id                AS user_id,
               u.full_name              AS name,
               u.avatar_url,
-              t.message                AS last_message,
+              t.message_text           AS last_message,
               t.created_at             AS last_message_at,
-              (SELECT COUNT(*) FROM chat_messages m
+              (SELECT COUNT(*) FROM messages m
                 WHERE m.sender_id = t.peer_id
                   AND m.receiver_id = $1
                   AND (m.is_read = false OR m.is_read = 0)) AS unread_count

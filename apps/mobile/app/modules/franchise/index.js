@@ -1,37 +1,74 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import { apiPost } from '../../../src/lib/api';
 
-const TERRITORIES = [
-  { zone: 'Dhanori', pin: '411015', shops: 47, users: 2840, status: 'Active', partner: 'Rajesh Sharma', revenue: '₹2.1L/mo', color: '#10b981' },
-  { zone: 'Viman Nagar', pin: '411014', shops: 62, users: 4120, status: 'Active', partner: 'Priya Kulkarni', revenue: '₹3.4L/mo', color: '#10b981' },
-  { zone: 'Kharadi', pin: '411014', shops: 38, users: 1980, status: 'Open', partner: '—', revenue: '—', color: '#f97316' },
-  { zone: 'Baner', pin: '411045', shops: 0, users: 0, status: 'Open', partner: '—', revenue: '—', color: '#f97316' },
-  { zone: 'Aundh', pin: '411007', shops: 0, users: 0, status: 'Open', partner: '—', revenue: '—', color: '#f97316' },
-  { zone: 'Wakad', pin: '411057', shops: 0, users: 0, status: 'Open', partner: '—', revenue: '—', color: '#f97316' },
-];
-
+/**
+ * Franchise portal — this page solicits money.
+ *
+ * TERRITORIES claimed live performance for six zones, two of them with named
+ * partners: "Dhanori, 47 shops, 2,840 users, ₹2.1L/mo, partner Rajesh Sharma"
+ * and "Viman Nagar, 62 shops, 4,120 users, ₹3.4L/mo, Priya Kulkarni". None of
+ * those figures came from anywhere and neither person exists.
+ *
+ * TIER_BENEFITS then paired an investment with a monthly return — ₹10,000 for
+ * "₹8,000–25,000/month", ₹50,000 for "₹40,000–1.2L", ₹2,00,000 for "₹1.5L–5L+"
+ * — next to territory numbers that appeared to corroborate them. A prospective
+ * partner could have put two lakh rupees in on the strength of it.
+ *
+ * And the application form reported "Application Submitted! Our onboarding team
+ * will contact you within 24 hours" having called no API at all, so nobody was
+ * ever going to call.
+ *
+ * The zone list and the earnings projections are removed: nothing computes
+ * either, and an income claim attached to an investment ask is the last thing
+ * this app should be guessing at. The tier table keeps only what the business
+ * actually sets — the investment and the commission rate. The form now posts to
+ * /franchise/register, which records a real pending application.
+ */
 const TIER_BENEFITS = [
-  { tier: 'Sub-Agent', icon: '🧑', invest: '₹10,000', commission: '10%', support: 'WhatsApp support', manage: 'Up to 20 shops', monthly: '₹8,000–25,000', color: '#64748b' },
-  { tier: 'Zone Franchise', icon: '🏢', invest: '₹50,000', commission: '25%', support: 'Dedicated BDE', manage: 'Full zone control', monthly: '₹40,000–1.2L', color: '#3b82f6', popular: true },
-  { tier: 'City Master', icon: '🌆', invest: '₹2,00,000', commission: '40% + override', support: 'C-Level access', manage: 'All zones in city', monthly: '₹1.5L–5L+', color: '#f97316' },
+  { tier: 'Sub-Agent', icon: '🧑', invest: '₹10,000', commission: '10%', support: 'WhatsApp support', manage: 'Up to 20 shops', color: '#64748b' },
+  { tier: 'Zone Franchise', icon: '🏢', invest: '₹50,000', commission: '25%', support: 'Dedicated BDE', manage: 'Full zone control', color: '#3b82f6', popular: true },
+  { tier: 'City Master', icon: '🌆', invest: '₹2,00,000', commission: '40% + override', support: 'C-Level access', manage: 'All zones in city', color: '#f97316' },
 ];
 
 export default function FranchiseScreen() {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState('Zone Franchise');
   const [form, setForm] = useState({ name: '', phone: '', pincode: '', zone: '' });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!form.name || !form.phone || !form.pincode || !form.zone) {
       return Alert.alert('Error', 'Please fill all fields');
     }
-    setShowApplyModal(false);
-    Alert.alert(
-      'Application Submitted! 🎉',
-      `Thank you ${form.name}. Your application to run a ${selectedTier} in ${form.zone} (${form.pincode}) has been submitted. Our onboarding team will contact you on ${form.phone} within 24 hours.`
-    );
-    setForm({ name: '', phone: '', pincode: '', zone: '' });
+
+    setSubmitting(true);
+    try {
+      await apiPost('/franchise/register', {
+        region_pincode: form.pincode,
+        territory_name: form.zone,
+        tier: selectedTier,
+        contact_name: form.name,
+        contact_phone: form.phone,
+      });
+      setShowApplyModal(false);
+      setForm({ name: '', phone: '', pincode: '', zone: '' });
+      Alert.alert(
+        'Application received',
+        // No promise about a 24-hour callback: nothing schedules one.
+        `Your application to run a ${selectedTier} in ${form.zone} has been recorded and is pending review.`
+      );
+    } catch (err) {
+      // The old handler closed the modal and congratulated the applicant
+      // regardless. A failed application has to look like one.
+      Alert.alert(
+        'Application not submitted',
+        err?.message || 'We could not submit your application. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -61,7 +98,10 @@ export default function FranchiseScreen() {
               <View style={styles.metaRow}><Text style={styles.metaKey}>Commission</Text><Text style={styles.metaVal}>{t.commission}</Text></View>
               <View style={styles.metaRow}><Text style={styles.metaKey}>Manage</Text><Text style={styles.metaVal}>{t.manage}</Text></View>
               <View style={styles.metaRow}><Text style={styles.metaKey}>Support</Text><Text style={styles.metaVal}>{t.support}</Text></View>
-              <View style={styles.metaRow}><Text style={styles.metaKey}>Earnings</Text><Text style={styles.metaVal}>{t.monthly}</Text></View>
+              {/* An "Earnings" row promised a monthly income band against each
+                  investment tier — up to "₹1.5L–5L+" for ₹2,00,000. Nothing
+                  computes that, no partner's actual earnings back it, and it sat
+                  directly beside an Apply Now button. */}
 
               <TouchableOpacity 
                 style={[styles.tierSelectBtn, { backgroundColor: t.color }]} 
@@ -76,20 +116,13 @@ export default function FranchiseScreen() {
           ))}
         </ScrollView>
 
-        {/* Territory Map */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Territory Map (Pune)</Text>
-          {TERRITORIES.map((t, i) => (
-            <View key={i} style={styles.territoryItem}>
-              <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4}}>
-                <Text style={styles.zoneName}>{t.zone} ({t.pin})</Text>
-                <Text style={[styles.statusBadge, {color: t.color, backgroundColor: t.color + '20'}]}>{t.status}</Text>
-              </View>
-              <Text style={styles.territoryMeta}>Partner: {t.partner}</Text>
-              <Text style={styles.territoryMeta}>Shops: {t.shops} | Users: {t.users} | Rev: {t.revenue}</Text>
-            </View>
-          ))}
-        </View>
+        {/* A "Territory Map (Pune)" listed six zones with shop counts, user
+            counts and monthly revenue, two of them naming the partner running
+            them. Every number was invented, and together with the earnings
+            bands above they read as evidence that the model works. Nothing in
+            the backend reports per-territory performance to a prospective
+            partner, so the section is gone rather than filled with numbers
+            somebody might invest against. */}
 
         <TouchableOpacity style={styles.applyBtn} onPress={() => setShowApplyModal(true)}>
           <Text style={styles.applyBtnText}>Apply for Open Pincode</Text>
@@ -102,7 +135,11 @@ export default function FranchiseScreen() {
           <ScrollView contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Franchise Application</Text>
-              <Text style={styles.modalDesc}>Fill in your details below. Our city master franchise coordinator will schedule a video call onboarding interview.</Text>
+              {/* Promised a scheduled video interview that nothing books. */}
+              <Text style={styles.modalDesc}>
+                Fill in your details below. Your application will be recorded for
+                review.
+              </Text>
               
               <Text style={styles.label}>Full Name</Text>
               <TextInput style={styles.modalInput} placeholder="e.g. Rajesh Kumar" placeholderTextColor="#64748b" value={form.name} onChangeText={(val) => setForm({...form, name: val})} />
@@ -133,7 +170,11 @@ export default function FranchiseScreen() {
                 <TouchableOpacity style={[styles.modalBtn, {backgroundColor: '#e2e8f0'}]} onPress={() => setShowApplyModal(false)}>
                   <Text style={styles.modalBtnText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalBtn, {backgroundColor: '#3b82f6'}]} onPress={handleApply}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, { backgroundColor: '#3b82f6' }, submitting && { opacity: 0.6 }]}
+                  disabled={submitting}
+                  onPress={handleApply}
+                >
                   <Text style={styles.modalBtnText}>Submit Apply</Text>
                 </TouchableOpacity>
               </View>

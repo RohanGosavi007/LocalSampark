@@ -4,18 +4,22 @@ import { router } from 'expo-router';
 import VisitorLayout from './components/VisitorLayout';
 import { Ionicons } from '@expo/vector-icons';
 
-const MOCK_MEDS = [
-  { id: 1, name: 'Dolo 650 Tablet', desc: '15 tablets in 1 strip', price: '₹30', image: '💊' },
-  { id: 2, name: 'Vicks Vaporub (50g)', desc: 'Relief from cough & cold', price: '₹145', image: '🧴' },
-];
+// MOCK_MEDS listed named medicines at fixed prices — "Dolo 650 Tablet, 15
+// tablets in 1 strip, ₹30" and "Vicks Vaporub (50g), ₹145" — as though this
+// pharmacy stocked them at that price. Inventing stock is bad anywhere; doing it
+// for medicine, where a customer may be deciding whether to travel to the shop,
+// is worse. The router now passes the pharmacy's real catalogue.
 
-export default function PharmacyVisitorView({ shop }) {
+export default function PharmacyVisitorView({ shop, products = [] }) {
   const [cart, setCart] = useState([]);
   
   return (
-    <VisitorLayout 
-      shopName={shop.name || 'Apollo Pharmacy'} 
-      shopAddress="Main Road, Viman Nagar"
+    <VisitorLayout shop={shop} 
+      /* The fallback named a real national chain, "Apollo Pharmacy", and gave
+          it an address. Any shop that arrived without a name was presented to
+          customers as an Apollo branch. */
+      shopName={shop.name || 'Pharmacy'}
+      shopAddress={shop.address || ''}
       shopIcon="⚕️"
       cartCount={cart.length}
       onCheckout={() => router.push('/modules/checkout')}
@@ -34,26 +38,39 @@ export default function PharmacyVisitorView({ shop }) {
           <Ionicons name="chevron-forward" size={20} color="#64748b" />
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Frequently Ordered</Text>
-        {MOCK_MEDS.map(prod => (
-          <View key={prod.id} style={styles.productCard}>
-            <View style={styles.prodImgBox}><Text style={{fontSize: 32}}>{prod.image}</Text></View>
-            <View style={styles.prodInfo}>
-              <Text style={styles.prodName}>{prod.name}</Text>
-              <Text style={styles.prodDesc}>{prod.desc}</Text>
-              <Text style={styles.prodPrice}>{prod.price}</Text>
-            </View>
-            <TouchableOpacity style={styles.addBtn} onPress={() => setCart([...cart, prod])}>
-              <Text style={styles.addBtnText}>+ ADD</Text>
-            </TouchableOpacity>
+        {/* "Frequently Ordered" claimed an ordering history nothing measured. */}
+        <Text style={styles.sectionTitle}>Available Items</Text>
+        {products.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No items listed yet</Text>
+            <Text style={styles.emptyBody}>
+              Upload a prescription above and the pharmacy will arrange the medicines.
+            </Text>
           </View>
-        ))}
+        ) : (
+          products.map(prod => (
+            <View key={prod.id} style={styles.productCard}>
+              <View style={styles.prodImgBox}><Text style={{fontSize: 32}}>💊</Text></View>
+              <View style={styles.prodInfo}>
+                <Text style={styles.prodName}>{prod.name}</Text>
+                {prod.description ? <Text style={styles.prodDesc}>{prod.description}</Text> : null}
+                <Text style={styles.prodPrice}>₹{Number(prod.price) || 0}</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => setCart([...cart, prod])}>
+                <Text style={styles.addBtnText}>+ ADD</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
       </View>
     </VisitorLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  emptyBox: { backgroundColor: '#f8fafc', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  emptyTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 6 },
+  emptyBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 18 },
   uploadBox: { flexDirection: 'row', backgroundColor: '#ecfdf5', borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: '#a7f3d0' },
   uploadIconBg: { backgroundColor: '#fff', padding: 10, borderRadius: 12, marginRight: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   uploadTitle: { fontSize: 16, fontWeight: 'bold', color: '#065f46', marginBottom: 4 },

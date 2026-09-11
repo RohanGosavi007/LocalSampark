@@ -13,16 +13,18 @@ const POPULAR_ROUTES = [
   { from: 'Dhanori', to: 'Magarpatta', riders: 19, icon: 'storefront-outline', color: '#10b981' },
 ];
 
-const FALLBACK_RIDES = [
-  { id: 1, driver: 'Ramesh Patil', from: 'Dhanori Chowk', to: 'Hinjewadi Phase 1', time: 'Tomorrow, 9:00 AM', price: 50, vehicle: 'Tata Nexon EV', seats: 3, rating: 4.9, gender: 'Any', verified: true, isEV: true },
-  { id: 2, driver: 'Sunita Joshi', from: 'Ganga Aria Society', to: 'Kharadi IT Park', time: 'Tomorrow, 8:30 AM', price: 40, vehicle: 'Maruti Baleno', seats: 2, rating: 4.7, gender: 'Any', verified: true, isEV: false },
-  { id: 3, driver: 'Vikram Singh', from: 'Pride Aashiyana', to: 'Viman Nagar EON', time: 'Today, 6:30 PM', price: 30, vehicle: 'Honda City', seats: 4, rating: 4.8, gender: 'Any', verified: true, isEV: false },
-  { id: 4, driver: 'Priya Kulkarni', from: 'Tingre Nagar', to: 'Magarpatta City', time: 'Tomorrow, 9:30 AM', price: 35, vehicle: 'Maruti Swift', seats: 2, rating: 5.0, gender: 'Women only', verified: true, isEV: false },
-];
+// FALLBACK_RIDES lived here: four named neighbours offering lifts — "Ramesh
+// Patil, Dhanori Chowk to Hinjewadi Phase 1, ₹50, Tata Nexon EV, 4.9, verified",
+// "Sunita Joshi", "Vikram Singh", and a women-only ride from "Priya Kulkarni".
+// Each was marked verified with a rating, and the list was substituted both when
+// the API failed and when it legitimately returned no rides — which is the
+// normal state at most hours. A commuter could have planned their morning around
+// a lift from someone who does not exist.
 
 export default function CarpoolScreen() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [joinedIds, setJoinedIds] = useState([]);
   const [filterTo, setFilterTo] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
@@ -35,17 +37,32 @@ export default function CarpoolScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       const result = await apiGet('/carpool/rides', token);
-      if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+      if (result.success && Array.isArray(result.data)) {
         setRides(result.data.map(r => ({
-          id: r.id, driver: r.driver_name || 'Neighbor', from: r.origin, to: r.destination,
-          time: r.departure_time, price: r.price_per_seat, vehicle: r.vehicle || 'Vehicle',
-          seats: r.seats_available, rating: r.rating || 4.8, gender: r.gender || 'Any', verified: true, isEV: false
+          id: r.id,
+          driver: r.driver_name || 'Neighbour',
+          from: r.origin,
+          to: r.destination,
+          time: r.departure_time,
+          price: r.price_per_seat,
+          vehicle: r.vehicle || null,
+          seats: r.seats_available,
+          // Rating and verification were asserted for every ride — "4.8" and a
+          // verified badge — whether or not the record carried either.
+          rating: r.rating != null ? Number(r.rating) : null,
+          gender: r.gender || 'Any',
+          verified: r.is_verified === true || r.is_verified === 1,
+          isEV: r.is_ev === true || r.is_ev === 1,
         })));
+        setError(null);
       } else {
-        setRides(FALLBACK_RIDES);
+        setRides([]);
       }
     } catch (e) {
-      setRides(FALLBACK_RIDES);
+      // An empty list is the honest answer when there are no rides, and an
+      // error message is the honest answer when the request failed.
+      setRides([]);
+      setError(e?.message || 'Could not load rides.');
     } finally { setLoading(false); }
   };
 
@@ -135,7 +152,7 @@ export default function CarpoolScreen() {
         {loading ? <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} /> : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="car-outline" size={48} color={COLORS.border} />
-            <Text style={styles.emptyTitle}>No rides found</Text>
+            <Text style={styles.emptyTitle}>{error ? 'Could not load rides' : 'No rides found'}</Text>
             <Text style={styles.emptyDesc}>Try a different route or offer your own ride!</Text>
           </View>
         ) : (
@@ -158,12 +175,17 @@ export default function CarpoolScreen() {
                           </View>
                         )}
                       </View>
+                      {/* The star and the vehicle name were printed for every
+                          ride; a driver with neither on record showed an empty
+                          star and a blank vehicle. */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Ionicons name="star" size={12} color="#f59e0b" />
-                          <Text style={styles.ratingText}> {r.rating}</Text>
-                        </View>
-                        <Text style={styles.vehicleText}>{r.vehicle}</Text>
+                        {r.rating ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="star" size={12} color="#f59e0b" />
+                            <Text style={styles.ratingText}> {r.rating}</Text>
+                          </View>
+                        ) : null}
+                        {r.vehicle ? <Text style={styles.vehicleText}>{r.vehicle}</Text> : null}
                         {r.isEV && (
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="leaf" size={10} color="#10b981" />

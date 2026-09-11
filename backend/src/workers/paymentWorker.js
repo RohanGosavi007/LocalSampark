@@ -45,10 +45,14 @@ async function processPendingPayouts() {
 
               const crypto = require('crypto');
               const txId = crypto.randomUUID();
+              // wallet_transactions is keyed by wallet_id and its columns are
+              // type and purpose. Named as user_id/transaction_type/description
+              // this always threw, and .catch(() => {}) discarded the error --
+              // so every escrow payout to a provider was silently dropped.
               await txClient.query(`
-                INSERT INTO wallet_transactions (id, user_id, amount, transaction_type, description, created_at)
-                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-              `, [txId, b.provider_id, fee, 'credit', `Escrow Payout for Service #${b.id || ''}`]).catch(() => {});
+                INSERT INTO wallet_transactions (id, wallet_id, amount, type, purpose, status, created_at)
+                VALUES ($1, (SELECT id FROM wallets WHERE user_id = $2), $3, $4, $5, 'completed', CURRENT_TIMESTAMP)
+              `, [txId, b.provider_id, fee, 'credit', `Escrow Payout for Service #${b.id || ''}`]);
             }
           });
           console.log(`[Worker:Payout] Released ₹${b.inspection_fee || 199} escrow to provider ${b.provider_id}`);

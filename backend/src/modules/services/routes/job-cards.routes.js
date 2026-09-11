@@ -83,8 +83,8 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
     const jobNumber = `JOB-${Date.now().toString(36).toUpperCase()}`;
 
     const result = await query(`INSERT INTO job_cards (shop_id, job_number, customer_name, customer_phone,
-       vehicle_info, device_info, problem_description, estimated_cost,
-       estimated_completion_date, assigned_technician, priority, photos,
+       vehicle_info, device_info, description, estimated_cost,
+       estimated_completion_date, assigned_to, priority, photos,
        status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'received', NOW())
        RETURNING *`,
@@ -193,7 +193,7 @@ router.post('/:shopId/:cardId/parts', authenticate, async (req, res, next) => {
     const partsTotal = await query(`SELECT COALESCE(SUM(total_cost), 0) as total FROM job_card_parts WHERE job_card_id = $1`,
       [cardId]
     );
-    await query(`UPDATE job_cards SET actual_cost = $1, updated_at = NOW() WHERE id = $2`,
+    await query(`UPDATE job_cards SET final_cost = $1, updated_at = NOW() WHERE id = $2`,
       [partsTotal.rows?.[0]?.total || 0, cardId]
     );
 
@@ -241,7 +241,7 @@ router.get('/:shopId/track/:jobNumber', async (req, res, next) => {
   try {
     const { jobNumber } = req.params;
 
-    const card = await query(`SELECT id, job_number, customer_name, status, problem_description,
+    const card = await query(`SELECT id, job_number, customer_name, status, description,
        estimated_cost, estimated_completion_date, created_at, updated_at
        FROM job_cards WHERE job_number = $1`,
       [jobNumber]

@@ -1,9 +1,14 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 if (process.env.USE_SQLITE === 'true') {
-  console.log('--- DEBUG: USE_SQLITE IS TRUE IN DATABASE.JS ---');
   const sqlite = require('./database.sqlite');
-  console.log('--- DEBUG: SQLITE KEYS:', Object.keys(sqlite), '---');
+  // Diagnostics go to stderr, not stdout. Loading this module used to print two
+  // console.log lines, which corrupted the output of every CLI tool that emits
+  // JSON on stdout — the schema scripts under scripts/ all do. Set
+  // DB_DEBUG=1 to see them.
+  if (process.env.DB_DEBUG === '1') {
+    console.error('[db] USE_SQLITE=true; exports:', Object.keys(sqlite).join(', '));
+  }
   module.exports = sqlite;
 } else {
   const { Pool } = require('pg');
@@ -90,6 +95,35 @@ if (process.env.USE_SQLITE === 'true') {
     return withTransaction(callback);
   }
 
+  /**
+   * Schema introspection, mirroring the SQLite driver's API so tooling can run
+   * against either engine without branching. information_schema is the
+   * PostgreSQL equivalent of PRAGMA table_info.
+   */
+  async function listTables() {
+    const res = await query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name"
+    );
+    return (res.rows || []).map((r) => r.table_name);
+  }
+
+  async function getTableColumns(table) {
+    const res = await query(
+      `SELECT column_name, data_type, is_nullable, column_default
+         FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1
+        ORDER BY ordinal_position`,
+      [table]
+    );
+    return (res.rows || []).map((r) => ({
+      name: r.column_name,
+      type: (r.data_type || '').toUpperCase(),
+      notNull: r.is_nullable === 'NO',
+      defaultValue: r.column_default,
+      primaryKey: false, // not needed by current callers; separate query if it becomes so
+    }));
+  }
+
   module.exports = {
     pool,
     connectDB,
@@ -97,6 +131,8 @@ if (process.env.USE_SQLITE === 'true') {
     queryOne,
     queryMany,
     withTransaction,
-    transaction
+    transaction,
+    listTables,
+    getTableColumns
   };
 }

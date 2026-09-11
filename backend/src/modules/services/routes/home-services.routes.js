@@ -71,18 +71,20 @@ router.post('/bookings', authenticate, async (req, res, next) => {
       // 1. Insert booking
       await txClient.query(`
         INSERT INTO home_service_bookings (
-          id, booking_ref, user_id, provider_id, category_id, booking_date, time_slot, service_address, pincode, problem_description, inspection_fee, status
+          id, booking_ref, customer_id, provider_id, category_id, booking_date, time_slot, service_address, pincode, problem_description, inspection_fee, status
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
       `, [bookingId, bookingRef, req.user.id, providerId, categoryId, bookingDate, timeSlot, serviceAddress, pincode || '411015', problemDescription || null, inspectionFee]);
 
       // 2. Ledger balance deduction (if balance exists)
-      const wallet = await txClient.queryOne('SELECT balance FROM user_wallets WHERE user_id = $1', [req.user.id]);
+      const wallet = await txClient.queryOne('SELECT balance FROM wallets WHERE user_id = $1', [req.user.id]);
       if (wallet && wallet.balance >= inspectionFee) {
-        await txClient.query('UPDATE user_wallets SET balance = balance - $1 WHERE user_id = $2', [inspectionFee, req.user.id]);
+        await txClient.query('UPDATE wallets SET balance = balance - $1 WHERE user_id = $2', [inspectionFee, req.user.id]);
         await txClient.query(`
-          INSERT INTO wallet_transactions (id, wallet_id, user_id, amount, transaction_type, reference_id, description)
-          VALUES ($1, $2, $3, $4, 'debit', $5, 'Home Service Inspection Escrow Deposit')
-        `, [crypto.randomUUID(), wallet.id || req.user.id, req.user.id, inspectionFee, bookingRef]);
+          -- wallet_transactions has no user_id or description column, and the
+          -- wallet id argument silently fell back to a user id.
+          INSERT INTO wallet_transactions (id, wallet_id, amount, type, reference_id, purpose, status)
+          VALUES ($1, (SELECT id FROM wallets WHERE user_id = $2), $3, 'debit', $4, 'Home Service Inspection Escrow Deposit', 'completed')
+        `, [crypto.randomUUID(), req.user.id, inspectionFee, bookingRef]);
       }
     });
 
@@ -102,9 +104,11 @@ router.get('/bookings', authenticate, async (req, res, next) => {
     let sql = 'SELECT * FROM home_service_bookings';
     const params = [];
     
-    // If not admin, restrict to own user_id
+    // The booking insert above writes customer_id, and that is the only one of
+    // the two columns ever populated -- filtering on user_id matched nothing, so
+    // a non-admin saw an empty list however many bookings they had made.
     if (req.user.role !== 'admin') {
-      sql += ' WHERE user_id = $1';
+      sql += ' WHERE customer_id = $1';
       params.push(req.user.id);
     }
     

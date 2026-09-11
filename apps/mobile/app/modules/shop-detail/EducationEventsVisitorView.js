@@ -5,9 +5,9 @@ import VisitorLayout from './components/VisitorLayout';
 
 export default function EducationEventsVisitorView({ shop }) {
   return (
-    <VisitorLayout 
-      shopName={shop.name || 'Learnix Institute'} 
-      shopAddress="Online / Viman Nagar"
+    <VisitorLayout shop={shop} 
+      shopName={shop.name || 'Institute'} 
+      shopAddress={shop.address || ''}
       shopIcon="🎓"
       cartCount={0}
       onCheckout={() => {}}

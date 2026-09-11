@@ -1,9 +1,22 @@
 const { queryOne } = require('../config/database');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
 /**
- * Middleware: Verify that the authenticated user owns the shop they're trying to access.
- * Used on all /my-shop/* routes to prevent cross-shop data access.
+ * Middleware: verify that the authenticated user owns the shop they are trying
+ * to access. Used on all /my-shop/* routes to prevent cross-shop data access.
+ *
+ * This resolved `req.shop` from the Prisma `shops` table while every other
+ * middleware in this file — and nearly every handler downstream — works against
+ * `local_shops`. Those are separate id spaces, so `req.shop.id` did not identify
+ * a row in any table the handlers then queried: of the 37 handlers that read
+ * `req.shop`, 34 query raw-SQL tables whose shop_id references local_shops
+ * (shop_staff, shop_products, shop_orders, shop_appointments, shop_reviews,
+ * shop_services, job_cards, kds_tickets, restaurant_tables, universal_orders,
+ * universal_leads, shop_owner_payouts, service_quotations). Every one of them
+ * silently matched nothing.
+ *
+ * It now resolves from local_shops, which is the stack the storefront, cart,
+ * checkout, analytics and seeds all use, matching requireOrderAccess and
+ * requireAppointmentAccess below.
  */
 const requireShopOwner = async (req, res, next) => {
   try {
@@ -11,29 +24,43 @@ const requireShopOwner = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Allow admin/super_admin to bypass ownership check
-    if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-      // If admin passes shopId query param, use that; otherwise find first shop
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+
+    if (isAdmin) {
       const shopId = req.query.shopId || req.params.shopId;
       if (shopId) {
-        const shop = await prisma.shop.findUnique({ where: { id: shopId } });
+        const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [shopId]);
         if (!shop) return res.status(404).json({ error: 'Shop not found' });
         req.shop = shop;
+        return next();
       }
-      return next();
+
+      // The admin branch used to fall through to next() with req.shop unset
+      // whenever no shopId was supplied, so every downstream handler then read
+      // `req.shop.id` off undefined and the request died as a 500 rather than a
+      // usable error.
+      return res.status(400).json({
+        error: 'shopId is required when acting as an admin on a shop-scoped route.',
+      });
     }
 
-    // For shop owners, find their shop
-    const shop = await prisma.shop.findFirst({
-      where: {
-        ownerId: req.user.id,
-        isVerified: true
-      }
-    });
+    const shop = await queryOne(
+      'SELECT * FROM local_shops WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [req.user.id]
+    );
 
     if (!shop) {
-      return res.status(403).json({ 
-        error: 'Shop owner access required. You either don\'t own a shop or your shop is not verified yet.' 
+      return res.status(403).json({
+        error: 'Shop owner access required. You either don\'t own a shop or your shop is not verified yet.',
+      });
+    }
+
+    // Verification is checked after ownership so an owner whose shop is pending
+    // gets told that, rather than being told they own no shop.
+    const verified = shop.is_verified === 1 || shop.is_verified === true;
+    if (!verified) {
+      return res.status(403).json({
+        error: 'Your shop is not verified yet. You will get access once it is approved.',
       });
     }
 

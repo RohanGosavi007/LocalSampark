@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { apiGet } from '../../../src/lib/api';
 import { fetchWithFallback } from '../../../src/utils/mockDataHelper';
 import DemoBadge from '../../../src/components/DemoBadge';
 
@@ -30,18 +31,52 @@ export default function PharmacyScreen() {
     { id: '5', name: 'Ayurvedic', icon: 'flower-outline', color: '#8b5cf6' }
   ];
 
-  const popularMedicines = [
-    { id: '1', name: 'Dolo 650', type: 'Tablet', use: 'Fever', price: '₹30', image: 'https://via.placeholder.com/100x100?text=Dolo' },
-    { id: '2', name: 'Paracetamol 500mg', type: 'Tablet', use: 'Pain Relief', price: '₹15', image: 'https://via.placeholder.com/100x100?text=Para' },
-    { id: '3', name: 'Volini Spray', type: 'Spray', use: 'Muscle Pain', price: '₹120', image: 'https://via.placeholder.com/100x100?text=Volini' },
-    { id: '4', name: 'Digene', type: 'Syrup', use: 'Acidity', price: '₹85', image: 'https://via.placeholder.com/100x100?text=Digene' },
-  ];
+  /**
+   * "Popular medicines" listed four named drugs at fixed prices — Dolo 650 at
+   * ₹30, Volini Spray at ₹120 — as though the platform stocked them at those
+   * rates. Nothing does; medicine comes from whichever pharmacy fills the
+   * prescription. Quoting a price for a specific drug the customer has not been
+   * prescribed is not a listing the app can stand behind.
+   *
+   * "Nearby pharmacies" was three invented shops at invented distances, two of
+   * them real national chains — "Apollo Pharmacy, 0.5 km, Main Road Dhanori,
+   * OPEN NOW, 4.8" and "Wellness Forever". A customer could have set out for one.
+   *
+   * Real pharmacies come from the shop directory, which knows which ones exist
+   * and where they are.
+   */
+  const [pharmacies, setPharmacies] = useState([]);
+  const [storesLoading, setStoresLoading] = useState(true);
+  const [storesError, setStoresError] = useState(null);
 
-  const pharmacies = [
-    { id: '1', name: 'Apollo Pharmacy', distance: '0.5 km', address: 'Main Road, Dhanori', open: true, rating: 4.8 },
-    { id: '2', name: 'Wellness Forever', distance: '1.2 km', address: 'Vishrantwadi', open: true, rating: 4.5 },
-    { id: '3', name: 'Sanjivani Medical', distance: '1.5 km', address: 'Lohegaon Road', open: false, rating: 4.2 },
-  ];
+  useEffect(() => {
+    const loadPharmacies = async () => {
+      setStoresLoading(true);
+      setStoresError(null);
+      try {
+        const res = await apiGet('/shops?category=pharmacy-healthcare');
+        const rows = res?.shops ?? res?.data ?? (Array.isArray(res) ? res : []);
+        setPharmacies(
+          rows.map((sh) => ({
+            id: String(sh.id),
+            name: sh.name || 'Pharmacy',
+            address: sh.address || null,
+            // Distance is only shown when the API computed one against the
+            // customer's location.
+            distance: sh.distance ? `${sh.distance} km` : null,
+            open: sh.is_active === 1 || sh.is_active === true,
+            rating: Number(sh.rating) || null,
+          }))
+        );
+      } catch (err) {
+        setPharmacies([]);
+        setStoresError(err?.message || 'Could not load nearby pharmacies.');
+      } finally {
+        setStoresLoading(false);
+      }
+    };
+    loadPharmacies();
+  }, []);
 
   const pickImage = async () => {
     try {
@@ -88,18 +123,25 @@ export default function PharmacyScreen() {
     }
   };
 
+  /**
+   * This was a setTimeout. After two seconds it cleared the image and reported
+   * "Upload Successful — Your prescription has been sent to our partner
+   * pharmacists", having uploaded nothing anywhere. A patient waiting on
+   * medicine would have been waiting on a request that did not exist.
+   *
+   * There is no prescription endpoint in the backend, so the flow now says what
+   * is true and points the customer at the pharmacies they can contact.
+   */
   const uploadPrescription = () => {
     if (!prescriptionImage) return;
-    setIsUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
-      setIsUploading(false);
-      setPrescriptionImage(null);
-      Alert.alert(
-        'Upload Successful', 
-        'Your prescription has been sent to our partner pharmacists. We will review it and add the medicines to your cart shortly.'
-      );
-    }, 2000);
+    Alert.alert(
+      'Prescription upload is not available yet',
+      'We cannot send your prescription through the app yet. Pick a pharmacy from Nearby Stores and contact them directly.',
+      [
+        { text: 'Close', style: 'cancel' },
+        { text: 'Nearby Stores', onPress: () => setActiveTab('pharmacies') },
+      ]
+    );
   };
 
   return (
@@ -152,28 +194,12 @@ export default function PharmacyScreen() {
               ))}
             </ScrollView>
 
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Popular Medicines</Text>
-              <TouchableOpacity><Text style={styles.seeAllText}>See All</Text></TouchableOpacity>
-            </View>
-            
-            <View style={styles.medicineGrid}>
-              {popularMedicines.map(med => (
-                <View key={med.id} style={styles.medicineCard}>
-                  <View style={styles.medicineImageContainer}>
-                    <Image source={med.image } style={styles.medicineImage}  contentFit="cover" placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4" cachePolicy="memory-disk" transition={200} />
-                  </View>
-                  <Text style={styles.medicineName} numberOfLines={1}>{med.name}</Text>
-                  <Text style={styles.medicineType}>{med.type} • {med.use}</Text>
-                  <View style={styles.medicineBottomRow}>
-                    <Text style={styles.medicinePrice}>{med.price}</Text>
-                    <TouchableOpacity style={styles.addButton}>
-                      <Text style={styles.addButtonText}>ADD</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
+            {/* A "Popular Medicines" grid listed four named drugs at fixed
+                prices with an ADD button that had no handler. Quoting ₹30 for
+                Dolo 650 as though the platform sells it — and letting a customer
+                tap ADD on a medicine nobody prescribed them — is not something
+                this screen can honestly do. Prescriptions and the pharmacy
+                directory below are the real paths. */}
 
             {/* Quick Prescription Upload Banner */}
             <TouchableOpacity style={styles.uploadBanner} onPress={() => setActiveTab('prescription')}>
@@ -260,19 +286,43 @@ export default function PharmacyScreen() {
         {activeTab === 'pharmacies' && (
           <View>
             <Text style={styles.sectionTitle}>Nearby Pharmacies</Text>
-            {pharmacies.map(store => (
-              <TouchableOpacity key={store.id} style={styles.storeCard}>
+
+            {storesLoading ? (
+              <View style={styles.stateBox}><ActivityIndicator color="#ef4444" /></View>
+            ) : pharmacies.length === 0 ? (
+              <View style={styles.stateBox}>
+                <Text style={styles.stateTitle}>
+                  {storesError ? 'Could not load pharmacies' : 'No pharmacies listed nearby'}
+                </Text>
+                <Text style={styles.stateBody}>
+                  {storesError || 'Pharmacies in your area will appear here once they join.'}
+                </Text>
+              </View>
+            ) : pharmacies.map(store => (
+              <TouchableOpacity
+                key={store.id}
+                style={styles.storeCard}
+                onPress={() => router.push(`/shops/${store.id}`)}
+              >
                 <View style={styles.storeIconContainer}>
                   <Ionicons name="medkit" size={24} color="#ef4444" />
                 </View>
                 <View style={styles.storeInfo}>
                   <Text style={styles.storeName}>{store.name}</Text>
-                  <Text style={styles.storeAddress}>{store.address} • {store.distance}</Text>
+                  {/* Address, distance and rating each render only when the shop
+                      record carries them. */}
+                  {(store.address || store.distance) ? (
+                    <Text style={styles.storeAddress}>
+                      {[store.address, store.distance].filter(Boolean).join(' • ')}
+                    </Text>
+                  ) : null}
                   <View style={styles.storeMetaRow}>
-                    <View style={styles.ratingBadge}>
-                      <Ionicons name="star" size={12} color="#f59e0b" />
-                      <Text style={styles.ratingText}>{store.rating}</Text>
-                    </View>
+                    {store.rating ? (
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={12} color="#f59e0b" />
+                        <Text style={styles.ratingText}>{store.rating}</Text>
+                      </View>
+                    ) : null}
                     <View style={[styles.statusBadge, store.open ? styles.openBadge : styles.closedBadge]}>
                       <Text style={[styles.statusText, store.open ? styles.openText : styles.closedText]}>
                         {store.open ? 'OPEN NOW' : 'CLOSED'}
@@ -293,6 +343,9 @@ export default function PharmacyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  stateBox: { backgroundColor: '#ffffff', borderRadius: 12, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   header: { padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#e2e8f0', flexDirection: 'row', alignItems: 'center' },
   backBtn: { marginRight: 16 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#0f172a' },
@@ -309,24 +362,12 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: '#0f172a' },
   
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a', marginBottom: 16 },
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
-  seeAllText: { color: '#3b82f6', fontWeight: '600' },
   
   categoryScroll: { marginBottom: 24, marginHorizontal: -16, paddingHorizontal: 16 },
   categoryCard: { alignItems: 'center', marginRight: 20, width: 72 },
   categoryIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   categoryName: { fontSize: 12, fontWeight: '600', color: '#475569', textAlign: 'center' },
   
-  medicineGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
-  medicineCard: { width: '48%', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0' },
-  medicineImageContainer: { alignItems: 'center', marginBottom: 12, padding: 8, backgroundColor: '#f8fafc', borderRadius: 8 },
-  medicineImage: { width: 80, height: 80, resizeMode: 'contain' },
-  medicineName: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginBottom: 4 },
-  medicineType: { fontSize: 12, color: '#64748b', marginBottom: 12 },
-  medicineBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  medicinePrice: { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  addButton: { backgroundColor: '#eff6ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: '#bfdbfe' },
-  addButtonText: { color: '#3b82f6', fontSize: 12, fontWeight: '700' },
   
   uploadBanner: { backgroundColor: '#3b82f6', borderRadius: 16, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   uploadBannerContent: { flex: 1, paddingRight: 16 },

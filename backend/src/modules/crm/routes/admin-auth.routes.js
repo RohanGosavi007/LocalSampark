@@ -5,7 +5,8 @@ const bcrypt = require('bcryptjs');
 const { query, queryOne } = require('../../../config/database');
 const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const { v4: uuidv4 } = require('uuid');
-const { generateTokens } = require('../../../middleware/auth.middleware');
+const { generateTokens, authenticate } = require('../../../middleware/auth.middleware');
+const otpStore = require('../../core/services/otpStore.service');
 
 // Default dev PIN for bootstrapping (will be bcrypt-compared)
 const DEV_DEFAULT_PIN = '123456';
@@ -18,6 +19,27 @@ router.post('/login', authLimiter, async (req, res, next) => {
 
     if (!phoneNumber || !pin || !otp) {
       return res.status(400).json({ error: 'Phone, PIN, and OTP are required' });
+    }
+
+    // ── The OTP is now actually verified ────────────────────────────────
+    //
+    // Previously `otp` was destructured, checked for presence by the guard
+    // above, and never looked at again. The second factor was therefore
+    // decorative: any non-empty string passed, so admin sign-in reduced to
+    // phone + PIN. The value could not be checked here because /auth/send-otp
+    // kept its codes in a Map private to auth.routes.js — hence the shared
+    // otpStore service this now reads from.
+    //
+    // Consumed on success, so a captured code cannot be replayed.
+    const otpUnavailable = otpStore.unavailableReason();
+    if (otpUnavailable) {
+      console.error(`[admin-auth] rejected: ${otpUnavailable}`);
+      return res.status(503).json({ error: 'Verification is temporarily unavailable. Please try again shortly.' });
+    }
+
+    const otpValid = await otpStore.verifyAndConsume(`otp:${phoneNumber}`, otp);
+    if (!otpValid) {
+      return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
 
     // Check user and role
@@ -58,11 +80,24 @@ router.post('/login', authLimiter, async (req, res, next) => {
       return res.status(403).json({ error: 'Account locked due to multiple failed PIN attempts. Try again later.' });
     }
 
-    // Secure PIN verification with bcrypt + legacy mock_pin_ fallback
+    const allowDevPinShortcuts = process.env.NODE_ENV !== 'production';
+
+    // Secure PIN verification with bcrypt. Two shortcuts below are development-only.
     let pinValid = false;
     if (adminPin && adminPin.pin_hash) {
-      // Check if it's a legacy mock_pin_ hash (from old seed data)
       if (adminPin.pin_hash.startsWith('mock_pin_')) {
+        // Legacy seed data stores the PIN in the clear as `mock_pin_<pin>`, so
+        // a seeded mock_pin_123456 row makes that admin's PIN literally 123456.
+        // Honouring it in production turns leftover seed data into a working
+        // credential; refuse instead, and let the operator re-issue a PIN.
+        // backend/src/scripts/purge_demo_credentials.js clears these rows.
+        if (!allowDevPinShortcuts) {
+          console.error(
+            `[admin-auth] refusing legacy plaintext PIN hash for user ${user.id} in production. ` +
+            'Run src/scripts/purge_demo_credentials.js and issue a new PIN.'
+          );
+          return res.status(403).json({ error: 'Admin PIN must be reset. Contact platform support.' });
+        }
         pinValid = adminPin.pin_hash === `mock_pin_${pin}`;
         // Auto-upgrade: replace legacy hash with bcrypt
         if (pinValid) {
@@ -74,7 +109,17 @@ router.post('/login', authLimiter, async (req, res, next) => {
         pinValid = await bcrypt.compare(pin, adminPin.pin_hash);
       }
     } else {
-      // No admin_pins record â€” accept dev default PIN and auto-create hashed record
+      // No admin_pins record.
+      //
+      // This accepted DEV_DEFAULT_PIN ('123456') unconditionally and then
+      // persisted it as the account's real PIN. In production that meant any
+      // admin who had never set a PIN could be signed into by anyone who knew
+      // the phone number — and the attacker's first successful login silently
+      // established 123456 as that admin's standing credential.
+      if (!allowDevPinShortcuts) {
+        console.error(`[admin-auth] no admin_pins row for user ${user.id}; refusing the development default PIN in production.`);
+        return res.status(403).json({ error: 'No admin PIN configured for this account. Contact platform support.' });
+      }
       pinValid = (pin === DEV_DEFAULT_PIN);
       if (pinValid) {
         const bcryptHash = await bcrypt.hash(pin, 12);
@@ -144,6 +189,54 @@ router.post('/login', authLimiter, async (req, res, next) => {
 
   } catch (error) {
     console.error('--- ADMIN LOGIN ERROR ---', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /admin-auth/me — confirm a stored admin session is still valid.
+ *
+ * apps/web's AdminAuthContext calls this on every mount to re-verify the
+ * `admin_token` it restored from localStorage. The route did not exist, so the
+ * call 404'd; because that context only signs the admin out on an explicit 401
+ * or 403 (a 500 or a network fault must not end a session mid-work), a 404 fell
+ * into the "keep the cached identity" branch. The verification therefore never
+ * actually ran: a revoked, expired or role-downgraded admin token kept working
+ * in the dashboard UI until a request happened to hit a route that enforced it.
+ *
+ * The response mirrors /login's `user` shape so the context can store the two
+ * interchangeably.
+ */
+router.get('/me', authenticate, async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    // Re-derive admin standing from the database rather than trusting the role
+    // baked into the JWT at login — an admin whose admin_roles row was
+    // deactivated since then must fail here.
+    const adminRole = await queryOne(
+      'SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = true',
+      [user.id]
+    );
+    const isDirectAdmin = user.role === 'admin' || user.role === 'super_admin';
+
+    if (!adminRole && !isDirectAdmin) {
+      return res.status(403).json({ error: 'Access denied. Admin role not assigned.' });
+    }
+
+    const roleString = String(adminRole ? adminRole.role : user.role).toUpperCase();
+    const regionId = adminRole ? adminRole.region_id : user.region_id;
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        fullName: user.full_name,
+        role: roleString,
+        regionId
+      }
+    });
+  } catch (error) {
     next(error);
   }
 });

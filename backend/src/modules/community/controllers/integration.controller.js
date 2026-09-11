@@ -10,7 +10,7 @@ const exportTallyXML = async (req, res, next) => {
         const societyId = req.query.societyId || req.headers['x-society-id'] || await getSocietyIdForUser(req.user?.id);
         const { month } = req.query; // Format: YYYY-MM
         
-        const result = await query(`SELECT smb.*, u.name as member_name 
+        const result = await query(`SELECT smb.*, u.full_name as member_name 
              FROM society_maintenance_bills smb
              JOIN society_members sm ON smb.member_id = sm.id
              JOIN users u ON sm.user_id = u.id
@@ -63,7 +63,7 @@ const exportVisitorsCSV = async (req, res, next) => {
         let sql = `
             SELECT sv.visitor_name, sv.visitor_phone, sv.purpose, sv.flat_number, 
                    sv.status, sv.created_at, sv.checked_in_at, sv.checked_out_at,
-                   u.name as resident_name 
+                   u.full_name as resident_name 
             FROM society_visitors sv
             LEFT JOIN users u ON sv.resident_id = u.id
             WHERE sv.society_id = $1
@@ -108,7 +108,7 @@ const exportBillsCSV = async (req, res, next) => {
         const { month } = req.query;
 
         let sql = `
-            SELECT smb.*, u.name as member_name 
+            SELECT smb.*, u.full_name as member_name 
             FROM society_maintenance_bills smb
             JOIN society_members sm ON smb.member_id = sm.id
             JOIN users u ON sm.user_id = u.id

@@ -1,20 +1,89 @@
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import StoryViewer from './StoryViewer';
 import { router } from 'expo-router';
+import { apiGet } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
-const MOCK_STORIES = [
-  { id: 1, user: 'Your Story', avatar: 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff', hasStory: false, isUser: true },
-  { id: 2, user: 'Society Admin', avatar: 'https://ui-avatars.com/api/?name=Admin&background=f59e0b&color=fff', hasStory: true, isUser: false, items: [{ id: 101, image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800', userName: 'Society Admin', userAvatar: 'https://ui-avatars.com/api/?name=Admin&background=f59e0b&color=fff', time: '2h ago', text: 'Important Society Meeting Tomorrow at 10 AM in the Clubhouse.' }] },
-  { id: 3, user: 'Glow Salon', avatar: 'https://ui-avatars.com/api/?name=Salon&background=ec4899&color=fff', hasStory: true, isUser: false, items: [{ id: 102, image: 'https://images.unsplash.com/photo-1521590832167-7bfcfaa6362f?w=800', userName: 'Glow Salon', userAvatar: 'https://ui-avatars.com/api/?name=Salon&background=ec4899&color=fff', time: '3h ago', text: 'Flat 20% OFF on all Spa Services this weekend!' }] },
-  { id: 4, user: 'Pharmacy', avatar: 'https://ui-avatars.com/api/?name=Pharma&background=10b981&color=fff', hasStory: true, isUser: false, items: [{ id: 103, image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800', userName: 'Pharmacy', userAvatar: 'https://ui-avatars.com/api/?name=Pharma&background=10b981&color=fff', time: '5h ago', text: 'New stock of Vitamin C supplements arrived.' }] },
-  { id: 5, user: 'Neha P.', avatar: 'https://ui-avatars.com/api/?name=Neha&background=8b5cf6&color=fff', hasStory: false, isUser: false }
-];
+/**
+ * The stories rail at the top of the feed.
+ *
+ * Its own constant was named MOCK_STORIES, and it was rendered unconditionally.
+ * Four of the five entries were invented, and three of them made claims a
+ * neighbour would act on: "Society Admin — Important Society Meeting Tomorrow at
+ * 10 AM in the Clubhouse"; "Glow Salon — Flat 20% OFF on all Spa Services this
+ * weekend!"; "Pharmacy — New stock of Vitamin C supplements arrived". A
+ * resident could have turned up to a meeting nobody called, or walked to a
+ * chemist for stock that was never delivered. The fifth was a neighbour,
+ * "Neha P.", who does not live there.
+ *
+ * The stock photographs came from Unsplash and were presented as those
+ * businesses' own premises.
+ *
+ * /stories returns what people have actually posted, and the rail collapses to
+ * just the user's own "Add story" tile when nobody has posted anything.
+ */
+
+/** Group the flat story rows into one rail entry per author. */
+function groupByAuthor(rows) {
+  const byUser = new Map();
+
+  for (const row of rows) {
+    const userId = String(row.user_id);
+    if (!byUser.has(userId)) {
+      byUser.set(userId, {
+        id: userId,
+        user: row.full_name || 'Neighbour',
+        avatar: row.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.full_name || 'N')}&background=64748b&color=fff`,
+        hasStory: true,
+        isUser: false,
+        items: [],
+      });
+    }
+    byUser.get(userId).items.push({
+      id: String(row.id),
+      image: row.media_url,
+      userName: row.full_name || 'Neighbour',
+      userAvatar: row.avatar_url || null,
+      time: row.created_at ? new Date(row.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '',
+      text: row.caption || '',
+    });
+  }
+
+  return [...byUser.values()];
+}
 
 export default function StoriesRow() {
+  const { user } = useAuth();
   const [viewerVisible, setViewerVisible] = useState(false);
   const [currentStories, setCurrentStories] = useState([]);
+  const [stories, setStories] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet('/stories')
+      .then((res) => {
+        if (cancelled) return;
+        const rows = Array.isArray(res) ? res : (res?.data ?? []);
+        setStories(groupByAuthor(rows));
+      })
+      // A rail that cannot load shows only the user's own tile. It never
+      // invents neighbours.
+      .catch(() => { if (!cancelled) setStories([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const rail = [
+    {
+      id: 'self',
+      user: 'Your Story',
+      avatar: user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=0D8ABC&color=fff`,
+      hasStory: false,
+      isUser: true,
+    },
+    ...stories,
+  ];
 
   const handleStoryPress = (story) => {
     if (story.isUser && !story.hasStory) {
@@ -28,7 +97,7 @@ export default function StoriesRow() {
   return (
     <View style={styles.container}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {MOCK_STORIES.map((story) => (
+        {rail.map((story) => (
           <TouchableOpacity 
             key={story.id} 
             style={styles.storyContainer} 

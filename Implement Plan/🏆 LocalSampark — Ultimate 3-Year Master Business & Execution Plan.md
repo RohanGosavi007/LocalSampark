@@ -64,7 +64,7 @@ The reference plan you shared states *"No mobile app yet — only web + admin pa
 |---|---|---|---|---|
 | **Web Portal** | Next.js 14 | 60+ routes | ✅ Build Passed (0 errors) | Vercel Free Tier |
 | **Admin God Mode** | Next.js | 20+ module tabs | ✅ Fully Wired | Vercel Free Tier |
-| **Mobile App** | Expo React Native | 40+ screens | ✅ Structurally Stable | Local APK Build ($0) |
+| **Mobile App** | Expo React Native | 40+ screens | ⚠️ Builds clean; 4 startup crashes found & fixed Aug 2026 — device verification still pending | Local APK Build ($0) |
 | **Backend API** | Express 5.1 | 100+ API endpoints | ✅ Server Running | Oracle Cloud Free VPS |
 | **Database** | SQLite / PostgreSQL | 50+ tables | ✅ Dual-Driver Ready | Supabase Free / Self-Host |
 | **Queue Engine** | BullMQ + Sync Fallback | 3 worker types | ✅ Running without Redis | Built-in ($0) |
@@ -72,14 +72,15 @@ The reference plan you shared states *"No mobile app yet — only web + admin pa
 | **SMS/OTP** | MSG91 + Firebase | Dev Bypass Mode | ✅ Production-Ready | Firebase Free (10K/mo) |
 | **Real-time** | Socket.io | 5 socket channels | ✅ Configured | Included in VPS |
 | **CDN/Storage** | MinIO / S3 compatible | Configured | ✅ Ready | Cloudflare R2 (10GB Free) |
-| **Error Tracking** | Sentry | Configured | ✅ Ready | Sentry Free (5K events/mo) |
+| **Error Tracking** | Sentry | SDK wired (mobile + web) | ⚠️ NOT LIVE — every DSN is still a placeholder | Sentry Free (5K events/mo) |
 | **Analytics** | Supabase Realtime | Configured | ✅ Ready | Supabase Free Tier |
 
 ### 2.2 Backend Unit Test Suite Results (Verified)
 
 ```
-Test Suites: 4 passed, 4 total
-Tests:       7 passed, 7 total (wallet, rbac, app, escrow)
+Test Suites: 11 passed, 11 total
+Tests:       109 passed, 109 total
+Coverage:    19.58% statements / 3.71% branches  <-- money paths need work
 Time:        20.415s
 Coverage:    Generated with --coverage flag
 ```

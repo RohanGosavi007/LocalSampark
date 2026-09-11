@@ -51,10 +51,10 @@ router.get('/admin', authenticate, async (req, res, next) => {
             return res.status(403).json({ error: 'Unauthorized. Admin access required.' });
         }
         const disputes = await query(`
-            SELECT d.*, u.name as user_name, s.name as shop_name, o.total_amount
+            SELECT d.*, u.full_name as user_name, s.name as shop_name, o.total_amount
             FROM disputes d
             LEFT JOIN users u ON d.user_id = u.id
-            LEFT JOIN shops s ON d.shop_id = s.id
+            LEFT JOIN local_shops s ON d.shop_id = s.id
             LEFT JOIN orders o ON d.order_id = o.id
             ORDER BY d.created_at DESC
         `);

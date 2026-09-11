@@ -17,7 +17,7 @@ const AnalyticsService = {
            (SUM(oi.quantity) / 30.0) as daily_burn_rate
          FROM order_items oi
          JOIN orders o ON oi.order_id = o.id
-         JOIN products p ON oi.product_id = p.id
+         JOIN shop_products p ON oi.product_id = p.id
          WHERE o.shop_id = $1 
            AND o.status = 'delivered'
            AND o.created_at >= NOW() - INTERVAL '30 days'

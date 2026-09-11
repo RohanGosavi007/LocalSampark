@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function HospitalVisitorView({ shop }) {
   return (
-    <VisitorLayout shopName={shop.name || 'City Hospital'} shopAddress="Main Road" shopIcon="🏥" cartCount={0}>
+    <VisitorLayout shop={shop} shopName={shop.name || 'Diagnostics'} shopAddress={shop.address || ''} shopIcon="🏥" cartCount={0}>
       <View style={{ padding: 16 }}>
         <Text style={styles.title}>Hospital Services</Text>
         <TouchableOpacity style={styles.card} onPress={() => router.push('/modules/checkout')}>

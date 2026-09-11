@@ -15,12 +15,12 @@ class PriceComparisonService {
         s.id AS shop_id, 
         s.name AS shop_name, 
         sp.price, 
-        sp.stock_qty,
+        sp.stock_quantity,
         (6371 * acos(cos(radians($2)) * cos(radians(s.lat)) * cos(radians(s.lng) - radians($3)) + sin(radians($2)) * sin(radians(s.lat)))) AS distance_km
       FROM shop_products sp
-      JOIN shops s ON sp.shop_id = s.id
+      JOIN local_shops s ON sp.shop_id = s.id
       WHERE sp.master_sku_id = $1
-        AND sp.stock_qty > 0
+        AND sp.stock_quantity > 0
         AND s.is_active = true
       HAVING (6371 * acos(cos(radians($2)) * cos(radians(s.lat)) * cos(radians(s.lng) - radians($3)) + sin(radians($2)) * sin(radians(s.lat)))) <= $4
       ORDER BY sp.price ASC, distance_km ASC

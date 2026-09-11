@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MapPin, Navigation, Truck, Package, PhoneCall, CheckCircle } from 'lucide-react-native';
+import { Linking, Alert } from 'react-native';
+import { apiGet } from '../../../src/lib/api';
 // In a real app we'd use react-native-maps
 // import MapView, { Marker, Polyline } from 'react-native-maps';
 
@@ -11,28 +13,58 @@ export default function OrderTrackingScreen() {
   
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulated fetching from API
-    setTimeout(() => {
-      setOrder({
-        id: id || 'ORD-1234',
-        shop_name: 'Sharma Grocery & Daily Needs',
-        status: 'out_for_delivery',
-        eta: '12 mins',
-        driver: {
-          name: 'Ramesh Kumar',
-          phone: '+91 9876543210',
-          vehicle: 'MH 12 AB 1234 (Hero Splendor)'
-        },
-        coords: {
-          shop: { latitude: 18.5793, longitude: 73.8780 },
-          user: { latitude: 18.5710, longitude: 73.8820 },
-          driver: { latitude: 18.5750, longitude: 73.8800 }
-        }
-      });
+    // A setTimeout used to hand back a complete fictional delivery: order
+    // "ORD-1234" from "Sharma Grocery & Daily Needs", arriving in 12 minutes,
+    // with a driver named "Ramesh Kumar" on "+91 9876543210" riding
+    // "MH 12 AB 1234 (Hero Splendor)". A named person, a working phone number
+    // and a vehicle registration, none of them belonging to anyone, shown to a
+    // customer as the rider bringing their order — with a Call button beside
+    // them. /orders/:orderId has existed the whole time.
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiGet(`/orders/${id}`);
+        const o = res?.order ?? res;
+        if (!o || !o.id) throw new Error('Order not found');
+
+        setOrder({
+          id: o.id,
+          shop_name: o.shop_name || 'Shop',
+          status: o.status || o.order_status || 'pending',
+          // Only shown when the server computed one. The mock always claimed
+          // "12 mins".
+          eta: o.eta || o.estimated_delivery_time || null,
+          // The rider block renders only when a rider is actually assigned and
+          // named. There is no invented fallback.
+          driver: o.delivery_agent_name
+            ? {
+                name: o.delivery_agent_name,
+                phone: o.delivery_agent_phone || null,
+                vehicle: o.delivery_agent_vehicle || null,
+              }
+            : null,
+        });
+      } catch (err) {
+        setOrder(null);
+        setError(err?.message === 'Order not found'
+          ? 'This order could not be found.'
+          : 'Could not load this order. Check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      load();
+    } else {
+      setOrder(null);
+      setError('No order was specified.');
       setLoading(false);
-    }, 1000);
+    }
   }, [id]);
 
   if (loading) {
@@ -40,6 +72,20 @@ export default function OrderTrackingScreen() {
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#4f46e5" />
       </View>
+    );
+  }
+
+  if (!order) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Order unavailable</Text>
+          <Text style={styles.errorBody}>{error}</Text>
+          <TouchableOpacity style={styles.errorBtn} onPress={() => router.back()}>
+            <Text style={styles.errorBtnText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -86,7 +132,10 @@ export default function OrderTrackingScreen() {
         
         <View style={styles.header}>
           <Text style={styles.orderId}>{order.id}</Text>
-          <Text style={styles.etaText}>Arriving in <Text style={{color: '#4f46e5'}}>{order.eta}</Text></Text>
+          {/* No invented ETA: shown only if the server sent one. */}
+          {order.eta ? (
+            <Text style={styles.etaText}>Arriving in <Text style={{color: '#4f46e5'}}>{order.eta}</Text></Text>
+          ) : null}
         </View>
 
         {/* Progress Bar */}
@@ -119,9 +168,20 @@ export default function OrderTrackingScreen() {
             </View>
             <View style={styles.driverInfo}>
               <Text style={styles.driverName}>{order.driver.name}</Text>
-              <Text style={styles.driverVehicle}>{order.driver.vehicle}</Text>
+              {order.driver.vehicle ? (
+                <Text style={styles.driverVehicle}>{order.driver.vehicle}</Text>
+              ) : null}
             </View>
-            <TouchableOpacity style={styles.callBtn}>
+            {/* The Call button had no handler — it dialled nothing. */}
+            <TouchableOpacity
+              style={[styles.callBtn, !order.driver.phone && { opacity: 0.45 }]}
+              disabled={!order.driver.phone}
+              onPress={() =>
+                Linking.openURL(`tel:${order.driver.phone}`).catch(() =>
+                  Alert.alert('Could not place the call', `Dial ${order.driver.phone} manually.`)
+                )
+              }
+            >
               <PhoneCall size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -133,7 +193,11 @@ export default function OrderTrackingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  errorTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },
+  errorBody: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  errorBtn: { backgroundColor: '#4f46e5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, minHeight: 44, justifyContent: 'center' },
+  errorBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   mapContainer: { flex: 1, backgroundColor: '#e5e7eb' },
   simulatedMap: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#eef2ff' },
   simulatedText: { fontSize: 18, fontWeight: 'bold', color: '#6b7280', marginTop: 12 },

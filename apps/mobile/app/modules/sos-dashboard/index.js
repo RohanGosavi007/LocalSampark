@@ -1,41 +1,120 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, RefreshControl, Alert, ActivityIndicator, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../../src/context/AuthContext';
+import { apiGet, apiPost } from '../../../src/lib/api';
 const { width } = Dimensions.get('window');
 
 export default function SOSDashboardScreen() {
   const { authToken, API_URL, user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({ totalAlerts: 156, activeAlerts: 3, resolvedToday: 8, avgResponseTime: '2.5 min' });
-  const [activeAlerts] = useState([
-    { id: 'SOS001', type: 'Medical', user: 'Rahul K.', location: 'Block A, Dhanori', time: '2 min ago', severity: 'critical' },
-    { id: 'SOS002', type: 'Fire', user: 'Priya S.', location: 'Sector 5, Tingre Nagar', time: '8 min ago', severity: 'high' },
-    { id: 'SOS003', type: 'Accident', user: 'Amit G.', location: 'Main Road, Vishrantwadi', time: '15 min ago', severity: 'medium' },
-  ]);
-  const [recentAlerts] = useState([
-    { id: 'SOS004', type: 'Medical', user: 'Neha D.', time: '1 hr ago', status: 'resolved', responders: 3 },
-    { id: 'SOS005', type: 'Safety', user: 'Raj P.', time: '2 hrs ago', status: 'resolved', responders: 5 },
-    { id: 'SOS006', type: 'Fire', user: 'Sita M.', time: '3 hrs ago', status: 'resolved', responders: 8 },
-    { id: 'SOS007', type: 'Accident', user: 'Karan S.', time: 'Yesterday', status: 'resolved', responders: 4 },
-  ]);
-  const [emergencyContacts] = useState([
+  /**
+   * This is the board somebody watches to dispatch help, and every emergency on
+   * it was made up: three "active" alerts — a Medical for "Rahul K." at Block A
+   * Dhanori two minutes ago marked critical, a Fire, an Accident — plus four
+   * resolved ones and a headline "156 total alerts, 2.5 min average response".
+   *
+   * A responder working from this screen would have been sending people to
+   * addresses where nothing had happened, and a real alert arriving would have
+   * been indistinguishable from the three permanent fakes above it.
+   *
+   * GET /sos/alerts returns the real active alerts (admin-scoped). Anything the
+   * server does not report is not shown.
+   */
+  const [stats, setStats] = useState(null);
+  const [activeAlerts, setActiveAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [triggering, setTriggering] = useState(false);
+
+  // The national emergency numbers are facts about India, not records about
+  // this app's users, so they stay hardcoded — and they now dial.
+  const emergencyContacts = [
     { name: 'Police', number: '100', icon: '🚔' },
     { name: 'Ambulance', number: '108', icon: '🚑' },
     { name: 'Fire', number: '101', icon: '🚒' },
     { name: 'Women Helpline', number: '1091', icon: '👩' },
-  ]);
+  ];
+
+  const load = async () => {
+    setError(null);
+    try {
+      const res = await apiGet('/sos/alerts');
+      const rows = res?.data ?? [];
+      const alerts = rows.map((a) => ({
+        id: String(a.id),
+        type: a.type || 'Alert',
+        user: a.full_name || 'Unknown',
+        phone: a.phone_number || null,
+        // Coordinates only; there is no reverse geocoding here, so a place name
+        // is not something this screen can honestly print.
+        location: a.latitude && a.longitude
+          ? `${Number(a.latitude).toFixed(4)}, ${Number(a.longitude).toFixed(4)}`
+          : a.pincode || null,
+        time: a.created_at ? new Date(a.created_at).toLocaleString() : '',
+        severity: 'critical',
+      }));
+      setActiveAlerts(alerts);
+      setStats({ activeAlerts: alerts.length });
+    } catch (err) {
+      setActiveAlerts([]);
+      setStats(null);
+      setError(err?.message || 'Could not load emergency alerts.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
 
   const severityColors = { critical: '#ef4444', high: '#f59e0b', medium: '#3b82f6', low: '#10b981' };
   const typeIcons = { Medical: '🏥', Fire: '🔥', Accident: '🚗', Safety: '🛡️' };
 
+  /**
+   * This announced "Emergency alert has been sent to nearby responders and your
+   * emergency contacts" and called nothing at all.
+   */
   const triggerSOS = () => {
-    Alert.alert('🚨 SOS Triggered!', 'Emergency alert has been sent to nearby responders and your emergency contacts.', [{ text: 'OK' }]);
+    Alert.alert('🚨 Raise an emergency alert?', 'This will notify your emergency contacts and local responders.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'RAISE ALERT',
+        style: 'destructive',
+        onPress: async () => {
+          if (triggering) return;
+          setTriggering(true);
+          try {
+            const res = await apiPost('/sos/trigger', { type: 'safety' });
+            const notified = res?.data?.emergencyContacts?.length ?? 0;
+            Alert.alert(
+              'Alert raised',
+              notified > 0
+                ? `Recorded and sent to ${notified} emergency contact${notified === 1 ? '' : 's'}.`
+                : 'Recorded. You have no emergency contacts saved yet.'
+            );
+            await load();
+          } catch (err) {
+            Alert.alert(
+              'Alert NOT sent',
+              `${err?.message || 'Network error'}.\n\nCall 112 if you need help now.`,
+              [
+                { text: 'Close', style: 'cancel' },
+                { text: 'Call 112', onPress: () => Linking.openURL('tel:112') },
+              ]
+            );
+          } finally {
+            setTriggering(false);
+          }
+        },
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(false)} />}>
+      {/* onRefresh just cleared the spinner; nothing was reloaded. */}
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}><Text style={{ fontSize: 20 }}>←</Text></TouchableOpacity>
           <View style={{ flex: 1 }}><Text style={styles.title}>SOS Dashboard</Text><Text style={styles.subtitle}>Emergency management center</Text></View>
@@ -50,11 +129,11 @@ export default function SOSDashboardScreen() {
 
         {/* Stats */}
         <View style={styles.kpiGrid}>
+          {/* Total alerts, resolved-today and average response time were three
+              invented figures; /sos/alerts reports the active ones only, so that
+              is the only tile left. */}
           {[
-            { label: 'Total Alerts', value: stats.totalAlerts, icon: '📊', color: '#3b82f6' },
-            { label: 'Active Now', value: stats.activeAlerts, icon: '🔴', color: '#ef4444' },
-            { label: 'Resolved Today', value: stats.resolvedToday, icon: '✅', color: '#10b981' },
-            { label: 'Avg Response', value: stats.avgResponseTime, icon: '⏱️', color: '#f59e0b' },
+            { label: 'Active Now', value: Number(stats?.activeAlerts) || 0, icon: '🔴', color: '#ef4444' },
           ].map((k, i) => (
             <View key={i} style={[styles.kpiCard, { borderLeftColor: k.color, borderLeftWidth: 4 }]}>
               <Text style={{ fontSize: 18 }}>{k.icon}</Text>
@@ -67,7 +146,18 @@ export default function SOSDashboardScreen() {
         {/* Active Alerts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🔴 Active Alerts</Text>
-          {activeAlerts.map((alert, i) => (
+          {loading ? (
+            <View style={styles.stateBox}><ActivityIndicator color="#ef4444" /></View>
+          ) : activeAlerts.length === 0 ? (
+            <View style={styles.stateBox}>
+              <Text style={styles.stateTitle}>
+                {error ? 'Could not load alerts' : 'No active emergencies'}
+              </Text>
+              <Text style={styles.stateBody}>
+                {error || 'Alerts raised in your area will appear here immediately.'}
+              </Text>
+            </View>
+          ) : activeAlerts.map((alert, i) => (
             <View key={i} style={[styles.alertCard, { borderLeftColor: severityColors[alert.severity], borderLeftWidth: 4 }]}>
               <View style={styles.alertHeader}>
                 <Text style={styles.alertType}>{typeIcons[alert.type]} {alert.type}</Text>
@@ -75,8 +165,18 @@ export default function SOSDashboardScreen() {
                   <Text style={[styles.severityText, { color: severityColors[alert.severity] }]}>{alert.severity.toUpperCase()}</Text>
                 </View>
               </View>
-              <Text style={styles.alertUser}>👤 {alert.user} • 📍 {alert.location}</Text>
+              <Text style={styles.alertUser}>
+                👤 {alert.user}{alert.location ? ` • 📍 ${alert.location}` : ''}
+              </Text>
               <Text style={styles.alertTime}>⏰ {alert.time}</Text>
+              {alert.phone ? (
+                <TouchableOpacity
+                  style={styles.callBtn}
+                  onPress={() => Linking.openURL(`tel:${alert.phone}`)}
+                >
+                  <Text style={styles.callBtnText}>📞 Call {alert.user}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ))}
         </View>
@@ -86,7 +186,11 @@ export default function SOSDashboardScreen() {
           <Text style={styles.sectionTitle}>Emergency Contacts</Text>
           <View style={styles.contactsRow}>
             {emergencyContacts.map((c, i) => (
-              <TouchableOpacity key={i} style={styles.contactCard}>
+              <TouchableOpacity
+                key={i}
+                style={styles.contactCard}
+                onPress={() => Linking.openURL(`tel:${c.number}`)}
+              >
                 <Text style={{ fontSize: 28 }}>{c.icon}</Text>
                 <Text style={styles.contactName}>{c.name}</Text>
                 <Text style={styles.contactNumber}>{c.number}</Text>
@@ -95,20 +199,11 @@ export default function SOSDashboardScreen() {
           </View>
         </View>
 
-        {/* Recent Resolved */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recently Resolved</Text>
-          {recentAlerts.map((alert, i) => (
-            <View key={i} style={styles.resolvedCard}>
-              <Text style={{ fontSize: 20 }}>{typeIcons[alert.type]}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.resolvedType}>{alert.type} - {alert.user}</Text>
-                <Text style={styles.resolvedMeta}>{alert.time} • {alert.responders} responders</Text>
-              </View>
-              <View style={styles.resolvedBadge}><Text style={styles.resolvedText}>Resolved</Text></View>
-            </View>
-          ))}
-        </View>
+        {/* A "Recently Resolved" list showed four closed emergencies with named
+            users and responder counts. /sos/alerts returns active alerts only —
+            there is no resolved-history endpoint — so the section is gone rather
+            than filled with a record of help that was never given. */}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -117,6 +212,11 @@ export default function SOSDashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  stateBox: { backgroundColor: '#ffffff', borderRadius: 12, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
+  callBtn: { marginTop: 12, backgroundColor: '#ef4444', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+  callBtnText: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 2 },
   title: { fontSize: 22, fontWeight: '800', color: '#0f172a' }, subtitle: { fontSize: 13, color: '#64748b', marginTop: 2 },

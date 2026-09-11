@@ -1,4 +1,7 @@
 import React from 'react';
+// No TabError here: this tab fires one-shot maintenance actions and reports
+// each outcome in its own alert; it loads no data that could fail on mount.
+import { fetchJson } from '../../lib/api';
 
 export default function SettingsTab({ API_BASE, authHeaders }) {
   const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
@@ -19,7 +22,11 @@ export default function SettingsTab({ API_BASE, authHeaders }) {
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>{s.desc}</p>
           <button onClick={async () => {
             try {
-              await fetch(`${API_BASE}/admin/settings/action`, {
+              // Via fetchJson so a 401/500 actually throws. With bare fetch
+              // this reported "triggered successfully!" for every failed
+              // maintenance action, including ones the operator was not
+              // authorised to run.
+              await fetchJson(`${API_BASE}/admin/settings/action`, {
                 method: 'POST', headers: authHeaders(),
                 body: JSON.stringify({ action: s.action })
               });

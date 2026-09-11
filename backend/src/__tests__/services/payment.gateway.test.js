@@ -88,19 +88,78 @@ describe('PaymentGatewayEngine', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should always return true for non-razorpay providers (fallback)', () => {
-      const isValid = PaymentGatewayEngine.verifyWebhookSignature('cashfree', '{}', 'any', 'any');
-      expect(isValid).toBe(true);
-    });
-
     it('should handle Buffer payload (raw body from express)', () => {
       const secret = 'test-webhook-secret';
       const payloadStr = '{"event":"order.paid"}';
       const sig = crypto.createHmac('sha256', secret).update(payloadStr).digest('hex');
-      
-      // Simulate what happens when express.raw() gives us a Buffer
-      const isValid = PaymentGatewayEngine.verifyWebhookSignature('razorpay', payloadStr, sig, secret);
+
+      // express.raw() hands the route a Buffer, not a string.
+      const isValid = PaymentGatewayEngine.verifyWebhookSignature(
+        'razorpay', Buffer.from(payloadStr), sig, secret
+      );
       expect(isValid).toBe(true);
+    });
+
+    // ─── fail-closed behaviour ──────────────────────────────
+    // These replace an earlier test that asserted
+    // "should always return true for non-razorpay providers (fallback)".
+    // That fallback was a payment bypass: POST /payments/webhook/cashfree marks
+    // orders paid, and it accepted any payload with any signature. The test
+    // encoded the bug as intended behaviour, so it is inverted here.
+
+    it('rejects a provider with no implemented verifier', () => {
+      expect(
+        PaymentGatewayEngine.verifyWebhookSignature('paypal', '{}', 'any', 'secret')
+      ).toBe(false);
+    });
+
+    it('rejects a cashfree delivery that carries no timestamp', () => {
+      expect(
+        PaymentGatewayEngine.verifyWebhookSignature('cashfree', '{}', 'anysig', 'secret')
+      ).toBe(false);
+    });
+
+    it('verifies a correctly signed cashfree delivery (base64 over timestamp + body)', () => {
+      const secret = 'test-webhook-secret';
+      const timestamp = '1725456000';
+      const payload = '{"type":"PAYMENT_SUCCESS_WEBHOOK"}';
+      const sig = crypto.createHmac('sha256', secret)
+        .update(`${timestamp}${payload}`)
+        .digest('base64');
+
+      expect(
+        PaymentGatewayEngine.verifyWebhookSignature('cashfree', payload, sig, secret, { timestamp })
+      ).toBe(true);
+    });
+
+    it('rejects a cashfree delivery whose body was tampered with after signing', () => {
+      const secret = 'test-webhook-secret';
+      const timestamp = '1725456000';
+      const sig = crypto.createHmac('sha256', secret)
+        .update(`${timestamp}{"amount":10}`)
+        .digest('base64');
+
+      expect(
+        PaymentGatewayEngine.verifyWebhookSignature(
+          'cashfree', '{"amount":10000}', sig, secret, { timestamp }
+        )
+      ).toBe(false);
+    });
+
+    it('rejects when no secret is configured, rather than defaulting to a literal', () => {
+      // The old code HMACed with the string 'mocksecret' when the secret was
+      // absent — a key published in the source, so anyone could forge a
+      // signature. PAYMENT_WEBHOOK_SECRET was in fact unset in deployment.
+      const forged = crypto.createHmac('sha256', 'mocksecret').update('{}').digest('hex');
+      expect(
+        PaymentGatewayEngine.verifyWebhookSignature('razorpay', '{}', forged, undefined)
+      ).toBe(false);
+    });
+
+    it('rejects a missing signature header', () => {
+      expect(
+        PaymentGatewayEngine.verifyWebhookSignature('razorpay', '{}', undefined, 'secret')
+      ).toBe(false);
     });
   });
 });

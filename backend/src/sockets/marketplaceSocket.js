@@ -36,7 +36,7 @@ module.exports = function marketplaceSocket(io, socket) {
     socket.join(room);
   });
 
-  socket.on('marketplace:send_message', (data) => {
+  socket.on('marketplace:send_message', async (data) => {
     const { listing_id, chat_room_id, message, message_type } = data;
     const room = `mkt_chat_${chat_room_id || listing_id}`;
     const payload = {
@@ -47,15 +47,21 @@ module.exports = function marketplaceSocket(io, socket) {
     };
     io.to(room).emit('marketplace:new_message', payload);
 
-    // Persist
+    // Persist. Two things stopped this working: the module path was
+    // '../../config/database', which resolves outside src and threw on every
+    // call, and listing_id had no column on marketplace_chat_messages. Both
+    // failures were swallowed -- by catch (e) {} and .catch(() => {}) -- so
+    // marketplace chat looked fine while nothing was ever written.
     try {
-      const { query } = require('../../config/database');
+      const { query } = require('../config/database');
       const crypto = require('crypto');
-      query(
+      await query(
         `INSERT INTO marketplace_chat_messages (id, listing_id, sender_id, message, message_type) VALUES ($1, $2, $3, $4, $5)`,
         [crypto.randomUUID(), listing_id, socket.user?.id, message, message_type || 'text']
-      ).catch(() => {});
-    } catch (e) {}
+      );
+    } catch (e) {
+      console.error('Failed to persist marketplace chat message:', e.message);
+    }
   });
 
   // ═══ OFFER NEGOTIATION REAL-TIME ═══

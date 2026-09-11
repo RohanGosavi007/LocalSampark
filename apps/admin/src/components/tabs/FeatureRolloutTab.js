@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
 const btnPrimary = { padding: '0.5rem 1rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
@@ -12,14 +14,15 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
 
   const fetchFeatures = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/gtm/admin/features`, { headers: authHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setFeatures(data.features || []);
-      }
+      // Was `if (res.ok) { ... }` with no else, so a 401 or 500 left the list
+      // empty and reported nothing. fetchJson throws instead.
+      const data = await fetchJson(`${API_BASE}/gtm/admin/features`, { headers: authHeaders() });
+      setFeatures(data.features || []);
     } catch (e) {
       console.error('Failed to fetch GTM features:', e);
+      setError(e);
     } finally {
       setLoading(false);
     }
@@ -87,6 +90,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>🚀 10x Go-To-Market Launch Control Center</h2>
@@ -123,6 +127,7 @@ function FeatureCard({ feature, onToggle, onSaveDetails, isSaving }) {
   const [pincodes, setPincodes] = useState((feature.allowed_pincodes || []).join(', '));
   const [headline, setHeadline] = useState(feature.coming_soon_headline || '');
   const [message, setMessage] = useState(feature.coming_soon_message || '');
+  const [error, setError] = useState(null);
 
   return (
     <div style={{ ...cardStyle, borderLeft: feature.is_enabled ? '4px solid #10b981' : '4px solid #ef4444' }}>

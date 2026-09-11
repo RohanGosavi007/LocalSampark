@@ -9,21 +9,18 @@ import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useShops, useCategories } from '../../src/hooks/useShops';
 
-// Demo shops matching web data — shown as fallback when API returns empty
-const DEMO_SHOPS = [
-  { id: 'demo-1', name: 'Sharma Grocery & Dairy', category: 'Grocery & Supermarkets', category_name: 'Grocery & Supermarkets', rating: 4.8, distance: '0.5', has_delivery: true, type: 'product', address: 'Kalyani Nagar, Pune', description: 'Fresh vegetables, dairy products, and daily essentials.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-2', name: 'Apollo Pharmacy Plus', category: 'Pharmacy & Healthcare', category_name: 'Pharmacy & Healthcare', rating: 4.5, distance: '0.8', has_delivery: true, type: 'product', address: 'Viman Nagar, Pune', description: '24/7 medicines and healthcare products.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-3', name: 'QuickFix Garage & Auto', category: 'Automotive & Mechanic', category_name: 'Automotive & Mechanic', rating: 4.3, distance: '1.2', has_delivery: false, type: 'appointment', address: 'Dhanori, Pune', description: 'Expert car & bike repair services.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-4', name: 'Golden Crumb Bakery', category: 'Sweet Shops & Bakeries', category_name: 'Sweet Shops & Bakeries', rating: 4.7, distance: '0.3', has_delivery: true, type: 'product', address: 'Dhanori Main Road, Pune', description: 'Freshly baked cakes, pastries & breads.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-5', name: 'Glow & Glamour Salon', category: 'Salon, Beauty & Spa', category_name: 'Salon, Beauty & Spa', rating: 4.6, distance: '0.6', has_delivery: false, type: 'appointment', address: 'Lohegaon, Pune', description: 'Premium haircuts, facials & spa treatments.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-6', name: 'Sanjeevani Medical Store', category: 'Pharmacy & Healthcare', category_name: 'Pharmacy & Healthcare', rating: 4.4, distance: '1.0', has_delivery: true, type: 'product', address: 'Vishrantwadi, Pune', description: 'All medicines, surgical items & health supplements.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-7', name: 'Cafe Coffee Day', category: 'Restaurants & Cafes', category_name: 'Restaurants & Cafes', rating: 4.2, distance: '0.4', has_delivery: true, type: 'product', address: 'Dhanori Chowk, Pune', description: 'Premium coffee, snacks & beverages.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-8', name: 'Raj Electronics & Repair', category: 'Electricians & Electronics', category_name: 'Electricians & Electronics', rating: 4.1, distance: '1.5', has_delivery: false, type: 'hybrid', address: 'Lohegaon Road, Pune', description: 'TV, AC, fridge repair & electrical appliances.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-9', name: 'Fresh Veggie Mart', category: 'Vegetables & Fruits', category_name: 'Vegetables & Fruits', rating: 4.9, distance: '0.2', has_delivery: true, type: 'product', address: 'Dhanori Gaon, Pune', description: 'Farm-fresh organic vegetables & fruits daily.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-10', name: 'Patel Hardware & Sanitary', category: 'Hardware & Sanitary', category_name: 'Hardware & Sanitary', rating: 4.0, distance: '1.8', has_delivery: false, type: 'product', address: 'Vishrantwadi, Pune', description: 'Pipes, fittings, paints & construction material.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-11', name: 'Shree Ganesh Tiffin Service', category: 'Tiffin Services', category_name: 'Tiffin Services', rating: 4.5, distance: '0.7', has_delivery: true, type: 'product', address: 'Dhanori, Pune', description: 'Homestyle veg & non-veg meals delivered daily.', approval_status: 'approved', is_demo: true },
-  { id: 'demo-12', name: 'FitZone Gym & Fitness', category: 'Gym & Fitness', category_name: 'Gym & Fitness', rating: 4.3, distance: '1.1', has_delivery: false, type: 'appointment', address: 'Lohegaon, Pune', description: 'Modern gym with personal trainers & group classes.', approval_status: 'approved', is_demo: true },
-];
+// DEMO_SHOPS lived here: eleven invented businesses with addresses, ratings and
+// distances — "Sharma Grocery & Dairy, Kalyani Nagar, 4.8, 0.5 km",
+// "Apollo Pharmacy Plus" (a real national chain), "Cafe Coffee Day" (another),
+// "Glow & Glamour Salon", "Sanjeevani Medical Store". They were substituted
+// whenever the shop API errored *and* whenever it legitimately returned no
+// shops, which is the normal state of any area the product has not launched in
+// yet. A customer in such an area was shown eleven nearby shops that do not
+// exist, each with a distance implying they could walk to it, and tapping one
+// opened a shop page for an id no server knows.
+//
+// The Directory now shows what the API returns, and says plainly when that is
+// nothing.
 
 const FALLBACK_CATEGORIES = [
   { name: 'All Categories', icon: '🏪' },
@@ -136,13 +133,11 @@ export default function DirectoryScreen() {
   useEffect(() => {
     if (shopsRes) {
       const shopsData = Array.isArray(shopsRes) ? shopsRes : (shopsRes.data || shopsRes.shops || shopsRes.rows || []);
-      if (shopsData.length > 0) {
-        setShops(shopsData);
-      } else {
-        setShops(DEMO_SHOPS);
-      }
+      // An empty result is a real answer — "no shops here yet" — not a failure
+      // to paper over.
+      setShops(shopsData);
     } else if (shopsError) {
-      setShops(DEMO_SHOPS);
+      setShops([]);
     }
   }, [shopsRes, shopsError]);
 
@@ -184,21 +179,24 @@ export default function DirectoryScreen() {
   useEffect(() => {
     setIsFiltering(true);
     let filteredResults = [...shops];
-    
-    // Fallback client-side filtering ONLY for DEMO SHOPS (since API is empty)
-    if (shops === DEMO_SHOPS) {
-      filteredResults = filteredResults.filter(shop => {
-        const matchesCategory = selectedCategory === 'All Categories' || shop.category === selectedCategory || shop.category_name === selectedCategory;
-        const matchesSearch = (shop.name || '').toLowerCase().includes((searchTerm || '').toLowerCase());
-        const matchesTopRated = !topRatedOnly || (shop.rating && shop.rating >= 4.0);
-        const matchesDelivery = !deliveryOnly || shop.has_delivery;
-        return matchesCategory && matchesSearch && matchesTopRated && matchesDelivery;
-      });
 
-      if (sortBy === 'rating') filteredResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      if (sortBy === 'name') filteredResults.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      if (sortBy === 'distance') filteredResults.sort((a, b) => (a.distance || 999) - (b.distance || 999));
-    }
+    // Client-side filtering used to run only when the list was DEMO_SHOPS, on
+    // the assumption that the backend filters everything else. It does filter by
+    // category and location, but the search box, the "top rated" and "delivery
+    // only" toggles and the sort control are not sent to it — so on real data
+    // those four controls did nothing at all. They are applied here for every
+    // list, demo or not.
+    filteredResults = filteredResults.filter(shop => {
+      const matchesSearch = !searchTerm ||
+        (shop.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesTopRated = !topRatedOnly || (shop.rating && Number(shop.rating) >= 4.0);
+      const matchesDelivery = !deliveryOnly || shop.has_delivery;
+      return matchesSearch && matchesTopRated && matchesDelivery;
+    });
+
+    if (sortBy === 'rating') filteredResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (sortBy === 'name') filteredResults.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (sortBy === 'distance') filteredResults.sort((a, b) => (Number(a.distance) || 999) - (Number(b.distance) || 999));
     
     setFilteredShops(filteredResults);
     setIsFiltering(false);
@@ -309,7 +307,13 @@ export default function DirectoryScreen() {
           onScroll={scrollHandler}
           scrollEventThrottle={16}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No shops found. Try another category or adjust filters.</Text>
+            <Text style={styles.emptyText}>
+              {shopsError
+                ? 'Could not load shops. Check your connection and pull down to retry.'
+                : shops.length === 0
+                  ? 'No shops are listed in this area yet.'
+                  : 'No shops match your filters. Try another category or adjust them.'}
+            </Text>
           }
           renderItem={({ item: shop }) => (
             <View style={styles.card}>

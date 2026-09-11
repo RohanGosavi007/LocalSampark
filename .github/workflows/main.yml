@@ -18,21 +18,30 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            apps/mobile/package-lock.json
 
-      - name: Install Dependencies
-        run: |
-          cd apps/web && npm ci || npm install
-          cd ../mobile && npm ci || npm install
-          cd ../../backend && npm ci || npm install
+      - name: Install Workspace Dependencies
+        # backend and apps/web are workspaces of the repo root and share its
+        # lockfile. `cd apps/web && npm ci` fell through to `npm install`
+        # every time (no local lockfile), producing an unlocked tree.
+        run: npm ci
+
+      - name: Install Mobile Dependencies
+        # apps/mobile is deliberately outside the workspaces list — Metro and
+        # the Expo autolinker resolve badly against a hoisted root tree — so
+        # it installs separately from its own lockfile.
+        working-directory: apps/mobile
+        run: npm ci
 
       - name: Backend - Lint & Test
         env:
           USE_SQLITE: true
           JWT_SECRET: "test-secret"
         run: |
-          cd backend
-          npm run lint --if-present
-          npm test --if-present
+          npm run lint --workspace=backend --if-present
+          npm run test --workspace=backend --if-present
 
       - name: Mobile - Lint
         # The original ~350 pre-existing errors (broken .eslintrc.js env,
@@ -46,6 +55,7 @@ jobs:
           npm run lint
 
       - name: Web App - Production Build Check
-        run: |
-          cd apps/web
-          npm run build
+        env:
+          # apps/web/src/lib/api.js appends /api/v1 to this origin itself.
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+        run: npm run build --workspace=apps/web

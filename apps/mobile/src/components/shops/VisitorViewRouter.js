@@ -22,103 +22,150 @@ import EventBookingView from './EventBookingView';
 import EducationView from './EducationView';
 import ServiceCounterView from './ServiceCounterView';
 
+// MeatView and BakeryView have no category to reach them: the catalogue
+// combines these trades into 'fresh-produce-meat' and 'dairy-sweets-bakery',
+// each of which is served by one view. They are left imported-but-unrouted
+// rather than force-fitted, and become reachable the moment the taxonomy
+// splits those categories.
+
 export default function VisitorViewRouter({ shop, products, categories, services, serviceSlots = [], onBook }) {
   if (!shop) return null;
 
   const categorySlug = (shop.category?.slug || '').toLowerCase();
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Maps shop_categories.slug → the specialised view for that trade.
+  //
+  // This held 67 snake_case keys ('kirana_grocery', 'bakery_sweets',
+  // 'dairy_milk_booth') from a taxonomy that was retired when the catalogue
+  // moved to kebab-case. Not one matched a row in shop_categories, so every
+  // shop in the app — clinic, garage, salon, pharmacy — fell through
+  // `|| 'retail'` and rendered RetailView. Twenty specialised views existed
+  // and none of them were ever reached. The web router had exactly the same
+  // defect and was corrected first; this is the mobile half.
+  //
+  // Keep in step with:
+  //   apps/web/src/app/shops/[id]/components/VisitorViewRouter.js
+  //   apps/web/src/app/shop-manager/components/ShopManagerRouter.js
+  //   backend/src/modules/ecommerce/controllers/shop-management.controller.js
+  // ═══════════════════════════════════════════════════════════════════
   const CATEGORY_VIEW_MAP = {
-    // Retail
-    'kirana_grocery':             'retail',
-    'pharmacy':                   'pharmacy',
-    'bakery_sweets':              'retail',
-    'dairy_milk_booth':           'retail',
-    'meat_fish_poultry':          'retail',
-    'fruit_vegetable':            'retail',
-    'electronics':                'retail',
-    'clothing_fashion':           'retail',
-    'hardware_paint':             'retail',
-    'stationery_bookstore':       'retail',
-    'florist':                    'retail',
-    'jewellery':                  'retail',
-    'sports_fitness':             'retail',
-    'home_decor':                 'retail',
-    'general_retail':             'retail',
-    'pet_store':                  'retail',
-    'cosmetics_beauty':           'retail',
-    'furniture':                  'retail',
-    'mattress_bedding':           'retail',
-    'kitchenware_utensils':       'retail',
-    'electrical_plumbing_supply': 'retail',
-    'tyre_battery':               'retail',
-    'pan_betel_shop':             'retail',
-    'liquor_wine':                'retail',
-    'ice_cream_dessert':          'retail',
-    'juice_smoothie_bar':         'retail',
-    'mobile_recharge_dth':        'retail',
-    'gift_novelty':               'retail',
-    'toy_store':                  'retail',
-    'nursery_garden':             'retail',
-    'pooja_religious':            'retail',
-    'fuel_station':               'retail',
-    'farm_agri_input':            'retail',
-    'recycling_scrap':            'lead_directory',
+    // ── Grocery & fresh ──────────────────────────────────────────────
+    // Each of these reaches a purpose-built view that the old map could not.
+    'grocery-supermarkets':       'kirana',
+    'fresh-produce-meat':         'fresh_produce',
+    'dairy-sweets-bakery':        'dairy',
 
-    // Restaurant & Food
-    'restaurant':                 'restaurant',
-    'tiffin_catering':            'tiffin',
-    'tea_coffee_cafe':            'restaurant',
+    // ── Pharmacy ─────────────────────────────────────────────────────
+    'pharmacy-healthcare':        'pharmacy',
 
-    // Salon / Spa / Beauty
-    'salon_spa':                  'wellness',
+    // ── Food ─────────────────────────────────────────────────────────
+    'restaurants-cafes':          'restaurant',
+    'tiffin-meal-subscription':   'tiffin',
+    'catering-party':             'tiffin',
+    'catering-party-services':    'tiffin',
 
-    // Healthcare & Clinics
-    'medical_clinic':             'clinic',
-    'dental_clinic':              'clinic',
-    'pathology_diagnostic_lab':   'pathology',
-    'physiotherapy_rehab':        'clinic',
-    'ayurveda_homeopathy':        'clinic',
-    'veterinary_clinic':          'clinic',
-    'optical':                    'retail',
+    // ── Wellness (appointment with a practitioner) ───────────────────
+    'salon-beauty-spa':           'wellness',
+    'yoga-wellness':              'wellness',
+    'gym-fitness':                'wellness',
 
-    // Coaching & Education
-    'coaching_tuition':           'education',
+    // ── Clinical ─────────────────────────────────────────────────────
+    'dentists-orthodontists':     'clinic',
+    'ayurvedic-homeopathic':      'clinic',
+    'dieticians-nutritionists':   'clinic',
+    'physiotherapy':              'clinic',
+    'physiotherapy-chiropractic': 'clinic',
 
-    // Garage & Auto
-    'garage_auto':                'garage',
-    'car_bike_dealer':            'retail',
-    'car_bike_wash':              'car_wash',
+    // ── Diagnostics (sample collection, report pickup) ───────────────
+    'pathology-labs':             'pathology',
+    'pathology-labs-diagnostics': 'pathology',
 
-    // Home Services & Repair
-    'computer_mobile_repair':     'garage',
-    'ac_appliance_repair':        'garage',
-    'water_purifier_ro':          'garage',
-    'pest_control':               'home_service',
-    'packers_movers':             'home_service',
-    'laundry_dryclean':           'home_service',
-    'cobbler_shoe_repair':        'home_service',
-    'key_locksmith':              'home_service',
-    'tailoring_alteration':       'retail',
+    // ── Repair bays (drop-off, job card) ─────────────────────────────
+    'automotive-mechanic':        'garage',
+    'mobile-computer-repair':     'garage',
+    'ac-appliance-repair':        'garage',
+    'ro-water-purifier':          'garage',
+    'ro-water-purifier-service':  'garage',
+    'car-bike-wash':              'car_wash',
 
-    // Professionals & Planners
-    'photography_studio':         'education',
-    'ca_legal_services':          'consultation',
-    'insurance_financial':        'consultation',
-    'travel_agent':               'consultation',
-    'event_wedding_planner':      'event_booking',
-    'interior_designer':          'consultation',
-    
-    // Logistics & Printing
-    'courier_logistics':          'retail',
-    'printing_xerox':             'retail',
+    // ── Visit-my-home services ───────────────────────────────────────
+    'home-services-plumbers':     'home_service',
+    'electricians-electronics':   'home_service',
+    'pest-control':               'home_service',
+    'pest-control-services':      'home_service',
+    'deep-cleaning':              'home_service',
+    'deep-cleaning-services':     'home_service',
+    'painting-renovation':        'home_service',
+    'security-cctv':              'home_service',
+    'locksmith-key-maker':        'home_service',
+    'laundry-dry-cleaning':       'home_service',
+    'packers-movers':             'home_service',
+    'courier-parcel-services':    'home_service',
 
-    // Fitness
-    'gym_yoga_studio':            'wellness', // Reusing wellness for fitness classes
+    // ── Recurring supply (cylinder, tanker) ──────────────────────────
+    // Reaches UtilitySubscriptionView, which nothing could previously reach.
+    'gas-cylinder-lpg':           'utility_subscription',
+    'water-tanker-supply':        'utility_subscription',
+
+    // ── Consultations ────────────────────────────────────────────────
+    'cas-tax-consultants':        'consultation',
+    'lawyers-advocates':          'consultation',
+    'insurance-agents':           'consultation',
+    'travel-agents-visa':         'consultation',
+    'interior-design-decor':      'consultation',
+    'astrologer-pandit':          'consultation',
+    'real-estate-brokers':        'consultation',
+
+    // ── Education ────────────────────────────────────────────────────
+    'tutors-education':           'education',
+    'coaching-test-prep':         'education',
+    'driving-schools':            'education',
+
+    // ── Booked by date or slot ───────────────────────────────────────
+    'event-planners-decorators':  'event_booking',
+    'wedding-party-planner':      'event_booking',
+    'photographers-videographers':'event_booking',
+    'turf-grounds':               'event_booking',
+
+    // ── Over-the-counter retail ──────────────────────────────────────
+    'clothing-fashion':           'retail',
+    'jewellery-gold':             'retail',
+    'stationery-gifts-books':     'retail',
+    'pooja-samagri-religious':    'retail',
+    'hardware-sanitary':          'retail',
+    'pet-care-supplies':          'retail',
+    'florists-nurseries':         'retail',
+    'eyewear-opticians':          'retail',
+    'printing-xerox-dtp':         'service_counter',
+    'tailoring-boutiques':        'service_counter',
   };
 
-  const viewType = CATEGORY_VIEW_MAP[categorySlug] || 'retail';
+  // Falling back to retail is right at runtime — a shop page must render —
+  // but doing it silently is how the whole map drifted out of date unnoticed.
+  const mapped = CATEGORY_VIEW_MAP[categorySlug];
+  if (!mapped && __DEV__ && categorySlug) {
+    console.warn(
+      `[VisitorViewRouter] No view mapped for category "${categorySlug}" — ` +
+      'falling back to retail. Add it to CATEGORY_VIEW_MAP in ' +
+      'src/components/shops/VisitorViewRouter.js.'
+    );
+  }
+  const viewType = mapped || 'retail';
 
   switch (viewType) {
+    // These five reach views that existed on disk but had no arm, so no
+    // category could ever render them.
+    case 'kirana':
+      return <KiranaView shop={shop} products={products} categories={categories} />;
+    case 'dairy':
+      return <DairyView shop={shop} products={products} categories={categories} />;
+    case 'fresh_produce':
+      return <FreshProduceView shop={shop} products={products} categories={categories} />;
+    case 'utility_subscription':
+      return <UtilitySubscriptionView shop={shop} products={products} services={services} />;
+    case 'service_counter':
+      return <ServiceCounterView shop={shop} services={services} products={products} />;
     case 'restaurant':
       return <RestaurantView shop={shop} products={products} categories={categories} />;
     case 'tiffin':

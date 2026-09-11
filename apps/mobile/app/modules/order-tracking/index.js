@@ -1,28 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
+import { apiGet } from '../../../src/lib/api';
 
 export default function OrderTrackingScreen() {
+  // This screen called no API at all. A setTimeout handed back one invented
+  // order — "ORD-1234 from Sharma Grocery, ₹540, Aashirvaad Atta and Amul
+  // Butter" — with a handover OTP of "4921". A customer could have read that
+  // code out to a delivery rider at the door. /orders/my-orders has been
+  // available the whole time.
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setOrders([
-        {
-          id: 'ORD-1234',
-          shop_name: 'Sharma Grocery',
-          total_amount: 540,
-          status: 'packing',
-          delivery_type: 'delivery',
-          tracking_otp: '4921',
-          created_at: new Date().toISOString(),
-          items: [{ name: 'Aashirvaad Atta', quantity: 1, price: 250 }, { name: 'Amul Butter', quantity: 2, price: 145 }]
-        }
-      ]);
+  const loadOrders = useCallback(async ({ isRefresh = false } = {}) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setLoadError(null);
+    try {
+      const res = await apiGet('/orders/my-orders');
+      const rows = res?.data ?? (Array.isArray(res) ? res : []);
+      setOrders(Array.isArray(rows) ? rows : []);
+    } catch (err) {
+      setOrders([]);
+      setLoadError(err?.message || 'Could not load your orders.');
+    } finally {
       setLoading(false);
-    }, 1000);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const getStatusStep = (status) => {
     const steps = ['pending', 'accepted', 'packing', 'ready_for_pickup', 'out_for_delivery', 'delivered', 'cancelled'];
@@ -43,14 +51,28 @@ export default function OrderTrackingScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadOrders({ isRefresh: true })}
+            tintColor="#3b82f6"
+          />
+        }
+      >
         {loading ? (
           <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 40 }} />
         ) : orders.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>You have no active orders.</Text>
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/(tabs)/directory')}>
-              <Text style={styles.primaryBtnText}>Browse Shops</Text>
+            <Text style={styles.emptyText}>
+              {loadError || 'You have no active orders.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={() => (loadError ? loadOrders({ isRefresh: true }) : router.push('/(tabs)/directory'))}
+            >
+              <Text style={styles.primaryBtnText}>{loadError ? 'Retry' : 'Browse Shops'}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -64,7 +86,12 @@ export default function OrderTrackingScreen() {
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={styles.totalAmount}>₹{order.total_amount}</Text>
                   <View style={styles.typeBadge}>
-                    <Text style={styles.typeText}>{order.delivery_type === 'pickup' ? '🏪 Pickup' : '🚚 Delivery'}</Text>
+                    {/* /orders/my-orders returns fulfillment_method. delivery_type
+                        was the mock's own field name and is always undefined on
+                        a real order, so every order read as "Delivery". */}
+                    <Text style={styles.typeText}>
+                      {(order.fulfillment_method || order.delivery_type) === 'pickup' ? '🏪 Pickup' : '🚚 Delivery'}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -89,7 +116,10 @@ export default function OrderTrackingScreen() {
                 </View>
               </View>
 
-              {order.delivery_type === 'delivery' && (order.status === 'out_for_delivery' || order.status === 'packing') && (
+              {/* Rendered only when the server actually sent a handover code.
+                  The mock supplied one unconditionally, so this box always
+                  showed a number that no rider could verify. */}
+              {order.tracking_otp && (order.status === 'out_for_delivery' || order.status === 'packing') && (
                 <View style={styles.otpBox}>
                   <View>
                     <Text style={styles.otpLabel}>Share OTP with Delivery Agent</Text>
@@ -99,14 +129,24 @@ export default function OrderTrackingScreen() {
                 </View>
               )}
 
+              {/* /orders/my-orders returns items_count rather than the line
+                  items themselves, so this lists them when they are present and
+                  otherwise states the count. `order.items.map` on the real
+                  response threw — items is undefined there. */}
               <View style={styles.itemsContainer}>
                 <Text style={styles.itemsTitle}>Items</Text>
-                {order.items.map((item, idx) => (
-                  <View key={idx} style={styles.itemRow}>
-                    <Text style={styles.itemName}>{item.quantity}x {item.name}</Text>
-                    <Text style={styles.itemPrice}>₹{item.price * item.quantity}</Text>
-                  </View>
-                ))}
+                {Array.isArray(order.items) && order.items.length > 0 ? (
+                  order.items.map((item, idx) => (
+                    <View key={idx} style={styles.itemRow}>
+                      <Text style={styles.itemName}>{item.quantity}x {item.name}</Text>
+                      <Text style={styles.itemPrice}>₹{(Number(item.price) || 0) * (Number(item.quantity) || 0)}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.itemName}>
+                    {Number(order.items_count) || 0} item{Number(order.items_count) === 1 ? '' : 's'}
+                  </Text>
+                )}
               </View>
             </View>
           ))

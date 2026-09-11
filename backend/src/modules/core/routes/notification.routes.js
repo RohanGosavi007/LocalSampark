@@ -5,14 +5,39 @@ const { query, queryOne } = require('../../../config/database');
 const { sendPushNotification, sendTopicPush } = require('../../../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 
-// Get user's notifications
+/**
+ * The signed-in user's notifications.
+ *
+ * This returned the driver's raw result object — {rows: [...]} on Postgres, a
+ * bare array on SQLite — with no success flag. The mobile NotificationContext
+ * checks `data.success` before accepting the response, so the check never
+ * passed and the app fell back to three hard-coded notifications on every
+ * launch, for every user, including one that said their grocery order had been
+ * delivered and one announcing a water shut-off the next morning.
+ *
+ * The shape is now stable and the field names match what the client renders.
+ */
 router.get('/', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.userId || req.user.id;
-    const notifications = await query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+    const result = await query(
+      'SELECT * FROM shop_notifications WHERE recipient_id = $1 ORDER BY created_at DESC LIMIT 50',
       [userId]
-    ).catch(() => []);
-    res.json(notifications || []);
+    );
+    const rows = result?.rows || result || [];
+
+    res.json({
+      success: true,
+      data: rows.map((n) => ({
+        id: String(n.id),
+        title: n.title,
+        message: n.body || '',
+        type: n.type,
+        isRead: Boolean(Number(n.is_read)),
+        actionUrl: n.action_url || null,
+        createdAt: n.created_at,
+      })),
+    });
   } catch (error) {
     next(error);
   }
@@ -22,9 +47,9 @@ router.get('/', authenticate, async (req, res, next) => {
 router.put('/:id/read', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.userId || req.user.id;
-    await query('UPDATE notifications SET is_read = 1 WHERE id = $1 AND user_id = $2',
+    await query('UPDATE shop_notifications SET is_read = 1 WHERE id = $1 AND recipient_id = $2',
       [req.params.id, userId]
-    ).catch(() => {});
+    );
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -35,9 +60,9 @@ router.put('/:id/read', authenticate, async (req, res, next) => {
 router.put('/read-all', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.userId || req.user.id;
-    await query('UPDATE notifications SET is_read = 1 WHERE user_id = $1',
+    await query('UPDATE shop_notifications SET is_read = 1 WHERE recipient_id = $1',
       [userId]
-    ).catch(() => {});
+    );
     res.json({ success: true });
   } catch (error) {
     next(error);

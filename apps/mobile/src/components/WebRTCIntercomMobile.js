@@ -23,24 +23,36 @@ const WebRTCIntercomMobile = ({ flatNumber, isGuard }) => {
     if (Platform.OS === 'android' || Platform.OS === 'ios') {
       const options = {
         ios: { appName: 'LocalSampark', includesCallsInRecents: false },
-        android: { alertTitle: 'Permissions required', alertDescription: 'This application needs to access your phone accounts', cancelButton: 'Cancel', okButton: 'ok', imageMargin: 0, additionalPermissions: [PermissionsAndroid.PERMISSIONS.example] }
+        // `PermissionsAndroid.PERMISSIONS.example` was carried over from
+        // CallKeep's README sample and does not exist, so this passed
+        // [undefined] down to the native setup call.
+        android: { alertTitle: 'Permissions required', alertDescription: 'This application needs to access your phone accounts', cancelButton: 'Cancel', okButton: 'ok', imageMargin: 0, additionalPermissions: [] }
       };
       
       try {
-        RNCallKeep.setup(options).then(accepted => {
-          console.log('CallKeep Setup:', accepted);
-        });
-        
+        // setup() registers a system telecom PhoneAccount. That can be
+        // rejected by the platform (a missing/unguarded ConnectionService, or
+        // an OEM telecom stack that refuses third-party accounts), and the
+        // rejection arrives asynchronously — the surrounding try/catch cannot
+        // see it, so an unhandled rejection was left behind. The intercom is
+        // optional, so a refusal must degrade quietly.
+        const setupResult = RNCallKeep.setup(options);
+        if (setupResult && typeof setupResult.then === 'function') {
+          setupResult
+            .then((accepted) => console.log('CallKeep setup:', accepted))
+            .catch((err) => console.warn('CallKeep setup rejected (intercom disabled):', err?.message || err));
+        }
+
         RNCallKeep.addEventListener('answerCall', ({ callUUID }) => {
           acceptCall();
           RNCallKeep.setCurrentCallActive(callUUID);
         });
-        
+
         RNCallKeep.addEventListener('endCall', ({ callUUID }) => {
           endCall();
         });
       } catch (err) {
-        console.error('CallKeep Setup Error:', err);
+        console.warn('CallKeep setup failed (intercom disabled):', err?.message || err);
       }
     }
 

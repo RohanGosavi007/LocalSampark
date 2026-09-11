@@ -5,9 +5,32 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { apiCache } = require('../../../middleware/cache.middleware');
 const { generateMockProducts, generateMockServices, generateMockStaff } = require('../../../utils/mockDataGenerator');
+
+// Mock catalog data was served on every request where NODE_ENV !== 'production'.
+// That is not just local development: staging, QA and any preview deploy all
+// matched it, so those environments answered with invented shops, invented
+// products at invented prices, and invented *named* staff with fabricated
+// ratings and years of experience — and the mobile storefront wires those
+// records straight into the real cart and checkout. Serving fiction is now an
+// explicit opt-in rather than the default for everything that is not prod.
+// Read at call time so tests and local runs can toggle it.
+const useMockCatalog = () =>
+  process.env.USE_MOCK_CATALOG === 'true' && process.env.NODE_ENV !== 'production';
 const { authenticate } = require('../../../middleware/auth.middleware');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+
+/**
+ * Delivery handover code written to shop_orders.tracking_otp.
+ *
+ * The rider quotes this to close out a delivery, so a guessable value lets
+ * an order be marked delivered by someone who never received it. It was
+ * Math.floor(1000 + Math.random() * 9000) — a predictable PRNG, and biased
+ * on top of that. crypto.randomInt is uniform over the range.
+ */
+function generateTrackingOtp() {
+  return String(crypto.randomInt(1000, 10000));
+}
 const { autoCreateShopDelivery } = require('../../services/controllers/delivery.controller');
 
 const razorpay = new Razorpay({
@@ -61,7 +84,7 @@ router.get('/search', async (req, res, next) => {
 });
 router.get('/categories', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== 'production') {
+    if (useMockCatalog()) {
       try {
         const fs = require('fs'); const path = require('path');
         const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
@@ -173,7 +196,7 @@ router.get('/nearby', async (req, res, next) => {
         fallbackUsed = true;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (useMockCatalog()) {
       try {
         const fs = require('fs'); const path = require('path');
         const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
@@ -198,77 +221,132 @@ router.get('/nearby', async (req, res, next) => {
 
     const userLat = parseFloat(lat);
     const userLng = parseFloat(lng);
-    const radKm = parseFloat(radius);
+    const radKm = parseFloat(radius) || 10;
 
-    // Build Prisma raw query
-    let conditions = ["status = 'ACTIVE'", '"isLive" = true'];
-    if (category) {
-        conditions.push(`categoryId = (SELECT id FROM categories WHERE slug = '${category}' LIMIT 1)`);
+    /**
+     * This query was built by string concatenation against Prisma's camelCase
+     * column names on a table that does not have them.
+     *
+     * It selected FROM local_shops — the right table — but filtered on
+     * `status = 'ACTIVE'`, `"isLive"`, `categoryId`, `regionId`,
+     * `"coverageRadiusKm"`, `deliveryAvailable` and `isFeatured`. local_shops
+     * has none of those: the columns are is_active, category_id, region_id and
+     * is_premium. Every variant of this query raised "no such column", which is
+     * why the Directory tab fell back to demo shops so reliably.
+     *
+     * More seriously, `category`, `region_id` and `pincode` came off the query
+     * string and were interpolated straight into the SQL on a route with no
+     * authentication:
+     *
+     *     conditions.push(`regionId = '${region_id}'`)
+     *
+     * Everything below is a bound parameter.
+     *
+     * Distance is a bounding box in SQL plus Haversine in JS rather than
+     * earth_distance/ll_to_earth: those need the PostgreSQL earthdistance
+     * extension and do not exist at all on the SQLite driver this app also runs
+     * on. The box is index-friendly (idx_local_shops_lat_lng) and the exact
+     * filter happens after.
+     */
+    const latDelta = radKm / 111.32;
+    const lngDelta = radKm / (111.32 * Math.max(Math.cos(userLat * (Math.PI / 180)), 0.01));
+
+    const params = [
+      userLat - latDelta, userLat + latDelta,
+      userLng - lngDelta, userLng + lngDelta,
+    ];
+    const conditions = [
+      'COALESCE(s.is_active, 1) = 1',
+      's.latitude BETWEEN $1 AND $2',
+      's.longitude BETWEEN $3 AND $4',
+    ];
+
+    if (category && category !== 'all') {
+      params.push(category);
+      conditions.push(`s.category_id = (SELECT id FROM shop_categories WHERE slug = $${params.length} LIMIT 1)`);
     }
     if (region_id) {
-        conditions.push(`regionId = '${region_id}'`);
+      params.push(region_id);
+      conditions.push(`s.region_id = $${params.length}`);
     }
-
-    // Pillar 5: Strict Geo-Fencing & Pincode Mapping
     if (pincode) {
-        conditions.push(`pincode = '${pincode}'`);
+      params.push(pincode);
+      conditions.push(`s.pincode = $${params.length}`);
     }
-    
-    // Distance must be strictly within the Shop's own defined coverageRadiusKm
-    conditions.push(`(earth_distance(ll_to_earth(${userLat}, ${userLng}), ll_to_earth(latitude, longitude)) / 1000) <= "coverageRadiusKm"`);
-
     if (topRated === 'true') {
-        conditions.push(`rating >= 4.0`);
+      conditions.push('s.rating >= 4.0');
     }
+
+    const rows = await query(
+      `SELECT s.*, c.slug AS category_slug, c.name AS category_name
+         FROM local_shops s
+         LEFT JOIN shop_categories c ON c.id = s.category_id
+        WHERE ${conditions.join(' AND ')}
+        LIMIT 500`,
+      params
+    );
+
+    /** Great-circle distance in kilometres. */
+    const distanceKm = (aLat, aLng, bLat, bLng) => {
+      const R = 6371;
+      const dLat = ((bLat - aLat) * Math.PI) / 180;
+      const dLng = ((bLng - aLng) * Math.PI) / 180;
+      const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+    };
+
+    let processedShops = (rows.rows || rows || [])
+      .map((shop) => ({
+        ...shop,
+        distance_km: Number(
+          distanceKm(userLat, userLng, Number(shop.latitude), Number(shop.longitude)).toFixed(2)
+        ),
+      }))
+      // The box is square; the radius is a circle. Trim the corners.
+      .filter((shop) => Number.isFinite(shop.distance_km) && shop.distance_km <= radKm);
+
     if (deliveryOnly === 'true') {
-        conditions.push(`deliveryAvailable = true`);
+      // The column is delivery_available; has_delivery does not exist on
+      // local_shops, so this filter would have removed every shop.
+      processedShops = processedShops.filter(
+        (shop) => shop.delivery_available === 1 || shop.delivery_available === true
+      );
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
-    let orderClause = `ORDER BY distance_km ASC`;
-    if (sortBy === 'rating') {
-        orderClause = `ORDER BY rating DESC NULLS LAST, distance_km ASC`;
-    } else if (sortBy === 'newest') {
-        orderClause = `ORDER BY createdAt DESC, distance_km ASC`;
-    } else if (sortBy === 'name') {
-        orderClause = `ORDER BY name ASC, distance_km ASC`;
-    }
-
-    const rawQuery = `
-        SELECT *,
-        earth_distance(ll_to_earth(${userLat}, ${userLng}), ll_to_earth(latitude, longitude)) / 1000 AS distance_km
-        FROM local_shops
-        ${whereClause}
-        ${orderClause}
-        LIMIT 200
-    `;
-
-    const shopsWithDistance = await prisma.$queryRawUnsafe(rawQuery);
-
-    // Calculate AdBid/Score for featured shops and sort if sortBy is not explicitly overriding
-    let processedShops = shopsWithDistance.map(shop => {
-        let adScore = 0;
-        if (shop.isFeatured) {
-            const rating = shop.rating || 4.5;
-            adScore = (10 * 0.6) + (rating * 0.3) + ((1 / ((shop.distance_km||0) + 0.1)) * 0.1);
-        }
-        return { 
-            ...shop, 
-            distance_km: parseFloat((shop.distance_km || 0).toFixed(2)),
-            ad_score: Math.round(adScore * 100) / 100 
-        };
+    // Featured placement. The old scoring read shop.isFeatured and defaulted a
+    // missing rating to 4.5 — a rating the shop had not earned, which then fed
+    // the sort order.
+    processedShops = processedShops.map((shop) => {
+      const featured = shop.is_featured === 1 || shop.is_featured === true;
+      const rating = Number(shop.rating);
+      const adScore = featured
+        ? 10 * 0.6 + (Number.isFinite(rating) ? rating : 0) * 0.3 + (1 / (shop.distance_km + 0.1)) * 0.1
+        : 0;
+      return { ...shop, ad_score: Math.round(adScore * 100) / 100 };
     });
 
-    if (!sortBy || sortBy === 'distance') {
-        // Sort priority: 1. Premium Shops (SaaS), 2. High AdScore (Boosted), 3. Distance
-        processedShops.sort((a, b) => {
-            if (b.isPremium !== a.isPremium) return (b.isPremium ? 1 : 0) - (a.isPremium ? 1 : 0);
-            if (b.ad_score !== a.ad_score) return b.ad_score - a.ad_score;
-            return a.distance_km - b.distance_km;
-        });
+    const byDistance = (a, b) => a.distance_km - b.distance_km;
+    if (sortBy === 'rating') {
+      processedShops.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0) || byDistance(a, b));
+    } else if (sortBy === 'newest') {
+      processedShops.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || byDistance(a, b));
+    } else if (sortBy === 'name') {
+      processedShops.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')) || byDistance(a, b));
+    } else {
+      // Premium first, then paid placement, then proximity.
+      processedShops.sort((a, b) => {
+        const aPremium = a.is_premium === 1 || a.is_premium === true ? 1 : 0;
+        const bPremium = b.is_premium === 1 || b.is_premium === true ? 1 : 0;
+        if (bPremium !== aPremium) return bPremium - aPremium;
+        if (b.ad_score !== a.ad_score) return b.ad_score - a.ad_score;
+        return byDistance(a, b);
+      });
     }
-    
+
+    processedShops = processedShops.slice(0, 200);
+
     await CacheService.set(cacheKey, processedShops, 300); // 5 minute cache
 
     res.json({ shops: processedShops, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
@@ -304,13 +382,23 @@ router.get('/my-shop', authenticate, async (req, res, next) => {
         const servRes = await query('SELECT * FROM shop_services WHERE shop_id = $1', [shop.id]);
         services = servRes.rows || servRes;
         
-        // Ensure appointments table exists or fail gracefully
-        try {
-            const apptRes = await query('SELECT * FROM appointments WHERE shop_id = $1 ORDER BY appointment_date DESC LIMIT 50', [shop.id]);
-            appointments = apptRes.rows || apptRes;
-        } catch (e) {
-            console.log('Appointments table might not exist yet', e.message);
-        }
+        // This read `appointments`, which no migration creates — the comment
+        // above it said so ("Ensure appointments table exists or fail
+        // gracefully") and the catch made the failure invisible, so a merchant's
+        // dashboard silently showed no bookings however many they had. Bookings
+        // are written to shop_appointments by POST /shops/:id/appointments.
+        const apptRes = await query(
+            `SELECT a.*, COALESCE(a.customer_name, u.full_name) AS customer_name,
+                    sv.name AS service_name
+               FROM shop_appointments a
+               LEFT JOIN users u ON u.id = a.user_id
+               LEFT JOIN shop_services sv ON sv.id = a.service_id
+              WHERE a.shop_id = $1
+              ORDER BY a.appointment_date DESC
+              LIMIT 50`,
+            [shop.id]
+        );
+        appointments = apptRes.rows || apptRes;
     }
     
     res.json({ 
@@ -329,7 +417,7 @@ router.get('/my-shop', authenticate, async (req, res, next) => {
 // GET /:id details
 router.get('/:id', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== 'production') {
+    if (useMockCatalog()) {
       try {
         const fs = require('fs'); const path = require('path');
         const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
@@ -362,7 +450,11 @@ router.post('/register', authenticate, async (req, res, next) => {
     // Generate UUID if DB doesn't auto-gen string IDs easily (using crypto)
     const id = crypto.randomUUID();
 
-    const shop = await queryOne(`INSERT INTO local_shops (id, owner_id, region_id, name, description, category_id, phone_number, address, latitude, longitude, opening_hours, photo_urls, delivery_available, pickup_available, estimated_delivery_time, gst_number, bank_account, registration_metadata, approval_status)
+    // `phone`, not `phone_number`: the live local_shops table has phone, while
+    // only the PostgreSQL DDL spelled it phone_number. Shop registration failed
+    // outright on SQLite because of it. Migration 070 renames the PostgreSQL
+    // column to match, making `phone` correct on both engines.
+    const shop = await queryOne(`INSERT INTO local_shops (id, owner_id, region_id, name, description, category_id, phone, address, latitude, longitude, opening_hours, photo_urls, delivery_available, pickup_available, estimated_delivery_time, gst_number, bank_account, registration_metadata, approval_status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'pending')
        RETURNING *`,
       [id, req.user.id, req.user.regionId, name, description, category_id, phoneNumber, address, latitude, longitude, JSON.stringify(openingHours || {}), JSON.stringify(photoUrls || []), delivery_available ? 1:0, pickup_available ? 1:0, estimated_delivery_time, gst_number, JSON.stringify(bank_account||{}), JSON.stringify(registration_metadata||{})]
@@ -381,7 +473,7 @@ router.post('/register', authenticate, async (req, res, next) => {
 // --- PRODUCTS ---
 router.get('/:id/products', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== 'production') {
+    if (useMockCatalog()) {
       const shopRow = await queryOne('SELECT c.slug FROM local_shops s JOIN shop_categories c ON s.category_id = c.id WHERE s.id = $1', [req.params.id]);
       const category = shopRow ? shopRow.slug : 'default';
       return res.json(generateMockProducts(category));
@@ -395,11 +487,33 @@ router.get('/:id/products', async (req, res, next) => {
 
 router.post('/:id/products', authenticate, async (req, res, next) => {
   try {
+    // This route was `authenticate` only — no ownership check at all — so any
+    // signed-in account could insert products into any shop's catalog, and those
+    // rows are what the storefront lists and what checkout prices.
+    const shop = await queryOne('SELECT id, owner_id FROM local_shops WHERE id = $1', [req.params.id]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    if (!isAdmin && shop.owner_id !== req.user.id) {
+      return res.status(403).json({ error: 'You do not own this shop' });
+    }
+
     const { name, description, price, imageUrl } = req.body;
-    const product = await queryOne(`INSERT INTO shop_products (shop_id, name, description, price, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [req.params.id, name, description, price, imageUrl]
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'Product name is required' });
+    }
+
+    // shop_products.id is a TEXT primary key with no default. The insert omitted
+    // it, which SQLite happily accepts as NULL (only INTEGER PRIMARY KEY
+    // auto-assigns), so products were created with no id and could never be
+    // added to a cart or ordered.
+    const id = crypto.randomUUID();
+    const product = await queryOne(
+      `INSERT INTO shop_products (id, shop_id, name, description, price, image_url, is_available, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, 1, 1) RETURNING *`,
+      [id, req.params.id, String(name).trim(), description || null, Number(price) || 0, imageUrl || null]
     );
-    res.status(201).json(product);
+    res.status(201).json(product || { id, shop_id: req.params.id, name });
   } catch (error) {
     next(error);
   }
@@ -408,7 +522,7 @@ router.post('/:id/products', authenticate, async (req, res, next) => {
 // --- SERVICES ---
 router.get('/:id/services', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== 'production') {
+    if (useMockCatalog()) {
       const shopRow = await queryOne('SELECT c.slug FROM local_shops s JOIN shop_categories c ON s.category_id = c.id WHERE s.id = $1', [req.params.id]);
       const category = shopRow ? shopRow.slug : 'default';
       return res.json(generateMockServices(category));
@@ -435,7 +549,7 @@ router.post('/:id/services', authenticate, async (req, res, next) => {
 // --- STAFF ---
 router.get('/:id/staff', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== 'production') {
+    if (useMockCatalog()) {
       const shopRow = await queryOne('SELECT c.slug FROM local_shops s JOIN shop_categories c ON s.category_id = c.id WHERE s.id = $1', [req.params.id]);
       const category = shopRow ? shopRow.slug : 'default';
       return res.json(generateMockStaff(category));
@@ -461,7 +575,7 @@ router.post('/:id/staff', authenticate, async (req, res, next) => {
 
 router.get('/:id/staff/:sid/slots', async (req, res, next) => {
     try {
-        if (process.env.NODE_ENV !== 'production') {
+        if (useMockCatalog()) {
             const slots = [];
             const startHour = 10;
             for(let i=0; i<6; i++) {
@@ -566,7 +680,7 @@ router.post('/:id/orders', authenticate, async (req, res, next) => {
     if (productItems.length > 0) {
       order = await queryOne(`INSERT INTO shop_orders (id, shop_id, user_id, total_amount, items, payment_method, delivery_type, delivery_address, delivery_coordinate, customer_name, customer_phone, tracking_otp, status) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending') RETURNING *`,
-        [crypto.randomUUID(), req.params.id, req.user.id, totalAmount, JSON.stringify(productItems), paymentMethod, deliveryType, deliveryAddress, deliveryCoordinate, customerName, customerPhone, Math.floor(1000+Math.random()*9000).toString()]
+        [crypto.randomUUID(), req.params.id, req.user.id, totalAmount, JSON.stringify(productItems), paymentMethod, deliveryType, deliveryAddress, deliveryCoordinate, customerName, customerPhone, generateTrackingOtp()]
       );
 
       // Commission logic for products
@@ -802,58 +916,18 @@ router.get('/flash-sales/active', async (req, res, next) => {
 });
 
 // Phase 13: Local Highlights (Stories)
-router.get('/highlights/feed', async (req, res, next) => {
-    try {
-        const stories = await query(`
-            SELECT st.*, s.name as shop_name 
-            FROM stories st
-            JOIN local_shops s ON st.shop_id = s.id
-            ORDER BY st.created_at DESC
-            LIMIT 20
-        `);
-        res.json(stories.rows || stories);
-    } catch (err) {
-        next(err);
-    }
-});
-
+// A second GET /highlights/feed was registered here. Express serves the first
+// matching route, so this one never ran — which was fortunate, because it had no
+// expiry filter and would have served stories that had already lapsed.
 // Phase 13: Batch Checkout
-router.post('/cart/batch-checkout', authenticate, async (req, res, next) => {
-    try {
-        const { items, use_coins } = req.body;
-        // Mock implementation of batch checkout and loyalty coin burning
-        const batchId = crypto.randomUUID();
-        
-        let total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-        let coinsUsed = 0;
-        
-        if (use_coins) {
-            const loyalty = await queryOne('SELECT sampark_coins_balance FROM loyalty_accounts WHERE user_id = $1', [req.user.id]);
-            if (loyalty && loyalty.sampark_coins_balance > 0) {
-                const maxDiscount = total * 0.1; // Max 10% off
-                coinsUsed = Math.min(loyalty.sampark_coins_balance, maxDiscount);
-                total -= coinsUsed;
-                
-                await query('UPDATE loyalty_accounts SET sampark_coins_balance = sampark_coins_balance - $1 WHERE user_id = $2', [coinsUsed, req.user.id]);
-                await query('INSERT INTO loyalty_transactions (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)', [crypto.randomUUID(), req.user.id, coinsUsed, 'Burn', 'Used on Batch Order']);
-            }
-        }
-        
-        const combined_delivery_fee = 25.0; // Optimized delivery fee
-        total += combined_delivery_fee;
-        
-        await query('INSERT INTO batch_orders (id, user_id, total_batch_amount, combined_delivery_fee, status) VALUES ($1, $2, $3, $4, $5)', [batchId, req.user.id, total, combined_delivery_fee, 'pending']);
-        
-        // Earn coins (1% of order value)
-        const earnedCoins = Math.floor(total * 0.01);
-        await query('INSERT INTO loyalty_accounts (user_id, sampark_coins_balance) VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET sampark_coins_balance = sampark_coins_balance + $2', [req.user.id, earnedCoins]);
-        await query('INSERT INTO loyalty_transactions (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)', [crypto.randomUUID(), req.user.id, earnedCoins, 'Earn', 'Earned from Batch Order']);
-
-        res.status(201).json({ success: true, batchId, total, coinsUsed, earnedCoins, message: 'Batch order placed successfully!' });
-    } catch (err) {
-        next(err);
-    }
-});
+//
+// A second POST /cart/batch-checkout was registered here, described in its own
+// comment as a "Mock implementation". Express serves the first match, so the
+// real handler above won and this never ran. It is deleted rather than left in
+// place because it computed the order total from client-supplied item.price —
+// anything reordering the routes would have turned that into a live
+// price-tampering hole — and it burned and granted loyalty coins without
+// creating any order to attach them to.
 
 // ————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 // ENHANCED SHOP MANAGEMENT ROUTES (v2)
@@ -885,7 +959,12 @@ router.put('/my-shop/appointments/:appointmentId/status', authenticate, requireS
 // ─── STAFF MANAGEMENT (Shop Owner) ──────────────────────────
 router.get('/my-shop/staff', authenticate, requireShopOwner, shopMgmt.getShopStaff);
 router.post('/my-shop/staff', authenticate, requireShopOwner, shopMgmt.addShopStaff);
-router.put('/my-shop/staff/:staffId', authenticate, requireShopOwner, shopMgmt.updateShopStaff);
+// PUT /my-shop/staff/:staffId was registered twice. This first registration won,
+// and it pointed at updateShopStaff, which writes every column unconditionally:
+// a request sending only { status } also wrote NULL over the staff member's
+// name, role, phone, email, shift and commission. The surviving registration
+// below uses updateStaff, which builds a partial UPDATE from the fields actually
+// supplied.
 router.delete('/my-shop/staff/:staffId', authenticate, requireShopOwner, shopMgmt.removeShopStaff);
 
 // ─── REVIEWS MANAGEMENT (Shop Owner) ──────────────────────────
@@ -1300,6 +1379,51 @@ router.put('/:id/loyalty/program', authenticate, async (req, res, next) => {
     );
 
     res.json({ success: true, program: saved });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /:id/settings — the shop-manager settings screen.
+ *
+ * apps/mobile/app/shop-manager/components/NativeSettingsManager.js reads this
+ * to populate the settings form; only the PUT half (/my-shop/settings)
+ * existed, so the form always opened blank and a save silently overwrote
+ * fields the owner had never seen.
+ *
+ * Returns the same columns updateShopSettings writes. Note that shop settings
+ * live on local_shops columns, not in the shop_settings JSON table — that
+ * table is used by a different surface.
+ */
+router.get('/:id/settings', authenticate, async (req, res, next) => {
+  try {
+    const shop = await queryOne(
+      `SELECT id, owner_id, description, address, phone_number, opening_hours,
+              delivery_available AS is_delivery_available,
+              pickup_available   AS is_pickup_available,
+              dine_in_available, self_delivery_available, accepts_walkin,
+              busy_status, estimated_delivery_time,
+              COALESCE(is_active, 1) AS is_live
+         FROM local_shops
+        WHERE id = $1`,
+      [req.params.id]
+    );
+
+    if (!shop) {
+      return res.status(404).json({ success: false, error: 'Shop not found' });
+    }
+
+    // Settings are owner-only: they include contact details and operational
+    // configuration that the public shop endpoint deliberately omits.
+    const isOwner = String(shop.owner_id) === String(req.user.id);
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(String(req.user.role || '').toUpperCase());
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, error: 'You do not manage this shop' });
+    }
+
+    const { owner_id: _ownerId, ...settings } = shop;
+    res.json({ success: true, data: settings, ...settings });
   } catch (error) {
     next(error);
   }

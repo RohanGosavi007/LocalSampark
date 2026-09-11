@@ -70,7 +70,7 @@ cron.schedule('0 1 * * *', async () => {
              COUNT(*) as total,
              COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed,
              COUNT(CASE WHEN status = 'NO_SHOW' THEN 1 END) as no_shows
-           FROM appointments WHERE shop_id = $1 AND date(scheduled_date) = $2`,
+           FROM shop_appointments WHERE shop_id = $1 AND date(appointment_date) = $2`,
           [shop.id, dateStr]
         );
 

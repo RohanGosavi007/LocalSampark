@@ -2,27 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { loadWithFallback } from '../../../src/utils/mockDataHelper';
-import DemoBadge from '../../../src/components/DemoBadge';
 import SkeletonLoader from '../../../src/components/SkeletonLoader';
 
-const MOCK_ORDERS = [
-  { id: 'ORD-5481', shop: 'Sharma Grocery & Daily Needs', amount: '₹340', date: 'Today, 2:30 PM', status: 'Delivered', type: 'delivery', items: 'Milk, Atta, Bread' },
-  { id: 'ORD-5479', shop: 'A-One Beauty Parlour', amount: '₹100', date: 'Yesterday, 10:00 AM', status: 'Upcoming Appointment', type: 'appointment', items: 'Haircut & Spa' },
-  { id: 'ORD-5421', shop: 'Pune Electricians', amount: '₹350', date: '28 Jun 2026', status: 'Completed', type: 'service', items: 'Fan Repair' }
-];
+// MOCK_ORDERS listed three purchases the user never made — ₹340 at "Sharma
+// Grocery & Daily Needs", ₹100 at "A-One Beauty Parlour", ₹350 to "Pune
+// Electricians". This screen did fetch the real order list into `orders`, then
+// rendered MOCK_ORDERS anyway, so the fetched data was discarded on every run
+// and every customer saw the same three fabricated receipts as their own
+// purchase history.
+//
+// It also called /orders, which is not a route. The customer's order list is
+// /orders/my-orders; /orders/:orderId is the per-order route, so '/orders'
+// matched nothing and 404'd, which is how the mock came to be showing every
+// time.
 
 export default function OrderHistoryScreen() {
   const [orders, setOrders] = useState([]);
-  const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      await loadWithFallback('/orders', MOCK_ORDERS, setOrders, setIsDemo);
+      await loadWithFallback('/orders/my-orders', null, setOrders, null, { setError });
       setLoading(false);
     };
     load();
   }, []);
+
+  // /orders/my-orders returns snake_case columns; this screen was written
+  // against the mock's field names.
+  const rows = orders.map((o) => ({
+    id: o.id,
+    shop: o.shop_name || 'Shop',
+    amount: `₹${Number(o.total_amount) || 0}`,
+    date: o.created_at ? new Date(o.created_at).toLocaleString(undefined, {
+      day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+    }) : '',
+    status: o.status || 'Pending',
+    type: o.fulfillment_method === 'pickup' ? 'pickup' : 'delivery',
+    items: Number(o.items_count) ? `${o.items_count} item${Number(o.items_count) === 1 ? '' : 's'}` : '',
+  }));
 
   if (loading) {
     return <SafeAreaView style={styles.container}><SkeletonLoader type="list" count={3} /></SafeAreaView>;
@@ -39,7 +58,16 @@ export default function OrderHistoryScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {MOCK_ORDERS.map(order => (
+        {rows.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>
+              {error ? 'Could not load your orders' : 'No orders yet'}
+            </Text>
+            <Text style={styles.emptyBody}>
+              {error || 'Orders you place will appear here.'}
+            </Text>
+          </View>
+        ) : rows.map(order => (
           <TouchableOpacity 
             key={order.id} 
             style={styles.orderCard}
@@ -86,6 +114,9 @@ export default function OrderHistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  emptyBox: { backgroundColor: '#fff', borderRadius: 16, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: '#f1f5f9', marginTop: 24 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 8 },
+  emptyBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   header: { padding: 16, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   backBtn: { flexDirection: 'row', alignItems: 'center' },
   backBtnText: { color: '#0f172a', fontWeight: '800', fontSize: 16 },

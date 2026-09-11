@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
 const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
@@ -6,15 +8,17 @@ const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'n
 export default function HomeServicesTab({ API_BASE, authHeaders }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchBookings = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/services/home-services/bookings`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/services/home-services/bookings`, { headers: authHeaders() });
       setBookings(data.bookings || data.data || []);
     } catch (e) {
       console.error('Failed to fetch home service bookings:', e);
+      setError(e);
     } finally {
       setLoading(false);
     }
@@ -26,6 +30,7 @@ export default function HomeServicesTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>

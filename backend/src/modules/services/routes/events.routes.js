@@ -71,11 +71,13 @@ router.post('/rsvp', authenticate, async (req, res, next) => {
 
       // 3. Deduct Wallet Balance
       if (totalAmount > 0) {
-        await txClient.query('UPDATE user_wallets SET balance = balance - $1 WHERE user_id = $2', [totalAmount, req.user.id]);
+        await txClient.query('UPDATE wallets SET balance = balance - $1 WHERE user_id = $2', [totalAmount, req.user.id]);
         await txClient.query(`
-          INSERT INTO wallet_transactions (id, wallet_id, user_id, amount, transaction_type, reference_id, description)
-          VALUES ($1, $2, $3, $4, 'debit', $5, 'Event Ticket Purchase')
-        `, [crypto.randomUUID(), req.user.id, req.user.id, totalAmount, ticketRef]);
+          -- wallet_transactions has no user_id or description, and its second
+          -- argument was being given a user id where a wallet id belongs.
+          INSERT INTO wallet_transactions (id, wallet_id, amount, type, reference_id, purpose, status)
+          VALUES ($1, (SELECT id FROM wallets WHERE user_id = $2), $3, 'debit', $4, 'Event Ticket Purchase', 'completed')
+        `, [crypto.randomUUID(), req.user.id, totalAmount, ticketRef]);
       }
     });
 

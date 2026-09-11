@@ -1,4 +1,8 @@
+const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
+
+// NOW() is PostgreSQL-only.
+const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
 /**
  * Trigger an SOS Event
@@ -8,11 +12,15 @@ const triggerSOS = async (req, res, next) => {
     const { type, latitude, longitude, pincode } = req.body;
     const userId = req.user.id;
 
-    // 1. Log the SOS event
+    // 1. Log the SOS event.
+    //
+    // sos_alerts.id is a TEXT primary key with no default (migration 092), so the
+    // id is generated here — the insert previously omitted it entirely.
+    const alertId = crypto.randomUUID();
     const newAlert = await query(
-      `INSERT INTO sos_alerts (user_id, type, latitude, longitude, pincode, status) 
-       VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
-      [userId, type, latitude, longitude, pincode]
+      `INSERT INTO sos_alerts (id, user_id, type, latitude, longitude, pincode, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'active') RETURNING *`,
+      [alertId, userId, type || null, latitude ?? null, longitude ?? null, pincode || null]
     );
 
     // 2. Fetch emergency contacts for the loud alarm routing
@@ -25,8 +33,9 @@ const triggerSOS = async (req, res, next) => {
       success: true,
       message: 'SOS Alert triggered successfully.',
       data: {
-        alert: newAlert.rows[0],
-        emergencyContacts: contacts.rows.map(r => r.contact_user_id)
+        // The SQLite driver returns rows directly rather than under .rows.
+        alert: (newAlert.rows && newAlert.rows[0]) || { id: alertId, user_id: userId, type, status: 'active' },
+        emergencyContacts: (contacts.rows || contacts || []).map(r => r.contact_user_id)
       }
     });
   } catch (error) {
@@ -40,7 +49,7 @@ const triggerSOS = async (req, res, next) => {
 const getActiveSOS = async (req, res, next) => {
   try {
     const alerts = await query(`
-      SELECT s.*, u.full_name, u.phone 
+      SELECT s.*, u.full_name, u.phone_number 
       FROM sos_alerts s
       JOIN users u ON s.user_id = u.id
       WHERE s.status = 'active'
@@ -49,7 +58,7 @@ const getActiveSOS = async (req, res, next) => {
     
     res.json({
       success: true,
-      data: alerts.rows
+      data: alerts.rows || alerts || []
     });
   } catch (error) {
     next(error);
@@ -64,7 +73,16 @@ const resolveSOS = async (req, res, next) => {
     const { id } = req.params;
     const { resolution, penalize } = req.body; // resolution: 'resolved', 'false_alarm'
 
-    const alert = await queryOne(`UPDATE sos_alerts SET status = $1 WHERE id = $2 RETURNING *`, [resolution, id]);
+    // Only the two statuses the admin action is defined for; anything else would
+    // silently park an alert in an unknown state.
+    if (!['resolved', 'false_alarm'].includes(resolution)) {
+      return res.status(400).json({ error: "resolution must be 'resolved' or 'false_alarm'" });
+    }
+
+    const alert = await queryOne(
+      `UPDATE sos_alerts SET status = $1, updated_at = ${NOW} WHERE id = $2 RETURNING *`,
+      [resolution, id]
+    );
     if (!alert) return res.status(404).json({ error: 'SOS Alert not found' });
 
     if (penalize && resolution === 'false_alarm') {
@@ -98,7 +116,9 @@ const addContact = async (req, res, next) => {
     const userId = req.user.id;
 
     // Find the contact user
-    const contactUser = await queryOne(`SELECT id FROM users WHERE phone = $1`, [contactPhone]);
+    // The users table has phone_number; there is no `phone` column, so this
+    // raised "no such column" and adding an emergency contact always failed.
+    const contactUser = await queryOne('SELECT id FROM users WHERE phone_number = $1', [contactPhone]);
     if (!contactUser) {
       return res.status(404).json({ error: 'Contact not found on LocalSampark.' });
     }

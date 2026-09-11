@@ -70,6 +70,42 @@ router.post('/news', authenticate, async (req, res, next) => {
     }
 });
 
+/**
+ * POST /posts — what apps/mobile/app/story-create/index.js submits.
+ *
+ * That screen posts { content, type } with no title; POST /news requires a
+ * title and rejects the body outright, so publishing from the mobile composer
+ * always failed. Rather than force a title the composer has no field for, the
+ * first line of the content becomes the title, which is what parsePost above
+ * expects to find when rendering the item back.
+ *
+ * Same moderation path as /news: submissions start 'pending'.
+ */
+router.post('/posts', authenticate, async (req, res, next) => {
+    try {
+        const { content, type } = req.body;
+        if (!content || !String(content).trim()) {
+            return res.status(400).json({ success: false, error: 'content is required.' });
+        }
+
+        const text = String(content).trim();
+        const firstLine = text.split('\n')[0].trim();
+        // Keep the derived title short enough to sit on a card.
+        const title = firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
+
+        const id = crypto.randomUUID();
+        await query(
+            "INSERT INTO posts (id, user_id, region_id, content, post_type, status) VALUES ($1, $2, $3, $4, $5, 'pending')",
+            [id, req.user.id, req.user.region_id || null,
+             JSON.stringify({ title, text, type: type || 'news' }), POST_TYPE]
+        );
+
+        res.status(201).json({ success: true, id, message: 'Submitted for review.' });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // POST approve/reject a pending news item (moderator/admin only)
 router.post('/news/:id/:action', authenticate, async (req, res, next) => {
     try {

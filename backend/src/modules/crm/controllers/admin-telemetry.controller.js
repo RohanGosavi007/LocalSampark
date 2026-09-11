@@ -23,12 +23,12 @@ exports.getGodModeMetrics = async (req, res, next) => {
 
     let revenueYTD = 0;
     try {
-      const revRes = await query('SELECT SUM(totalAmountPaise) as total FROM orders WHERE status != $1', ['CANCELLED']);
+      const revRes = await query('SELECT SUM(totalAmountPaise) as total FROM orders WHERE order_status != $1', ['CANCELLED']);
       const revRows = revRes.rows || revRes || [];
       revenueYTD = (parseFloat(revRows[0]?.total || 0)) / 100;
     } catch (e) {
       try {
-        const revRes2 = await query('SELECT SUM(total_amount) as total FROM orders WHERE status != $1', ['CANCELLED']);
+        const revRes2 = await query('SELECT SUM(total_amount) as total FROM orders WHERE order_status != $1', ['CANCELLED']);
         const revRows2 = revRes2.rows || revRes2 || [];
         revenueYTD = parseFloat(revRows2[0]?.total || 0);
       } catch (e2) {

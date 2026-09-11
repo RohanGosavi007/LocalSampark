@@ -3,7 +3,23 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Ale
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function VisitorLayout({ shopName, shopAddress, shopIcon, children, cartCount, onCheckout }) {
+/**
+ * Shared chrome for every view under app/modules/shop-detail.
+ *
+ * The hero block used to assert four things about every shop in the app, none
+ * of them measured: "⭐ 4.8", "214 Ratings", "🚀 15 min Delivery", and an offer
+ * banner reading "Get 10% Off on orders above ₹500. Code: LOCAL10". A customer
+ * could reasonably have tried to use that code at checkout, where nothing
+ * accepts it. Each of those is now shown only when the shop actually carries the
+ * corresponding value.
+ */
+export default function VisitorLayout({ shop, shopName, shopAddress, shopIcon, children, cartCount, onCheckout }) {
+  const rating = Number(shop?.rating) || null;
+  const reviewCount = Number(shop?.reviews_count ?? shop?.review_count) || 0;
+  const deliveryTime = shop?.delivery_time || null;
+  const offer = shop?.offer_text || null;
+  const hasStats = rating || deliveryTime;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -21,23 +37,33 @@ export default function VisitorLayout({ shopName, shopAddress, shopIcon, childre
             <Text style={{fontSize: 40}}>{shopIcon || '🏪'}</Text>
           </View>
           <Text style={styles.shopName}>{shopName}</Text>
-          <Text style={styles.shopAddress}>📍 {shopAddress}</Text>
-          
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statVal}>⭐ 4.8</Text>
-              <Text style={styles.statLabel}>214 Ratings</Text>
+          {shopAddress ? <Text style={styles.shopAddress}>📍 {shopAddress}</Text> : null}
+
+          {hasStats ? (
+            <View style={styles.statsRow}>
+              {rating ? (
+                <View style={styles.statItem}>
+                  <Text style={styles.statVal}>⭐ {rating.toFixed(1)}</Text>
+                  <Text style={styles.statLabel}>
+                    {reviewCount} {reviewCount === 1 ? 'Rating' : 'Ratings'}
+                  </Text>
+                </View>
+              ) : null}
+              {deliveryTime ? (
+                <View style={styles.statItem}>
+                  <Text style={styles.statVal}>🚀 {deliveryTime}</Text>
+                  <Text style={styles.statLabel}>Delivery</Text>
+                </View>
+              ) : null}
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statVal}>🚀 15 min</Text>
-              <Text style={styles.statLabel}>Delivery</Text>
+          ) : null}
+
+          {offer ? (
+            <View style={styles.offerBadge}>
+              <Text style={{fontSize: 16, marginRight: 8}}>🏷️</Text>
+              <Text style={styles.offerText}>{offer}</Text>
             </View>
-          </View>
-          
-          <View style={styles.offerBadge}>
-            <Text style={{fontSize: 16, marginRight: 8}}>🏷️</Text>
-            <Text style={styles.offerText}>Get 10% Off on orders above ₹500. Code: LOCAL10</Text>
-          </View>
+          ) : null}
         </View>
 
         {children}

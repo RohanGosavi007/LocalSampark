@@ -61,7 +61,7 @@ export default function MobileCommunityHub() {
   const handleResolveLost = async (alertId) => {
     // In reality, the owner would select WHO found it. For demo, we auto-assign finder ID 2.
     try {
-      const data = await apiPost('/community-hub/lost/${alertId}/resolve', { finderId: 2 });
+      const data = await apiPost(`/community-hub/lost/${alertId}/resolve`, { finderId: 2 });
       if (data.success) {
         Alert.alert('Success', data.message);
         fetchLostItems();
@@ -87,7 +87,7 @@ export default function MobileCommunityHub() {
         deliveryRequested: deliveryData.requested,
         dropoffLocation: deliveryData.dropoffLocation
       };
-      const data = await apiPost('/community-hub/garage/${checkoutModal.id}/buy', payload);
+      const data = await apiPost(`/community-hub/garage/${checkoutModal.id}/buy`, payload);
       if (data.success) {
         Alert.alert('Purchased!', `${data.message}\n${data.data.deliveryJobId ? 'Delivery Agent Pinged!' : 'Contact seller to pick up.'}`);
         setCheckoutModal(null);

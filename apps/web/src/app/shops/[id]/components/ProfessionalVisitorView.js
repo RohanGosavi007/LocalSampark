@@ -13,8 +13,46 @@ import {
 // Features: Consultation types, expertise areas, booking, testimonials
 // ═══════════════════════════════════════════════════════════════════════
 
+// Shown only when a shop has published no services of its own. Generic on
+// purpose: these are delivery formats, not claims about the business.
+const FALLBACK_CONSULTATIONS = [
+  { id: 'in_person', name: 'In-Person Visit', icon: '🏢', desc: 'Visit our office', time: '30-60 min' },
+  { id: 'video', name: 'Video Call', icon: '📹', desc: 'Online consultation', time: '30 min' },
+  { id: 'phone', name: 'Phone Consultation', icon: '📞', desc: 'Quick call', time: '15 min' },
+  { id: 'home', name: 'Home Visit', icon: '🏠', desc: 'We come to you', time: '60 min' },
+];
+
 export default function ProfessionalVisitorView({ shop, services = [], onBookAppointment }) {
   const [selectedType, setSelectedType] = useState(null);
+
+  // `services` was destructured and then never referenced anywhere in this
+  // component — the shop's real service list and prices were fetched, passed
+  // down and silently discarded, while every professional shop rendered the
+  // same four hardcoded options at the same invented prices (₹500/₹300/₹200/
+  // ₹1000). Real services take precedence; the generic formats above are only
+  // a fallback for a shop that has published none.
+  const consultations = services.length
+    ? services.map((s, i) => ({
+        id: s.id ?? `svc-${i}`,
+        name: s.serviceName || s.name || 'Consultation',
+        icon: '📋',
+        desc: s.description || s.serviceCategory || s.category || 'Consultation',
+        time: s.durationMinutes ? `${s.durationMinutes} min` : null,
+        price: s.price ?? (s.pricePaise != null ? s.pricePaise / 100 : null),
+      }))
+    : FALLBACK_CONSULTATIONS;
+
+  // Derived from what the shop actually offers. This was a hardcoded list of
+  // CA/tax topics (Income Tax, GST, ROC Filing, TDS), so a lawyer, an insurance
+  // agent, a travel agent, an interior designer and an astrologer all advertised
+  // "ROC Filing" as an area of expertise.
+  const expertise = [
+    ...new Set(
+      services
+        .map((s) => s.serviceCategory || s.category || s.serviceName || s.name)
+        .filter(Boolean)
+    ),
+  ];
 
   return (
     <div className="space-y-6">
@@ -29,11 +67,21 @@ export default function ProfessionalVisitorView({ shop, services = [], onBookApp
           </div>
           <div>
             <h2 className="text-xl font-bold text-text">{shop?.name || 'Professional Services'}</h2>
-            <p className="text-text-muted text-sm mt-1">Trusted by 200+ clients • 10+ years experience</p>
+            {/* "Trusted by 200+ clients • 10+ years experience" was hardcoded
+                here, and the rating below was a fixed "4.8 (120 reviews)" —
+                unqualified claims rendered identically for every professional
+                shop, whatever its real record. Both now come from the shop, and
+                the rating is omitted rather than invented when it has none. */}
+            {shop?.description && (
+              <p className="text-text-muted text-sm mt-1">{shop.description}</p>
+            )}
             <div className="flex items-center gap-3 mt-2">
-              <span className="flex items-center gap-1 text-xs text-amber-500 font-bold">
-                <Star className="w-3 h-3 fill-amber-400" /> 4.8 (120 reviews)
-              </span>
+              {shop?.rating > 0 && (
+                <span className="flex items-center gap-1 text-xs text-amber-500 font-bold">
+                  <Star className="w-3 h-3 fill-amber-400" /> {shop.rating}
+                  {shop.totalRatings > 0 && ` (${shop.totalRatings} reviews)`}
+                </span>
+              )}
               <span className="text-xs text-green-500 font-bold flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" /> Verified
               </span>
@@ -48,51 +96,61 @@ export default function ProfessionalVisitorView({ shop, services = [], onBookApp
           <Briefcase className="w-5 h-5 text-indigo-500" /> Consultation Options
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            { type: 'in_person', label: 'In-Person Visit', icon: '🏢', desc: 'Visit our office', time: '30-60 min', price: 500 },
-            { type: 'video', label: 'Video Call', icon: '📹', desc: 'Online consultation', time: '30 min', price: 300 },
-            { type: 'phone', label: 'Phone Consultation', icon: '📞', desc: 'Quick call', time: '15 min', price: 200 },
-            { type: 'home', label: 'Home Visit', icon: '🏠', desc: 'We come to you', time: '60 min', price: 1000 },
-          ].map((opt, i) => (
-            <motion.div key={i}
+          {consultations.map((opt, i) => (
+            <motion.div key={opt.id}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
               onClick={() => setSelectedType(opt)}
               className={`p-4 rounded-xl cursor-pointer transition-all border-2 flex items-center gap-3 ${
-                selectedType?.type === opt.type
+                selectedType?.id === opt.id
                   ? 'border-indigo-500 bg-indigo-500/5'
                   : 'border-border hover:border-indigo-500/30'
               }`}
             >
               <span className="text-2xl">{opt.icon}</span>
               <div className="flex-1">
-                <h3 className="font-bold text-sm text-text">{opt.label}</h3>
-                <p className="text-xs text-text-muted">{opt.desc} • {opt.time}</p>
+                <h3 className="font-bold text-sm text-text">{opt.name}</h3>
+                <p className="text-xs text-text-muted">
+                  {[opt.desc, opt.time].filter(Boolean).join(' • ')}
+                </p>
               </div>
-              <span className="font-black text-indigo-500">₹{opt.price}</span>
+              {/* A shop that has not priced a service shows no price, rather
+                  than one this component made up. */}
+              {opt.price != null && (
+                <span className="font-black text-indigo-500">₹{opt.price}</span>
+              )}
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Areas of Expertise */}
-      <div className="bg-background-alt p-6 rounded-2xl border border-border">
-        <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
-          <Award className="w-5 h-5 text-amber-500" /> Areas of Expertise
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {['Income Tax', 'GST', 'Company Law', 'Audit', 'ROC Filing', 'TDS', 'Tax Planning', 'Business Advisory', 'Compliance'].map((area, i) => (
-            <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
-              {area}
-            </span>
-          ))}
+      {/* Areas of Expertise — omitted entirely when the shop has published no
+          services, rather than falling back to a fixed list. This was hardcoded
+          to CA/tax topics, so a lawyer, insurance agent, travel agent, interior
+          designer and astrologer all listed "ROC Filing" and "TDS". */}
+      {expertise.length > 0 && (
+        <div className="bg-background-alt p-6 rounded-2xl border border-border">
+          <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
+            <Award className="w-5 h-5 text-amber-500" /> Areas of Expertise
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {expertise.map((area, i) => (
+              <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                {area}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Trust Badges */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
+          // "1000+ Cases Handled" was here — a specific, unverifiable claim
+          // asserted on behalf of every professional shop on the platform.
+          // Replaced with a statement about how the platform works, which is
+          // true of all of them.
           { icon: Shield, label: 'Licensed & Certified', color: '#22c55e' },
-          { icon: FileText, label: '1000+ Cases Handled', color: '#3b82f6' },
+          { icon: FileText, label: 'Documented Engagements', color: '#3b82f6' },
           { icon: Clock, label: 'Quick Turnaround', color: '#f97316' },
           { icon: Users, label: 'Confidential & Secure', color: '#8b5cf6' },
         ].map((badge, i) => (

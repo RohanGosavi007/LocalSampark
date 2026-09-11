@@ -12,8 +12,31 @@ const crypto = require('crypto');
 router.get('/', async (req, res, next) => {
   try {
     const { category, condition, min_price, max_price, search, sort = 'newest', lat, lng, radius = 10, page = 1, limit = 24 } = req.query;
+
+    // Zone scope. Marketplace is hyperlocal: a Pune user must not see Nagpur
+    // listings. This endpoint previously returned every active listing in the
+    // country regardless of the caller's zone.
+    //
+    // Fails closed — no zone means no listings, and the client is told to pick
+    // one. Falling back to nationwide would defeat the isolation this exists
+    // for, so an unscoped client sees nothing rather than everything.
+    const regionId = req.query.region_id || req.headers['x-territory-id'] || null;
+    if (!regionId) {
+      return res.status(200).json({
+        success: true,
+        listings: [],
+        page: parseInt(page),
+        total: 0,
+        code: 'ZONE_REQUIRED',
+        message: 'Select a location to see listings near you.',
+      });
+    }
+
     let sql = `SELECT l.*, u.full_name as seller_name, NULL as seller_photo FROM marketplace_listings l LEFT JOIN users u ON l.seller_id = u.id WHERE l.status = 'active'`;
     const params = [];
+
+    params.push(regionId);
+    sql += ` AND l.region_id = $${params.length}`;
 
     if (category) { params.push(category); sql += ` AND l.category = $${params.length}`; }
     if (condition) { params.push(condition); sql += ` AND l.condition = $${params.length}`; }
@@ -98,12 +121,29 @@ router.post('/', authenticate, async (req, res, next) => {
             latitude, longitude, delivery_available = false, zone, flash_deal_until } = req.body;
     if (!title || !price) return res.status(400).json({ error: 'Title and price are required' });
 
+    // region_id decides which zone the listing appears in. Without it a new
+    // listing is invisible to the zone-scoped browse endpoint, so it is
+    // resolved here rather than left to the caller: explicit value first, then
+    // the request's territory header, then the seller's own region — the same
+    // attribution migration 067 used to backfill existing rows.
+    let regionId = req.body.region_id || req.headers['x-territory-id'] || null;
+    if (!regionId) {
+      const seller = await queryOne('SELECT region_id FROM users WHERE id = $1', [req.user.id]);
+      regionId = seller && seller.region_id ? seller.region_id : null;
+    }
+    if (!regionId) {
+      return res.status(400).json({
+        error: 'A location is required to publish a listing.',
+        code: 'ZONE_REQUIRED',
+      });
+    }
+
     const id = crypto.randomUUID();
     await query(`INSERT INTO marketplace_listings (id, seller_id, title, description, category, condition, price, is_negotiable,
-      photo_urls, latitude, longitude, delivery_available, zone, flash_deal_until, status)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active')`,
+      photo_urls, latitude, longitude, delivery_available, zone, flash_deal_until, region_id, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'active')`,
       [id, req.user.id, title, description||null, category||null, condition, price, is_negotiable?1:0,
-       JSON.stringify(photo_urls), latitude||null, longitude||null, delivery_available?1:0, zone||null, flash_deal_until||null]);
+       JSON.stringify(photo_urls), latitude||null, longitude||null, delivery_available?1:0, zone||null, flash_deal_until||null, regionId]);
 
     res.status(201).json({ success: true, listingId: id, message: 'Listing created' });
   } catch (error) { next(error); }

@@ -1,20 +1,65 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { apiGet } from '../../lib/api';
 import { Wrench, Calendar, CheckCircle2, IndianRupee, Star, Clock, MapPin, ChevronRight } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+/**
+ * A service partner's landing screen.
+ *
+ * "4 pending jobs, 3 completed today, 4.8 rating, ₹3,450 earned" were literals,
+ * and the greeting fell back to "Welcome, Suresh". Below them, two jobs at
+ * specific flats — an AC gas refill at 2pm in Sector 4, a washing machine repair
+ * at 4:30 — that nobody had booked. A partner could have set out for one.
+ *
+ * /dashboards/services/dashboard reports what they have actually been booked
+ * for, and the Bookings tab is the list they can act on.
+ */
 export default function ServiceDashboard({ user }) {
-  const stats = [
-    { label: 'Pending Jobs', value: '4', icon: Calendar, color: '#f59e0b' },
-    { label: 'Completed Today', value: '3', icon: CheckCircle2, color: '#10b981' },
-    { label: 'Profile Rating', value: '4.8', icon: Star, color: '#3b82f6' },
-    { label: 'Total Earnings', value: '₹3,450', icon: IndianRupee, color: '#8b5cf6' }
-  ];
+  const [figures, setFigures] = useState(null);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const pendingAppointments = [
-    { id: 'JOB-902', service: 'AC Gas Refill', time: '02:00 PM', location: 'Sector 4, Flat 102' },
-    { id: 'JOB-905', service: 'Washing Machine Repair', time: '04:30 PM', location: 'Sector 1, Flat 505' },
+  useEffect(() => {
+    Promise.allSettled([
+      apiGet('/dashboards/services/dashboard'),
+      apiGet('/shops/my-shop/appointments'),
+    ]).then(([statsRes, apptRes]) => {
+      if (statsRes.status === 'fulfilled') {
+        setFigures(statsRes.value?.stats ?? null);
+      } else {
+        setFigures(null);
+        setError(statsRes.reason?.message || 'Could not load your dashboard.');
+      }
+
+      if (apptRes.status === 'fulfilled') {
+        setPendingAppointments(
+          (apptRes.value?.appointments ?? [])
+            .filter((a) => ['pending', 'confirmed'].includes(String(a.status || '').toLowerCase()))
+            .slice(0, 5)
+            .map((a) => ({
+              id: String(a.id),
+              service: a.service_name || 'Service',
+              time: a.time_slot || '',
+              location: a.customer_name || '',
+            }))
+        );
+      } else {
+        setPendingAppointments([]);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const stats = [
+    { label: 'Pending Jobs', value: String(Number(figures?.upcomingBookings) || 0), icon: Calendar, color: '#f59e0b' },
+    { label: 'Completed Today', value: String(Number(figures?.completedToday) || 0), icon: CheckCircle2, color: '#10b981' },
+    // The endpoint returns 0 until provider ratings are aggregated; a dash is
+    // honest where "4.8" was not.
+    { label: 'Profile Rating', value: Number(figures?.avgRating) ? String(figures.avgRating) : '—', icon: Star, color: '#3b82f6' },
+    { label: 'Total Earnings', value: `₹${(Number(figures?.totalEarnings) || 0).toLocaleString('en-IN')}`, icon: IndianRupee, color: '#8b5cf6' },
   ];
 
   return (
@@ -22,7 +67,8 @@ export default function ServiceDashboard({ user }) {
       <View style={s.headerRow}>
         <View>
           <View style={s.headerLeft}><Wrench color="#3b82f6" size={24} style={{ marginRight: 8 }} /><Text style={s.headerTitle}>Service Partner</Text></View>
-          <Text style={s.headerSubtitle}>Online • Welcome, {user?.name || 'Suresh'}</Text>
+          {/* The fallback greeted an unnamed partner as "Suresh". */}
+          <Text style={s.headerSubtitle}>Online{user?.name ? ` • Welcome, ${user.name}` : ''}</Text>
         </View>
         <TouchableOpacity style={s.statusBadge}><View style={s.statusDot} /><Text style={s.statusText}>ACCEPTING JOBS</Text></TouchableOpacity>
       </View>
@@ -42,7 +88,15 @@ export default function ServiceDashboard({ user }) {
 
       <View style={{ marginBottom: 24 }}>
         <Text style={s.sectionTitle}>Pending Appointments</Text>
-        {pendingAppointments.map((job) => (
+        {loading ? (
+          <View style={s.emptyRow}><ActivityIndicator color="#3b82f6" /></View>
+        ) : pendingAppointments.length === 0 ? (
+          <View style={s.emptyRow}>
+            <Text style={s.emptyText}>
+              {error || 'Jobs customers book with you will appear here.'}
+            </Text>
+          </View>
+        ) : pendingAppointments.map((job) => (
           <View key={job.id} style={s.jobCard}>
             <View style={s.jobHeader}>
               <View style={s.jobIdBadge}><Text style={s.jobIdText}>{job.id}</Text></View>
@@ -70,6 +124,8 @@ export default function ServiceDashboard({ user }) {
 }
 
 const s = StyleSheet.create({
+  emptyRow: { padding: 20, alignItems: 'center' },
+  emptyText: { color: '#94a3b8', fontSize: 13, textAlign: 'center', lineHeight: 19 },
   container: { flex: 1, backgroundColor: '#020617' },
   headerRow: { marginBottom: 24, marginTop: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },

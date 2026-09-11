@@ -29,25 +29,26 @@ export default function DeliveryOnboardingScreen() {
     }
 
     try {
-      const baseUrl = Constants.expoConfig?.extra?.API_URL_DEV || API_BASE_URL;
-      const response = await fetch(`${baseUrl}/api/v1/delivery/onboarding`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authState.token}`
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      if (response.ok) {
+      // Was: fetch(`${baseUrl}/api/v1/delivery/onboarding`) with
+      // baseUrl = Constants.expoConfig.extra.API_URL_DEV. Two bugs:
+      //   1. API_URL_DEV already ends in /api/v1, so the path became
+      //      /api/v1/api/v1/delivery/onboarding and always 404'd.
+      //   2. It pinned the dev LAN address (http://192.168.1.7:5000), so a
+      //      release build sent KYC documents to an unreachable private IP.
+      // apiPost resolves the correct base per build type and attaches the
+      // auth header itself.
+      const data = await apiPost('/delivery/onboarding', formData);
+
+      if (data && data.success !== false) {
         Alert.alert('KYC Submitted!', 'Your onboarding application is under review.');
         router.replace('/modules/delivery-dashboard');
       } else {
-        const error = await response.json();
-        Alert.alert('Error', error.message || 'Failed to submit KYC.');
+        Alert.alert('Error', data?.message || data?.error || 'Failed to submit KYC.');
       }
     } catch (err) {
-      Alert.alert('Network Error', 'Could not connect to server.');
+      // apiPost throws ApiError on a non-2xx, so surface the server's message
+      // rather than always claiming the network was unreachable.
+      Alert.alert('Error', err?.message || 'Could not connect to server.');
     }
   };
 

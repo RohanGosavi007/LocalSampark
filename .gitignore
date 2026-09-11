@@ -13,10 +13,11 @@ backend/.env
 *.sqlite
 *.sqlite3
 *.db
-*.db-shm
-*.db-wal
+*.db-*
+*.db.*
 database.sqlite
 localsampark.db
+backend/src/data/
 .claude/
 NUL
 
@@ -24,6 +25,7 @@ NUL
 .next/
 dist/
 build/
+build-android/
 out/
 
 # Accidentally-committed bundler/Metro output — regenerate via
@@ -63,6 +65,11 @@ coverage/
 *.apk
 *.aab
 *.keystore
+
+# Machine-specific Android SDK location. Untracked via 'git rm --cached'; the
+# file stays on disk because Gradle needs it, but it is no longer committed --
+# it held one developer's absolute SDK path and broke every other machine.
+local.properties
 
 # Expo
 .expo/

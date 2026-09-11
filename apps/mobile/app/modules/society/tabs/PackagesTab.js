@@ -1,11 +1,40 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { apiGet } from '../../../../src/lib/api';
 
+/**
+ * Two parcels were hardcoded — an Amazon delivery "At Gate" since 2:30 PM and a
+ * collected BlueDart. A resident could have walked down to the gate for a parcel
+ * that was not there.
+ */
 export default function PackagesTab({ role }) {
-  const [packages] = useState([
-    { id: 1, courier: 'Amazon', status: 'At Gate', code: 'AMZ-8891', date: 'Today, 2:30 PM' },
-    { id: 2, courier: 'BlueDart', status: 'Collected', code: 'BLD-1120', date: 'Yesterday' }
-  ]);
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiGet('/society-management/packages/pending');
+        const rows = res?.packages ?? res?.data ?? (Array.isArray(res) ? res : []);
+        setPackages(
+          rows.map((p) => ({
+            id: String(p.id),
+            courier: p.courier_name || p.courier || 'Parcel',
+            status: String(p.status || 'pending').toLowerCase() === 'collected' ? 'Collected' : 'At Gate',
+            code: p.tracking_code || p.code || '',
+            date: p.created_at ? new Date(p.created_at).toLocaleString() : '',
+          }))
+        );
+      } catch (err) {
+        setPackages([]);
+        setError(err?.message || 'Could not load packages.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
@@ -21,7 +50,18 @@ export default function PackagesTab({ role }) {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>{role === 'guard' ? 'Recent Deliveries' : 'My Packages'}</Text>
-        {packages.map(pkg => (
+        {loading ? (
+          <View style={styles.stateBox}><ActivityIndicator color="#3b82f6" /></View>
+        ) : packages.length === 0 ? (
+          <View style={styles.stateBox}>
+            <Text style={styles.stateTitle}>
+              {error ? 'Could not load packages' : 'Nothing at the gate'}
+            </Text>
+            <Text style={styles.stateBody}>
+              {error || 'Parcels logged by the guard will appear here.'}
+            </Text>
+          </View>
+        ) : packages.map(pkg => (
           <View key={pkg.id} style={styles.pkgRow}>
             <View style={styles.iconContainer}>
               <Text style={styles.icon}>📦</Text>
@@ -45,6 +85,9 @@ export default function PackagesTab({ role }) {
 }
 
 const styles = StyleSheet.create({
+  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
   sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },

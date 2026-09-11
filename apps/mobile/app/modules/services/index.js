@@ -76,8 +76,18 @@ export default function ServicesScreen() {
       const token = await AsyncStorage.getItem('token');
       const scheduled_time = `${bookingDate.toISOString().split('T')[0]} ${selectedTime}`;
       await apiPost('/services/book', { service_id: selectedService.id, scheduled_time, address: bookingAddress, promo: promoCode }, token);
-    } catch (e) { /* Fallback */ }
-    setRequestSent(true);
+      setRequestSent(true);
+    } catch (e) {
+      // The catch was an empty `/* Fallback */` and the success screen was shown
+      // regardless, so a booking that the server rejected still told the
+      // customer "Booking Request Sent! Our local runner is matching you with
+      // the provider" — and they would have waited for a provider nobody had
+      // been asked to send.
+      Alert.alert(
+        'Booking not sent',
+        e?.message || 'We could not send your booking request. Please try again.'
+      );
+    }
   };
 
   const filteredServices = services.filter(s => {

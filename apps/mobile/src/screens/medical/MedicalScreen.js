@@ -1,84 +1,132 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert , StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, Linking, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Stethoscope, PhoneCall, HeartPulse, Pill, Calendar, Clock, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { apiGet } from '../../lib/api';
+import { apiGet, apiPost } from '../../lib/api';
+import * as Location from 'expo-location';
 
 export default function NativemedicalScreen() {
   const router = useRouter();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('doctors'); // 'doctors' | 'pharmacy'
+  const [loadError, setLoadError] = useState(null);
+  const [dispatching, setDispatching] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     async function loadDoctors() {
+      // The catch used to fall back to two invented practitioners — "Dr. Rajesh
+      // Patil, General Physician / MD, 14 Yrs Exp, Dhanori Health Clinic, ₹400,
+      // 4.9 stars" and "Dr. Ananya Joshi, Pediatrician" — with clinic addresses
+      // and consulting hours. Inventing a doctor is inventing a person a patient
+      // may travel to and trust with their health.
       try {
         const data = await apiGet('/medical/doctors');
-        if (isMounted && data && data.doctors && data.doctors.length > 0) {
-          setDoctors(data.doctors.map(d => ({
+        const rows = data?.doctors ?? [];
+        if (!isMounted) return;
+
+        setDoctors(
+          rows.map((d) => ({
             id: d.id,
             name: d.name,
-            specialty: d.specialization,
-            experience: d.qualification || 'Experienced MD',
-            clinic: d.clinic_name,
-            fee: `₹${d.consultation_fee || 500}`,
-            available: 'Available Today',
-            rating: `${d.rating || 4.9} ★`
-          })));
-          setLoading(false);
-          return;
-        }
+            specialty: d.specialization || '',
+            experience: d.qualification || '',
+            clinic: d.clinic_name || '',
+            // No default fee: a consultation price is the doctor's to set, and
+            // "₹500" was previously filled in whenever the record had none.
+            fee: d.consultation_fee != null ? `₹${d.consultation_fee}` : null,
+            // "Available Today" was asserted for every doctor regardless of any
+            // schedule.
+            available: d.available_today ? 'Available today' : null,
+            rating: d.rating != null ? `${d.rating} ★` : null,
+          }))
+        );
       } catch (e) {
-        console.warn('API error, loading local fallback:', e.message);
-      }
-      
-      if (isMounted) {
-        setDoctors([
-          {
-            id: 'doc_1',
-            name: 'Dr. Rajesh Patil',
-            specialty: 'General Physician / MD',
-            experience: '14 Yrs Exp',
-            clinic: 'Dhanori Health Clinic, Porwal Rd',
-            fee: '₹400',
-            available: 'Today, 5:00 PM - 9:00 PM',
-            rating: '4.9 ★'
-          },
-          {
-            id: 'doc_2',
-            name: 'Dr. Ananya Joshi',
-            specialty: 'Pediatrician & Child Care',
-            experience: '9 Yrs Exp',
-            clinic: 'Little Angels Care, Lohegaon',
-            fee: '₹500',
-            available: 'Tomorrow, 10:00 AM - 1:00 PM',
-            rating: '4.8 ★'
-          }
-        ]);
-        setLoading(false);
+        if (!isMounted) return;
+        setDoctors([]);
+        setLoadError(e?.message || 'Could not load doctors.');
+      } finally {
+        if (isMounted) setLoading(false);
       }
     }
+
     loadDoctors();
     return () => { isMounted = false; };
   }, []);
 
+  /**
+   * Emergency SOS.
+   *
+   * This was the most dangerous fabrication in the app. Confirming dispatch
+   * called no API whatsoever and showed:
+   *
+   *   "Ambulance Dispatched 🚑 — Emergency Unit En-Route!
+   *    Driver: Ramesh Kumar (+91 98220 11223)
+   *    ETA: 4 Minutes"
+   *
+   * Nothing was dispatched, the driver does not exist, and the phone number
+   * belongs to no one. Someone in a medical emergency would have read that,
+   * believed help was four minutes away, and stopped looking for it.
+   *
+   * POST /sos/trigger records a real alert and returns the emergency contacts it
+   * routed to. The confirmation now says only what actually happened.
+   */
   const handleTriggerSOS = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     Alert.alert(
-      '🚨 EMERGENCY SOS DISPATCH',
-      'Alert nearest Dhanori Emergency Ambulance & Society Gate Guard?',
+      '🚨 EMERGENCY SOS',
+      'Raise an emergency alert to your emergency contacts and local responders?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'CONFIRM DISPATCH NOW',
+          text: 'RAISE ALERT NOW',
           style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert('Ambulance Dispatched 🚑', 'Emergency Unit En-Route!\nDriver: Ramesh Kumar (+91 98220 11223)\nETA: 4 Minutes');
-          }
-        }
+          onPress: async () => {
+            if (dispatching) return;
+            setDispatching(true);
+            try {
+              // Location is best-effort: an alert without coordinates is far
+              // better than no alert.
+              let coords = null;
+              try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status === 'granted') {
+                  const pos = await Location.getCurrentPositionAsync({});
+                  coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                }
+              } catch {}
+
+              const res = await apiPost('/sos/trigger', {
+                type: 'medical',
+                latitude: coords?.latitude ?? null,
+                longitude: coords?.longitude ?? null,
+              });
+
+              const notified = res?.data?.emergencyContacts?.length ?? 0;
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert(
+                'Alert raised',
+                notified > 0
+                  ? `Your emergency alert has been recorded and sent to ${notified} emergency contact${notified === 1 ? '' : 's'}.\n\nIf this is life-threatening, call 108 now.`
+                  : 'Your emergency alert has been recorded.\n\nYou have no emergency contacts saved. If this is life-threatening, call 108 now.'
+              );
+            } catch (err) {
+              // Failing loudly matters more here than anywhere else in the app.
+              Alert.alert(
+                'Alert NOT sent',
+                `The emergency alert could not be raised (${err?.message || 'network error'}).\n\nCall 108 for an ambulance now.`,
+                [
+                  { text: 'Close', style: 'cancel' },
+                  { text: 'Call 108', onPress: () => Linking.openURL('tel:108') },
+                ]
+              );
+            } finally {
+              setDispatching(false);
+            }
+          },
+        },
       ]
     );
   };
@@ -87,7 +135,19 @@ export default function NativemedicalScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert('Book Appointment', `Confirm appointment booking with ${doc.name} (${doc.fee})?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Confirm Booking', onPress: () => Alert.alert('Appointment Confirmed 🎉', `Token #14 generated for ${doc.name}.\nSlot: ${doc.available}`) }
+      {
+        text: 'Confirm Booking',
+        // "Token #14 generated" was printed for every booking — a fixed queue
+        // number from a queue that does not exist, alongside a confirmation for
+        // an appointment nothing recorded. Booking is not wired to
+        // /shops/:id/appointments yet, so this says so rather than confirming
+        // something that did not happen.
+        onPress: () =>
+          Alert.alert(
+            'Booking not available yet',
+            'Appointment booking for doctors is not connected yet. Please contact the clinic directly.'
+          ),
+      }
     ]);
   };
 
@@ -151,9 +211,20 @@ export default function NativemedicalScreen() {
         <ScrollView style={s.s21} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
           {activeTab === 'doctors' ? (
             <View>
-              <Text style={s.s22}>Available Doctors in Dhanori ({doctors.length})</Text>
+              {/* "in Dhanori" was hardcoded — the heading named one locality
+                  whatever area the patient was actually in. */}
+              <Text style={s.s22}>Doctors ({doctors.length})</Text>
 
-              {doctors.map((doc) => (
+              {doctors.length === 0 ? (
+                <View style={s.emptyBox}>
+                  <Text style={s.emptyTitle}>
+                    {loadError ? 'Could not load doctors' : 'No doctors listed yet'}
+                  </Text>
+                  <Text style={s.emptyBody}>
+                    {loadError || 'Doctors in your area will appear here once they are listed.'}
+                  </Text>
+                </View>
+              ) : doctors.map((doc) => (
                 <View key={doc.id} style={s.s23}>
                   <View style={s.s24}>
                     <View style={s.s25}>
@@ -161,23 +232,35 @@ export default function NativemedicalScreen() {
                       <Text style={s.s27}>{doc.specialty}</Text>
                       <Text style={s.s28}>{doc.experience}</Text>
                     </View>
-                    <View style={s.s29}>
-                      <Text style={s.s30}>{doc.rating}</Text>
+                    {/* Rating, clinic, availability and fee are each rendered
+                        only when the record carries them. They were previously
+                        printed unconditionally, so a doctor with none of these
+                        showed an empty star badge and "₹undefined". */}
+                    {doc.rating ? (
+                      <View style={s.s29}>
+                        <Text style={s.s30}>{doc.rating}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {doc.clinic ? (
+                    <View style={s.s31}>
+                      <MapPin color="#64748b" size={14} />
+                      <Text style={s.s32}>{doc.clinic}</Text>
                     </View>
-                  </View>
+                  ) : null}
 
-                  <View style={s.s31}>
-                    <MapPin color="#64748b" size={14} />
-                    <Text style={s.s32}>{doc.clinic}</Text>
-                  </View>
-
-                  <View style={s.s33}>
-                    <Clock color="#34d399" size={14} />
-                    <Text style={s.s34}>{doc.available}</Text>
-                  </View>
+                  {doc.available ? (
+                    <View style={s.s33}>
+                      <Clock color="#34d399" size={14} />
+                      <Text style={s.s34}>{doc.available}</Text>
+                    </View>
+                  ) : null}
 
                   <View style={s.s35}>
-                    <Text style={s.s36}>{doc.fee} <Text style={s.s37}>consultation</Text></Text>
+                    <Text style={s.s36}>
+                      {doc.fee ? <>{doc.fee} <Text style={s.s37}>consultation</Text></> : <Text style={s.s37}>Fee on enquiry</Text>}
+                    </Text>
                     <TouchableOpacity
                       onPress={() => handleBookAppointment(doc)}
                       style={s.s38}
@@ -209,6 +292,9 @@ export default function NativemedicalScreen() {
 }
 
 const s = StyleSheet.create({
+  emptyBox: { backgroundColor: '#0f172a', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#1e293b' },
+  emptyTitle: { fontSize: 15, fontWeight: '800', color: '#ffffff', marginBottom: 6, textAlign: 'center' },
+  emptyBody: { fontSize: 13, color: '#94a3b8', textAlign: 'center', lineHeight: 19 },
   s0: { flex: 1, backgroundColor: '#020617' },
   s1: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
   s2: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 9999 },

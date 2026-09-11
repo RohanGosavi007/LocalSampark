@@ -1,23 +1,29 @@
 import { Stack } from 'expo-router';
+import { wrap as sentryWrap, captureException } from '../src/sentry';
 import React, { useEffect } from 'react';
 
 // ══════════════════════════════════════════════════════════════════════
-// HERMES CRASH PREVENTION POLYFILLS
-// Some third-party libraries (like react-native-webrtc's event-target-shim, 
-// or Supabase) do unchecked `instanceof Event` or `instanceof URL` checks.
-// Since React Native doesn't define Event globally, this causes an immediate
-// crash at startup: "Right operand of 'instanceof' is not an object".
+// The Event/URL polyfills that used to live here have moved to
+// src/expo-crash-fix.js, which metro.config.js prepends as a Metro polyfill.
+// They could never work from this file: ES `import` declarations are hoisted,
+// so react-native-webrtc, event-target-shim and Supabase were all evaluated
+// before any statement in this module body ran. See that file for detail.
 // ══════════════════════════════════════════════════════════════════════
-if (typeof global.Event === 'undefined') {
-  global.Event = class Event {};
-}
-if (typeof global.URL === 'undefined') {
-  global.URL = class URL {};
-}
 
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import WebRTCIntercomMobile from '../src/components/WebRTCIntercomMobile';
+
+// Loaded defensively like every other native-backed import in this file. As a
+// hoisted `import` it was the one hard dependency at the root of the tree, so
+// any failure inside react-native-webrtc, react-native-callkeep or the
+// Supabase realtime client took the entire app down with it — even though the
+// intercom is an optional feature.
+let WebRTCIntercomMobile = () => null;
+try {
+  WebRTCIntercomMobile = require('../src/components/WebRTCIntercomMobile').default;
+} catch (e) {
+  console.warn('[_layout] WebRTCIntercomMobile import failed:', e.message);
+}
 
 let DevLoginScreen = () => null;
 if (__DEV__) {
@@ -71,7 +77,19 @@ function DynamicNavigator() {
         <Stack.Screen name="location-select" options={{ presentation: 'modal' }} />
         <Stack.Screen name="onboarding-tutorial" />
       </Stack>
-      <WebRTCIntercomMobile flatNumber={user?.flatNumber || "A-101"} isGuard={role === 'GUARD'} />
+      {/* Door intercom, for society residents and gate guards only.
+          This previously passed `user?.flatNumber || "A-101"`, so every user —
+          including a shopper with no society at all — mounted the intercom,
+          registered a system telecom PhoneAccount via CallKeep, and subscribed
+          to the Supabase channel for a fake flat "A-101" that all of them
+          shared. Mounting only for users who actually have a flat (or are a
+          guard) keeps the telecom stack out of the normal shopping path.
+          Still isolated so a failure degrades to "no intercom". */}
+      {(user?.flatNumber || role === 'GUARD') && (
+        <ErrorBoundary fallback={null}>
+          <WebRTCIntercomMobile flatNumber={user?.flatNumber} isGuard={role === 'GUARD'} />
+        </ErrorBoundary>
+      )}
     </>
   );
 }
@@ -187,15 +205,30 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
+    this.setState({ componentStack: errorInfo?.componentStack });
+    // A boundary that swallows the error is invisible to Sentry otherwise —
+    // React treats a caught error as handled and does not re-throw it.
+    captureException(error, { componentStack: errorInfo?.componentStack });
   }
 
   render() {
     if (this.state.hasError) {
+      // `fallback` lets a subtree fail in isolation instead of blanking the
+      // whole app; pass fallback={null} to degrade silently.
+      if ('fallback' in this.props) {
+        return this.props.fallback;
+      }
       return (
         <View style={errorStyles.container}>
           <Text style={errorStyles.icon}>⚠️</Text>
           <Text style={errorStyles.title}>Something went wrong</Text>
           <Text style={errorStyles.message}>{this.state.error?.message || 'An unexpected error occurred'}</Text>
+          {/* Without an origin this screen is undiagnosable from a user's
+              screenshot, which is exactly how the Hermes `instanceof` crash
+              went unexplained. */}
+          <Text style={errorStyles.stack} numberOfLines={8}>
+            {(this.state.componentStack || this.state.error?.stack || '').trim().slice(0, 500)}
+          </Text>
         </View>
       );
     }
@@ -208,6 +241,7 @@ const errorStyles = StyleSheet.create({
   icon: { fontSize: 48, marginBottom: 16 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 12 },
   message: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 22 },
+  stack: { fontSize: 10, color: '#94a3b8', textAlign: 'left', marginTop: 20, fontFamily: 'monospace' },
 });
 
 // Territory store — restore saved territory on app boot
@@ -218,7 +252,7 @@ try {
   console.warn('[_layout] useTerritoryStore import failed:', e.message);
 }
 
-export default function RootLayout() {
+function RootLayout() {
   useEffect(() => {
     // Force-hide native splash screen immediately on mount using multiple methods
     const dismissSplash = async () => {
@@ -303,3 +337,7 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+// Wrapped so Sentry can attach navigation/route context to reports. Falls back
+// to the bare component when Sentry is not initialised (no DSN configured).
+export default sentryWrap(RootLayout);

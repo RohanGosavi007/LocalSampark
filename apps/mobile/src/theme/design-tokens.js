@@ -95,5 +95,50 @@ const gradients = {
 
 const radius = { sm: 8, base: 14, lg: 22, xl: 32, full: 9999 };
 
-module.exports = { brand, neutral, category, glass, mesh, motion, type, radius, gradients };
-export default { brand, neutral, category, glass, mesh, motion, type, radius, gradients };
+// ── Quick-commerce surface layer ──────────────────────────────────────────
+//
+// The tokens above describe the app's expressive surfaces: mesh gradients,
+// glass, aurora. Those suit a landing page. They do not suit a browse-and-buy
+// flow, where the product photograph has to be the brightest thing on screen
+// and a price has to be readable in a tenth of a second on a bright street.
+//
+// This layer is deliberately flat and quiet — the Blinkit/Zepto/Swiggy register
+// — and exists alongside the expressive one rather than replacing it, so a
+// screen opts in. Nothing here animates.
+const commerce = {
+  // Near-white ground so photography carries the colour, not the chrome.
+  surface: neutral[0],
+  surfaceSunken: neutral[50],
+  hairline: neutral[200],
+
+  ink: neutral[900],
+  inkMuted: neutral[500],
+  inkFaint: neutral[400],
+
+  // One accent, used only for actions. Everything else is greyscale.
+  action: brand.primary,
+  actionInk: neutral[0],
+  actionSunken: brand.primaryHover,
+  actionTint: brand.primaryLight,
+
+  // Reserved strictly for genuine urgency (low stock, last slot). Overusing
+  // this is what makes an interface feel like a discount bin.
+  urgent: brand.accent,
+  urgentTint: brand.accentLight,
+
+  // Thumb ergonomics. 44 is the documented minimum tap target on both
+  // platforms; quick-commerce leans larger because people tap while walking.
+  tap: { min: 44, comfortable: 48 },
+
+  // Bottom-anchored surfaces sit above the home indicator, not under it.
+  dock: { height: 64, inset: 12, safeAreaFallback: 24 },
+
+  // Prices must not reflow as digits change during a quantity tap.
+  price: { fontVariant: ['tabular-nums'] },
+
+  // Dense list rhythm. The expressive scale in `type` is for headers.
+  gap: { hair: 2, tight: 4, base: 8, row: 12, block: 16, section: 24 },
+};
+
+module.exports = { brand, neutral, category, glass, mesh, motion, type, radius, gradients, commerce };
+export default { brand, neutral, category, glass, mesh, motion, type, radius, gradients, commerce };

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
 const statCardStyle = { ...cardStyle, flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' };
@@ -9,29 +11,32 @@ export default function SubscriptionsTab({ API_BASE, authHeaders }) {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ mrr: 0, active: 0, churned: 0 });
+  const [error, setError] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/subscriptions/all`, { headers: authHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        const subs = data.data || [];
-        setSubscriptions(subs);
-        
-        let mrr = 0, active = 0, churned = 0;
-        subs.forEach(s => {
-          if (s.status === 'active') {
-            active++;
-            mrr += parseFloat(s.price_monthly || 0);
-          } else if (s.status === 'cancelled') {
-            churned++;
-          }
-        });
-        setStats({ mrr, active, churned });
-      }
+      // Was `if (res.ok) { ... }` with no else, so a failed load left both the
+      // table and the MRR/active/churn tiles showing zeroes as though the
+      // platform genuinely had no subscriptions.
+      const data = await fetchJson(`${API_BASE}/admin/subscriptions/all`, { headers: authHeaders() });
+      const subs = data.data || [];
+      setSubscriptions(subs);
+
+      let mrr = 0, active = 0, churned = 0;
+      subs.forEach(s => {
+        if (s.status === 'active') {
+          active++;
+          mrr += parseFloat(s.price_monthly || 0);
+        } else if (s.status === 'cancelled') {
+          churned++;
+        }
+      });
+      setStats({ mrr, active, churned });
     } catch (e) {
       console.error(e);
+      setError(e);
     } finally {
       setLoading(false);
     }
@@ -43,6 +48,7 @@ export default function SubscriptionsTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>💼 Vendor CRM SaaS Management</h2>

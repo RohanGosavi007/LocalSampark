@@ -3,11 +3,6 @@ module.exports = {
   extends: 'expo',
   ignorePatterns: [
     '/dist/*',
-    // Dead code, unreferenced by any screen or route, importing a
-    // ./components/VisitorViewRouter that doesn't exist at this path. Kept
-    // on disk rather than deleted in case it's finished later, but it
-    // shouldn't fail CI in the meantime.
-    'src/screens/shops/DynamicSuperAppShopScreen.js',
     // Binary/corrupted file, not valid JS source.
     'test_hermes.js',
     // Minified/transpiled build output checked into the repo root, not
@@ -40,6 +35,11 @@ module.exports = {
         waitFor: 'readonly',
         expect: 'readonly',
       },
+    },
+    {
+      // Unit tests (jest.config.js) and their native-module stubs.
+      files: ['__tests__/**/*.js', 'jest.config.js'],
+      env: { jest: true, node: true },
     },
   ],
 };

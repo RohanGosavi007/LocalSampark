@@ -79,7 +79,7 @@ export default function MobileDonations() {
     const amount = donateAmounts[id];
     if (!amount) return Alert.alert('Error', 'Enter amount');
     try {
-      const data = await apiPost('/donations/crowdfund/${id}/donate', { amount });
+      const data = await apiPost(`/donations/crowdfund/${id}/donate`, { amount });
       if (data.success) {
         Alert.alert('Thank You!', data.message);
         setDonateAmounts({ ...donateAmounts, [id]: '' });

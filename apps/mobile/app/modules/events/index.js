@@ -94,7 +94,7 @@ export default function EventsScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       const payload = { ...bookingData, numTickets: parseInt(bookingData.numTickets, 10) };
-      const data = await apiPost('/events/${bookingModal.id}/book', payload);
+      const data = await apiPost(`/events/${bookingModal.id}/book`, payload);
       if (data.success) {
         Alert.alert('Success', `Booking Ref: ${data.data.bookingRef}\nPaid: ₹${data.data.finalPricePaid}\nCoins Deducted: ${data.data.coinsDeducted}`);
         setBookingModal(null);

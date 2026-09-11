@@ -12,7 +12,7 @@ const sendMessage = async (req, res, next) => {
 
         const id = uuidv4();
         await query(`INSERT INTO society_messages 
-            (id, society_id, sender_id, receiver_id, message_text, is_read, created_at) 
+            (id, society_id, sender_id, receiver_id, message, is_read, created_at) 
             VALUES ($1, $2, $3, $4, $5, 0, CURRENT_TIMESTAMP)`,
             [id, societyId, senderId, receiverId, messageText]
         );

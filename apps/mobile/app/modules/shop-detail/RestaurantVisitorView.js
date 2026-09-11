@@ -1,22 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import VisitorLayout from './components/VisitorLayout';
 import { Ionicons } from '@expo/vector-icons';
 
-const MOCK_MENU = [
-  { id: 1, name: 'Paneer Butter Masala', desc: 'Rich & creamy curry', price: '₹220', type: 'veg', image: '🍲' },
-  { id: 2, name: 'Chicken Biryani', desc: 'Aromatic basmati rice with chicken', price: '₹280', type: 'non-veg', image: '🍗' },
-  { id: 3, name: 'Garlic Naan', desc: 'Freshly baked', price: '₹45', type: 'veg', image: '🫓' },
-];
+/**
+ * shop_products.dietary_tags is a JSON string array, e.g. '["VEG"]'. Returns
+ * true for veg, false for non-veg, and null when the shop tagged neither — in
+ * which case no badge is shown at all.
+ */
+function dietaryVeg(product) {
+  const raw = product.dietary_tags ?? product.dietaryTags;
+  if (!raw) return null;
+  let tags = raw;
+  if (typeof raw === 'string') {
+    try { tags = JSON.parse(raw); } catch { tags = [raw]; }
+  }
+  if (!Array.isArray(tags) || tags.length === 0) return null;
+  const upper = tags.map((t) => String(t).toUpperCase());
+  if (upper.includes('NON_VEG') || upper.includes('NONVEG') || upper.includes('NON-VEG')) return false;
+  if (upper.includes('VEG') || upper.includes('VEGAN')) return true;
+  return null;
+}
 
-export default function RestaurantVisitorView({ shop }) {
+// MOCK_MENU was a three-dish menu at fixed prices — Paneer Butter Masala ₹220,
+// Chicken Biryani ₹280, Garlic Naan ₹45 — shown as the menu of whichever
+// restaurant the customer had opened. The router now passes the real one.
+
+export default function RestaurantVisitorView({ shop, products = [] }) {
   const [cart, setCart] = useState([]);
-  
+  const [activeCategory, setActiveCategory] = useState('All');
+
+  const items = useMemo(
+    () =>
+      products.map((p) => ({
+        id: String(p.id),
+        name: p.name || '',
+        description: p.description || '',
+        price: Number(p.price) || 0,
+        category: p.subcategory || p.category || null,
+        // A dish is only marked veg or non-veg when the shop said so. The mock
+        // set `type` on every item, so an untagged dish would have rendered as
+        // non-veg by default — a claim this app has no business making.
+        veg: dietaryVeg(p),
+      })),
+    [products]
+  );
+
+  const menuCategories = useMemo(() => {
+    const found = [...new Set(items.map((i) => i.category).filter(Boolean))];
+    return found.length ? ['All', ...found] : [];
+  }, [items]);
+
+  const visibleItems =
+    activeCategory === 'All' ? items : items.filter((i) => i.category === activeCategory);
+
   return (
-    <VisitorLayout 
-      shopName={shop.name || 'Spice Route'} 
-      shopAddress="FC Road, Pune"
+    <VisitorLayout shop={shop} 
+      /* The fallbacks invented a business: "Spice Route" on "FC Road, Pune". */
+      shopName={shop.name || 'Restaurant'}
+      shopAddress={shop.address || ''}
       shopIcon="🍽️"
       cartCount={cart.length}
       onCheckout={() => router.push('/modules/checkout')}
@@ -37,25 +80,45 @@ export default function RestaurantVisitorView({ shop }) {
 
         <Text style={styles.sectionTitle}>Digital Menu</Text>
         
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-          <View style={[styles.menuCat, styles.menuCatActive]}><Text style={styles.menuCatTextActive}>All</Text></View>
-          <View style={styles.menuCat}><Text style={styles.menuCatText}>Starters</Text></View>
-          <View style={styles.menuCat}><Text style={styles.menuCatText}>Mains</Text></View>
-          <View style={styles.menuCat}><Text style={styles.menuCatText}>Breads</Text></View>
-        </ScrollView>
+        {/* The category strip was four fixed labels — All / Starters / Mains /
+            Breads — that filtered nothing and were not this restaurant's own
+            sections. It is now built from the categories the dishes actually
+            carry, and hidden when there is nothing to filter by. */}
+        {menuCategories.length > 1 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {menuCategories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.menuCat, activeCategory === cat && styles.menuCatActive]}
+                onPress={() => setActiveCategory(cat)}
+              >
+                <Text style={activeCategory === cat ? styles.menuCatTextActive : styles.menuCatText}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : null}
 
-        {MOCK_MENU.map(item => (
+        {visibleItems.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No dishes listed yet</Text>
+            <Text style={styles.emptyBody}>This restaurant has not published its menu.</Text>
+          </View>
+        ) : visibleItems.map(item => (
           <View key={item.id} style={styles.productCard}>
-            <View style={styles.prodImgBox}><Text style={{fontSize: 32}}>{item.image}</Text></View>
+            <View style={styles.prodImgBox}><Text style={{fontSize: 32}}>🍽️</Text></View>
             <View style={styles.prodInfo}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                <View style={[styles.vegBadge, { borderColor: item.type === 'veg' ? '#16a34a' : '#dc2626' }]}>
-                  <View style={[styles.vegDot, { backgroundColor: item.type === 'veg' ? '#16a34a' : '#dc2626' }]} />
-                </View>
+                {item.veg === null ? null : (
+                  <View style={[styles.vegBadge, { borderColor: item.veg ? '#16a34a' : '#dc2626' }]}>
+                    <View style={[styles.vegDot, { backgroundColor: item.veg ? '#16a34a' : '#dc2626' }]} />
+                  </View>
+                )}
                 <Text style={styles.prodName}>{item.name}</Text>
               </View>
-              <Text style={styles.prodDesc}>{item.desc}</Text>
-              <Text style={styles.prodPrice}>{item.price}</Text>
+              {item.description ? <Text style={styles.prodDesc}>{item.description}</Text> : null}
+              <Text style={styles.prodPrice}>₹{item.price}</Text>
             </View>
             <TouchableOpacity style={styles.addBtn} onPress={() => setCart([...cart, item])}>
               <Text style={styles.addBtnText}>+ ADD</Text>
@@ -68,6 +131,9 @@ export default function RestaurantVisitorView({ shop }) {
 }
 
 const styles = StyleSheet.create({
+  emptyBox: { backgroundColor: '#f8fafc', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  emptyTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 6 },
+  emptyBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 18 },
   dineInBox: { flexDirection: 'row', backgroundColor: '#fff7ed', borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: '#fed7aa' },
   dineInIconBg: { backgroundColor: '#fff', padding: 10, borderRadius: 12, marginRight: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   dineInTitle: { fontSize: 16, fontWeight: 'bold', color: '#9a3412', marginBottom: 4 },

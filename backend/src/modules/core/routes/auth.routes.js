@@ -1,6 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { getJwtRefreshSecret } = require('../../../config/secrets');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { authenticate, generateTokens } = require('../../../middleware/auth.middleware');
@@ -13,9 +14,39 @@ const { generateOTP, sendOTP } = require('../services/sms.service');
 const { sendEmail } = require('../services/email.service');
 const { verifyFirebaseToken } = require('../services/firebase.service');
 const { v4: uuidv4 } = require('uuid');
+// Used in verify-otp to resolve a pincode to a region. It was never imported,
+// so signup with a pincode threw ReferenceError inside the try below; the
+// catch then called next(e) *and* let execution continue, creating the user
+// with no region after the response had already been handed to the error
+// handler.
+const { queryOne } = require('../../../config/database');
+const otpStore = require('../services/otpStore.service');
 
-// In-memory OTP store for simplicity in dev mode (use Redis in prod)
-const tempOtpStore = new Map();
+/**
+ * Guard the in-memory OTP fallback out of production.
+ *
+ * When Redis is down or unconfigured, OTPs were written to this process-local
+ * Map. render.yaml runs the API behind Render's load balancer, so a verify
+ * request can land on a different instance than the send did — the OTP is then
+ * simply absent and every login fails, intermittently and unreproducibly. The
+ * Map is also unbounded and never swept, so it grows for the life of the
+ * process.
+ *
+ * Returning 503 makes the dependency explicit: OTP login is unavailable while
+ * the cache is, rather than working for a random fraction of requests.
+ *
+ * @returns {boolean} true if the caller may proceed
+ */
+function requireOtpStore(res) {
+  const reason = otpStore.unavailableReason();
+  if (!reason) return true;
+
+  console.error('[auth] OTP request rejected: ' + reason);
+  res.status(503).json({
+    error: 'Verification is temporarily unavailable. Please try again shortly.'
+  });
+  return false;
+}
 
 router.post('/send-otp', authLimiter, async (req, res, next) => {
   try {
@@ -24,19 +55,24 @@ router.post('/send-otp', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Phone number is required' });
     }
 
-    // Generate cryptographically secure 6-digit OTP, or use 123456 for dev preset numbers
-    const isDevNumber = phoneNumber.startsWith('+919000');
+    // Generate a cryptographically secure 6-digit OTP.
+    //
+    // The +919000* range short-circuits to a fixed 123456 so the seeded demo
+    // accounts can be used without an SMS round-trip. That shortcut MUST stay
+    // out of production: those twelve numbers map to the twelve platform roles
+    // in /verify-otp below, +919000000012 among them being super_admin, so an
+    // ungated fixed OTP is an unauthenticated path to a signed super-admin
+    // token for anyone who knows the number.
+    const allowDemoNumbers = process.env.NODE_ENV !== 'production';
+    const isDevNumber = allowDemoNumbers && phoneNumber.startsWith('+919000');
     const otp = isDevNumber ? '123456' : generateOTP();
     
-    if (redisClient) {
-      await cacheSet(`otp:${phoneNumber}`, otp, 300); // 5 min TTL
-    } else {
-      console.warn('âš ï¸ Redis unavailable â€” using in-memory OTP (NOT SAFE FOR PRODUCTION)');
-      tempOtpStore.set(phoneNumber, {
-        otp,
-        expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
-      });
-    }
+    if (!requireOtpStore(res)) return;
+
+    // Written through the shared store so other routes can verify it. It used
+    // to live in a Map private to this module, which is why /admin-auth/login
+    // required an `otp` field and then never checked its value.
+    await otpStore.setOtp(`otp:${phoneNumber}`, otp);
 
     // Send OTP via SMS provider (MSG91) or console fallback
     const smsResult = await sendOTP(phoneNumber, otp);
@@ -67,35 +103,35 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Phone number and OTP are required' });
     }
 
+    if (!requireOtpStore(res)) return;
+
     const isWhatsapp = method === 'whatsapp';
-    const redisKey = isWhatsapp ? `whatsapp_otp:${phoneNumber}` : `otp:${phoneNumber}`;
-    const tempStoreKey = isWhatsapp ? `whatsapp_${phoneNumber}` : phoneNumber;
+    const otpKey = isWhatsapp ? `whatsapp_otp:${phoneNumber}` : `otp:${phoneNumber}`;
 
-    let record;
-    if (redisClient) {
-      const storedOtp = await cacheGet(redisKey);
-      if (storedOtp) {
-        record = { otp: storedOtp, expiresAt: Date.now() + 100000 }; // Fake expiry for logic below
-      }
-    } else {
-      record = tempOtpStore.get(tempStoreKey);
-    }
-
-    if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
+    // verifyAndConsume compares and deletes in one step. Expiry is handled by
+    // the store (a Redis TTL, or an explicit timestamp in the dev Map) rather
+    // than by the caller — the previous code synthesised a fake `expiresAt` of
+    // "now + 100 seconds" for the Redis branch purely to satisfy a shared
+    // expiry check, which meant the real TTL was the only thing enforcing it.
+    const otpValid = await otpStore.verifyAndConsume(otpKey, otp);
+    if (!otpValid) {
       return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
 
-    // Clear OTP
-    if (redisClient) {
-      await cacheDel(redisKey);
-    } else {
-      tempOtpStore.delete(tempStoreKey);
-    }
+    // (The code is consumed by verifyAndConsume above, so there is nothing to
+    // clear here. It previously referenced redisKey/tempStoreKey, which no
+    // longer exist.)
 
     // Check if user exists
     let user;
     try {
-      if (phoneNumber.startsWith('+919000')) {
+      // Demo-account short-circuit: synthesises a user (never persisted) whose
+      // role is read straight off the phone number, then falls through to
+      // generateTokens. Ungated, this signed a real super_admin JWT for anyone
+      // who posted +919000000012 with the fixed OTP above — no database row,
+      // no credential, no approval. Restricted to non-production, matching the
+      // identical block already guarded in the catch below.
+      if (process.env.NODE_ENV !== 'production' && phoneNumber.startsWith('+919000')) {
         const roleMap = {
           '+919000000001': 'user',
           '+919000000002': 'resident_member',
@@ -134,10 +170,18 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
 
         let assignedRegionId = regionId || null;
         if (!assignedRegionId && pincode) {
+          // Resolving the pincode is best-effort: a user in an unmapped
+          // pincode still gets an account, just without a region.
+          //
+          // The catch previously called next(e) and then fell through to
+          // create the user anyway — so a failure here handed the request to
+          // the error handler and *also* sent a success response.
           try {
             const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
             if (matchedRegion) assignedRegionId = matchedRegion.id;
-          } catch (e) { next(e); }
+          } catch (e) {
+            console.warn(`[auth] region lookup failed for pincode ${pincode}: ${e.message}`);
+          }
         }
 
         const id = crypto.randomUUID();
@@ -260,7 +304,7 @@ router.post('/refresh-token', async (req, res, next) => {
       return res.status(400).json({ error: 'Refresh token is required' });
     }
 
-    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'dev_refresh_key', async (err, decoded) => {
+    jwt.verify(refreshToken, getJwtRefreshSecret(), async (err, decoded) => {
       if (err) {
         return res.status(401).json({ error: 'Invalid or expired refresh token' });
       }
@@ -292,16 +336,15 @@ router.post('/send-whatsapp-otp', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Phone/WhatsApp number is required' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    if (redisClient) {
-      await cacheSet(`whatsapp_otp:${phoneNumber}`, otp, 300);
-    } else {
-      tempOtpStore.set(`whatsapp_${phoneNumber}`, {
-        otp,
-        expiresAt: Date.now() + 5 * 60 * 1000
-      });
-    }
+    // generateOTP() uses crypto.randomInt. Math.random() is a seeded PRNG whose
+    // output is predictable from prior draws, so an attacker who can request
+    // OTPs for their own number can narrow the code sent to someone else's.
+    // The SMS path already used generateOTP; only this WhatsApp path did not.
+    const otp = generateOTP();
+
+    if (!requireOtpStore(res)) return;
+
+    await otpStore.setOtp(`whatsapp_otp:${phoneNumber}`, otp);
 
     if (process.env.NODE_ENV === 'development') {
       console.log(`[WHATSAPP OTP DEBUG] Sent OTP ${otp} via WhatsApp to ${phoneNumber}`);
@@ -369,8 +412,14 @@ router.post('/register-email',
       }
     });
 
-    // Send email verification link token
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Send email verification link token.
+    //
+    // Was Math.random().toString(36) twice. Math.random() is V8's xorshift128+,
+    // whose full internal state is recoverable from a couple of observed
+    // outputs — so an attacker who registers an account and reads their own
+    // token can predict every token issued around the same time. 32 bytes from
+    // the CSPRNG removes the guess entirely.
+    const token = crypto.randomBytes(32).toString('hex');
     await prisma.emailVerificationToken.create({
       data: {
         id: uuidv4(),
@@ -498,7 +547,16 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
       return res.status(404).json({ error: 'No user registered with this email address' });
     }
 
-    const token = Math.random().toString(36).substring(2, 15);
+    // Password-reset token.
+    //
+    // This was Math.random().toString(36).substring(2, 15) — about 13 base-36
+    // characters drawn from a predictable PRNG, and it is the single credential
+    // that lets the holder set a new password. The attack is not theoretical:
+    // request a reset for an account you control, observe the token, solve for
+    // V8's xorshift128+ state, then request a reset for the victim and compute
+    // the token you know they were sent. That is account takeover for any email
+    // address, with no access to the victim's inbox.
+    const token = crypto.randomBytes(32).toString('hex');
     await prisma.passwordResetToken.create({
       data: {
         id: uuidv4(),

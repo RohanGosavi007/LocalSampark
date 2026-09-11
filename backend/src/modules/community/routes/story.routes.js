@@ -7,13 +7,16 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 router.get('/', authenticate, async (req, res, next) => {
   try {
     // Select stories that have not expired
-    const stories = await query(`SELECT s.*, u.full_name, u.avatar_url 
+    const result = await query(`SELECT s.*, u.full_name, u.avatar_url
        FROM stories s
        JOIN users u ON s.user_id = u.id
        WHERE s.expires_at > CURRENT_TIMESTAMP
        ORDER BY s.created_at DESC`
     );
-    res.json(stories);
+
+    // Was res.json(stories) — the driver's raw result object, {rows: [...]} on
+    // Postgres and a bare array on SQLite, so no client could read it reliably.
+    res.json({ success: true, data: result?.rows || result || [] });
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const columnStyle = { flex: 1, background: '#0f172a', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b', display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '240px' };
 const cardStyle = { background: '#1e293b', padding: '1rem', borderRadius: '0.75rem', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '0.5rem' };
@@ -7,17 +9,20 @@ const btnAction = { padding: '0.35rem 0.7rem', background: '#4f46e5', border: 'n
 export default function LeadsCRMTab({ API_BASE, authHeaders }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchLeads = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/franchise/leads`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/franchise/leads`, { headers: authHeaders() });
       setLeads(data.leads || data.data || []);
     } catch (e) {
       console.error('Failed to fetch CRM leads:', e);
       setLeads([
-        { id: 'l1', business_name: 'Gupta Kirana Store', category: 'Grocery', phone: '+91 98220 11990', status: 'SCRAPED' },
+        { id: 'l1', business_name: 'Gupta Kirana Store', category: 'Grocery', phone: '+91 98220 11990', status: 'SCRAPED'
+      setError(e);
+    },
         { id: 'l2', business_name: 'Dhanori Medicals', category: 'Pharmacy', phone: '+91 99120 33881', status: 'CONTACTED' },
         { id: 'l3', business_name: 'Baner Hardware & Tools', category: 'Retail', phone: '+91 97660 55412', status: 'VERIFIED' }
       ]);
@@ -43,6 +48,7 @@ export default function LeadsCRMTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: '#f8fafc' }}>🎯 Franchise Lead Conversion Pipeline</h3>

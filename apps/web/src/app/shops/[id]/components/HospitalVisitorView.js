@@ -59,11 +59,13 @@ export default function EnhancedHospitalVisitorView({ shop, services = [], staff
           <Stethoscope className="w-6 h-6 text-cyan-500" /> Our Doctors
         </h2>
         <div className="space-y-4">
-          {(staff.length > 0 ? staff : [
-            { id: 1, name: 'Dr. Sharma', specialization: 'General Medicine', experience_years: 15, avg_rating: 4.8, fee: 500, available: true },
-            { id: 2, name: 'Dr. Patel', specialization: 'Pediatrics', experience_years: 10, avg_rating: 4.6, fee: 600, available: true },
-            { id: 3, name: 'Dr. Gupta', specialization: 'Orthopedics', experience_years: 20, avg_rating: 4.9, fee: 800, available: false },
-          ]).map((doc, i) => (
+          {/* A clinic that has not listed its practitioners used to fall back to
+              three invented ones — "Dr. Sharma, General Medicine, 15 years, 4.8,
+              ₹500", and two more — rendered under the heading "Our Doctors" as
+              though they worked here. A patient could open a booking for a
+              doctor who does not exist, at a fee nobody set. Named people,
+              credentials and fees are never invented; an empty list says so. */}
+          {staff.map((doc, i) => (
             <motion.div
               key={doc.id || i}
               initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
@@ -90,15 +92,31 @@ export default function EnhancedHospitalVisitorView({ shop, services = [], staff
                 </div>
                 <p className="text-sm text-text-muted">{doc.specialization || doc.role}</p>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="flex items-center gap-1 text-xs text-text-muted">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {doc.avg_rating || '4.5'}
-                  </span>
-                  <span className="text-xs text-text-muted">{doc.experience_years || '—'}y experience</span>
+                  {/* Was `doc.avg_rating || '4.5'`, so an unrated practitioner
+                      was given a 4.5 the platform had no basis for. */}
+                  {doc.avg_rating > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-text-muted">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {doc.avg_rating}
+                    </span>
+                  )}
+                  {doc.experience_years > 0 && (
+                    <span className="text-xs text-text-muted">{doc.experience_years}y experience</span>
+                  )}
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <p className="font-black text-lg text-cyan-500">₹{doc.fee || doc.price || 500}</p>
-                <p className="text-[10px] text-text-muted">Consultation</p>
+                {/* Was `₹{doc.fee || doc.price || 500}` — a practitioner whose
+                    fee the clinic never entered was advertised at ₹500. A
+                    consultation fee is a commitment to the patient, so an
+                    unpriced one asks rather than guesses. */}
+                {(doc.fee || doc.price) ? (
+                  <>
+                    <p className="font-black text-lg text-cyan-500">₹{doc.fee || doc.price}</p>
+                    <p className="text-[10px] text-text-muted">Consultation</p>
+                  </>
+                ) : (
+                  <p className="text-xs font-semibold text-text-muted">Fee on enquiry</p>
+                )}
                 {doc.available !== false && (
                   <button className="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500 text-white">
                     Book <ChevronRight className="w-3 h-3 inline" />
@@ -107,8 +125,14 @@ export default function EnhancedHospitalVisitorView({ shop, services = [], staff
               </div>
             </motion.div>
           ))}
+          {staff.length === 0 && (
+            <p className="text-sm text-text-muted py-4 text-center">
+              This clinic has not listed its practitioners yet. Call the clinic to ask
+              about availability and consultation fees.
+            </p>
+          )}
         </div>
-        
+
         {/* Slot Picker for Selected Doctor */}
         {selectedDoctor && (
           <motion.div 

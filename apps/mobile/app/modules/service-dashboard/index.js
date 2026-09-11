@@ -8,30 +8,47 @@ const { width } = Dimensions.get('window');
 export default function ServiceDashboardScreen() {
   const { authToken, API_URL } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({
-    todayBookings: 5, upcomingBookings: 3, completedToday: 2, totalEarnings: 12500,
-    weeklyEarnings: 8500, avgRating: 4.6, totalReviews: 89, activeServices: 8,
-  });
-  const [upcomingBookings] = useState([
-    { id: 'BK001', customer: 'Anita Deshmukh', service: 'Deep Cleaning', time: '2:00 PM', date: 'Today', amount: 1500 },
-    { id: 'BK002', customer: 'Raj Patil', service: 'AC Repair', time: '4:30 PM', date: 'Today', amount: 800 },
-    { id: 'BK003', customer: 'Meena Shah', service: 'Plumbing Fix', time: '10:00 AM', date: 'Tomorrow', amount: 600 },
-  ]);
-  const [weeklyData] = useState([
-    { day: 'Mon', value: 1200 }, { day: 'Tue', value: 1800 }, { day: 'Wed', value: 900 },
-    { day: 'Thu', value: 2200 }, { day: 'Fri', value: 1500 }, { day: 'Sat', value: 2800 }, { day: 'Sun', value: 600 },
-  ]);
+  /**
+   * Every figure was seeded — 5 bookings today, ₹12,500 earned, a 4.6 rating
+   * from 89 reviews — alongside three invented jobs for named customers and a
+   * seven-day earnings curve. A provider opening this on their first day saw a
+   * fortnight of business they had not done.
+   *
+   * It did call /services/dashboard, but merged json.data while that endpoint
+   * returns stats and trend, so a successful response replaced nothing and the
+   * seeded numbers stayed on screen looking like live data.
+   *
+   * The upcoming-bookings list has its own screen — the Bookings tab, backed by
+   * /shops/my-shop/appointments — so it links there instead of duplicating a
+   * list it has no endpoint for.
+   */
+  const [stats, setStats] = useState(null);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [error, setError] = useState(null);
 
   const fetchData = async () => {
+    setError(null);
     try {
-      const res = await fetch(`${API_URL}/services/dashboard`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+      const res = await fetch(`${API_URL}/services/dashboard`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (json.success) setStats(prev => ({ ...prev, ...json.data }));
-    } catch (err) { console.warn('Using mock service data'); }
+      if (!json.success) throw new Error(json.error || 'Could not load your dashboard.');
+
+      setStats(json.stats || null);
+      setWeeklyData((json.trend || []).map((t) => ({ day: t.day, value: Number(t.value) || 0 })));
+    } catch (err) {
+      setStats(null);
+      setWeeklyData([]);
+      setError(err?.message || 'Could not load your dashboard.');
+    }
   };
+
   useEffect(() => { fetchData(); }, []);
   const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
-  const maxVal = Math.max(...weeklyData.map(d => d.value));
+  const maxVal = Math.max(1, ...weeklyData.map(d => d.value));
+  const money = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,14 +58,27 @@ export default function ServiceDashboardScreen() {
           <View><Text style={styles.title}>Service Dashboard</Text><Text style={styles.subtitle}>Manage bookings & services</Text></View>
         </View>
 
+        {error ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Could not load your dashboard</Text>
+            <Text style={styles.emptyBody}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchData}>
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <View style={styles.kpiGrid}>
           {[
-            { label: 'Today Bookings', value: stats.todayBookings, icon: '📅', color: '#3b82f6' },
-            { label: 'Upcoming', value: stats.upcomingBookings, icon: '⏰', color: '#f59e0b' },
-            { label: 'Completed', value: stats.completedToday, icon: '✅', color: '#10b981' },
-            { label: 'Earnings', value: `₹${stats.totalEarnings.toLocaleString()}`, icon: '💰', color: '#8b5cf6' },
-            { label: 'Rating', value: `⭐ ${stats.avgRating}`, icon: '⭐', color: '#f59e0b' },
-            { label: 'Services', value: stats.activeServices, icon: '🔧', color: '#06b6d4' },
+            { label: 'Today Bookings', value: Number(stats?.todayBookings) || 0, icon: '📅', color: '#3b82f6' },
+            { label: 'Upcoming', value: Number(stats?.upcomingBookings) || 0, icon: '⏰', color: '#f59e0b' },
+            { label: 'Completed', value: Number(stats?.completedToday) || 0, icon: '✅', color: '#10b981' },
+            { label: 'Earnings', value: money(stats?.totalEarnings), icon: '💰', color: '#8b5cf6' },
+            // The endpoint reports 0 until provider ratings are aggregated, so
+            // show a dash rather than a 0.0-star score the provider has not
+            // earned. "4.6 from 89 reviews" was previously printed for everyone.
+            { label: 'Rating', value: Number(stats?.avgRating) ? `⭐ ${stats.avgRating}` : '—', icon: '⭐', color: '#f59e0b' },
+            { label: 'Services', value: Number(stats?.activeServices) || 0, icon: '🔧', color: '#06b6d4' },
           ].map((k, i) => (
             <View key={i} style={[styles.kpiCard, { borderLeftColor: k.color, borderLeftWidth: 4 }]}>
               <Text style={{ fontSize: 20 }}>{k.icon}</Text>
@@ -58,33 +88,39 @@ export default function ServiceDashboardScreen() {
           ))}
         </View>
 
-        {/* Upcoming Bookings */}
+        {/* This section listed three invented jobs for named customers. The
+            real list lives on the Bookings tab, which reads
+            /shops/my-shop/appointments; there is no endpoint that returns it in
+            dashboard form, so this links there rather than duplicating it. */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upcoming Bookings</Text>
-          {upcomingBookings.map((bk, i) => (
-            <View key={i} style={styles.bookingCard}>
-              <View style={styles.bookingTime}><Text style={styles.bookingTimeText}>{bk.time}</Text><Text style={styles.bookingDate}>{bk.date}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.bookingService}>{bk.service}</Text>
-                <Text style={styles.bookingCustomer}>👤 {bk.customer}</Text>
-              </View>
-              <Text style={styles.bookingAmount}>₹{bk.amount}</Text>
-            </View>
-          ))}
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/(tabs)/bookings')}>
+            <Text style={styles.linkCardText}>
+              {Number(stats?.upcomingBookings) || 0} upcoming — open the Bookings tab
+            </Text>
+            <Text style={styles.linkCardChevron}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Earnings Chart */}
         <View style={styles.chartCard}>
-          <Text style={styles.sectionTitle}>Weekly Earnings</Text>
-          <View style={styles.chartContainer}>
-            {weeklyData.map((d, i) => (
-              <View key={i} style={styles.barWrapper}>
-                <Text style={styles.barValue}>₹{d.value}</Text>
-                <View style={[styles.bar, { height: (d.value / maxVal) * 100, backgroundColor: '#8b5cf6' }]} />
-                <Text style={styles.barLabel}>{d.day}</Text>
-              </View>
-            ))}
-          </View>
+          {/* The endpoint's trend is a booking count per day, not a rupee
+              amount — the axis said "Weekly Earnings" over values that were
+              never money. */}
+          <Text style={styles.sectionTitle}>Bookings This Week</Text>
+          {weeklyData.length === 0 ? (
+            <Text style={styles.emptyBody}>No completed bookings recorded yet.</Text>
+          ) : (
+            <View style={styles.chartContainer}>
+              {weeklyData.map((d, i) => (
+                <View key={d.day || i} style={styles.barWrapper}>
+                  <Text style={styles.barValue}>{d.value}</Text>
+                  <View style={[styles.bar, { height: (d.value / maxVal) * 100, backgroundColor: '#8b5cf6' }]} />
+                  <Text style={styles.barLabel}>{d.day}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -103,6 +139,14 @@ export default function ServiceDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  emptyBox: { backgroundColor: '#ffffff', borderRadius: 14, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', margin: 16 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  emptyBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
+  retryBtn: { marginTop: 16, backgroundColor: '#3b82f6', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, minHeight: 44, justifyContent: 'center' },
+  retryBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 13 },
+  linkCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#e2e8f0', minHeight: 44 },
+  linkCardText: { color: '#0f172a', fontSize: 14, fontWeight: '600', flex: 1 },
+  linkCardChevron: { color: '#94a3b8', fontSize: 22, fontWeight: '700' },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 2 },

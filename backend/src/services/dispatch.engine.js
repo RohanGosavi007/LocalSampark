@@ -12,7 +12,7 @@ class DispatchEngine {
       SELECT id, name, phone, 
         (6371 * acos(cos(radians($1)) * cos(radians(current_lat)) * cos(radians(current_lng) - radians($2)) + sin(radians($1)) * sin(radians(current_lat)))) AS distance_km
       FROM delivery_agents
-      WHERE is_online = true AND is_available = true
+      WHERE is_online = true
       HAVING (6371 * acos(cos(radians($1)) * cos(radians(current_lat)) * cos(radians(current_lng) - radians($2)) + sin(radians($1)) * sin(radians(current_lat)))) <= $3
       ORDER BY distance_km ASC
       LIMIT 5;
@@ -42,11 +42,11 @@ class DispatchEngine {
     const drivers = await this.findNearbyDrivers(shopLat, shopLng);
     if (drivers.length > 0) {
       const assignedDriver = drivers[0];
-      await query("UPDATE orders SET assigned_agent_id = $1, status = 'DISPATCHED' WHERE id = $2", [assignedDriver.id, orderId]);
+      await query("UPDATE orders SET assigned_agent_id = $1, order_status = 'DISPATCHED' WHERE id = $2", [assignedDriver.id, orderId]);
       
       // If batched, assign the candidate order to the same driver
       if (isBatched && candidateOrderId) {
-        await query("UPDATE orders SET assigned_agent_id = $1, status = 'DISPATCHED' WHERE id = $2", [assignedDriver.id, candidateOrderId]);
+        await query("UPDATE orders SET assigned_agent_id = $1, order_status = 'DISPATCHED' WHERE id = $2", [assignedDriver.id, candidateOrderId]);
       }
 
       return { 

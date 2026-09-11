@@ -31,7 +31,14 @@ export default function RegisterScreen() {
     }
     setLoading(true);
     try {
-      const data = await apiPost('/auth/register', { name: form.name, email: form.email, password: form.password });
+      // The backend route is /auth/register-email and its validator requires
+      // `fullName`; posting `name` to /auth/register 404'd, so email signup
+      // never worked. Phone signup (send-otp/verify-otp) was unaffected.
+      const data = await apiPost('/auth/register-email', {
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+      });
       if (data && (data.success || !data.message || data.message.includes('success'))) {
         Alert.alert('Success', 'Registration successful! Check your email for verification.');
         router.replace('/login');
@@ -58,9 +65,15 @@ export default function RegisterScreen() {
       setStep(2);
       Alert.alert('OTP Sent', 'Check your messages for the verification code.');
     } catch (err) {
-      // Fallback for dev environment without actual backend
-      setStep(2);
-      Alert.alert('OTP Sent', 'Check your messages for the verification code.');
+      if (__DEV__) {
+        // Fallback for dev environment without an actual backend.
+        setStep(2);
+        Alert.alert('OTP Sent', 'Check your messages for the verification code.');
+        return;
+      }
+      // Telling a real user "OTP Sent" when the send failed strands them on a
+      // code-entry screen waiting for an SMS that was never dispatched.
+      Alert.alert('Could not send OTP', err?.message || 'Please try again in a moment.');
     } finally {
       setLoading(false);
     }
@@ -72,11 +85,20 @@ export default function RegisterScreen() {
       return;
     }
     setLoading(true);
-    // Emulate auth
-    const success = await loginWithDevPreset('user', form.phone, otp);
-    setLoading(false);
-    if (success) {
-      router.replace('/(tabs)');
+    try {
+      // loginWithDevPreset performs the real /auth/verify-otp exchange; only
+      // its offline mock fallback is dev-gated. In a release build a failed
+      // verification now rejects instead of quietly minting a session, so this
+      // call has to be guarded — unhandled, it would surface as a red-box
+      // rejection with the spinner stuck on.
+      const success = await loginWithDevPreset('user', form.phone, otp);
+      if (success) {
+        router.replace('/(tabs)');
+      }
+    } catch (err) {
+      Alert.alert('Verification Failed', err?.message || 'Invalid OTP code.');
+    } finally {
+      setLoading(false);
     }
   };
 

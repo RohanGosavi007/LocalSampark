@@ -1,34 +1,92 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { apiGet, apiPut } from '../../src/lib/api';
 
 export default function PayoutsScreen() {
-  const [payouts, setPayouts] = useState([
-    { id: 'PAY-8921', payee: 'Rahul Desai (Pune East)', type: 'Franchise', amount: 24500, date: '28-Jun-2026', status: 'Pending' },
-    { id: 'PAY-8922', payee: 'Glow & Glamour Salon', type: 'Shop Owner', amount: 8200, date: '28-Jun-2026', status: 'Pending' },
-    { id: 'PAY-8910', payee: 'Amit Singh (NCR Central)', type: 'Franchise', amount: 45000, date: '27-Jun-2026', status: 'Approved' },
-    { id: 'PAY-8905', payee: 'Ramesh Groceries', type: 'Shop Owner', amount: 3100, date: '26-Jun-2026', status: 'Rejected' },
-  ]);
+  /**
+   * Four invented withdrawal requests sat here — ₹24,500 to "Rahul Desai (Pune
+   * East)", ₹45,000 to "Amit Singh (NCR Central)", and two shop payouts —
+   * ₹80,800 of money movement between people who do not exist.
+   *
+   * Approve and Reject confirmed the action, played a success haptic and changed
+   * a value in React state. Nothing was sent anywhere. An administrator could
+   * work through this queue believing they had released payments, and the
+   * partners waiting on them would never be paid.
+   *
+   * GET /admin/payouts/pending lists the real requests and
+   * PUT /admin/payouts/:id/approve releases one.
+   */
+  const [payouts, setPayouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  const load = useCallback(async ({ isRefresh = false } = {}) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError(null);
+    try {
+      const res = await apiGet('/admin/payouts/pending');
+      const rows = res?.data ?? [];
+      setPayouts(
+        rows.map((p) => ({
+          id: String(p.id),
+          payee: p.payee || 'Payee',
+          type: p.type || '',
+          amount: Number(p.amount) || 0,
+          date: p.date ? new Date(p.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+          status: p.status
+            ? p.status.charAt(0).toUpperCase() + p.status.slice(1).toLowerCase()
+            : 'Pending',
+        }))
+      );
+    } catch (err) {
+      setPayouts([]);
+      setError(err?.message || 'Could not load payout requests.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const handleAction = (id, action) => {
     Haptics.impactAsync(action === 'Approved' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Heavy);
-    
+
+    // Only approval has an endpoint. Offering a Reject button that quietly does
+    // nothing is how the previous version misled its user, so it says so.
+    if (action === 'Rejected') {
+      Alert.alert(
+        'Rejection is not available yet',
+        'There is no endpoint to reject a payout. Leave it pending and settle it outside the app for now.'
+      );
+      return;
+    }
+
     Alert.alert(
-      `${action} Payout`,
-      `Are you sure you want to mark ${id} as ${action}?`,
+      'Approve payout',
+      `Release ${id} for payment?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Yes', 
-          style: action === 'Rejected' ? 'destructive' : 'default',
-          onPress: () => {
-            setPayouts(prev => prev.map(p => p.id === id ? { ...p, status: action } : p));
-            Haptics.notificationAsync(
-              action === 'Approved' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
-            );
-          }
-        }
+        {
+          text: 'Approve',
+          onPress: async () => {
+            setBusyId(id);
+            try {
+              await apiPut(`/admin/payouts/${id}/approve`, {});
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              await load({ isRefresh: true });
+            } catch (err) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Not approved', err?.message || 'The payout was not released. Try again.');
+            } finally {
+              setBusyId(null);
+            }
+          },
+        },
       ]
     );
   };
@@ -50,11 +108,32 @@ export default function PayoutsScreen() {
         headerTintColor: '#fff'
       }} />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load({ isRefresh: true })} tintColor="#f59e0b" />
+        }
+      >
         <Text style={styles.headerTitle}>Withdrawal Requests</Text>
         <Text style={styles.headerDesc}>Review and approve partner payout requests.</Text>
 
-        {payouts.map((p) => {
+        {loading ? (
+          <View style={styles.stateBox}><ActivityIndicator color="#f59e0b" /></View>
+        ) : payouts.length === 0 ? (
+          <View style={styles.stateBox}>
+            <Text style={styles.stateTitle}>
+              {error ? 'Could not load payout requests' : 'Nothing pending'}
+            </Text>
+            <Text style={styles.stateBody}>
+              {error || 'Withdrawal requests awaiting approval will appear here.'}
+            </Text>
+            {error ? (
+              <TouchableOpacity style={styles.retryBtn} onPress={() => load({ isRefresh: true })}>
+                <Text style={styles.retryBtnText}>Retry</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : payouts.map((p) => {
           const s = getStatusStyle(p.status);
           
           return (
@@ -84,11 +163,16 @@ export default function PayoutsScreen() {
                   >
                     <Text style={[styles.actionBtnText, { color: '#ef4444' }]}>Reject</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.actionBtn, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]} 
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }, busyId === p.id && { opacity: 0.5 }]}
+                    disabled={busyId === p.id}
                     onPress={() => handleAction(p.id, 'Approved')}
                   >
-                    <Text style={[styles.actionBtnText, { color: '#10b981' }]}>Approve</Text>
+                    {busyId === p.id ? (
+                      <ActivityIndicator size="small" color="#10b981" />
+                    ) : (
+                      <Text style={[styles.actionBtnText, { color: '#10b981' }]}>Approve</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               )}
@@ -101,6 +185,11 @@ export default function PayoutsScreen() {
 }
 
 const styles = StyleSheet.create({
+  stateBox: { backgroundColor: '#ffffff', borderRadius: 12, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
+  retryBtn: { marginTop: 18, backgroundColor: '#f59e0b', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, minHeight: 44, justifyContent: 'center' },
+  retryBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 13 },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#0f172a', marginBottom: 4 },

@@ -157,6 +157,15 @@ CREATE TABLE IF NOT EXISTS local_shops (
     is_verified INTEGER DEFAULT 0,
     is_premium INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
+    -- Declared here, not in migration 075, because migration 049 creates FTS
+    -- triggers whose bodies read new.tags. SQLite revalidates every trigger
+    -- during ALTER TABLE ... RENAME, so between 049 and 075 one invalid trigger
+    -- aborted an unrelated table's rename: migration 063 renames
+    -- universal_orders_new and failed, leaving a fresh deployment with no
+    -- universal_orders table at all while the controller queried it. init runs
+    -- before every numbered migration, so declaring it here closes the window
+    -- and makes 075 a harmless no-op.
+    tags TEXT DEFAULT '',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );

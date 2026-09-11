@@ -28,12 +28,18 @@ export default function EducationEventsVisitorView({ shop, services = [], onEnro
           <div>
             <h2 className="text-xl font-bold text-text">{shop?.name || 'Learning Center'}</h2>
             <p className="text-text-muted text-sm mt-1">Transform your future with expert guidance</p>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="flex items-center gap-1 text-xs text-amber-500 font-bold">
-                <Star className="w-3 h-3 fill-amber-400" /> 4.9 (95 reviews)
-              </span>
-              <span className="text-xs text-green-500 font-bold">500+ Students</span>
-            </div>
+            {/* Was a fixed "4.9 (95 reviews)" and "500+ Students" on every
+                learning centre, whatever its real record. The rating now comes
+                from the shop and is omitted when it has none; the student count
+                is gone entirely — the platform has no such figure to report. */}
+            {shop?.rating > 0 && (
+              <div className="flex items-center gap-3 mt-2">
+                <span className="flex items-center gap-1 text-xs text-amber-500 font-bold">
+                  <Star className="w-3 h-3 fill-amber-400" /> {shop.rating}
+                  {shop.totalRatings > 0 && ` (${shop.totalRatings} reviews)`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -44,12 +50,11 @@ export default function EducationEventsVisitorView({ shop, services = [], onEnro
           <BookOpen className="w-5 h-5 text-indigo-500" /> Courses & Packages
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(services.length > 0 ? services : [
-            { name: 'Foundation Course', price: 5000, duration: '3 months', icon: '📚', students: 120, batch: 'Mon-Fri, 4-6 PM' },
-            { name: 'Crash Course', price: 8000, duration: '1 month', icon: '⚡', students: 40, batch: 'Weekends', popular: true },
-            { name: 'Personal Tutoring', price: 2000, duration: 'Per session', icon: '👨‍🏫', students: 15, batch: 'Flexible timing' },
-            { name: 'Online Classes', price: 3000, duration: '3 months', icon: '💻', students: 200, batch: 'Live + Recorded' },
-          ]).map((course, i) => (
+          {/* Four invented courses at invented prices (₹5000/₹8000/₹2000/₹3000)
+              with invented enrolment counts and batch timings, shown for any
+              centre that had published none. A parent could arrive expecting a
+              "Foundation Course" at ₹5000 that the centre does not run. */}
+          {services.map((course, i) => (
             <motion.div key={i}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
               onClick={() => setSelectedPkg(course)}
@@ -68,18 +73,36 @@ export default function EducationEventsVisitorView({ shop, services = [], onEnro
                   <h3 className="font-bold text-text">{course.name}</h3>
                   <p className="text-xs text-text-muted mt-1">{course.batch}</p>
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs text-text-muted flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {course.duration}
-                    </span>
-                    <span className="text-xs text-text-muted flex items-center gap-1">
-                      <Users className="w-3 h-3" /> {course.students} enrolled
-                    </span>
+                    {(course.duration || course.durationMinutes) && (
+                      <span className="text-xs text-text-muted flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {course.duration || `${course.durationMinutes} min`}
+                      </span>
+                    )}
+                    {course.students > 0 && (
+                      <span className="text-xs text-text-muted flex items-center gap-1">
+                        <Users className="w-3 h-3" /> {course.students} enrolled
+                      </span>
+                    )}
                   </div>
-                  <p className="text-indigo-500 font-black text-lg mt-2">₹{course.price}</p>
+                  {/* An unpriced course asks rather than showing "₹undefined"
+                      or a number this component chose. */}
+                  {(course.price ?? course.pricePaise) != null ? (
+                    <p className="text-indigo-500 font-black text-lg mt-2">
+                      ₹{course.price ?? course.pricePaise / 100}
+                    </p>
+                  ) : (
+                    <p className="text-text-muted font-semibold text-sm mt-2">Ask for fees</p>
+                  )}
                 </div>
               </div>
             </motion.div>
           ))}
+          {services.length === 0 && (
+            <p className="text-sm text-text-muted py-4 col-span-full text-center">
+              This centre has not published its courses yet. Contact them for
+              current batches and fees.
+            </p>
+          )}
         </div>
       </div>
 

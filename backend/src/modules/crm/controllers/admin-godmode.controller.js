@@ -55,11 +55,18 @@ exports.updateUserStatus = async (req, res, next) => {
     await query('UPDATE users SET is_active = $1 WHERE id = $2', [is_active, id]);
     
     try {
-      await query(`INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
+      await query(`INSERT INTO admin_audit_log (admin_id, admin_name, action, target_type, target_id, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [req.user.id, req.user.full_name || 'Admin', 'update_user_status', 'user', id, JSON.stringify({ is_active })]
       );
-    } catch (e) { next(e); }
+    } catch (e) {
+      // The audited change has already been committed, so failing the request
+      // here would report an error for work that actually succeeded. This
+      // previously called next(e), which sent an error response and then fell
+      // through to res.json below -- a double response. Because the insert
+      // targeted a table that never existed, that happened on every single call.
+      console.error('Audit log write failed:', e.message);
+    }
 
     res.json({ success: true, message: 'User status updated successfully' });
   } catch (error) {
@@ -75,11 +82,18 @@ exports.updateUserRole = async (req, res, next) => {
     await query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
     
     try {
-      await query(`INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
+      await query(`INSERT INTO admin_audit_log (admin_id, admin_name, action, target_type, target_id, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [req.user.id, req.user.full_name || 'Admin', 'update_user_role', 'user', id, JSON.stringify({ role })]
       );
-    } catch (e) { next(e); }
+    } catch (e) {
+      // The audited change has already been committed, so failing the request
+      // here would report an error for work that actually succeeded. This
+      // previously called next(e), which sent an error response and then fell
+      // through to res.json below -- a double response. Because the insert
+      // targeted a table that never existed, that happened on every single call.
+      console.error('Audit log write failed:', e.message);
+    }
 
     res.json({ success: true, message: 'User role updated successfully' });
   } catch (error) {
@@ -117,7 +131,11 @@ exports.exportUsers = async (req, res, next) => {
 
 exports.getRoles = async (req, res, next) => {
   try {
-    const roles = await query('SELECT * FROM admin_roles ORDER BY created_at DESC');
+    // admin_roles_config holds role definitions (role_name, description,
+    // permissions). admin_roles is a different table: the per-user grant that
+    // auth.middleware.js reads by user_id. This queried the latter for the
+    // former's columns, so role management never worked.
+    const roles = await query('SELECT * FROM admin_roles_config ORDER BY created_at DESC');
     res.json({ success: true, data: roles.rows || roles });
   } catch (error) {
     console.warn('Roles query failed:', error.message);
@@ -130,20 +148,27 @@ exports.createOrUpdateRole = async (req, res, next) => {
     const { role_name, permissions, description } = req.body;
     
     // Fallback if ON CONFLICT doesn't work for sqlite if no unique constraint exists
-    const existing = await queryOne('SELECT * FROM admin_roles WHERE role_name = $1', [role_name]);
+    const existing = await queryOne('SELECT * FROM admin_roles_config WHERE role_name = $1', [role_name]);
     let role;
     if (existing) {
-        role = await queryOne(`UPDATE admin_roles SET permissions = $1, description = $2 WHERE role_name = $3 RETURNING *`, [JSON.stringify(permissions), description, role_name]);
+        role = await queryOne(`UPDATE admin_roles_config SET permissions = $1, description = $2 WHERE role_name = $3 RETURNING *`, [JSON.stringify(permissions), description, role_name]);
     } else {
-        role = await queryOne(`INSERT INTO admin_roles (role_name, permissions, description) VALUES ($1, $2, $3) RETURNING *`, [role_name, JSON.stringify(permissions), description]);
+        role = await queryOne(`INSERT INTO admin_roles_config (role_name, permissions, description) VALUES ($1, $2, $3) RETURNING *`, [role_name, JSON.stringify(permissions), description]);
     }
     
     try {
-      await query(`INSERT INTO admin_audit_logs (admin_id, admin_name, action, target_type, target_id, details)
+      await query(`INSERT INTO admin_audit_log (admin_id, admin_name, action, target_type, target_id, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [req.user.id, req.user.full_name || 'Admin', 'upsert_role', 'role', role ? role.id : null, JSON.stringify({ role_name })]
       );
-    } catch (e) { next(e); }
+    } catch (e) {
+      // The audited change has already been committed, so failing the request
+      // here would report an error for work that actually succeeded. This
+      // previously called next(e), which sent an error response and then fell
+      // through to res.json below -- a double response. Because the insert
+      // targeted a table that never existed, that happened on every single call.
+      console.error('Audit log write failed:', e.message);
+    }
 
     res.json({ success: true, data: role });
   } catch (error) {

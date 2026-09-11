@@ -72,10 +72,19 @@ router.post('/subscribe', authenticate, enforceMultiTenancy, async (req, res, ne
 router.post('/webhook/billing', express.raw({ type: 'application/json' }), async (req, res, next) => {
   try {
     const signature = req.headers['x-razorpay-signature'] || req.headers['x-webhook-signature'];
-    const secret = process.env.SAAS_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || 'webhook_secret';
-    
+    // No literal default. This used to fall back to the string 'webhook_secret',
+    // which is published in this file — anyone could forge a billing webhook and
+    // drive a subscription state change. An unconfigured secret is now a
+    // misconfiguration to surface, not a value to invent.
+    const secret = process.env.SAAS_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET;
+
     if (!signature) {
       return res.status(401).json({ error: 'Missing webhook signature' });
+    }
+
+    if (!secret) {
+      console.error('[SaaS Webhook] rejected: SAAS_WEBHOOK_SECRET / PAYMENT_WEBHOOK_SECRET not configured');
+      return res.status(503).json({ error: 'Webhook signature verification unavailable' });
     }
 
     const rawPayload = req.body.toString('utf8');
@@ -145,7 +154,7 @@ router.get('/admin/subscriptions', authenticate, requireAdmin, async (req, res, 
       subs = await query(`
         SELECT vs.*, s.name as shop_name, sp.name as plan_name, sp.price_monthly 
         FROM vendor_subscriptions vs
-        LEFT JOIN shops s ON vs.shop_id = s.id
+        LEFT JOIN local_shops s ON vs.shop_id = s.id
         LEFT JOIN saas_plans sp ON vs.plan_id = sp.id
         ORDER BY vs.created_at DESC
       `);

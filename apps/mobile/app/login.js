@@ -25,8 +25,14 @@ export default function LoginScreen() {
         Alert.alert('OTP Sent', data.mock ? 'Test OTP sent: 123456' : 'An OTP has been sent to your mobile number.');
       }
     } catch (err) {
-      console.warn('sendOtp failed, enabling OTP entry fallback');
-      setOtpSent(true);
+      if (__DEV__) {
+        console.warn('[DEV ONLY] sendOtp failed, enabling OTP entry fallback');
+        setOtpSent(true);
+        return;
+      }
+      // Advancing to the OTP screen after a failed send leaves the user
+      // waiting on an SMS that was never dispatched.
+      Alert.alert('Could not send OTP', err?.message || 'Please try again in a moment.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +50,14 @@ export default function LoginScreen() {
         router.replace('/(tabs)');
       }
     } catch (err) {
-      console.warn('verifyOtp error, attempting fallback preset verify', err.message);
+      // In a release build a failed verification is final. Falling through to
+      // loginWithDevPreset here is what turned "wrong OTP" into "logged in":
+      // that helper's catch minted a local session for any phone/OTP pair.
+      if (!__DEV__) {
+        Alert.alert('Verification Failed', err.message || 'Invalid OTP code.');
+        return;
+      }
+      console.warn('[DEV ONLY] verifyOtp error, attempting fallback preset verify', err.message);
       const devSuccess = await loginWithDevPreset('user', phoneNumber, otp);
       if (devSuccess) {
         router.replace('/(tabs)');
@@ -139,25 +152,32 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        {/* Developer Presets */}
-        <View style={{ marginTop: 40, width: '100%', backgroundColor: '#ffffff', borderRadius: 12, padding: 16 }}>
-          <Text style={{ color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' }}>
-            ⚡ QUICK DEVELOPER PRESET LOGINS
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>
-            {devRoles.map(role => (
-              <TouchableOpacity
-                key={role.id}
-                style={styles.presetButton}
-                onPress={() => handleDeveloperPresetLogin(role.id)}
-                disabled={loading}
-              >
-                <Text style={{ fontSize: 20, marginBottom: 4 }}>{role.icon}</Text>
-                <Text style={{ color: '#0f172a', fontSize: 10, textAlign: 'center' }}>{role.label}</Text>
-              </TouchableOpacity>
-            ))}
+        {/* Developer Presets — debug builds only.
+            This panel shipped in the release APK, offering any installer a
+            one-tap login as Shop Owner, Territory Admin or Super Admin. The
+            __DEV__ guard is compile-time: Metro replaces it with `false` for a
+            release bundle, so the whole block (and the role list) is dropped by
+            dead-code elimination rather than merely hidden. */}
+        {__DEV__ && (
+          <View style={{ marginTop: 40, width: '100%', backgroundColor: '#ffffff', borderRadius: 12, padding: 16 }}>
+            <Text style={{ color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' }}>
+              ⚡ QUICK DEVELOPER PRESET LOGINS
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>
+              {devRoles.map(role => (
+                <TouchableOpacity
+                  key={role.id}
+                  style={styles.presetButton}
+                  onPress={() => handleDeveloperPresetLogin(role.id)}
+                  disabled={loading}
+                >
+                  <Text style={{ fontSize: 20, marginBottom: 4 }}>{role.icon}</Text>
+                  <Text style={{ color: '#0f172a', fontSize: 10, textAlign: 'center' }}>{role.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>

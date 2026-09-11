@@ -4,7 +4,11 @@
  * 10x Plan: Section 22.3 — Automated Fraud Prevention
  * ═══════════════════════════════════════════════════════════════════════
  */
-const { query, queryOne, withTransaction } = require('../config/database');
+// queryMany is used in three places below (checkReferralAbuse and
+// checkVelocityAbuse) but was never imported, so each of those calls threw
+// ReferenceError at runtime — every referral- and velocity-abuse check failed
+// open rather than flagging anything.
+const { query, queryOne, queryMany, withTransaction } = require('../config/database');
 const logger = require('../config/logger');
 const crypto = require('crypto');
 

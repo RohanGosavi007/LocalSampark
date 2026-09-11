@@ -7,6 +7,7 @@ import { Store, MapPin, MessageCircle, Share2, Star, CheckCircle } from 'lucide-
 import VisitorViewRouter from '../../src/components/shops/VisitorViewRouter';
 import { apiGet } from '../../src/lib/api';
 import { useAuth } from '../../src/context/AuthContext';
+import StickyCartBar from '../../src/components/commerce/StickyCartBar';
 
 export default function ShopDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -119,13 +120,17 @@ export default function ShopDetailScreen() {
         </View>
 
         {/* Dynamic Category View Router */}
-        <VisitorViewRouter 
-          shop={shop} 
-          services={services} 
-          products={products} 
-          staff={staff} 
+        <VisitorViewRouter
+          shop={shop}
+          services={services}
+          products={products}
+          staff={staff}
         />
       </ScrollView>
+
+      {/* Persistent cart. The bar unmounts itself when the cart is empty, so
+          the extra bottom padding above is only consumed when it is showing. */}
+      <StickyCartBar onPress={() => router.push('/cart')} />
     </SafeAreaView>
   );
 }

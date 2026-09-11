@@ -14,3 +14,11 @@ local.properties
 
 # Bundle artifacts
 *.jsbundle
+# Expo's export:embed names the bundle index.android.bundle, which the
+# *.jsbundle pattern above does not match, so it was being tracked. The release
+# build regenerates it into build/generated/assets and that copy wins the asset
+# merge — the checked-in one never ships, it just churns ~9MB per build.
+app/src/main/assets/index.android.bundle
+
+# Upload-keystore credentials (see app/build.gradle). Never commit these.
+keystore.properties

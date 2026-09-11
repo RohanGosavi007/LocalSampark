@@ -114,6 +114,58 @@ describe('Auth Middleware', () => {
       expect(next).toHaveBeenCalled();
       expect(req.user).toEqual(mockUser);
     });
+
+    // ─── session revocation (token_version) ─────────────────
+    // generateTokens() embeds token_version, and admin.routes.js exposes a
+    // "log everyone out" action that increments it for every user. verifyRole()
+    // enforced that; authenticate() did not — and authenticate() is what nearly
+    // every route uses, so revocation had no practical effect. These lock in
+    // the check, including the null-coalescing that stops a legacy row with a
+    // NULL token_version from logging a legitimate user out.
+
+    it('rejects a token whose tokenVersion is behind the stored one', async () => {
+      const { req, res, next } = mockReqResNext();
+      const token = jwt.sign({ userId: 1, tokenVersion: 0 }, JWT_SECRET, { expiresIn: '1h' });
+      req.headers.authorization = `Bearer ${token}`;
+      // Admin bumped token_version to revoke outstanding sessions.
+      queryOne.mockResolvedValue({ id: 1, role: 'user', is_active: true, token_version: 1 });
+
+      await authenticate(req, res, next);
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Session invalidated. Please login again.' });
+    });
+
+    it('accepts a token whose tokenVersion matches the stored one', async () => {
+      const { req, res, next } = mockReqResNext();
+      const token = jwt.sign({ userId: 1, tokenVersion: 3 }, JWT_SECRET, { expiresIn: '1h' });
+      req.headers.authorization = `Bearer ${token}`;
+      queryOne.mockResolvedValue({ id: 1, role: 'user', is_active: true, token_version: 3 });
+
+      await authenticate(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('treats a NULL stored token_version as 0 rather than revoking', async () => {
+      const { req, res, next } = mockReqResNext();
+      const token = jwt.sign({ userId: 1, tokenVersion: 0 }, JWT_SECRET, { expiresIn: '1h' });
+      req.headers.authorization = `Bearer ${token}`;
+      // Row predating migration 072, or a driver returning NULL for an unset int.
+      queryOne.mockResolvedValue({ id: 1, role: 'user', is_active: true, token_version: null });
+
+      await authenticate(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('treats a token minted without tokenVersion as version 0', async () => {
+      const { req, res, next } = mockReqResNext();
+      const token = jwt.sign({ userId: 1 }, JWT_SECRET, { expiresIn: '1h' });
+      req.headers.authorization = `Bearer ${token}`;
+      queryOne.mockResolvedValue({ id: 1, role: 'user', is_active: true, token_version: 0 });
+
+      await authenticate(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
   });
 
   // ─── optionalAuth ─────────────────────────────────────────

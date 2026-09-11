@@ -26,7 +26,7 @@ const getMyEvents = async (req, res, next) => {
     const userId = req.user.id;
     const hosted = await query(`SELECT * FROM events WHERE organizer_id = $1 ORDER BY event_date ASC`, [userId]);
     const booked = await query(`
-      SELECT t.*, e.title as event_title, e.event_date, e.location 
+      SELECT t.*, e.title as event_title, e.event_date, e.venue AS location
       FROM event_tickets t 
       JOIN events e ON t.event_id = e.id 
       WHERE t.user_id = $1 
@@ -72,7 +72,10 @@ const createEvent = async (req, res, next) => {
       status = 'active';
     }
 
-    const newEvent = await query(`INSERT INTO events (organizer_id, title, description, event_date, location, ticket_price, total_tickets, available_tickets, allow_coin_discount, status) 
+    // The place an event happens is stored in `venue`; there is no `location`
+    // column, and naming one meant every event creation failed outright. The
+    // ticket columns are real additions -- see migration 084.
+    const newEvent = await query(`INSERT INTO events (organizer_id, title, description, event_date, venue, ticket_price, total_tickets, available_tickets, allow_coin_discount, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [userId, title, description, eventDate, location, ticketPrice, totalTickets, totalTickets, allowCoinDiscount, status]
     );

@@ -37,14 +37,61 @@ jobs:
           cd apps/mobile
           npm ci || npm install
 
-      - name: Build Android APK
+      # Sentry source maps.
+      #
+      # apps/mobile/android/app/build.gradle applies sentry.gradle only when
+      # SENTRY_AUTH_TOKEN is present, so without it a release crash arrives as
+      # an unmapped Hermes offset like index.android.bundle:1:3125598.
+      #
+      # Setting that token as a GitHub secret here would NOT work: `eas build`
+      # (below, without --local) runs Gradle on Expo's servers, so this runner's
+      # environment never reaches the build. It has to be an EAS secret:
+      #
+      #   eas secret:create --scope project --name SENTRY_AUTH_TOKEN --value <token>
+      #   eas secret:create --scope project --name SENTRY_ORG     --value <org-slug>
+      #   eas secret:create --scope project --name SENTRY_PROJECT --value <project-slug>
+      #
+      # This step only reports whether that has been done. It is deliberately
+      # non-fatal — a missing token degrades crash reporting, it does not make
+      # the artifact invalid, and failing the release for it would be worse.
+      - name: Check Sentry source-map upload is configured
+        working-directory: apps/mobile
+        continue-on-error: true
         run: |
-          cd apps/mobile
-          eas build --platform android --profile production --non-interactive
+          if eas secret:list --non-interactive 2>/dev/null | grep -q SENTRY_AUTH_TOKEN; then
+            echo "SENTRY_AUTH_TOKEN is configured — source maps will upload."
+          else
+            echo "::warning title=Sentry source maps disabled::SENTRY_AUTH_TOKEN is not an EAS secret. Release crashes will not be symbolicated. See the comment in this workflow for the eas secret:create commands."
+          fi
 
-      - name: Upload Artifact
+      # `eas build` without --local runs on Expo's servers and writes nothing
+      # into the workspace, so the old "Upload Artifact: apps/mobile/build/"
+      # step could only ever warn "No files were found" — and because
+      # upload-artifact does not fail on an empty path by default, the whole
+      # release workflow went green while producing no artifact at all.
+      #
+      # Capture the build metadata instead and publish the download URL that
+      # EAS actually returns.
+      - name: Build Android APK (EAS cloud)
+        id: eas
+        working-directory: apps/mobile
+        run: |
+          eas build --platform android --profile production \
+            --non-interactive --json --wait > build.json
+          echo "url=$(node -p "require('./build.json')[0].artifacts.buildUrl")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish build URL
+        run: |
+          {
+            echo "### Android production build"
+            echo ""
+            echo "APK: ${{ steps.eas.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload EAS build metadata
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: apps/mobile/build/
+          name: eas-build-metadata
+          path: apps/mobile/build.json
           retention-days: 30
+          if-no-files-found: error

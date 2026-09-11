@@ -1,16 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { apiGet } from '../../lib/api';
 import { Shield, Bell, TrendingUp, Store, Users, AlertCircle, ShoppingCart, Bike, Home, Wallet, PartyPopper, Stethoscope, PackageOpen, Crown, Megaphone, CheckCircle2 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+/**
+ * The operator's landing screen.
+ *
+ * All four headline figures were literals — "₹1.2L revenue", "45 active shops",
+ * "12 agents", "8 pending applications" — and so were the change lines beneath
+ * them: "+22%", "+3 this week", "All online", "Action Needed". An operator
+ * opening the app on day one saw a platform that was already trading.
+ *
+ * /admin/analytics/overview measures all of it. There is no week-on-week
+ * comparison behind any of these, so the change line is gone rather than
+ * invented; a real number with a fake delta under it is worse than the number
+ * alone.
+ */
 export default function AdminDashboard({ user }) {
+  const [figures, setFigures] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiGet('/admin/analytics/overview?duration=week')
+      .then((res) => setFigures(res?.metrics ?? null))
+      .catch(() => setFigures(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dash = (v) => (loading ? '…' : v);
+  const money = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`;
+
   const stats = [
-    { label: 'Total Revenue', value: '₹1.2L', change: '+22%', positive: true, icon: TrendingUp, color: '#10b981' },
-    { label: 'Active Shops', value: '45', change: '+3 this week', positive: true, icon: Store, color: '#3b82f6' },
-    { label: 'Active Agents', value: '12', change: 'All online', positive: true, icon: Users, color: '#8b5cf6' },
-    { label: 'Pending Apps', value: '8', change: 'Action Needed', positive: false, icon: AlertCircle, color: '#f59e0b' },
+    { label: 'Total Volume', value: dash(money(figures?.financialVolume)), icon: TrendingUp, color: '#10b981' },
+    { label: 'Active Shops', value: dash(String(Number(figures?.activeMerchants) || 0)), icon: Store, color: '#3b82f6' },
+    { label: 'Total Users', value: dash(String(Number(figures?.totalUsers) || 0)), icon: Users, color: '#8b5cf6' },
+    { label: 'Avg. Delivery', value: dash(figures?.slaTime || '—'), icon: AlertCircle, color: '#f59e0b' },
   ];
 
   const quickActions = [
@@ -28,10 +55,12 @@ export default function AdminDashboard({ user }) {
     { icon: PackageOpen, label: 'Subscrip', route: '/(admin)/subscriptions', color: '#84cc16' },
   ];
 
-  const pendingQueue = [
-    { id: 1, name: 'Sharma Electronics', type: 'Shop Registration', time: '2 hours ago' },
-    { id: 2, name: 'Rahul Delivery', type: 'Agent Onboarding', time: '5 hours ago' },
-  ];
+  // Two invented applications sat here waiting for review — a shop
+  // registration and an agent onboarding, neither of which anyone had
+  // submitted, each with a Review button that did nothing. The real queue lives
+  // behind /admin/approvals/pending and the Shops screen acts on it, so this
+  // is not duplicated here with a shorter fake.
+  const pendingQueue = [];
 
   return (
     <ScrollView style={s.container} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
@@ -46,9 +75,6 @@ export default function AdminDashboard({ user }) {
         </View>
         <TouchableOpacity style={s.bellBtn}>
           <Bell size={24} color="#e2e8f0" />
-          <View style={s.bellBadge}>
-            <Text style={s.bellBadgeText}>8</Text>
-          </View>
         </TouchableOpacity>
       </View>
 
@@ -65,7 +91,6 @@ export default function AdminDashboard({ user }) {
               </View>
               <Text style={s.statValue}>{stat.value}</Text>
               <Text style={s.statLabel}>{stat.label}</Text>
-              <Text style={[s.statChange, { color: stat.positive ? '#34d399' : '#fbbf24' }]}>{stat.change}</Text>
             </View>
           );
         })}
@@ -117,7 +142,7 @@ export default function AdminDashboard({ user }) {
           {pendingQueue.length === 0 && (
             <View style={s.emptyQueue}>
               <CheckCircle2 color="#10b981" size={32} />
-              <Text style={s.emptyText}>Queue is empty!</Text>
+              <Text style={s.emptyText}>Nothing is waiting on you here.</Text>
             </View>
           )}
         </View>

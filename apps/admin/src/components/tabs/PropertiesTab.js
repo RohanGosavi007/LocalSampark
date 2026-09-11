@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
 const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
@@ -7,15 +9,17 @@ const btnDanger = { ...btnPrimary, background: '#ef4444' };
 export default function PropertiesTab({ API_BASE, authHeaders }) {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchProperties = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/properties`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/properties`, { headers: authHeaders() });
       setProperties(data.properties || data.data || []);
     } catch (e) {
       console.error(e);
+      setError(e);
     } finally {
       setLoading(false);
     }
@@ -35,13 +39,15 @@ export default function PropertiesTab({ API_BASE, authHeaders }) {
       if (res.ok) {
         setProperties(properties.map(p => p.id === id ? { ...p, status } : p));
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
+      setError(e);
     }
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>

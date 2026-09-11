@@ -3,4 +3,7 @@
   <color name="iconBackground">#ffffff</color>
   <color name="colorPrimary">#023c69</color>
   <color name="colorPrimaryDark">#ffffff</color>
+  <!-- AppTheme hardcoded android:statusBarColor to #ffffff, so it stayed white
+       in dark mode. Routed through a token that values-night overrides. -->
+  <color name="statusBarBackground">#ffffff</color>
 </resources>

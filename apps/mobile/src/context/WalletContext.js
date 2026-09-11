@@ -9,6 +9,7 @@ export function WalletProvider({ children }) {
   const [walletBalance, setWalletBalance] = useState(0.00);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const isDev = process.env.NODE_ENV === 'development';
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 
@@ -18,24 +19,33 @@ export function WalletProvider({ children }) {
   const fetchWallet = async () => {
     if (!authToken || !user) return;
     setIsLoading(true);
+    setError(null);
     try {
       // /wallet/history returns { balance, transactions }; /wallet/balance has
       // never existed, so this always fell through to the mock below.
       const res = await fetch(`${API_URL}/wallet/history`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setWalletBalance(data.balance || 0.00);
-        setWalletTransactions(data.transactions || []);
+      if (!res.ok) {
+        // A non-2xx response fell through silently: the old code only handled
+        // res.ok, so a 401 or 500 left the previous balance on screen unchanged.
+        throw new Error(`Wallet request failed (${res.status})`);
       }
+      const data = await res.json();
+      setWalletBalance(data.balance || 0.00);
+      setWalletTransactions(data.transactions || []);
     } catch (e) {
-      console.warn("Failed to fetch wallet, using mock fallback for demo");
-      setWalletBalance(750.00);
-      setWalletTransactions([
-        { id: 1, amount: '120.00', type: 'debit', purpose: 'Paid at Sharma Grocery', time: 'Today, 11:30 AM' },
-        { id: 2, amount: '500.00', type: 'credit', purpose: 'Loaded via Razorpay', time: 'Yesterday, 4:15 PM' }
-      ]);
+      // This used to fall back to a ₹750 balance and two invented ledger
+      // entries — "Paid at Sharma Grocery ₹120" and "Loaded via Razorpay ₹500".
+      // A wallet is a financial record: showing a spendable balance the user
+      // does not have, and payments they never made, is the worst place in the
+      // app to guess. The balance stays at zero and the error is surfaced so
+      // screens can say the wallet could not be loaded rather than quietly
+      // showing a number.
+      console.warn('[Wallet] Failed to fetch wallet:', e?.message);
+      setWalletBalance(0);
+      setWalletTransactions([]);
+      setError(e?.message || 'Could not load your wallet.');
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +56,7 @@ export function WalletProvider({ children }) {
   }, [authToken, user]);
 
   return (
-    <WalletContext.Provider value={{ walletBalance, walletTransactions, fetchWallet, isLoading }}>
+    <WalletContext.Provider value={{ walletBalance, walletTransactions, fetchWallet, isLoading, error }}>
       {children}
     </WalletContext.Provider>
   );

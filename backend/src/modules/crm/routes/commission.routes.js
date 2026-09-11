@@ -76,7 +76,7 @@ router.post('/process-split', authenticate, requireAdmin, requirePermission('fin
     );
 
     // Find and credit franchise partner for pincode
-    const partner = await queryOne('SELECT id, user_id FROM franchise_partners WHERE target_pincodes LIKE $1 OR territory_name LIKE $2 LIMIT 1',
+    const partner = await queryOne('SELECT id, user_id FROM franchise_partners WHERE territory_pincode LIKE $1 OR territory_name LIKE $2 LIMIT 1',
       [`%${pincode}%`, `%${pincode}%`]
     );
 

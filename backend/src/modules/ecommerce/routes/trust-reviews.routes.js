@@ -11,7 +11,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
     const userId = req.user.id;
 
     // Verify if user actually ordered from this shop
-    const orderCheck = await pool.query(`SELECT id FROM orders WHERE user_id = $1 AND shop_id = $2 AND status = 'delivered' LIMIT 1`,
+    const orderCheck = await pool.query(`SELECT id FROM orders WHERE user_id = $1 AND shop_id = $2 AND order_status = 'delivered' LIMIT 1`,
       [userId, shopId]
     );
 
@@ -33,9 +33,9 @@ router.get('/feed', authenticate, async (req, res) => {
   try {
     const { zoneId } = req.query;
     // Join with shops to get shop name, join with users to get user name
-    const result = await pool.query(`SELECT tr.*, s.name as shop_name, u.name as user_name 
+    const result = await pool.query(`SELECT tr.*, s.name as shop_name, u.full_name as user_name 
        FROM trust_reviews tr
-       JOIN shops s ON tr.shop_id = s.id
+       JOIN local_shops s ON tr.shop_id = s.id
        JOIN users u ON tr.user_id = u.id
        WHERE s.zone_id = $1
        ORDER BY tr.created_at DESC

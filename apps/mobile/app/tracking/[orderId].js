@@ -1,13 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
+import { apiGet } from '../../src/lib/api';
 
 export default function OrderTrackingScreen() {
   const { orderId } = useLocalSearchParams();
-  const [orderStatus, setOrderStatus] = useState('accepted');
-  const [driverLocation, setDriverLocation] = useState({ lat: 19.076, lng: 72.8777 });
-  const [etaMinutes, setEtaMinutes] = useState(18);
+  // The status started at 'accepted' and the ETA at 18 minutes before anything
+  // had been loaded, so an order that was merely placed — or that failed to load
+  // at all — showed as accepted with a countdown running. Both start empty and
+  // are filled from the order.
+  const [orderStatus, setOrderStatus] = useState('placed');
+  const [driverLocation, setDriverLocation] = useState(null);
+  const [etaMinutes, setEtaMinutes] = useState(null);
+  const [rider, setRider] = useState(null);
+
+  // The screen subscribed to live updates but never fetched the order it was
+  // subscribing about, so everything on it before the first broadcast was a
+  // placeholder.
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await apiGet(`/orders/${orderId}`);
+        const o = res?.order ?? res;
+        if (cancelled || !o?.id) return;
+
+        setOrderStatus(String(o.status || o.order_status || 'placed').toLowerCase());
+        if (o.eta_minutes != null) setEtaMinutes(Number(o.eta_minutes));
+        if (o.delivery_agent_name) {
+          setRider({
+            name: o.delivery_agent_name,
+            rating: o.delivery_agent_rating ?? null,
+            phone: o.delivery_agent_phone || null,
+          });
+        }
+      } catch {
+        // Leave the screen in its empty state; the stepper still shows "Order
+        // Placed" and nothing is asserted about a rider or an arrival time.
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [orderId]);
 
   // Real-time Supabase Location Tracking Subscription
   useEffect(() => {
@@ -21,6 +58,7 @@ export default function OrderTrackingScreen() {
           setDriverLocation(payload.coordinates);
         }
         if (payload.eta) setEtaMinutes(payload.eta);
+        if (payload.rider) setRider(payload.rider);
       })
       .on('broadcast', { event: 'shop:order:status' }, (payload) => {
         if (payload.status) setOrderStatus(payload.status);
@@ -51,11 +89,19 @@ export default function OrderTrackingScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Estimated Arrival Banner */}
-        <View style={styles.etaCard}>
-          <Text style={styles.etaLabel}>ESTIMATED ARRIVAL TIME</Text>
-          <Text style={styles.etaTime}>{etaMinutes} Mins</Text>
-          <Text style={styles.etaSub}>Driver is navigating through your pincode territory</Text>
-        </View>
+        {/* The banner read "18 Mins" and "Driver is navigating through your
+            pincode territory" from the moment the screen opened, whether or not
+            an order had loaded and whether or not anyone was driving anywhere.
+            It appears once there is an actual estimate. */}
+        {etaMinutes != null ? (
+          <View style={styles.etaCard}>
+            <Text style={styles.etaLabel}>ESTIMATED ARRIVAL TIME</Text>
+            <Text style={styles.etaTime}>{etaMinutes} Mins</Text>
+            {driverLocation ? (
+              <Text style={styles.etaSub}>Your delivery partner is on the way.</Text>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Real-time Order Stepper */}
         <View style={styles.stepperCard}>
@@ -74,19 +120,34 @@ export default function OrderTrackingScreen() {
           ))}
         </View>
 
-        {/* Live Driver Location Info */}
-        <View style={styles.driverCard}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={styles.avatar}><Text style={{ fontSize: 24 }}>🛵</Text></View>
-            <View style={{ marginLeft: 12, flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#0f172a' }}>Ramesh Kumar</Text>
-              <Text style={{ fontSize: 13, color: '#64748b' }}>Delivery Partner • 4.9 ⭐</Text>
+        {/* The rider card was hardcoded: "Ramesh Kumar, Delivery Partner,
+            4.9 ⭐" on every order, with a Call Driver button that had no handler
+            and dialled nothing. It renders only when a rider is actually
+            assigned, and the button dials the number the server sent. */}
+        {rider ? (
+          <View style={styles.driverCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={styles.avatar}><Text style={{ fontSize: 24 }}>🛵</Text></View>
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#0f172a' }}>{rider.name}</Text>
+                <Text style={{ fontSize: 13, color: '#64748b' }}>
+                  Delivery Partner{rider.rating ? ` • ${rider.rating} ⭐` : ''}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.callBtn, !rider.phone && { opacity: 0.45 }]}
+                disabled={!rider.phone}
+                onPress={() =>
+                  Linking.openURL(`tel:${rider.phone}`).catch(() =>
+                    Alert.alert('Could not place the call', `Dial ${rider.phone} manually.`)
+                  )
+                }
+              >
+                <Text style={styles.callBtnText}>📞 Call Driver</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.callBtn}>
-              <Text style={styles.callBtnText}>📞 Call Driver</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

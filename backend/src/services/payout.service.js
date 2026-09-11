@@ -59,7 +59,15 @@ class PayoutService {
     // Calculate financials
     const grossGMV = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
     const totalDeliveryFees = orders.reduce((sum, o) => sum + parseFloat(o.delivery_fee || 0), 0);
-    const orderAmount = grossGMV - totalDeliveryFees;
+    // Commission is charged on the full order value, delivery fee included.
+    //
+    // This aggregate previously used (grossGMV - totalDeliveryFees) while the
+    // per-order line items below used the full total_amount, so the audit trail
+    // never tied out to the payout — it overstated commission by exactly
+    // rate% of delivery fees. The line-item basis was confirmed authoritative,
+    // so the aggregate is aligned to it. Note this raises platform commission
+    // relative to the previous aggregate for any shop charging delivery.
+    const orderAmount = grossGMV;
 
     const platformCommission = orderAmount * (commissionRate / 100);
     const paymentGatewayFee = grossGMV * 0.02; // 2% Razorpay fee

@@ -36,9 +36,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: Install Root Dependencies
-        run: npm ci || npm install
+        # backend is an npm workspace of the root, so this installs it too.
+        run: npm ci
 
       - name: Run Backend Tests
         env:
@@ -46,11 +48,12 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret
         run: |
-          cd backend
-          npm install
-          npx prisma generate
-          npx prisma migrate dev --name init
-          npm test --if-present
+          npm exec --workspace=backend -- prisma generate
+          # `migrate dev` is the interactive authoring command: it wants to
+          # create a new migration and prompts/errors on drift. CI applies the
+          # committed migrations instead.
+          npm exec --workspace=backend -- prisma migrate deploy
+          npm run test --workspace=backend
 
   deploy-to-render:
     needs: test-and-lint
@@ -66,6 +69,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: Apply Production DB Migrations
         # Render's deploy hook only rebuilds and restarts the app; it does not
@@ -77,14 +81,19 @@ jobs:
         # (src/migrations/*.sql, ~300 tables — everything from `posts` to
         # `local_shops` to `carpool_rides`). Running only `prisma migrate
         # deploy` silently skips the second, larger schema entirely.
+        #
+        # `cd backend && npm ci` could never work: backend is a workspace and
+        # has no lockfile of its own, and `npm ci` refuses to run without one.
+        # This step therefore failed on every push to main, which meant the
+        # Render deploy hook below never fired either — main has not actually
+        # been deploying.
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
         run: |
-          cd backend
           npm ci
-          npx prisma generate
-          npx prisma migrate deploy
-          npm run migrate
+          npm exec --workspace=backend -- prisma generate
+          npm exec --workspace=backend -- prisma migrate deploy
+          npm run migrate --workspace=backend
 
       - name: Trigger Render Deploy Hook
         run: |

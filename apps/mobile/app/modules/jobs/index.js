@@ -51,7 +51,11 @@ export default function JobsScreen() {
 
   const fetchFreelancers = async () => {
     try {
-      const data = await apiGet('/jobs/skills');
+      // job.routes.js (which owns /skills, /skills/register and /skills/book)
+      // is mounted at '/job-services', not '/jobs' — see backend
+      // src/routes/index.js. Under '/jobs' these all 404'd, and the empty
+      // catch below turned that into a permanently empty freelancer list.
+      const data = await apiGet('/job-services/skills');
       setFreelancers(Array.isArray(data) ? data : (data.rows || []));
     } catch (err) {} finally {
       setLoadingFreelancers(false);
@@ -83,13 +87,15 @@ export default function JobsScreen() {
   };
 
   // Referenced by the "Confirm Request" button on the book-a-skilled-worker
-  // modal but never defined, crashing on tap. No backend route for booking a
-  // skilled-service request exists yet either (checked src/routes) — this
-  // mirrors handleRegisterFreelancer's shape so it fails gracefully via the
-  // existing error Alert instead of throwing, until that endpoint is built.
+  // modal but never defined, crashing on tap.
+  //
+  // The earlier note here said no backend route existed. It does —
+  // POST /skills/book in modules/services/routes/job.routes.js — it was just
+  // being called under the wrong mount prefix ('/jobs' instead of
+  // '/job-services'), so it always 404'd and looked missing.
   const handleBookService = async () => {
     try {
-      const data = await apiPost('/jobs/skills/book', newBooking);
+      const data = await apiPost('/job-services/skills/book', newBooking);
       if (data.success) {
         Alert.alert('Success', data.message || 'Request sent to the provider.');
         setShowBookingModal(false);
@@ -104,7 +110,7 @@ export default function JobsScreen() {
   const handleRegisterFreelancer = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const data = await apiPost('/jobs/skills/register', newBooking);
+      const data = await apiPost('/job-services/skills/register', newBooking);
       if (data.success) {
         Alert.alert('Success', data.message);
         setShowBookingModal(false);

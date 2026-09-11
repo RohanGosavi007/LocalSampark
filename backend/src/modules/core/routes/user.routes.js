@@ -46,7 +46,7 @@ const crypto = require('crypto');
 
 router.get('/me/wallet', authenticate, async (req, res, next) => {
   try {
-    const txData = await query('SELECT * FROM wallet_transactions WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
+    const txData = await query('SELECT * FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1) ORDER BY created_at DESC', [req.user.id]);
     const transactions = txData.rows || txData || [];
     const balance = transactions.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
     res.json({ wallet: { balance }, transactions });
@@ -95,34 +95,17 @@ router.post('/me/documents', authenticate, async (req, res, next) => {
     const docId = crypto.randomUUID();
     const docUrl = documentUrl || fileUrl;
 
-    try {
-      await query(
-        `INSERT INTO user_documents (id, user_id, document_type, document_number, document_url, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [docId, req.user.id, documentType, documentNumber || '', docUrl, 'PENDING_VERIFICATION']
-      );
-    } catch (dbErr) {
-      if (dbErr.message.includes('relation "user_documents" does not exist') || dbErr.message.includes('no such table')) {
-        await query(`
-          CREATE TABLE IF NOT EXISTS user_documents (
-            id VARCHAR(255) PRIMARY KEY,
-            user_id VARCHAR(255) NOT NULL,
-            document_type VARCHAR(100),
-            document_number VARCHAR(100),
-            document_url TEXT,
-            status VARCHAR(50) DEFAULT 'PENDING_VERIFICATION',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        await query(
-          `INSERT INTO user_documents (id, user_id, document_type, document_number, document_url, status)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [docId, req.user.id, documentType, documentNumber || '', docUrl, 'PENDING_VERIFICATION']
-        );
-      } else {
-        throw dbErr;
-      }
-    }
+    // No inner try/catch here. This used to create user_documents on the fly
+    // if it was missing, using a `document_url` column that the real table
+    // does not have. The table is declared by migration 082 and the URL lives
+    // in file_url, so the fallback was both unnecessary and wrong. Once the
+    // fallback went, the catch did nothing but rethrow — the outer handler
+    // below already forwards to next().
+    await query(
+      `INSERT INTO user_documents (id, user_id, document_type, document_number, file_url, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [docId, req.user.id, documentType, documentNumber || '', docUrl, 'PENDING_VERIFICATION']
+    );
 
     res.status(201).json({
       success: true,

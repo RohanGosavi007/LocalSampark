@@ -6,41 +6,37 @@ import { withRoleGuard } from '../../../src/utils/permissions';
 function CRMScreen() {
   const [activeTab, setActiveTab] = useState('pipeline'); // pipeline, leads, campaigns, revenue, support
 
-  // Pipeline Board State
-  const [pipelineLeads, setPipelineLeads] = useState([
-    { id: 1, name: 'Sharma Dairy Grocery', stage: 'Onboarding', value: '₹1,200/mo', type: 'Merchant' },
-    { id: 2, name: 'Sunil Deshmukh', stage: 'Inquiry', value: '₹25,000', type: 'Franchise Partner' },
-    { id: 3, name: 'Prajapati Electricals', stage: 'Verified', value: '₹499/mo', type: 'Merchant' }
-  ]);
-
-  // Leads Directory State
-  const [leads, setLeads] = useState([
-    { id: 1, name: 'Sharma Dairy & Grocery', source: 'Website Registration', email: 'sharma@gmail.com', phone: '+91 9999988888', status: 'New' },
-    { id: 2, name: 'Sanjay Kumar (Plumbing)', source: 'Franchise Reference', email: 'sanjay@gmail.com', phone: '+91 9888877777', status: 'Contacted' },
-    { id: 3, name: 'Ganga Aria Gate Security', source: 'Admin Onboarding', email: 'ganga_aria@gmail.com', phone: '+91 9777766666', status: 'Onboarded' }
-  ]);
-
-  // Campaigns State
-  const [campaigns, setCampaigns] = useState([
-    { id: 1, name: 'Dhanori Monsoon Offer', channel: 'SMS', sent: 1200, clicks: 450, status: 'Completed' },
-    { id: 2, name: 'Society Safety Announcement', channel: 'Push Notification', sent: 2500, clicks: 1800, status: 'Active' }
-  ]);
+  /**
+   * Every one of this screen's five tabs was seeded with invented records:
+   *
+   *  - Pipeline: three deals including "Sharma Dairy Grocery, Onboarding,
+   *    ₹1,200/mo" and a franchise partner worth ₹25,000.
+   *  - Leads: three businesses with working-looking email addresses and phone
+   *    numbers — "sharma@gmail.com, +91 9999988888".
+   *  - Campaigns: two broadcasts with delivery and click counts ("2,500 sent,
+   *    1,800 clicks") that nothing measured.
+   *  - Revenue: two transactions with commission splits down to the paisa.
+   *  - Support: two tickets raised by named users, one about a failed UPI
+   *    top-up.
+   *
+   * An operator could have called those phone numbers, chased that UPI ticket,
+   * or reported those campaign numbers upward.
+   *
+   * There is nothing to wire this to yet: leads, lead_activities, crm_campaigns
+   * and support_tickets are queried by the backend but created by no migration
+   * (see backend/src/__tests__/tablesExist.test.js), so every CRM endpoint fails
+   * on a database built from the migrations. The screen now starts empty and
+   * says so, rather than showing a pipeline that does not exist.
+   */
+  const [pipelineLeads, setPipelineLeads] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [campName, setCampName] = useState('');
   const [campChannel, setCampChannel] = useState('SMS');
-
-  // Revenue Split State
   const [platformShare, setPlatformShare] = useState('40');
   const [franchiseShare, setFranchiseShare] = useState('30');
-  const mockTransactions = [
-    { id: 1, type: 'Shop Listing (Sharma Dairy)', gross: 999.00, dev: '₹399.60', partner: '₹299.70', status: 'Completed' },
-    { id: 2, type: 'Delivery Fee (Run #420)', gross: 40.00, dev: '₹16.00', partner: '₹12.00', status: 'Completed' }
-  ];
-
-  // Support Tickets State
-  const [tickets, setTickets] = useState([
-    { id: 1, title: 'Delivery delay at Sharma Grocery', user: 'Rohan Patil', priority: 'High', status: 'Open' },
-    { id: 2, title: 'UPI Load money failed transaction', user: 'Sunita Joshi', priority: 'Medium', status: 'Resolved' }
-  ]);
+  const mockTransactions = [];
+  const [tickets, setTickets] = useState([]);
 
   // Operations CRM Handlers
   const handleMoveStage = (id, currentStage, direction) => {
@@ -54,7 +50,8 @@ function CRMScreen() {
 
   const handleUpdateLeadStatus = (id, status) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-    Alert.alert('Status Updated', `Lead status changed to ${status}`);
+    // Local only — there is no leads endpoint to persist this to.
+    Alert.alert('Not saved', 'Lead management is not connected to the server yet.');
   };
 
   const handleLaunchCampaign = () => {
@@ -69,16 +66,21 @@ function CRMScreen() {
     };
     setCampaigns([newCamp, ...campaigns]);
     setCampName('');
-    Alert.alert('Campaign Scheduled', `"${campName}" scheduled for broadcast!`);
+    // No campaign is scheduled: crm_campaigns does not exist and no endpoint
+    // accepts one. Saying "scheduled for broadcast" would be a promise to send
+    // messages to real people.
+    Alert.alert('Not scheduled', 'Campaign broadcasting is not connected to the server yet.');
   };
 
   const handleUpdatePolicy = () => {
-    Alert.alert('Policy Updated', `Commission splits saved:\nPlatform Dev: ${platformShare}%\nFranchise: ${franchiseShare}%`);
+    // Commission policy is set through the commissions module; this screen has
+    // no endpoint, so it must not report the split as saved.
+    Alert.alert('Not saved', 'Commission policy is not editable from this screen yet.');
   };
 
   const handleResolveTicket = (id) => {
     setTickets(prev => prev.map(t => t.id === id ? { ...t, status: 'Resolved' } : t));
-    Alert.alert('Success', 'Ticket resolved.');
+    Alert.alert('Not saved', 'Support tickets are not connected to the server yet.');
   };
 
   return (
@@ -112,6 +114,21 @@ function CRMScreen() {
       </View>
       
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Every tab here starts empty because the CRM tables the backend
+            queries — leads, lead_activities, crm_campaigns, support_tickets —
+            are created by no migration. Saying that once, at the top, is more
+            useful than five separate "nothing here" messages that read like the
+            operator simply has no work. */}
+        <View style={styles.noticeBox}>
+          <Text style={styles.noticeTitle}>CRM is not connected yet</Text>
+          <Text style={styles.noticeBody}>
+            Leads, campaigns, revenue splits and support tickets are not stored
+            on the server yet, so nothing you enter here is saved and no data
+            appears. This screen previously showed sample records that looked
+            real.
+          </Text>
+        </View>
+
         {/* 1. PIPELINE BOARD VIEW */}
         {activeTab === 'pipeline' && (
           <View>
@@ -295,6 +312,9 @@ function CRMScreen() {
 }
 
 const styles = StyleSheet.create({
+  noticeBox: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fcd34d', borderRadius: 12, padding: 16, marginBottom: 16 },
+  noticeTitle: { fontSize: 15, fontWeight: '800', color: '#92400e', marginBottom: 6 },
+  noticeBody: { fontSize: 13, color: '#b45309', lineHeight: 19 },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   header: { padding: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#ffffff', flexDirection: 'row', alignItems: 'center' },
   backBtn: { marginRight: 12 }, backBtnText: { color: '#3b82f6', fontWeight: 'bold', fontSize: 16 },

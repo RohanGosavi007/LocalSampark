@@ -28,6 +28,26 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
         "android.permission.VIBRATE"
+      ],
+      "intentFilters": [
+        {
+          "autoVerify": true,
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "localsampark.in"
+            },
+            {
+              "scheme": "https",
+              "host": "www.localsampark.in"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "ios": {
@@ -68,11 +88,15 @@
           "merchantIdentifier": "merchant.com.localsampark",
           "enableGooglePay": true
         }
-      ]
+      ],
+      "@sentry/react-native",
+      "./plugins/withCallKeepConnectionService"
     ],
     "extra": {
       "API_URL_DEV": "http://192.168.1.7:5000/api/v1",
       "API_URL_PROD": "https://localsampark-api.onrender.com/api/v1",
+      "SUPABASE_URL": "https://qahlydtjfypxhumixtwo.supabase.co",
+      "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhaGx5ZHRqZnlweGh1bWl4dHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzU3ODksImV4cCI6MjA5ODgxMTc4OX0.evlCQSJYWBxLub9aGBbneP6JHVxJg-zZx8th0TbByio",
       "router": {},
       "eas": {
         "projectId": "44fa4239-afc4-4135-bfca-22dd924e16c6"

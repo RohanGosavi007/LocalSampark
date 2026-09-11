@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 export default function RevenueTab({ 
   API_BASE, authHeaders, 
@@ -9,14 +11,21 @@ export default function RevenueTab({
   revenueChart, setRevenueChart 
 }) {
   const totalShare = +platformShare + +franchiseShare + +agentShare + +miscShare;
-  
+
+  // The revenue-share figures are lifted to the parent, but the chart request
+  // is made here, so its failure state belongs here too.
+  const [error, setError] = useState(null);
+
   const fetchRevenueChart = useCallback(async () => {
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/revenue/chart`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/revenue/chart`, { headers: authHeaders() });
       if (data) setRevenueChart(data);
-    } catch(e) { console.error(e); }
-  }, [API_BASE, authHeaders]);
+    } catch (e) {
+      console.error(e);
+      setError(e);
+    }
+  }, [API_BASE, authHeaders, setRevenueChart]);
 
   useEffect(() => {
     fetchRevenueChart();
@@ -27,6 +36,7 @@ export default function RevenueTab({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <TabError error={error} onRetry={fetchRevenueChart} />
       {/* Escrow and Convenience Fee Stats Banner */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
         {[

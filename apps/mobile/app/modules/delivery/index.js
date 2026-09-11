@@ -40,7 +40,7 @@ export default function MobileDeliveryAgent() {
 
   const handleAcceptJob = async (jobId) => {
     try {
-      const data = await apiPost('/delivery/jobs/${jobId}/accept');
+      const data = await apiPost(`/delivery/jobs/${jobId}/accept`);
       if (data.success) {
         Alert.alert('Job Accepted!', 'Head to the pickup location.');
         fetchJobs();
@@ -54,7 +54,7 @@ export default function MobileDeliveryAgent() {
 
   const handleCompleteJob = async (jobId) => {
     try {
-      const data = await apiPost('/delivery/jobs/${jobId}/complete');
+      const data = await apiPost(`/delivery/jobs/${jobId}/complete`);
       if (data.success) {
         Alert.alert('Delivery Complete!', data.message); // Will show payout
         fetchMyJobs();

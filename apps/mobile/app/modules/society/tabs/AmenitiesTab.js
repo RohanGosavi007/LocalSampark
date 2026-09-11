@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 export default function AmenitiesTab({ role }) {
-  const [amenities] = useState([
-    { id: 1, name: 'Clubhouse Hall', capacity: '100 pax', status: 'Available' },
-    { id: 2, name: 'Swimming Pool', capacity: '20 pax', status: 'Maintenance' },
-    { id: 3, name: 'Gymnasium', capacity: '15 pax', status: 'Available' }
-  ]);
+  // Three amenities were hardcoded, with the pool permanently under
+  // maintenance. A resident could have skipped their swim on the strength of it.
+  // /society-admin/bookings accepts a booking but nothing lists what a society
+  // actually has, so this stays empty until that endpoint exists.
+  const [amenities] = useState([]);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
@@ -22,7 +22,14 @@ export default function AmenitiesTab({ role }) {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Society Amenities</Text>
-        {amenities.map(amenity => (
+        {amenities.length === 0 ? (
+          <View style={styles.stateBox}>
+            <Text style={styles.stateTitle}>No amenities listed</Text>
+            <Text style={styles.stateBody}>
+              Your committee has not published the shared facilities yet.
+            </Text>
+          </View>
+        ) : amenities.map(amenity => (
           <View key={amenity.id} style={styles.amenityRow}>
             <View style={{flex: 1}}>
               <Text style={styles.amenityTitle}>{amenity.name}</Text>
@@ -48,6 +55,9 @@ export default function AmenitiesTab({ role }) {
 }
 
 const styles = StyleSheet.create({
+  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
+  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
   sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },

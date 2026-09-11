@@ -6,12 +6,20 @@ on:
   pull_request:
     branches: [ "main", "develop" ]
 
+# backend, apps/web and apps/admin are npm *workspaces* of the repo root.
+# There is exactly one lockfile (./package-lock.json) and one node_modules
+# tree; ./backend/package-lock.json and friends have never existed. Pointing
+# setup-node's cache-dependency-path at them failed the job outright with
+# "Some specified paths were not resolved, unable to cache dependencies",
+# before a single line of app code was touched.
+#
+# So: install once at the root with `npm ci`, then drive each package through
+# `--workspace`. That also stops `npm ci || npm install` from quietly building
+# a second, unlocked dependency tree inside each app directory.
+
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20.x
@@ -19,19 +27,20 @@ jobs:
         with:
           node-version: 20.x
           cache: 'npm'
-          cache-dependency-path: './backend/package-lock.json'
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm ci
       - name: Run Prisma Generate
-        run: npx prisma generate
+        run: npm exec --workspace=backend -- prisma generate
       - name: Run Tests
-        run: npm test
+        env:
+          USE_SQLITE: 'true'
+          JWT_SECRET: ci-test-jwt-secret-key
+          JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-key
+        run: npm run test --workspace=backend
 
   frontend-build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./apps/web
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20.x
@@ -39,19 +48,19 @@ jobs:
         with:
           node-version: 20.x
           cache: 'npm'
-          cache-dependency-path: './apps/web/package-lock.json'
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm ci
       - name: Build Web App
-        run: npm run build
+        run: npm run build --workspace=apps/web
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:5000/api/v1
+          # apps/web/src/lib/api.js treats this as the ORIGIN and appends
+          # /api/v1 itself. Setting it to ".../api/v1" here produced
+          # http://localhost:5000/api/v1/api/v1 in the built bundle.
+          NEXT_PUBLIC_API_URL: http://localhost:5000
 
   admin-build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./apps/admin
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20.x
@@ -59,10 +68,12 @@ jobs:
         with:
           node-version: 20.x
           cache: 'npm'
-          cache-dependency-path: './apps/admin/package-lock.json'
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm ci
       - name: Build Admin App
-        run: npm run build
+        run: npm run build --workspace=apps/admin
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:5000/api/v1
+          # Same contract as the web app: apps/admin/src/lib/api.js appends
+          # /api/v1 to this value.
+          NEXT_PUBLIC_API_URL: http://localhost:5000

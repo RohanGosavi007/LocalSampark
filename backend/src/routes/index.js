@@ -148,6 +148,22 @@ router.use('/analytics', require('../modules/crm/routes/ai-analytics.routes'));
 router.use('/admin/fraud', adminLimiter, require('../modules/crm/routes/fraud.routes'));
 router.use('/admin/payouts', adminLimiter, require('../modules/ecommerce/routes/payout.routes'));
 
+// ─── MOBILE ROLE DASHBOARDS ───────────────────────────────
+// The mobile CRM, service-provider, society, franchise and field-agent
+// screens each fetch a dashboard endpoint that had no implementation; all of
+// them silently fell back to hard-coded mock data, which is why the gap went
+// unnoticed. Mounted at '/' because the client already uses four different
+// prefixes (/crm, /services, /society, /territory) and the module declares
+// the full paths itself.
+//
+// Registered last so these additions cannot shadow an existing route in the
+// /crm, /services or /territory modules mounted above.
+router.use('/', require('../modules/core/routes/dashboards.routes'));
+
+// Simple neighbourhood jobs board — distinct from the full recruitment
+// module at /jobs (postings, applications, resumes, interviews).
+router.use('/jobs-board', require('../modules/services/routes/jobs-board.routes'));
+
 router.use('/test-runner', require('./test-runner.routes'));
 
 module.exports = router;

@@ -6,9 +6,15 @@ export default function VisitorsTab({ role }) {
   const [visitorName, setVisitorName] = useState('');
   const [visitorPhone, setVisitorPhone] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
-  const [visitors, setVisitors] = useState([
-    { id: 1, name: 'Plumber (Rajesh Sharma)', phone: '9999988888', vehicle: 'MH-12-AB-1234', purpose: 'Repairs', status: 'Expected' }
-  ]);
+  // The list opened with one visitor already expected: "Plumber (Rajesh
+  // Sharma), 9999988888, MH-12-AB-1234, Repairs". A security guard reading a
+  // gate log would have been watching for a person and a vehicle that do not
+  // exist, and a resident would have seen a tradesman they never invited.
+  //
+  // Pre-approvals are held in local state only — nothing is sent to the gate —
+  // so the list starts empty and shows just what this resident has entered in
+  // this session.
+  const [visitors, setVisitors] = useState([]);
 
   const handleVisitor = () => {
     if (!visitorName || !visitorPhone) return;

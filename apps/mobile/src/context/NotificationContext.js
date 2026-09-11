@@ -10,44 +10,48 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock initial notifications
-  const MOCK_NOTIFICATIONS = [
-    { id: '1', title: 'Order Delivered', message: 'Your grocery order has been delivered successfully.', type: 'order', isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-    { id: '2', title: 'Community Alert', message: 'Water supply will be affected tomorrow from 10 AM to 2 PM.', type: 'community', isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-    { id: '3', title: 'Special Offer', message: 'Get 50% off on your next salon booking!', type: 'promotion', isRead: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-  ];
-
+  /**
+   * Three hard-coded notifications used to stand in whenever the request
+   * failed, and one of the conditions for "failed" was the response lacking a
+   * `success` flag — which GET /notifications never sent, because it returned
+   * the database driver's raw result object. So the fallback was not an edge
+   * case: it was what every user saw on every launch.
+   *
+   * Two of the three were claims a user would act on. "Order Delivered — Your
+   * grocery order has been delivered successfully" tells someone a parcel has
+   * arrived when it has not, and "Water supply will be affected tomorrow from
+   * 10 AM to 2 PM" is a civic notice a household would fill buckets for. The
+   * third advertised 50% off a salon booking no shop had offered.
+   *
+   * A signed-out or failing app now shows an empty tray, which is true.
+   */
   const fetchNotifications = async () => {
     if (!authToken) {
-      // Keep mock data if not logged in to show UI
-      setNotifications(MOCK_NOTIFICATIONS);
-      updateUnreadCount(MOCK_NOTIFICATIONS);
+      setNotifications([]);
+      setUnreadCount(0);
+      setError(null);
       setIsLoading(false);
       return;
     }
-    
+
     try {
-      // Try to fetch from API
       const res = await fetch(`${API_URL}/notifications`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setNotifications(data.data);
-          updateUnreadCount(data.data);
-          return;
-        }
-      }
-      
-      // Fallback to mock data if API fails or endpoint doesn't exist
-      throw new Error('API failed, using mock data');
+
+      if (!res.ok) throw new Error(`Notifications unavailable (${res.status})`);
+
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : (data?.data ?? []);
+      setNotifications(rows);
+      updateUnreadCount(rows);
+      setError(null);
     } catch (err) {
-      console.log('Using mock notifications fallback');
-      setNotifications(MOCK_NOTIFICATIONS);
-      updateUnreadCount(MOCK_NOTIFICATIONS);
+      setNotifications([]);
+      setUnreadCount(0);
+      setError(err?.message || 'Could not load notifications.');
     } finally {
       setIsLoading(false);
     }
@@ -118,6 +122,7 @@ export function NotificationProvider({ children }) {
       notifications,
       unreadCount,
       isLoading,
+      error,
       markAsRead,
       markAllRead,
       refreshNotifications

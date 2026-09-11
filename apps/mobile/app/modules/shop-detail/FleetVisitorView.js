@@ -4,7 +4,7 @@ import VisitorLayout from './components/VisitorLayout';
 
 export default function FleetVisitorView({ shop }) {
   return (
-    <VisitorLayout shopName={shop.name || 'City Cabs'} shopAddress="Pune City" shopIcon="🚕" cartCount={0}>
+    <VisitorLayout shop={shop} shopName={shop.name || 'Vehicle Rentals'} shopAddress={shop.address || ''} shopIcon="🚕" cartCount={0}>
       <View style={{ padding: 16 }}>
         <Text style={styles.title}>Book a Ride</Text>
         <TouchableOpacity style={styles.card}>

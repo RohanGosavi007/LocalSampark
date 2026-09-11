@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TabError from '../TabError';
+import { fetchJson } from '../../lib/api';
 
 export default function AdCampaignsTab({ API_BASE, authHeaders }) {
   const [campaigns, setCampaigns] = useState([]);
@@ -6,6 +8,7 @@ export default function AdCampaignsTab({ API_BASE, authHeaders }) {
   const [showModal, setShowModal] = useState(false);
   const [globalRadius, setGlobalRadius] = useState(4); // Default 4km
   const [formData, setFormData] = useState({ shop_id: '', budget_amount: 500, radius_km: 4, duration_days: 7 });
+  const [error, setError] = useState(null);
 
   const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
   const inputStyle = { width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', marginBottom: '1rem' };
@@ -17,14 +20,15 @@ export default function AdCampaignsTab({ API_BASE, authHeaders }) {
   const fetchFeaturedShops = async () => {
     try {
       setLoading(true);
+      setError(null);
       // Calls our new AdService route
-      const res = await fetch(`${API_BASE}/campaigns/geo-feed?lat=18.5912&lng=73.9015&radiusKm=${globalRadius}`, {
+      const data = await fetchJson(`${API_BASE}/campaigns/geo-feed?lat=18.5912&lng=73.9015&radiusKm=${globalRadius}`, {
         headers: { ...(typeof authHeaders === 'function' ? authHeaders() : authHeaders) }
       });
-      const data = await res.json();
       setCampaigns(data.ads || []);
     } catch (err) {
       console.error('Error fetching ad campaigns:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -38,12 +42,11 @@ export default function AdCampaignsTab({ API_BASE, authHeaders }) {
   const handleCreateAd = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/campaigns/purchase`, {
+      const data = await fetchJson(`${API_BASE}/campaigns/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(typeof authHeaders === 'function' ? authHeaders() : authHeaders) },
         body: JSON.stringify(formData)
       });
-      const data = await res.json();
       if (res.ok) {
         alert(data.message || 'Ad Campaign Purchased!');
         setShowModal(false);
@@ -58,6 +61,7 @@ export default function AdCampaignsTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', color: '#fff' }}>
+      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       {/* Header Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <div style={{ ...cardStyle, borderLeft: '4px solid #3b82f6' }}>
