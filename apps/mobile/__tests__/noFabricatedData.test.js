@@ -176,10 +176,8 @@ const UI_CONFIG = new Set([
  * never wired to an API. The list may only shrink.
  */
 const SEEDED = new Set([
-  'app/(tabs)/community.js',
   'app/chat/[shopId].js',
   'app/components/shops/managers/AdvancedRestaurantManager.js',
-  'app/modules/community/index.js',
   'app/modules/shop-detail/TiffinCateringVisitorView.js',
   'src/screens/properties/PropertySearch.js',
 ]);

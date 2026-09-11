@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../../src/context/AuthContext';
+import { apiGet, apiPost } from '../../../src/lib/api';
 
-const POSTS = [
-  { id: 1, author: 'Rohan Joshi', avatar: '👨‍💼', society: 'Goodwill Woodlands', time: '1 hr ago', type: 'question', content: 'Did anyone else experience a power outage in Phase 2 last night? Any updates from the power department on restoration ETA?', likes: 14, comments: 6, pinned: false },
-  { id: 2, author: 'Pooja Mehta', avatar: '👩‍🌾', society: 'Pride Aashiyana', time: '3 hrs ago', type: 'event', content: '🧹 Organizing a Neighborhood Clean-Up Drive this Sunday morning. Starting 7:30 AM from the main gate. All volunteers welcome — gloves and bags provided!', likes: 28, comments: 11, pinned: false },
-  { id: 3, author: 'Admin Announcement', avatar: '📢', society: 'Dhanori Ward', time: '1 day ago', type: 'alert', content: '⚠️ Notice: Road repair works begin on Tingre Nagar road from Monday 8 AM. Expect delays during peak hours (8–10 AM, 5–8 PM). Use Bhairav Nagar lane as alternate route.', likes: 45, comments: 8, pinned: true },
-  { id: 4, author: 'Sunita Bhosale', avatar: '👩‍⚕️', society: 'Ganga Aria', time: '2 days ago', type: 'discussion', content: 'Great news! The Dhanori community health camp is happening next Saturday at Goodwill Clubhouse. Free BP, sugar, and eye checkups. Please spread the word! 🏥', likes: 62, comments: 19, pinned: false },
-  { id: 5, author: 'Cricket Club', avatar: '🏏', society: 'Dhanori Ground', time: '3 days ago', type: 'event', content: 'Annual LocalSampark Cricket Cup registrations are now open! 12 slots available. Register your team of 11 before July 5th. Prize: ₹5,000 + trophy! 🏆', likes: 89, comments: 34, pinned: false },
-];
-
-const POLLS = [
-  { q: 'Should we request a speed breaker near the main gate?', options: [{ l: 'Yes, definitely!', v: 78 }, { l: 'No, not needed', v: 14 }] },
-  { q: 'Best time for weekly garbage collection?', options: [{ l: 'Morning 6-8 AM', v: 112 }, { l: 'Evening 5-7 PM', v: 43 }] },
-];
+/**
+ * The seeded POSTS and POLLS arrays are gone; this screen is a near-duplicate
+ * of app/(tabs)/community.js and carried the same fabrications, including an
+ * "Admin Announcement" road-closure notice no authority had issued.
+ *
+ * Posts come from GET /feed/posts. POLLS is removed rather than wired: the
+ * backend has no multi-option poll -- POST /feed/posts/:id/vote records a
+ * single up/down vote against a post -- so the tallies were counting nothing.
+ *
+ * NOTE: this file and app/(tabs)/community.js render the same feed with
+ * different styling. They should be collapsed into one screen; until then any
+ * change here needs making there too.
+ */
 
 const TYPE_COLORS = {
   alert: { color: '#ef4444', label: 'ALERT', bg: 'rgba(239,68,68,0.2)' },
@@ -25,37 +27,79 @@ const TYPE_COLORS = {
 
 export default function CommunityModule() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState(POSTS);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [likedIds, setLikedIds] = useState([]);
-  const [pollVotes, setPollVotes] = useState({});
   
   // Post state
   const [postModal, setPostModal] = useState(false);
   const [newPost, setNewPost] = useState('');
   const [postType, setPostType] = useState('discussion');
 
-  const handleLike = (id) => {
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet('/feed/posts');
+      const rows = Array.isArray(data) ? data : (data?.rows ?? data?.posts ?? []);
+      setPosts(rows.map((row) => {
+        const created = row.created_at ? new Date(row.created_at) : null;
+        const valid = created && !Number.isNaN(created.getTime());
+        return {
+          id: row.id,
+          author: row.full_name || 'Neighbour',
+          avatar: row.avatar_url || '',
+          society: row.society_name || '',
+          time: valid ? created.toLocaleDateString() : '',
+          type: row.post_type || 'discussion',
+          content: row.content || '',
+          likes: Number(row.upvotes || 0),
+          comments: Number(row.comment_count || 0),
+          pinned: Boolean(row.is_pinned),
+        };
+      }));
+    } catch (e) {
+      setError(e?.message || 'Could not load the community feed.');
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadPosts(); }, [loadPosts]);
+
+  // A like used to increment local state only, so it vanished on next launch
+  // and the author never saw it. It is an upvote on the post server-side.
+  const handleLike = async (id) => {
     if (likedIds.includes(id)) return;
     setLikedIds([...likedIds, id]);
-    setPosts(posts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
+    setPosts(posts.map(p => (p.id === id ? { ...p, likes: p.likes + 1 } : p)));
+    try {
+      await apiPost(`/feed/posts/${id}/vote`, { voteType: 'up' });
+    } catch (e) {
+      // Roll the optimistic update back rather than leaving a like the server
+      // never recorded.
+      setLikedIds((prev) => prev.filter((x) => x !== id));
+      setPosts((prev) => prev.map(p => (p.id === id ? { ...p, likes: Math.max(0, p.likes - 1) } : p)));
+    }
   };
 
-  const handleVote = (pollIdx, optIdx) => {
-    if (pollVotes[pollIdx] !== undefined) return;
-    setPollVotes({ ...pollVotes, [pollIdx]: optIdx });
-  };
-
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!newPost.trim()) return Alert.alert('Error', 'Post content cannot be empty');
-    const post = {
-      id: Date.now(), author: user?.full_name || 'You', avatar: '🧑', society: 'My Territory',
-      time: 'Just now', type: postType, content: newPost, likes: 0, comments: 0, pinned: false
-    };
-    setPosts([post, ...posts]);
+    try {
+      // Previously this only prepended to local state and announced the post
+      // had been "broadcasted to the community". Nothing was sent.
+      await apiPost('/feed/posts', { content: newPost, postType });
+    } catch (e) {
+      Alert.alert('Post not published', `${e?.message || 'The post could not be sent.'} Please try again.`);
+      return;
+    }
     setNewPost('');
     setPostModal(false);
-    Alert.alert('Posted!', 'Your message has been broadcasted to the community.');
+    await loadPosts();
+    Alert.alert('Posted', 'Your message is now on the community feed.');
   };
 
   const filtered = activeFilter === 'all' ? posts : posts.filter(p => p.type === activeFilter);
@@ -94,39 +138,10 @@ export default function CommunityModule() {
           </View>
         </TouchableOpacity>
 
-        {/* Community Polls Section (Only show if viewing 'all' or 'discussion') */}
-        {(activeFilter === 'all' || activeFilter === 'discussion') && POLLS.map((poll, pIdx) => (
-          <View key={pIdx} style={styles.pollCard}>
-            <Text style={{color:'#3b82f6', fontWeight:'bold', fontSize:12, marginBottom:5}}>📊 COMMUNITY POLL</Text>
-            <Text style={styles.cardTitle}>{poll.q}</Text>
-            {poll.options.map((opt, oIdx) => {
-              const voted = pollVotes[pIdx] !== undefined;
-              const isMyVote = pollVotes[pIdx] === oIdx;
-              const totalVotes = poll.options.reduce((sum, o) => sum + o.v, 0);
-              const percent = voted ? Math.round((opt.v / totalVotes) * 100) : 0;
-              return (
-                <TouchableOpacity 
-                  key={oIdx} 
-                  style={[styles.pollOpt, isMyVote && styles.pollOptVoted]}
-                  onPress={() => handleVote(pIdx, oIdx)}
-                  disabled={voted}
-                >
-                  <View style={{flexDirection:'row', justifyContent:'space-between', zIndex:2}}>
-                    <Text style={{color: isMyVote ? '#3b82f6' : '#fff', fontWeight: isMyVote ? 'bold' : 'normal'}}>{opt.l}</Text>
-                    {voted && <Text style={{color: '#94a3b8'}}>{percent}%</Text>}
-                  </View>
-                  {voted && <View style={[styles.pollBar, {width: `${percent}%`}]} />}
-                </TouchableOpacity>
-              );
-            })}
-            <Text style={{color:'#64748b', fontSize:12, marginTop:10}}>
-              {poll.options.reduce((sum, o) => sum + o.v, 0)} votes total
-            </Text>
-          </View>
-        ))}
-
         {displayPosts.map(p => {
-          const typeConf = TYPE_COLORS[p.type];
+          // post_type is not constrained to the four keys in TYPE_COLORS, and
+          // indexing it directly threw on anything else.
+          const typeConf = TYPE_COLORS[p.type] || TYPE_COLORS.discussion;
           return (
             <View key={p.id} style={[styles.postCard, p.pinned && styles.pinnedCard]}>
               {p.pinned && <Text style={styles.pinnedLabel}>📌 PINNED ANNOUNCEMENT</Text>}

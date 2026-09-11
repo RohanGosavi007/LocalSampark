@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { apiGet, apiPost } from '../../src/lib/api';
 
-const POSTS = [
-  { id: 1, author: 'Rohan Joshi', avatar: '👨‍💼', society: 'Goodwill Woodlands', time: '1 hr ago', type: 'question', content: 'Did anyone else experience a power outage in Phase 2 last night? Any updates from the power department on restoration ETA?', likes: 14, comments: 6, pinned: false },
-  { id: 2, author: 'Pooja Mehta', avatar: '👩‍🌾', society: 'Pride Aashiyana', time: '3 hrs ago', type: 'event', content: '🧹 Organizing a Neighborhood Clean-Up Drive this Sunday morning. Starting 7:30 AM from the main gate. All volunteers welcome — gloves and bags provided!', likes: 28, comments: 11, pinned: false },
-  { id: 3, author: 'Admin Announcement', avatar: '📢', society: 'Dhanori Ward', time: '1 day ago', type: 'alert', content: '⚠️ Notice: Road repair works begin on Tingre Nagar road from Monday 8 AM. Expect delays during peak hours (8–10 AM, 5–8 PM). Use Bhairav Nagar lane as alternate route.', likes: 45, comments: 8, pinned: true },
-  { id: 4, author: 'Sunita Bhosale', avatar: '👩‍⚕️', society: 'Ganga Aria', time: '2 days ago', type: 'discussion', content: 'Great news! The Dhanori community health camp is happening next Saturday at Goodwill Clubhouse. Free BP, sugar, and eye checkups. Please spread the word! 🏥', likes: 62, comments: 19, pinned: false },
-];
-
-const POLLS = [
-  { id: 101, q: 'Should we request a speed breaker near the main gate?', options: [{ l: 'Yes, definitely!', v: 78 }, { l: 'No, not needed', v: 14 }] },
-  { id: 102, q: 'Best time for weekly garbage collection?', options: [{ l: 'Morning 6-8 AM', v: 112 }, { l: 'Evening 5-7 PM', v: 43 }] },
-];
+/**
+ * The seeded POSTS and POLLS arrays that used to sit here are gone.
+ *
+ * POSTS invented four neighbours by name -- "Rohan Joshi", "Pooja Mehta",
+ * "Sunita Bhosale" -- each attributed to a named society, with like and comment
+ * counts, and one pinned as an "Admin Announcement" carrying a road-closure
+ * notice ("Road repair works begin on Tingre Nagar road from Monday 8 AM") that
+ * no authority had issued. A resident could plan around it.
+ *
+ * Posts now come from GET /feed/posts, which returns rows from `posts` joined to
+ * their author with upvote/downvote counts. The screen's typeConfig keys
+ * (alert, event, question, discussion, lostfound) are exactly the values the
+ * API's post_type column carries, so they map straight across.
+ *
+ * POLLS is removed rather than wired: the backend has no multi-option poll. Its
+ * only voting endpoint is POST /feed/posts/:id/vote, which records a single
+ * up/down vote against a post. Rendering "Should we request a speed breaker near
+ * the main gate? — Yes 78 / No 14" with tallies nothing counted was a claim
+ * about what the neighbourhood wants, and there is nothing to replace it with
+ * yet, so the section is gone until a poll API exists.
+ */
 
 const typeConfig = {
   alert: { color: '#ef4444', label: 'ALERT', bg: '#fee2e2' },
@@ -22,41 +33,89 @@ const typeConfig = {
   lostfound: { color: '#8b5cf6', label: 'LOST & FOUND', bg: '#f3e8ff' },
 };
 
+/** Maps a row from GET /feed/posts onto the shape this screen renders. */
+function normalizePost(row) {
+  const created = row.created_at ? new Date(row.created_at) : null;
+  const validDate = created && !Number.isNaN(created.getTime());
+  return {
+    id: row.id,
+    author: row.full_name || 'Neighbour',
+    avatar: row.avatar_url || 'person',
+    society: row.society_name || '',
+    time: validDate ? created.toLocaleDateString() : '',
+    type: row.post_type || 'discussion',
+    content: row.content || '',
+    likes: Number(row.upvotes || 0),
+    comments: Number(row.comment_count || 0),
+    pinned: Boolean(row.is_pinned),
+  };
+}
+
+/**
+ * post_type comes from the database and is not constrained to the five keys
+ * below, so indexing typeConfig directly would throw on any other value and
+ * take the whole feed down with it.
+ */
+const typeStyle = (type) => typeConfig[type] || typeConfig.discussion;
+
+
 export default function CommunityScreen() {
-  const [posts, setPosts] = useState(POSTS);
-  const [pollVotes, setPollVotes] = useState({});
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [posting, setPosting] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedType, setSelectedType] = useState('discussion');
 
-  const handlePost = () => {
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet('/feed/posts');
+      const rows = Array.isArray(data) ? data : (data?.rows ?? data?.posts ?? []);
+      setPosts(rows.map(normalizePost));
+    } catch (e) {
+      setError(e?.message || 'Could not load the community feed.');
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadPosts(); }, [loadPosts]);
+
+  const handlePost = async () => {
     if (!newPostContent.trim()) {
       Alert.alert('Empty Post', 'Please write something before posting.');
       return;
     }
-    const post = {
-      id: Date.now(),
-      author: 'You',
-      avatar: '🧑',
-      society: 'Dhanori',
-      type: selectedType,
-      content: newPostContent,
-      time: 'Just now',
-      likes: 0,
-      comments: 0,
-      pinned: false
-    };
-    setPosts([post, ...posts]);
-    setNewPostContent('');
+    if (posting) return;
+    setPosting(true);
+    try {
+      // This used to build a local object and prepend it to state. The post
+      // appeared in the feed, the modal closed, and nothing was ever sent: the
+      // user believed they had posted to their neighbourhood and had not.
+      await apiPost('/feed/posts', {
+        content: newPostContent,
+        postType: selectedType,
+      });
+      setNewPostContent('');
+      await loadPosts();
+    } catch (e) {
+      Alert.alert('Post not published', `${e?.message || 'The post could not be sent.'} Please try again.`);
+      setPosting(false);
+      return;
+    }
+    setPosting(false);
     setSelectedType('discussion');
     setShowCreateModal(false);
     Alert.alert('Success', 'Your post is live in the community!');
   };
 
-  const handleVote = (pollId, optIdx) => {
-    if (pollVotes[pollId] !== undefined) return;
-    setPollVotes({ ...pollVotes, [pollId]: optIdx });
-  };
+  // handleVote is gone with the polls it served. It only wrote to local state,
+  // so a resident's vote on "Should we request a speed breaker near the main
+  // gate?" was never recorded anywhere and vanished on the next launch.
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,69 +129,39 @@ export default function CommunityScreen() {
         </TouchableOpacity>
       </View>
       <View style={{ flex: 1 }}>
+        {/* Loading, failure and genuinely-empty are three different states.
+            They used to be one, because a seeded array meant the feed was
+            never empty and never visibly failed. */}
+        {loading || error || posts.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <Text style={{ fontSize: 40, marginBottom: 12 }}>{error ? '⚠️' : '💬'}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1f2937', marginBottom: 6, textAlign: 'center' }}>
+              {loading ? 'Loading the feed...' : error ? 'Could not load the feed' : 'No posts yet'}
+            </Text>
+            <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center' }}>
+              {loading ? '' : error || 'Be the first to post something for your neighbourhood.'}
+            </Text>
+            {error ? (
+              <TouchableOpacity
+                onPress={loadPosts}
+                style={{ marginTop: 16, backgroundColor: '#4f46e5', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
         <FlashList
           data={[
             ...posts.filter(p => p.pinned).map(p => ({ ...p, isPinned: true })),
-            { type: 'polls_header' },
-            ...POLLS.map(p => ({ ...p, isPoll: true })),
             ...posts.filter(p => !p.pinned)
           ]}
           estimatedItemSize={200}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          keyExtractor={(item) => item.isPoll ? `poll-${item.id}` : (item.type === 'polls_header' ? 'polls_header' : `post-${item.id}`)}
-          getItemType={(item) => {
-            if (item.type === 'polls_header') return 'header';
-            if (item.isPoll) return 'poll';
-            if (item.isPinned) return 'pinned_post';
-            return 'post';
-          }}
+          keyExtractor={(item) => `post-${item.id}`}
+          getItemType={(item) => (item.isPinned ? 'pinned_post' : 'post')}
           renderItem={({ item }) => {
-            if (item.type === 'polls_header') {
-              return null; // Using this just as a spacer if needed, or we can just render polls directly
-            }
-            if (item.isPoll) {
-              const poll = item;
-              return (
-                <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#f59e0b' }]}>
-                  <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 12}}>
-                    <Text style={{fontSize: 20, marginRight: 8}}>📊</Text>
-                    <Text style={{color: '#f59e0b', fontWeight: '800', fontSize: 12}}>COMMUNITY POLL</Text>
-                  </View>
-                  <Text style={styles.postContent}>{poll.q}</Text>
-                  
-                  {poll.options.map((opt, idx) => {
-                    const totalVotes = poll.options.reduce((sum, o) => sum + o.v, 0);
-                    const isVotedFor = pollVotes[poll.id] === idx;
-                    const hasVoted = pollVotes[poll.id] !== undefined;
-                    const percent = hasVoted ? Math.round((opt.v / totalVotes) * 100) : 0;
-
-                    return (
-                      <TouchableOpacity 
-                        key={idx} 
-                        style={[
-                          styles.pollOption, 
-                          isVotedFor && styles.pollOptionSelected,
-                          hasVoted && { borderColor: 'transparent' }
-                        ]}
-                        onPress={() => handleVote(poll.id, idx)}
-                        disabled={hasVoted}
-                      >
-                        {hasVoted && (
-                          <View style={[styles.pollBar, { width: `${percent}%`, backgroundColor: isVotedFor ? '#dcfce7' : '#f1f5f9' }]} />
-                        )}
-                        <View style={styles.pollOptionContent}>
-                          <Text style={[styles.pollOptionText, isVotedFor && styles.pollOptionTextSelected]}>{opt.l}</Text>
-                          {hasVoted && <Text style={styles.pollPercent}>{percent}%</Text>}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                  <Text style={styles.pollFooter}>{poll.options.reduce((sum, o) => sum + o.v, 0)} votes total</Text>
-                </View>
-              );
-            }
-            
             const post = item;
             if (post.isPinned) {
               return (
@@ -145,8 +174,8 @@ export default function CommunityScreen() {
                         <Text style={styles.meta}>{post.society} • {post.time}</Text>
                       </View>
                     </View>
-                    <View style={[styles.typeBadge, {backgroundColor: typeConfig[post.type].bg}]}>
-                      <Text style={[styles.typeText, {color: typeConfig[post.type].color}]}>📌 PINNED {typeConfig[post.type].label}</Text>
+                    <View style={[styles.typeBadge, {backgroundColor: typeStyle(post.type).bg}]}>
+                      <Text style={[styles.typeText, {color: typeStyle(post.type).color}]}>📌 PINNED {typeStyle(post.type).label}</Text>
                     </View>
                   </View>
                   <Text style={styles.postContent}>{post.content}</Text>
@@ -164,8 +193,8 @@ export default function CommunityScreen() {
                       <Text style={styles.meta}>{post.society} • {post.time}</Text>
                     </View>
                   </View>
-                  <View style={[styles.typeBadge, {backgroundColor: typeConfig[post.type].bg}]}>
-                    <Text style={[styles.typeText, {color: typeConfig[post.type].color}]}>{typeConfig[post.type].label}</Text>
+                  <View style={[styles.typeBadge, {backgroundColor: typeStyle(post.type).bg}]}>
+                    <Text style={[styles.typeText, {color: typeStyle(post.type).color}]}>{typeStyle(post.type).label}</Text>
                   </View>
                 </View>
                 <Text style={styles.postContent}>{post.content}</Text>
@@ -181,6 +210,7 @@ export default function CommunityScreen() {
             );
           }}
         />
+        )}
 
       {/* Create Post Modal */}
       <Modal visible={showCreateModal} animationType="slide" transparent>
