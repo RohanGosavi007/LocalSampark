@@ -10,8 +10,19 @@ const requirePermission = (domain, action) => {
             return res.status(403).json({ error: 'Admin access required.' });
         }
 
-        // Super Admin bypass
-        if (req.adminRole.role === 'super_admin' || req.user.role === 'super_admin') {
+        // Super Admin bypass.
+        //
+        // Both sides are upper-cased before comparing. requireAdmin in
+        // auth.middleware.js deliberately normalises req.adminRole.role to upper
+        // case ("SUPER_ADMIN") so that admin.routes.js can compare against
+        // 'SUPER_ADMIN' directly, so the literal lower-case comparison that used
+        // to be here could never match an admin_roles grant. It went unnoticed
+        // only because requireAdmin also sets permissions to {"all": true}, and
+        // the permissions.all check below then let the request through. A real
+        // super admin whose admin_roles row carries scoped permissions instead
+        // of {"all": true} fell past both and got a 403 on every domain.
+        const roleName = String(req.adminRole.role || req.user.role || '').toUpperCase();
+        if (roleName === 'SUPER_ADMIN') {
             return next();
         }
 

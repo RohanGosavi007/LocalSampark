@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../lib/api';
 export default function AuditLogPage() {
   const API_BASE = (typeof window !== 'undefined' && window.location.hostname !== 'localhost') 
     ? 'https://localsampark-api.onrender.com/api/v1' 
@@ -8,9 +9,12 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/admin/audit`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
-    })
+    // No Authorization header: the session is an httpOnly cookie that the
+    // patched fetch in AdminAuthContext attaches (with its CSRF header) to any
+    // request aimed at our API. Reading 'admin_token' from localStorage here
+    // produced the literal string "Bearer null" once the token stopped being
+    // stored there.
+    fetch(`${API_BASE}/admin/audit`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(data => {
         setLogs(Array.isArray(data) ? data : (data.rows || []));

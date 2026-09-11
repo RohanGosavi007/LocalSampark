@@ -7,9 +7,58 @@ const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const { v4: uuidv4 } = require('uuid');
 const { generateTokens, authenticate } = require('../../../middleware/auth.middleware');
 const otpStore = require('../../core/services/otpStore.service');
+const { generateCsrfToken, CSRF_COOKIE } = require('../../../middleware/csrf.middleware');
 
 // Default dev PIN for bootstrapping (will be bcrypt-compared)
 const DEV_DEFAULT_PIN = '123456';
+
+const ADMIN_TOKEN_COOKIE = 'admin_token';
+
+/**
+ * Cookie attributes for the admin session.
+ *
+ * sameSite is the awkward part. The admin panel and the API are served from
+ * different origins (admin.localsampark.in vs the API host, or :3001 vs :5000
+ * locally), so a 'strict' or 'lax' cookie would simply not be sent with the
+ * panel's XHRs and every request would come back 401. 'none' is therefore
+ * required, and 'none' is exactly the setting that permits cross-site replay --
+ * which is why the CSRF token is not optional here.
+ *
+ * 'none' also requires Secure, which requires HTTPS. In development over plain
+ * http://localhost that combination is rejected by the browser, so development
+ * falls back to 'lax' + insecure, which works because both ends are localhost.
+ */
+function sessionCookieOptions(isProduction) {
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
+    maxAge: 24 * 60 * 60 * 1000, // 24h, matching the access token's lifetime
+  };
+}
+
+/**
+ * Issues the httpOnly session cookie plus the readable CSRF cookie.
+ * The CSRF cookie deliberately omits httpOnly: the client has to read it to
+ * echo it back in the X-CSRF-Token header.
+ */
+function setAdminSessionCookies(res, accessToken) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const base = sessionCookieOptions(isProduction);
+
+  res.cookie(ADMIN_TOKEN_COOKIE, accessToken, base);
+  res.cookie(CSRF_COOKIE, generateCsrfToken(), { ...base, httpOnly: false });
+}
+
+/** Clears both cookies. Attributes must match those used to set them. */
+function clearAdminSessionCookies(res) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const { maxAge, ...base } = sessionCookieOptions(isProduction);
+
+  res.clearCookie(ADMIN_TOKEN_COOKIE, base);
+  res.clearCookie(CSRF_COOKIE, { ...base, httpOnly: false });
+}
 
 // Separate login for admins
 router.post('/login', authLimiter, async (req, res, next) => {
@@ -176,6 +225,17 @@ router.post('/login', authLimiter, async (req, res, next) => {
       ]
     );
 
+    // Session cookies.
+    //
+    // The admin panel used to keep accessToken in localStorage, where any
+    // injected script could read it. It now arrives as an httpOnly cookie that
+    // JavaScript cannot touch, paired with a readable CSRF value the client
+    // echoes back in X-CSRF-Token (see middleware/csrf.middleware.js).
+    //
+    // accessToken is still returned in the body. Removing it would break any
+    // non-browser caller mid-deploy, and the browser client no longer stores it.
+    setAdminSessionCookies(res, accessToken);
+
     res.json({
       success: true,
       user: {
@@ -239,6 +299,20 @@ router.get('/me', authenticate, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+/**
+ * Ends the admin session.
+ *
+ * An httpOnly cookie cannot be deleted by the client, so signing out has to be
+ * a server round trip -- previously the panel just dropped the localStorage key
+ * and considered itself logged out. Deliberately unauthenticated: clearing
+ * cookies on a session that has already expired must still work, and there is
+ * nothing to protect in "stop sending me these cookies".
+ */
+router.post('/logout', (req, res) => {
+  clearAdminSessionCookies(res);
+  res.json({ success: true });
 });
 
 module.exports = router;

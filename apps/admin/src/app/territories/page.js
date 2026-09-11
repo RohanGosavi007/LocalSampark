@@ -1,14 +1,17 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { API_BASE } from '../../lib/api';
+import { API_BASE, getAuthHeaders } from '../../lib/api';
 export default function TerritoriesPage() {
   const [territories, setTerritories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/admin/regions`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
-    })
+    // No Authorization header: the session is an httpOnly cookie that the
+    // patched fetch in AdminAuthContext attaches (with its CSRF header) to any
+    // request aimed at our API. Reading 'admin_token' from localStorage here
+    // produced the literal string "Bearer null" once the token stopped being
+    // stored there.
+    fetch(`${API_BASE}/admin/regions`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(data => {
         setTerritories(data);

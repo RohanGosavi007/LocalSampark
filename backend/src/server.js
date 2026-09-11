@@ -120,6 +120,10 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'X-Requested-With',
+    // Echoed back from the csrf_token cookie by cookie-authenticated clients;
+    // omitting it here makes the browser's preflight reject every admin
+    // mutation before it is even sent. See middleware/csrf.middleware.js.
+    'X-CSRF-Token',
     'X-Territory-ID',
     'X-Society-ID',
     'ngrok-skip-browser-warning',
@@ -144,6 +148,10 @@ if (process.env.NODE_ENV === 'production') {
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+// Populates req.cookies, which authenticate() reads the admin session from and
+// csrf.middleware.js reads the CSRF value from. Without it req.cookies is
+// undefined and cookie auth silently falls through to "no token provided".
+app.use(require('cookie-parser')());
 const { rateLimiter, ddosProtector } = require('./middleware/rateLimit.middleware');
 app.use(ddosProtector);
 app.use(rateLimiter);

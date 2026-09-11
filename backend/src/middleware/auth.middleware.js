@@ -1,12 +1,33 @@
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, getJwtRefreshSecret } = require('../config/secrets');
 
+const { verifyCsrf } = require('./csrf.middleware');
+
+/**
+ * Name of the httpOnly cookie carrying the admin access token, shared by
+ * admin-auth.routes.js (which sets it), authenticate() below (which reads it)
+ * and csrf.middleware.js (which guards it).
+ */
+const ADMIN_TOKEN_COOKIE = 'admin_token';
+
+/**
+ * Runs the CSRF guard inline and reports whether the request may continue.
+ *
+ * verifyCsrf is written as ordinary Express middleware so it can also be
+ * mounted on a router, but authenticate() needs it mid-function. Calling it
+ * with a no-op `next` gives the same behaviour: on success it invokes next and
+ * sends nothing, on failure it sends a 403 and does not.
+ */
+function passesCsrf(req, res) {
+  verifyCsrf(req, res, () => {});
+  return !res.headersSent;
+}
+
 let _prisma = null;
 const getPrisma = () => {
   if (process.env.USE_SQLITE === 'true') return null;
   if (!_prisma) {
-    const { PrismaClient } = require('@prisma/client');
-    _prisma = new PrismaClient();
+    _prisma = require('../config/prisma').sharedPrisma;
   }
   return _prisma;
 };
@@ -18,13 +39,41 @@ const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
+      req.authSource = 'header';
+    } else if (req.cookies && req.cookies[ADMIN_TOKEN_COOKIE]) {
+      // httpOnly cookie set by POST /admin-auth/login. Preferred over the
+      // header for the admin panel because no JavaScript -- including anything
+      // injected by an XSS -- can read it back out, which a localStorage token
+      // cannot claim.
+      //
+      // The browser attaches a cookie to requests automatically, and that is
+      // exactly what makes cookie auth forgeable from another site, so requests
+      // authenticated this way must additionally clear the check in
+      // csrf.middleware.js. A bearer header is never auto-sent and so needs no
+      // such check; req.authSource is what lets that middleware tell them apart.
+      token = req.cookies[ADMIN_TOKEN_COOKIE];
+      req.authSource = 'cookie';
     } else if (req.query && req.query.token) {
+      // Deprecated: a token in the query string ends up in access logs, browser
+      // history and Referer headers. Kept only for links already in the wild.
       token = req.query.token;
+      req.authSource = 'query';
     }
 
     if (!token) {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
+
+    // A cookie is replayed by the browser on cross-site requests, so cookie
+    // auth needs a second factor that an attacker's page cannot reproduce.
+    //
+    // Enforced here rather than per-route so that every one of the ~235 admin
+    // routes is covered without each having to remember the guard, and so a
+    // route added later cannot quietly miss it. Header and query callers are
+    // untouched: verifyCsrf passes straight through unless authSource is
+    // 'cookie'. It signals rejection by sending a 403 itself, so the only thing
+    // to check is whether it responded.
+    if (!passesCsrf(req, res)) return;
 
     const decoded = jwt.verify(token, getJwtSecret());
     const targetUserId = decoded.userId || decoded.id || decoded.sub;

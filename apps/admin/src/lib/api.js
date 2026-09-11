@@ -6,12 +6,27 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 export const API_BASE = `${API_URL}/api/v1`;
 
+/**
+ * Headers for an admin API call.
+ *
+ * There is normally no Authorization header any more: the session is an
+ * httpOnly `admin_token` cookie that JavaScript cannot read, and the patched
+ * fetch in AdminAuthContext attaches it -- along with the X-CSRF-Token header
+ * the server requires for cookie-authenticated writes -- to every request bound
+ * for our API. That is what keeps an XSS from being able to walk off with a
+ * super-admin session.
+ *
+ * The localStorage lookup is retained only so that a browser still holding a
+ * token from before the cookie migration keeps working until it expires; the
+ * server accepts either. It is guarded because getItem returns null rather than
+ * '' for a missing key, which previously stringified into a literal
+ * "Authorization: Bearer null" on every signed-out request.
+ */
 export function getAuthHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
+  const legacyToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+  const headers = { 'Content-Type': 'application/json' };
+  if (legacyToken) headers.Authorization = `Bearer ${legacyToken}`;
+  return headers;
 }
 
 /**
