@@ -12,11 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # apps/mobile is a standalone package with its own lockfile; without this
+      # path setup-node keyed its npm cache on the ROOT lockfile, which this job
+      # never installs. This also replaces the hand-rolled actions/cache step
+      # that used to sit below: it cached apps/mobile/node_modules, and `npm ci`
+      # deletes node_modules before installing, so the restore was always
+      # discarded. setup-node caches the npm download cache instead, which npm
+      # ci does use.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
 
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
@@ -24,18 +32,17 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: apps/mobile/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('apps/mobile/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
+      # `npm ci || npm install` was wrong for the same reason ci.yml records it
+      # for the workspace jobs: when `npm ci` fails -- a lockfile that has
+      # drifted from package.json is the usual cause -- the fallback silently
+      # builds a second, UNLOCKED dependency tree. The release artifact then
+      # ships whatever `npm install` happened to resolve that day rather than
+      # what apps/mobile/package-lock.json pins, which is exactly the property
+      # a release build exists to guarantee. Fail instead, and fix the lockfile.
       - name: Install Dependencies
-        run: |
-          cd apps/mobile
-          npm ci || npm install
+        working-directory: apps/mobile
+        run: npm ci
 
       # Sentry source maps.
       #

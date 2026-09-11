@@ -26,7 +26,10 @@ jobs:
     - name: Install Monorepo Dependencies
       run: npm ci
 
-    - name: Run Linting check
+    # Root "test" fans out to `npm run test --workspaces --if-present`, so this
+    # runs the backend/web/admin test suites. It is not a lint step; it was
+    # labelled one, which made a red build look like a formatting problem.
+    - name: Run workspace test suites
       run: npm run test --if-present
 
   build-android:
