@@ -1,26 +1,112 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { withRoleGuard } from '../../../src/utils/permissions';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 
-const CAREGIVERS = [
-  { id: 1, name: 'Sunita Bhosale', role: 'Infant Nanny / Baby Care', rating: '4.9 ★', experience: '5 years', location: 'Dhanori', charge: '₹220/hour', skills: ['Infant Feeding', 'First Aid', 'Toddler Activities'], icon: '🍼' },
-  { id: 2, name: 'Janardan Shinde', role: 'Senior Care Companion', rating: '4.8 ★', experience: '8 years', location: 'Viman Nagar', charge: '₹250/hour', skills: ['Medicine Reminders', 'Mobility Assist', 'Bilingual'], icon: '👵' },
-  { id: 3, name: 'Amol Gokhale', role: 'Pet Sitter / Dog Walker', rating: '4.7 ★', experience: '3 years', location: 'Kharadi', charge: '₹150/walk', skills: ['Large Breeds', 'Pet Boarding', 'Grooming Assist'], icon: '🐕' },
-];
+import { apiGet, apiPost } from '../../../src/lib/api';
+
+/**
+ * Care Network.
+ *
+ * This screen used to render three hardcoded caregivers -- real-sounding names,
+ * addresses, hourly rates and a "Background Checked" badge -- for people who do
+ * not exist. Worse, "Pay Fee (₹150)" called nothing: it closed the modal and
+ * announced "Match Fee Paid Successfully! The Match Fee of ₹150 has been
+ * debited", so the app told a user money had left their account when no payment
+ * had been attempted and no record was created anywhere.
+ *
+ * Both now come from the API: GET /care/providers for the list, POST
+ * /care/request to register interest. Note that /care/request takes no payment
+ * -- it inserts a care_requests row with status 'pending' -- so the fee copy is
+ * gone entirely rather than reworded. Nothing in this flow charges anybody, and
+ * the screen no longer claims otherwise.
+ */
+const ROLE_ICONS = {
+  baby: '🍼', infant: '🍼', child: '🍼',
+  senior: '👵', elder: '👵',
+  pet: '🐕', dog: '🐕',
+};
+
+/** Rows come from care_providers, whose column names vary by dialect. */
+function normalizeProvider(row) {
+  const role = row.role || row.service_type || row.category || '';
+  const iconKey = Object.keys(ROLE_ICONS).find((k) => role.toLowerCase().includes(k));
+  let skills = row.skills;
+  if (typeof skills === 'string') {
+    try { skills = JSON.parse(skills); } catch { skills = skills.split(',').map((s) => s.trim()); }
+  }
+  return {
+    id: row.id,
+    name: row.name || row.full_name || 'Caregiver',
+    role,
+    rating: row.rating != null ? `${row.rating} ★` : null,
+    experience: row.experience || row.experience_years || null,
+    location: row.location || row.area || null,
+    charge: row.charge || row.rate || null,
+    verified: Boolean(row.is_verified ?? row.background_checked),
+    skills: Array.isArray(skills) ? skills : [],
+    icon: iconKey ? ROLE_ICONS[iconKey] : '❤️',
+  };
+}
 
 function CareModule() {
   const [showModal, setShowModal] = useState(false);
   const [selectedCare, setSelectedCare] = useState(null);
+  const [caregivers, setCaregivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [address, setAddress] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadProviders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet('/care/providers');
+      const rows = Array.isArray(data) ? data : (data?.rows ?? data?.data ?? []);
+      setCaregivers(rows.map(normalizeProvider));
+    } catch (e) {
+      // An empty list and a failed request must not look the same: one means
+      // "no caregivers are listed yet", the other means "we could not ask".
+      setError(e?.message || 'Could not load caregivers.');
+      setCaregivers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadProviders(); }, [loadProviders]);
 
   const handleMatch = (care) => {
     setSelectedCare(care);
+    setAddress('');
     setShowModal(true);
   };
 
-  const confirmMatch = () => {
-    setShowModal(false);
-    Alert.alert('Match Fee Paid Successfully! 🎉', 'The Match Fee of ₹150 has been debited. You will receive the caregiver\'s contact details, police verification records, and references via SMS instantly.');
+  const confirmMatch = async () => {
+    if (!selectedCare || submitting) return;
+    setSubmitting(true);
+    try {
+      await apiPost('/care/request', {
+        provider_id: selectedCare.id,
+        date: new Date().toISOString(),
+        address,
+      });
+      setShowModal(false);
+      Alert.alert(
+        'Request sent',
+        `Your request for ${selectedCare.name} has been recorded and is pending confirmation. You will be contacted once it is accepted.`
+      );
+    } catch (e) {
+      // Stay on the modal so the request can be retried; closing it here would
+      // look indistinguishable from success.
+      Alert.alert(
+        'Request not sent',
+        `${e?.message || 'The request could not be submitted.'} Please try again.`
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -37,19 +123,43 @@ function CareModule() {
           <Text style={styles.heroDesc}>Find verified local assistance for baby care, elder care, and pet care. Safe, society-vetted professionals.</Text>
         </View>
 
-        {CAREGIVERS.map(c => (
+        {loading ? (
+          <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 32 }} />
+        ) : error ? (
+          <View style={styles.card}>
+            <Text style={styles.role}>{error}</Text>
+            <TouchableOpacity style={[styles.matchBtn, { marginTop: 12 }]} onPress={loadProviders}>
+              <Text style={styles.matchBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : caregivers.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.role}>No caregivers are listed in your area yet.</Text>
+          </View>
+        ) : caregivers.map(c => (
           <View key={c.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.iconBox}><Text style={{fontSize: 32}}>{c.icon}</Text></View>
               <View style={styles.headerTextCol}>
                 <Text style={styles.name}>{c.name}</Text>
-                <View style={styles.badgeSuccess}><Text style={styles.badgeSuccessText}>✓ Background Checked</Text></View>
+                {/* Shown only when the provider record actually carries a
+                    verification flag. It was previously printed unconditionally,
+                    which vouched for people nobody had checked. */}
+                {c.verified ? (
+                  <View style={styles.badgeSuccess}><Text style={styles.badgeSuccessText}>✓ Background Checked</Text></View>
+                ) : null}
               </View>
             </View>
 
-            <Text style={styles.role}>{c.role} • {c.experience} Exp</Text>
-            <Text style={styles.meta}>📍 {c.location} • {c.rating}</Text>
-            
+            <Text style={styles.role}>
+              {[c.role, c.experience ? `${c.experience} Exp` : null].filter(Boolean).join(' • ')}
+            </Text>
+            {(c.location || c.rating) ? (
+              <Text style={styles.meta}>
+                {[c.location ? `📍 ${c.location}` : null, c.rating].filter(Boolean).join(' • ')}
+              </Text>
+            ) : null}
+
             <View style={styles.skillsRow}>
               {c.skills.map(s => (
                 <View key={s} style={styles.skillChip}><Text style={styles.skillText}>{s}</Text></View>
@@ -58,11 +168,10 @@ function CareModule() {
 
             <View style={styles.footer}>
               <View>
-                <Text style={styles.charge}>{c.charge}</Text>
-                <Text style={styles.feeText}>₹150 Local Match Fee</Text>
+                {c.charge ? <Text style={styles.charge}>{c.charge}</Text> : null}
               </View>
               <TouchableOpacity style={styles.matchBtn} onPress={() => handleMatch(c)}>
-                <Text style={styles.matchBtnText}>Hire Assistant</Text>
+                <Text style={styles.matchBtnText}>Request</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -73,18 +182,38 @@ function CareModule() {
       <Modal visible={showModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Match Caregiver</Text>
-            <Text style={styles.modalDesc}>A ₹150 match fee is processed securely to dispatch full police verification records and connect you directly with the provider.</Text>
-            
+            <Text style={styles.modalTitle}>Request {selectedCare?.name || 'caregiver'}</Text>
+            {/* No fee copy. POST /care/request creates a pending care_requests
+                row and takes no payment, so promising that "a ₹150 match fee is
+                processed securely" described something that never happened. */}
+            <Text style={styles.modalDesc}>
+              This sends a request to the caregiver. They will be in touch to confirm
+              availability before anything is arranged.
+            </Text>
+
             <Text style={styles.label}>Society Wing & flat</Text>
-            <TextInput style={styles.input} placeholder="e.g. A-402, Pride Aashiyana" placeholderTextColor="#64748b" />
-            
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. A-402, Pride Aashiyana"
+              placeholderTextColor="#64748b"
+              value={address}
+              onChangeText={setAddress}
+            />
+
             <View style={styles.modalActions}>
-              <TouchableOpacity style={[styles.modalBtn, {backgroundColor: '#e2e8f0'}]} onPress={() => setShowModal(false)}>
+              <TouchableOpacity
+                style={[styles.modalBtn, {backgroundColor: '#e2e8f0'}]}
+                onPress={() => setShowModal(false)}
+                disabled={submitting}
+              >
                 <Text style={styles.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, {backgroundColor: '#3b82f6'}]} onPress={confirmMatch}>
-                <Text style={styles.modalBtnText}>Pay Fee (₹150)</Text>
+              <TouchableOpacity
+                style={[styles.modalBtn, {backgroundColor: submitting ? '#93c5fd' : '#3b82f6'}]}
+                onPress={confirmMatch}
+                disabled={submitting}
+              >
+                <Text style={styles.modalBtnText}>{submitting ? 'Sending…' : 'Send request'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -123,7 +252,6 @@ const styles = StyleSheet.create({
   
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#ffffff', paddingTop: 16 },
   charge: { color: '#0f172a', fontSize: 18, fontWeight: 'bold' },
-  feeText: { color: '#64748b', fontSize: 10, marginTop: 2 },
   matchBtn: { backgroundColor: '#3b82f6', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   matchBtnText: { color: '#0f172a', fontWeight: 'bold', fontSize: 13 },
 

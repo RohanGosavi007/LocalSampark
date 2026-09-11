@@ -179,7 +179,6 @@ const SEEDED = new Set([
   'app/(tabs)/community.js',
   'app/chat/[shopId].js',
   'app/components/shops/managers/AdvancedRestaurantManager.js',
-  'app/modules/care/index.js',
   'app/modules/community/index.js',
   'app/modules/shop-detail/TiffinCateringVisitorView.js',
   'src/screens/properties/PropertySearch.js',
