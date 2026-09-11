@@ -1,31 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { loadWithFallback } from '../../../src/utils/mockDataHelper';
-import DemoBadge from '../../../src/components/DemoBadge';
+import { apiGet } from '../../../src/lib/api';
 
-// Mock Bookings
-const MOCK_BOOKINGS = [
-  { id: 'B-1001', serviceName: 'AC Deep Cleaning', date: 'Oct 24, 2026', time: '11:00 AM', status: 'Confirmed', price: '₹799', provider: 'CoolBreeze Experts' },
-  { id: 'B-1002', serviceName: 'Plumbing Repair', date: 'Oct 25, 2026', time: '02:00 PM', status: 'Pending', price: '₹450', provider: 'Local Plumbers Co' },
-  { id: 'B-0990', serviceName: 'Home Salon Service', date: 'Oct 10, 2026', time: '10:00 AM', status: 'Completed', price: '₹1200', provider: 'Elite Styling' },
-  { id: 'B-0985', serviceName: 'Washing Machine Repair', date: 'Oct 05, 2026', time: '04:00 PM', status: 'Cancelled', price: '₹550', provider: 'HomeTech Repairs' }
-];
+/**
+ * The seeded MOCK_BOOKINGS array that used to sit here is gone.
+ *
+ * It was correctly gated -- loadWithFallback only substitutes mocks under
+ * __DEV__ -- so it never reached a release build. It is removed anyway because
+ * it was masking a real bug: this screen asked for '/services/bookings', which
+ * does not exist. The routes are /services/my-bookings and
+ * /services/home-services/bookings, so every request 404'd. In development the
+ * mock hid that completely, and in release the screen simply showed no bookings
+ * however many the user had.
+ */
 
 export default function ServiceBookingsScreen() {
   const [activeTab, setActiveTab] = useState('Active');
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
-  const [isDemo, setIsDemo] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      await loadWithFallback('/services/bookings', MOCK_BOOKINGS, setBookings, setIsDemo);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet('/services/my-bookings');
+      const rows = Array.isArray(data) ? data : (data?.rows ?? data?.bookings ?? []);
+      // The endpoint returns service_bookings joined to local_services:
+      // { id, scheduled_time, status, service_name, price, provider }. The UI
+      // below reads serviceName/date/time, so map rather than rename the JSX.
+      setBookings(rows.map((b) => {
+        const when = b.scheduled_time ? new Date(b.scheduled_time) : null;
+        const valid = when && !Number.isNaN(when.getTime());
+        return {
+          id: b.id,
+          serviceName: b.service_name || b.serviceName || 'Service',
+          date: valid ? when.toLocaleDateString() : '—',
+          time: valid ? when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—',
+          status: b.status || 'Pending',
+          price: b.price != null ? `₹${b.price}` : '—',
+          provider: b.provider || b.provider_name || '—',
+        };
+      }));
+    } catch (e) {
+      setError(e?.message || 'Could not load your bookings.');
+      setBookings([]);
+    } finally {
       setLoading(false);
-    };
-    load();
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -107,6 +135,20 @@ export default function ServiceBookingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
           <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 40 }} />
+        ) : error ? (
+          /* A failed request is reported as one. Previously the 404 from the
+             wrong endpoint was indistinguishable from having no bookings. */
+          <View style={styles.emptyState}>
+            <Ionicons name="alert-circle-outline" size={64} color="#f59e0b" />
+            <Text style={styles.emptyTitle}>Could not load your bookings</Text>
+            <Text style={styles.emptyDesc}>{error}</Text>
+            <TouchableOpacity
+              onPress={load}
+              style={{ marginTop: 16, backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : filteredBookings.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-clear-outline" size={64} color="#cbd5e1" />

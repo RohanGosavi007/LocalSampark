@@ -2,22 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { apiGet, apiPost } from '../../../src/lib/api';
-import { loadWithFallback } from '../../../src/utils/mockDataHelper';
-import DemoBadge from '../../../src/components/DemoBadge';
-
 
 const CATEGORIES = ['All', 'Electronics', 'Furniture', 'Home Appliances', 'Sports', 'Books', 'Clothing', 'Vehicles', 'Kitchen'];
 
-const MOCK_ITEMS = [
-  { id: 1, title: 'Hero Bicycle (24T) — Barely Used', price: 3500, category: 'Sports', condition: 'Good', icon: '🚲', seller: 'Rahul K.', zone: 'Dhanori', time: '2 hrs ago', views: 42 },
-  { id: 2, title: 'Wooden Study Table + Ergonomic Chair', price: 2200, category: 'Furniture', condition: 'Like New', icon: '🪑', seller: 'Meera S.', zone: 'Viman Nagar', time: '5 hrs ago', views: 28 },
-  { id: 3, title: 'Sony ExtraBass Bluetooth Speaker', price: 1500, category: 'Electronics', condition: 'Fair', icon: '🔊', seller: 'Amit P.', zone: 'Dhanori', time: '1 day ago', views: 71 },
-  { id: 4, title: 'LG Washing Machine 6.5Kg', price: 9000, category: 'Home Appliances', condition: 'Excellent', icon: '🫧', seller: 'Sunita R.', zone: 'Kharadi', time: '2 days ago', views: 56 },
-  { id: 5, title: 'Microwave Oven (Samsung 23L)', price: 4500, category: 'Kitchen', condition: 'Good', icon: '📦', seller: 'Priya N.', zone: 'Baner', time: '3 days ago', views: 33 },
-  { id: 6, title: 'MTB Trek 3-speed Mountain Bike', price: 7500, category: 'Sports', condition: 'Good', icon: '🚵', seller: 'Sanjay V.', zone: 'Dhanori', time: '4 days ago', views: 19 },
-  { id: 7, title: 'iPhone 12 — Pristine (64GB)', price: 22000, category: 'Electronics', condition: 'Like New', icon: '📱', seller: 'Kavita M.', zone: 'Kalyani Nagar', time: '5 days ago', views: 145 },
-  { id: 8, title: 'Ikea Kallax Shelf — 4 Cubes', price: 1800, category: 'Furniture', condition: 'Good', icon: '📚', seller: 'Rohan D.', zone: 'Aundh', time: '6 days ago', views: 22 },
-];
+/**
+ * There is deliberately no MOCK_ITEMS here any more.
+ *
+ * fetchItems used to end with `setItems(MOCK_ITEMS); // Fallback to mock on fail`
+ * with no __DEV__ guard, so in a release build any failed request -- an outage,
+ * an expired token, no signal -- filled the marketplace with eight invented
+ * listings carrying real prices and sellers: an "iPhone 12 — Pristine (64GB)"
+ * at ₹22,000 from "Kavita M.", an LG washing machine at ₹9,000. A user could
+ * tap through and try to buy something that has never existed.
+ *
+ * The guard in __tests__/noFabricatedData.test.js could not catch it: its shape
+ * scanner skips any file that calls an API, and this file does.
+ *
+ * A failed load now surfaces as an error the user can retry, which is the same
+ * contract src/utils/mockDataHelper.js already documents -- an empty list and a
+ * broken request must not look alike.
+ */
 
 const conditionColor = { 'Like New': '#10b981', 'Excellent': '#4f46e5', 'Good': '#f97316', 'Fair': '#f59e0b' };
 
@@ -32,6 +36,7 @@ export default function MarketplaceScreen() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchItems();
@@ -40,11 +45,13 @@ export default function MarketplaceScreen() {
   const fetchItems = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await apiGet('/marketplace');
-      setItems(Array.isArray(data) ? data : (data.rows || []));
+      setItems(Array.isArray(data) ? data : (data.rows || data.items || []));
     } catch (err) {
-      console.warn("Failed to fetch marketplace items", err);
-      setItems(MOCK_ITEMS); // Fallback to mock on fail
+      console.warn('Failed to fetch marketplace items', err);
+      setError(err?.message || 'Could not load listings.');
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -113,11 +120,27 @@ export default function MarketplaceScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {filtered.length === 0 ? (
+        {/* A failed load is shown as a failure, not as "nothing for sale". The
+            two used to be indistinguishable because the catch substituted mock
+            listings instead. */}
+        {error ? (
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: 40, marginBottom: 16 }}>⚠️</Text>
+            <Text style={styles.emptyTitle}>Could not load listings</Text>
+            <Text style={styles.emptyDesc}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchItems}>
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 40, marginBottom: 16 }}>🔍</Text>
-            <Text style={styles.emptyTitle}>No items match your filters</Text>
-            <Text style={styles.emptyDesc}>Try adjusting the category or search query.</Text>
+            <Text style={styles.emptyTitle}>
+              {loading ? 'Loading listings…' : 'No items match your filters'}
+            </Text>
+            <Text style={styles.emptyDesc}>
+              {loading ? 'One moment.' : 'Try adjusting the category or search query.'}
+            </Text>
           </View>
         ) : (
           <View style={styles.grid}>
@@ -238,6 +261,8 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a', marginBottom: 8 },
   emptyDesc: { color: '#64748b', textAlign: 'center' },
 
+  retryBtn: { marginTop: 16, backgroundColor: '#4f46e5', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 },
+  retryBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
   fab: { position: 'absolute', bottom: 24, right: 24, backgroundColor: '#3b82f6', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6 },
   fabText: { color: '#fff', fontWeight: '800', fontSize: 16 },
 

@@ -238,3 +238,70 @@ describe('no screens invent records by shape', () => {
     expect(stale).toEqual([]);
   });
 });
+
+/**
+ * Ungated mock substitution inside a catch block.
+ *
+ * The two guards above both have a blind spot, and two screens slipped through
+ * each of them:
+ *
+ *   - The shape scanner skips any file that calls an API, on the reasoning that
+ *     a screen with a real source is not inventing data. But
+ *     app/modules/marketplace/index.js called the API *and* ended its catch with
+ *     `setItems(MOCK_ITEMS)` with no __DEV__ guard, so every failed request in a
+ *     release build filled the marketplace with eight invented listings at real
+ *     prices.
+ *
+ *   - The shape scanner only inspects array literals.
+ *     app/modules/service-booking/booking-detail.js held its fabrications in an
+ *     object map, so it was never even considered, and it rendered a made-up
+ *     booking -- with a dialable phone number -- for every id.
+ *
+ * This check is narrower and catches both: a mock identifier assigned into React
+ * state inside a catch block, where that catch does not mention __DEV__. That is
+ * the precise shape of "the request failed, so show the user fiction instead",
+ * which src/utils/mockDataHelper.js already documents as the behaviour that put
+ * invented records in front of real users.
+ */
+function catchBlocksWithUngatedMocks(src) {
+  const hits = [];
+  const MOCK_ASSIGN = /\bset[A-Z]\w*\(\s*(?:MOCK_\w+|mock[A-Z]\w*)/;
+
+  for (const m of src.matchAll(/\bcatch\s*(?:\([^)]*\))?\s*\{/g)) {
+    // Walk to the matching brace so nested blocks are not truncated.
+    let depth = 0;
+    let end = m.index + m[0].length - 1;
+    for (let i = end; i < src.length; i++) {
+      if (src[i] === '{') depth++;
+      else if (src[i] === '}') {
+        depth--;
+        if (depth === 0) { end = i; break; }
+      }
+    }
+    const body = src.slice(m.index, end + 1);
+    if (MOCK_ASSIGN.test(body) && !body.includes('__DEV__')) {
+      hits.push(src.slice(0, m.index).split('\n').length);
+    }
+  }
+  return hits;
+}
+
+describe('no catch block substitutes mock data in a release build', () => {
+  it('the scanner recognises the pattern it is looking for', () => {
+    const bad = 'try { await go(); } catch (e) { setItems(MOCK_ITEMS); }';
+    const gated = 'try { await go(); } catch (e) { if (__DEV__) setItems(MOCK_ITEMS); }';
+    expect(catchBlocksWithUngatedMocks(bad)).toHaveLength(1);
+    expect(catchBlocksWithUngatedMocks(gated)).toHaveLength(0);
+  });
+
+  it('no screen falls back to mock data when a request fails', () => {
+    const offenders = [];
+    for (const file of [...walk(path.join(MOBILE, 'app')), ...walk(path.join(MOBILE, 'src'))]) {
+      const src = stripComments(fs.readFileSync(file, 'utf8'));
+      for (const line of catchBlocksWithUngatedMocks(src)) {
+        offenders.push(`${path.relative(MOBILE, file).split(path.sep).join('/')}:${line}`);
+      }
+    }
+    expect(offenders.sort()).toEqual([]);
+  });
+});

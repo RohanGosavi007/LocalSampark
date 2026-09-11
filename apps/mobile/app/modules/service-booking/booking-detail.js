@@ -1,30 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
+import { apiGet } from '../../../src/lib/api';
 
-// Mock Bookings Data
-const MOCK_BOOKINGS = {
-  'B-1001': { id: 'B-1001', serviceName: 'AC Deep Cleaning', date: 'Oct 24, 2026', time: '11:00 AM', status: 'Confirmed', price: '₹799', provider: 'CoolBreeze Experts', providerPhone: '+91 9876543210', address: 'Flat 402, B Wing, Solitaire Society, Dhanori' },
-  'B-1002': { id: 'B-1002', serviceName: 'Plumbing Repair', date: 'Oct 25, 2026', time: '02:00 PM', status: 'Pending', price: '₹450', provider: 'Local Plumbers Co', providerPhone: '+91 9123456789', address: 'Flat 402, B Wing, Solitaire Society, Dhanori' }
-};
-
+/**
+ * Booking detail.
+ *
+ * This screen called no API at all. It held a MOCK_BOOKINGS map and, for any id
+ * it did not recognise, fell back to showing 'B-1001' regardless -- so opening
+ * ANY booking displayed "AC Deep Cleaning, Oct 24, ₹799, CoolBreeze Experts"
+ * along with a dialable +91 phone number and a flat address, none of which
+ * existed. It also seeded a chat message supposedly from the provider ("Hi! I
+ * have received your booking. Will be there on time."), so the screen showed a
+ * conversation that had never taken place.
+ *
+ * The guard in __tests__/noFabricatedData.test.js missed it because its shape
+ * scanner only looks at array literals, and MOCK_BOOKINGS was an object map.
+ *
+ * Bookings now come from GET /services/my-bookings, which returns the caller's
+ * own rows from service_bookings; there is no single-booking endpoint, so the
+ * row is selected from that list. An id that is not in it is reported as not
+ * found rather than silently swapped for a different booking.
+ *
+ * Note the endpoint choice. /home-services/bookings looks like a match but
+ * queries home_service_bookings, a separate table behind a different flow; ids
+ * from this screen's sibling list would never have been found in it. The
+ * neighbouring list screen asked for /services/bookings, which does not exist at
+ * all -- the routes are /services/my-bookings and /services/home-services/bookings
+ * -- so that list has been 404ing and showing empty in every release build.
+ */
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams();
   const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState([
-    { id: 1, sender: 'provider', text: 'Hi! I have received your booking. Will be there on time.', time: '10:00 AM' }
-  ]);
+  // Starts empty. Any real message history belongs to the messaging API, not to
+  // a literal in this file.
+  const [chatHistory, setChatHistory] = useState([]);
 
-  useEffect(() => {
-    // Simulate fetch
-    if (id && MOCK_BOOKINGS[id]) {
-      setBooking(MOCK_BOOKINGS[id]);
-    } else {
-      setBooking(MOCK_BOOKINGS['B-1001']); // Fallback
+  const loadBooking = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet('/services/my-bookings');
+      const rows = Array.isArray(data) ? data : (data?.rows ?? data?.bookings ?? []);
+      const match = rows.find((b) => String(b.id) === String(id));
+      if (!match) {
+        setBooking(null);
+        setError('This booking could not be found.');
+        return;
+      }
+      // scheduled_time carries both halves; split it rather than inventing a
+      // separate date, and leave either null when it is absent so the UI can
+      // omit the field instead of printing "null at null".
+      const when = match.scheduled_time ? new Date(match.scheduled_time) : null;
+      const valid = when && !Number.isNaN(when.getTime());
+      setBooking({
+        id: match.id,
+        serviceName: match.service_name || match.serviceName || 'Service',
+        date: valid ? when.toLocaleDateString() : null,
+        time: valid ? when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
+        status: match.status || 'Pending',
+        price: match.price != null ? `₹${match.price}` : null,
+        provider: match.provider || match.provider_name || null,
+        providerPhone: match.provider_phone || match.providerPhone || null,
+        address: match.address || null,
+      });
+    } catch (e) {
+      setBooking(null);
+      setError(e?.message || 'Could not load this booking.');
+    } finally {
+      setLoading(false);
     }
   }, [id]);
+
+  useEffect(() => { loadBooking(); }, [loadBooking]);
 
   const handleSendMessage = () => {
     if (!chatMessage.trim()) return;
@@ -48,7 +100,42 @@ export default function BookingDetailScreen() {
     }
   };
 
-  if (!booking) return null;
+  // Previously `if (!booking) return null`, which was unreachable because a
+  // booking was always substituted. Now that a booking can genuinely be absent,
+  // returning null would render a blank screen and hide the reason.
+  if (loading || !booking) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Booking</Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#3b82f6" />
+          ) : (
+            <>
+              <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#1f2937', marginBottom: 6, textAlign: 'center' }}>
+                Booking unavailable
+              </Text>
+              <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 20 }}>
+                {error || 'This booking could not be loaded.'}
+              </Text>
+              <TouchableOpacity
+                onPress={loadBooking}
+                style={{ backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
