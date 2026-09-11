@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+// One shared client instead of a per-module pool; see config/prisma.js.
+const prisma = require('../../../config/prisma').sharedPrisma;
 const { apiCache } = require('../../../middleware/cache.middleware');
 const { generateMockProducts, generateMockServices, generateMockStaff } = require('../../../utils/mockDataGenerator');
 

@@ -161,9 +161,8 @@ const getDashboardStats = async (req, res, next) => {
         console.warn('Dashboard stats sqlite error:', e.message);
       }
     } else {
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
-
+      // One shared client instead of a per-module pool; see config/prisma.js.
+      const prisma = require('../../../config/prisma').sharedPrisma;
       [shopsCount, activeRegions, totalRegions, totalUsers, totalOrders, completedOrders] = await Promise.all([
         prisma.shop.count(),
         prisma.region.count({ where: { isActive: true } }),

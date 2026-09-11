@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+// One shared client instead of a per-module pool; see config/prisma.js.
+const prisma = require('../../../config/prisma').sharedPrisma;
 const { authenticate } = require('../../../middleware/auth.middleware');
 
 router.get('/me', authenticate, async (req, res, next) => {

@@ -68,8 +68,59 @@ async function disconnectPrisma() {
   }
 }
 
+/**
+ * The one client every module should use.
+ *
+ * getPrismaClient() deliberately returns null when USE_SQLITE=true, because in
+ * that mode the app talks to SQLite through config/database instead. That made
+ * the singleton unusable for the seven modules that genuinely need a Prisma
+ * client in BOTH modes, so each of them had fallen back to its own
+ * `new PrismaClient()` at module scope -- including auth.middleware.js, which
+ * the header of this file names as already fixed. Eight independent connection
+ * pools were being opened against the same database; with a hosted Postgres
+ * connection cap that is how a deploy starts refusing connections under load
+ * while every pool sits mostly idle.
+ *
+ * getSharedPrisma() resolves to the configured singleton where there is one and
+ * otherwise constructs exactly one client of its own, so there is a single pool
+ * in every mode.
+ */
+let shared = null;
+function getSharedPrisma() {
+  if (!shared) {
+    shared = getPrismaClient();
+    if (!shared) {
+      const { PrismaClient } = require('@prisma/client');
+      shared = new PrismaClient();
+    }
+  }
+  return shared;
+}
+
+/**
+ * A lazy stand-in for the client, so a module can keep
+ *
+ *     const prisma = require('../../config/prisma').sharedPrisma;
+ *
+ * at module scope without constructing anything at require time. Resolution
+ * happens on first property access, by which point the environment is loaded.
+ *
+ * Functions are bound to the real client: `prisma.$transaction(...)` would
+ * otherwise be invoked with the proxy as `this`.
+ */
+const sharedPrisma = new Proxy({}, {
+  get(_target, prop) {
+    const client = getSharedPrisma();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+  has(_target, prop) { return prop in getSharedPrisma(); },
+});
+
 module.exports = {
   get prisma() { return getPrismaClient(); },
   getPrismaClient,
+  getSharedPrisma,
+  sharedPrisma,
   disconnectPrisma,
 };

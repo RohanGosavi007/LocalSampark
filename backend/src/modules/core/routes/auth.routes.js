@@ -2,8 +2,8 @@
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { getJwtRefreshSecret } = require('../../../config/secrets');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+// One shared client instead of a per-module pool; see config/prisma.js.
+const prisma = require('../../../config/prisma').sharedPrisma;
 const { authenticate, generateTokens } = require('../../../middleware/auth.middleware');
 const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const bcrypt = require('bcryptjs');

@@ -1,6 +1,6 @@
 const crypto = require('crypto');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+// One shared client instead of a per-module pool; see config/prisma.js.
+const prisma = require('../../../config/prisma').sharedPrisma;
 const { query, queryOne } = require('../../../config/database');
 
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
