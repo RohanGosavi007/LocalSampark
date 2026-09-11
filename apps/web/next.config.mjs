@@ -1,4 +1,6 @@
-import { withSentryConfig } from '@sentry/nextjs';
+// From '@sentry/nextjs/config', not '@sentry/nextjs': the root re-export is
+// deprecated in v10 and stops working in v11.
+import { withSentryConfig } from '@sentry/nextjs/config';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -39,13 +41,19 @@ const nextConfig = {
   },
 };
 
+// Options updated for @sentry/nextjs 10. The three that moved were warning on
+// every build after the 8 -> 10 upgrade and are slated for removal:
+//   disableLogger          -> webpack.treeshake.removeDebugLogging
+//   automaticVercelMonitors -> webpack.automaticVercelMonitors
+//   (the withSentryConfig import itself moved to @sentry/nextjs/config, see top)
 export default withSentryConfig(nextConfig, {
   silent: true,
   hideSourceMaps: true,
   widenClientFileUpload: true,
-  isTreeShakingEnabled: true,
-  transpileClientSDK: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
+  webpack: {
+    // Strips Sentry's own debug logging from the production bundle.
+    treeshake: { removeDebugLogging: true },
+    automaticVercelMonitors: true,
+  },
 });
 

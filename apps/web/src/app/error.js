@@ -1,11 +1,18 @@
 'use client';
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from './components/ui/Button';
 
 export default function Error({ error, reset }) {
   useEffect(() => {
+    // The copy below promises "our team has been notified", and until now that
+    // was not true: this boundary only wrote to the browser console, so every
+    // error it caught died on the user's machine. React error boundaries
+    // swallow the exception, so nothing else reports it either -- it has to be
+    // captured explicitly here.
+    Sentry.captureException(error);
     console.error('Application Error:', error);
   }, [error]);
 
