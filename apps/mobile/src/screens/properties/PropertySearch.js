@@ -1,16 +1,48 @@
 import { Image } from 'expo-image';
-import React, { useState, memo, useMemo, useCallback } from 'react';
+import React, { useState, memo, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput , StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, PlusCircle, Search, MapPin, Bed, Bath, Maximize2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { apiGet } from '../../lib/api';
 
-const MOCK_PROPERTIES = [
-  { id: '1', title: '2 BHK in Ganga Aria', location: 'Dhanori, Pune', price: '₹18,000/mo', type: 'Rent', beds: 2, baths: 2, sqft: 950, image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400' },
-  { id: '2', title: '3 BHK Premium Flat', location: 'Pride Aashiyana, Lohegaon', price: '₹85 L', type: 'Buy', beds: 3, baths: 3, sqft: 1200, image: 'https://images.unsplash.com/photo-1502672260266-1c1de2d92004?auto=format&fit=crop&q=80&w=400' },
-  { id: '3', title: '1 BHK Fully Furnished', location: 'Tingre Nagar', price: '₹14,000/mo', type: 'Rent', beds: 1, baths: 1, sqft: 600, image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=400' }
-];
+/**
+ * The seeded MOCK_PROPERTIES array is gone.
+ *
+ * It listed three invented homes with real prices and addresses -- a 2 BHK in
+ * Ganga Aria at ₹18,000/mo, a 3 BHK in Pride Aashiyana at ₹85 L -- against
+ * stock photography, on a screen a person uses to decide where to live.
+ *
+ * Listings now come from GET /properties, which returns available rows from
+ * local_property_listings as { success, properties: [...] }.
+ *
+ * Note what that table does NOT have: bed, bath or floor-area columns. The card
+ * below used to print "2 Bed / 2 Bath / 950 sqft" for every listing, so those
+ * figures could only ever have been invented. They are now rendered only when a
+ * row actually carries them, and omitted otherwise.
+ */
+
+/** Maps a local_property_listings row onto the card's shape. */
+function normalizeProperty(row) {
+  let images = row.images_json;
+  if (typeof images === 'string') {
+    try { images = JSON.parse(images); } catch { images = []; }
+  }
+  const isRent = String(row.listing_type || 'RENT').toUpperCase() === 'RENT';
+  const price = Number(row.price || 0);
+  return {
+    id: String(row.id),
+    title: row.title || 'Property',
+    location: row.address || '',
+    price: isRent ? `₹${price.toLocaleString()}/mo` : `₹${price.toLocaleString()}`,
+    type: isRent ? 'Rent' : 'Buy',
+    image: Array.isArray(images) && images.length ? images[0] : null,
+    beds: row.bedrooms ?? null,
+    baths: row.bathrooms ?? null,
+    sqft: row.area_sqft ?? null,
+  };
+}
 
 const PropertyItem = memo(({ item }) => (
   <TouchableOpacity style={s.s0}>
@@ -25,11 +57,13 @@ const PropertyItem = memo(({ item }) => (
         <MapPin size={14} color="#94a3b8" />
         <Text style={s.s8}>{item.location}</Text>
       </View>
-      <View style={s.s9}>
-        <View style={s.s10}><Bed size={16} color="#94a3b8" /><Text style={s.s11}>{item.beds} Bed</Text></View>
-        <View style={s.s12}><Bath size={16} color="#94a3b8" /><Text style={s.s13}>{item.baths} Bath</Text></View>
-        <View style={s.s14}><Maximize2 size={16} color="#94a3b8" /><Text style={s.s15}>{item.sqft} sqft</Text></View>
-      </View>
+      {(item.beds || item.baths || item.sqft) ? (
+        <View style={s.s9}>
+          {item.beds ? <View style={s.s10}><Bed size={16} color="#94a3b8" /><Text style={s.s11}>{item.beds} Bed</Text></View> : null}
+          {item.baths ? <View style={s.s12}><Bath size={16} color="#94a3b8" /><Text style={s.s13}>{item.baths} Bath</Text></View> : null}
+          {item.sqft ? <View style={s.s14}><Maximize2 size={16} color="#94a3b8" /><Text style={s.s15}>{item.sqft} sqft</Text></View> : null}
+        </View>
+      ) : null}
     </View>
   </TouchableOpacity>
 ), (prevProps, nextProps) => prevProps.item.id === nextProps.item.id);
@@ -38,14 +72,36 @@ export default function PropertySearchScreen() {
   const navigation = useNavigation();
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadProperties = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet('/properties');
+      const rows = Array.isArray(data) ? data : (data?.properties ?? data?.rows ?? []);
+      setProperties(rows.map(normalizeProperty));
+    } catch (e) {
+      // An empty market and an unreachable API are different facts. The seeded
+      // array made both look like three flats for rent.
+      setError(e?.message || 'Could not load listings.');
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadProperties(); }, [loadProperties]);
 
   const filteredProperties = useMemo(() => {
-    return MOCK_PROPERTIES.filter(p => {
+    return properties.filter(p => {
       if (filter !== 'All' && p.type !== filter) return false;
       if (search && !p.location.toLowerCase().includes(search.toLowerCase()) && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [filter, search]);
+  }, [properties, filter, search]);
 
   const renderItem = useCallback(({ item }) => (
     <PropertyItem item={item} />

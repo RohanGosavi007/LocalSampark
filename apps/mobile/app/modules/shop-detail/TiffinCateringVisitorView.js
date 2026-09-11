@@ -4,14 +4,27 @@ import { router } from 'expo-router';
 import VisitorLayout from './components/VisitorLayout';
 import { Ionicons } from '@expo/vector-icons';
 
+/**
+ * Tiffin / catering shop view.
+ *
+ * This screen offered three subscription plans at fixed prices -- a 7-day trial
+ * at ₹1,200, a 15-day plan at ₹1,500, a 30-day premium at ₹4,500 -- for every
+ * tiffin shop in the app, regardless of what that shop actually sells or
+ * charges. Selecting one put it in the cart and routed to checkout, so a
+ * customer could attempt to buy a subscription the shop had never offered at a
+ * price it had never set. It also printed a fixed "Today's Menu (Lunch)" of
+ * 4 Roti, Paneer Masala, Dal Tadka and Jeera Rice for every shop, every day.
+ *
+ * The plans are removed rather than wired. A tiffin_plans table exists in the
+ * schema, but nothing exposes it -- no route anywhere in the backend reads it --
+ * so there is no honest source for this list yet, and the same is true of the
+ * daily menu (tiffin_daily_menu). Showing nothing is worse for the shop and
+ * better for the customer than showing a price that is not real.
+ *
+ * When those endpoints land, fetch them here and restore both sections.
+ */
 export default function TiffinCateringVisitorView({ shop }) {
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  
-  const plans = [
-    { id: 1, name: '7 Days Trial', meals: 'Lunch & Dinner', price: '₹1,200', active: true },
-    { id: 2, name: '15 Days Classic', meals: 'Lunch Only', price: '₹1,500', active: false },
-    { id: 3, name: '30 Days Premium', meals: 'Lunch & Dinner', price: '₹4,500', active: false },
-  ];
+  const [selectedPlan] = useState(null);
 
   return (
     <VisitorLayout shop={shop} 
@@ -22,35 +35,17 @@ export default function TiffinCateringVisitorView({ shop }) {
       onCheckout={() => router.push('/modules/checkout')}
     >
       <View style={{ padding: 16 }}>
-        
-        <View style={styles.todayMenuBox}>
-          <Text style={styles.todayMenuTitle}>Today's Menu (Lunch)</Text>
-          <Text style={styles.todayMenuText}>• 4 Roti</Text>
-          <Text style={styles.todayMenuText}>• Paneer Masala</Text>
-          <Text style={styles.todayMenuText}>• Dal Tadka</Text>
-          <Text style={styles.todayMenuText}>• Jeera Rice & Salad</Text>
-        </View>
 
         <Text style={styles.sectionTitle}>Subscription Plans</Text>
         
-        {plans.map(plan => (
-          <TouchableOpacity 
-            key={plan.id} 
-            style={[styles.planCard, selectedPlan === plan.id && styles.planCardActive]}
-            onPress={() => setSelectedPlan(plan.id)}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.planName}>{plan.name}</Text>
-              <Text style={styles.planMeals}>{plan.meals}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.planPrice}>{plan.price}</Text>
-              {selectedPlan === plan.id && (
-                <Ionicons name="checkmark-circle" size={20} color="#16a34a" style={{ marginTop: 4 }} />
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.planCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.planName}>No plans listed yet</Text>
+            <Text style={styles.planMeals}>
+              {(shop.name || 'This kitchen') + ' has not published its tiffin plans or pricing in the app yet. Contact the shop directly to arrange a subscription.'}
+            </Text>
+          </View>
+        </View>
 
       </View>
     </VisitorLayout>

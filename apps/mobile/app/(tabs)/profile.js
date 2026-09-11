@@ -12,12 +12,18 @@ export default function ProfileScreen() {
   const [isOnline, setIsOnline] = useState(true);
 
   // Form State
+  // These defaults used to be fabricated values -- '+91 9876543210',
+  // 'Pride Aashiyana', 'B-404' -- so a user who had never entered an address saw
+  // a complete, plausible identity presented as their own, in an editable form
+  // they could then save. That wrote a stranger's flat number onto their
+  // account, and every screen reading the profile repeated it. The fields are
+  // empty when there is nothing to show; the placeholders say what each is for.
   const [form, setForm] = useState({
-    name: user?.name || 'Resident Name',
-    phone: user?.phone_number || '+91 9876543210',
-    society: user?.society_name || 'Pride Aashiyana',
-    flatNo: user?.flat_no || 'B-404',
-    email: user?.email || 'resident@example.com'
+    name: user?.name || '',
+    phone: user?.phone_number || '',
+    society: user?.society_name || '',
+    flatNo: user?.flat_no || '',
+    email: user?.email || ''
   });
 
   const handleRoleChange = (role) => {
@@ -228,6 +234,8 @@ export default function ProfileScreen() {
           <TextInput 
             style={styles.input} 
             value={form.society}
+            placeholder="e.g. Goodwill Woodlands"
+            placeholderTextColor="#94a3b8"
             onChangeText={t => setForm({...form, society: t})}
           />
 
@@ -235,6 +243,8 @@ export default function ProfileScreen() {
           <TextInput 
             style={styles.input} 
             value={form.flatNo}
+            placeholder="e.g. A-402"
+            placeholderTextColor="#94a3b8"
             onChangeText={t => setForm({...form, flatNo: t})}
           />
         </View>
