@@ -292,8 +292,14 @@ function RootLayout() {
       try {
         const Notifications = require('expo-notifications');
         Notifications.setNotificationHandler({
+          // expo-notifications made shouldShowBanner/shouldShowList required and
+          // deprecated shouldShowAlert. With only the deprecated field set, a
+          // notification arriving while the app is in the foreground is handled
+          // but never presented -- the merchant/user sees nothing until they
+          // background the app. Both new fields must be given explicitly.
           handleNotification: async () => ({
-            shouldShowAlert: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
           }),

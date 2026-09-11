@@ -53,9 +53,13 @@ export default function ShopDashboardScreen() {
 
   useEffect(() => {
     // Setup Push Notifications
+    // Redundant with the app-wide handler installed in app/_layout.js, which
+    // runs before any screen mounts; kept only so this screen stays correct if
+    // it is ever rendered outside that root layout. Keep the two in step.
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
       }),

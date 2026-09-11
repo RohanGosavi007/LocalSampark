@@ -182,7 +182,6 @@ const SEEDED = new Set([
   'app/modules/care/index.js',
   'app/modules/community/index.js',
   'app/modules/shop-detail/TiffinCateringVisitorView.js',
-  'app/modules/society/tabs/EventsTab.js',
   'src/screens/properties/PropertySearch.js',
 ]);
 

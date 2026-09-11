@@ -4,9 +4,13 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Set notification handler to show alerts when app is in foreground
+// NOTE: nothing imports this module today, so this handler never actually
+// installs; app/_layout.js owns the live one. Kept in step with it so adopting
+// this service later does not silently regress foreground notifications.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
