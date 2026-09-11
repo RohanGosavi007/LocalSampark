@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup and device-to-device transfer rules for Android 12+ (API 31), declared
+  via android:dataExtractionRules. Android 12 ignores fullBackupContent, so the
+  exclusions in secure_store_backup_rules.xml have to be restated here or the
+  auth tokens would be included again on every modern device.
+
+  See that file for why the SecureStore preferences and the AsyncStorage
+  RKStorage database must not travel: they are ciphertext under a hardware-bound
+  AndroidKeyStore key that does not leave the originating device.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="SecureStore.xml" />
+        <exclude domain="database" path="RKStorage" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="SecureStore.xml" />
+        <exclude domain="database" path="RKStorage" />
+    </device-transfer>
+</data-extraction-rules>

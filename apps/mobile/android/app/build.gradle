@@ -160,7 +160,17 @@ def cxxStagingDirectory = {
     if (override != null) {
         return override.toString().equalsIgnoreCase('default') ? null : override.toString()
     }
-    return System.getProperty('os.name').toLowerCase().contains('windows') ? 'C:/tmp/cxx_app' : null
+    if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
+        return null
+    }
+    // Derived from the drive the project actually sits on rather than hardcoded
+    // to "C:/tmp/cxx_app". A checkout on another drive, or a machine whose C: is not
+    // writable got an unwritable staging path and a CMake configure failure that
+    // named a directory nobody had chosen. Uses the root of rootDir's own drive,
+    // which is writable by definition because the checkout lives there.
+    def drive = rootDir.toPath().getRoot()
+    def drivePrefix = (drive == null) ? 'C:/' : drive.toString().replace(File.separator, '/')
+    return drivePrefix + 'tmp/cxx_app'
 }()
 
 android {

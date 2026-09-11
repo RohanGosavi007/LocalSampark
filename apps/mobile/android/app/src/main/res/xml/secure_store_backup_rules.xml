@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-backup rules for Android 11 and below (android:fullBackupContent).
+
+  Everything is backed up EXCEPT the two stores that hold authentication
+  material. src/lib/secureStorage.js writes the access/refresh tokens to
+  expo-secure-store, which persists them in the SharedPreferences file
+  "SecureStore.xml"; when the keystore is unavailable it falls back to
+  AsyncStorage under a `sec_` prefix, and AsyncStorage persists to the SQLite
+  database "RKStorage".
+
+  Those values are encrypted with a key held in the AndroidKeyStore, and that
+  key is hardware-bound and never leaves the device. A restored backup on a new
+  device therefore carries ciphertext that can never be decrypted, which makes
+  expo-secure-store return null and strands the user in a half-restored session.
+  Excluding them means a restored install simply starts logged out, which is
+  both the correct security posture and the working one.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="SecureStore.xml" />
+    <exclude domain="database" path="RKStorage" />
+</full-backup-content>

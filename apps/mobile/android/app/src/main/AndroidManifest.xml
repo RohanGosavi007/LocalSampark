@@ -19,6 +19,14 @@
        FOREGROUND_SERVICE_MICROPHONE pairs with the only foregroundServiceType
        VoiceConnectionService actually uses (Constants.FOREGROUND_SERVICE_TYPE_MICROPHONE). -->
   <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE"/>
+  <!-- The base foreground-service permission, required since Android 9 (API 28)
+       for any startForeground() call. Only the API-34 typed variant below was
+       declared, which is additive rather than a replacement: without this one
+       VoiceConnectionService dies with
+       "SecurityException: Permission Denial: startForeground requires
+       android.permission.FOREGROUND_SERVICE" the first time a call is answered
+       on any device between API 28 and 33. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
   <!-- Scoped storage replaced this from Android 10; declaring it unbounded
        triggers a Play Console policy warning. -->
@@ -58,8 +66,8 @@
         https://localsampark.in/.well-known/assetlinks.json at install time and
         check that it lists this package with the signing certificate SHA-256.
         That file is served from apps/web/public/.well-known/assetlinks.json.
-        If verification fails the links simply fall back to the browser -- it
-        cannot break the app -- but they will not open it either, so the
+        If verification fails the links simply fall back to the browser (it
+        cannot break the app) but they will not open it either, so the
         fingerprint in that file has to match whatever key actually signs the
         shipped build (see android/KEYSTORE.md).
       -->
