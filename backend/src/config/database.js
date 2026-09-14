@@ -14,8 +14,61 @@ if (process.env.USE_SQLITE === 'true') {
   const { Pool } = require('pg');
   const logger = require('./logger');
 
-  const poolConfig = process.env.DIRECT_URL || process.env.DATABASE_URL 
-    ? { connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL, max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000, ssl: { rejectUnauthorized: false } }
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  /**
+   * TLS for the managed Postgres connection.
+   *
+   * This was hardcoded to `{ rejectUnauthorized: false }`, which disables
+   * certificate verification outright: the client encrypts the link but will
+   * accept ANY certificate, so the connection is not protected against an
+   * active man-in-the-middle. Every credential and every row of user data
+   * crosses that link.
+   *
+   * Managed providers (Supabase, Render, Heroku) sign with a private CA, which
+   * is why the flag gets switched off. The correct fix is to supply that CA via
+   * DB_SSL_CA (or a CA bundle path in PGSSLROOTCERT) and verify against it.
+   * DB_SSL_REJECT_UNAUTHORIZED=false remains available as an explicit, visible
+   * opt-out for a provider that genuinely cannot supply one — but it now has to
+   * be a deliberate deployment decision rather than the silent default.
+   */
+  function buildSslConfig() {
+    if (process.env.DB_SSL === 'false') return false;
+    if (process.env.DB_SSL_CA) {
+      return { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n'), rejectUnauthorized: true };
+    }
+    if (process.env.DB_SSL_REJECT_UNAUTHORIZED === 'false') {
+      logger.warn(
+        '⚠️  SECURITY: DB TLS certificate verification is DISABLED ' +
+        '(DB_SSL_REJECT_UNAUTHORIZED=false). The database connection is encrypted ' +
+        'but not authenticated. Set DB_SSL_CA to your provider CA instead.'
+      );
+      return { rejectUnauthorized: false };
+    }
+    return { rejectUnauthorized: true };
+  }
+
+  /**
+   * Runtime uses DATABASE_URL (the pooled/PgBouncer endpoint). DIRECT_URL is
+   * the unpooled endpoint Prisma needs for migrations and DDL; preferring it
+   * here — as this did — pointed every request in the app at the connection
+   * endpoint that has the lowest connection ceiling, which is exactly backwards
+   * under production load.
+   */
+  const runtimeUrl = process.env.DATABASE_URL || process.env.DIRECT_URL;
+
+  const poolConfig = runtimeUrl
+    ? {
+        connectionString: runtimeUrl,
+        max: parseInt(process.env.DB_POOL_MAX || (isProduction ? '50' : '20'), 10),
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+        // A query that hangs holds its pool connection indefinitely; enough of
+        // them and the pool is exhausted and the API stops serving entirely.
+        statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT_MS || '30000', 10),
+        query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT_MS || '30000', 10),
+        ssl: buildSslConfig(),
+      }
     : {
         host: process.env.DB_HOST || 'localhost',
         // 10x Scale: Route through PgBouncer transaction pool in production
@@ -23,9 +76,11 @@ if (process.env.USE_SQLITE === 'true') {
         database: process.env.DB_NAME || 'localsampark',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || '',
-        max: process.env.NODE_ENV === 'production' ? 100 : 20, // High Node.js side pool limits since PgBouncer handles the DB limits
+        max: parseInt(process.env.DB_POOL_MAX || (isProduction ? '100' : '20'), 10), // High Node.js side pool limits since PgBouncer handles the DB limits
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
+        statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT_MS || '30000', 10),
+        query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT_MS || '30000', 10),
       };
 
   const pool = new Pool(poolConfig);
@@ -83,7 +138,13 @@ if (process.env.USE_SQLITE === 'true') {
       await client.query('COMMIT');
       return result;
     } catch (error) {
-      await client.query('ROLLBACK');
+      // A failed ROLLBACK (dead connection, statement timeout) would otherwise
+      // replace the real error with a confusing secondary one.
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        logger.error('ROLLBACK failed after transaction error: ' + rollbackError.message);
+      }
       throw error;
     } finally {
       client.release();

@@ -5,6 +5,15 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
+# A release is never cancelled mid-flight, but two tags pushed together must
+# not race for the same EAS build slot.
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -25,6 +34,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: apps/mobile/package-lock.json
+
+      # Checked before anything expensive runs. Without it the job installs the
+      # full dependency tree first and only then fails at `eas build` with an
+      # authentication error, several minutes in.
+      - name: Verify EXPO_TOKEN is configured
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error title=Missing secret::EXPO_TOKEN is not set. Create one at https://expo.dev/settings/access-tokens and add it as a repository secret."
+            exit 1
+          fi
+          echo "EXPO_TOKEN is present."
 
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8

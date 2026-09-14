@@ -1,4 +1,5 @@
 const { query } = require('../config/database');
+const { trackInterval } = require('../utils/intervals');
 
 /**
  * Event Expiration Worker
@@ -32,7 +33,7 @@ async function processExpiredEvents() {
 
 function initEventWorker() {
   console.log('⚡ [Worker] Event Ticket Expiration Worker Initialized (Interval: 6 hrs)');
-  setInterval(processExpiredEvents, 21600000); // 6 hour poll interval
+  trackInterval('event-expiry', processExpiredEvents, 21600000); // 6 hour poll interval
 }
 
 module.exports = { initEventWorker, processExpiredEvents };

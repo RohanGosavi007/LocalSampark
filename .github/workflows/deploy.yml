@@ -6,6 +6,21 @@ on:
   pull_request:
     branches: [ main ]
 
+# Least privilege: this pipeline only reads the repository. Without an explicit
+# block the job inherits whatever the repository default is, which is commonly
+# read/write on every scope.
+permissions:
+  contents: read
+
+# Two pushes to main previously produced two overlapping deploys, each running
+# `prisma migrate deploy` and the raw-SQL migration runner against the same
+# production database at the same time. cancel-in-progress is deliberately
+# false: cancelling a run midway through applying migrations is worse than
+# queueing behind it.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   test-and-lint:
     runs-on: ubuntu-latest
@@ -96,25 +111,61 @@ jobs:
           npm run migrate --workspace=backend
 
       - name: Trigger Render Deploy Hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          # Trigger deployment to Render
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          echo "Deployment triggered on Render!"
+          # A bare `curl -X POST` exits 0 on an HTTP 404/401, so a missing or
+          # rotated hook secret produced a green "Deployment triggered!" for a
+          # deploy that was never requested. -f makes an error status a failure;
+          # the explicit empty check catches an unset secret, which would
+          # otherwise make curl fail with a confusing "no URL specified".
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::error title=Missing secret::RENDER_DEPLOY_HOOK_URL is not set in the production environment."
+            exit 1
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+          echo "Deployment triggered on Render."
 
       - name: Wait for Deployment & Health Check
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          HEALTH_URL: https://localsampark-api.onrender.com/health
         run: |
-          echo "Waiting for deployment to complete..."
-          # Polling loop for zero downtime deployment verification
-          max_retries=15
-          wait_time=20
+          # The old loop polled /health and exited 0 on the first 200 response.
+          # Render keeps the PREVIOUS instance serving while the new one builds,
+          # so that 200 arrived within seconds — from the old build — and the
+          # pipeline reported a healthy deploy before the new code had even
+          # compiled. A failed deploy looked identical to a successful one.
+          #
+          # /health now reports the commit it is running (server.js reads
+          # GIT_COMMIT / RENDER_GIT_COMMIT), so wait for THIS commit to answer.
+          echo "Waiting for $EXPECTED_SHA to become live at $HEALTH_URL"
+          max_retries=40
+          wait_time=15
           for i in $(seq 1 $max_retries); do
-            echo "Health check attempt $i of $max_retries..."
-            if curl -f --silent https://localsampark-api.onrender.com/health; then
-              echo -e "\n✅ Deployment healthy and live!"
-              exit 0
+            body=$(curl -fsS --max-time 10 "$HEALTH_URL" 2>/dev/null || true)
+            if [ -n "$body" ]; then
+              status=$(printf '%s' "$body" | jq -r '.status // "unknown"')
+              live=$(printf '%s' "$body" | jq -r '.commit // "unknown"')
+              echo "  attempt $i/$max_retries: status=$status commit=$live"
+              if [ "$status" = "ok" ] && [ "$live" = "$EXPECTED_SHA" ]; then
+                echo "✅ $EXPECTED_SHA is live and healthy."
+                exit 0
+              fi
+              if [ "$live" = "unknown" ]; then
+                # GIT_COMMIT is not wired up in the Render dashboard yet. Fall
+                # back to the old behaviour rather than blocking the deploy, but
+                # make the weaker guarantee visible instead of silent.
+                echo "::warning title=Cannot verify deployed commit::/health reports no commit. Set GIT_COMMIT (or enable RENDER_GIT_COMMIT) in the Render dashboard so this check can confirm the new build is live."
+                if [ "$status" = "ok" ]; then
+                  echo "⚠️  Service is healthy, but this does NOT confirm the new build is serving."
+                  exit 0
+                fi
+              fi
+            else
+              echo "  attempt $i/$max_retries: no response yet"
             fi
-            echo "Not ready yet. Waiting $wait_time seconds..."
             sleep $wait_time
           done
-          echo "❌ Deployment health check timed out after $(($max_retries * $wait_time)) seconds!"
+          echo "::error title=Deploy verification failed::$EXPECTED_SHA did not become live within $((max_retries * wait_time))s."
           exit 1

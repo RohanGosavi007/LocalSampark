@@ -109,7 +109,16 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin) || (origin && origin.endsWith('.onrender.com'))) {
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // Render preview/staging deploys get a generated *.onrender.com hostname,
+    // so a wildcard was allowed here. But `credentials: true` is set above,
+    // which means ANY other tenant on onrender.com could make authenticated
+    // cross-origin calls with the browser attaching our cookies. Keep the
+    // convenience for non-production deploys only; production must name its
+    // origins in CLIENT_URL / ADMIN_URL.
+    if (process.env.NODE_ENV !== 'production' && origin.endsWith('.onrender.com')) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -136,9 +145,17 @@ app.use(cors({
 
 // ─── HTTPS Redirect (Production Only) ───────────────────────
 if (process.env.NODE_ENV === 'production') {
+  // Platform load balancers (Render, and the deploy workflow's own poll) probe
+  // over plain HTTP from inside the network. Redirecting those made every
+  // probe a 301 that curl -f treats as success without ever reaching the app,
+  // so an unhealthy instance still looked healthy. Exempt the probe paths.
+  const HTTPS_EXEMPT = new Set(['/health', '/metrics']);
   app.use((req, res, next) => {
+    if (HTTPS_EXEMPT.has(req.path)) return next();
     if (req.headers['x-forwarded-proto'] !== 'https') {
-      return res.redirect(301, `https://${req.hostname}${req.url}`);
+      // 308, not 301: a 301 lets the client downgrade a POST to GET, which
+      // silently drops the body of any mutation that arrived over HTTP.
+      return res.redirect(308, `https://${req.hostname}${req.originalUrl}`);
     }
     next();
   });
@@ -166,6 +183,12 @@ app.use(auditLogger);
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // ─── HEALTH CHECK & METRICS ─────────────────────────────────
+// Flipped by the shutdown handler below. While draining, /health must report
+// unhealthy so the load balancer stops routing new requests to this instance
+// BEFORE it stops accepting connections — that gap is what makes a rolling
+// deploy zero-downtime rather than merely fast.
+let isShuttingDown = false;
+
 app.get('/health', async (req, res) => {
   const memoryUsage = process.memoryUsage();
   let dbStatus = 'unknown';
@@ -184,10 +207,18 @@ app.get('/health', async (req, res) => {
     firebaseStatus = isFirebaseInitialized() ? 'connected' : 'not configured';
   } catch (e) {}
 
+  if (isShuttingDown) isHealthy = false;
+
   const payload = {
-    status: isHealthy ? 'ok' : 'error',
+    status: isShuttingDown ? 'draining' : (isHealthy ? 'ok' : 'error'),
     app: 'LocalSampark API',
     version: '1.0.0',
+    // The deploy workflow polls this to confirm the NEW build is serving.
+    // Without it the health check passes instantly against the OLD instance
+    // that is still up, and the pipeline reports a green deploy before the new
+    // code has even finished building. Render exposes the commit as
+    // RENDER_GIT_COMMIT; GIT_COMMIT is the generic override.
+    commit: process.env.GIT_COMMIT || process.env.RENDER_GIT_COMMIT || 'unknown',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     uptime: Math.floor(process.uptime()) + 's',
@@ -315,34 +346,81 @@ async function startServer() {
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('🛑 SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    if (pool && typeof pool.end === 'function') {
-      pool.end();
-    } else if (pool && typeof pool.close === 'function') {
-      pool.close();
+// ─── GRACEFUL SHUTDOWN ──────────────────────────────────────
+//
+// The previous handler called server.close() and waited for its callback. That
+// callback never fires while a single Socket.io client is still connected —
+// and this app keeps long-lived websockets open by design — so the process sat
+// there until the platform's grace period expired and SIGKILLed it mid-request.
+// Four un-unref'd setInterval timers held the event loop open on top of that.
+//
+// The sequence below is the one a rolling deploy actually needs:
+//   1. Flip /health to "draining" so the load balancer drains this instance.
+//   2. Wait DRAIN_DELAY_MS for in-flight routing to notice before closing.
+//   3. Stop the polling timers, close Socket.io, then stop accepting HTTP.
+//   4. Release the DB pool and Redis.
+//   5. Hard-exit on a deadline no matter what, so a stuck socket cannot turn a
+//      deploy into a SIGKILL.
+const { clearAllIntervals } = require('./utils/intervals');
+
+// Must stay below the platform's kill grace period (Render's default is 30s).
+const DRAIN_DELAY_MS = parseInt(process.env.SHUTDOWN_DRAIN_MS || '5000', 10);
+const SHUTDOWN_DEADLINE_MS = parseInt(process.env.SHUTDOWN_DEADLINE_MS || '25000', 10);
+
+let shutdownStarted = false;
+
+async function gracefulShutdown(signal, exitCode = 0) {
+  if (shutdownStarted) return; // a second SIGTERM must not restart the sequence
+  shutdownStarted = true;
+  isShuttingDown = true;
+  logger.info(`🛑 ${signal} received. Draining for ${DRAIN_DELAY_MS}ms before shutdown...`);
+
+  // Unconditional backstop. unref'd so it never by itself keeps us alive.
+  const deadline = setTimeout(() => {
+    logger.error('⏱️ Shutdown deadline exceeded — forcing exit.');
+    process.exit(exitCode || 1);
+  }, SHUTDOWN_DEADLINE_MS);
+  deadline.unref();
+
+  await new Promise((resolve) => setTimeout(resolve, DRAIN_DELAY_MS));
+
+  try {
+    const cleared = clearAllIntervals();
+    logger.info(`   Stopped ${cleared} background polling timer(s).`);
+
+    if (io && typeof io.close === 'function') {
+      await new Promise((resolve) => io.close(resolve));
+      logger.info('   Socket.io closed.');
     }
-    if (redisClient && typeof redisClient.quit === 'function') {
-      redisClient.quit();
-    }
-    process.exit(0);
-  });
-});
+
+    await new Promise((resolve) => server.close(resolve));
+    logger.info('   HTTP server closed.');
+
+    if (pool && typeof pool.end === 'function') await pool.end();
+    else if (pool && typeof pool.close === 'function') await pool.close();
+    logger.info('   Database pool released.');
+
+    if (redisClient && typeof redisClient.quit === 'function') await redisClient.quit();
+    logger.info('✅ Shutdown complete.');
+  } catch (err) {
+    logger.error('Error during shutdown: ' + (err && err.message));
+    exitCode = exitCode || 1;
+  }
+
+  clearTimeout(deadline);
+  process.exit(exitCode);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM', 0));
+// Without SIGINT the local dev server needed two Ctrl+C presses and left the
+// pool open on the first.
+process.on('SIGINT', () => gracefulShutdown('SIGINT', 0));
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at: ' + promise + ' reason: ' + reason);
-  // Trigger a graceful shutdown in production
   if (process.env.NODE_ENV === 'production') {
     logger.error('Initiating graceful shutdown due to unhandled promise rejection');
-    server.close(() => {
-      if (pool && typeof pool.end === 'function') pool.end();
-      if (redisClient && typeof redisClient.quit === 'function') redisClient.quit();
-      process.exit(1);
-    });
-    // Force shutdown after 10 seconds if graceful shutdown fails
-    setTimeout(() => process.exit(1), 10000).unref();
+    gracefulShutdown('unhandledRejection', 1);
   } else {
     logger.error('Unhandled Rejection swallowed (Development mode)');
   }

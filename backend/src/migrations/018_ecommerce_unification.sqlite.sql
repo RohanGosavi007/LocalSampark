@@ -1,13 +1,20 @@
+-- There is no `products` table in this schema; the catalogue is shop_products
+-- and its id is a TEXT uuid, as is users.id. The original definition declared
+-- INTEGER columns and a foreign key to products(id), which left a dangling
+-- reference: SQLite accepts the CREATE but then fails every statement that
+-- triggers a foreign-key check on this table, including `DELETE FROM users`.
+-- init.sql was already corrected for Postgres; this keeps the SQLite path
+-- (local dev and the USE_SQLITE CI job) in parity with it.
 CREATE TABLE IF NOT EXISTS cart_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     session_id TEXT NULL,
-    user_id INTEGER NULL,
-    product_id INTEGER NOT NULL,
+    user_id TEXT NULL,
+    product_id TEXT NOT NULL,
     quantity INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (product_id) REFERENCES shop_products(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS orders (

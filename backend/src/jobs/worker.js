@@ -1,6 +1,7 @@
 const { Worker } = require('bullmq');
 const { query, withTransaction } = require('../config/database');
 const logger = require('../config/logger');
+const { trackInterval } = require('../utils/intervals');
 
 // Execute maintenance logic (extracted for reuse across BullMQ and In-Memory fallback)
 async function runHourlyMaintenance() {
@@ -112,13 +113,11 @@ async function runHighFrequencyTasks() {
 function initFallbackWorkers() {
   logger.info('⚡ Initializing Synchronous In-Memory Fallback Queue Workers...');
 
-  // Run immediately on boot
-  runHourlyMaintenance();
-  runHighFrequencyTasks();
-
-  // Recurring intervals
-  setInterval(runHourlyMaintenance, 3600000); // 1 hour interval
-  setInterval(runHighFrequencyTasks, 30000);     // 30 seconds interval
+  // Recurring intervals. trackInterval also fires the first pass immediately,
+  // unrefs the timer so it cannot block a graceful shutdown, and skips a tick
+  // while the previous (async) pass is still running. See utils/intervals.js.
+  trackInterval('hourly-maintenance', runHourlyMaintenance, 3600000, { runImmediately: true });
+  trackInterval('high-frequency-tasks', runHighFrequencyTasks, 30000, { runImmediately: true });
   
   logger.info('✅ Synchronous In-Memory Queue Workers Active (No Redis Required)');
 }

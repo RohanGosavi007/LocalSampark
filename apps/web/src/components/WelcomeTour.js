@@ -1,18 +1,40 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { X, ChevronRight, MapPin, MessageSquare, ShoppingBag } from 'lucide-react';
 
+/**
+ * Routes where the tour must never appear.
+ *
+ * This component is mounted globally in app/layout.js and renders a
+ * `fixed inset-0 z-[100]` overlay, so for any first-time visitor it covered
+ * every page — including the sign-in screen. The first thing a new user saw
+ * was a three-step product tour sitting on top of the login form, blocking
+ * every control behind it until dismissed. Onboarding belongs after
+ * authentication, not in front of it.
+ */
+const TOUR_SUPPRESSED_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
+
 export default function WelcomeTour() {
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [step, setStep] = useState(0);
 
+  const suppressed = TOUR_SUPPRESSED_ROUTES.some(
+    (route) => pathname === route || (pathname && pathname.startsWith(route + '/'))
+  );
+
   useEffect(() => {
+    if (suppressed) {
+      setIsVisible(false);
+      return;
+    }
     // Show only once per user
     const hasSeenTour = localStorage.getItem('localsampark_tour_seen');
     if (!hasSeenTour) {
       setIsVisible(true);
     }
-  }, []);
+  }, [suppressed]);
 
   const completeTour = () => {
     localStorage.setItem('localsampark_tour_seen', 'true');
@@ -27,7 +49,7 @@ export default function WelcomeTour() {
     }
   };
 
-  if (!isVisible) return null;
+  if (suppressed || !isVisible) return null;
 
   const tourContent = [
     {

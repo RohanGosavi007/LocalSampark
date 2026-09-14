@@ -67,6 +67,25 @@ function validateEnv() {
     if (isProduction) process.exit(1);
   }
 
+  /**
+   * A present-but-weak JWT_SECRET is worse than a missing one: the server boots
+   * clean and every token it issues is forgeable. CI runs with the literal
+   * "test-secret", and that value reaching a production environment variable is
+   * a realistic copy-paste accident, so reject it by name as well as by length.
+   */
+  if (isProduction) {
+    const secret = process.env.JWT_SECRET || '';
+    const banned = ['test-secret', 'secret', 'changeme', 'localsampark', 'your-secret-key'];
+    if (secret.length < 32) {
+      console.error(`❌ CRITICAL: JWT_SECRET is ${secret.length} characters; at least 32 are required in production.`);
+      process.exit(1);
+    }
+    if (banned.includes(secret.toLowerCase())) {
+      console.error('❌ CRITICAL: JWT_SECRET is a well-known placeholder value. Generate one with: openssl rand -base64 48');
+      process.exit(1);
+    }
+  }
+
   if (isProduction && placeholderCritical.length > 0) {
     console.error('❌ CRITICAL: Placeholder secrets found in production:');
     placeholderCritical.forEach(key => console.error(`  - ${key}`));

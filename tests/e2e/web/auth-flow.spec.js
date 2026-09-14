@@ -41,13 +41,23 @@ test.describe('Auth Flow', () => {
 
   test('should prevent empty form submission on login', async ({ page }) => {
     await page.goto('/login');
-    const submitBtn = page.locator('button[type="submit"], button:has-text("Login"), button:has-text("Continue")').first();
-    if (await submitBtn.isVisible()) {
-      await submitBtn.click();
-      // Should show validation error or stay on same page
-      await page.waitForTimeout(500);
+    const submitBtn = page.locator('form button[type="submit"]').first();
+    await expect(submitBtn).toBeVisible();
+
+    // The page guards an empty form by disabling submit, so clicking it is not
+    // a valid way to test this: the previous version of this test called
+    // .click() and spent the full 15s action timeout waiting for a button that
+    // is correctly never enabled, then failed. Assert the guard itself, and
+    // only exercise a click if the button is enabled (i.e. some other form of
+    // validation is in use).
+    if (await submitBtn.isDisabled()) {
       expect(page.url()).toContain('login');
+      return;
     }
+
+    await submitBtn.click();
+    await page.waitForTimeout(500);
+    expect(page.url()).toContain('login');
   });
 
   test('should reject invalid phone number format', async ({ page }) => {

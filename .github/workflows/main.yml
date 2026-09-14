@@ -6,6 +6,16 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+
+# Superseded PR runs are cancelled: a second push to the same branch makes the
+# first run's result irrelevant, and these jobs build the Next.js app and two
+# full dependency trees.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   validate-and-test:
     name: Lint, Type-Check, Unit Tests, and Build

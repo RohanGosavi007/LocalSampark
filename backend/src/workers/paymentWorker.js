@@ -1,4 +1,5 @@
 const { query, withTransaction } = require('../config/database');
+const { trackInterval } = require('../utils/intervals');
 
 /**
  * Technician Escrow Payout Worker
@@ -70,7 +71,7 @@ async function processPendingPayouts() {
 
 function initPaymentWorker() {
   console.log('⚡ [Worker] Technician Payout Worker Initialized (Interval: 1 hr)');
-  setInterval(processPendingPayouts, 3600000); // 1 hour poll interval
+  trackInterval('technician-payouts', processPendingPayouts, 3600000); // 1 hour poll interval
 }
 
 module.exports = { initPaymentWorker, processPendingPayouts };

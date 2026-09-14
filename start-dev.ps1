@@ -1,22 +1,31 @@
 # LocalSampark Development Launcher
-# Starts Backend, Web App, and Mobile Bundler in separate PowerShell windows
+# Starts Backend, Web App, and Mobile Bundler in separate PowerShell windows.
+#
+# Every window is anchored to $PSScriptRoot. Previously each child process
+# inherited the caller's working directory and then ran a relative `cd backend`,
+# so launching this script from anywhere other than the repository root opened
+# three windows that all failed with "path does not exist".
+
+$Root = $PSScriptRoot
 
 Write-Host "🚀 Starting LocalSampark Development Environment..." -ForegroundColor Cyan
 
-# Start Backend
 Write-Host "Starting Backend API on port 5000..." -ForegroundColor Green
-Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "cd backend; npm run dev"
+Start-Process powershell.exe -WorkingDirectory $Root `
+    -ArgumentList "-NoExit", "-Command", "npm run dev:backend"
 
-# Wait a moment for backend to initialize
+# Give the backend a head start so the web app's first API calls are not
+# hitting a port that is not listening yet.
 Start-Sleep -Seconds 3
 
-# Start Web App
 Write-Host "Starting Web Application on port 3000..." -ForegroundColor Yellow
-Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "cd apps/web; npm run dev"
+Start-Process powershell.exe -WorkingDirectory $Root `
+    -ArgumentList "-NoExit", "-Command", "npm run dev:web"
 
-# Start Mobile Bundler
 Write-Host "Starting Expo Mobile Bundler..." -ForegroundColor Magenta
-Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "cd apps/mobile; npx expo start"
+Start-Process powershell.exe -WorkingDirectory (Join-Path $Root 'apps/mobile') `
+    -ArgumentList "-NoExit", "-Command", "npx expo start"
 
-Write-Host "✅ All environments started successfully!" -ForegroundColor Green
-Write-Host "Please refer to tunnel-setup.md for physical device testing instructions." -ForegroundColor Cyan
+Write-Host "✅ All environments started." -ForegroundColor Green
+Write-Host "For physical-device testing, run .\start-live-tunnel.ps1 (it opens the" -ForegroundColor Cyan
+Write-Host "tunnel and rewrites apps/mobile/.env for you), or see tunnel-setup.md." -ForegroundColor Cyan
