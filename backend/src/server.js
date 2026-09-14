@@ -340,6 +340,13 @@ async function startServer() {
     // 10x Scale: Initialize Async Notification Queue
     notificationService.initQueue(redisClient);
 
+    // ML config invalidation. Without this, a change to a ranking weight — or
+    // the kill switch — reaches other instances only when their 30s cache
+    // expires, so the fleet spends that window split between the old and new
+    // behaviour. Degrades to TTL-only when Redis is absent.
+    const mlConfig = require('./modules/ml/services/mlconfig.service');
+    await mlConfig.initInvalidationListener();
+
   } catch (error) {
     logger.error('❌ Failed to start server: ' + error.message);
     process.exit(1);
@@ -399,6 +406,12 @@ async function gracefulShutdown(signal, exitCode = 0) {
     if (pool && typeof pool.end === 'function') await pool.end();
     else if (pool && typeof pool.close === 'function') await pool.close();
     logger.info('   Database pool released.');
+
+    try {
+      await require('./modules/ml/services/mlconfig.service').close();
+    } catch (e) {
+      logger.warn('ML config subscriber close failed: ' + e.message);
+    }
 
     if (redisClient && typeof redisClient.quit === 'function') await redisClient.quit();
     logger.info('✅ Shutdown complete.');

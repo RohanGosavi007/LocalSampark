@@ -18,14 +18,18 @@ export default function LeadsCRMTab({ API_BASE, authHeaders }) {
       const data = await fetchJson(`${API_BASE}/franchise/leads`, { headers: authHeaders() });
       setLeads(data.leads || data.data || []);
     } catch (e) {
+      // This block used to be unparseable: a setError(e) call had been spliced
+      // into the middle of the object literal below, between two array
+      // elements. Nothing imports this component, so Next never compiled it and
+      // the build stayed green while the file could not be parsed at all.
+      //
+      // The invented fallback leads are gone with it. Showing three fabricated
+      // businesses ("Gupta Kirana Store", "Dhanori Medicals", ...) styled as
+      // real CRM records meant an operator could call a prospect that does not
+      // exist. A failed fetch is now reported as a failure.
       console.error('Failed to fetch CRM leads:', e);
-      setLeads([
-        { id: 'l1', business_name: 'Gupta Kirana Store', category: 'Grocery', phone: '+91 98220 11990', status: 'SCRAPED'
       setError(e);
-    },
-        { id: 'l2', business_name: 'Dhanori Medicals', category: 'Pharmacy', phone: '+91 99120 33881', status: 'CONTACTED' },
-        { id: 'l3', business_name: 'Baner Hardware & Tools', category: 'Retail', phone: '+91 97660 55412', status: 'VERIFIED' }
-      ]);
+      setLeads([]);
     } finally {
       setLoading(false);
     }

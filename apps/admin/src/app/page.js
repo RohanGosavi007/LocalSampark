@@ -37,6 +37,11 @@ import EnvironmentTab from '../components/tabs/EnvironmentTab';
 import AnimalWelfareTab from '../components/tabs/AnimalWelfareTab';
 import CivicTab from '../components/tabs/CivicTab';
 import RewardsTab from '../components/tabs/RewardsTab';
+// Orphaned until now: the file existed but nothing imported it, so Next never
+// compiled it and a syntax error inside it sat undetected while the build
+// stayed green. See the note at the top of AIAnalyticsTab.js.
+import AIAnalyticsTab from '../components/tabs/AIAnalyticsTab';
+import MLControlTab from '../components/tabs/MLControlTab';
 
 const authHeaders = getAuthHeaders;
 
@@ -408,7 +413,9 @@ export default function AdminDashboardPage() {
     { id: 'environment', label: 'Environment & Waste', icon: '♻️' },
     { id: 'animal', label: 'Animal Welfare & Pets', icon: '🐾' },
     { id: 'civic', label: 'Civic & Legal Services', icon: '🏛️' },
-    { id: 'rewards', label: 'Earn & Rewards', icon: '🎁' }
+    { id: 'rewards', label: 'Earn & Rewards', icon: '🎁' },
+    { id: 'ai-analytics', label: 'Territory Intelligence', icon: '📊' },
+    { id: 'ml-control', label: 'ML Control Center', icon: '🧠' }
   ];
 
   const tabStyle = (id) => ({
@@ -599,6 +606,8 @@ export default function AdminDashboardPage() {
         {activeTab === 'animal' && <AnimalWelfareTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'civic' && <CivicTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'rewards' && <RewardsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'ai-analytics' && <AIAnalyticsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'ml-control' && <MLControlTab API_BASE={API_BASE} authHeaders={authHeaders} />}
 
       </main>
     </div>

@@ -164,6 +164,13 @@ router.use('/', require('../modules/core/routes/dashboards.routes'));
 // module at /jobs (postings, applications, resumes, interviews).
 router.use('/jobs-board', require('../modules/services/routes/jobs-board.routes'));
 
+// ─── ML: TELEMETRY & RANKING CONTROL PLANE ───────────────
+// /ml/events is the highest-volume endpoint once the clients are instrumented
+// (every card scrolled past is an impression), so it is deliberately NOT behind
+// apiCache or the admin limiter — it carries its own ingest limiter and always
+// answers 202.
+router.use('/ml', require('../modules/ml/routes/ml.routes'));
+
 router.use('/test-runner', require('./test-runner.routes'));
 
 module.exports = router;
