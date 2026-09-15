@@ -14,6 +14,8 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ShopCardSkeleton } from '../../components/ui/Skeleton';
 import { ShopCard } from '../../components/ShopCard';
+import TrackedItem from '../../components/TrackedItem';
+import { initTelemetry, resetImpressions } from '../../lib/telemetry';
 import LazyMap from '../../components/LazyMap';
 import { MemoizedVirtualizedShopGrid as VirtualizedShopGrid } from '../../components/VirtualizedShopGrid';
 
@@ -41,6 +43,21 @@ export default function ShopsPage() {
   const [activeStory, setActiveStory] = useState(null);
   const [workerFilteredShops, setWorkerFilteredShops] = useState(null);
   const [categoryCounts, setCategoryCounts] = useState({});
+
+  // Starts the telemetry buffer and its page-hide flush. Idempotent — repeated
+  // calls are a no-op — so mounting this page more than once is harmless.
+  useEffect(() => {
+    initTelemetry();
+  }, []);
+
+  // Impressions are de-duplicated per item per surface, so that scrolling a
+  // card back into view does not log it twice. Changing the filters produces a
+  // genuinely different feed, though, and the items in it deserve a fresh
+  // impression — otherwise a shop that appeared under "All" is never counted as
+  // shown under "Groceries".
+  useEffect(() => {
+    resetImpressions('shops_directory');
+  }, [selectedCategory, searchTerm, filterDelivery, filterTopRated]);
 
   // 10x Scale: Web Worker Engine for Off-Thread Filtering
   useEffect(() => {
@@ -389,12 +406,21 @@ export default function ShopsPage() {
               <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {sortedShops.map((shop, i) => (
                   <StaggerItem key={shop.id}>
-                    <ShopCard
-                      shop={shop}
-                      category={categoriesMap[shop.category_id || shop.categoryId] || shop.category}
-                      index={i % 3}
-                      onQuickView={handleQuickView}
-                    />
+                    {/*
+                      Reports an impression once the card has been 50% visible
+                      for a second, and a click when it is activated. `i` is the
+                      rendered slot, which is what lets the admin console
+                      attribute click-through to position rather than only to
+                      the merchant.
+                    */}
+                    <TrackedItem surface="shops_directory" itemType="shop" itemId={shop.id} position={i}>
+                      <ShopCard
+                        shop={shop}
+                        category={categoriesMap[shop.category_id || shop.categoryId] || shop.category}
+                        index={i % 3}
+                        onQuickView={handleQuickView}
+                      />
+                    </TrackedItem>
                   </StaggerItem>
                 ))}
               </StaggerGrid>

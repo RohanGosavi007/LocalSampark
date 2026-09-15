@@ -131,6 +131,10 @@ router.get('/config/public', async (req, res, next) => {
   }
 });
 
+// ─── RANKED FEEDS ────────────────────────────────────────────────────────────
+// Mounted before the admin routes so /ml/recommendations/* cannot be shadowed.
+router.use('/recommendations', require('./recommendations.routes'));
+
 // ─── ADMIN CONTROL PLANE ─────────────────────────────────────────────────────
 
 const adminOnly = [authenticate, requireAdmin];

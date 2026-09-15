@@ -42,30 +42,73 @@ async function seedDemoShops() {
   try {
     console.log('🌱 Starting mock shops seed...');
 
-    // Clear existing shops to start fresh
-    await query("DELETE FROM local_shops");
+    // Clear existing shops to start fresh.
+    //
+    // Children first. This deleted local_shops before its dependants, which
+    // works exactly once — on an empty catalogue. shop_products.shop_id is
+    // declared ON DELETE NO ACTION (unlike shop_offers and shop_staff, which
+    // cascade), so as soon as a single product existed the first statement
+    // failed with a foreign-key error and the whole re-seed aborted.
+    //
+    // staff_availability hangs off shop_staff rather than off a shop, so it is
+    // removed before its parent for the same reason.
+    await query("DELETE FROM staff_availability");
     await query("DELETE FROM shop_products");
     await query("DELETE FROM shop_staff");
     await query("DELETE FROM shop_offers");
+    await query("DELETE FROM local_shops");
     console.log('🗑️ Cleared existing shops.');
 
-    // 1. Get or create a region
-    let region = await queryOne("SELECT id, latitude, longitude FROM regions LIMIT 1");
+    // 1. Anchor the demo catalogue to the coordinates the app actually opens at.
+    //
+    // This used to take `SELECT ... FROM regions LIMIT 1` — an arbitrary row,
+    // since there is no ORDER BY — and adopt its latitude and longitude,
+    // discarding the Dhanori defaults declared just below. The first row that
+    // came back was "Aurangabad City - 431001" at 16.81, 73.09, so all 124 demo
+    // shops were scattered around a point roughly 200 km from Pune.
+    //
+    // Nothing reported a problem, but the shop feed was empty for the demo:
+    // /shops/nearby and /ml/recommendations/home both fall back to 18.59, 73.90
+    // when the client sends no location, and a 10 km radius around Pune
+    // contains none of the seeded shops. Opening the app without granting
+    // location permission — which is exactly what happens on a fresh install
+    // during a demo — showed nothing at all.
+    //
+    // The regions table cannot be trusted for this: its coordinates are
+    // randomly generated and do not match the place names attached to them
+    // ("Botanical Garden (Pune)" is recorded at 15.05, 78.31, in Andhra
+    // Pradesh). The demo anchors on the app's own default centre instead, and
+    // a Dhanori region is created with matching coordinates if one is missing.
+    const DEMO_LAT = 18.5786;
+    const DEMO_LNG = 73.8967;
+    let baseLat = DEMO_LAT;
+    let baseLng = DEMO_LNG;
+
+    let region = await queryOne(
+      "SELECT id, latitude, longitude FROM regions WHERE name LIKE 'Dhanori%' AND id IS NOT NULL LIMIT 1"
+    );
     let regionId;
-    let baseLat = 18.5786;
-    let baseLng = 73.8967;
-    
+
     if (!region) {
       regionId = crypto.randomUUID();
       await query(
         `INSERT INTO regions (id, name, state, country, latitude, longitude, radius_km)
-         VALUES ($1, 'Dhanori', 'Maharashtra', 'India', 18.5786, 73.8967, 5.0)`,
-        [regionId]
+         VALUES ($1, 'Dhanori', 'Maharashtra', 'India', $2, $3, 5.0)`,
+        [regionId, DEMO_LAT, DEMO_LNG]
       );
     } else {
       regionId = region.id;
-      if (region.latitude) baseLat = region.latitude;
-      if (region.longitude) baseLng = region.longitude;
+      // Only adopt the stored coordinates when they are plausibly the same
+      // place. Anything further than ~50 km from the app's default centre is
+      // the corrupted-coordinate case above, and following it would empty the
+      // demo feed again.
+      const lat = Number(region.latitude);
+      const lng = Number(region.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lng)
+          && Math.abs(lat - DEMO_LAT) < 0.5 && Math.abs(lng - DEMO_LNG) < 0.5) {
+        baseLat = lat;
+        baseLng = lng;
+      }
     }
 
     // 2. Get or create an owner user

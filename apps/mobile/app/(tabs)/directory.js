@@ -8,6 +8,8 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useShops, useCategories } from '../../src/hooks/useShops';
+import { useImpressionTracking } from '../../src/hooks/useImpressionTracking';
+import { initTelemetry, resetImpressions } from '../../src/lib/telemetry';
 
 // DEMO_SHOPS lived here: eleven invented businesses with addresses, ratings and
 // distances — "Sharma Grocery & Dairy, Kalyani Nagar, 4.8, 0.5 km",
@@ -96,6 +98,25 @@ export default function DirectoryScreen() {
   const [topRatedOnly, setTopRatedOnly] = useState(false);
   const [deliveryOnly, setDeliveryOnly] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+
+  // Impression and click tracking for this feed. The hook holds its
+  // viewabilityConfigCallbackPairs in a ref — React Native throws if that prop
+  // changes identity between renders, which it would on every data update.
+  const { viewabilityProps, onItemPress } = useImpressionTracking('shops_directory', 'shop');
+
+  // Starts the telemetry buffer and its background flush. Idempotent.
+  useEffect(() => {
+    initTelemetry();
+  }, []);
+
+  // Impressions are de-duplicated per item per surface, so a card scrolled back
+  // into view is not counted twice. Changing the filters produces a genuinely
+  // different feed though, and its items deserve a fresh impression — without
+  // this a shop shown under "All Categories" would never be counted as shown
+  // under "Groceries".
+  useEffect(() => {
+    resetImpressions('shops_directory');
+  }, [selectedCategory, sortBy, topRatedOnly, deliveryOnly]);
 
   useEffect(() => {
     if (category) setSelectedCategory(category);
@@ -299,6 +320,7 @@ export default function DirectoryScreen() {
       ) : (
         <AnimatedFlashList
           data={filteredShops}
+          {...viewabilityProps}
           keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
           numColumns={2}
           contentContainerStyle={styles.scrollContent}
@@ -315,7 +337,7 @@ export default function DirectoryScreen() {
                   : 'No shops match your filters. Try another category or adjust them.'}
             </Text>
           }
-          renderItem={({ item: shop }) => (
+          renderItem={({ item: shop, index: shopIndex }) => (
             <View style={styles.card}>
               <View style={styles.imageBox}>
                 <Text style={{fontSize: 40}}>{categories.find(c => c.name === shop.category || c.name === shop.category_name)?.icon || '🏪'}</Text>
@@ -336,6 +358,7 @@ export default function DirectoryScreen() {
               <TouchableOpacity 
                 style={styles.actionBtn} 
                 onPress={() => {
+                  onItemPress(shop.id, shopIndex);
                   // For demo shops pass extra data so shop-detail doesn't show blank
                   const categorySlug = (shop.category || shop.category_name || 'retail')
                     .toLowerCase().replace(/[^a-z0-9]+/g, '-');
