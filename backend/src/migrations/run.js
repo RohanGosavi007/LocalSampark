@@ -93,6 +93,37 @@ async function runMigration() {
           console.log(`⚠️ Migration ${file} error:`, err.message);
         }
       }
+
+      // JavaScript migrations, run after the SQL ones.
+      //
+      // Some repairs cannot be expressed in SQLite's dialect. Retyping a column
+      // or restoring a dropped constraint requires rebuilding the table, and a
+      // rebuild that hardcodes its column list silently drops any column an
+      // environment has that the file does not know about — so those read the
+      // live schema instead, which needs real code. 098 is the first.
+      //
+      // Each exports `run()` and is expected to be idempotent, since this
+      // runner has no record of what it has already applied on the SQLite path.
+      const jsFiles = fs.readdirSync(__dirname)
+        .filter(f => /^\d{3}_.*\.js$/.test(f) && !f.startsWith('run'))
+        .sort();
+
+      for (const file of jsFiles) {
+        const mod = require(path.join(__dirname, file));
+        if (typeof mod.run !== 'function') continue;
+        console.log(`Running migration: ${file}...`);
+        try {
+          const result = await mod.run();
+          if (result && result.results) {
+            const rebuilt = result.results.filter(r => r.rebuilt).length;
+            if (rebuilt > 0) console.log(`   ${rebuilt} table(s) rebuilt.`);
+          }
+        } catch (err) {
+          // Consistent with the SQL loop above: a failing migration is reported
+          // and the rest still run, rather than aborting the whole schema setup.
+          console.log(`⚠️ Migration ${file} error:`, err.message);
+        }
+      }
     } else {
       const sqlPath = path.join(__dirname, 'init.sql');
       const sql = fs.readFileSync(sqlPath, 'utf8');

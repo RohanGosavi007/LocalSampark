@@ -17,6 +17,7 @@ import { ShopCard } from '../../components/ShopCard';
 import TrackedItem from '../../components/TrackedItem';
 import { initTelemetry, resetImpressions } from '../../lib/telemetry';
 import { useShopSearch } from '../../hooks/useShopSearch';
+import PredictiveSearchBar from '../../components/PredictiveSearchBar';
 import LazyMap from '../../components/LazyMap';
 import { MemoizedVirtualizedShopGrid as VirtualizedShopGrid } from '../../components/VirtualizedShopGrid';
 
@@ -331,13 +332,21 @@ export default function ShopsPage() {
           <div className="sticky top-[70px] z-40 bg-background/80 backdrop-blur-xl p-4 rounded-2xl border border-border shadow-sm mb-12 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                <input 
-                    type="text" 
-                    className="w-full bg-background border border-border rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" 
-                    placeholder="Search shops..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted z-10 pointer-events-none" />
+                {/*
+                  Suggestions come from the prefix-matching search index, so
+                  "groc" surfaces grocery shops before the word is finished and
+                  a category match surfaces a shop whose name never contains the
+                  term. Picking one opens that shop; typing on runs the full
+                  search through useShopSearch above.
+                */}
+                <PredictiveSearchBar
+                  id="shops-search"
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  onSelectShop={(item) => { window.location.href = `/shops/${item.id}`; }}
+                  placeholder="Search shops, services, categories..."
+                  inputClassName="w-full bg-background border border-border rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 />
               </div>
               
