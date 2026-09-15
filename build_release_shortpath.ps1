@@ -142,10 +142,20 @@ $gradleExit = $LASTEXITCODE
 Pop-Location
 if ($gradleExit -ne 0) { throw "Gradle build failed with exit code $gradleExit" }
 
-# ── 5. Report ───────────────────────────────────────────────────────────────
+# ── 5. Report & Copy to Workspace ──────────────────────────────────────────
 $outDir = Join-Path $Dest ("apps\mobile\android\app\build\outputs\apk\" + $Variant.ToLower())
+$repoOutDir = Join-Path $src 'build-android'
+if (-not (Test-Path $repoOutDir)) {
+    New-Item -ItemType Directory -Force -Path $repoOutDir | Out-Null
+}
+
 Write-Host "`n========================================="
 Write-Host '  Build Complete!'
 Get-ChildItem -Path $outDir -Filter *.apk -ErrorAction SilentlyContinue |
-    ForEach-Object { Write-Host ("  {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB)) }
+    ForEach-Object {
+        Write-Host ("  Scratch APK: {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB))
+        $destFile = Join-Path $repoOutDir $_.Name
+        Copy-Item -Path $_.FullName -Destination $destFile -Force
+        Write-Host ("  Copied to  : {0}" -f $destFile)
+    }
 Write-Host '========================================='

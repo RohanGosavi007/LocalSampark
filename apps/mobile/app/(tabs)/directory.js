@@ -11,6 +11,7 @@ import { useShops, useCategories } from '../../src/hooks/useShops';
 import { useImpressionTracking } from '../../src/hooks/useImpressionTracking';
 import { initTelemetry, resetImpressions } from '../../src/lib/telemetry';
 import { useShopSearch } from '../../src/hooks/useShopSearch';
+import PredictiveSearchBar from '../../src/components/PredictiveSearchBar';
 
 // DEMO_SHOPS lived here: eleven invented businesses with addresses, ratings and
 // distances — "Sharma Grocery & Dairy, Kalyani Nagar, 4.8, 0.5 km",
@@ -271,14 +272,27 @@ export default function DirectoryScreen() {
         </View>
       </TouchableOpacity>
 
+      {/*
+        Suggestions come from the prefix-matching search index, so "groc"
+        surfaces grocery shops before the word is finished and a category match
+        surfaces a shop whose name never contains the term. Choosing one opens
+        that shop; typing on runs the full search through useShopSearch above.
+      */}
       <View style={styles.searchContainer}>
         <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput 
-          style={styles.searchInput} 
-          placeholder={`Search ${categories.length} categories...`}
-          placeholderTextColor="#64748b"
+        <PredictiveSearchBar
           value={searchTerm}
-          onChangeText={setSearchTerm}
+          onChange={setSearchTerm}
+          onSelectShop={(item) => {
+            const categorySlug = (item.category || 'retail')
+              .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            router.push(
+              `/modules/shop-detail?id=${item.id}&category=${categorySlug}&name=${encodeURIComponent(item.name)}`
+            );
+          }}
+          placeholder={`Search ${categories.length} categories...`}
+          style={{ flex: 1 }}
+          inputStyle={[styles.searchInput, { backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 }]}
         />
         <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilters(!showFilters)}>
           <Text style={{ fontSize: 20 }}>⚙️</Text>
@@ -409,7 +423,11 @@ const styles = StyleSheet.create({
   zoneChangeBtn: { backgroundColor: '#3b82f6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   zoneChangeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   // Search & Filters
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, marginHorizontal: 16, marginTop: 12, elevation: 2 },
+  // zIndex and a raised elevation keep the suggestion dropdown above the
+  // category chips (elevation 1) and the results list that follow it. On
+  // Android elevation, not zIndex, decides sibling paint order, so both are
+  // set. No overflow:'hidden' here — it would clip the dropdown.
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, marginHorizontal: 16, marginTop: 12, elevation: 12, zIndex: 50 },
   searchIcon: { marginRight: 12, fontSize: 18 },
   searchInput: { flex: 1, paddingVertical: 14, color: '#0f172a', fontSize: 15 },
   filterBtn: { padding: 8, marginLeft: 8 },
