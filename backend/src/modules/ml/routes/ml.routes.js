@@ -136,6 +136,9 @@ router.get('/config/public', async (req, res, next) => {
 router.use('/recommendations', require('./recommendations.routes'));
 router.use('/search', require('./search.routes'));
 
+// Bandit layout, experiments, moderation queue and drift reporting.
+router.use('/', require('./advanced.routes'));
+
 // ─── ADMIN CONTROL PLANE ─────────────────────────────────────────────────────
 
 const adminOnly = [authenticate, requireAdmin];

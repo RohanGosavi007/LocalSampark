@@ -15,6 +15,7 @@ import ShopByCategory from '../../components/ShopByCategory';
 import TrendingHighlights from '../../components/TrendingHighlights';
 import SwipeableCardDeck from '../../components/SwipeableCardDeck';
 import { useShops } from '../../hooks/useShops';
+import HomeModules from '../../components/home/HomeModules';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, theme } from '../../theme/theme';
 
 const { width } = Dimensions.get('window');
@@ -73,27 +74,16 @@ export default function ResidentDashboard({ user }) {
             <StoriesRow />
           </View>
 
-          {/* SuperApp Tri-Category Quick Hub */}
-          <View style={{ marginBottom: 24, paddingHorizontal: SPACING.md }}>
-            <Text style={[s.sectionTitle, { paddingHorizontal: 0, marginBottom: 12 }]}>🚀 Neighborhood SuperApp</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity onPress={() => router.push('/advanced')} style={{ flex: 1, backgroundColor: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.3)', borderWidth: 1, borderRadius: 16, padding: 12, alignItems: 'center' }}>
-                <Text style={{ fontSize: 24, marginBottom: 4 }}>🚗</Text>
-                <Text style={{ color: '#06b6d4', fontWeight: '800', fontSize: 12 }}>Carpool</Text>
-                <Text style={{ color: '#94a3b8', fontSize: 9, textAlign: 'center', marginTop: 2 }}>Split & Track</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/advanced')} style={{ flex: 1, backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)', borderWidth: 1, borderRadius: 16, padding: 12, alignItems: 'center' }}>
-                <Text style={{ fontSize: 24, marginBottom: 4 }}>🛍️</Text>
-                <Text style={{ color: '#f59e0b', fontWeight: '800', fontSize: 12 }}>Auctions</Text>
-                <Text style={{ color: '#94a3b8', fontSize: 9, textAlign: 'center', marginTop: 2 }}>Bid & Escrow</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/advanced')} style={{ flex: 1, backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)', borderWidth: 1, borderRadius: 16, padding: 12, alignItems: 'center' }}>
-                <Text style={{ fontSize: 24, marginBottom: 4 }}>💼</Text>
-                <Text style={{ color: '#3b82f6', fontWeight: '800', fontSize: 12 }}>Jobs & Quiz</Text>
-                <Text style={{ color: '#94a3b8', fontSize: 9, textAlign: 'center', marginTop: 2 }}>Skills & Badges</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/*
+            Module order comes from the contextual bandit rather than from this
+            file. It replaced a fixed three-tile hub whose tiles were always
+            Carpool, Auctions and Jobs, in that order, for every user at every
+            hour of the day — which is the thing a bandit exists to stop. Every
+            module is still always present; only the ordering is personalised,
+            because hiding a pharmacy shortcut from someone who has not tapped
+            it lately would be optimising engagement against safety.
+          */}
+          <HomeModules pincode={activeZone?.pincode || null} />
 
           {/* Urgent Actions Banner */}
           <View style={s.urgentRow}>

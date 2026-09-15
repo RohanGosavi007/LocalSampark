@@ -42,6 +42,7 @@ import RewardsTab from '../components/tabs/RewardsTab';
 // stayed green. See the note at the top of AIAnalyticsTab.js.
 import AIAnalyticsTab from '../components/tabs/AIAnalyticsTab';
 import MLControlTab from '../components/tabs/MLControlTab';
+import MLGovernanceTab from '../components/tabs/MLGovernanceTab';
 // These three shipped complete but were never imported, so their features
 // were unreachable from the console and their code was never compiled — which
 // is how a syntax error sat undetected in LeadsCRMTab while the build stayed
@@ -423,6 +424,7 @@ export default function AdminDashboardPage() {
     { id: 'rewards', label: 'Earn & Rewards', icon: '🎁' },
     { id: 'ai-analytics', label: 'Territory Intelligence', icon: '📊' },
     { id: 'ml-control', label: 'ML Control Center', icon: '🧠' },
+    { id: 'ml-governance', label: 'ML Governance & A/B', icon: '⚖️' },
     { id: 'feature-rollout', label: 'Feature Rollout', icon: '🚦' },
     { id: 'home-services', label: 'Home Services', icon: '🔧' },
     { id: 'leads-crm', label: 'Lead Pipeline', icon: '📇' }
@@ -618,6 +620,7 @@ export default function AdminDashboardPage() {
         {activeTab === 'rewards' && <RewardsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'ai-analytics' && <AIAnalyticsTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'ml-control' && <MLControlTab API_BASE={API_BASE} authHeaders={authHeaders} />}
+        {activeTab === 'ml-governance' && <MLGovernanceTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'feature-rollout' && <FeatureRolloutTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'home-services' && <HomeServicesTab API_BASE={API_BASE} authHeaders={authHeaders} />}
         {activeTab === 'leads-crm' && <LeadsCRMTab API_BASE={API_BASE} authHeaders={authHeaders} />}

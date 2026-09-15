@@ -332,6 +332,66 @@ async function rank(candidates, context = {}) {
     const budgetMs = Number(cfg.ml_timeout_ms) || 150;
     const weights = await mlconfig.getWeights(regionId);
 
+    // Multi-task ranking, when enabled, replaces the weighted-sum scorer
+    // entirely. It is a different scoring model rather than an extra term:
+    // running both and blending them would give two objectives a vote each and
+    // make neither interpretable. Overrides, exploration and the surface kill
+    // switches all still apply, because those are governance rather than
+    // scoring — an admin's block must hold whichever model is ranking.
+    if (cfg.ml_mmoe_enabled === true) {
+      const multiTask = require('../ranking/multiTaskRanker');
+      const withDistance = candidates.map((c) => ({
+        ...c,
+        _distance_km: (lat != null && c.latitude != null)
+          ? distanceKm(lat, lng, Number(c.latitude), Number(c.longitude))
+          : null,
+      }));
+
+      const overrides = await loadOverrides(surface);
+      const impressionCounts = await loadImpressionCounts('shop');
+      const eligible = withDistance.filter((c) => {
+        const o = overrides.get(c.id);
+        return !(o && o.override_type === 'block');
+      });
+
+      const mt = await multiTask.rank(eligible, { cfg });
+
+      let ordered = mt.items.map((item) => {
+        const o = overrides.get(item.id);
+        if (o && o.override_type === 'boost') {
+          return { ...item, _score: item._score * (Number(o.boost_factor) || 1) };
+        }
+        return item;
+      });
+      ordered.sort((a, b) => b._score - a._score);
+
+      const pinned = [];
+      ordered = ordered.filter((item) => {
+        const o = overrides.get(item.id);
+        if (o && o.override_type === 'pin') {
+          pinned.push({ ...item, _pinned: o.pinned_position, is_promoted: true });
+          return false;
+        }
+        return true;
+      });
+      for (const item of pinned.sort((a, b) => a._pinned - b._pinned)) {
+        ordered.splice(Math.min(Math.max(item._pinned, 0), ordered.length), 0, item);
+      }
+
+      const items = injectExploration(ordered, Number(cfg.ml_epsilon) || 0, limit, impressionCounts);
+
+      return {
+        items,
+        strategy: 'mmoe',
+        timings: { total_ms: Date.now() - started },
+        debug: {
+          candidates: candidates.length,
+          params: mt.params,
+          items_with_history: mt.stats_loaded,
+        },
+      };
+    }
+
     const minSupport = Number(cfg.ml_cf_min_support) || 50;
 
     const [index, profile, overrides, impressionCounts, collaborative] = await Promise.all([

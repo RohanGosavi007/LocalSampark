@@ -81,6 +81,30 @@ const DEFAULTS = Object.freeze({
   ml_cf_min_support: 50,
   ml_timeout_ms: 150,
   ml_candidate_limit: 200,
+
+  // Multi-task ranking. Exponents default to 1.0, which makes the composite
+  // reduce exactly to the plain product of its three probabilities — neutral
+  // rather than an opinion about which objective matters.
+  ml_mmoe_enabled: false,
+  ml_mmoe_alpha: 1.0,
+  ml_mmoe_beta: 1.0,
+  ml_mmoe_gamma: 1.0,
+  ml_mmoe_lambda: 0.15,
+  ml_mmoe_prior_ctr: 0.08,
+  ml_mmoe_prior_cvr: 0.12,
+  ml_mmoe_prior_weight: 20,
+
+  // Contextual bandit.
+  ml_bandit_enabled: false,
+  ml_bandit_alpha: 1.0,
+  ml_bandit_ridge: 1.0,
+
+  // Anomaly detection and drift.
+  ml_anomaly_enabled: true,
+  ml_anomaly_z: 3.0,
+  ml_anomaly_min_n: 10,
+  ml_drift_psi_warn: 0.10,
+  ml_drift_psi_alert: 0.25,
 });
 
 /**
@@ -104,6 +128,25 @@ const BOUNDS = Object.freeze({
   ml_cf_min_support: [1, 100000],
   ml_timeout_ms: [10, 2000],
   ml_candidate_limit: [10, 2000],
+
+  // Exponents: 0 switches an objective off (x^0 = 1), which is legitimate.
+  // Negative would invert the objective and is never what anyone means.
+  ml_mmoe_alpha: [0, 5],
+  ml_mmoe_beta: [0, 5],
+  ml_mmoe_gamma: [0, 5],
+  ml_mmoe_lambda: [0, 5],
+  ml_mmoe_prior_ctr: [0, 1],
+  ml_mmoe_prior_cvr: [0, 1],
+  ml_mmoe_prior_weight: [1, 10000],
+
+  // LinUCB alpha scales the confidence width; 0 is pure exploitation.
+  ml_bandit_alpha: [0, 10],
+  ml_bandit_ridge: [0.001, 100],
+
+  ml_anomaly_z: [1, 10],
+  ml_anomaly_min_n: [1, 100000],
+  ml_drift_psi_warn: [0, 5],
+  ml_drift_psi_alert: [0, 5],
 });
 
 const BOOLEAN_KEYS = Object.freeze([
@@ -112,6 +155,9 @@ const BOOLEAN_KEYS = Object.freeze([
   'ml_enabled_services',
   'ml_enabled_jobs',
   'ml_enabled_marketplace',
+  'ml_mmoe_enabled',
+  'ml_bandit_enabled',
+  'ml_anomaly_enabled',
 ]);
 
 const WEIGHT_KEYS = Object.freeze([
