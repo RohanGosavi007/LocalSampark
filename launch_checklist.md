@@ -77,6 +77,26 @@ Ordered by what blocks the launch soonest.
 - [ ] **Take a backup before the first production migration run.** The raw-SQL
       runner applies ~30 pending numbered migrations on first execution.
 
+- [ ] **Import real pincode centroids for `territories` and `regions`.**
+      The coordinates currently stored are fabricated — uniform random noise
+      over a box covering roughly Maharashtra, attached to genuine place names
+      and genuine pincodes, which is why nothing looks wrong. "Chinchwad East"
+      (411019, a Pune suburb at ~18.63, 73.80) is recorded at 15.54, 74.64;
+      territories sharing a pincode prefix, which in reality span under 60 km,
+      are spread over ~900 km on average.
+
+      Migration 097 flags every row `centroid_verified = false` and the spatial
+      lookups refuse unverified coordinates, so nothing currently ranks or
+      assigns by them — `resolveTerritory()` uses pincode, which is real data.
+      That is containment, not a fix: proximity-based territory assignment and
+      radius search stay unavailable until real centroids exist.
+
+      Source a pincode-to-centroid dataset (India Post publishes one; several
+      open datasets mirror it), load it, and set `centroid_verified = true` on
+      the rows it covers. `geoDataTrust.test.js` measures the clustering and
+      will show the improvement. Nothing else needs changing — the code path is
+      already there and starts working the moment the flag flips.
+
 - [ ] **Create the first Super Admin account.** No script does this; the demo
       `God Developer` account exists only in the local SQLite database.
 
@@ -183,5 +203,6 @@ Ordered by what blocks the launch soonest.
 | Schema | `cart_items` referenced a non-existent `products` table on SQLite, which broke `DELETE FROM users` outright. Repaired, and the source migration corrected so fresh dev/CI databases are right. |
 | Data purge | Rewritten: transactional, dry-run by default, preserves Mock Shops and their owners, sweeps dependent rows generically, and verifies referential integrity before committing. |
 | Website login | `/login` no longer depends on the production-disabled `mockLogin()`. Real phone-OTP and email sign-in, with the dev role picker compiled out of production. |
+| Geo data | Fabricated territory/region coordinates are flagged unverified and spatial lookups refuse them, so nothing assigns a user to a territory 400 km away. Territory resolution uses pincode, which is genuine. |
 | Services page | `060_local_services.sql` had no `.sqlite.sql` counterpart, so `local_services` and `service_bookings` existed in production and in no local or CI environment. `/services/nearby` failed on every call there and the page rendered an empty state rather than an error. Ported. |
 | Live testing | `start-live-tunnel.ps1` opens the tunnel, rewrites `apps/mobile/.env` and starts Expo, instead of printing instructions. |

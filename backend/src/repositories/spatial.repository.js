@@ -87,6 +87,17 @@ class SpatialRepository {
    * └─────────────────────────────────────────────────────────────────┘
    */
   async nearestTerritory(lat, lng) {
+    // Only verified centroids. The coordinates currently stored on territories
+    // are uniform random noise attached to genuine place names and pincodes —
+    // territories sharing a pincode prefix, which in reality span under 60 km,
+    // are spread over ~900 km here. Ranking by distance against them would
+    // assign a user in Pune to an arbitrary territory hundreds of kilometres
+    // away, confidently and silently, and territory assignment decides which
+    // shops that user sees and which admin manages them.
+    //
+    // Migration 097 flags every existing row unverified, so this returns null
+    // until real centroids are imported. Null is the honest answer: callers can
+    // fall back to territoryByPincode(), which uses data that IS real.
     const result = await query(`
       SELECT t.*, lt.name as taluka_name, ld.name as district_name, ls.name as state_name
       FROM territories t
@@ -94,6 +105,7 @@ class SpatialRepository {
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
       WHERE t.is_active = true
+        AND COALESCE(t.centroid_verified, 0) = 1
     `);
 
     const territories = result.rows || result;
@@ -144,12 +156,14 @@ class SpatialRepository {
    * └─────────────────────────────────────────────────────────────────┘
    */
   async nearestTerritories(lat, lng, radiusKm = 10, limit = 10) {
+    // Verified centroids only, for the reason given on nearestTerritory above.
     const result = await query(`
       SELECT t.*, lt.name as taluka_name, ld.name as district_name
       FROM territories t
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       WHERE t.is_active = true
+        AND COALESCE(t.centroid_verified, 0) = 1
     `);
 
     const territories = result.rows || result;
@@ -274,6 +288,36 @@ class SpatialRepository {
   /**
    * Resolve a territory by pincode (fast lookup, no spatial calc needed).
    */
+  /**
+   * Resolves a user to a territory using the most reliable signal available.
+   *
+   * Pincode first, because territories.pincode is real data — "411019
+   * Chinchwad East" is a genuine Pune pincode attached to a genuine Pune
+   * locality. Only the coordinates are fabricated. Falling back to centroid
+   * proximity is correct in principle and will start working the moment
+   * verified centroids exist, but today it returns null rather than a
+   * confident guess.
+   *
+   * Returns { territory, method } so a caller can tell how the answer was
+   * reached instead of treating a guess and a lookup as the same thing.
+   */
+  async resolveTerritory({ pincode = null, lat = null, lng = null } = {}) {
+    if (pincode) {
+      const byPincode = await this.territoryByPincode(pincode);
+      if (byPincode) return { territory: byPincode, method: 'pincode' };
+    }
+
+    if (lat != null && lng != null) {
+      const containing = await this.pointInTerritory(lat, lng);
+      if (containing) return { territory: containing, method: 'boundary' };
+
+      const nearest = await this.nearestTerritory(lat, lng);
+      if (nearest) return { territory: nearest, method: 'centroid' };
+    }
+
+    return { territory: null, method: 'unresolved' };
+  }
+
   async territoryByPincode(pincode) {
     return queryOne(`
       SELECT t.*, lt.name as taluka_name, ld.name as district_name, ls.name as state_name
