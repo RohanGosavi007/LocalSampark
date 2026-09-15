@@ -89,20 +89,26 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
   const [saving, setSaving] = useState(null);
   const [notice, setNotice] = useState('');
   const [draft, setDraft] = useState({});
+  const [overrides, setOverrides] = useState([]);
+  const [curateForm, setCurateForm] = useState({
+    item_id: '', override_type: 'pin', pinned_position: 0, boost_factor: 1.5, reason: '',
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [cfg, met, rdy] = await Promise.all([
+      const [cfg, met, rdy, ovr] = await Promise.all([
         fetchJson(`${API_BASE}/ml/admin/config`, { headers: authHeaders() }),
         fetchJson(`${API_BASE}/ml/admin/metrics?hours=24`, { headers: authHeaders() }),
         fetchJson(`${API_BASE}/ml/admin/readiness`, { headers: authHeaders() }),
+        fetchJson(`${API_BASE}/ml/admin/overrides?surface=shops_home`, { headers: authHeaders() }),
       ]);
       setConfig(cfg);
       setDraft(cfg.values || {});
       setMetrics(met.metrics || null);
       setReadiness(rdy.readiness || null);
+      setOverrides(ovr.overrides || []);
     } catch (e) {
       setError(e);
       setConfig(null);
@@ -167,6 +173,52 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
       await load();
     } catch (e) {
       setError(e);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const saveOverride = async (e) => {
+    e.preventDefault();
+    setSaving('curate');
+    setNotice('');
+    try {
+      const payload = {
+        surface: 'shops_home',
+        item_id: curateForm.item_id.trim(),
+        override_type: curateForm.override_type,
+        reason: curateForm.reason.trim(),
+      };
+      if (curateForm.override_type === 'pin') payload.pinned_position = Number(curateForm.pinned_position);
+      if (curateForm.override_type === 'boost') payload.boost_factor = Number(curateForm.boost_factor);
+
+      await fetchJson(`${API_BASE}/ml/admin/overrides`, {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setNotice(`${curateForm.override_type} applied to ${payload.item_id}.`);
+      setCurateForm((f) => ({ ...f, item_id: '', reason: '' }));
+      await load();
+    } catch (e2) {
+      setError(e2);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const removeOverride = async (itemId) => {
+    setSaving(`rm-${itemId}`);
+    try {
+      await fetchJson(`${API_BASE}/ml/admin/overrides`, {
+        method: 'DELETE',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ surface: 'shops_home', item_id: itemId }),
+      });
+      setNotice('Override removed.');
+      await load();
+    } catch (e2) {
+      setError(e2);
     } finally {
       setSaving(null);
     }
@@ -363,6 +415,127 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Curation */}
+          <div style={card}>
+            <h4 style={{ color: '#f8fafc', margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Curation</h4>
+            <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 1.2rem 0' }}>
+              Pin a merchant to a fixed slot, multiply its score, or remove it from
+              recommendations. A weight changes how a signal is valued for everyone; an override is
+              a statement about one merchant, so every change needs a reason and is written to the
+              audit log. Pinned merchants are labelled as promoted to users.
+            </p>
+
+            <form onSubmit={saveOverride} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', alignItems: 'end' }}>
+              <div>
+                <label htmlFor="curate-item" style={{ ...label, display: 'block', marginBottom: '0.3rem' }}>Shop ID</label>
+                <input
+                  id="curate-item"
+                  value={curateForm.item_id}
+                  onChange={(e) => setCurateForm((f) => ({ ...f, item_id: e.target.value }))}
+                  placeholder="uuid"
+                  required
+                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="curate-type" style={{ ...label, display: 'block', marginBottom: '0.3rem' }}>Action</label>
+                <select
+                  id="curate-type"
+                  value={curateForm.override_type}
+                  onChange={(e) => setCurateForm((f) => ({ ...f, override_type: e.target.value }))}
+                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                >
+                  <option value="pin">Pin to slot</option>
+                  <option value="boost">Boost score</option>
+                  <option value="block">Block</option>
+                </select>
+              </div>
+
+              {curateForm.override_type === 'pin' ? (
+                <div>
+                  <label htmlFor="curate-pos" style={{ ...label, display: 'block', marginBottom: '0.3rem' }}>Slot (0 = first)</label>
+                  <input
+                    id="curate-pos" type="number" min="0" max="99"
+                    value={curateForm.pinned_position}
+                    onChange={(e) => setCurateForm((f) => ({ ...f, pinned_position: e.target.value }))}
+                    style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                  />
+                </div>
+              ) : null}
+
+              {curateForm.override_type === 'boost' ? (
+                <div>
+                  <label htmlFor="curate-boost" style={{ ...label, display: 'block', marginBottom: '0.3rem' }}>Multiplier (max 5)</label>
+                  <input
+                    id="curate-boost" type="number" min="0.1" max="5" step="0.1"
+                    value={curateForm.boost_factor}
+                    onChange={(e) => setCurateForm((f) => ({ ...f, boost_factor: e.target.value }))}
+                    style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                  />
+                </div>
+              ) : null}
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="curate-reason" style={{ ...label, display: 'block', marginBottom: '0.3rem' }}>Reason (required, recorded)</label>
+                <input
+                  id="curate-reason"
+                  value={curateForm.reason}
+                  onChange={(e) => setCurateForm((f) => ({ ...f, reason: e.target.value }))}
+                  placeholder="Why is this merchant being promoted or removed?"
+                  required minLength={3}
+                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <button type="submit" disabled={saving === 'curate'} style={btnPrimary}>
+                  {saving === 'curate' ? 'Applying…' : 'Apply override'}
+                </button>
+              </div>
+            </form>
+
+            <div style={{ marginTop: '1.25rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+              {overrides.length === 0 ? (
+                <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  No overrides. The feed is ranked purely by score.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {overrides.map((o) => (
+                    <div key={o.item_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.86rem' }}>
+                          {o.item_name || o.item_id}
+                          <span style={{
+                            marginLeft: '0.6rem', fontSize: '0.68rem', fontWeight: 700,
+                            padding: '0.15rem 0.45rem', borderRadius: '0.25rem',
+                            background: o.override_type === 'block' ? '#450a0a' : '#082f49',
+                            color: o.override_type === 'block' ? '#fca5a5' : '#7dd3fc',
+                            textTransform: 'uppercase', letterSpacing: '0.05em',
+                          }}>
+                            {o.override_type}
+                            {o.override_type === 'pin' ? ` @${o.pinned_position}` : ''}
+                            {o.override_type === 'boost' ? ` ×${o.boost_factor}` : ''}
+                          </span>
+                        </div>
+                        <div style={{ color: '#64748b', fontSize: '0.76rem' }}>{o.reason || 'No reason recorded'}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeOverride(o.item_id)}
+                        disabled={saving === `rm-${o.item_id}`}
+                        style={{ ...btnGhost, padding: '0.35rem 0.8rem', fontSize: '0.75rem' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

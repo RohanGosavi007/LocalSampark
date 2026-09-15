@@ -46,6 +46,33 @@ const STOPWORDS = new Set([
   'near', 'local', 'we', 'a', 'an', 'in', 'on', 'at', 'to', 'of', 'is', 'it',
 ]);
 
+/**
+ * Light suffix stripping, so "groceries" and "grocery" are the same term.
+ *
+ * Without it the vector half of search disagreed with the keyword half on
+ * ordinary plurals: shop_search_index is built with FTS5's porter tokenizer and
+ * matches "groceries" to "grocery", while these vectors treated them as two
+ * unrelated terms and contributed nothing to the query that most needed them.
+ *
+ * Deliberately not a full Porter implementation. The value here is collapsing
+ * plurals and a few common endings in a corpus of shop names and category
+ * labels; the rest of Porter's rules are tuned for English prose and would
+ * mangle domain words ("catering" -> "cater") for no gain in matching.
+ *
+ * Applied only to Latin-script tokens. Devanagari inflection does not work by
+ * suffix stripping, and truncating those tokens would corrupt them.
+ */
+function stem(token) {
+  if (!/^[a-z]+$/.test(token)) return token;
+  if (token.length <= 4) return token;
+  if (token.endsWith('ies') && token.length > 5) return token.slice(0, -3) + 'y';
+  if (token.endsWith('sses')) return token.slice(0, -2);
+  if (token.endsWith('ses') || token.endsWith('xes') || token.endsWith('hes')) return token.slice(0, -2);
+  // Not 'ss' (class), not 'us' (status).
+  if (token.endsWith('s') && !token.endsWith('ss') && !token.endsWith('us')) return token.slice(0, -1);
+  return token;
+}
+
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
 let cache = null; // { vectors: Map<id, Map<term, weight>>, idf: Map, builtAt, meta: Map }
@@ -68,7 +95,10 @@ function tokenize(text) {
     .split(/\s+/)
     // Counted in code points, not UTF-16 units, so a surrogate pair is one
     // character rather than two.
-    .filter((t) => [...t].length > 2 && !STOPWORDS.has(t));
+    .filter((t) => [...t].length > 2 && !STOPWORDS.has(t))
+    // Stemmed after the stopword check, so the stopword list stays readable as
+    // the words people actually type.
+    .map(stem);
 }
 
 /** L2-normalises in place so cosine similarity is a plain dot product. */
@@ -274,6 +304,7 @@ function stats() {
 }
 
 module.exports = {
+  stem,
   getIndex,
   vectorFor,
   embedText,

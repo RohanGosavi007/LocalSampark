@@ -34,7 +34,14 @@ function migrationTables() {
     if (!file.endsWith('.sql')) continue;
     const sql = fs.readFileSync(path.join(MIGRATIONS, file), 'utf8');
 
-    for (const m of sql.matchAll(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["`]?([a-z_][a-z0-9_]*)/gi)) {
+    // VIRTUAL covers SQLite's FTS5 indexes. shop_search_index is declared
+    // `CREATE VIRTUAL TABLE ... USING fts5(...)` in 049, and without this the
+    // scan does not see it — so any code querying the full-text index was
+    // reported as querying a table that does not exist, which is the opposite
+    // of what this file is for. TEMP/TEMPORARY is accepted for completeness.
+    for (const m of sql.matchAll(
+      /CREATE\s+(?:TEMP(?:ORARY)?\s+|VIRTUAL\s+)?TABLE\s+(?:IF NOT EXISTS\s+)?["`]?([a-z_][a-z0-9_]*)/gi
+    )) {
       tables.add(m[1].toLowerCase());
     }
     // A rename makes the new name available too.

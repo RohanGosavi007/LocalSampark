@@ -131,9 +131,10 @@ router.get('/config/public', async (req, res, next) => {
   }
 });
 
-// ─── RANKED FEEDS ────────────────────────────────────────────────────────────
-// Mounted before the admin routes so /ml/recommendations/* cannot be shadowed.
+// ─── RANKED FEEDS & SEARCH ───────────────────────────────────────────────────
+// Mounted before the admin routes so these cannot be shadowed.
 router.use('/recommendations', require('./recommendations.routes'));
+router.use('/search', require('./search.routes'));
 
 // ─── ADMIN CONTROL PLANE ─────────────────────────────────────────────────────
 
@@ -307,6 +308,162 @@ router.get('/admin/readiness', ...adminOnly, async (req, res, next) => {
   try {
     const readiness = await telemetry.getReadiness();
     return res.json({ success: true, readiness });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── CURATION ────────────────────────────────────────────────────────────────
+//
+// Pins, boosts and blocks on ml_item_overrides, which ranker.service.js reads.
+// Deliberately separate from the weight endpoints: a weight changes how a
+// signal is valued for every merchant, while an override is a statement about
+// one of them. Territory admins may curate their own region; the scope is
+// enforced server-side by resolveRegionScope, not by the console hiding a
+// control.
+
+const VALID_OVERRIDES = ['pin', 'boost', 'block'];
+
+/** GET /ml/admin/overrides — current curation for a surface. */
+router.get('/admin/overrides', ...adminOnly, async (req, res, next) => {
+  try {
+    const { regionId } = resolveRegionScope(req);
+    const surface = req.query.surface || 'shops_home';
+    const { query } = require('../../../config/database');
+
+    const params = [surface];
+    let where = 'WHERE o.surface = $1';
+    if (regionId) {
+      params.push(regionId);
+      where += ' AND o.region_id = $' + params.length;
+    }
+
+    const rows = await query(
+      'SELECT o.*, s.name AS item_name FROM ml_item_overrides o ' +
+      'LEFT JOIN local_shops s ON s.id = o.item_id ' +
+      where + ' ORDER BY o.override_type, o.pinned_position',
+      params
+    );
+    return res.json({ success: true, surface, overrides: rows.rows || rows || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** PUT /ml/admin/overrides — create or replace one override. */
+router.put('/admin/overrides', ...adminOnly, async (req, res, next) => {
+  try {
+    const { regionId } = resolveRegionScope(req);
+    const body = req.body || {};
+    const surface = body.surface || 'shops_home';
+    const itemId = body.item_id;
+    const type = String(body.override_type || '').toLowerCase();
+
+    if (!itemId) return res.status(400).json({ success: false, error: 'item_id is required' });
+    if (!VALID_OVERRIDES.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'override_type must be one of: ' + VALID_OVERRIDES.join(', '),
+      });
+    }
+    // Required, not optional. A curation decision nobody has to justify is one
+    // nobody can review later, and these decisions move money.
+    if (!body.reason || String(body.reason).trim().length < 3) {
+      return res.status(400).json({ success: false, error: 'A reason is required for every curation change.' });
+    }
+
+    // Validated here as well as by the table CHECKs, so the operator gets a
+    // readable message rather than a raw constraint violation.
+    let boost = null;
+    let position = null;
+    if (type === 'boost') {
+      boost = Number(body.boost_factor);
+      if (!Number.isFinite(boost) || boost <= 0 || boost > 5) {
+        return res.status(400).json({ success: false, error: 'boost_factor must be between 0 and 5.' });
+      }
+    }
+    if (type === 'pin') {
+      position = parseInt(body.pinned_position, 10);
+      if (!Number.isInteger(position) || position < 0 || position >= 100) {
+        return res.status(400).json({ success: false, error: 'pinned_position must be between 0 and 99.' });
+      }
+    }
+
+    const { query } = require('../../../config/database');
+    const nodeCrypto = require('crypto');
+    const actor = req.user.id || req.user.userId;
+
+    const existing = await query(
+      regionId
+        ? 'SELECT id FROM ml_item_overrides WHERE surface = $1 AND item_id = $2 AND region_id = $3'
+        : 'SELECT id FROM ml_item_overrides WHERE surface = $1 AND item_id = $2 AND region_id IS NULL',
+      regionId ? [surface, itemId, regionId] : [surface, itemId]
+    );
+    const found = (existing.rows || existing || [])[0];
+
+    if (found) {
+      await query(
+        'UPDATE ml_item_overrides SET override_type = $1, boost_factor = $2, ' +
+        'pinned_position = $3, reason = $4, is_active = 1, created_by = $5 WHERE id = $6',
+        [type, boost, position, String(body.reason).slice(0, 500), actor, found.id]
+      );
+    } else {
+      await query(
+        'INSERT INTO ml_item_overrides (id, surface, item_type, item_id, override_type, ' +
+        'boost_factor, pinned_position, region_id, reason, is_active, created_by) ' +
+        'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1, $10)',
+        [nodeCrypto.randomUUID(), surface, body.item_type || 'shop', itemId, type,
+          boost, position, regionId, String(body.reason).slice(0, 500), actor]
+      );
+    }
+
+    try {
+      await query(
+        'INSERT INTO admin_audit_log (admin_id, action, target_type, target_id, details) ' +
+        'VALUES ($1, $2, $3, $4, $5)',
+        [actor, 'ML_CURATION', 'ml_override', itemId,
+          JSON.stringify({ surface, type, boost, position, reason: body.reason, region_id: regionId })]
+      );
+    } catch (auditErr) {
+      logger.warn('ML curation audit write failed: ' + auditErr.message);
+    }
+
+    return res.json({ success: true, override: { surface, item_id: itemId, override_type: type } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** DELETE /ml/admin/overrides — remove one. */
+router.delete('/admin/overrides', ...adminOnly, async (req, res, next) => {
+  try {
+    const { regionId } = resolveRegionScope(req);
+    const surface = (req.body && req.body.surface) || req.query.surface || 'shops_home';
+    const itemId = (req.body && req.body.item_id) || req.query.item_id;
+    if (!itemId) return res.status(400).json({ success: false, error: 'item_id is required' });
+
+    const { query } = require('../../../config/database');
+    const actor = req.user.id || req.user.userId;
+
+    await query(
+      regionId
+        ? 'DELETE FROM ml_item_overrides WHERE surface = $1 AND item_id = $2 AND region_id = $3'
+        : 'DELETE FROM ml_item_overrides WHERE surface = $1 AND item_id = $2 AND region_id IS NULL',
+      regionId ? [surface, itemId, regionId] : [surface, itemId]
+    );
+
+    try {
+      await query(
+        'INSERT INTO admin_audit_log (admin_id, action, target_type, target_id, details) ' +
+        'VALUES ($1, $2, $3, $4, $5)',
+        [actor, 'ML_CURATION_REMOVE', 'ml_override', itemId,
+          JSON.stringify({ surface, region_id: regionId })]
+      );
+    } catch (auditErr) {
+      logger.warn('ML curation audit write failed: ' + auditErr.message);
+    }
+
+    return res.json({ success: true, removed: itemId });
   } catch (err) {
     next(err);
   }
