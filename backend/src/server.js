@@ -360,6 +360,46 @@ async function startServer() {
     });
     logger.info('✅ ML affinity matrix rebuild scheduled (03:15 daily).');
 
+    // Demand aggregation, hourly. Rolls the interaction log into
+    // (region, category, hour) buckets that the detectors and the console read
+    // instead of scanning raw events. Hourly rather than nightly because the
+    // buckets ARE hourly — aggregating once a day would leave the current day
+    // invisible until the next morning.
+    const anomalyDetector = require('./modules/ml/safety/anomalyDetector');
+    cron.schedule('5 * * * *', () => {
+      anomalyDetector.aggregateDemand({ windowHours: 3 }).catch((e) =>
+        logger.error('Scheduled demand aggregation failed: ' + e.message)
+      );
+    });
+
+    // Anomaly detectors, every six hours. These compare a listing against the
+    // population, so running them more often mostly re-derives the same answer
+    // — and each pass writes to a queue a human has to read.
+    cron.schedule('40 */6 * * *', async () => {
+      try {
+        const detectorCfg = await mlConfig.get(null);
+        const summary = await anomalyDetector.runAll({ cfg: detectorCfg });
+        if (summary.total_flags > 0) {
+          logger.warn(`🔍 Anomaly scan flagged ${summary.total_flags} listing(s) for moderation.`);
+        }
+      } catch (e) {
+        logger.error('Scheduled anomaly scan failed: ' + e.message);
+      }
+    });
+
+    // Feature distribution snapshot, daily. PSI compares one day's binned
+    // distribution against another's, so a missed snapshot is a hole in the
+    // series that cannot be backfilled — the raw values have aged out of the
+    // window by the time anyone notices.
+    const driftMonitor = require('./modules/ml/governance/driftMonitor');
+    cron.schedule('50 2 * * *', () => {
+      driftMonitor.captureSnapshots().catch((e) =>
+        logger.error('Scheduled drift snapshot failed: ' + e.message)
+      );
+    });
+
+    logger.info('✅ ML demand aggregation, anomaly scan and drift snapshot scheduled.');
+
   } catch (error) {
     logger.error('❌ Failed to start server: ' + error.message);
     process.exit(1);

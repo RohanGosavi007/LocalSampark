@@ -17,6 +17,38 @@ const anomaly = require('../../modules/ml/safety/anomalyDetector');
 const abTesting = require('../../modules/ml/experimentation/abTestingManager');
 const drift = require('../../modules/ml/governance/driftMonitor');
 
+/**
+ * Removes rows this suite created.
+ *
+ * These tests exercise real write paths against whatever database is
+ * configured, and jest.config.js declares no setupFiles — so setup/testDb.js,
+ * which exists to point the suite at an isolated file, is never loaded and the
+ * writes land in the shared development database. A full run left roughly 3,500
+ * synthetic interaction events there, which inflates the demo's own CTR and
+ * feeds fabricated pairs into the affinity matrix.
+ *
+ * Cleaning up by timestamp is narrow but correct: it removes exactly what this
+ * run inserted and touches nothing that was there before. The broader fix is to
+ * make the suite hermetic, which is a larger piece of work — isolating the
+ * database currently fails 48 tests across 9 suites that read the development
+ * catalogue rather than seeding their own fixtures.
+ */
+const SUITE_STARTED_AT = new Date()
+  .toISOString()
+  .replace('T', ' ')
+  .replace(/\.\d{3}Z$/, '');
+
+afterAll(async () => {
+  const { query } = require('../../config/database');
+  try {
+    await query('DELETE FROM ml_interaction_events WHERE created_at >= $1', [SUITE_STARTED_AT]);
+  } catch {
+    // A failed cleanup is not a failed test; it leaves rows behind in a
+    // development database, which is the status quo this is improving on.
+  }
+});
+
+
 const CFG = {
   ml_mmoe_alpha: 1, ml_mmoe_beta: 1, ml_mmoe_gamma: 1, ml_mmoe_lambda: 0.15,
   ml_mmoe_prior_ctr: 0.08, ml_mmoe_prior_cvr: 0.12, ml_mmoe_prior_weight: 20,

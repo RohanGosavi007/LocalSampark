@@ -26,6 +26,38 @@ process.env.USE_SQLITE = 'true';
 const telemetry = require('../../modules/ml/services/telemetry.service');
 const mlconfig = require('../../modules/ml/services/mlconfig.service');
 
+/**
+ * Removes rows this suite created.
+ *
+ * These tests exercise real write paths against whatever database is
+ * configured, and jest.config.js declares no setupFiles — so setup/testDb.js,
+ * which exists to point the suite at an isolated file, is never loaded and the
+ * writes land in the shared development database. A full run left roughly 3,500
+ * synthetic interaction events there, which inflates the demo's own CTR and
+ * feeds fabricated pairs into the affinity matrix.
+ *
+ * Cleaning up by timestamp is narrow but correct: it removes exactly what this
+ * run inserted and touches nothing that was there before. The broader fix is to
+ * make the suite hermetic, which is a larger piece of work — isolating the
+ * database currently fails 48 tests across 9 suites that read the development
+ * catalogue rather than seeding their own fixtures.
+ */
+const SUITE_STARTED_AT = new Date()
+  .toISOString()
+  .replace('T', ' ')
+  .replace(/\.\d{3}Z$/, '');
+
+afterAll(async () => {
+  const { query } = require('../../config/database');
+  try {
+    await query('DELETE FROM ml_interaction_events WHERE created_at >= $1', [SUITE_STARTED_AT]);
+  } catch {
+    // A failed cleanup is not a failed test; it leaves rows behind in a
+    // development database, which is the status quo this is improving on.
+  }
+});
+
+
 describe('ML event weights', () => {
   test('IMPRESSION carries zero weight — it is the CTR denominator, not a positive', () => {
     expect(telemetry.EVENT_WEIGHTS.IMPRESSION).toBe(0);

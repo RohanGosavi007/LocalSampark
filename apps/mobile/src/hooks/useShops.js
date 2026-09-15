@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../lib/api';
 import { prefetchImages } from '../utils/imageOptimization';
 import { useTerritoryStore } from '../store/useTerritoryStore';
+import { sessionIntentTracker } from '../services/sessionIntentTracker';
 
 export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
   const { territoryId } = useTerritoryStore();
@@ -9,7 +10,11 @@ export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
   const effectiveZone = territoryId || zoneId;
 
   return useQuery({
-    queryKey: ['shops', effectiveZone, category, lat, lng, pincode],
+    // Intent is part of the key: without it React Query would serve a feed
+    // ranked for browsing to a user who has just become urgent, from cache,
+    // and the hints would appear to do nothing.
+    queryKey: ['shops', effectiveZone, category, lat, lng, pincode,
+      sessionIntentTracker.lastIntent],
     queryFn: async () => {
       let url = pincode ? `/shops/pincode/${pincode}` : (lat && lng ? `/shops/nearby` : `/shops`);
       const params = [];
@@ -18,6 +23,17 @@ export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
       if (category) params.push(`category_id=${category}`);
       if (lat && !pincode) params.push(`lat=${lat}`);
       if (lng && !pincode) params.push(`lng=${lng}`);
+
+      // In-session intent. The server treats these as bounded hints — it still
+      // applies its own config and kill switches — so a shop directory opened
+      // right after tapping a pharmacy's phone number ranks proximity and
+      // open-now harder than the same directory opened while idly scrolling.
+      const intent = sessionIntentTracker.getQueryContext();
+      if (intent.boost_tags && intent.boost_tags.length > 0) {
+        params.push(`boost_tags=${encodeURIComponent(intent.boost_tags.join(','))}`);
+        params.push(`intent_confidence=${intent.intent_confidence}`);
+        params.push(`local_hour=${new Date().getHours()}`);
+      }
       
       if (params.length > 0) {
         url += `?${params.join('&')}`;

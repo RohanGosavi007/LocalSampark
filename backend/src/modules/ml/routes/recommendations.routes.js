@@ -23,6 +23,7 @@ const { query } = require('../../../config/database');
 const ranker = require('../services/ranker.service');
 const embeddings = require('../services/embedding.service');
 const mlconfig = require('../services/mlconfig.service');
+const sessionBoost = require('../ranking/sessionBoost');
 const logger = require('../../../config/logger');
 
 /** Pune city centre, matching the fallback /shops/nearby already uses. */
@@ -90,6 +91,13 @@ function readContext(req) {
     localHour: req.query.local_hour != null ? parseInt(req.query.local_hour, 10) : null,
     limit: Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50),
     userId: req.user ? (req.user.id || req.user.userId) : null,
+    // In-session intent from the client. Parsed into a fixed vocabulary and
+    // applied as bounded adjustments — see ranking/sessionBoost.js for why a
+    // client must not be able to set ranking parameters directly.
+    session: sessionBoost.parseTags(req.query.boost_tags),
+    intentConfidence: req.query.intent_confidence != null
+      ? Math.min(Math.max(parseFloat(req.query.intent_confidence) || 0, 0), 1)
+      : 1,
   };
 }
 
@@ -103,8 +111,19 @@ router.get('/home', optionalAuth, async (req, res) => {
   const ctx = readContext(req);
 
   try {
-    const cfg = await mlconfig.get(ctx.regionId);
-    const candidates = await retrieveCandidates({
+    const baseCfg = await mlconfig.get(ctx.regionId);
+
+    // Session hints adjust the ranking parameters within the bounds an
+    // administrator configured. They cannot switch ranking on, cannot exceed
+    // those bounds, and are scaled by how much evidence the client's
+    // classification rests on.
+    const { cfg, applied } = sessionBoost.applyHints(
+      baseCfg,
+      { tags: ctx.session.tags, intent: ctx.session.intent, confidence: ctx.intentConfidence },
+      mlconfig.BOUNDS
+    );
+
+    let candidates = await retrieveCandidates({
       lat: ctx.lat,
       lng: ctx.lng,
       radiusKm: ctx.radiusKm,
@@ -112,6 +131,24 @@ router.get('/home', optionalAuth, async (req, res) => {
       regionId: ctx.regionId,
       limit: Number(cfg.ml_candidate_limit) || 200,
     });
+
+    // `require:open_now` filters rather than reweights: no score adjustment
+    // expresses "closed is useless" as reliably as removing it. Falls back to
+    // the unfiltered set if filtering would empty the feed.
+    const hard = sessionBoost.applyHardFilters(candidates, {
+      tags: ctx.session.tags,
+      localHour: ctx.localHour,
+    });
+    candidates = hard.candidates;
+
+    // The session's dominant category, as a bounded multiplier applied before
+    // ranking so it composes with every scorer rather than only one of them.
+    if (ctx.session.category) {
+      candidates = candidates.map((c) => ({
+        ...c,
+        _session_category_boost: sessionBoost.categoryBoost(c, ctx.session.category),
+      }));
+    }
 
     const result = await ranker.rank(candidates, {
       userId: ctx.userId,
@@ -121,6 +158,7 @@ router.get('/home', optionalAuth, async (req, res) => {
       regionId: ctx.regionId,
       surface: 'shops_home',
       limit: ctx.limit,
+      cfgOverride: cfg,
     });
 
     return res.json({
@@ -132,6 +170,15 @@ router.get('/home', optionalAuth, async (req, res) => {
       // than inferred from a latency graph.
       strategy: result.strategy,
       reason: result.reason || null,
+      // Echoed so a client can tell whether its hints were honoured, and so the
+      // admin console can attribute a feed to the intent that shaped it.
+      session: {
+        intent: ctx.session.intent,
+        applied_hints: applied,
+        hard_filters: hard.filtered,
+        filtered_out: hard.removed || 0,
+        category: ctx.session.category,
+      },
       used_fallback_location: ctx.usedFallbackLocation,
       count: result.items.length,
       shops: ranker.publicShape(result.items),

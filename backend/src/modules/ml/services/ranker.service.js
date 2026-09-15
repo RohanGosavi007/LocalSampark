@@ -296,6 +296,10 @@ async function rank(candidates, context = {}) {
     regionId = null,
     surface = 'shops_home',
     limit = 20,
+    // Pre-adjusted config from the session-hint layer. Passed in rather than
+    // re-read so the hints the endpoint echoed back are exactly the ones that
+    // ranked, with no chance of the two diverging.
+    cfgOverride = null,
   } = context;
 
   const started = Date.now();
@@ -306,7 +310,7 @@ async function rank(candidates, context = {}) {
 
   let cfg;
   try {
-    cfg = await mlconfig.get(regionId);
+    cfg = cfgOverride || await mlconfig.get(regionId);
   } catch (err) {
     logger.warn('ML config unavailable during ranking: ' + err.message);
     return {
@@ -358,10 +362,12 @@ async function rank(candidates, context = {}) {
 
       let ordered = mt.items.map((item) => {
         const o = overrides.get(item.id);
-        if (o && o.override_type === 'boost') {
-          return { ...item, _score: item._score * (Number(o.boost_factor) || 1) };
-        }
-        return item;
+        let score = item._score;
+        if (o && o.override_type === 'boost') score *= Number(o.boost_factor) || 1;
+        // Session category affinity, set by the endpoint when the user has been
+        // looking at one category. 1 when absent, so this is a no-op then.
+        score *= Number(item._session_category_boost) || 1;
+        return score === item._score ? item : { ...item, _score: score };
       });
       ordered.sort((a, b) => b._score - a._score);
 
@@ -458,6 +464,7 @@ async function rank(candidates, context = {}) {
       if (override && override.override_type === 'boost') {
         score *= Number(override.boost_factor) || 1;
       }
+      score *= Number(candidate._session_category_boost) || 1;
 
       scored.push({
         ...candidate,

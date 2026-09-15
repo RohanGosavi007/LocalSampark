@@ -21,6 +21,46 @@ function getRandomName(categoryName) {
   }
 }
 
+/**
+ * Trading hours appropriate to the category.
+ *
+ * Every seeded shop used to carry the identical literal
+ * `{"open":"09:00","close":"21:00"}`, which makes the whole catalogue close at
+ * the same minute. That is not merely unrealistic: the urgent-intent path asks
+ * for shops open right now, so at 22:00 the filter removed all 124 of them and
+ * an urgent late-night query — the exact scenario the feature exists for —
+ * returned nothing but leftover test fixtures.
+ *
+ * A pharmacy open late is what makes that query demonstrable, so the hours
+ * follow the category rather than a constant.
+ */
+function getOpeningHours(categoryName) {
+  const name = String(categoryName || '').toLowerCase();
+
+  // Round the clock. `close <= open` is how the open-now check encodes a range
+  // that wraps past midnight, so 00:00–00:00 reads as always open.
+  if (/pharmac|medical|hospital|clinic|emergency|ambulance|fuel|petrol|atm/.test(name)) {
+    return { open: '00:00', close: '00:00' };
+  }
+  // Late-night trade.
+  if (/restaurant|cafe|food|dhaba|tiffin|catering|sweet|bakery/.test(name)) {
+    return { open: '07:00', close: '23:30' };
+  }
+  // Early starts.
+  if (/dairy|milk|newspaper|gym|fitness|yoga/.test(name)) {
+    return { open: '05:30', close: '21:00' };
+  }
+  // Trades that answer a call outside shop hours.
+  if (/plumb|electric|locksmith|repair|towing|service/.test(name)) {
+    return { open: '07:00', close: '22:00' };
+  }
+  // Professional and appointment-based.
+  if (/salon|spa|tutor|coaching|lab|pathology|physio|legal|consult/.test(name)) {
+    return { open: '10:00', close: '19:00' };
+  }
+  return { open: '09:00', close: '21:00' };
+}
+
 function getRandomLocation(baseLat, baseLng, radiusInKm) {
   const radiusInDegrees = radiusInKm / 111;
   const u = Math.random();
@@ -147,8 +187,8 @@ async function seedDemoShops() {
         
         await query(
           `INSERT INTO local_shops (id, owner_id, region_id, category_id, name, description, category, phone_number, address, coordinate, latitude, longitude, opening_hours, photo_urls, shop_type, approval_status, is_verified, is_active, delivery_available)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, '+919999999999', $8, ${geom}, $9, $10, '{"open":"09:00","close":"21:00"}', '[]', $11, 'approved', 1, 1, 1)`,
-          [shopId, ownerId, regionId, cat.id, shopName, `Best ${cat.name} in the neighborhood.`, cat.name, `Random Address, Near Landmark, Pune`, loc.lat, loc.lng, shopType]
+           VALUES ($1, $2, $3, $4, $5, $6, $7, '+919999999999', $8, ${geom}, $9, $10, $11, '[]', $12, 'approved', 1, 1, 1)`,
+          [shopId, ownerId, regionId, cat.id, shopName, `Best ${cat.name} in the neighborhood.`, cat.name, `Random Address, Near Landmark, Pune`, loc.lat, loc.lng, JSON.stringify(getOpeningHours(cat.name)), shopType]
         );
 
         // Add products if retail

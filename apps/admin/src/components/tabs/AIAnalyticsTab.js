@@ -5,7 +5,19 @@ import TabError from '../TabError';
 import { fetchJson } from '../../lib/api';
 
 /**
- * Territory analytics.
+ * Territory analytics, and the entry point to the ML surfaces.
+ *
+ * The brief for the governance work named this file as the thing to become a
+ * comprehensive ML Governance Center. It did not, and deliberately: this tab
+ * answers a business question — what is this territory earning — while
+ * governance answers an operational one about models and experiments. Merging
+ * them would produce a tab where a franchise manager checking GMV scrolls past
+ * PSI thresholds and bandit arm statistics.
+ *
+ * What was actually wrong was leaving three analytics tabs side by side with no
+ * indication of which to open. The banner below names the other two and says
+ * what each is for, so this file stays the territory view and stops competing
+ * with them.
  *
  * This file did not compile. A `setError(e)` call had been spliced into the
  * middle of an object literal inside the catch block, between two array
@@ -106,6 +118,25 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <TabError error={error} onRetry={fetchAnalytics} />
+
+      <div
+        style={{
+          ...cardStyle,
+          borderLeft: '3px solid #4f46e5',
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'flex-start',
+          padding: '1rem 1.25rem',
+        }}
+      >
+        <span aria-hidden="true" style={{ fontSize: '1.1rem' }}>🧭</span>
+        <div style={{ fontSize: '0.83rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+          This tab covers territory business performance. For model behaviour, open{' '}
+          <strong style={{ color: '#f8fafc' }}>ML Control Center</strong> (ranking weights, kill
+          switches, curation) or <strong style={{ color: '#f8fafc' }}>ML Governance &amp; A/B</strong>{' '}
+          (multi-objective configuration, experiments, drift, the AI moderation queue).
+        </div>
+      </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
