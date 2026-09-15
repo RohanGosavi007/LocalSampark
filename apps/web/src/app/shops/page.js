@@ -16,6 +16,7 @@ import { ShopCardSkeleton } from '../../components/ui/Skeleton';
 import { ShopCard } from '../../components/ShopCard';
 import TrackedItem from '../../components/TrackedItem';
 import { initTelemetry, resetImpressions } from '../../lib/telemetry';
+import { useShopSearch } from '../../hooks/useShopSearch';
 import LazyMap from '../../components/LazyMap';
 import { MemoizedVirtualizedShopGrid as VirtualizedShopGrid } from '../../components/VirtualizedShopGrid';
 
@@ -43,6 +44,13 @@ export default function ShopsPage() {
   const [activeStory, setActiveStory] = useState(null);
   const [workerFilteredShops, setWorkerFilteredShops] = useState(null);
   const [categoryCounts, setCategoryCounts] = useState({});
+
+  // Server-side search. Matches category and description as well as the name,
+  // and reaches shops outside the currently loaded page — neither of which the
+  // local substring filter below can do. It returns null while in flight and on
+  // failure, so the local filter keeps rendering and typing never blanks the
+  // directory waiting on the network.
+  const { results: searchResults, active: searchActive } = useShopSearch(searchTerm);
 
   // Starts the telemetry buffer and its page-hide flush. Idempotent — repeated
   // calls are a no-op — so mounting this page more than once is harmless.
@@ -183,8 +191,22 @@ export default function ShopsPage() {
     setIsFiltering(false);
   }, [shops, workerFilteredShops, filterDelivery, filterTopRated, searchTerm]);
 
+  // The server's ordering is the result of fusing two retrievers, so it is not
+  // re-sorted here — only the non-search filters are reapplied over it.
+  const displayShops = useMemo(() => {
+    if (!searchActive) return filteredShops;
+    return searchResults.filter((shop) => {
+      const matchesDelivery = filterDelivery ? (shop.delivery_available === 1 || shop.deliveryAvailable) : true;
+      const matchesTopRated = filterTopRated ? (shop.rating >= 4.0) : true;
+      return matchesDelivery && matchesTopRated;
+    });
+  }, [searchActive, searchResults, filteredShops, filterDelivery, filterTopRated]);
+
   const sortedShops = useMemo(() => {
-    return [...filteredShops].sort((a, b) => {
+    // Relevance order is the point of a search result; re-sorting it by
+    // distance or rating would discard the ranking the user asked for.
+    if (searchActive) return displayShops;
+    return [...displayShops].sort((a, b) => {
       const aPrem = a.is_premium || a.isPremium;
       const bPrem = b.is_premium || b.isPremium;
       if (aPrem && !bPrem) return -1;
@@ -195,7 +217,7 @@ export default function ShopsPage() {
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
       return 0;
     });
-  }, [filteredShops, sortBy]);
+  }, [displayShops, searchActive, sortBy]);
 
   const sortedCategories = useMemo(() => {
     const prioritySlugs = ['hospitals-clinics', '2-wheeler-garage', '4-wheeler-garage'];

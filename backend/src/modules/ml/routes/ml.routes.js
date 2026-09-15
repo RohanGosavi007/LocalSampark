@@ -313,6 +313,41 @@ router.get('/admin/readiness', ...adminOnly, async (req, res, next) => {
   }
 });
 
+/**
+ * GET /ml/admin/matrix — shape of the collaborative matrix.
+ *
+ * Sits beside readiness so the console can show both what the log holds and
+ * what has actually been derived from it, rather than implying a model exists
+ * because a table does.
+ */
+router.get('/admin/matrix', ...adminOnly, async (req, res, next) => {
+  try {
+    const matrixBuilder = require('../jobs/matrix-builder.job');
+    return res.json({ success: true, matrix: await matrixBuilder.stats() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /ml/admin/matrix/rebuild — run the rebuild now.
+ *
+ * Normally nightly. Exposed so the effect of a threshold change can be seen
+ * without waiting a day, and so the job can be exercised on demand rather than
+ * only ever running unobserved at 03:15. `dry_run` reports what it would store
+ * without touching the table.
+ */
+router.post('/admin/matrix/rebuild', ...adminOnly, requireSuperAdmin, async (req, res, next) => {
+  try {
+    const matrixBuilder = require('../jobs/matrix-builder.job');
+    const dryRun = (req.body && req.body.dry_run) === true;
+    const summary = await matrixBuilder.rebuild({ dryRun });
+    return res.json({ success: true, summary });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── CURATION ────────────────────────────────────────────────────────────────
 //
 // Pins, boosts and blocks on ml_item_overrides, which ranker.service.js reads.

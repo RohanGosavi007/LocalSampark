@@ -10,6 +10,7 @@ import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, w
 import { useShops, useCategories } from '../../src/hooks/useShops';
 import { useImpressionTracking } from '../../src/hooks/useImpressionTracking';
 import { initTelemetry, resetImpressions } from '../../src/lib/telemetry';
+import { useShopSearch } from '../../src/hooks/useShopSearch';
 
 // DEMO_SHOPS lived here: eleven invented businesses with addresses, ratings and
 // distances — "Sharma Grocery & Dairy, Kalyani Nagar, 4.8, 0.5 km",
@@ -98,6 +99,12 @@ export default function DirectoryScreen() {
   const [topRatedOnly, setTopRatedOnly] = useState(false);
   const [deliveryOnly, setDeliveryOnly] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+
+  // Server-side search. Matches category and description as well as the name,
+  // and reaches shops outside the currently loaded page — neither of which the
+  // local substring filter below can do. Returns null while in flight and on
+  // failure, so the local filter keeps rendering.
+  const { results: searchResults, active: searchActive } = useShopSearch(searchTerm);
 
   // Impression and click tracking for this feed. The hook holds its
   // viewabilityConfigCallbackPairs in a ref — React Native throws if that prop
@@ -207,21 +214,32 @@ export default function DirectoryScreen() {
     // only" toggles and the sort control are not sent to it — so on real data
     // those four controls did nothing at all. They are applied here for every
     // list, demo or not.
+    // When the server answered, its list replaces the locally filtered one: it
+    // has already matched on category and description and reaches shops outside
+    // the loaded page. The non-search toggles are still applied over it.
+    if (searchActive) {
+      filteredResults = searchResults.slice();
+    }
+
     filteredResults = filteredResults.filter(shop => {
-      const matchesSearch = !searchTerm ||
+      const matchesSearch = searchActive || !searchTerm ||
         (shop.name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTopRated = !topRatedOnly || (shop.rating && Number(shop.rating) >= 4.0);
       const matchesDelivery = !deliveryOnly || shop.has_delivery;
       return matchesSearch && matchesTopRated && matchesDelivery;
     });
 
-    if (sortBy === 'rating') filteredResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    if (sortBy === 'name') filteredResults.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    if (sortBy === 'distance') filteredResults.sort((a, b) => (Number(a.distance) || 999) - (Number(b.distance) || 999));
-    
+    // Relevance order is the point of a search result, so an explicit sort is
+    // only applied when the user is browsing rather than searching.
+    if (!searchActive) {
+      if (sortBy === 'rating') filteredResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      if (sortBy === 'name') filteredResults.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      if (sortBy === 'distance') filteredResults.sort((a, b) => (Number(a.distance) || 999) - (Number(b.distance) || 999));
+    }
+
     setFilteredShops(filteredResults);
     setIsFiltering(false);
-  }, [shops, selectedCategory, searchTerm, topRatedOnly, deliveryOnly, sortBy]);
+  }, [shops, selectedCategory, searchTerm, topRatedOnly, deliveryOnly, sortBy, searchActive, searchResults]);
 
   return (
     <SafeAreaView style={styles.container}>

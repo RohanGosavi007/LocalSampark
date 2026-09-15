@@ -1,9 +1,28 @@
 const Typesense = require('typesense');
 
+/**
+ * Whether Typesense is actually provisioned.
+ *
+ * The client used to be constructed unconditionally, defaulting to
+ * localhost:8108 with the api key 'xyz'. Nothing listens there in any real
+ * deployment, so every search spent ~100ms on two ECONNREFUSED retries before
+ * giving up — on the hot path of a search box, paid on every keystroke that
+ * reached the server. Measured at 150ms per /shops/search call.
+ *
+ * Requiring an explicit host and key means an unconfigured deployment skips
+ * Typesense in microseconds and goes straight to the in-process searcher, while
+ * a configured one behaves exactly as before.
+ */
+const TYPESENSE_CONFIGURED = Boolean(
+  process.env.TYPESENSE_HOST && process.env.TYPESENSE_API_KEY
+);
+
 // Typesense configuration for high-performance indexing and typo-tolerant search
 let client;
 
-try {
+if (!TYPESENSE_CONFIGURED) {
+  client = null;
+} else try {
   client = new Typesense.Client({
     nodes: [{
       host: process.env.TYPESENSE_HOST || 'localhost',

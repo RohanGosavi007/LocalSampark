@@ -79,7 +79,31 @@ router.get('/search', async (req, res, next) => {
       return res.json({ source: 'typesense', data: searchResults });
     }
 
-    res.status(503).json({ error: 'Search Engine Offline' });
+    // SearchEngine returns null whenever Typesense is unreachable, and
+    // Typesense is not provisioned in this deployment — so this endpoint
+    // answered `503 Search Engine Offline` for every query ever made to it.
+    // Shop search was simply dead, and nothing surfaced that fact: the client
+    // showed an empty result list.
+    //
+    // Falls through to the in-process hybrid searcher, which fuses the FTS5
+    // index with content vectors and depends on no external service. Typesense
+    // remains the preferred path when it is actually configured.
+    const hybrid = require('../../ml/services/search.service');
+    const result = await hybrid.search(q, {
+      limit: parseInt(limit, 10) || 20,
+      categorySlug: category || null,
+    });
+
+    return res.json({
+      source: 'hybrid',
+      strategy: result.strategy,
+      retrievers: result.retrievers || null,
+      data: result.items.map((item) => {
+        const out = { ...item };
+        delete out._fusion_score;
+        return out;
+      }),
+    });
   } catch (error) { next(error); }
 });
 router.get('/categories', async (req, res, next) => {

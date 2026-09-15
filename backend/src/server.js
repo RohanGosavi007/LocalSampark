@@ -347,6 +347,19 @@ async function startServer() {
     const mlConfig = require('./modules/ml/services/mlconfig.service');
     await mlConfig.initInvalidationListener();
 
+    // Nightly rebuild of the item-to-item affinity matrix from the interaction
+    // log. Runs at 03:15 local, when the rebuild's table swap is least likely
+    // to collide with traffic. Produces nothing until the log has real volume,
+    // which is the intended state — see modules/ml/jobs/matrix-builder.job.js.
+    const matrixBuilder = require('./modules/ml/jobs/matrix-builder.job');
+    const cron = require('node-cron');
+    cron.schedule('15 3 * * *', () => {
+      matrixBuilder.rebuild().catch((e) =>
+        logger.error('Scheduled affinity rebuild failed: ' + e.message)
+      );
+    });
+    logger.info('✅ ML affinity matrix rebuild scheduled (03:15 daily).');
+
   } catch (error) {
     logger.error('❌ Failed to start server: ' + error.message);
     process.exit(1);

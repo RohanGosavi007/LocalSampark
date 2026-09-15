@@ -187,6 +187,81 @@ function injectExploration(ranked, epsilon, limit, impressionCounts) {
   return out;
 }
 
+/**
+ * Collaborative affinity for the items a user has already engaged with.
+ *
+ * Returns itemId -> { score, support } keyed by the *candidate* item, so
+ * scoring is a map lookup rather than a query per candidate.
+ *
+ * Returns an empty map when the user has no history, which is the normal case
+ * today. That is what keeps the collaborative term at zero without any special
+ * cold-start branch: no history means no affinity rows means a term of 0.
+ */
+async function loadCollaborativeScores(userId, minSupport) {
+  if (!userId) return new Map();
+  try {
+    // The user's own engaged items, then everything the matrix relates to them.
+    const res = await query(
+      `SELECT a.related_item_id AS item_id,
+              SUM(a.score * e.user_weight) AS score,
+              MAX(a.support)               AS support
+         FROM ml_item_affinity a
+         JOIN (
+              SELECT item_id, SUM(weight) AS user_weight
+                FROM ml_interaction_events
+               WHERE user_id = $1 AND item_type = 'shop' AND weight > 0
+               GROUP BY item_id
+         ) e ON e.item_id = a.source_item_id
+        WHERE a.item_type = 'shop'
+          AND a.support >= $2
+        GROUP BY a.related_item_id`,
+      [userId, minSupport]
+    );
+
+    const rows = res.rows || res || [];
+    if (rows.length === 0) return new Map();
+
+    // Normalised across this user's own candidates so the term lands in 0..1
+    // like every other, and the configured weight means the same thing
+    // regardless of how active the user is.
+    let max = 0;
+    for (const row of rows) {
+      const v = Number(row.score) || 0;
+      if (v > max) max = v;
+    }
+
+    const out = new Map();
+    for (const row of rows) {
+      const raw = Number(row.score) || 0;
+      out.set(row.item_id, {
+        score: max > 0 ? raw / max : 0,
+        support: Number(row.support) || 0,
+      });
+    }
+    return out;
+  } catch {
+    // The affinity table may not exist yet in an older deployment.
+    return new Map();
+  }
+}
+
+/**
+ * How far to trust a collaborative pair, given how much evidence backs it.
+ *
+ * Ramps from 0 at the minimum support to 1 at ten times it. This is the
+ * mechanism that lets the same scoring code serve launch day and month six: a
+ * pair seen twice contributes almost nothing, a pair seen four hundred times
+ * contributes fully, and no separate cold-start path has to be written or
+ * maintained. Without it, the first weeks of sparse data would produce
+ * confident nonsense — which is exactly what a recommender looks like when it
+ * is trained on nearly nothing.
+ */
+function collaborativeConfidence(support, minSupport) {
+  if (!support || support < minSupport) return 0;
+  const ceiling = minSupport * 10;
+  return Math.min((support - minSupport) / Math.max(ceiling - minSupport, 1), 1);
+}
+
 /** Lifetime impression counts, for the exploration pool ordering. */
 async function loadImpressionCounts(itemType = 'shop') {
   try {
@@ -257,11 +332,14 @@ async function rank(candidates, context = {}) {
     const budgetMs = Number(cfg.ml_timeout_ms) || 150;
     const weights = await mlconfig.getWeights(regionId);
 
-    const [index, profile, overrides, impressionCounts] = await Promise.all([
+    const minSupport = Number(cfg.ml_cf_min_support) || 50;
+
+    const [index, profile, overrides, impressionCounts, collaborative] = await Promise.all([
       embeddings.getIndex(),
       embeddings.preferenceVector(userId),
       loadOverrides(surface),
       loadImpressionCounts('shop'),
+      loadCollaborativeScores(userId, minSupport),
     ]);
 
     // Budget check after the I/O and before scoring. Scoring is pure CPU over a
@@ -293,11 +371,16 @@ async function rank(candidates, context = {}) {
       // a cold start and a mature system.
       const sim = (profile && itemVector) ? embeddings.cosine(profile, itemVector) : 0;
 
+      // Scaled by its own support, so a thinly-evidenced pair contributes
+      // proportionally little rather than the same as a well-evidenced one.
+      const affinity = collaborative.get(candidate.id);
+      const cf = affinity
+        ? affinity.score * collaborativeConfidence(affinity.support, minSupport)
+        : 0;
+
       const terms = {
         sim,
-        // Collaborative stays 0 until the affinity matrix has support. The
-        // weight is 0 too, so this is belt and braces.
-        cf: 0,
+        cf,
         dist: km != null ? distanceScore(km, Number(cfg.ml_distance_half_life_km) || 2) : 0,
         pop: wilsonScore(candidate.rating, candidate.review_count ?? candidate.total_ratings ?? 0),
         rec: recencyScore(candidate.created_at),
@@ -353,6 +436,7 @@ async function rank(candidates, context = {}) {
         candidates: candidates.length,
         has_profile: Boolean(profile),
         vocabulary: index.idf.size,
+        collaborative_pairs: collaborative.size,
       },
     };
   } catch (err) {
@@ -387,6 +471,8 @@ function publicShape(items, { includeScores = false } = {}) {
 
 module.exports = {
   rank,
+  collaborativeConfidence,
+  loadCollaborativeScores,
   baselineRank,
   publicShape,
   distanceKm,
