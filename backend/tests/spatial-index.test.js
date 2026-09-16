@@ -21,17 +21,26 @@ const PUNE = { lat: 18.5204, lng: 73.8567 };
 const created = [];
 
 async function insertShop(lat, lng) {
-  // local_shops.id is INTEGER PRIMARY KEY in SQLite — it *is* the rowid —
-  // while PostgreSQL declares it UUID. That divergence is why an earlier
-  // version of this test failed with SQLITE_MISMATCH: it supplied a UUID.
-  // The id is left to the engine instead.
-  const name = 'spatial-test-' + crypto.randomUUID().slice(0, 8);
+  // Supplies every NOT NULL column, and an explicit TEXT id.
+  //
+  // This used to insert only (name, latitude, longitude) and leave the id to
+  // the engine, with a comment asserting that local_shops.id is INTEGER
+  // PRIMARY KEY on SQLite. The migrations declare `id TEXT PRIMARY KEY`, and
+  // `category`, `address` and `coordinate` are all NOT NULL. Both statements
+  // were true of the development database this suite used to run against and
+  // false of the schema the migrations actually produce — the dev file had
+  // drifted, and the test documented the drift as though it were the contract.
+  //
+  // It is also where the stray `spatial-test-*` shops in the development
+  // catalogue came from: the suite wrote into the shared database and its
+  // cleanup did not always run.
+  const id = crypto.randomUUID();
+  const name = 'spatial-test-' + id.slice(0, 8);
   await db.query(
-    'INSERT INTO local_shops (name, latitude, longitude) VALUES ($1, $2, $3)',
-    [name, lat, lng]
+    `INSERT INTO local_shops (id, name, category, address, coordinate, latitude, longitude, is_active)
+     VALUES ($1, $2, 'Test', 'Test Address', $3, $4, $5, 1)`,
+    [id, name, `POINT(${lng} ${lat})`, lat, lng]
   );
-  const row = await db.query('SELECT id FROM local_shops WHERE name = $1', [name]);
-  const id = (row.rows || [])[0].id;
   created.push(id);
   return id;
 }

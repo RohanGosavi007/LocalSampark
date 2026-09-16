@@ -10,36 +10,21 @@ const fs = require('fs');
 process.env.NODE_ENV = 'test';
 process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
 
-// Run against a dedicated database file. Previously the suite shared
-// src/data/localsampark.db with development, so CREATE TABLE IF NOT EXISTS hit
-// pre-existing tables with a divergent schema and seeding failed.
-if (!process.env.TEST_USE_POSTGRES) {
-  const testDbPath = path.join(__dirname, '../../data/test.db');
-  process.env.SQLITE_DB_PATH = testDbPath;
+// The database path and the schema are owned by jest.globalSetup.js, which
+// builds an isolated file from the real migrations before any suite runs. This
+// module no longer sets SQLITE_DB_PATH or deletes anything.
+//
+// Both mattered. Setting the path here only worked when this module happened to
+// be required before config/database, which reads the variable at load — true
+// until someone added an import above it. And deleting the file at import time
+// is actively unsafe under Jest's parallel workers: one worker requiring this
+// module would remove the database another worker was mid-query against.
+//
+// The CREATE TABLE IF NOT EXISTS statements below are now no-ops against the
+// migrated schema, which is the point — they cannot shadow the real
+// definitions, and the divergence they used to introduce (a `users.id` of
+// INTEGER where every migration declares a TEXT uuid) is gone.
 
-  // Start from a clean slate so schema changes always take effect.
-  for (const suffix of ['', '-wal', '-shm']) {
-    const f = testDbPath + suffix;
-    if (fs.existsSync(f)) {
-      try {
-        fs.unlinkSync(f);
-      } catch {
-        // A lingering handle from a previous run is not fatal; the schema
-        // creation below is idempotent.
-      }
-    }
-  }
-}
-process.env.JWT_SECRET = 'test-jwt-secret-key-localsampark-2026';
-process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-localsampark-2026';
-process.env.JWT_EXPIRES_IN = '1h';
-process.env.JWT_REFRESH_EXPIRES_IN = '7d';
-
-let dbModule;
-
-/**
- * Initialize test database
- */
 async function setupTestDb() {
   // Import database module after env vars are set
   dbModule = require('../../config/database');

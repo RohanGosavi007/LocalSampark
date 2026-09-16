@@ -189,11 +189,22 @@ async function runMigration() {
       }
     }
     console.log('✅ Database migration completed successfully');
-    process.exit(0);
+    return { ok: true };
   } catch (error) {
     console.error('❌ Migration failed:', error.message);
-    process.exit(1);
+    // Rethrow rather than exiting. This function is now also called in-process
+    // by the Jest global setup to build the test schema from the real
+    // migrations, and a process.exit() there would kill the test runner before
+    // a single suite ran.
+    throw error;
   }
 }
 
-runMigration();
+// Exit codes belong to the CLI entry point, not to the function.
+if (require.main === module) {
+  runMigration()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}
+
+module.exports = { runMigration, splitSqlStatements };
