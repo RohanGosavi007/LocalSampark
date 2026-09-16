@@ -13,6 +13,14 @@ router.use('/notifications', require('../modules/core/routes/notification.routes
 router.use('/sos', require('../modules/core/routes/sos.routes'));
 router.use('/zones', apiCache(3600), require('../modules/core/routes/zone.routes'));
 router.use('/user-zones', require('../modules/core/routes/user_zone.routes'));
+
+// Territory resolution and franchise territory management.
+//
+// Deliberately NOT behind apiCache: /territories/resolve answers per-caller
+// (the franchise serving a location depends on the location) and caching it by
+// URL would serve one user's territory to another on a shared pincode-less
+// request.
+router.use('/territories', require('./territory.routes'));
 router.use('/rewards', require('../modules/core/routes/rewards.routes'));
 router.use('/referral', require('../modules/core/routes/referral.routes'));
 router.use('/upload', uploadLimiter, require('../modules/core/routes/upload.routes'));

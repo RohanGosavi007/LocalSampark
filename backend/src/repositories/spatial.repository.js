@@ -17,6 +17,17 @@
 
 const turf = require('@turf/turf');
 const { query, queryOne } = require('../config/database');
+const pincodeUtil = require('../utils/pincode');
+
+/**
+ * Shared-edge tolerance for overlap detection, in square kilometres.
+ *
+ * Two territories snapped to the same street share a boundary line, and the
+ * intersection of their polygons is a sliver with area at floating-point noise
+ * level rather than exactly zero. Anything below this is a shared border;
+ * anything above is two franchises claiming the same ground.
+ */
+const OVERLAP_TOLERANCE_KM2 = 1e-6;
 
 class SpatialRepository {
 
@@ -40,14 +51,31 @@ class SpatialRepository {
    * └─────────────────────────────────────────────────────────────────┘
    */
   async pointInTerritory(lat, lng) {
-    // Load all active territories with boundaries
+    // Verified boundaries only.
+    //
+    // This filter was missing, and its absence was the most consequential
+    // defect in the spatial layer. nearestTerritory below has always refused
+    // unverified *centroids*, because those coordinates are uniform random
+    // noise. But every row's boundary_geojson is a 5 km circle generated around
+    // that same fabricated centroid, so the polygon path was serving confident
+    // answers derived from precisely the data the centroid path refuses.
+    //
+    // Measured: pointInTerritory(16.8167, 73.0973) returned "Aurangabad City"
+    // — a point 415 km from real Aurangabad, out on the Konkan coast. Franchise
+    // attribution, commission and lead routing all read that answer.
+    //
+    // Migration 101 adds boundary_verified and flags every existing row 0, so
+    // this returns null until real boundaries are imported. Null is the honest
+    // answer; resolveTerritory falls back to pincode, which is genuine data.
     const result = await query(`
       SELECT t.*, lt.name as taluka_name, ld.name as district_name, ls.name as state_name
       FROM territories t
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.is_active = true AND t.boundary_geojson IS NOT NULL
+      WHERE t.is_active = true
+        AND t.boundary_geojson IS NOT NULL
+        AND COALESCE(t.boundary_verified, 0) = 1
     `);
 
     const territories = result.rows || result;
@@ -55,10 +83,9 @@ class SpatialRepository {
 
     for (const territory of territories) {
       try {
-        const boundary = JSON.parse(territory.boundary_geojson);
-        const polygon = turf.polygon(boundary.coordinates || [boundary]);
-
-        if (turf.booleanPointInPolygon(point, polygon)) {
+        const geometry = this.parseBoundary(territory.boundary_geojson);
+        if (!geometry) continue;
+        if (turf.booleanPointInPolygon(point, geometry)) {
           return territory;
         }
       } catch (e) {
@@ -67,8 +94,57 @@ class SpatialRepository {
       }
     }
 
-    // Fallback: If no polygon match, find nearest by centroid distance
-    return this.nearestTerritory(lat, lng);
+    // No internal fallback.
+    //
+    // This used to return this.nearestTerritory(lat, lng) here, which made
+    // resolveTerritory report method:'boundary' for an answer that was actually
+    // reached by centroid proximity. The whole point of returning a method is
+    // that a caller can tell a lookup from a guess, and a mislabelled guess is
+    // worse than no label at all. resolveTerritory does the fallback itself and
+    // labels it correctly.
+    return null;
+  }
+
+  /**
+   * Parses a stored boundary into a Turf geometry.
+   *
+   * Handles Polygon and MultiPolygon, and a bare coordinate array. The previous
+   * inline version called turf.polygon(boundary.coordinates || [boundary]),
+   * which throws on a MultiPolygon — the exact type the audit brief asks
+   * territories to support — and the throw was swallowed by the surrounding
+   * catch, so a MultiPolygon territory silently matched nothing rather than
+   * reporting a problem.
+   */
+  parseBoundary(raw) {
+    if (!raw) return null;
+
+    let parsed;
+    try {
+      parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {
+      return null;
+    }
+    if (!parsed) return null;
+
+    // A Feature wrapper, which is what most GIS exports produce.
+    const geometry = parsed.type === 'Feature' ? parsed.geometry : parsed;
+    if (!geometry) return null;
+
+    try {
+      if (geometry.type === 'MultiPolygon') {
+        return turf.multiPolygon(geometry.coordinates);
+      }
+      if (geometry.type === 'Polygon') {
+        return turf.polygon(geometry.coordinates);
+      }
+      // A bare coordinate array, as some older rows store.
+      if (Array.isArray(geometry)) {
+        return turf.polygon(geometry);
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
   }
 
   /**
@@ -202,14 +278,49 @@ class SpatialRepository {
    * └─────────────────────────────────────────────────────────────────┘
    */
   territoriesIntersect(geojsonA, geojsonB) {
+    const polyA = this.parseBoundary(geojsonA);
+    const polyB = this.parseBoundary(geojsonB);
+    if (!polyA || !polyB) return false;
+
     try {
-      const polyA = turf.polygon(geojsonA.coordinates);
-      const polyB = turf.polygon(geojsonB.coordinates);
+      // Touching at a shared edge is not an overlap.
+      //
+      // Adjacent territories drawn by snapping to a common street share a
+      // boundary line by construction, and turf.intersect returns a
+      // zero-area geometry for that — non-null, so a plain null check called
+      // every pair of neighbouring territories a conflict and made it
+      // impossible to draw a contiguous map. Requiring real area is what
+      // distinguishes "these share a border" from "these claim the same
+      // ground".
       const intersection = turf.intersect(turf.featureCollection([polyA, polyB]));
-      return intersection !== null;
+      if (!intersection) return false;
+
+      const overlapKm2 = turf.area(intersection) / 1e6;
+      return overlapKm2 > OVERLAP_TOLERANCE_KM2;
     } catch (e) {
+      // A failed geometry operation must not read as "no overlap": that is the
+      // answer that lets a conflicting territory be created. Unknown is treated
+      // as conflicting, and the caller decides.
       console.error('[SpatialRepo] Intersection check failed:', e.message);
-      return false;
+      return true;
+    }
+  }
+
+  /**
+   * Area of the overlap between two boundaries, in square kilometres.
+   *
+   * Returned to the admin UI so a conflict can be reported as "these overlap by
+   * 2.3 km²" rather than as a bare rejection an operator cannot act on.
+   */
+  overlapAreaKm2(geojsonA, geojsonB) {
+    const polyA = this.parseBoundary(geojsonA);
+    const polyB = this.parseBoundary(geojsonB);
+    if (!polyA || !polyB) return 0;
+    try {
+      const intersection = turf.intersect(turf.featureCollection([polyA, polyB]));
+      return intersection ? turf.area(intersection) / 1e6 : 0;
+    } catch (e) {
+      return 0;
     }
   }
 
@@ -231,18 +342,23 @@ class SpatialRepository {
    * └─────────────────────────────────────────────────────────────────┘
    */
   async territoryContainsPoint(territoryId, lat, lng) {
+    // Verified boundaries only, for the reason given on pointInTerritory.
+    // Answering "yes, this point is in that territory" from a fabricated
+    // circle is the same false confidence whether the caller named the
+    // territory or asked us to find it.
     const territory = await queryOne(
-      'SELECT boundary_geojson FROM territories WHERE id = $1',
+      `SELECT boundary_geojson FROM territories
+        WHERE id = $1 AND COALESCE(boundary_verified, 0) = 1`,
       [territoryId]
     );
 
     if (!territory || !territory.boundary_geojson) return false;
 
+    const geometry = this.parseBoundary(territory.boundary_geojson);
+    if (!geometry) return false;
+
     try {
-      const boundary = JSON.parse(territory.boundary_geojson);
-      const polygon = turf.polygon(boundary.coordinates);
-      const point = turf.point([lng, lat]);
-      return turf.booleanPointInPolygon(point, polygon);
+      return turf.booleanPointInPolygon(turf.point([lng, lat]), geometry);
     } catch (e) {
       return false;
     }
@@ -319,6 +435,13 @@ class SpatialRepository {
   }
 
   async territoryByPincode(pincode) {
+    // Normalised at the boundary. Callers pass whatever a form, a CSV or a URL
+    // parameter gave them, so "411 001" and 411001 reached this as a literal
+    // and matched nothing — a merchant stored under "411001" was simply
+    // invisible, with no error to explain it.
+    const normalized = pincodeUtil.normalize(pincode);
+    if (!normalized) return null;
+
     return queryOne(`
       SELECT t.*, lt.name as taluka_name, ld.name as district_name, ls.name as state_name
       FROM territories t
@@ -326,7 +449,7 @@ class SpatialRepository {
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
       WHERE t.pincode = $1 AND t.is_active = true
-    `, [pincode]);
+    `, [normalized]);
   }
 
   /**

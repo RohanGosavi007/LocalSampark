@@ -2,6 +2,7 @@
 const router = express.Router();
 const { query } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const territoryService = require('../../../services/territoryResolution.service');
 const crypto = require('crypto');
 
 // GET all leads for user
@@ -18,11 +19,28 @@ router.get('/leads', authenticate, async (req, res, next) => {
 // POST add lead
 router.post('/leads', authenticate, async (req, res, next) => {
     try {
-        const { customer_name, phone } = req.body;
+        const { customer_name, phone, pincode, lat, lng } = req.body;
         const id = crypto.randomUUID();
+
+        // Attribution is resolved here, on the server, from whatever location
+        // signal the caller supplied. It is never taken from the client as a
+        // franchise id: a field agent's app could otherwise name the partner
+        // who gets credited for the lead.
+        const attribution = await territoryService.attributionFor({
+            lat: lat != null ? Number(lat) : null,
+            lng: lng != null ? Number(lng) : null,
+            pincode: pincode || null,
+        });
+
         // assigned_to, not owner_id; first_name, not customer_name.
-        await query('INSERT INTO crm_leads (id, assigned_to, first_name, phone, status) VALUES ($1, $2, $3, $4, $5)', [id, req.user.id, customer_name, phone, 'new']);
-        res.status(201).json({ success: true, id });
+        await query(
+            `INSERT INTO crm_leads (id, assigned_to, first_name, phone, status,
+                                    pincode, territory_id, franchise_partner_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [id, req.user.id, customer_name, phone, 'new',
+             attribution.pincode, attribution.territory_id, attribution.franchise_partner_id]
+        );
+        res.status(201).json({ success: true, id, attribution });
     } catch (err) {
         next(err);
     }

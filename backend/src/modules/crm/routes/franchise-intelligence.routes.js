@@ -2,10 +2,58 @@
 const crypto = require('crypto');
 const router = express.Router();
 const { authenticate, requireRole } = require('../../../middleware/auth.middleware');
+const {
+  attachFranchiseScope,
+  requireFranchise,
+  coversPincode,
+} = require('../../../middleware/franchiseScope.middleware');
 const pool = require('../../../config/database');
 
+/**
+ * Confirms the caller's franchise actually holds the zone in the URL.
+ *
+ * Every route here is keyed on `:zoneId` and every one of them was guarded only
+ * by `requireRole('franchise')` — which asks whether the caller is *a*
+ * franchise, never whether it is *this* franchise. Any partner could substitute
+ * another partner's region id and read their merchant health scores, their
+ * prospect list with contact details, and write outreach records into their
+ * log. Roles answer "what kind of user"; only the territory scope answers
+ * "whose data".
+ *
+ * Zones are regions, and regions carry a pincode, which is the same key the
+ * scope is expressed in. An administrator is unscoped and passes through.
+ */
+async function requireZoneOwnership(req, res, next) {
+  try {
+    const scope = req.franchiseScope;
+    if (scope && !scope.scoped) return next();
+
+    const zone = await pool.queryOne(
+      'SELECT id, pincode FROM regions WHERE id = $1 LIMIT 1',
+      [req.params.zoneId]
+    );
+
+    if (!zone) {
+      return res.status(404).json({ error: 'Zone not found' });
+    }
+
+    if (!coversPincode(req, zone.pincode)) {
+      return res.status(403).json({
+        error: 'This zone is outside your franchise territory.',
+      });
+    }
+
+    return next();
+  } catch (err) {
+    // Denying by default: a failure to establish ownership is not permission.
+    return res.status(403).json({ error: 'Zone ownership could not be verified.' });
+  }
+}
+
+const zoneGuard = [authenticate, requireRole('franchise'), attachFranchiseScope, requireFranchise, requireZoneOwnership];
+
 // GET /api/v1/franchise-intelligence/:zoneId/health-scores - Merchant health scoring
-router.get('/:zoneId/health-scores', authenticate, requireRole('franchise'), async (req, res) => {
+router.get('/:zoneId/health-scores', ...zoneGuard, async (req, res) => {
   try {
     const { zoneId } = req.params;
     
@@ -47,7 +95,7 @@ router.get('/:zoneId/health-scores', authenticate, requireRole('franchise'), asy
 });
 
 // GET /api/v1/franchise-intelligence/:zoneId/leads - Prospective merchants
-router.get('/:zoneId/leads', authenticate, requireRole('franchise'), async (req, res) => {
+router.get('/:zoneId/leads', ...zoneGuard, async (req, res) => {
   try {
     const { zoneId } = req.params;
     // The table is franchise_lead_crm -- ai-analytics.routes.js reads it under
@@ -62,7 +110,7 @@ router.get('/:zoneId/leads', authenticate, requireRole('franchise'), async (req,
 });
 
 // POST /api/v1/franchise-intelligence/:zoneId/outreach - Log outreach attempt
-router.post('/:zoneId/outreach', authenticate, requireRole('franchise'), async (req, res) => {
+router.post('/:zoneId/outreach', ...zoneGuard, async (req, res) => {
   try {
     const { zoneId } = req.params;
     const { shopId, method, notes } = req.body;

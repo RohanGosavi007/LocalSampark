@@ -54,9 +54,18 @@ exports.handleChatMessage = async (req, res, next) => {
         // either -- and swallowed that second failure with .catch(() => {}).
         // Every lead captured by the chatbot was discarded. crm_leads stores the
         // visitor name in first_name and the origin in lead_source.
+        // Attribute the lead to whoever serves the visitor's area, so it
+        // reaches that franchise's pipeline rather than sitting unscoped and
+        // invisible to every partner.
+        const territoryService = require('../../../services/territoryResolution.service');
+        const attribution = await territoryService.attributionFor({
+          pincode: visitorDetails.pincode || null,
+        });
+
         await query(
-          `INSERT INTO crm_leads (id, first_name, phone, email, status, lead_source, notes)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          `INSERT INTO crm_leads (id, first_name, phone, email, status, lead_source, notes,
+                                  pincode, territory_id, franchise_partner_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [
             leadId,
             visitorDetails.name || 'Chat Visitor',
@@ -65,6 +74,9 @@ exports.handleChatMessage = async (req, res, next) => {
             'NEW',
             'CHATBOT',
             visitorDetails.notes || 'Inquiry via resident chatbot',
+            attribution.pincode,
+            attribution.territory_id,
+            attribution.franchise_partner_id,
           ]
         );
       } catch (err) {
