@@ -139,6 +139,17 @@ router.use('/search', require('./search.routes'));
 // Bandit layout, experiments, moderation queue and drift reporting.
 router.use('/', require('./advanced.routes'));
 
+// Phase-2: visual and hybrid search, plus the control surface for the graph,
+// sequence, uplift, fairness, cold-start and feature-store subsystems.
+//
+// Mounted at '/' and after the '/search' router above deliberately. Express
+// falls through a `use` whose sub-router matches no route, so /ml/search/visual
+// and /ml/search/hybrid reach this one while /ml/search/semantic and
+// /ml/search/suggest keep being served by search.routes. Mounting this at
+// '/search' instead would work equally well for those two paths and would then
+// need a second mount for /ml/phase2/*.
+router.use('/', require('./phase2.routes'));
+
 // ─── ADMIN CONTROL PLANE ─────────────────────────────────────────────────────
 
 const adminOnly = [authenticate, requireAdmin];

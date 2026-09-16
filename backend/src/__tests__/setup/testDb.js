@@ -373,6 +373,27 @@ async function cleanTestData() {
       // Table may not exist, ignore
     }
   }
+
+  // Put the shared fixtures back.
+  //
+  // `local_shops` and `users` are seeded once for the whole run by
+  // jest.globalSetup, and several suites — the ranker's content-vector tests
+  // above all — assume the catalogue is there. Wiping them without restoring
+  // made the run order-dependent: whether an unrelated suite passed came down
+  // to whether Jest happened to schedule it before or after this one.
+  //
+  // Re-seeding is idempotent (the inserts are OR IGNORE apart from the shops,
+  // which have just been deleted), and it is cheap: five shops and a handful of
+  // categories.
+  try {
+    const { seedFixtures } = require('../../../jest.globalSetup');
+    if (typeof seedFixtures === 'function') await seedFixtures(dbModule);
+  } catch (err) {
+    // Reported rather than swallowed. A failure here means the next suite will
+    // fail for a reason that has nothing to do with what it is testing, and
+    // silence is what made the original problem so hard to place.
+    console.warn('Could not restore shared test fixtures: ' + err.message);
+  }
 }
 
 /**

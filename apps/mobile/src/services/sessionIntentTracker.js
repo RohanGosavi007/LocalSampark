@@ -62,13 +62,55 @@ const INTENT = Object.freeze({
 /** Interactions older than this no longer describe what the user is doing. */
 const RECENCY_MS = 120000;
 
+/**
+ * Length of the ordered category trail sent to the server's sequence model.
+ *
+ * Longer than the classification window on purpose. `classify()` answers "what
+ * is the user doing right now", for which ten interactions over two minutes is
+ * the right horizon and anything older is noise. The sequence model answers
+ * "what will they want next", and that is a question about the shape of the
+ * whole session — searched, compared three, called none, came back — which the
+ * ten-entry window has already discarded by the time it matters.
+ *
+ * Fifty matches the server's default `ml_sequence_max_len`. Sending more would
+ * be truncated there; sending fewer would silently shorten the model's context.
+ */
+const TRAIL_SIZE = 50;
+
+/**
+ * Actions that put a category into the trail.
+ *
+ * Scrolls and impressions are excluded. They carry no intent — the server's
+ * telemetry weights an impression at zero for the same reason — and at one
+ * trail entry per scroll event the fifty-entry window would cover about four
+ * seconds of flicking rather than the session.
+ */
+const TRAIL_ACTIONS = Object.freeze([
+  'CALL_TAP', 'DIRECTIONS_TAP', 'BOOKING_START', 'DETAIL_VIEW',
+  'SEARCH_SUBMIT', 'CARD_CLICK', 'CATEGORY_BROWSE', 'EMERGENCY_CATEGORY_VIEW',
+]);
+
+/**
+ * Consecutive entries in the same category inside this window collapse into one.
+ *
+ * Tapping four plumbers in a row is one intent, not four, and four identical
+ * tokens in a row teach the model that repetition predicts repetition — which
+ * is true of the tokens and false of the user.
+ */
+const TRAIL_DEDUPE_MS = 30000;
+
 class SessionIntentTracker {
-  constructor({ windowSize = WINDOW_SIZE, recencyMs = RECENCY_MS } = {}) {
+  constructor({ windowSize = WINDOW_SIZE, recencyMs = RECENCY_MS, trailSize = TRAIL_SIZE } = {}) {
     this.windowSize = windowSize;
     this.recencyMs = recencyMs;
+    this.trailSize = trailSize;
     // Plain array used as a ring: at ten entries, shift() is cheaper than the
     // bookkeeping a real ring buffer needs, and far easier to read.
     this.window = [];
+    // The longer ordered category trail, for the server's sequence model.
+    // Separate from `window` rather than derived from it because the two have
+    // different horizons and different admission rules.
+    this.trail = [];
     this.sessionStart = Date.now();
     this.listeners = new Set();
     this.lastIntent = INTENT.UNKNOWN;
@@ -91,6 +133,8 @@ class SessionIntentTracker {
     });
 
     if (this.window.length > this.windowSize) this.window.shift();
+
+    this._recordTrail(action, category, at);
 
     const intent = this.classify(at);
     if (intent.intent !== this.lastIntent) {
@@ -229,6 +273,10 @@ class SessionIntentTracker {
       boost_tags: state.boostTags,
       session_depth: this.window.length,
       session_age_seconds: Math.round((Date.now() - this.sessionStart) / 1000),
+      // The ordered category trail for the server's sequence model, already in
+      // the wire format. Empty string when there is nothing to send, so a
+      // caller can append it unconditionally.
+      session_events: this.sequenceTrail(),
     };
   }
 
@@ -271,13 +319,70 @@ class SessionIntentTracker {
   /** Called on pull-to-refresh or when the app returns from the background. */
   reset() {
     this.window = [];
+    // Cleared alongside the window. A trail surviving a reset would let one
+    // user's session leak into the next on a shared device, and would hand the
+    // sequence model a history whose first half belongs to somebody else.
+    this.trail = [];
     this.sessionStart = Date.now();
     this.lastIntent = INTENT.UNKNOWN;
+  }
+
+  /**
+   * Appends to the sequence trail, collapsing consecutive same-category entries.
+   *
+   * Kept private and called from `record` so there is one entry point for an
+   * interaction. A separate public method would eventually be called in some
+   * places and not others, and the trail would develop holes that look exactly
+   * like the user having done nothing.
+   */
+  _recordTrail(action, category, at) {
+    if (!category) return;
+    const normalisedAction = String(action).toUpperCase();
+    if (!TRAIL_ACTIONS.includes(normalisedAction)) return;
+
+    const slug = String(category).toLowerCase();
+    // The server validates against /^[a-z0-9_-]{1,48}$/ and drops anything
+    // else. Applying the same rule here means a category with a space in it
+    // fails visibly in development rather than silently shortening every
+    // trail in production.
+    if (!/^[a-z0-9_-]{1,48}$/.test(slug)) return;
+
+    const last = this.trail[this.trail.length - 1];
+    if (last && last.category === slug && at - last.at < TRAIL_DEDUPE_MS) {
+      // Refresh the timestamp so the elapsed gap the model sees is measured
+      // from the most recent contact with the category, not the first.
+      last.at = at;
+      return;
+    }
+
+    this.trail.push({ category: slug, at });
+    if (this.trail.length > this.trailSize) this.trail.shift();
+  }
+
+  /**
+   * The trail encoded for the `session_events` query parameter.
+   *
+   * `slug:timestamp,...`, oldest first — the format the recommendations
+   * endpoint parses. Returns an empty string when there is nothing to send, so
+   * a caller can append it unconditionally and the server simply gets no trail.
+   *
+   * Capped so it cannot grow the query string without bound: fifty entries at
+   * roughly twenty bytes is about a kilobyte, which rides on a GET comfortably.
+   */
+  sequenceTrail() {
+    if (this.trail.length === 0) return '';
+    return this.trail.map((entry) => `${entry.category}:${entry.at}`).join(',');
+  }
+
+  /** The trail as objects, for the on-device re-ranker. */
+  sequenceEvents() {
+    return this.trail.slice();
   }
 
   snapshot() {
     return {
       window: this.window.slice(),
+      trail: this.trail.slice(),
       ...this.classify(),
       session_age_seconds: Math.round((Date.now() - this.sessionStart) / 1000),
     };
@@ -299,4 +404,7 @@ module.exports = {
   URGENCY_WEIGHTS,
   URGENT_CATEGORIES,
   WINDOW_SIZE,
+  TRAIL_SIZE,
+  TRAIL_ACTIONS,
+  TRAIL_DEDUPE_MS,
 };

@@ -3,6 +3,7 @@ import { apiGet } from '../lib/api';
 import { prefetchImages } from '../utils/imageOptimization';
 import { useTerritoryStore } from '../store/useTerritoryStore';
 import { sessionIntentTracker } from '../services/sessionIntentTracker';
+import { edgeRanker } from '../services/edgeRanker';
 
 export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
   const { territoryId } = useTerritoryStore();
@@ -34,7 +35,16 @@ export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
         params.push(`intent_confidence=${intent.intent_confidence}`);
         params.push(`local_hour=${new Date().getHours()}`);
       }
-      
+
+      // The ordered category trail, for the server's sequence model. Sent
+      // separately from the boost tags because it is useful even when the
+      // intent classifier has nothing to say — a user calmly browsing three
+      // plumbers produces no urgency signal at all, and is exactly the case
+      // next-category prediction is for.
+      if (intent.session_events) {
+        params.push(`session_events=${encodeURIComponent(intent.session_events)}`);
+      }
+
       if (params.length > 0) {
         url += `?${params.join('&')}`;
       }
@@ -61,6 +71,27 @@ export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
     networkMode: 'offlineFirst',
     gcTime: 1000 * 60 * 30, // 30 min garbage collection
     staleTime: 1000 * 60 * 5, // 5 min stale time
+
+    /**
+     * The on-device pass, applied through `select` rather than in `queryFn`.
+     *
+     * This matters and is easy to get wrong. `select` runs on every render
+     * against the cached response and does not write back to the cache, so the
+     * local signals used are the ones that exist *now* — the dwell and scroll
+     * state at render time, not at fetch time. Re-ranking inside `queryFn`
+     * would freeze one ordering into the cache, computed from local signals
+     * that were seconds old before the list first appeared, and every
+     * subsequent cache hit would replay it.
+     *
+     * The ranker fails open on its own, so there is no guard here beyond
+     * leaving a response with no shops array untouched.
+     */
+    select: (data) => {
+      if (!data || !Array.isArray(data.shops)) return data;
+      return { ...data, shops: edgeRanker.rerank(data.shops, {
+        sessionEvents: sessionIntentTracker.sequenceEvents(),
+      }) };
+    },
   });
 };
 

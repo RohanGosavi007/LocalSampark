@@ -400,6 +400,108 @@ async function startServer() {
 
     logger.info('✅ ML demand aggregation, anomaly scan and drift snapshot scheduled.');
 
+    // ─── Phase-2 subsystems ──────────────────────────────────────────────
+    //
+    // All of these produce artefacts that the ranking path reads but never
+    // writes, so they are scheduled rather than computed on demand, and each is
+    // staggered away from the others. Running the graph propagation and the
+    // vector index build in the same minute would put two multi-minute CPU
+    // loops on one instance while it is also serving.
+    //
+    // Every one of them is inert until its config flag is switched on. The
+    // schedule exists so that when an operator does switch a flag on, there is
+    // already an artefact to read rather than an empty table and a feature that
+    // appears not to work.
+
+    // Graph embeddings, nightly at 03:45 — after the affinity matrix rebuild at
+    // 03:15, since both read the same event log and the graph is the heavier of
+    // the two.
+    cron.schedule('45 3 * * *', async () => {
+      try {
+        const cfg = await mlConfig.get(null);
+        const lightgcn = require('./modules/ml/graph/lightgcn');
+        const result = await lightgcn.build({
+          dim: Number(cfg.ml_graph_dim) || 32,
+          layers: Number(cfg.ml_graph_layers) || 3,
+        });
+        lightgcn.invalidate();
+        if (!result.built) {
+          logger.info(`Graph rebuild produced nothing (${result.reason}); this is expected before the event log has volume.`);
+        }
+      } catch (e) {
+        logger.error('Scheduled graph rebuild failed: ' + e.message);
+      }
+    });
+
+    // Vector index, nightly at 04:10. Rebuilt from the catalogue rather than
+    // the event log, so it is the one job that is useful from day one.
+    cron.schedule('10 4 * * *', async () => {
+      try {
+        const cfg = await mlConfig.get(null);
+        await require('./modules/ml/vector/vectorIndex.service').build({
+          M: Number(cfg.ml_ann_m) || 16,
+          efConstruction: Number(cfg.ml_ann_ef_construction) || 200,
+        });
+      } catch (e) {
+        logger.error('Scheduled vector index rebuild failed: ' + e.message);
+      }
+    });
+
+    // Cold-start priors, nightly at 04:30. The donor search is quadratic in the
+    // number of pincodes, and the answer moves on the order of days.
+    cron.schedule('30 4 * * *', () => {
+      require('./modules/ml/coldstart/coldStart').rebuildPriors().catch((e) =>
+        logger.error('Scheduled cold-start prior rebuild failed: ' + e.message)
+      );
+    });
+
+    // Sequence model, weekly on Sunday at 05:00. Weekly rather than nightly
+    // because it needs a week of new sessions to learn anything new from, and
+    // because it refuses to activate a model that does not beat the popularity
+    // baseline — nightly runs would mostly log that refusal.
+    cron.schedule('0 5 * * 0', () => {
+      require('./modules/ml/sequence/intentModel').train().catch((e) =>
+        logger.error('Scheduled sequence model training failed: ' + e.message)
+      );
+    });
+
+    // Uplift model, weekly on Sunday at 05:30. Same reasoning: the treatment
+    // groups need time to accumulate.
+    cron.schedule('30 5 * * 0', () => {
+      require('./modules/ml/causal/upliftModel').trainFromLog().catch((e) =>
+        logger.error('Scheduled uplift model fit failed: ' + e.message)
+      );
+    });
+
+    // Feature materialisation, every six hours. This does not feed serving —
+    // the online path computes and caches — it writes the record the freshness
+    // report reads, which is the only way staleness is visible at all.
+    cron.schedule('20 */6 * * *', async () => {
+      try {
+        const store = require('./modules/ml/featurestore');
+        const { query } = require('./config/database');
+        const shops = await query('SELECT id FROM local_shops WHERE COALESCE(is_active, 1) = 1 LIMIT 2000');
+        const ids = (shops.rows || shops || []).map((row) => row.id);
+        if (ids.length === 0) return;
+        for (const feature of store.registry.forEntity('shop')) {
+          await store.materialize(feature, ids);
+        }
+      } catch (e) {
+        logger.error('Scheduled feature materialisation failed: ' + e.message);
+      }
+    });
+
+    // The vector index is loaded from disk at boot rather than rebuilt. A cold
+    // instance that rebuilt on startup would spend its first minutes at full
+    // CPU while taking traffic, and the persisted index is at most a day old.
+    require('./modules/ml/vector/vectorIndex.service').load()
+      .then((loaded) => {
+        if (!loaded) logger.info('Vector index: nothing persisted yet; the nightly job will build one.');
+      })
+      .catch((e) => logger.warn('Vector index load failed: ' + e.message));
+
+    logger.info('✅ ML phase-2 jobs scheduled (graph 03:45, vectors 04:10, cold start 04:30, sequence + uplift Sun 05:00).');
+
   } catch (error) {
     logger.error('❌ Failed to start server: ' + error.message);
     process.exit(1);

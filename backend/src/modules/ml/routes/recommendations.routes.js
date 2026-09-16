@@ -98,7 +98,58 @@ function readContext(req) {
     intentConfidence: req.query.intent_confidence != null
       ? Math.min(Math.max(parseFloat(req.query.intent_confidence) || 0, 0), 1)
       : 1,
+
+    // Used by the cold-start transfer prior to pick which pincode's borrowed
+    // rate applies, and by the vector index to choose a shard.
+    pincode: req.query.pincode ? String(req.query.pincode).slice(0, 10) : null,
+
+    // The user's society, when the client knows it. Passed rather than looked
+    // up so a client that already has it saves the ranker a query; when absent,
+    // the graph module resolves it itself.
+    societyId: req.query.society_id || req.headers['x-society-id'] || null,
+
+    // This session's ordered category events, for the sequence model. Fresher
+    // than the event log, which has not ingested the last few taps yet — which
+    // is exactly the window where next-action prediction is worth anything.
+    sessionEvents: parseSessionEvents(req.query.session_events),
   };
+}
+
+/**
+ * Parses the client's in-session event trail.
+ *
+ * Format: `slug:timestamp,slug:timestamp,...`, oldest first. Compact because it
+ * rides on every feed request, and structured enough to carry the elapsed times
+ * the model's time embedding needs.
+ *
+ * Validated strictly and dropped silently on anything malformed. This is
+ * client-supplied input feeding a model that influences ranking, so the same
+ * reasoning applies as in sessionBoost: a client must not be able to steer the
+ * ranker by sending something the server did not anticipate. The worst a
+ * malformed trail can do here is produce no prediction.
+ */
+function parseSessionEvents(raw) {
+  if (!raw || typeof raw !== 'string') return [];
+  const out = [];
+  const now = Date.now();
+
+  for (const part of raw.split(',').slice(-50)) {
+    const [category, timestamp] = part.split(':');
+    if (!category || !/^[a-z0-9_-]{1,48}$/i.test(category)) continue;
+
+    const at = Number(timestamp);
+    // A timestamp in the future, or more than a day old, is not a plausible
+    // in-session event. Clamped rather than rejected so a client with a skewed
+    // clock still contributes ordering.
+    const resolved = Number.isFinite(at) && at > 0 && at <= now + 60000 && at > now - 86400000
+      ? at
+      : now;
+
+    out.push({ category: category.toLowerCase(), at: resolved });
+  }
+
+  out.sort((a, b) => a.at - b.at);
+  return out;
 }
 
 /**
@@ -159,7 +210,50 @@ router.get('/home', optionalAuth, async (req, res) => {
       surface: 'shops_home',
       limit: ctx.limit,
       cfgOverride: cfg,
+      pincode: ctx.pincode,
+      sessionEvents: ctx.sessionEvents,
     });
+
+    // Badges are attached after ranking, never before. A badge is presentation:
+    // it explains the order, it does not participate in deciding it. Generating
+    // them first and letting a "trending" tag feed back into the score would
+    // make the explanation self-fulfilling.
+    let shaped = result.items;
+    let narratives = null;
+    if (cfg.ml_narratives_enabled === true) {
+      try {
+        const justification = require('../narratives/justificationEngine');
+        const annotated = await justification.annotate(result.items, {
+          userId: ctx.userId,
+          societyId: ctx.societyId,
+          localHour: ctx.localHour,
+          budgetMs: Number(cfg.ml_narratives_budget_ms) || 40,
+          wilsonScore: ranker.wilsonScore,
+          enabled: true,
+        });
+        shaped = annotated.items;
+        narratives = {
+          badged: annotated.badged,
+          degraded: annotated.degraded,
+          duration_ms: annotated.duration_ms,
+        };
+      } catch (err) {
+        // A missing badge is a cosmetic loss. The feed ships without it.
+        logger.warn('Narratives: annotation skipped: ' + err.message);
+      }
+    }
+
+    // The exposure ledger records what was actually served, so tomorrow's
+    // fairness pass knows who was owed. Deliberately not awaited: a ledger
+    // write must never extend the latency of the feed it is recording.
+    if (cfg.ml_fairness_enabled === true) {
+      const fairness = require('../fairness/exposureFairness');
+      fairness.recordExposure(
+        result.items.map((item) => item.id),
+        candidates.map((item) => item.id),
+        { regionId: ctx.regionId }
+      ).catch((err) => logger.warn('Fairness: exposure not recorded: ' + err.message));
+    }
 
     return res.json({
       success: true,
@@ -180,8 +274,23 @@ router.get('/home', optionalAuth, async (req, res) => {
         category: ctx.session.category,
       },
       used_fallback_location: ctx.usedFallbackLocation,
-      count: result.items.length,
-      shops: ranker.publicShape(result.items),
+      count: shaped.length,
+      shops: ranker.publicShape(shaped),
+      // Echoed so the client can prefetch the predicted next category and the
+      // console can attribute a feed to the intent that shaped it. Null
+      // whenever the sequence model is off or had nothing to go on.
+      predicted_intent: result.prediction
+        ? {
+          top_category: result.prediction.top_category,
+          confidence: Math.round(result.prediction.intent_confidence * 100) / 100,
+          model_version: result.prediction.model_version,
+        }
+        : null,
+      // What uplift and fairness actually did, including the relevance the
+      // fairness constraint spent. Surfaced rather than hidden: it is a cost
+      // the operator agreed to and should be able to see being incurred.
+      adjustments: result.adjustments || null,
+      narratives,
       timings: { total_ms: Date.now() - started },
     });
   } catch (err) {

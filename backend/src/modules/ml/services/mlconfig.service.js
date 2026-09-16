@@ -105,6 +105,56 @@ const DEFAULTS = Object.freeze({
   ml_anomaly_min_n: 10,
   ml_drift_psi_warn: 0.10,
   ml_drift_psi_alert: 0.25,
+
+  // Graph collaborative filtering. ml_w_graph is 0 until the graph has enough
+  // edges to mean anything, for the same reason ml_w_cf is: a term with no
+  // evidence behind it should contribute nothing rather than noise.
+  ml_graph_enabled: false,
+  ml_graph_layers: 3,
+  ml_graph_dim: 32,
+  ml_w_graph: 0.0,
+  ml_graph_min_degree: 3,
+
+  // Narrative badges. On by default — these are presentational and the
+  // deterministic path cannot produce a wrong ranking, only a dull badge.
+  ml_narratives_enabled: true,
+  ml_narratives_budget_ms: 40,
+
+  // Sequential intent.
+  ml_sequence_enabled: false,
+  ml_sequence_max_len: 50,
+  ml_w_intent: 0.0,
+
+  // Causal uplift.
+  ml_uplift_enabled: false,
+  ml_uplift_strength: 0.5,
+
+  // Vector index and hybrid retrieval.
+  ml_ann_enabled: false,
+  ml_ann_ef_search: 64,
+  ml_ann_ef_construction: 200,
+  ml_ann_m: 16,
+  ml_rrf_k: 60,
+  ml_hybrid_w_dense: 0.5,
+
+  // Cold start. On by default: withholding exploration from new merchants is
+  // not a neutral choice, it is a choice that they never accumulate history.
+  ml_coldstart_enabled: true,
+  ml_coldstart_budget: 0.1,
+  ml_coldstart_grace_days: 30,
+
+  // Exposure fairness.
+  ml_fairness_enabled: false,
+  ml_fairness_strength: 0.3,
+  ml_fairness_max_ndcg_loss: 0.05,
+
+  // Visual search.
+  ml_visual_enabled: false,
+  ml_visual_min_score: 0.45,
+
+  // Feature store.
+  ml_featurestore_enabled: true,
+  ml_featurestore_ttl_ms: 60000,
 });
 
 /**
@@ -147,6 +197,41 @@ const BOUNDS = Object.freeze({
   ml_anomaly_min_n: [1, 100000],
   ml_drift_psi_warn: [0, 5],
   ml_drift_psi_alert: [0, 5],
+
+  // Beyond four propagation rounds LightGCN embeddings over-smooth: every node
+  // converges toward the graph's dominant eigenvector and the neighbourhood
+  // distinctions this module exists to capture disappear. The ceiling is a
+  // guard against a slider, not a tuning range.
+  ml_graph_layers: [1, 4],
+  ml_graph_dim: [8, 256],
+  ml_w_graph: [0, 1],
+  ml_graph_min_degree: [1, 1000],
+
+  ml_narratives_budget_ms: [1, 500],
+
+  ml_sequence_max_len: [5, 200],
+  ml_w_intent: [0, 1],
+
+  ml_uplift_strength: [0, 1],
+
+  // efSearch below M gives the greedy descent nowhere to go and recall
+  // collapses; the floor keeps a misconfigured slider from silently turning
+  // approximate search into wrong search.
+  ml_ann_ef_search: [16, 2000],
+  ml_ann_ef_construction: [16, 4000],
+  ml_ann_m: [4, 96],
+  ml_rrf_k: [1, 1000],
+  ml_hybrid_w_dense: [0, 1],
+
+  ml_coldstart_budget: [0, 0.5],
+  ml_coldstart_grace_days: [1, 365],
+
+  ml_fairness_strength: [0, 1],
+  ml_fairness_max_ndcg_loss: [0, 0.5],
+
+  ml_visual_min_score: [0, 1],
+
+  ml_featurestore_ttl_ms: [0, 3600000],
 });
 
 const BOOLEAN_KEYS = Object.freeze([
@@ -158,10 +243,29 @@ const BOOLEAN_KEYS = Object.freeze([
   'ml_mmoe_enabled',
   'ml_bandit_enabled',
   'ml_anomaly_enabled',
+  'ml_graph_enabled',
+  'ml_narratives_enabled',
+  'ml_sequence_enabled',
+  'ml_uplift_enabled',
+  'ml_ann_enabled',
+  'ml_coldstart_enabled',
+  'ml_fairness_enabled',
+  'ml_visual_enabled',
+  'ml_featurestore_enabled',
 ]);
 
+/**
+ * The terms of the weighted-sum score, renormalised together by getWeights.
+ *
+ * ml_w_graph and ml_w_intent join the existing six rather than being applied
+ * as separate multipliers on top. That matters: a term outside the
+ * renormalisation would change the scale of every score when switched on, and
+ * scores from before and after the change would not be comparable — which is
+ * the same trap ml_w_cf was kept out of.
+ */
 const WEIGHT_KEYS = Object.freeze([
   'ml_w_sim', 'ml_w_cf', 'ml_w_dist', 'ml_w_pop', 'ml_w_rec', 'ml_w_ctx',
+  'ml_w_graph', 'ml_w_intent',
 ]);
 
 const CACHE_TTL_MS = 30000;

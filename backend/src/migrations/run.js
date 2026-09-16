@@ -61,9 +61,20 @@ async function runMigration() {
         });
       });
 
-      // Get all 0*.sqlite.sql files
+      // Every numbered .sqlite.sql file, in order.
+      //
+      // Matched on the three-digit prefix rather than on a leading '0'. The
+      // original filter was `startsWith('0')`, which worked only while the
+      // numbering stayed below 100 — 100_ml_phase2.sqlite.sql and everything
+      // after it would have been skipped in silence, giving a SQLite schema
+      // missing tables the Postgres one has. That is the worst shape a
+      // migration bug can take: no error, and a divergence that only surfaces
+      // as a "no such table" in whichever environment runs SQLite.
+      //
+      // Lexicographic sort is still correct here because every filename has the
+      // same three-digit zero-padded prefix.
       const files = fs.readdirSync(__dirname)
-        .filter(f => f.startsWith('0') && f.endsWith('.sqlite.sql'))
+        .filter(f => /^\d{3}_.*\.sqlite\.sql$/.test(f))
         .sort();
 
       for (const file of files) {

@@ -157,3 +157,21 @@ module.exports = async function globalSetup() {
 
 module.exports.TEST_DB_PATH = TEST_DB_PATH;
 module.exports.FIXTURE_SHOPS = FIXTURE_SHOPS;
+
+/**
+ * Exported so a suite that wipes shared tables can put them back.
+ *
+ * setup/testDb.js#cleanTestData deletes local_shops and users to give the
+ * e-commerce suites a blank slate, and never restored what it removed. Whether
+ * that mattered depended entirely on whether it ran before or after a suite
+ * that needs the catalogue — which Jest decides by its own scheduling — so the
+ * run was order-dependent and adding any new test file could break an
+ * unrelated one. It did: five new ML suites shifted the order and the content
+ * vector tests in mlRanker began failing with "expected > 0, received 0",
+ * pointing at the embedding index rather than at the fixture that was no
+ * longer there.
+ *
+ * Re-seeding after the wipe removes the dependence rather than papering over
+ * it in whichever suite happened to notice.
+ */
+module.exports.seedFixtures = seedFixtures;

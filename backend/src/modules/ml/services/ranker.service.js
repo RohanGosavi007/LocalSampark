@@ -16,6 +16,26 @@ const embeddings = require('./embedding.service');
 const logger = require('../../../config/logger');
 const { query } = require('../../../config/database');
 
+/**
+ * Phase-2 scorers, each behind its own config flag and each defaulting to off.
+ *
+ * Required lazily inside the functions that use them rather than at module
+ * load. Two reasons, both learned from the modules above: a require cycle
+ * (coldstart reads embeddings, which this file also holds) and, more
+ * practically, a disabled subsystem should cost nothing at boot — the sequence
+ * model deserialises a weight matrix on first use, and a deployment with
+ * ml_sequence_enabled false should never pay for it.
+ */
+function optional(modulePath) {
+  try {
+    // eslint-disable-next-line global-require
+    return require(modulePath);
+  } catch (err) {
+    logger.warn(`Ranker: optional module ${modulePath} unavailable: ${err.message}`);
+    return null;
+  }
+}
+
 /** Great-circle distance in kilometres. */
 function distanceKm(aLat, aLng, bLat, bLng) {
   const toRad = (d) => (d * Math.PI) / 180;
@@ -188,6 +208,41 @@ function injectExploration(ranked, epsilon, limit, impressionCounts) {
 }
 
 /**
+ * Places cold-start picks into a finished feed.
+ *
+ * Distinct from injectExploration in what it selects and where it puts it.
+ * That function takes the least-*shown* items from the tail; this takes the
+ * least-*known* ones chosen by Thompson sampling, which after a few weeks is a
+ * different set — an item shown a hundred times and ignored is well understood,
+ * and spending another slot on it learns nothing.
+ *
+ * Placement mirrors the existing exploration pass deliberately: never position
+ * 0, and spread rather than clustered. The first slot is the one most likely to
+ * be acted on and is the most expensive to give away, and three unknown
+ * merchants in a row reads as a broken feed.
+ */
+function injectColdStart(items, pool, picks) {
+  if (!Array.isArray(items) || items.length < 4 || picks.length === 0) return items;
+
+  const present = new Set(items.map((item) => String(item.id)));
+  const byId = new Map(pool.map((item) => [String(item.id), item]));
+
+  const additions = picks
+    .filter((pick) => !present.has(String(pick.id)) && byId.has(String(pick.id)))
+    .map((pick) => ({ ...byId.get(String(pick.id)), is_cold_start: true, _sampled_rate: pick.sampled_rate }));
+
+  if (additions.length === 0) return items;
+
+  const out = items.slice();
+  const stride = Math.max(2, Math.floor(out.length / (additions.length + 1)));
+  additions.forEach((item, i) => {
+    const position = Math.min(stride * (i + 1), out.length - 1);
+    out[position] = item;
+  });
+  return out;
+}
+
+/**
  * Collaborative affinity for the items a user has already engaged with.
  *
  * Returns itemId -> { score, support } keyed by the *candidate* item, so
@@ -278,6 +333,189 @@ async function loadImpressionCounts(itemType = 'shop') {
   } catch {
     return new Map();
   }
+}
+
+/**
+ * Gathers every phase-2 signal, concurrently and failing soft.
+ *
+ * The contract each one honours: return an empty map when the flag is off, when
+ * the data is missing, or when anything at all goes wrong. A signal that throws
+ * would take down a feed; a signal that returns nothing leaves the ranker
+ * exactly as it was before the subsystem existed, which is a working feed.
+ */
+function emptyPhase2Signals() {
+  return {
+    graph: new Map(),
+    intent: new Map(),
+    coldstart: new Map(),
+    coldstartPicks: [],
+    prediction: null,
+    timed_out: true,
+  };
+}
+
+/**
+ * Resolves `promise`, or `fallback()` if it has not settled within `ms`.
+ *
+ * The losing promise is not cancelled — JavaScript has no mechanism for that —
+ * so its queries still complete and its result is discarded. That is the cost
+ * of the deadline and it is bounded: these are read-only aggregates, and the
+ * alternative is a feed that waits.
+ */
+function withDeadline(promise, ms, fallback) {
+  let timer = null;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(fallback()), ms);
+  });
+  return Promise.race([promise, timeout])
+    .then((result) => {
+      // Clearing the timer matters: an un-cleared one keeps the event loop
+      // alive for its full duration, which in a test run shows up as Jest
+      // complaining that it cannot exit.
+      if (timer) clearTimeout(timer);
+      return result;
+    })
+    .catch((err) => {
+      if (timer) clearTimeout(timer);
+      logger.warn('Ranker: phase-2 signals failed: ' + err.message);
+      return fallback();
+    });
+}
+
+async function loadPhase2Signals({ cfg, userId, candidates, context }) {
+  const empty = emptyPhase2Signals();
+  empty.timed_out = false;
+
+  const itemIds = candidates.map((c) => c.id);
+
+  const [graph, intent, coldstart] = await Promise.all([
+    (async () => {
+      if (cfg.ml_graph_enabled !== true || Number(cfg.ml_w_graph) <= 0) return new Map();
+      const lightgcn = optional('../graph/lightgcn');
+      if (!lightgcn) return new Map();
+      try {
+        const societyId = context.societyId || await lightgcn.societyForUser(userId);
+        return await lightgcn.affinityScores(userId, itemIds, {
+          regionId: context.regionId || null,
+          societyId,
+          minDegree: Number(cfg.ml_graph_min_degree) || 3,
+        });
+      } catch (err) {
+        logger.warn('Ranker: graph affinity unavailable: ' + err.message);
+        return new Map();
+      }
+    })(),
+
+    (async () => {
+      if (cfg.ml_sequence_enabled !== true || Number(cfg.ml_w_intent) <= 0) {
+        return { scores: new Map(), prediction: null };
+      }
+      const intentModel = optional('../sequence/intentModel');
+      if (!intentModel) return { scores: new Map(), prediction: null };
+      try {
+        const prediction = await intentModel.predictNextCategory(userId, context.sessionEvents || []);
+        return { scores: intentModel.intentScores(candidates, prediction), prediction };
+      } catch (err) {
+        logger.warn('Ranker: intent prediction unavailable: ' + err.message);
+        return { scores: new Map(), prediction: null };
+      }
+    })(),
+
+    (async () => {
+      if (cfg.ml_coldstart_enabled !== true) return { assessments: new Map(), picks: [] };
+      const coldStart = optional('../coldstart/coldStart');
+      if (!coldStart) return { assessments: new Map(), picks: [] };
+      try {
+        const assessments = await coldStart.assess(candidates, {
+          graceDays: Number(cfg.ml_coldstart_grace_days) || 30,
+          pincode: context.pincode || null,
+        });
+        const budget = Math.round((Number(cfg.ml_coldstart_budget) || 0) * (context.limit || 20));
+        return { assessments, picks: coldStart.selectExploration(assessments, budget) };
+      } catch (err) {
+        logger.warn('Ranker: cold-start assessment unavailable: ' + err.message);
+        return { assessments: new Map(), picks: [] };
+      }
+    })(),
+  ]).catch((err) => {
+    logger.warn('Ranker: phase-2 signals failed wholesale: ' + err.message);
+    return [new Map(), { scores: new Map(), prediction: null }, { assessments: new Map(), picks: [] }];
+  });
+
+  return {
+    ...empty,
+    graph,
+    intent: intent.scores,
+    prediction: intent.prediction,
+    coldstart: coldstart.assessments,
+    coldstartPicks: coldstart.picks,
+  };
+}
+
+/**
+ * Applies the post-scoring adjustments: uplift, then fairness.
+ *
+ * Order matters and is not arbitrary. Uplift is a *scoring* correction — it
+ * changes what the ranker believes each candidate is worth — so it must happen
+ * before the ordering is fixed. Fairness is an *allocation* constraint over the
+ * final ordering, and it measures its own cost in NDCG against the scores it
+ * receives. Running fairness first and uplift second would let uplift silently
+ * undo a correction whose cost had already been accounted for and reported.
+ */
+async function applyPostScoring(ordered, { cfg, context }) {
+  const notes = { uplift: null, fairness: null };
+  let items = ordered;
+
+  if (cfg.ml_uplift_enabled === true && Number(cfg.ml_uplift_strength) > 0) {
+    const uplift = optional('../causal/upliftModel');
+    if (uplift) {
+      try {
+        const factors = await uplift.multipliers(items, {
+          strength: Number(cfg.ml_uplift_strength) || 0.5,
+        });
+        if (factors.size > 0) {
+          items = items
+            .map((item) => {
+              const factor = factors.get(item.id);
+              if (factor === undefined) return item;
+              return { ...item, _score: item._score * factor, _uplift_factor: factor };
+            })
+            .sort((a, b) => b._score - a._score);
+          notes.uplift = { applied: factors.size, strength: Number(cfg.ml_uplift_strength) };
+        }
+      } catch (err) {
+        logger.warn('Ranker: uplift adjustment skipped: ' + err.message);
+      }
+    }
+  }
+
+  if (cfg.ml_fairness_enabled === true && Number(cfg.ml_fairness_strength) > 0) {
+    const fairness = optional('../fairness/exposureFairness');
+    if (fairness) {
+      try {
+        const deficits = await fairness.loadDeficits(items.map((i) => i.id), {
+          regionId: context.regionId || null,
+        });
+        const result = fairness.rerank(items, {
+          deficits,
+          strength: Number(cfg.ml_fairness_strength) || 0.3,
+          maxNdcgLoss: Number(cfg.ml_fairness_max_ndcg_loss) || 0.05,
+        });
+        items = result.items;
+        notes.fairness = {
+          applied_strength: result.applied_strength,
+          ndcg_loss: result.ndcg_loss,
+          budget: result.budget,
+          moved: result.moved,
+          max_move: result.max_move,
+        };
+      } catch (err) {
+        logger.warn('Ranker: fairness re-rank skipped: ' + err.message);
+      }
+    }
+  }
+
+  return { items, notes };
 }
 
 /**
@@ -400,12 +638,29 @@ async function rank(candidates, context = {}) {
 
     const minSupport = Number(cfg.ml_cf_min_support) || 50;
 
-    const [index, profile, overrides, impressionCounts, collaborative] = await Promise.all([
+    const [index, profile, overrides, impressionCounts, collaborative, phase2] = await Promise.all([
       embeddings.getIndex(),
       embeddings.preferenceVector(userId),
       loadOverrides(surface),
       loadImpressionCounts('shop'),
       loadCollaborativeScores(userId, minSupport),
+      // Every phase-2 signal, gathered concurrently with the rest. Each resolves
+      // to an empty result when its flag is off or its data is missing, so the
+      // scoring loop below has no conditional branches for them — an absent
+      // signal contributes a term of zero, exactly as ml_w_cf does before the
+      // affinity matrix has support.
+      //
+      // Raced against its own deadline rather than sharing the ranker's. These
+      // signals are enhancements: losing them costs some ranking quality, while
+      // letting them consume the ranking budget costs the *whole* ML path,
+      // because the check below falls back to the distance-sorted baseline.
+      // Trading a graph term for a baseline feed is a bad exchange, and it is
+      // the one that happens by default if this shares the main budget.
+      withDeadline(
+        loadPhase2Signals({ cfg, userId, candidates, context }),
+        Math.max(Math.floor((Number(cfg.ml_timeout_ms) || 150) / 2), 20),
+        emptyPhase2Signals
+      ),
     ]);
 
     // Budget check after the I/O and before scoring. Scoring is pure CPU over a
@@ -451,6 +706,12 @@ async function rank(candidates, context = {}) {
         pop: wilsonScore(candidate.rating, candidate.review_count ?? candidate.total_ratings ?? 0),
         rec: recencyScore(candidate.created_at),
         ctx: contextScore(candidate.category_name || candidate.category, localHour),
+        // Society-neighbourhood affinity from the propagated graph, and the
+        // predicted-next-category probability from the sequence model. Both are
+        // 0 when their subsystem is off or has no answer for this candidate,
+        // which is what lets them join the weighted sum with no special-casing.
+        graph: phase2.graph.get(candidate.id) || 0,
+        intent: phase2.intent.get(candidate.id) || 0,
       };
 
       let score =
@@ -459,7 +720,9 @@ async function rank(candidates, context = {}) {
         weights.ml_w_dist * terms.dist +
         weights.ml_w_pop * terms.pop +
         weights.ml_w_rec * terms.rec +
-        weights.ml_w_ctx * terms.ctx;
+        weights.ml_w_ctx * terms.ctx +
+        weights.ml_w_graph * terms.graph +
+        weights.ml_w_intent * terms.intent;
 
       if (override && override.override_type === 'boost') {
         score *= Number(override.boost_factor) || 1;
@@ -488,22 +751,44 @@ async function rank(candidates, context = {}) {
       ordered.splice(pos, 0, { ...item, is_promoted: true });
     }
 
-    const items = injectExploration(
+    // Uplift re-scores, fairness re-allocates. Both are no-ops when their flags
+    // are off, and both fail soft.
+    const post = await applyPostScoring(ordered, { cfg, context });
+    ordered = post.items;
+
+    let items = injectExploration(
       ordered,
       Number(cfg.ml_epsilon) || 0,
       limit,
       impressionCounts
     );
 
+    // Cold-start slots are placed last, over the finished list.
+    //
+    // They are a claim on the *served* feed, so they have to be applied to what
+    // is actually being served — inserting them earlier would let the fairness
+    // re-rank or the exploration pass push them back out, and the budget an
+    // operator configured would silently not be honoured.
+    if (phase2.coldstartPicks.length > 0) {
+      items = injectColdStart(items, ordered, phase2.coldstartPicks);
+    }
+
     return {
       items,
       strategy: 'ml',
       timings: { total_ms: Date.now() - started },
+      // Surfaced so the endpoint can echo the predicted intent to the client
+      // and the console can attribute a feed to it.
+      prediction: phase2.prediction,
+      adjustments: post.notes,
       debug: {
         candidates: candidates.length,
         has_profile: Boolean(profile),
         vocabulary: index.idf.size,
         collaborative_pairs: collaborative.size,
+        graph_scored: phase2.graph.size,
+        intent_scored: phase2.intent.size,
+        coldstart_slots: phase2.coldstartPicks.length,
       },
     };
   } catch (err) {
@@ -548,4 +833,8 @@ module.exports = {
   recencyScore,
   contextScore,
   injectExploration,
+  injectColdStart,
+  applyPostScoring,
+  loadPhase2Signals,
+  withDeadline,
 };
