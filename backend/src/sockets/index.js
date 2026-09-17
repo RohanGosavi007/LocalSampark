@@ -9,6 +9,7 @@ const inventorySocket = require('./inventorySocket');
 const carpoolSocket = require('./carpoolSocket');
 const marketplaceSocket = require('./marketplaceSocket');
 const jobsSocket = require('./jobsSocket');
+const territorySocket = require('./territorySocket');
 
 let io;
 
@@ -93,6 +94,7 @@ const initSockets = (server) => {
     carpoolSocket(io, socket);
     marketplaceSocket(io, socket);
     jobsSocket(io, socket);
+    territorySocket(io, socket);
 
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);

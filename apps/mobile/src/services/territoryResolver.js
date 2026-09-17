@@ -46,6 +46,26 @@ const RESOLUTION_TTL_MS = 12 * 60 * 60 * 1000;
 /** Acquisition ceiling. Beyond this the user is staring at a spinner. */
 const GPS_TIMEOUT_MS = 8000;
 
+/**
+ * Speed above which a jump between two fixes is not a journey.
+ *
+ * 300 km/h. A commercial flight exceeds it and nothing else a delivery rider
+ * does comes close, so the false-positive rate on real movement is effectively
+ * zero while the signal on teleportation is unambiguous.
+ *
+ * This exists because `position.mocked` only catches a spoofer that announces
+ * itself. Android sets the flag when a mock *provider* supplies the fix, but a
+ * rooted device, a patched build, or a spoofer hooking the location APIs
+ * directly will hand over coordinates with the flag clear. What such a spoofer
+ * cannot easily fake is a plausible *history*: jumping from Pune to Mumbai
+ * between two fixes thirty seconds apart is 14,000 km/h, and no amount of
+ * flag-clearing makes that a drive.
+ */
+const MAX_PLAUSIBLE_KMH = 300;
+
+/** Below this gap, ordinary GPS scatter produces meaningless speeds. */
+const MIN_INTERVAL_FOR_SPEED_MS = 5000;
+
 let lastFix = null; // { lat, lng, at, mocked }
 
 /**
@@ -94,6 +114,38 @@ async function writeCache(resolution) {
 }
 
 /**
+ * Whether moving between two fixes would require an implausible speed.
+ *
+ * Returns `{ implausible, kmh }`. Says no when there is nothing to compare
+ * against, when the fixes are too close together in time for a speed to mean
+ * anything, or when either fix is unusable — an absent history is not evidence
+ * of spoofing, and treating it as such would flag every cold start.
+ */
+export function implausibleJump(previous, current) {
+  if (!previous || !current) return { implausible: false, kmh: null };
+
+  const elapsedMs = current.at - previous.at;
+  if (!Number.isFinite(elapsedMs) || elapsedMs < MIN_INTERVAL_FOR_SPEED_MS) {
+    return { implausible: false, kmh: null };
+  }
+
+  const km = haversineKm(previous.lat, previous.lng, current.lat, current.lng);
+  if (!Number.isFinite(km)) return { implausible: false, kmh: null };
+
+  const kmh = km / (elapsedMs / 3600000);
+  return { implausible: kmh > MAX_PLAUSIBLE_KMH, kmh: Math.round(kmh) };
+}
+
+/** Great-circle distance in km. Small enough not to warrant a dependency. */
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(toRad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
  * Acquires a position, or explains why it could not.
  *
  * Never prompts for permission on its own. A permission dialog that appears
@@ -105,6 +157,10 @@ export async function getPosition({ allowPrompt = false } = {}) {
   if (lastFix && Date.now() - lastFix.at < FIX_TTL_MS) {
     return { ok: true, ...lastFix, cached: true };
   }
+
+  // Held before lastFix is overwritten, so the plausibility check below has a
+  // previous position to compare against.
+  const previousFix = lastFix;
 
   try {
     let { status } = await Location.getForegroundPermissionsAsync();
@@ -129,16 +185,28 @@ export async function getPosition({ allowPrompt = false } = {}) {
 
     if (!position) return { ok: false, reason: 'timeout' };
 
+    const now = Date.now();
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    // Android reports when a position came from a mock provider. It is not a
+    // security control — a determined spoofer patches the app — but it catches
+    // the ordinary case, and the server treats a flagged fix as unusable for
+    // attribution rather than trusting it.
+    const flaggedMock = position.mocked === true || position.coords?.mocked === true;
+
+    // The second signal: a fix that is only reachable by teleporting. See
+    // MAX_PLAUSIBLE_KMH — this catches the spoofer that does not set the flag.
+    const jump = implausibleJump(previousFix, { lat, lng, at: now });
+
     lastFix = {
-      lat: position.coords.latitude,
-      lng: position.coords.longitude,
+      lat,
+      lng,
       accuracy: position.coords.accuracy,
-      // Android reports when a position came from a mock provider. It is not a
-      // security control — a determined spoofer patches the app — but it
-      // catches the ordinary case, and the server treats a flagged fix as
-      // unusable for attribution rather than trusting it.
-      mocked: position.mocked === true || position.coords?.mocked === true,
-      at: Date.now(),
+      mocked: flaggedMock || jump.implausible,
+      mockReason: flaggedMock ? 'provider_flag' : (jump.implausible ? 'implausible_speed' : null),
+      impliedKmh: jump.kmh,
+      at: now,
     };
 
     return { ok: true, ...lastFix, cached: false };

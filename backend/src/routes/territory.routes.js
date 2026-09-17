@@ -59,6 +59,67 @@ async function audit(req, action, detail) {
   }
 }
 
+/**
+ * POST /territories/transitions
+ *
+ * A device reporting that it crossed from one territory into another.
+ *
+ * Accepts a crossing that happened earlier: the device queues transitions when
+ * it has no signal — which is most likely at the edge of a serviced area, i.e.
+ * exactly where crossings happen — and uploads them on reconnection. The
+ * client's `occurred_at` is therefore trusted for ordering but clamped, because
+ * a client-supplied timestamp is not evidence and a device with a wrong clock
+ * would otherwise write rows dated next year.
+ */
+router.post('/transitions', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user.id || req.user.userId;
+    const body = req.body || {};
+
+    const lat = body.lat != null ? Number(body.lat) : null;
+    const lng = body.lng != null ? Number(body.lng) : null;
+
+    const toId = body.to_territory_id || null;
+    const fromId = body.from_territory_id || null;
+
+    if (!toId && !fromId) {
+      return res.status(400).json({ success: false, message: 'A transition needs at least one territory.' });
+    }
+    if (toId && fromId && String(toId) === String(fromId)) {
+      return res.status(400).json({ success: false, message: 'A transition must change territory.' });
+    }
+
+    // Clamp the reported time into [30 days ago, now]. A backlog older than a
+    // month is not worth reconciling, and nothing may be dated in the future.
+    const now = Date.now();
+    const reported = body.occurred_at ? Date.parse(body.occurred_at) : now;
+    const occurredAt = new Date(
+      Math.min(now, Math.max(Number.isFinite(reported) ? reported : now, now - 30 * 24 * 3600 * 1000))
+    ).toISOString();
+
+    try {
+      await query(
+        `INSERT INTO territory_transitions
+           (id, user_id, from_territory_id, to_territory_id, latitude, longitude, occurred_at, mocked)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [crypto.randomUUID(), userId, fromId, toId, lat, lng, occurredAt, body.mocked === true ? 1 : 0]
+      );
+    } catch (err) {
+      // The dedupe index firing means the device retried an upload it had
+      // already made. That is a success from the client's point of view, and
+      // telling it otherwise makes it retry forever.
+      if (/unique|duplicate/i.test(err.message)) {
+        return res.json({ success: true, recorded: false, reason: 'already_recorded' });
+      }
+      throw err;
+    }
+
+    return res.json({ success: true, recorded: true, occurred_at: occurredAt });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // ─── Public resolution ──────────────────────────────────────────────────────
 
 /**

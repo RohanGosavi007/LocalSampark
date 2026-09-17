@@ -39,6 +39,11 @@ module.exports = {
   getForegroundPermissionsAsync: jest.fn(async () => ({ status: state.foregroundStatus })),
   requestForegroundPermissionsAsync: jest.fn(async () => ({ status: state.requestStatus })),
   hasServicesEnabledAsync: jest.fn(async () => state.servicesEnabled),
+  watchPositionAsync: jest.fn(async (options, callback) => {
+    module.exports.__watchCallback = callback;
+    module.exports.__watchOptions = options;
+    return { remove: jest.fn() };
+  }),
   getCurrentPositionAsync: jest.fn(async (options) => {
     module.exports.__lastOptions = options;
     if (state.throws) throw new Error(state.throws);
