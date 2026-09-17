@@ -40,6 +40,7 @@ const crypto = require('crypto');
 const turf = require('@turf/turf');
 
 const spatial = require('../repositories/spatial.repository');
+const spatialCache = require('./spatialCache.service');
 const pincodeUtil = require('../utils/pincode');
 const { query, queryOne } = require('../config/database');
 const logger = require('../config/logger');
@@ -61,6 +62,16 @@ const METHOD_CONFIDENCE = Object.freeze({
  * costs nothing; this exists so that stays true after boundaries land.
  */
 const BOUNDARY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * How close to a boundary line counts as "on the border", in metres.
+ *
+ * Consumer GPS on a phone is routinely off by more than the width of a street,
+ * so within this distance the inside/outside answer is not meaningfully better
+ * than a coin flip. Resolutions this close are flagged borderline so the
+ * deterministic tie-breaker decides rather than the last fix's error.
+ */
+const BOUNDARY_EDGE_METRES = 50;
 let boundaryCache = null;
 
 async function verifiedBoundaries() {
@@ -87,6 +98,10 @@ async function verifiedBoundaries() {
 
 function invalidate() {
   boundaryCache = null;
+  // A territory changing hands is exactly when a cached answer becomes a
+  // payment to the wrong partner, so the two caches are cleared together and
+  // never independently.
+  spatialCache.invalidate();
 }
 
 /**
@@ -281,13 +296,34 @@ async function resolveByCoordinates(lat, lng) {
     return shape(null, 'unresolved', { reason: 'coordinates_out_of_range' });
   }
 
+  // A cached cell answer is only ever written for points provably interior to
+  // their territory (see spatialCache.setCoordinate), so a hit here is safe to
+  // return without re-testing the geometry.
+  const cached = await spatialCache.getCoordinate(latitude, longitude);
+  if (cached) return { ...cached, cached: true };
+
   const hits = await containingTerritories(latitude, longitude);
   if (hits.length > 0) {
     const decision = breakBorderlineTie(hits, latitude, longitude);
-    return shape(decision.row, 'boundary', {
-      borderline: decision.ambiguous || false,
+
+    // How far the point sits from the edge decides two things: whether this is
+    // the 50 m street-boundary case, and whether the answer may be shared with
+    // the rest of the geohash cell.
+    const marginKm = spatial.distanceToBoundaryKm(decision.row, latitude, longitude);
+    const nearEdge = marginKm !== null && marginKm * 1000 <= BOUNDARY_EDGE_METRES;
+
+    const result = shape(decision.row, 'boundary', {
+      borderline: decision.ambiguous || nearEdge || false,
       borderline_candidates: decision.candidates || undefined,
+      boundary_margin_km: marginKm,
     });
+
+    // Deliberately not awaited on the critical path — a slow cache write must
+    // not slow the answer the user is waiting for, and a failed one is a miss
+    // next time rather than an error now.
+    spatialCache.setCoordinate(latitude, longitude, result, marginKm).catch(() => {});
+
+    return result;
   }
 
   const nearest = await spatial.nearestTerritory(latitude, longitude);
@@ -311,14 +347,25 @@ async function resolveByPincode(pincode) {
     });
   }
 
+  // A pincode is an exact key — it belongs to one territory or to none — so
+  // unlike a coordinate there is no cell to straddle and no margin to check.
+  const cached = await spatialCache.getPincode(normalized);
+  if (cached) return { ...cached, cached: true };
+
   const territory = await spatial.territoryByPincode(normalized);
   if (!territory) {
     // A valid pincode nobody serves is a franchise opportunity, not an error.
+    //
+    // Deliberately not cached. The gap counter below is how an operator sees
+    // demand for an unserved area, and caching the negative would swallow every
+    // repeat request — the signal is the whole point of the miss.
     await recordCoverageGap(normalized);
     return shape(null, 'unresolved', { reason: 'no_territory_for_pincode', pincode: normalized });
   }
 
-  return shape(territory, 'pincode', { pincode: normalized });
+  const result = shape(territory, 'pincode', { pincode: normalized });
+  spatialCache.setPincode(normalized, result).catch(() => {});
+  return result;
 }
 
 /**

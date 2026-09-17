@@ -3,18 +3,15 @@ const router = express.Router();
 const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const geo = require('../../../utils/geo');
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+// The maths lives in one place now (src/utils/geo.js); this keeps the local
+// name the call sites below already use.
+const haversineKm = geo.distanceKm;
 
 async function getDriverRating(driverId) {
   const r = await queryOne(`SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM carpool_ratings WHERE rated_id = $1`, [driverId]);

@@ -124,6 +124,33 @@ async function seedFixtures(db) {
   }
 }
 
+/**
+ * Clears the per-worker database copies from the previous run.
+ *
+ * jest.setup.js gives each worker its own copy of the migrated database so
+ * parallel suites cannot collide. Those copies must not outlive the run that
+ * made them: a stale one carries the previous run's schema, and a suite would
+ * then fail against a migration that has since changed for reasons nothing in
+ * the output would explain.
+ */
+function removeWorkerDbs() {
+  const dir = path.dirname(TEST_DB_PATH);
+  const base = path.basename(TEST_DB_PATH, '.db');
+  if (!fs.existsSync(dir)) return;
+
+  for (const entry of fs.readdirSync(dir)) {
+    // Matches the `.db` and its `-wal`/`-shm` sidecars alike.
+    if (entry.startsWith(`${base}.worker`)) {
+      try {
+        fs.unlinkSync(path.join(dir, entry));
+      } catch {
+        // A locked file from a crashed run is not worth failing setup over; the
+        // copy below will overwrite it or the worker will reuse it harmlessly.
+      }
+    }
+  }
+}
+
 module.exports = async function globalSetup() {
   // Must be set before config/database is first required, which the migration
   // runner does transitively.
@@ -139,6 +166,7 @@ module.exports = async function globalSetup() {
   // accumulates whatever a half-finished migration left behind, and that state
   // is invisible until a suite fails for a reason nobody can reproduce.
   removeTestDb();
+  removeWorkerDbs();
   fs.mkdirSync(path.dirname(TEST_DB_PATH), { recursive: true });
 
   // The migration runner is chatty and its output would bury the test report.

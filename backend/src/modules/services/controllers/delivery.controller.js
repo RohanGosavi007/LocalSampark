@@ -2,6 +2,7 @@ const crypto = require('crypto');
 // One shared client instead of a per-module pool; see config/prisma.js.
 const prisma = require('../../../config/prisma').sharedPrisma;
 const { query, queryOne } = require('../../../config/database');
+const geo = require('../../../utils/geo');
 
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
@@ -65,16 +66,8 @@ async function calculateDeliveryFee(req, res, next) {
 }
 
 // Haversine
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
+// One implementation for the whole backend; see src/utils/geo.js.
+const haversineDistance = geo.distanceKm;
 
 // requestDelivery: P2P courier and on-demand parcel delivery
 const requestDelivery = async (req, res, next) => {

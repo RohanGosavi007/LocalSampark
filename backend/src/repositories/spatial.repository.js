@@ -365,6 +365,68 @@ class SpatialRepository {
   }
 
   /**
+   * Distance from a point to the nearest edge of a territory's boundary, in km.
+   *
+   * This is the margin that decides whether an answer can be cached for a whole
+   * geohash cell and whether a resolution should be treated as borderline. A
+   * point 4 km inside a territory is unambiguous; a point 30 m from the edge is
+   * one GPS error away from belonging to the neighbouring franchise, and the
+   * two need to be told apart.
+   *
+   * Returns null when there is no verified geometry to measure against, which
+   * the callers treat as "not safe to cache" rather than "far from any edge".
+   *
+   * ┌─────────────────────────────────────────────────────────────────┐
+   * │ PostGIS: SELECT ST_Distance(                                    │
+   * │            ST_Boundary(t.boundary)::geography,                  │
+   * │            ST_SetSRID(ST_Point($2,$1),4326)::geography) / 1000  │
+   * │ — and ST_DWithin(t.boundary, point, 50) for the edge test.      │
+   * │ Once real boundaries are imported into a geometry column, this  │
+   * │ moves into the query and the GiST index does the work. Until    │
+   * │ then the polygons live in a TEXT column and turf measures them. │
+   * └─────────────────────────────────────────────────────────────────┘
+   */
+  distanceToBoundaryKm(territory, lat, lng) {
+    const geometry = this.parseBoundary(territory && territory.boundary_geojson);
+    if (!geometry) return null;
+
+    try {
+      const point = turf.point([lng, lat]);
+      // polygonToLine yields the ring(s); for a MultiPolygon it is a
+      // FeatureCollection, so every ring is measured and the nearest wins. A
+      // territory with a hole in it has an inner ring that is just as much an
+      // edge as the outer one.
+      const lines = turf.polygonToLine(geometry);
+      const features = lines.type === 'FeatureCollection' ? lines.features : [lines];
+
+      let nearest = Infinity;
+      for (const feature of features) {
+        const d = turf.pointToLineDistance(point, feature, { units: 'kilometers' });
+        if (d < nearest) nearest = d;
+      }
+
+      return Number.isFinite(nearest) ? nearest : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Whether a point sits within `metres` of a territory's boundary line.
+   *
+   * The Phase 1 edge case in plain terms: a user standing on the street that
+   * separates two franchises. Inside-or-outside is a coin flip at that range —
+   * consumer GPS is routinely off by more than the width of the road — so the
+   * resolution is marked borderline and the deterministic tie-breaker decides,
+   * rather than whichever side the last fix happened to land on.
+   */
+  isNearBoundary(territory, lat, lng, metres = 50) {
+    const km = this.distanceToBoundaryKm(territory, lat, lng);
+    if (km === null) return false;
+    return km * 1000 <= metres;
+  }
+
+  /**
    * Compute the centroid of a GeoJSON polygon.
    * 
    * ┌─────────────────────────────────────────────────────────────────┐

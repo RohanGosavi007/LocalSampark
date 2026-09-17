@@ -32,27 +32,20 @@ function generateTrackingOtp() {
   return String(crypto.randomInt(1000, 10000));
 }
 const { autoCreateShopDelivery } = require('../../services/controllers/delivery.controller');
+const geo = require('../../../utils/geo');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mockkey',
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'mocksecret'
 });
 
-// Helper for Haversine distance (in JS if DB doesn't support ACOS natively)
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
-  var R = 6371; // Radius of the earth in km
-  var dLat = deg2rad(lat2 - lat1);
-  var dLon = deg2rad(lon2 - lon1);
-  var a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  var d = R * c; // Distance in km
-  return d;
-}
-function deg2rad(deg) { return deg * (Math.PI / 180) }
+// Distance now comes from src/utils/geo.js. The local copy guarded with
+// `if (!lat1 || !lon1 || ...) return Infinity`, which rejects a coordinate of
+// exactly 0 as missing — harmless for India, wrong anywhere on the equator or
+// the prime meridian, and wrong silently: the shop simply stops appearing in
+// proximity results. geo.distanceKm distinguishes absent from zero.
+const getDistanceFromLatLonInKm = geo.distanceKm;
+const deg2rad = geo.toRad;
 
 const CacheService = require('../../../services/cache.service');
 const AuditLogger = require('../../../services/audit.logger');
