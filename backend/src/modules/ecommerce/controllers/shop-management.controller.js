@@ -358,24 +358,75 @@ async function getShopLedger(req, res, next) {
     let grossSales = 0;
     let platformCommission = 0;
     let netPayout = 0;
-    
-    // We'll calculate pending payouts as those orders that are delivered but not yet "paid out"
-    // Since we don't have a payout table yet, we'll just simulate the metrics based on orders
+
+    /**
+     * The ledger reads the commission rows the platform actually wrote.
+     *
+     * This used to compute `gross * 0.10` with a comment saying it was
+     * simulating the metrics because there was no payout table. There is one:
+     * every product order writes a shop_commissions row carrying the rate that
+     * was applied — the category's rate, or the shop's negotiated override —
+     * plus the convenience fee, which the flat 10% ignored entirely.
+     *
+     * So the earnings screen showed a shop owner one number and the platform
+     * paid them a different one. For a category on 15% with a ₹10 fee, the
+     * screen overstated take-home on every single order, and the owner had no
+     * way to see why the settlement did not match.
+     *
+     * Orders with no commission row fall back to the rate on the shop or its
+     * category. That fallback is marked in the response rather than blended in
+     * silently, because "we could not find what you were charged" and "you were
+     * charged this" are different statements.
+     */
+    const commissionRows = await queryMany(
+      'SELECT order_id, gross_amount, commission_amount, convenience_fee, total_platform_earning, net_to_shop FROM shop_commissions WHERE shop_id = $1',
+      [shop.id]
+    );
+
+    const byOrder = new Map();
+    for (const row of commissionRows || []) {
+      byOrder.set(String(row.order_id), row);
+    }
+
+    const fallbackRate = await (async () => {
+      const row = await queryOne(
+        `SELECT s.commission_override_percent, s.convenience_fee_override,
+                c.commission_percent, c.convenience_fee
+           FROM local_shops s
+           LEFT JOIN shop_categories c ON c.id = s.category_id
+          WHERE s.id = $1`,
+        [shop.id]
+      );
+      return {
+        percent: Number(row?.commission_override_percent ?? row?.commission_percent ?? 0) || 0,
+        fee: Number(row?.convenience_fee_override ?? row?.convenience_fee ?? 0) || 0,
+      };
+    })();
+
     const transactions = orders.map(o => {
-      const gross = o.total_amount || 0;
-      const commission = gross * 0.10; // 10% platform commission
-      const net = gross - commission;
+      const gross = Number(o.total_amount) || 0;
+      const recorded = byOrder.get(String(o.id));
+
+      const platformEarning = recorded
+        ? Number(recorded.total_platform_earning ?? 0)
+        : (gross * fallbackRate.percent) / 100 + fallbackRate.fee;
+
+      const net = recorded
+        ? Number(recorded.net_to_shop ?? gross - platformEarning)
+        : gross - platformEarning;
 
       grossSales += gross;
-      platformCommission += commission;
+      platformCommission += platformEarning;
       netPayout += net;
 
       return {
         order_id: o.id.toString(),
         created_at: o.created_at,
         gross_amount: gross,
-        commission: commission,
-        net_amount: net
+        commission: platformEarning,
+        net_amount: net,
+        // So the screen can mark an estimate as an estimate.
+        source: recorded ? 'recorded' : 'estimated',
       };
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -1338,7 +1389,10 @@ async function getKDSTickets(req, res, next) {
 
     let whereClause = 'WHERE shop_id = $1 AND date(created_at) = date(CURRENT_TIMESTAMP)';
     const params = [shop.id];
-    if (status) { params.push(status); whereClause += ` AND status = ${params.length}`; }
+    // `$` was missing from the placeholder, so this built `AND status = 2` —
+    // comparing the status column to the integer 2 — and the filter silently
+    // matched no tickets at all.
+    if (status) { params.push(status); whereClause += ` AND status = $${params.length}`; }
 
     const tickets = await query(`SELECT * FROM kds_tickets ${whereClause} ORDER BY ticket_number ASC`, params
     );

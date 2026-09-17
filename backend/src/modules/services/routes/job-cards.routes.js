@@ -4,11 +4,108 @@
  */
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../../config/database');
+const { query, queryOne } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 
+const ADMIN_ROLES = ['admin', 'super_admin'];
+
+/**
+ * The rows of a result, whichever driver produced it.
+ *
+ * The PostgreSQL client returns `{ rows: [...] }`; the SQLite layer returns the
+ * array itself. This file assumed the first everywhere, so on SQLite every
+ * listing here resolved to `[]` — job cards silently never appeared — and
+ * `result.rows[0]` threw "Cannot read properties of undefined" on creation.
+ * The rest of the codebase spells this `(r.rows || r)`; this gives it a name so
+ * the next reader does not have to rediscover why.
+ */
+function rowsOf(result) {
+  if (!result) return [];
+  return Array.isArray(result) ? result : (result.rows || []);
+}
+
+/**
+ * Confirms the caller may act on this shop's job cards.
+ *
+ * Every mutating route in this file was guarded by `authenticate` alone. The
+ * shop id sits in the URL and nothing checked it against the caller, so any
+ * signed-in account could create job cards in any garage, move any repair to
+ * "completed", edit any milestone, and — through the parts route — add labour
+ * charges to a stranger's bill. `authenticate` answers "is this a real user",
+ * never "is this their shop".
+ */
+async function requireShopAccess(req, res, next) {
+  try {
+    const shop = await queryOne('SELECT id, owner_id FROM local_shops WHERE id = $1', [req.params.shopId]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    const role = String(req.user?.role || '').toLowerCase();
+    if (ADMIN_ROLES.includes(role)) {
+      req.shop = shop;
+      return next();
+    }
+
+    if (String(shop.owner_id) !== String(req.user?.id)) {
+      return res.status(403).json({ error: 'You do not manage this shop.' });
+    }
+
+    req.shop = shop;
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * Loads the job card and proves it belongs to the shop in the URL.
+ *
+ * The routes took `cardId` straight from the path and updated by that id alone,
+ * so the shop segment was decoration: any card id worked under any shop id.
+ * Pairing them is what makes the ownership check above mean anything.
+ */
+async function loadCard(req, res, next) {
+  try {
+    const card = await queryOne(
+      'SELECT * FROM job_cards WHERE id = $1 AND shop_id = $2',
+      [req.params.cardId, req.params.shopId]
+    );
+    if (!card) return res.status(404).json({ error: 'Job card not found for this shop.' });
+    req.jobCard = card;
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * The job card lifecycle.
+ *
+ * The status route accepted any value from the list in any order, so a
+ * completed repair could be moved back to "received", a cancelled one revived,
+ * and a job could jump straight from "received" to "ready" without anyone
+ * having looked at it. Customers see this status, and so does the warranty
+ * clock.
+ *
+ * Terminal states have no exits. Reopening a finished job is a new job card,
+ * which is also what the customer's receipt and warranty need it to be.
+ */
+const JOB_STATUS_FLOW = Object.freeze({
+  received:      ['diagnosed', 'cancelled'],
+  diagnosed:     ['waiting_parts', 'in_progress', 'cancelled'],
+  waiting_parts: ['in_progress', 'cancelled'],
+  in_progress:   ['quality_check', 'waiting_parts', 'cancelled'],
+  quality_check: ['ready', 'in_progress', 'cancelled'],
+  ready:         ['completed', 'cancelled'],
+  completed:     [],
+  cancelled:     [],
+});
+
+const JOB_STATUSES = Object.keys(JOB_STATUS_FLOW);
+
+const MILESTONE_STATUSES = Object.freeze(['pending', 'in_progress', 'completed', 'skipped']);
+
 // â”€â”€ GET /api/v1/job-cards/:shopId â€” Get all job cards for a shop â”€â”€
-router.get('/:shopId', authenticate, async (req, res, next) => {
+router.get('/:shopId', authenticate, requireShopAccess, async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { status, page = 1, limit = 20 } = req.query;
@@ -33,8 +130,8 @@ router.get('/:shopId', authenticate, async (req, res, next) => {
     );
 
     res.json({
-      jobCards: result.rows || [],
-      statusSummary: (summary.rows || []).reduce((acc, r) => { acc[r.status] = parseInt(r.count); return acc; }, {}),
+      jobCards: rowsOf(result),
+      statusSummary: rowsOf(summary).reduce((acc, r) => { acc[r.status] = parseInt(r.count); return acc; }, {}),
       page: parseInt(page),
     });
   } catch (error) {
@@ -43,12 +140,13 @@ router.get('/:shopId', authenticate, async (req, res, next) => {
 });
 
 // â”€â”€ GET /api/v1/job-cards/:shopId/:cardId â€” Get single job card with milestones â”€â”€
-router.get('/:shopId/:cardId', authenticate, async (req, res, next) => {
+router.get('/:shopId/:cardId', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
 
     const card = await query(`SELECT * FROM job_cards WHERE id = $1`, [cardId]);
-    if (!card.rows?.length) {
+    const cardRows = rowsOf(card);
+    if (cardRows.length === 0) {
       return res.status(404).json({ error: 'Job card not found' });
     }
 
@@ -61,9 +159,9 @@ router.get('/:shopId/:cardId', authenticate, async (req, res, next) => {
     );
 
     res.json({
-      jobCard: card.rows[0],
-      milestones: milestones.rows || [],
-      parts: parts.rows || [],
+      jobCard: cardRows[0],
+      milestones: rowsOf(milestones),
+      parts: rowsOf(parts),
     });
   } catch (error) {
     next(error);
@@ -71,7 +169,7 @@ router.get('/:shopId/:cardId', authenticate, async (req, res, next) => {
 });
 
 // â”€â”€ POST /api/v1/job-cards/:shopId â€” Create new job card â”€â”€
-router.post('/:shopId', authenticate, async (req, res, next) => {
+router.post('/:shopId', authenticate, requireShopAccess, async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const {
@@ -80,20 +178,52 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
       assignedTechnician, priority, photos
     } = req.body;
 
+    if (!customerName || !String(customerName).trim()) {
+      return res.status(400).json({ error: 'A customer name is required to open a job card.' });
+    }
+
     const jobNumber = `JOB-${Date.now().toString(36).toUpperCase()}`;
 
-    const result = await query(`INSERT INTO job_cards (shop_id, job_number, customer_name, customer_phone,
+    /**
+     * `title` is NOT NULL and this INSERT never supplied it, so every attempt
+     * to open a job card failed on the constraint and surfaced as a 500. The
+     * repair archetype — garages, AC and appliance repair, mobile repair,
+     * plumbing, electrical — could not create a job card at all.
+     *
+     * The caller may send one; otherwise it is derived from the problem
+     * description, which is what a service advisor would write anyway, and
+     * falls back to the job number so the column is never empty.
+     */
+    const jobTitle = (() => {
+      const explicit = String(req.body.title || '').trim();
+      if (explicit) return explicit.slice(0, 200);
+
+      const derived = String(problemDescription || '').trim();
+      if (derived) return derived.slice(0, 200);
+
+      return `Job ${jobNumber}`;
+    })();
+
+    const result = await query(`INSERT INTO job_cards (shop_id, job_number, title, customer_name, customer_phone,
        vehicle_info, device_info, description, estimated_cost,
        estimated_completion_date, assigned_to, priority, photos,
        status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'received', NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'received', NOW())
        RETURNING *`,
-      [shopId, jobNumber, customerName, customerPhone || null,
+      [shopId, jobNumber, jobTitle, customerName, customerPhone || null,
        vehicleInfo || null, deviceInfo || null, problemDescription || '',
        estimatedCost || 0, estimatedCompletionDate || null,
        assignedTechnician || null, priority || 'normal',
        JSON.stringify(photos || [])]
     );
+
+    const created = rowsOf(result)[0];
+    if (!created) {
+      // RETURNING gave nothing back, so there is no id to hang milestones on.
+      // Failing here is honest; the previous code threw a TypeError one line
+      // later and reported it as a 500 with no indication of the cause.
+      return res.status(500).json({ error: 'The job card could not be created.' });
+    }
 
     // Auto-create default milestones based on common repair workflow
     const defaultMilestones = [
@@ -108,7 +238,7 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
     for (const ms of defaultMilestones) {
       await query(`INSERT INTO job_card_milestones (job_card_id, step_order, title, description, status, created_at)
          VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [result.rows[0].id, ms.step, ms.title, ms.description, ms.step === 1 ? 'completed' : 'pending']
+        [created.id, ms.step, ms.title, ms.description, ms.step === 1 ? 'completed' : 'pending']
       );
     }
 
@@ -123,50 +253,91 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
       });
     }
 
-    res.status(201).json({ success: true, jobCard: result.rows[0], jobNumber });
+    res.status(201).json({ success: true, jobCard: created, jobNumber });
   } catch (error) {
     next(error);
   }
 });
 
 // â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/status â€” Update job card status â”€â”€
-router.put('/:shopId/:cardId/status', authenticate, async (req, res, next) => {
+router.put('/:shopId/:cardId/status', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { shopId, cardId } = req.params;
     const { status, notes } = req.body;
 
-    const validStatuses = ['received', 'diagnosed', 'waiting_parts', 'in_progress', 'quality_check', 'ready', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    if (!JOB_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${JOB_STATUSES.join(', ')}` });
     }
 
-    await query(`UPDATE job_cards SET status = $1, status_notes = $2, updated_at = NOW() WHERE id = $3`,
-      [status, notes || null, cardId]
+    const current = req.jobCard.status || 'received';
+
+    // Re-setting the same status is a no-op rather than an error: a retried
+    // request from a patchy connection should not look like a rejected one.
+    if (current !== status) {
+      const allowed = JOB_STATUS_FLOW[current] || [];
+      if (!allowed.includes(status)) {
+        return res.status(409).json({
+          error: `A job card cannot move from "${current}" to "${status}".`,
+          code: 'INVALID_TRANSITION',
+          current_status: current,
+          allowed_next: allowed,
+        });
+      }
+    }
+
+    await query(`UPDATE job_cards SET status = $1, status_notes = $2, updated_at = NOW() WHERE id = $3 AND shop_id = $4`,
+      [status, notes || null, cardId, shopId]
     );
 
-    // Emit status change via Socket.io
+    // Scoped to the people entitled to see it.
+    //
+    // This was `io.emit(...)`, which broadcasts to every connected client on
+    // the platform — every customer of every other shop received every job
+    // card's status changes, carrying the card id. Socket.io rooms exist for
+    // exactly this, and the HTTP side of this file is scoped, so the socket
+    // side leaking was the wider hole of the two.
     const io = req.app.get('io');
     if (io) {
-      io.emit(`order_status_${cardId}`, { status });
+      io.to(`job_card_${cardId}`).emit(`order_status_${cardId}`, { status });
+      io.to(`shop_${shopId}`).emit('job_card_status', { card_id: cardId, status });
     }
 
-    res.json({ success: true, status });
+    res.json({ success: true, status, previous_status: current });
   } catch (error) {
     next(error);
   }
 });
 
 // â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/milestone/:milestoneId â€” Update milestone â”€â”€
-router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, async (req, res, next) => {
+router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
-    const { milestoneId } = req.params;
+    const { cardId, milestoneId } = req.params;
     const { status, notes, photos, completedBy } = req.body;
 
-    // Valid: pending, in_progress, completed, skipped
+    // The vocabulary was stated in a comment and enforced nowhere, so any
+    // string at all could be written into a milestone's status — including one
+    // the progress UI has no case for, which then renders as nothing.
+    if (!MILESTONE_STATUSES.includes(status)) {
+      return res.status(400).json({
+        error: `Invalid milestone status. Must be one of: ${MILESTONE_STATUSES.join(', ')}`,
+      });
+    }
+
+    // Scoped to the card, which is itself scoped to the shop. Updating by
+    // milestone id alone let any milestone on the platform be edited from any
+    // shop's URL.
+    const milestone = await queryOne(
+      'SELECT id FROM job_card_milestones WHERE id = $1 AND job_card_id = $2',
+      [milestoneId, cardId]
+    );
+    if (!milestone) {
+      return res.status(404).json({ error: 'Milestone not found on this job card.' });
+    }
+
     await query(`UPDATE job_card_milestones SET status = $1, notes = $2, photos = $3,
        completed_by = $4, completed_at = CASE WHEN $1 = 'completed' THEN NOW() ELSE completed_at END,
-       updated_at = NOW() WHERE id = $5`,
-      [status, notes || null, JSON.stringify(photos || []), completedBy || null, milestoneId]
+       updated_at = NOW() WHERE id = $5 AND job_card_id = $6`,
+      [status, notes || null, JSON.stringify(photos || []), completedBy || null, milestoneId, cardId]
     );
 
     res.json({ success: true });
@@ -176,7 +347,7 @@ router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, async (req, 
 });
 
 // â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/parts â€” Add parts/labor to job card â”€â”€
-router.post('/:shopId/:cardId/parts', authenticate, async (req, res, next) => {
+router.post('/:shopId/:cardId/parts', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
     const { partName, partType, quantity, unitCost, notes } = req.body;
@@ -194,7 +365,7 @@ router.post('/:shopId/:cardId/parts', authenticate, async (req, res, next) => {
       [cardId]
     );
     await query(`UPDATE job_cards SET final_cost = $1, updated_at = NOW() WHERE id = $2`,
-      [partsTotal.rows?.[0]?.total || 0, cardId]
+      [rowsOf(partsTotal)[0]?.total || 0, cardId]
     );
 
     res.json({ success: true, totalCost });
@@ -204,7 +375,7 @@ router.post('/:shopId/:cardId/parts', authenticate, async (req, res, next) => {
 });
 
 // â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/photo â€” Upload photo proof â”€â”€
-router.post('/:shopId/:cardId/photo', authenticate, async (req, res, next) => {
+router.post('/:shopId/:cardId/photo', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
     const { photoUrl, photoType, caption } = req.body;
@@ -222,7 +393,7 @@ router.post('/:shopId/:cardId/photo', authenticate, async (req, res, next) => {
 });
 
 // â”€â”€ GET /api/v1/job-cards/:shopId/:cardId/photos â€” Get all photos for a job card â”€â”€
-router.get('/:shopId/:cardId/photos', authenticate, async (req, res, next) => {
+router.get('/:shopId/:cardId/photos', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
 
@@ -239,26 +410,39 @@ router.get('/:shopId/:cardId/photos', authenticate, async (req, res, next) => {
 // â”€â”€ GET /api/v1/job-cards/:shopId/track/:jobNumber â€” Public tracking by job number â”€â”€
 router.get('/:shopId/track/:jobNumber', async (req, res, next) => {
   try {
-    const { jobNumber } = req.params;
+    const { shopId, jobNumber } = req.params;
 
-    const card = await query(`SELECT id, job_number, customer_name, status, description,
+    // Scoped to the shop in the URL.
+    //
+    // `shopId` was destructured away and never used: the lookup ran on
+    // job_number alone. Job numbers are `JOB-` plus a base-36 timestamp, so
+    // they are sequential and guessable, and this route is deliberately
+    // unauthenticated — the customer follows a tracking link. Unscoped, anyone
+    // could walk the number space and read customer names off every repair job
+    // on the platform.
+    const cardResult = await query(`SELECT id, job_number, customer_name, status, description,
        estimated_cost, estimated_completion_date, created_at, updated_at
-       FROM job_cards WHERE job_number = $1`,
-      [jobNumber]
+       FROM job_cards WHERE job_number = $1 AND shop_id = $2`,
+      [jobNumber, shopId]
     );
 
-    if (!card.rows?.length) {
+    // Both row shapes. The PostgreSQL driver returns `{ rows: [...] }` and the
+    // SQLite layer returns the array itself, so `card.rows?.length` was
+    // undefined on SQLite and this endpoint answered 404 for every job that
+    // existed — customer-facing tracking was simply dead there.
+    const cardRows = rowsOf(cardResult);
+    if (cardRows.length === 0) {
       return res.status(404).json({ error: 'Job card not found' });
     }
 
-    const milestones = await query(`SELECT step_order, title, description, status, completed_at
+    const milestoneResult = await query(`SELECT step_order, title, description, status, completed_at
        FROM job_card_milestones WHERE job_card_id = $1 ORDER BY step_order ASC`,
-      [card.rows[0].id]
+      [cardRows[0].id]
     );
 
     res.json({
-      jobCard: card.rows[0],
-      milestones: milestones.rows || [],
+      jobCard: cardRows[0],
+      milestones: rowsOf(milestoneResult),
     });
   } catch (error) {
     next(error);
