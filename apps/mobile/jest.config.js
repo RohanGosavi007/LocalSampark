@@ -15,6 +15,7 @@ module.exports = {
   moduleNameMapper: {
     '^@react-native-async-storage/async-storage$': '<rootDir>/__tests__/__mocks__/asyncStorage.js',
     '^expo-constants$': '<rootDir>/__tests__/__mocks__/expoConstants.js',
+    '^expo-location$': '<rootDir>/__tests__/__mocks__/expoLocation.js',
     // src/lib/api.js imports the token store from './secureStorage'. It used to
     // import it from '../context/AuthContext', which is why the mapping below
     // was keyed on that path.
