@@ -489,7 +489,20 @@ async function validateNoOverlap(geojson, { excludeTerritoryId = null } = {}) {
   const conflicts = [];
   for (const row of rows) {
     const other = spatial.parseBoundary(row.boundary_geojson);
-    if (!other) continue;
+    if (!other) {
+      // Reported rather than skipped. Skipping let this promise "no overlap"
+      // against a territory whose geometry it could not read — which is not the
+      // same claim, and is the one an operator would act on.
+      conflicts.push({
+        territory_id: row.id,
+        name: row.name,
+        pincode: row.pincode,
+        code: 'unreadable_geometry',
+        overlap_km2: null,
+        overlap_pct_of_new: null,
+      });
+      continue;
+    }
     const overlapKm2 = spatial.overlapAreaKm2(candidate, other);
     if (overlapKm2 > 1e-6) {
       conflicts.push({

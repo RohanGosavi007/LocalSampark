@@ -4,6 +4,11 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import TabError from '../TabError';
 import { fetchJson } from '../../lib/api';
+import {
+  validateBoundary,
+  snapPoint,
+  closeRing,
+} from '@localsampark/shared/territoryTopology';
 
 /**
  * Territory management.
@@ -147,30 +152,51 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
    * after they press save. The server re-validates on save regardless — this is
    * feedback, not enforcement.
    */
+  /**
+   * The territories the validator checks against and the snapper snaps to.
+   *
+   * Only active ones with a boundary: an inactive territory is not competing
+   * for the ground, and snapping to a retired boundary would align the new one
+   * to geometry nobody is using.
+   */
+  const neighbours = useMemo(
+    () => (territories || [])
+      .filter((t) => t.is_active && (t.boundary_geojson || t.geojson))
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        pincode: t.pincode,
+        geojson: t.boundary_geojson || t.geojson,
+      })),
+    [territories]
+  );
+
   useEffect(() => {
     if (!drawing || drawPoints.length < 3) {
       setValidation(null);
-      return undefined;
+      return;
     }
 
-    const timer = setTimeout(async () => {
-      try {
-        const { toGeoJsonPolygon } = await import('../territory/TerritoryMap');
-        const geojson = toGeoJsonPolygon(drawPoints);
-        if (!geojson) return;
-        const result = await fetchJson(`${API_BASE}/territories/admin/validate-boundary`, {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({ geojson, exclude_territory_id: selected?.id || null }),
-        });
-        setValidation(result);
-      } catch (err) {
-        setValidation({ valid: false, reason: 'validation_request_failed', conflicts: [] });
-      }
-    }, 400);
+    // Validated in the browser, synchronously, with the same module the server
+    // runs on save. This used to POST to /validate-boundary on every vertex
+    // from the third onward — one request per click, each carrying the whole
+    // polygon, to answer a question the browser can answer itself. The server
+    // still re-validates on save, because a browser is not an authority; this
+    // is feedback, and feedback should not cost a round trip.
+    const ring = closeRing(drawPoints.map((p) => [p.lng, p.lat]));
+    const result = validateBoundary(
+      { type: 'Polygon', coordinates: [ring] },
+      neighbours,
+      { excludeId: selected?.id || null }
+    );
 
-    return () => clearTimeout(timer);
-  }, [drawing, drawPoints, selected, API_BASE, authHeaders]);
+    setValidation({
+      valid: result.valid,
+      errors: result.errors,
+      conflicts: result.conflicts,
+      area_km2: result.areaKm2,
+    });
+  }, [drawing, drawPoints, selected, neighbours]);
 
   const conflictIds = useMemo(
     () => (validation?.conflicts || []).map((c) => c.territory_id),
@@ -300,7 +326,18 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
               conflictIds={conflictIds}
               drawing={drawing}
               drawPoints={drawPoints}
-              onDrawPoint={(point) => setDrawPoints((points) => [...points, point])}
+              onDrawPoint={(point) => {
+                // Snap as the point is placed, so the operator sees where it
+                // actually landed and can undo it. Drawing a boundary beside an
+                // existing one by eye leaves either a sliver of overlap or — far
+                // worse — a sliver of gap: a black hole with no franchise
+                // assigned, where orders resolve to nothing and nothing errors.
+                const snapped = snapPoint(point, neighbours, { excludeId: selected?.id || null });
+                setDrawPoints((points) => [...points, { lng: snapped.lng, lat: snapped.lat }]);
+                if (snapped.snapped) {
+                  setNotice(`Snapped to an existing ${snapped.to.kind} (${Math.round(snapped.distanceMetres)} m away).`);
+                }
+              }}
               onSelect={(territory) => { setSelected(territory); setDrawPoints([]); setDrawing(false); }}
             />
 
@@ -341,20 +378,28 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
                   <div style={{ marginTop: '0.75rem', fontSize: '0.82rem' }}>
                     {validation.valid ? (
                       <span style={{ color: '#22c55e' }}>
-                        No conflicts. Area {validation.area_km2} km².
+                        No conflicts. Area {Number(validation.area_km2 || 0).toFixed(2)} km².
                       </span>
                     ) : (
                       <div style={{ color: '#fca5a5' }}>
-                        <strong>
-                          {validation.reason === 'overlaps_existing_territory'
-                            ? `Overlaps ${validation.conflicts.length} existing territor${validation.conflicts.length === 1 ? 'y' : 'ies'}`
-                            : validation.reason === 'self_intersecting_boundary'
-                              ? 'The outline crosses itself'
-                              : `Rejected: ${validation.reason}`}
-                        </strong>
+                        {/* Shape problems first: an operator whose outline crosses
+                            itself does not also need to hear about overlaps. */}
+                        {(validation.errors || []).map((e) => (
+                          <div key={e.code}><strong>{e.message}</strong></div>
+                        ))}
+
+                        {(validation.conflicts || []).length > 0 ? (
+                          <strong>
+                            {`Overlaps ${validation.conflicts.length} existing territor${validation.conflicts.length === 1 ? 'y' : 'ies'}`}
+                          </strong>
+                        ) : null}
+
                         {(validation.conflicts || []).slice(0, 5).map((c) => (
                           <div key={c.territory_id} style={{ ...muted, color: '#fca5a5' }}>
-                            {c.name} ({c.pincode}) — {c.overlap_km2} km², {c.overlap_pct_of_new}% of your shape
+                            {c.name} ({c.pincode}) —{' '}
+                            {c.code === 'overlap'
+                              ? `${c.overlap_km2} km² of shared ground`
+                              : 'this territory’s boundary could not be read, so an overlap cannot be ruled out'}
                           </div>
                         ))}
                       </div>

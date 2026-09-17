@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.4.0"
   }
 }

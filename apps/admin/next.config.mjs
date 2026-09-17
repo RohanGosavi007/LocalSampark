@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // The shared workspace package ships untranspiled CommonJS source rather than
+  // a build artefact, so Next has to compile it alongside the app. Without
+  // this, importing @localsampark/shared/territoryTopology fails at build time
+  // in a way whose message points at node_modules rather than at the cause.
+  transpilePackages: ['@localsampark/shared'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
