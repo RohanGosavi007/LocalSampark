@@ -461,10 +461,112 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST register
+/**
+ * Validates a shop registration payload.
+ *
+ * Nothing validated this before: name, coordinates, phone and category all went
+ * straight into the INSERT. The consequences were quiet rather than loud.
+ *
+ * A shop with null coordinates inserts fine and then never appears in a
+ * proximity search: every distance against it is Infinity, so it sorts last
+ * forever and the owner concludes the platform does not work. A shop at
+ * (0, 0) is worse — it is a real point in the Gulf of Guinea, so it sorts by a
+ * genuine distance and appears in searches thousands of kilometres away.
+ *
+ * A category_id that names no row leaves the shop unroutable: the visitor view
+ * falls back to the generic one, and the commission lookup has no rate to read.
+ *
+ * Returns an array of problems; empty means valid.
+ */
+function validateShopRegistration(body) {
+  const problems = [];
+
+  if (!body.name || !String(body.name).trim()) {
+    problems.push({ field: 'name', message: 'A shop name is required.' });
+  }
+
+  if (!body.address || !String(body.address).trim()) {
+    problems.push({ field: 'address', message: 'An address is required.' });
+  }
+
+  const lat = Number(body.latitude);
+  const lng = Number(body.longitude);
+
+  if (body.latitude === null || body.latitude === undefined || body.latitude === '' || !Number.isFinite(lat)) {
+    problems.push({ field: 'latitude', message: 'A latitude is required to place the shop on the map.' });
+  } else if (lat < -90 || lat > 90) {
+    problems.push({ field: 'latitude', message: 'Latitude must be between -90 and 90.' });
+  }
+
+  if (body.longitude === null || body.longitude === undefined || body.longitude === '' || !Number.isFinite(lng)) {
+    problems.push({ field: 'longitude', message: 'A longitude is required to place the shop on the map.' });
+  } else if (lng < -180 || lng > 180) {
+    problems.push({ field: 'longitude', message: 'Longitude must be between -180 and 180.' });
+  }
+
+  // Exactly (0, 0) is almost always an uninitialised location object rather
+  // than a shop in the Atlantic, and it is far more damaging than a null
+  // because it looks like a real position.
+  if (Number.isFinite(lat) && Number.isFinite(lng) && lat === 0 && lng === 0) {
+    problems.push({
+      field: 'latitude',
+      message: 'The coordinates are (0, 0), which is in the ocean. Set the shop location on the map.',
+    });
+  }
+
+  if (body.phoneNumber !== undefined && body.phoneNumber !== null && String(body.phoneNumber).trim() !== '') {
+    // Indian mobile numbers: ten digits starting 6-9, optionally with +91 and
+    // whatever spacing or dashes the person typed.
+    const digits = String(body.phoneNumber).replace(/[\s()+-]/g, '').replace(/^91(?=\d{10}$)/, '');
+    if (!/^[6-9]\d{9}$/.test(digits)) {
+      problems.push({ field: 'phoneNumber', message: 'Enter a valid 10-digit Indian mobile number.' });
+    }
+  }
+
+  for (const field of ['openingHours', 'bank_account', 'registration_metadata']) {
+    const value = body[field];
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'object') continue;
+
+    // A string here is either JSON the client stringified itself or junk.
+    // JSON.stringify would happily wrap the junk in quotes and store it, and
+    // the next reader would get a string where it expected an object.
+    try {
+      JSON.parse(value);
+    } catch {
+      problems.push({ field, message: `${field} must be an object or valid JSON.` });
+    }
+  }
+
+  return problems;
+}
+
 router.post('/register', authenticate, async (req, res, next) => {
   try {
+    const problems = validateShopRegistration(req.body || {});
+    if (problems.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'This shop cannot be registered yet.',
+        problems,
+      });
+    }
+
     const { name, description, category_id, phoneNumber, address, latitude, longitude, openingHours, photoUrls, delivery_available, pickup_available, estimated_delivery_time, gst_number, bank_account, registration_metadata } = req.body;
-    
+
+    // A category that names no row leaves the shop unroutable: the visitor view
+    // falls back to the generic one and the commission lookup has no rate.
+    if (category_id) {
+      const category = await queryOne('SELECT id FROM shop_categories WHERE id = $1', [category_id]);
+      if (!category) {
+        return res.status(400).json({
+          success: false,
+          error: 'This shop cannot be registered yet.',
+          problems: [{ field: 'category_id', message: 'That category does not exist.' }],
+        });
+      }
+    }
+
     // Generate UUID if DB doesn't auto-gen string IDs easily (using crypto)
     const id = crypto.randomUUID();
 

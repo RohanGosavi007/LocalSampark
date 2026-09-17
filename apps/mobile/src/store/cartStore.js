@@ -30,11 +30,30 @@ export const useCartStore = create(
         }
       },
 
+      /**
+       * Adds an item, unless the cart already belongs to another shop.
+       *
+       * Returns `{ added, reason, currentShopName }`. It used to return
+       * nothing, which made the multi-shop guard below invisible in two ways:
+       * the caller could not tell the add had been refused, so the user tapped
+       * "Add" and simply nothing happened; and the sync at the bottom of this
+       * function ran regardless, so the item the local cart had just rejected
+       * was still posted to the server cart. The two carts then disagreed, and
+       * the one the customer could see was the one that was wrong.
+       */
       addItem: (product, quantity = 1, customOptions = {}) => {
+        const blockedBy = (() => {
+          const state = get();
+          return state.currentShopId && state.currentShopId !== product.shop_id
+            ? state.currentShopName || 'another shop'
+            : null;
+        })();
+
+        if (blockedBy) {
+          return { added: false, reason: 'different_shop', currentShopName: blockedBy };
+        }
+
         set((state) => {
-          if (state.currentShopId && state.currentShopId !== product.shop_id) {
-            return state; // In native, handle warnings outside store via alert
-          }
 
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -65,9 +84,11 @@ export const useCartStore = create(
           };
         });
         
-        // Sync to DB
-        const state = get();
+        // Sync only what was actually added. Syncing unconditionally is what
+        // let the server cart hold an item the local cart had refused.
         get().syncToBackend(product.id, quantity, customOptions);
+
+        return { added: true, reason: null, currentShopName: product.shop_name };
       },
 
       removeItem: (productId, options = null) => {

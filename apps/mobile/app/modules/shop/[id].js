@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useCartStore } from '../../../src/store/cartStore';
@@ -10,7 +10,7 @@ import SkeletonLoader from '../../../src/components/SkeletonLoader';
 
 export default function ShopDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { items: cart, addItem: addToCart, removeItem: removeFromCart, updateQuantity, getCartTotal, getItemCount } = useCartStore();
+  const { items: cart, addItem: addToCart, removeItem: removeFromCart, updateQuantity, getCartTotal, getItemCount, clearCart } = useCartStore();
 
   const [shop, setShop] = useState(null);
   const [products, setProducts] = useState([]);
@@ -88,7 +88,29 @@ export default function ShopDetailScreen() {
       shop_name: shop?.name,
       shop_category: shop?.category_name || shop?.category,
     };
-    addToCart(cartProduct, 1, {});
+    const result = addToCart(cartProduct, 1, {});
+
+    // A cart holds one shop's items at a time. The store used to refuse a
+    // second shop's item silently: the customer tapped Add, nothing appeared,
+    // and nothing explained why. Offer the only two things they can actually
+    // do about it.
+    if (result && !result.added && result.reason === 'different_shop') {
+      Alert.alert(
+        'Start a new cart?',
+        `Your cart already has items from ${result.currentShopName}. Orders go to one shop at a time.`,
+        [
+          { text: 'Keep my cart', style: 'cancel' },
+          {
+            text: `Clear and add`,
+            style: 'destructive',
+            onPress: () => {
+              clearCart();
+              addToCart(cartProduct, 1, {});
+            },
+          },
+        ]
+      );
+    }
   };
 
   if (loading) {

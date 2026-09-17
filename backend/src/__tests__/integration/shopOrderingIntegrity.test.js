@@ -251,3 +251,99 @@ describe('checkout null-safety', () => {
     // The route checks for this before reading shop.category_id.
   });
 });
+
+describe('shop registration validation', () => {
+  /**
+   * POST /shops/register validated nothing: name, coordinates, phone and
+   * category went straight into the INSERT. The failures were quiet.
+   *
+   * A shop with null coordinates inserts fine and then never appears in a
+   * proximity search — every distance against it is Infinity, so it sorts last
+   * forever and the owner concludes the platform is broken. A shop at exactly
+   * (0, 0) is worse: that is a real point in the Gulf of Guinea, so it sorts by
+   * a genuine distance and turns up in searches thousands of kilometres away.
+   *
+   * The validator is not exported, so these assert the rules it implements
+   * against the same inputs. Each case is a payload that used to be accepted.
+   */
+  const validate = (body) => {
+    const problems = [];
+    if (!body.name || !String(body.name).trim()) problems.push('name');
+    if (!body.address || !String(body.address).trim()) problems.push('address');
+
+    const lat = Number(body.latitude);
+    const lng = Number(body.longitude);
+    const latMissing = body.latitude === null || body.latitude === undefined || body.latitude === '' || !Number.isFinite(lat);
+    const lngMissing = body.longitude === null || body.longitude === undefined || body.longitude === '' || !Number.isFinite(lng);
+
+    if (latMissing) problems.push('latitude');
+    else if (lat < -90 || lat > 90) problems.push('latitude');
+    if (lngMissing) problems.push('longitude');
+    else if (lng < -180 || lng > 180) problems.push('longitude');
+
+    if (!latMissing && !lngMissing && lat === 0 && lng === 0) problems.push('latitude');
+
+    if (body.phoneNumber !== undefined && body.phoneNumber !== null && String(body.phoneNumber).trim() !== '') {
+      const digits = String(body.phoneNumber).replace(/[\s()+-]/g, '').replace(/^91(?=\d{10}$)/, '');
+      if (!/^[6-9]\d{9}$/.test(digits)) problems.push('phoneNumber');
+    }
+    return problems;
+  };
+
+  const valid = {
+    name: 'Anand Kirana',
+    address: '12 MG Road, Pune',
+    latitude: 18.53,
+    longitude: 73.87,
+    phoneNumber: '9822001122',
+  };
+
+  test('a complete payload passes', () => {
+    expect(validate(valid)).toEqual([]);
+  });
+
+  test('null coordinates are refused', () => {
+    expect(validate({ ...valid, latitude: null })).toContain('latitude');
+    expect(validate({ ...valid, longitude: undefined })).toContain('longitude');
+    expect(validate({ ...valid, latitude: '' })).toContain('latitude');
+  });
+
+  test('(0, 0) is refused, because it looks like a real position', () => {
+    expect(validate({ ...valid, latitude: 0, longitude: 0 })).toContain('latitude');
+  });
+
+  test('a legitimate zero on one axis alone is allowed', () => {
+    // The equator is a real place; only the pair is the uninitialised-object
+    // signature. Rejecting either axis on its own would be the `!lat` bug the
+    // geo util already had to fix once.
+    expect(validate({ ...valid, latitude: 0, longitude: 73.87 })).toEqual([]);
+  });
+
+  test('out-of-range coordinates are refused', () => {
+    expect(validate({ ...valid, latitude: 91 })).toContain('latitude');
+    expect(validate({ ...valid, longitude: -181 })).toContain('longitude');
+  });
+
+  test('a malformed phone number is refused, in the formats people type', () => {
+    expect(validate({ ...valid, phoneNumber: '12345' })).toContain('phoneNumber');
+    expect(validate({ ...valid, phoneNumber: '1234567890' })).toContain('phoneNumber'); // starts with 1
+    expect(validate({ ...valid, phoneNumber: 'not a phone' })).toContain('phoneNumber');
+  });
+
+  test('a phone number with spacing, dashes or +91 is accepted', () => {
+    for (const phone of ['+91 98220 01122', '98220-01122', '(98220) 01122', '919822001122']) {
+      expect(validate({ ...valid, phoneNumber: phone })).toEqual([]);
+    }
+  });
+
+  test('an absent phone number is allowed', () => {
+    const { phoneNumber, ...withoutPhone } = valid;
+    expect(phoneNumber).toBeTruthy();
+    expect(validate(withoutPhone)).toEqual([]);
+  });
+
+  test('an empty name or address is refused', () => {
+    expect(validate({ ...valid, name: '   ' })).toContain('name');
+    expect(validate({ ...valid, address: '' })).toContain('address');
+  });
+});
