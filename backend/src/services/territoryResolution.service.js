@@ -202,6 +202,12 @@ async function franchiseForTerritory(territoryId) {
          FROM franchise_territories ft
          JOIN franchise_partners fp ON fp.id = ft.franchise_partner_id
         WHERE ft.territory_id = $1 AND ft.status = 'ACTIVE'
+        -- Since migration 103 a territory can carry both a MASTER and a SUB
+        -- assignment. The sub-franchise is closest to the ground and is the one
+        -- that earns, so it must win here deterministically. Without the
+        -- ordering this was a bare LIMIT 1 over two valid rows, which means the
+        -- franchise credited for an order depended on row order.
+        ORDER BY CASE WHEN ft.tier = 'SUB' THEN 0 ELSE 1 END
         LIMIT 1`,
       [territoryId]
     );
@@ -209,6 +215,28 @@ async function franchiseForTerritory(territoryId) {
     // The join table may not exist on an older deployment. Resolution still
     // returns the territory; it simply cannot name a franchise.
     logger.warn('Territory resolution: franchise lookup failed: ' + err.message);
+    return null;
+  }
+}
+
+/**
+ * The active holder of a territory at one tier, or null.
+ *
+ * Exclusivity is enforced per tier, so "is this territory taken" is only a
+ * meaningful question once a tier is named.
+ */
+async function holderAtTier(territoryId, tier) {
+  if (!territoryId) return null;
+  try {
+    return await queryOne(
+      `SELECT id, franchise_partner_id, tier, parent_assignment_id
+         FROM franchise_territories
+        WHERE territory_id = $1 AND tier = $2 AND status = 'ACTIVE'
+        LIMIT 1`,
+      [territoryId, tier]
+    );
+  } catch (err) {
+    logger.warn('Tier holder lookup failed: ' + err.message);
     return null;
   }
 }
@@ -495,7 +523,22 @@ async function validateNoOverlap(geojson, { excludeTerritoryId = null } = {}) {
  * Both are needed: the check below is the good error message, the index is the
  * guarantee under concurrency.
  */
-async function assignTerritory({ franchisePartnerId, territoryId, actorId = null, commissionRate = null, bufferRadiusKm = 0, reason = null }) {
+async function assignTerritory({
+  franchisePartnerId,
+  territoryId,
+  actorId = null,
+  commissionRate = null,
+  bufferRadiusKm = 0,
+  reason = null,
+  tier = 'MASTER',
+  parentAssignmentId = null,
+}) {
+  const normalizedTier = String(tier || 'MASTER').toUpperCase();
+  if (normalizedTier !== 'MASTER' && normalizedTier !== 'SUB') {
+    const err = new Error(`tier must be MASTER or SUB, received "${tier}".`);
+    err.status = 400;
+    throw err;
+  }
   if (!franchisePartnerId || !territoryId) {
     const err = new Error('franchisePartnerId and territoryId are both required.');
     err.status = 400;
@@ -516,17 +559,56 @@ async function assignTerritory({ franchisePartnerId, territoryId, actorId = null
     throw err;
   }
 
-  const existing = await franchiseForTerritory(territoryId);
+  // A SUB must sit under a real MASTER assignment for the same territory.
+  // Without this check a sub-franchise could be created under a parent covering
+  // somewhere else entirely, and the master override would then pay a partner
+  // for ground they do not hold.
+  let parentId = null;
+  if (normalizedTier === 'SUB') {
+    if (!parentAssignmentId) {
+      const err = new Error('A SUB franchise requires parentAssignmentId naming the master assignment it sits under.');
+      err.status = 400;
+      throw err;
+    }
+
+    const parent = await queryOne(
+      `SELECT id, territory_id, tier, status FROM franchise_territories WHERE id = $1`,
+      [parentAssignmentId]
+    );
+
+    if (!parent) {
+      const err = new Error(`No franchise assignment with id ${parentAssignmentId}.`);
+      err.status = 404;
+      throw err;
+    }
+    if (parent.tier !== 'MASTER' || parent.status !== 'ACTIVE') {
+      const err = new Error('parentAssignmentId must name an ACTIVE MASTER assignment.');
+      err.status = 409;
+      throw err;
+    }
+    if (String(parent.territory_id) !== String(territoryId)) {
+      const err = new Error('A sub-franchise must sit under a master holding the same territory.');
+      err.status = 409;
+      throw err;
+    }
+
+    parentId = parent.id;
+  }
+
+  // Exclusivity is per tier since migration 103: a master and a sub may both
+  // hold a territory — that containment is the point of the hierarchy — but two
+  // masters or two subs may not.
+  const existing = await holderAtTier(territoryId, normalizedTier);
   if (existing) {
     if (String(existing.franchise_partner_id) === String(franchisePartnerId)) {
-      return { assigned: false, reason: 'already_held_by_this_partner', assignment_id: existing.assignment_id };
+      return { assigned: false, reason: 'already_held_by_this_partner', assignment_id: existing.id };
     }
     const err = new Error(
-      `Territory "${territory.name}" (${territory.pincode}) is already held by another active franchise. ` +
-      'Release or transfer it first — territories are exclusive.'
+      `Territory "${territory.name}" (${territory.pincode}) already has an active ${normalizedTier} franchise. ` +
+      'Release or transfer it first — a territory is exclusive within each tier.'
     );
     err.status = 409;
-    err.conflict = { franchise_partner_id: existing.franchise_partner_id };
+    err.conflict = { franchise_partner_id: existing.franchise_partner_id, tier: normalizedTier };
     throw err;
   }
 
@@ -534,9 +616,11 @@ async function assignTerritory({ franchisePartnerId, territoryId, actorId = null
   try {
     await query(
       `INSERT INTO franchise_territories
-         (id, franchise_partner_id, territory_id, pincode, status, commission_rate, buffer_radius_km, assigned_by)
-       VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6, $7)`,
-      [id, franchisePartnerId, territoryId, territory.pincode, commissionRate, Number(bufferRadiusKm) || 0, actorId]
+         (id, franchise_partner_id, territory_id, pincode, status, commission_rate,
+          buffer_radius_km, assigned_by, tier, parent_assignment_id)
+       VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6, $7, $8, $9)`,
+      [id, franchisePartnerId, territoryId, territory.pincode, commissionRate,
+        Number(bufferRadiusKm) || 0, actorId, normalizedTier, parentId]
     );
   } catch (err) {
     // The index fired, which means another request claimed it between the check
@@ -561,7 +645,14 @@ async function assignTerritory({ franchisePartnerId, territoryId, actorId = null
     actorId,
   });
 
-  return { assigned: true, assignment_id: id, territory_id: territoryId, pincode: territory.pincode };
+  return {
+    assigned: true,
+    assignment_id: id,
+    territory_id: territoryId,
+    pincode: territory.pincode,
+    tier: normalizedTier,
+    parent_assignment_id: parentId,
+  };
 }
 
 /**
@@ -877,6 +968,7 @@ module.exports = {
   transferTerritory,
   releaseTerritory,
   franchiseForTerritory,
+  holderAtTier,
   pincodesForFranchise,
   effectiveCommission,
   holderAt,
