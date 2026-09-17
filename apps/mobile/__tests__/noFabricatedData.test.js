@@ -158,7 +158,8 @@ const API_CALL =
  * they are not claims about anybody.
  */
 const UI_CONFIG = new Set([
-  'src/utils/permissions.js',            // tab bar per role
+  'src/utils/permissions.js',            // the withRoleGuard HOC
+  'src/utils/rolePolicy.js',             // tab bar per role, and the citizen/specialist split
   'src/components/UPIPaymentSheet.js',   // the UPI apps we support
   'src/components/ShopByCategory.js',    // category tiles and icons
   'app/onboarding-tutorial.js',          // onboarding slides

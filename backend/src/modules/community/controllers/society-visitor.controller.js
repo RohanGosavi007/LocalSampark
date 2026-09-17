@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { query, queryOne, queryMany } = require('../../../config/database');
+const { hasSocietyCapability } = require('../middleware/society-capability');
 
 // Resolve the society this guard is on duty for. Guards are scoped to one
 // society, so every read and write below is filtered by it.
@@ -19,6 +20,45 @@ function requireSociety(societyId, res) {
   }
   return true;
 }
+
+/**
+ * The visitor lifecycle.
+ *
+ * `updateVisitorStatus` accepted any status from the list in any order, so a
+ * checked-out visitor could be put back to checked-in, a denied visitor could
+ * be approved after the fact, and a gate log could be rewritten into any shape
+ * at all. This log is the record of who was inside the society and when; an
+ * arbitrary edit to it is not a data-quality problem, it is the loss of the
+ * only evidence there is.
+ *
+ * Terminal states have no exits. A visitor who left and came back is a new
+ * entry, which is also what the gate register needs it to be.
+ */
+const VISITOR_FLOW = Object.freeze({
+  pending:     ['approved', 'denied'],
+  approved:    ['checked_in', 'denied'],
+  denied:      [],
+  checked_in:  ['checked_out'],
+  checked_out: [],
+});
+
+const VISITOR_STATUSES = Object.keys(VISITOR_FLOW);
+
+/**
+ * Who may move a visitor to a given status.
+ *
+ * The approve/deny decision belongs to the resident being visited; the physical
+ * gate movements belong to the guard. Previously any member of the society
+ * could set any status on any visitor — a neighbour could approve a visitor for
+ * a flat that is not theirs, or check out someone else's guest.
+ */
+const STATUS_CAPABILITY = Object.freeze({
+  approved: 'approveVisitor',
+  denied: 'approveVisitor',
+  checked_in: 'logGateEntry',
+  checked_out: 'logGateEntry',
+  pending: 'logGateEntry',
+});
 
 // ─── VISITORS ────────────────────────────────────────────────────────────────
 
@@ -87,12 +127,25 @@ async function checkOutVisitor(req, res, next) {
       return res.status(409).json({ success: false, message: 'Visitor is already checked out' });
     }
 
-    await query(
+    // Conditional update, not a read-then-write.
+    //
+    // The status was read above and the row updated by id alone, so two
+    // check-out taps a moment apart — a guard's second press, or the gate
+    // tablet retrying on a flaky connection — both passed the check and both
+    // wrote, overwriting checked_out_at with the later time. The condition
+    // moves into the statement so the database decides, and rowCount says
+    // whether this request was the one that won.
+    const result = await query(
       `UPDATE society_visitors
           SET status = 'checked_out', checked_out_at = CURRENT_TIMESTAMP
-        WHERE id = $1`,
-      [req.params.id]
+        WHERE id = $1 AND society_id = $2 AND status <> 'checked_out'`,
+      [req.params.id, societyId]
     );
+
+    if (result.rowCount === 0) {
+      return res.status(409).json({ success: false, message: 'Visitor is already checked out' });
+    }
+
     res.json({ success: true, message: 'Visitor checked out' });
   } catch (error) { next(error); }
 }
@@ -103,20 +156,57 @@ async function updateVisitorStatus(req, res, next) {
     if (!requireSociety(societyId, res)) return;
 
     const { visitorId, status } = req.body;
-    const VALID = ['pending', 'approved', 'denied', 'checked_in', 'checked_out'];
-    if (!VALID.includes(status)) {
-      return res.status(400).json({ success: false, message: `Status must be one of: ${VALID.join(', ')}` });
+    if (!VISITOR_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: `Status must be one of: ${VISITOR_STATUSES.join(', ')}` });
     }
 
-    const result = await query(
-      'UPDATE society_visitors SET status = $1 WHERE id = $2 AND society_id = $3',
-      [status, visitorId, societyId]
+    const visitor = await queryOne(
+      'SELECT id, status, flat_number FROM society_visitors WHERE id = $1 AND society_id = $2',
+      [visitorId, societyId]
     );
-    if (result.rowCount === 0) {
+    if (!visitor) {
       return res.status(404).json({ success: false, message: 'Visitor not found for this society' });
     }
 
-    res.json({ success: true, message: `Visitor ${status}` });
+    const current = visitor.status || 'pending';
+    if (current !== status && !(VISITOR_FLOW[current] || []).includes(status)) {
+      return res.status(409).json({
+        success: false,
+        message: `A visitor cannot move from "${current}" to "${status}".`,
+        code: 'INVALID_TRANSITION',
+        current_status: current,
+        allowed_next: VISITOR_FLOW[current] || [],
+      });
+    }
+
+    // The approve/deny decision belongs to the resident being visited. A guard
+    // logs movement at the gate; a neighbour decides nothing about a visitor
+    // for a flat that is not theirs.
+    const needed = STATUS_CAPABILITY[status];
+    if (!(await hasSocietyCapability(req, societyId, needed, visitor.flat_number))) {
+      return res.status(403).json({
+        success: false,
+        message: `This account cannot ${needed === 'approveVisitor' ? 'approve or deny visitors' : 'log gate movements'} here.`,
+        code: 'CAPABILITY_REQUIRED',
+        capability: needed,
+      });
+    }
+
+    // Guarded by the status we just read, so a concurrent change loses rather
+    // than being silently overwritten.
+    const result = await query(
+      'UPDATE society_visitors SET status = $1 WHERE id = $2 AND society_id = $3 AND status = $4',
+      [status, visitorId, societyId, current]
+    );
+    if (result.rowCount === 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'This visitor was updated by someone else a moment ago. Reload and try again.',
+        code: 'CONCURRENT_UPDATE',
+      });
+    }
+
+    res.json({ success: true, message: `Visitor ${status}`, previous_status: current });
   } catch (error) { next(error); }
 }
 

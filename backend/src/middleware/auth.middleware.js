@@ -367,12 +367,44 @@ const hasAccess = (allowedRoles) => {
     if (!req.user) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    const userRole = req.user.role;
-    // Super admins always have access
-    if (userRole === ROLES.SUPER_ADMIN || userRole === ROLES.ADMIN) {
+    /**
+     * Both sides are normalised before comparing.
+     *
+     * Roles are stored lower case ('shop_owner', 'super_admin') while the ROLES
+     * constants are upper case and, in places, differently spelled —
+     * ROLES.SHOP_OWNER is 'VENDOR'. Nothing here normalised, so the super-admin
+     * bypass never fired and `allowedRoles.includes(userRole)` compared
+     * 'shop_owner' against 'VENDOR'. Every route guarded by hasAccess was
+     * therefore closed to the exact people it was meant to admit: a shop owner
+     * could not pause or reset their own token queue, and neither could an
+     * administrator.
+     *
+     * ROLES.SHOP_OWNER and ROLES.SERVICE_PROVIDER both being 'VENDOR' is also
+     * why the alias list below matters — a caller naming either constant means
+     * the same stored role.
+     */
+    const normalise = (value) => String(value || '').trim().toUpperCase();
+
+    const ALIASES = {
+      CUSTOMER: ['USER', 'CUSTOMER'],
+      VENDOR: ['SHOP_OWNER', 'SERVICE_PROVIDER', 'VENDOR'],
+      DELIVERY: ['DELIVERY_AGENT', 'DELIVERY'],
+    };
+
+    const expand = (value) => {
+      const key = normalise(value);
+      return ALIASES[key] ? ALIASES[key] : [key];
+    };
+
+    const userRole = normalise(req.user.role);
+
+    // Super admins always have access.
+    if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
       return next();
     }
-    if (!allowedRoles.includes(userRole)) {
+
+    const permitted = new Set((allowedRoles || []).flatMap(expand));
+    if (!permitted.has(userRole)) {
       return res.status(403).json({ success: false, error: 'Forbidden: Insufficient permissions' });
     }
     next();
