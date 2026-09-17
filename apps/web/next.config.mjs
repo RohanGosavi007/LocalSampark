@@ -15,7 +15,10 @@ const nextConfig = {
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' }
     ]
   },
+  productionBrowserSourceMaps: false,
   experimental: {
+    webpackMemoryOptimizations: true,
+    cpus: 1,
     optimizePackageImports: [
       'lucide-react',
       '@phosphor-icons/react',
@@ -49,7 +52,10 @@ const nextConfig = {
 export default withSentryConfig(nextConfig, {
   silent: true,
   hideSourceMaps: true,
-  widenClientFileUpload: true,
+  widenClientFileUpload: false,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
   webpack: {
     // Strips Sentry's own debug logging from the production bundle.
     treeshake: { removeDebugLogging: true },

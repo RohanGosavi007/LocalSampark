@@ -116,6 +116,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=4096"
       - key: NEXT_PUBLIC_API_URL
         fromService:
           type: web

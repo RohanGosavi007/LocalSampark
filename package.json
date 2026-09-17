@@ -13,7 +13,7 @@
     "dev:backend": "npx cross-env NODE_OPTIONS=--max-old-space-size=8192 npm run dev --workspace=backend",
     "dev:web": "npx cross-env NODE_OPTIONS=--max-old-space-size=8192 npm run dev --workspace=apps/web",
     "dev:admin": "npx cross-env NODE_OPTIONS=--max-old-space-size=8192 npm run dev --workspace=apps/admin",
-    "build:web": "npm run build --workspace=apps/web",
+    "build:web": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 npm run build --workspace=apps/web",
     "build:admin": "npm run build --workspace=apps/admin",
     "db:migrate": "npm run migrate --workspace=backend",
     "db:seed": "npm run seed --workspace=backend",
