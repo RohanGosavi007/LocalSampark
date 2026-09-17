@@ -1,6 +1,8 @@
 const crypto = require('crypto');
 const { query, queryOne, queryMany } = require('../../../config/database');
 const { hasSocietyCapability } = require('../middleware/society-capability');
+const notifications = require('../../core/services/notification.service');
+const logger = require('../../../config/logger');
 
 // Resolve the society this guard is on duty for. Guards are scoped to one
 // society, so every read and write below is filtered by it.
@@ -60,6 +62,36 @@ const STATUS_CAPABILITY = Object.freeze({
   pending: 'logGateEntry',
 });
 
+/**
+ * Pushes a gate event to the people who live in a flat.
+ *
+ * Deliberately resolves recipients from membership rather than taking a user
+ * id: a flat has a family, and notifying only whoever registered it means the
+ * one person who is out is the only person asked.
+ */
+async function notifyFlatResidents(societyId, flatNumber, notification) {
+  if (!societyId || !flatNumber) return;
+
+  const result = await query(
+    `SELECT user_id FROM society_members
+      WHERE society_id = $1 AND flat_number = $2 AND is_active = 1`,
+    [societyId, flatNumber]
+  );
+
+  const residents = result.rows || result || [];
+  if (residents.length === 0) {
+    // Worth knowing: a gate entry for a flat with nobody registered to it means
+    // either a typo at the gate or a flat the society has not onboarded.
+    logger.info(`Gate event for society ${societyId} flat ${flatNumber} has no registered residents`);
+    return;
+  }
+
+  await Promise.all(
+    residents.map((r) => notifications.sendToUser(r.user_id, notification)
+      .catch((err) => logger.warn(`Push to ${r.user_id} failed: ${err.message}`)))
+  );
+}
+
 // ─── VISITORS ────────────────────────────────────────────────────────────────
 
 async function logVisitor(req, res, next) {
@@ -67,18 +99,56 @@ async function logVisitor(req, res, next) {
     const societyId = await societyIdFor(req);
     if (!requireSociety(societyId, res)) return;
 
-    const { name, phone, purpose, flat, photo } = req.body;
+    const { name, phone, purpose, flat, photo, vehicleNumber, clientId, recordedAt } = req.body;
     if (!name || !flat) {
       return res.status(400).json({ success: false, message: 'Visitor name and flat number are required' });
     }
+
+    /**
+     * A replayed upload must not create a second visitor.
+     *
+     * The gate console queues entries while it has no signal and drains them on
+     * reconnect, so the same entry can arrive twice — the first attempt may
+     * have been recorded and had its response lost on the way back. A duplicate
+     * is not cosmetic: the check-out matches one row and leaves the other open
+     * forever, so the register shows a visitor who never left.
+     */
+    if (clientId) {
+      const existing = await queryOne(
+        'SELECT id FROM society_visitors WHERE society_id = $1 AND client_entry_id = $2',
+        [societyId, clientId]
+      );
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          id: existing.id,
+          duplicate: true,
+          message: 'This entry was already recorded',
+        });
+      }
+    }
+
+    /**
+     * The time the visitor actually arrived, not the time the upload landed.
+     *
+     * Clamped into a sane window: a queued entry can legitimately be hours old
+     * after a long outage, but a device with a wrong clock must not be able to
+     * write the register into next year or last decade.
+     */
+    const now = Date.now();
+    const reported = recordedAt ? Date.parse(recordedAt) : now;
+    const arrivedAt = new Date(
+      Math.min(now, Math.max(Number.isFinite(reported) ? reported : now, now - 7 * 24 * 3600 * 1000))
+    ).toISOString();
 
     const id = crypto.randomUUID();
     await query(
       `INSERT INTO society_visitors
          (id, society_id, guard_id, visitor_name, visitor_phone, purpose, flat_number,
-          visitor_photo_url, status, checked_in_at, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'checked_in', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, societyId, req.user.id, name, phone || null, purpose || 'guest', flat, photo || null]
+          visitor_photo_url, vehicle_number, client_entry_id, status, checked_in_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'checked_in', $11, CURRENT_TIMESTAMP)`,
+      [id, societyId, req.user.id, name, phone || null, purpose || 'guest', flat,
+       photo || null, vehicleNumber || null, clientId || null, arrivedAt]
     );
 
     // Intercom alert to the resident's app.
@@ -88,6 +158,28 @@ async function logVisitor(req, res, next) {
         id, name, phone, purpose, timestamp: new Date().toISOString(),
       });
     }
+
+    /**
+     * A socket alone does not reach a resident.
+     *
+     * The only notification here was the emit above, which lands on an open
+     * socket — that is, on a phone with the app in the foreground. A visitor
+     * arriving unannounced is precisely the moment the resident is doing
+     * something else, so the alert reached nobody in the common case and the
+     * guard was left standing at the gate with a visitor and no answer.
+     *
+     * The push goes to every active resident of the flat, and it is sent
+     * without blocking the guard's response: the gate must not wait on a
+     * notification queue, and a push that fails must not fail the check-in that
+     * has already happened.
+     */
+    notifyFlatResidents(societyId, flat, {
+      title: 'Visitor at the gate',
+      body: `${name}${purpose ? ` — ${purpose}` : ''} is at the gate for flat ${flat}.`,
+      type: 'visitor_alert',
+      priority: 'high',
+      data: { visitorId: id, societyId, flat, visitorName: name, visitorPhone: phone || null },
+    }).catch((err) => logger.warn(`Visitor push for flat ${flat} failed: ${err.message}`));
 
     res.status(201).json({ success: true, id, message: 'Visitor logged, intercom alert sent' });
   } catch (error) { next(error); }

@@ -2,10 +2,10 @@
 const router = express.Router();
 const controller = require('../controllers/society-analytics.controller');
 const { authenticate } = require('../../../middleware/auth.middleware');
-const { requireSocietyPermission } = require('../middleware/society-rbac.middleware');
+const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');
 
 router.use(authenticate);
 
-router.get('/dashboard', requireSocietyPermission('all'), controller.getDashboardOverview);
+router.get('/dashboard', requireCapability(CAPABILITIES.MANAGE_SOCIETY), controller.getDashboardOverview);
 
 module.exports = router;

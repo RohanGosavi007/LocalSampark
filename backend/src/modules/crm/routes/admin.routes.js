@@ -833,12 +833,44 @@ router.get('/premium/users', authenticate, requireAdmin, async (req, res, next) 
   }
 });
 
-// GET all societies for Admin SocietyTab
+/**
+ * Societies for the admin console's Society tab.
+ *
+ * Scoped by who is asking. Platform staff — ADMIN and SUPER_ADMIN — see every
+ * society, which is the point of the console. Anyone else who reaches this
+ * route sees only the societies they actually run.
+ *
+ * Today `requireAdmin` admits platform staff alone, so the scoping below never
+ * narrows anything. It is here because the alternative is a query that returns
+ * the whole estate and relies on one middleware, three files away, never being
+ * widened. The brief asks for society admins to have a view of their own
+ * society; the day that is granted, this endpoint is already correct rather
+ * than already leaking.
+ */
 router.get('/societies', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const limit = req.query.limit || 50;
-    const societies = await query('SELECT * FROM societies ORDER BY created_at DESC LIMIT $1', [limit]);
-    res.json({ success: true, data: societies.rows || societies });
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const role = String(req.adminRole?.role || req.user?.role || '').toUpperCase();
+    const isPlatformStaff = role === 'ADMIN' || role === 'SUPER_ADMIN';
+
+    if (isPlatformStaff) {
+      const societies = await query(
+        'SELECT * FROM societies ORDER BY created_at DESC LIMIT $1',
+        [limit]
+      );
+      return res.json({ success: true, scope: 'platform', data: societies.rows || societies });
+    }
+
+    const societies = await query(
+      `SELECT s.* FROM societies s
+         JOIN society_admin_roles sar ON sar.society_id = s.id
+        WHERE sar.user_id = $1 AND sar.is_active = true
+        ORDER BY s.created_at DESC
+        LIMIT $2`,
+      [req.user.id || req.user.userId, limit]
+    );
+
+    return res.json({ success: true, scope: 'society', data: societies.rows || societies });
   } catch (error) {
     next(error);
   }
@@ -1501,172 +1533,15 @@ router.put('/delivery/agents/:id/status', authenticate, requireAdmin, async (req
   } catch (e) { next(e); }
 });
 
-router.get('/societies', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const soc = await query(`SELECT * FROM societies ORDER BY created_at DESC LIMIT 50`);
-    res.json({ data: soc.rows || soc });
-  } catch (e) { next(e); }
-});
-
-router.get('/wallet/transactions/all', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const tx = await query(`
-      SELECT wt.*, u.full_name as user_name 
-      FROM wallet_transactions wt 
-      JOIN wallets w ON wt.wallet_id = w.id 
-      JOIN users u ON w.user_id = u.id 
-      ORDER BY wt.created_at DESC LIMIT 50
-    `);
-    res.json({ data: tx.rows || tx });
-  } catch (e) { next(e); }
-});
-
-router.get('/events', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const events = await query(`SELECT * FROM events ORDER BY created_at DESC LIMIT 50`);
-    res.json({ data: events.rows || events });
-  } catch (e) { next(e); }
-});
-
-router.get('/marketplace/products', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const items = await query(`SELECT * FROM marketplace_listings ORDER BY created_at DESC LIMIT 50`);
-    res.json({ data: items.rows || items });
-  } catch (e) { next(e); }
-});
-
-router.get('/medical/records', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    // The tab renders item.name, but the canonical column is provider_name, so
-    // every row displayed a dash. Alias it rather than reshaping the client.
-    const records = await query(
-      `SELECT id, name AS provider_name, name, type, NULL AS license_no, NULL AS zone,
-              address, contact_number, status, NULL AS is_verified, created_at
-         FROM medical_providers
-        ORDER BY created_at DESC
-        LIMIT 50`
-    );
-    res.json({ data: records.rows || records });
-  } catch (e) {
-    console.warn('Medical query failed:', e.message);
-    res.json({ data: [] });
-  }
-});
-
-router.get('/subscriptions/all', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const subs = await query(`
-      SELECT us.*, sp.name as plan_name, u.full_name as user_name 
-      FROM user_subscriptions us 
-      JOIN subscription_plans sp ON us.plan_id = sp.id 
-      JOIN users u ON us.user_id = u.id 
-      ORDER BY us.created_at DESC LIMIT 50
-    `);
-    res.json({ data: subs.rows || subs });
-  } catch (e) { next(e); }
-});
-
-router.get('/premium/users', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const premium = await query(`
-      SELECT DISTINCT u.id, u.full_name as user_name, u.phone_number, u.email 
-      FROM users u
-      JOIN user_subscriptions us ON u.id = us.user_id
-      WHERE u.is_active = true AND us.status = 'active'
-      ORDER BY u.created_at DESC LIMIT 50
-    `);
-    res.json({ data: premium.rows || premium });
-  } catch (e) { next(e); }
-});
-
-router.get('/sos/active', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const sos = await query(`
-      SELECT s.*, u.full_name as user_name, u.phone_number 
-      FROM society_emergency_alerts s 
-      JOIN users u ON s.triggered_by = u.id 
-      WHERE s.status = 'active' OR s.status = 'dispatched'
-      ORDER BY s.created_at DESC LIMIT 50
-    `);
-    res.json({ data: sos.rows || sos });
-  } catch (e) { 
-    console.warn('SOS query failed:', e.message);
-    res.json({ data: [] });
-  }
-});
-
-router.get('/crm/leads', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const leads = await query(`
-      SELECT id, first_name || ' ' || COALESCE(last_name, '') as name, phone, lead_source as source, status, created_at 
-      FROM crm_leads 
-      ORDER BY created_at DESC LIMIT 50
-    `);
-    res.json({ data: leads.rows || leads });
-  } catch (e) { next(e); }
-});
-
-router.get('/community/posts', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const posts = await query(`
-      SELECT t.*, u.full_name as user_name 
-      FROM posts t 
-      JOIN users u ON t.user_id = u.id 
-      ORDER BY t.created_at DESC LIMIT 50
-    `);
-    res.json({ data: posts.rows || posts });
-  } catch (e) { next(e); }
-});
-
-// GET all job postings (for Admin)
-router.get('/jobs', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const jobs = await query('SELECT * FROM local_job_postings ORDER BY created_at DESC');
-    res.json({ data: jobs.rows || jobs });
-  } catch (error) { 
-    console.warn('Jobs query failed:', error.message);
-    res.json({ data: [] });
-  }
-});
-
-// GET all properties (for Admin)
-router.get('/properties', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const properties = await query('SELECT * FROM local_property_listings ORDER BY created_at DESC');
-    res.json({ data: properties.rows || properties });
-  } catch (error) { 
-    console.warn('Properties query failed:', error.message);
-    res.json({ data: [] });
-  }
-});
-
-
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// Phase 6: Territory Assignment Endpoints (RBAC Hard Partitioning)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-// POST /admin/assign-territory â€” SuperAdmin assigns territory to user
-router.post('/assign-territory', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const { userId, territoryId, districtId, role } = req.body;
-    if (!userId || (!territoryId && !districtId)) {
-      return res.status(400).json({ error: 'userId and (territoryId or districtId) required.' });
-    }
-
-    const id = crypto.randomUUID();
-    await query(`INSERT INTO admin_territory_assignments (id, user_id, territory_id, district_id, role, assigned_by, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, 1)`,
-      [id, userId, territoryId || null, districtId || null, role || 'territory_franchise', req.user.id]
-    );
-
-    res.json({ success: true, message: 'Territory assigned successfully.', id });
-  } catch (error) {
-    if (error.message && error.message.includes('UNIQUE')) {
-      return res.status(409).json({ error: 'User is already assigned to this territory.' });
-    }
-    next(error);
-  }
-});
+/*
+ * A second GET /societies used to sit here.
+ *
+ * Express matches the first route that fits, so this one never ran — but it
+ * looked authoritative, and it returned `{ data }` where the live one returns
+ * `{ success, data }`. Anyone debugging the Society tab and finding this first
+ * would have edited a handler that cannot execute. Removed; the live one is
+ * above.
+ */
 
 // GET /admin/territory-assignments â€” List all assignments
 router.get('/territory-assignments', authenticate, requireAdmin, async (req, res, next) => {

@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../../middleware/auth.middleware');
-const { requireSocietyPermission } = require('../middleware/society-rbac.middleware');
+const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');
 
 const vendorController = require('../controllers/vendor-management.controller');
 const payrollController = require('../controllers/staff-payroll.controller');
@@ -10,18 +10,18 @@ const assetController = require('../controllers/asset-registry.controller');
 router.use(authenticate);
 
 // Vendors
-router.post('/vendor', requireSocietyPermission('vendors'), vendorController.createVendor);
-router.get('/vendor', requireSocietyPermission('vendors'), vendorController.listVendors);
-router.post('/vendor/invoice', requireSocietyPermission('vendors'), vendorController.createVendorInvoice);
-router.post('/vendor/pay', requireSocietyPermission('finance'), vendorController.payVendorInvoice);
+router.post('/vendor', requireCapability(CAPABILITIES.MANAGE_SOCIETY), vendorController.createVendor);
+router.get('/vendor', requireCapability(CAPABILITIES.MANAGE_SOCIETY), vendorController.listVendors);
+router.post('/vendor/invoice', requireCapability(CAPABILITIES.MANAGE_SOCIETY), vendorController.createVendorInvoice);
+router.post('/vendor/pay', requireCapability(CAPABILITIES.MANAGE_SOCIETY), vendorController.payVendorInvoice);
 
 // Payroll
-router.post('/payroll/generate', requireSocietyPermission('finance'), payrollController.generateMonthlyPayroll);
-router.get('/payroll/summary', requireSocietyPermission('finance'), payrollController.getPayrollSummary);
+router.post('/payroll/generate', requireCapability(CAPABILITIES.MANAGE_SOCIETY), payrollController.generateMonthlyPayroll);
+router.get('/payroll/summary', requireCapability(CAPABILITIES.MANAGE_SOCIETY), payrollController.getPayrollSummary);
 
 // Assets
-router.post('/asset', requireSocietyPermission('assets'), assetController.registerAsset);
-router.post('/asset/maintenance', requireSocietyPermission('assets'), assetController.logMaintenance);
-router.get('/asset', requireSocietyPermission('assets'), assetController.getAssets);
+router.post('/asset', requireCapability(CAPABILITIES.MANAGE_SOCIETY), assetController.registerAsset);
+router.post('/asset/maintenance', requireCapability(CAPABILITIES.MANAGE_SOCIETY), assetController.logMaintenance);
+router.get('/asset', requireCapability(CAPABILITIES.MANAGE_SOCIETY), assetController.getAssets);
 
 module.exports = router;

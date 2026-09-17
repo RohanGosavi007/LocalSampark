@@ -158,20 +158,82 @@ async function hasSocietyCapability(req, societyId, capability, flatNumber = nul
 }
 
 /**
+ * Which society a request is about.
+ *
+ * Two mechanisms used to answer this and they did not agree.
+ * `requireSocietyPermission` validated the id the *request named*
+ * (body/query/params); the controllers behind it then called their own
+ * `getSocietyIdForUser`, which returned the caller's first active membership
+ * with no ordering at all. So the society that was authorised and the society
+ * that was written to were resolved independently.
+ *
+ * For anyone in a single society that is invisible. For a committee member who
+ * also lives somewhere else it is a privilege escalation: name the society you
+ * administer, pass the check, and have the write land in whichever society the
+ * database happened to return first.
+ *
+ * One resolution, used by the guard and the handler alike:
+ *
+ *   - A named society wins. It is not trusted — the capability check that
+ *     follows is answered against *that* society, so naming one you do not
+ *     belong to buys nothing.
+ *   - Otherwise the caller's memberships decide, and only when there is exactly
+ *     one. Two memberships and no stated society is genuinely ambiguous, and
+ *     picking one is how the original bug worked; it asks instead.
+ */
+async function resolveSocietyId(req) {
+  const named = req.params?.societyId || req.body?.societyId || req.query?.societyId || null;
+  if (named) return named;
+
+  const userId = req.user?.id;
+  if (!userId) return null;
+
+  const { query } = require('../../../config/database');
+  try {
+    const result = await query(
+      `SELECT society_id, role, flat_number, is_active, status
+         FROM society_members
+        WHERE user_id = $1`,
+      [userId]
+    );
+
+    const active = (result.rows || result || []).filter(membershipIsActive);
+    if (active.length === 1) return active[0].society_id;
+
+    // Zero -> no society. More than one -> the caller has to say which.
+    return null;
+  } catch (err) {
+    logger.warn('Society resolution failed: ' + err.message);
+    return null;
+  }
+}
+
+/**
  * Express guard for a capability.
  *
  * The society is resolved server-side by `resolveSocietyId` rather than read
  * from the request, so a tampered id cannot widen what the caller reaches — it
  * can only point at a society where they hold nothing.
  */
-function requireCapability(capability, resolveSocietyId) {
+function requireCapability(capability, resolveSocietyIdFn) {
   return async (req, res, next) => {
     try {
-      const societyId = typeof resolveSocietyId === 'function'
-        ? await resolveSocietyId(req)
-        : (req.params.societyId || req.body.societyId || null);
+      const resolver = typeof resolveSocietyIdFn === 'function' ? resolveSocietyIdFn : resolveSocietyId;
+      const societyId = await resolver(req);
 
       if (!societyId) {
+        // Distinguish "you belong to none" from "you belong to several and did
+        // not say which", because the second is the caller's to fix.
+        const contexts = await societyContextFor(req);
+        if (contexts.length > 1) {
+          return res.status(400).json({
+            success: false,
+            message: 'You belong to more than one society. Include societyId to say which.',
+            code: 'SOCIETY_AMBIGUOUS',
+            societies: contexts.map((c) => ({ societyId: c.societyId, name: c.societyName, role: c.role })),
+          });
+        }
+
         return res.status(403).json({
           success: false,
           message: 'No society is associated with this account.',
@@ -257,5 +319,6 @@ module.exports = {
   membershipIsActive,
   hasSocietyCapability,
   requireCapability,
+  resolveSocietyId,
   societyContextFor,
 };

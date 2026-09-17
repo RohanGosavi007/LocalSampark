@@ -10,6 +10,7 @@ const carpoolSocket = require('./carpoolSocket');
 const marketplaceSocket = require('./marketplaceSocket');
 const jobsSocket = require('./jobsSocket');
 const territorySocket = require('./territorySocket');
+const societyCaps = require('../modules/community/middleware/society-capability');
 
 let io;
 
@@ -68,22 +69,76 @@ const initSockets = (server) => {
       console.log(`[Socket.io] Client joined room:shop:${shopId}`);
     });
 
-    // Phase 9: Resident Intercom Rooms
-    socket.on('join_flat_room', ({ societyId, flatNo }) => {
-      const room = `flat_${societyId}_${flatNo}`;
-      socket.join(room);
-      console.log(`[Socket.io] Resident joined ${room}`);
+    /**
+     * Resident intercom rooms.
+     *
+     * These three handlers took the society, the flat and the gate straight
+     * from the payload and joined the room. The handshake degrades an
+     * unrecognised token to a guest rather than refusing, so any client at all
+     * could join `flat_<any society>_<any flat>` and watch every visitor alert
+     * and intercom call for a flat that was not theirs — a live feed of who
+     * calls on whom, across every society on the platform.
+     *
+     * Membership is now verified server-side before the join. A resident
+     * reaches their own flat; a guard or society admin reaches the society's
+     * gate. Nobody reaches a society they do not belong to.
+     */
+    socket.on('join_flat_room', async ({ societyId, flatNo } = {}) => {
+      if (!societyId || !flatNo) return;
+
+      const membership = await societyCaps.membershipOf(socket.user?.id, societyId);
+      const isResidentOfFlat = societyCaps.membershipIsActive(membership)
+        && String(membership.flat_number || '').trim().toLowerCase() === String(flatNo).trim().toLowerCase();
+
+      // A society admin may listen on a flat while covering the desk; a guard
+      // may not — the gate announces visitors, it does not listen to flats.
+      const isSocietyStaff = await societyCaps.hasSocietyCapability(
+        { user: socket.user }, societyId, societyCaps.CAPABILITIES.MANAGE_SOCIETY
+      );
+
+      if (!isResidentOfFlat && !isSocietyStaff) {
+        return socket.emit('socket_error', { event: 'join_flat_room', reason: 'not_authorised' });
+      }
+
+      socket.join(`flat_${societyId}_${flatNo}`);
+      socket.emit('joined_flat_room', { societyId, flatNo });
     });
 
-    socket.on('join_gatekeeper_room', ({ gateId }) => {
-      socket.join(`gatekeeper_${gateId}`);
-      console.log(`[Socket.io] Gatekeeper joined gatekeeper_${gateId}`);
+    socket.on('join_gatekeeper_room', async ({ societyId, gateId } = {}) => {
+      if (!societyId) return;
+
+      const permitted = await societyCaps.hasSocietyCapability(
+        { user: socket.user }, societyId, societyCaps.CAPABILITIES.LOG_GATE_ENTRY
+      );
+      if (!permitted) {
+        return socket.emit('socket_error', { event: 'join_gatekeeper_room', reason: 'not_authorised' });
+      }
+
+      // Namespaced by society. The gate id alone is not unique across
+      // societies, and every deployment's first gate is called GATE-1.
+      socket.join(`gatekeeper_${societyId}_${gateId || 'default'}`);
+      socket.emit('joined_gatekeeper_room', { societyId, gateId: gateId || 'default' });
     });
 
-    socket.on('VISITOR_RESPONSE', (data) => {
-      // Forward the resident's response back to the gatekeeper
-      // data should contain { visitorId, status, gateId (optional) }
-      io.to('gatekeeper_GATE-1').emit('VISITOR_RESPONSE', data);
+    socket.on('VISITOR_RESPONSE', async (data = {}) => {
+      const { societyId, gateId, visitorId, status } = data;
+      if (!societyId || !visitorId) return;
+
+      // The resident answering must actually belong to the society. This
+      // previously forwarded anything to a hardcoded `gatekeeper_GATE-1`, so
+      // every society's approvals landed in one global room — the wrong gate,
+      // and readable by anyone who had joined it.
+      const membership = await societyCaps.membershipOf(socket.user?.id, societyId);
+      if (!societyCaps.membershipIsActive(membership)) {
+        return socket.emit('socket_error', { event: 'VISITOR_RESPONSE', reason: 'not_authorised' });
+      }
+
+      io.to(`gatekeeper_${societyId}_${gateId || 'default'}`).emit('VISITOR_RESPONSE', {
+        visitorId,
+        status,
+        respondedBy: socket.user?.id,
+        at: new Date().toISOString(),
+      });
     });
 
     orderSocket(io, socket);

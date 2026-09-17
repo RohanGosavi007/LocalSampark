@@ -2,7 +2,7 @@
 const router = express.Router();
 const controller = require('../controllers/guard-shift.controller');
 const { authenticate } = require('../../../middleware/auth.middleware');
-const { requireSocietyPermission } = require('../middleware/society-rbac.middleware');
+const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');
 
 // `authenticate`, not the module object.
 //
@@ -15,7 +15,7 @@ const { requireSocietyPermission } = require('../middleware/society-rbac.middlew
 // it up next.
 router.use(authenticate);
 
-router.post('/', requireSocietyPermission('members'), controller.createShift); // admins
+router.post('/', requireCapability(CAPABILITIES.MANAGE_SOCIETY), controller.createShift); // admins
 router.get('/', controller.getRoster);
 router.post('/attendance', controller.markShiftAttendance); // guards
 

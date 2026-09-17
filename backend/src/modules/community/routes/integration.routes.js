@@ -2,12 +2,12 @@
 const router = express.Router();
 const controller = require('../controllers/integration.controller');
 const { authenticate } = require('../../../middleware/auth.middleware');
-const { requireSocietyPermission } = require('../middleware/society-rbac.middleware');
+const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');
 
 router.use(authenticate);
 
-router.get('/tally/xml', requireSocietyPermission('finance'), controller.exportTallyXML);
-router.get('/export/visitors', requireSocietyPermission('members'), controller.exportVisitorsCSV);
-router.get('/export/bills', requireSocietyPermission('finance'), controller.exportBillsCSV);
+router.get('/tally/xml', requireCapability(CAPABILITIES.MANAGE_SOCIETY), controller.exportTallyXML);
+router.get('/export/visitors', requireCapability(CAPABILITIES.MANAGE_SOCIETY), controller.exportVisitorsCSV);
+router.get('/export/bills', requireCapability(CAPABILITIES.MANAGE_SOCIETY), controller.exportBillsCSV);
 
 module.exports = router;
