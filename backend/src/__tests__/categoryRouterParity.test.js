@@ -287,3 +287,49 @@ describe('mobile Directory visitor views', () => {
     expect(notImported).toEqual([]);
   });
 });
+
+describe('no non-route directories inside the Expo Router tree', () => {
+  /**
+   * apps/mobile/app/ is Expo Router's route tree: every file under it becomes a
+   * navigable screen. It also held `app/components/` and `app/config/` — 28
+   * files including a complete second copy of VisitorViewRouter and
+   * ShopManagerRouter that nothing imported.
+   *
+   * The live routers are the ones under src/. The app/ copies had drifted to 55
+   * category keys against the live 62, missing catering-party-services,
+   * physiotherapy-chiropractic, pathology-labs-diagnostics,
+   * ro-water-purifier-service, pest-control-services, deep-cleaning-services
+   * and turf-grounds.
+   *
+   * The danger was not the drift itself — nothing rendered them — but that a
+   * maintainer fixing a category bug had a two-in-three chance of editing a
+   * file that does nothing, confirming the fix by reading the code, and
+   * shipping no change at all.
+   *
+   * They are deleted. This keeps them deleted.
+   */
+  const MOBILE_APP = path.join(REPO, 'apps/mobile/app');
+
+  test('app/components and app/config do not exist', () => {
+    expect(fs.existsSync(path.join(MOBILE_APP, 'components'))).toBe(false);
+    expect(fs.existsSync(path.join(MOBILE_APP, 'config'))).toBe(false);
+  });
+
+  test('there is exactly one VisitorViewRouter and one ShopManagerRouter in mobile', () => {
+    const found = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/^(VisitorViewRouter|ShopManagerRouter)\.js$/.test(entry.name)) found.push(full);
+      }
+    };
+    walk(path.join(REPO, 'apps/mobile'));
+
+    // A second copy of either is the defect above returning.
+    const visitor = found.filter((f) => f.endsWith('VisitorViewRouter.js'));
+    expect(visitor).toHaveLength(1);
+    expect(visitor[0].split(path.sep).join('/')).toContain('apps/mobile/src/components/shops/');
+  });
+});

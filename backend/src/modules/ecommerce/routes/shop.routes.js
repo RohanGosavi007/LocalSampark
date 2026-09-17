@@ -49,6 +49,7 @@ const deg2rad = geo.toRad;
 
 const CacheService = require('../../../services/cache.service');
 const AuditLogger = require('../../../services/audit.logger');
+const logger = require('../../../config/logger');
 const SearchEngine = require('../../../services/search.engine');
 
 // GET /search via Typesense AI Search Engine
@@ -659,10 +660,38 @@ router.post('/:id/appointments', authenticate, async (req, res, next) => {
     const slot = await prisma.serviceSlot.findUnique({ where: { id: serviceSlotId } });
     if (!slot) return res.status(404).json({ error: 'Service slot not found' });
 
+    // Refuse a slot that is already taken.
+    //
+    // Migration 106 makes this impossible at the database level, which is what
+    // actually holds under concurrency — two customers tapping "confirm" on the
+    // last evening slot at the same moment. This check exists so the ordinary
+    // case gets a clear 409 rather than a constraint-violation stack trace.
+    const clash = await prisma.appointment.findFirst({
+      where: {
+        shopId: req.params.id,
+        serviceSlotId,
+        scheduledDate: new Date(scheduledDate),
+        scheduledTime,
+        status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+      },
+    });
+
+    if (clash) {
+      return res.status(409).json({
+        success: false,
+        error: 'That slot has just been taken. Please choose another time.',
+        code: 'SLOT_UNAVAILABLE',
+      });
+    }
+
     // Create appointment via Prisma
     const appt = await prisma.appointment.create({
       data: {
-        bookingNumber: 'LS-BK-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+        // crypto.randomUUID rather than Date.now()+random(1000). The old form
+        // drew from a thousand values inside a single millisecond, so two
+        // simultaneous bookings collided about once in a thousand — rare enough
+        // to survive testing and frequent enough to happen in production.
+        bookingNumber: 'LS-BK-' + crypto.randomUUID(),
         userId: req.user.id,
         shopId: req.params.id,
         serviceSlotId: serviceSlotId,
@@ -681,9 +710,72 @@ router.post('/:id/appointments', authenticate, async (req, res, next) => {
 
     res.status(201).json({ success: true, appointment: appt });
   } catch (error) {
+    // The index fired, meaning another request claimed the slot between the
+    // check above and this insert. That is the race the index exists for, and
+    // the customer should see the same message as the ordinary clash.
+    if (error && (error.code === 'P2002' || /unique|duplicate/i.test(error.message || ''))) {
+      return res.status(409).json({
+        success: false,
+        error: 'That slot has just been taken. Please choose another time.',
+        code: 'SLOT_UNAVAILABLE',
+      });
+    }
     next(error);
   }
 });
+
+/**
+ * The lowest total an order may legitimately claim.
+ *
+ * `totalAmount` arrives in the request body and was used verbatim: to charge
+ * the customer, to compute the platform commission, and to compute what the
+ * shop is owed. Nothing recomputed it, so a client posting `totalAmount: 1`
+ * for a cart of groceries created a one-rupee order and a one-rupee commission
+ * base, and every downstream report agreed with it.
+ *
+ * This establishes a floor rather than overwriting the total. Legitimate carts
+ * can exceed the sum of list prices — size upgrades, add-ons, delivery fees and
+ * surge all push it up — so replacing the client figure outright would reject
+ * or under-charge real orders. Underpayment is the attack, and a floor is
+ * exactly the shape of that attack.
+ *
+ * Items that do not resolve to a product row for this shop fall back to the
+ * price the client stated. That is not a hole being left open: such items are
+ * services and ad-hoc lines that have no catalogue price to check against, and
+ * the alternative — refusing them — would break every hybrid cart.
+ */
+async function minimumOrderTotal(shopId, items) {
+  let floor = 0;
+  const unverified = [];
+
+  for (const item of items || []) {
+    const qty = Math.max(1, Number(item.quantity) || 1);
+    const claimed = Number(item.price) || 0;
+
+    if (!item.id) {
+      floor += claimed * qty;
+      unverified.push(item.name || 'unnamed item');
+      continue;
+    }
+
+    const product = await queryOne(
+      'SELECT price FROM shop_products WHERE id = $1 AND shop_id = $2',
+      [item.id, shopId]
+    );
+
+    if (!product) {
+      floor += claimed * qty;
+      unverified.push(item.name || item.id);
+      continue;
+    }
+
+    floor += Number(product.price || 0) * qty;
+  }
+
+  // Rounded to the paisa: floating point on a long cart otherwise leaves the
+  // floor a fraction above a legitimately exact total.
+  return { floor: Math.round(floor * 100) / 100, unverified };
+}
 
 router.post('/:id/orders', authenticate, async (req, res, next) => {
   try {
@@ -695,16 +787,52 @@ router.post('/:id/orders', authenticate, async (req, res, next) => {
     const serviceItems = items.filter(item => item.type === 'service');
 
     if (productItems.length > 0) {
+      const { floor, unverified } = await minimumOrderTotal(req.params.id, productItems);
+
+      // A paisa of tolerance absorbs rounding, not discounting.
+      if (Number(totalAmount) < floor - 0.01) {
+        return res.status(400).json({
+          success: false,
+          error: 'The order total does not match the current prices for these items. Please refresh your cart.',
+          code: 'TOTAL_BELOW_CATALOGUE_PRICE',
+          expected_minimum: floor,
+        });
+      }
+
+      if (unverified.length > 0) {
+        logger.info(
+          `Order for shop ${req.params.id} contains ${unverified.length} item(s) with no catalogue price: ${unverified.join(', ')}`
+        );
+      }
+
       order = await queryOne(`INSERT INTO shop_orders (id, shop_id, user_id, total_amount, items, payment_method, delivery_type, delivery_address, delivery_coordinate, customer_name, customer_phone, tracking_otp, status) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending') RETURNING *`,
         [crypto.randomUUID(), req.params.id, req.user.id, totalAmount, JSON.stringify(productItems), paymentMethod, deliveryType, deliveryAddress, deliveryCoordinate, customerName, customerPhone, generateTrackingOtp()]
       );
 
-      // Commission logic for products
+      // Commission logic for products.
+      //
+      // Both lookups used to be dereferenced unconditionally. A request naming a
+      // shop that does not exist threw "Cannot read properties of null (reading
+      // 'category_id')" from the line below, and a shop whose category row had
+      // been removed or deactivated threw the same on `cat.commission_percent`.
+      // Either way the customer saw a 500 at checkout, after the order row had
+      // already been written — so the order existed and the commission did not.
       const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [req.params.id]);
-      const cat = await queryOne('SELECT * FROM shop_categories WHERE id = $1', [shop.category_id]);
-      const cp = shop.commission_override_percent ?? cat.commission_percent;
-      const cf = shop.convenience_fee_override ?? cat.convenience_fee;
+      if (!shop) {
+        return res.status(404).json({ success: false, error: 'Shop not found.' });
+      }
+
+      const cat = shop.category_id
+        ? await queryOne('SELECT * FROM shop_categories WHERE id = $1', [shop.category_id])
+        : null;
+
+      // A missing category must not stop an order the customer has already
+      // paid for. Commission falls back to the shop's own override, then to
+      // zero — and zero commission is recorded plainly rather than guessed, so
+      // it shows up in reconciliation instead of hiding in an average.
+      const cp = shop.commission_override_percent ?? cat?.commission_percent ?? 0;
+      const cf = shop.convenience_fee_override ?? cat?.convenience_fee ?? 0;
       const ca = totalAmount * (cp / 100);
       const tpe = ca + cf;
       const nts = totalAmount - tpe;
