@@ -131,415 +131,66 @@ router.get('/', async (req, res, next) => {
   try {
     const { limit = 20, cursor, search = '', status } = req.query;
 
-    // SQLite fallback — Prisma targets the remote PostgreSQL database which
-    // is unreachable in local dev mode. Use the SQLite query layer instead.
-    if (process.env.USE_SQLITE === 'true') {
-      const params = [];
-      let where = '';
-      const conditions = [];
-      let pIdx = 0;
-      if (search) {
-        pIdx++;
-        conditions.push(`(name LIKE $${pIdx}`);
-        params.push(`%${search}%`);
-        pIdx++;
-        conditions[conditions.length - 1] += ` OR description LIKE $${pIdx})`;
-        params.push(`%${search}%`);
-      }
-      if (status) {
-        pIdx++;
-        conditions.push(`approval_status = $${pIdx}`);
-        params.push(status);
-      }
-      if (conditions.length) where = 'WHERE ' + conditions.join(' AND ');
-      pIdx++;
-      params.push(parseInt(limit));
-      const rows = await query(
-        `SELECT * FROM local_shops ${where} ORDER BY created_at DESC LIMIT $${pIdx}`,
-        params
-      );
-      const shops = rows.rows || rows || [];
-      const nextCursor = shops.length === parseInt(limit) && shops.length > 0 ? shops[shops.length - 1].id : null;
-      return res.json({ data: shops, nextCursor, limit: parseInt(limit) });
-    }
-
-    let where = {};
-    
-    if (search) {
-        where.OR = [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } }
-        ];
-    }
-    
-    if (status) {
-        where.approvalStatus = status;
-    }
-    
-    const queryOpts = {
-        where,
-        take: parseInt(limit),
-        orderBy: { id: 'desc' }
-    };
-    
-    if (cursor) {
-        queryOpts.cursor = { id: cursor };
-        queryOpts.skip = 1;
-    }
-    
-    const shops = await prisma.shop.findMany(queryOpts);
-    
-    const nextCursor = shops.length === parseInt(limit) ? shops[shops.length - 1].id : null;
-
-    res.json({
-        data: shops,
-        nextCursor,
-        limit: parseInt(limit)
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET nearby shops
-router.get('/nearby', async (req, res, next) => {
-  try {
-    let { lat, lng, radius = 10, pincode, category, region_id, topRated, deliveryOnly, sortBy } = req.query;
-    let fallbackUsed = false;
-    
-    // IP Fallback logic
-    if (!lat || !lng) {
-        lat = 18.5913; 
-        lng = 73.8987;
-        fallbackUsed = true;
-    }
-
-    if (useMockCatalog()) {
-      try {
-        const fs = require('fs'); const path = require('path');
-        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
-        if (fs.existsSync(mockPath)) {
-          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
-          let filteredShops = sData.shops;
-          if (category && category !== 'all') {
-             const catSlug = category.toLowerCase().replace(/ /g, '-');
-             filteredShops = filteredShops.filter(s => s.category.toLowerCase().replace(/ /g, '-') === catSlug);
-          }
-          return res.json({ shops: filteredShops, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
-        }
-      } catch (e) { next(e); }
-    }
-    
-    // Check Redis cache first if no specific filters that change frequently
-    const cacheKey = `shops:nearby:${Math.round(lat*100)}:${Math.round(lng*100)}:${radius}:${category||'all'}:${region_id||'all'}:${topRated||'f'}:${deliveryOnly||'f'}:${sortBy||'distance'}`;
-    const cached = await CacheService.get(cacheKey);
-    if (cached) {
-        return res.json({ shops: cached, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id, source: 'cache' });
-    }
-
-    const userLat = parseFloat(lat);
-    const userLng = parseFloat(lng);
-    const radKm = parseFloat(radius) || 10;
-
     /**
-     * This query was built by string concatenation against Prisma's camelCase
-     * column names on a table that does not have them.
+     * Reads local_shops on every engine.
      *
-     * It selected FROM local_shops — the right table — but filtered on
-     * `status = 'ACTIVE'`, `"isLive"`, `categoryId`, `regionId`,
-     * `"coverageRadiusKm"`, `deliveryAvailable` and `isFeatured`. local_shops
-     * has none of those: the columns are is_active, category_id, region_id and
-     * is_premium. Every variant of this query raised "no such column", which is
-     * why the Directory tab fell back to demo shops so reliably.
+     * This used to branch: SQLite read local_shops directly and everything else
+     * went through `prisma.shop.findMany`. Prisma's Shop model is `@@map`ped to
+     * `shops`, which is a different table from the `local_shops` that
+     * POST /shops/register writes to — so on PostgreSQL a shop could register
+     * successfully and never appear in the listing that is supposed to show it.
+     * The owner saw their shop in their own dashboard, which reads local_shops,
+     * and nowhere a customer would look.
      *
-     * More seriously, `category`, `region_id` and `pincode` came off the query
-     * string and were interpolated straight into the SQL on a route with no
-     * authentication:
-     *
-     *     conditions.push(`regionId = '${region_id}'`)
-     *
-     * Everything below is a bound parameter.
-     *
-     * Distance is a bounding box in SQL plus Haversine in JS rather than
-     * earth_distance/ll_to_earth: those need the PostgreSQL earthdistance
-     * extension and do not exist at all on the SQLite driver this app also runs
-     * on. The box is index-friendly (idx_local_shops_lat_lng) and the exact
-     * filter happens after.
+     * The branch was introduced as a local-dev workaround and quietly became
+     * the only thing keeping the two halves apart. Reading the table the writes
+     * already target is the smaller change and the correct one; it needs no
+     * data migration and is engine-independent.
      */
-    const latDelta = radKm / 111.32;
-    const lngDelta = radKm / (111.32 * Math.max(Math.cos(userLat * (Math.PI / 180)), 0.01));
+    const take = Math.min(parseInt(limit, 10) || 20, 100);
+    const params = [];
+    const conditions = ['1 = 1'];
 
-    const params = [
-      userLat - latDelta, userLat + latDelta,
-      userLng - lngDelta, userLng + lngDelta,
-    ];
-    const conditions = [
-      'COALESCE(s.is_active, 1) = 1',
-      's.latitude BETWEEN $1 AND $2',
-      's.longitude BETWEEN $3 AND $4',
-    ];
-
-    if (category && category !== 'all') {
-      params.push(category);
-      conditions.push(`s.category_id = (SELECT id FROM shop_categories WHERE slug = $${params.length} LIMIT 1)`);
-    }
-    if (region_id) {
-      params.push(region_id);
-      conditions.push(`s.region_id = $${params.length}`);
-    }
-    if (pincode) {
-      params.push(pincode);
-      conditions.push(`s.pincode = $${params.length}`);
-    }
-    if (topRated === 'true') {
-      conditions.push('s.rating >= 4.0');
+    if (search) {
+      params.push(`%${search}%`);
+      const namePlaceholder = `$${params.length}`;
+      params.push(`%${search}%`);
+      conditions.push(`(name LIKE ${namePlaceholder} OR description LIKE $${params.length})`);
     }
 
-    const rows = await query(
-      `SELECT s.*, c.slug AS category_slug, c.name AS category_name
-         FROM local_shops s
-         LEFT JOIN shop_categories c ON c.id = s.category_id
+    if (status) {
+      params.push(status);
+      conditions.push(`approval_status = $${params.length}`);
+    }
+
+    // Keyset pagination on created_at, matching the ordering below. The Prisma
+    // version paginated on an id cursor; ids here are UUIDs, so ordering by one
+    // is meaningless and the cursor has to follow the sort key.
+    if (cursor) {
+      params.push(cursor);
+      conditions.push(`created_at < $${params.length}`);
+    }
+
+    params.push(take);
+
+    const result = await query(
+      `SELECT * FROM local_shops
         WHERE ${conditions.join(' AND ')}
-        LIMIT 500`,
+        ORDER BY created_at DESC
+        LIMIT $${params.length}`,
       params
     );
 
-    /** Great-circle distance in kilometres. */
-    const distanceKm = (aLat, aLng, bLat, bLng) => {
-      const R = 6371;
-      const dLat = ((bLat - aLat) * Math.PI) / 180;
-      const dLng = ((bLng - aLng) * Math.PI) / 180;
-      const h =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-      return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-    };
+    const shops = result.rows || result || [];
+    const nextCursor = shops.length === take && shops.length > 0
+      ? shops[shops.length - 1].created_at
+      : null;
 
-    let processedShops = (rows.rows || rows || [])
-      .map((shop) => ({
-        ...shop,
-        distance_km: Number(
-          distanceKm(userLat, userLng, Number(shop.latitude), Number(shop.longitude)).toFixed(2)
-        ),
-      }))
-      // The box is square; the radius is a circle. Trim the corners.
-      .filter((shop) => Number.isFinite(shop.distance_km) && shop.distance_km <= radKm);
-
-    if (deliveryOnly === 'true') {
-      // The column is delivery_available; has_delivery does not exist on
-      // local_shops, so this filter would have removed every shop.
-      processedShops = processedShops.filter(
-        (shop) => shop.delivery_available === 1 || shop.delivery_available === true
-      );
-    }
-
-    // Featured placement. The old scoring read shop.isFeatured and defaulted a
-    // missing rating to 4.5 — a rating the shop had not earned, which then fed
-    // the sort order.
-    processedShops = processedShops.map((shop) => {
-      const featured = shop.is_featured === 1 || shop.is_featured === true;
-      const rating = Number(shop.rating);
-      const adScore = featured
-        ? 10 * 0.6 + (Number.isFinite(rating) ? rating : 0) * 0.3 + (1 / (shop.distance_km + 0.1)) * 0.1
-        : 0;
-      return { ...shop, ad_score: Math.round(adScore * 100) / 100 };
-    });
-
-    const byDistance = (a, b) => a.distance_km - b.distance_km;
-    if (sortBy === 'rating') {
-      processedShops.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0) || byDistance(a, b));
-    } else if (sortBy === 'newest') {
-      processedShops.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || byDistance(a, b));
-    } else if (sortBy === 'name') {
-      processedShops.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')) || byDistance(a, b));
-    } else {
-      // Premium first, then paid placement, then proximity.
-      processedShops.sort((a, b) => {
-        const aPremium = a.is_premium === 1 || a.is_premium === true ? 1 : 0;
-        const bPremium = b.is_premium === 1 || b.is_premium === true ? 1 : 0;
-        if (bPremium !== aPremium) return bPremium - aPremium;
-        if (b.ad_score !== a.ad_score) return b.ad_score - a.ad_score;
-        return byDistance(a, b);
-      });
-    }
-
-    processedShops = processedShops.slice(0, 200);
-
-    await CacheService.set(cacheKey, processedShops, 300); // 5 minute cache
-
-    res.json({ shops: processedShops, userLocation: { lat, lng }, fallbackUsed, strictRegion: !!region_id });
+    res.json({ data: shops, nextCursor, limit: take });
   } catch (error) {
     next(error);
   }
 });
-
-// GET /my-shop details (For vendor dashboard)
-router.get('/my-shop', authenticate, async (req, res, next) => {
-  try {
-    const shop = await queryOne('SELECT * FROM local_shops WHERE owner_id = $1 LIMIT 1', [req.user.id]);
-    if (!shop) return res.status(404).json({ error: 'No shop registered for this account' });
-    
-    const category = await queryOne('SELECT * FROM shop_categories WHERE id = $1', [shop.category_id]);
-    
-    // Fetch related data
-    let products = [];
-    let services = [];
-    let staff = [];
-    let orders = [];
-    let appointments = [];
-    
-    if (category.business_model === 'product' || category.business_model === 'both' || category.business_model === 'hybrid') {
-        const prodRes = await query('SELECT * FROM shop_products WHERE shop_id = $1', [shop.id]);
-        products = prodRes.rows || prodRes;
-        
-        const ordRes = await query('SELECT * FROM orders WHERE shop_id = $1 ORDER BY created_at DESC LIMIT 50', [shop.id]);
-        orders = ordRes.rows || ordRes;
-    }
-    
-    if (category.business_model === 'appointment' || category.business_model === 'both' || category.business_model === 'hybrid') {
-        const servRes = await query('SELECT * FROM shop_services WHERE shop_id = $1', [shop.id]);
-        services = servRes.rows || servRes;
-        
-        // This read `appointments`, which no migration creates — the comment
-        // above it said so ("Ensure appointments table exists or fail
-        // gracefully") and the catch made the failure invisible, so a merchant's
-        // dashboard silently showed no bookings however many they had. Bookings
-        // are written to shop_appointments by POST /shops/:id/appointments.
-        const apptRes = await query(
-            `SELECT a.*, COALESCE(a.customer_name, u.full_name) AS customer_name,
-                    sv.name AS service_name
-               FROM shop_appointments a
-               LEFT JOIN users u ON u.id = a.user_id
-               LEFT JOIN shop_services sv ON sv.id = a.service_id
-              WHERE a.shop_id = $1
-              ORDER BY a.appointment_date DESC
-              LIMIT 50`,
-            [shop.id]
-        );
-        appointments = apptRes.rows || apptRes;
-    }
-    
-    res.json({ 
-        shop: { ...shop, category_details: category },
-        products,
-        services,
-        staff,
-        orders,
-        appointments
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET /:id details
-router.get('/:id', async (req, res, next) => {
-  try {
-    if (useMockCatalog()) {
-      try {
-        const fs = require('fs'); const path = require('path');
-        const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
-        if (fs.existsSync(mockPath)) {
-          const sData = JSON.parse(fs.readFileSync(mockPath, 'utf8'));
-          let mockShop = sData.shops.find(s => s.id === req.params.id || s.slug === req.params.id);
-          if (mockShop) {
-            // Fake category details to match UI expectation
-            mockShop.category_details = { name: mockShop.category, business_model: 'hybrid', slug: mockShop.category.toLowerCase().replace(/ /g, '-') };
-            return res.json(mockShop);
-          }
-        }
-      } catch (e) { next(e); }
-    }
-    const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [req.params.id]);
-    if (!shop) return res.status(404).json({ error: 'Shop not found' });
-    
-    const category = await queryOne('SELECT * FROM shop_categories WHERE id = $1', [shop.category_id]);
-    res.json({ ...shop, category_details: category });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST register
-/**
- * Validates a shop registration payload.
- *
- * Nothing validated this before: name, coordinates, phone and category all went
- * straight into the INSERT. The consequences were quiet rather than loud.
- *
- * A shop with null coordinates inserts fine and then never appears in a
- * proximity search: every distance against it is Infinity, so it sorts last
- * forever and the owner concludes the platform does not work. A shop at
- * (0, 0) is worse — it is a real point in the Gulf of Guinea, so it sorts by a
- * genuine distance and appears in searches thousands of kilometres away.
- *
- * A category_id that names no row leaves the shop unroutable: the visitor view
- * falls back to the generic one, and the commission lookup has no rate to read.
- *
- * Returns an array of problems; empty means valid.
- */
-function validateShopRegistration(body) {
-  const problems = [];
-
-  if (!body.name || !String(body.name).trim()) {
-    problems.push({ field: 'name', message: 'A shop name is required.' });
-  }
-
-  if (!body.address || !String(body.address).trim()) {
-    problems.push({ field: 'address', message: 'An address is required.' });
-  }
-
-  const lat = Number(body.latitude);
-  const lng = Number(body.longitude);
-
-  if (body.latitude === null || body.latitude === undefined || body.latitude === '' || !Number.isFinite(lat)) {
-    problems.push({ field: 'latitude', message: 'A latitude is required to place the shop on the map.' });
-  } else if (lat < -90 || lat > 90) {
-    problems.push({ field: 'latitude', message: 'Latitude must be between -90 and 90.' });
-  }
-
-  if (body.longitude === null || body.longitude === undefined || body.longitude === '' || !Number.isFinite(lng)) {
-    problems.push({ field: 'longitude', message: 'A longitude is required to place the shop on the map.' });
-  } else if (lng < -180 || lng > 180) {
-    problems.push({ field: 'longitude', message: 'Longitude must be between -180 and 180.' });
-  }
-
-  // Exactly (0, 0) is almost always an uninitialised location object rather
-  // than a shop in the Atlantic, and it is far more damaging than a null
-  // because it looks like a real position.
-  if (Number.isFinite(lat) && Number.isFinite(lng) && lat === 0 && lng === 0) {
-    problems.push({
-      field: 'latitude',
-      message: 'The coordinates are (0, 0), which is in the ocean. Set the shop location on the map.',
-    });
-  }
-
-  if (body.phoneNumber !== undefined && body.phoneNumber !== null && String(body.phoneNumber).trim() !== '') {
-    // Indian mobile numbers: ten digits starting 6-9, optionally with +91 and
-    // whatever spacing or dashes the person typed.
-    const digits = String(body.phoneNumber).replace(/[\s()+-]/g, '').replace(/^91(?=\d{10}$)/, '');
-    if (!/^[6-9]\d{9}$/.test(digits)) {
-      problems.push({ field: 'phoneNumber', message: 'Enter a valid 10-digit Indian mobile number.' });
-    }
-  }
-
-  for (const field of ['openingHours', 'bank_account', 'registration_metadata']) {
-    const value = body[field];
-    if (value === undefined || value === null) continue;
-    if (typeof value === 'object') continue;
-
-    // A string here is either JSON the client stringified itself or junk.
-    // JSON.stringify would happily wrap the junk in quotes and store it, and
-    // the next reader would get a string where it expected an object.
-    try {
-      JSON.parse(value);
-    } catch {
-      problems.push({ field, message: `${field} must be an object or valid JSON.` });
-    }
-  }
-
-  return problems;
-}
 
 router.post('/register', authenticate, async (req, res, next) => {
   try {

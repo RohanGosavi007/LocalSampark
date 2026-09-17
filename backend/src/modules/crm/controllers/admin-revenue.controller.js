@@ -164,7 +164,12 @@ const getDashboardStats = async (req, res, next) => {
       // One shared client instead of a per-module pool; see config/prisma.js.
       const prisma = require('../../../config/prisma').sharedPrisma;
       [shopsCount, activeRegions, totalRegions, totalUsers, totalOrders, completedOrders] = await Promise.all([
-        prisma.shop.count(),
+        // local_shops, not prisma.shop. The Prisma model is @@mapped to
+        // `shops`, which is not the table shop registration writes to — so this
+        // dashboard tile reported a shop count unrelated to the shops on the
+        // platform.
+        query('SELECT COUNT(*) AS count FROM local_shops')
+          .then((r) => Number((r.rows || r)[0]?.count || 0)),
         prisma.region.count({ where: { isActive: true } }),
         prisma.region.count(),
         prisma.user.count(),

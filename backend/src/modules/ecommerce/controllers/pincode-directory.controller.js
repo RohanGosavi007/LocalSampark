@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 const prisma = require('../../../../prisma/client');
+const { query } = require('../../../config/database');
 
 // In-Memory LRU Cache Fallback
 const directoryCache = new Map();
@@ -50,58 +51,82 @@ async function getShopsByPincode(req, res, next) {
       return res.json(cachedEntry.payload);
     }
 
-    // Build Composite Indexed Where Clause
-    const whereClause = {
-      pincode: pincode,
-      status: 'ACTIVE',
-    };
+    /**
+     * Reads local_shops, the table registration actually writes to.
+     *
+     * This queried `prisma.shop`, whose model is `@@map`ped to `shops` — a
+     * different table. POST /shops/register inserts into local_shops, so a shop
+     * that registered successfully never appeared in the pincode directory a
+     * customer browses. In development the mock-data short-circuit above hides
+     * this entirely, so the only place the query ran was production.
+     *
+     * local_shops does not carry every column the Prisma model declares. The
+     * payload shape is preserved — clients depend on it — and the fields with
+     * no column behind them are derived where that is honest (photo_urls gives
+     * the logo and banner, the name gives a slug) and null where it is not.
+     */
+    const conditions = ['s.pincode = $1', 's.is_active = 1'];
+    const params = [pincode];
 
     if (category_id) {
-      whereClause.categoryId = category_id;
+      params.push(category_id);
+      conditions.push(`s.category_id = $${params.length}`);
     }
 
-    if (category_type) {
-      whereClause.categoryType = category_type; // PRODUCT, APPOINTMENT, HYBRID
+    // Cursor pagination on id, matching the ordering below.
+    if (cursor) {
+      params.push(cursor);
+      conditions.push(`s.id > $${params.length}`);
     }
 
-    // Cursor Pagination Setup
-    const queryOptions = {
-      where: whereClause,
-      take: pageSize + 1, // Fetch 1 extra to check for next page
-      orderBy: { id: 'asc' }, // Indexed ordering
-      select: {
-        // STRICT PAYLOAD STRIPPING — Only return fields needed for list rendering
-        id: true,
-        name: true,
-        slug: true,
-        categoryType: true,
-        rating: true,
-        totalRatings: true,
-        logoUrl: true,
-        bannerUrl: true,
-        locality: true,
-        pincode: true,
-        estimatedDeliveryTime: true,
-        deliveryAvailable: true,
-        pickupAvailable: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            iconUrl: true,
-          },
-        },
-      },
+    params.push(pageSize + 1);
+
+    const result = await query(
+      `SELECT s.id, s.name, s.rating, s.pincode, s.photo_urls,
+              s.estimated_delivery_time, s.delivery_available, s.pickup_available,
+              s.category_id, c.name AS category_name, c.slug AS category_slug,
+              c.icon AS category_icon
+         FROM local_shops s
+         LEFT JOIN shop_categories c ON c.id = s.category_id
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY s.id ASC
+        LIMIT $${params.length}`,
+      params
+    );
+
+    const firstPhoto = (raw) => {
+      if (!raw) return null;
+      try {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return Array.isArray(parsed) ? (parsed[0] || null) : null;
+      } catch {
+        return null;
+      }
     };
 
-    if (cursor) {
-      queryOptions.cursor = { id: cursor };
-      queryOptions.skip = 1; // Skip the cursor element
-    }
-
-    // Execute Query
-    const shops = await prisma.shop.findMany(queryOptions);
+    const shops = (result.rows || result || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: String(row.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      categoryType: null,
+      rating: row.rating ?? null,
+      totalRatings: null,
+      logoUrl: firstPhoto(row.photo_urls),
+      bannerUrl: firstPhoto(row.photo_urls),
+      locality: null,
+      pincode: row.pincode,
+      estimatedDeliveryTime: row.estimated_delivery_time ?? null,
+      deliveryAvailable: Boolean(row.delivery_available),
+      pickupAvailable: Boolean(row.pickup_available),
+      category: row.category_id
+        ? {
+          id: row.category_id,
+          name: row.category_name,
+          slug: row.category_slug,
+          iconUrl: row.category_icon,
+        }
+        : null,
+    }));
 
     let nextCursor = null;
     if (shops.length > pageSize) {

@@ -1,124 +1,218 @@
 // ═══════════════════════════════════════════════════════════════════════
-// Category Type Map — Classification of all 66 categories
+// Category Type Map — the live taxonomy, typed by commerce model
 // ═══════════════════════════════════════════════════════════════════════
 // PRODUCT:     Sells physical goods (cart + checkout + delivery)
 // APPOINTMENT: Sells time-based services (calendar + booking)
 // HYBRID:      Sells both physical goods AND services
 // ═══════════════════════════════════════════════════════════════════════
+//
+// ─── Why this file was rewritten ──────────────────────────────────────
+//
+// It used to declare 66 categories of its own, keyed SCREAMING_SNAKE:
+// KIRANA_GROCERY, PHARMACY, SALON_SPA. The platform routes on
+// shop_categories.slug, which is kebab-case — grocery-supermarkets,
+// pharmacy-healthcare, salon-beauty-spa — and all five routing maps agree
+// with it.
+//
+// Not one of the 66 keys appeared in any routing map, and prisma/seed.js
+// writes them straight into categories.slug. A shop seeded through the
+// Prisma path therefore rendered the generic RetailVisitorView: a clinic,
+// a salon and a garage all looked like a grocery counter. That is exactly
+// the failure an earlier migration removed from the kebab/snake-case
+// switch, reachable again through the seeder, and nothing failed loudly
+// enough to notice — the fallback is silent by design.
+//
+// ─── How the types below were decided ─────────────────────────────────
+//
+// Not by re-guessing each category. The backend's ARCHETYPE_MAP already
+// classifies every live slug into an archetype — retail, healthcare,
+// garage_repair, home_visit — and the archetype already encodes whether a
+// category sells goods, time, or both. The commerce type is derived from
+// it by the table below, so the two cannot drift: adding a category to
+// ARCHETYPE_MAP and forgetting it here is caught by
+// categoryTypeMapParity.test.js rather than by a shop rendering wrong.
+//
+//   retail, pharmacy, fresh_perishable,
+//   subscription, eyewear                   -> PRODUCT
+//   healthcare, salon_wellness, education,
+//   professional, home_visit, laundry,
+//   event_creative                          -> APPOINTMENT
+//   restaurant, tiffin, garage_repair,
+//   tailoring, print_counter                -> HYBRID
+//
+// The HYBRID cases are the ones worth stating plainly: a garage sells
+// parts and labour, a tailor sells cloth and fitting, a print counter
+// sells paper and a job. Each needs both a catalogue and a calendar.
 
-const CATEGORY_TYPE_MAP = {
-  // ─── PRODUCT SHOPS (34 categories) ─────────────────────────────────
-  KIRANA_GROCERY:           { type: 'PRODUCT',     displayName: 'Kirana & Grocery',              icon: '🛒', order: 1 },
-  PHARMACY:                 { type: 'PRODUCT',     displayName: 'Pharmacy & Medical Store',       icon: '💊', order: 2 },
-  BAKERY_SWEETS:            { type: 'PRODUCT',     displayName: 'Bakery & Sweets',                icon: '🍰', order: 3 },
-  DAIRY_MILK_BOOTH:         { type: 'PRODUCT',     displayName: 'Dairy & Milk Booth',             icon: '🥛', order: 4 },
-  MEAT_FISH_POULTRY:        { type: 'PRODUCT',     displayName: 'Meat, Fish & Poultry',           icon: '🥩', order: 5 },
-  FRUIT_VEGETABLE:          { type: 'PRODUCT',     displayName: 'Fruits & Vegetables',            icon: '🥬', order: 6 },
-  ELECTRONICS:              { type: 'PRODUCT',     displayName: 'Electronics & Gadgets',          icon: '📱', order: 7 },
-  CLOTHING_FASHION:         { type: 'PRODUCT',     displayName: 'Clothing & Fashion',             icon: '👗', order: 8 },
-  HARDWARE_PAINT:           { type: 'PRODUCT',     displayName: 'Hardware & Paint',               icon: '🔨', order: 9 },
-  STATIONERY_BOOKSTORE:     { type: 'PRODUCT',     displayName: 'Stationery & Bookstore',         icon: '📚', order: 10 },
-  FLORIST:                  { type: 'PRODUCT',     displayName: 'Florist',                        icon: '💐', order: 11 },
-  JEWELLERY:                { type: 'PRODUCT',     displayName: 'Jewellery',                      icon: '💍', order: 12 },
-  SPORTS_FITNESS:           { type: 'PRODUCT',     displayName: 'Sports & Fitness Equipment',     icon: '⚽', order: 13 },
-  HOME_DECOR:               { type: 'PRODUCT',     displayName: 'Home Decor',                     icon: '🏠', order: 14 },
-  GENERAL_RETAIL:           { type: 'PRODUCT',     displayName: 'General Retail',                 icon: '🏪', order: 15 },
-  PET_STORE:                { type: 'PRODUCT',     displayName: 'Pet Store',                      icon: '🐾', order: 16 },
-  COSMETICS_BEAUTY:         { type: 'PRODUCT',     displayName: 'Cosmetics & Beauty Products',    icon: '💄', order: 17 },
-  FURNITURE:                { type: 'PRODUCT',     displayName: 'Furniture',                      icon: '🪑', order: 18 },
-  MATTRESS_BEDDING:         { type: 'PRODUCT',     displayName: 'Mattress & Bedding',             icon: '🛏️', order: 19 },
-  KITCHENWARE_UTENSILS:     { type: 'PRODUCT',     displayName: 'Kitchenware & Utensils',         icon: '🍳', order: 20 },
-  ELECTRICAL_PLUMBING_SUPPLY: { type: 'PRODUCT',   displayName: 'Electrical & Plumbing Supply',   icon: '🔌', order: 21 },
-  TYRE_BATTERY:             { type: 'PRODUCT',     displayName: 'Tyre & Battery',                 icon: '🔋', order: 22 },
-  PAN_BETEL_SHOP:           { type: 'PRODUCT',     displayName: 'Pan & Betel Shop',               icon: '🍃', order: 23 },
-  LIQUOR_WINE:              { type: 'PRODUCT',     displayName: 'Liquor & Wine Shop',             icon: '🍷', order: 24 },
-  ICE_CREAM_DESSERT:        { type: 'PRODUCT',     displayName: 'Ice Cream & Dessert',            icon: '🍦', order: 25 },
-  JUICE_SMOOTHIE_BAR:       { type: 'PRODUCT',     displayName: 'Juice & Smoothie Bar',           icon: '🥤', order: 26 },
-  MOBILE_RECHARGE_DTH:      { type: 'PRODUCT',     displayName: 'Mobile Recharge & DTH',          icon: '📡', order: 27 },
-  GIFT_NOVELTY:             { type: 'PRODUCT',     displayName: 'Gift & Novelty Shop',            icon: '🎁', order: 28 },
-  TOY_STORE:                { type: 'PRODUCT',     displayName: 'Toy Store',                      icon: '🧸', order: 29 },
-  NURSERY_GARDEN:           { type: 'PRODUCT',     displayName: 'Nursery & Garden Centre',        icon: '🌱', order: 30 },
-  POOJA_RELIGIOUS:          { type: 'PRODUCT',     displayName: 'Pooja & Religious Items',        icon: '🪔', order: 31 },
-  FUEL_STATION:             { type: 'PRODUCT',     displayName: 'Fuel Station / Petrol Pump',     icon: '⛽', order: 32 },
-  FARM_AGRI_INPUT:          { type: 'PRODUCT',     displayName: 'Farm & Agri Input',              icon: '🌾', order: 33 },
-  RECYCLING_SCRAP:          { type: 'PRODUCT',     displayName: 'Recycling & Scrap Dealer',       icon: '♻️', order: 34 },
+/**
+ * Archetype → commerce model.
+ *
+ * The single place the derivation lives. ARCHETYPE_MAP in
+ * modules/ecommerce/controllers/shop-management.controller.js is the source
+ * of the archetypes themselves.
+ */
+const ARCHETYPE_TO_TYPE = Object.freeze({
+  retail: 'PRODUCT',
+  pharmacy: 'PRODUCT',
+  fresh_perishable: 'PRODUCT',
+  subscription: 'PRODUCT',
+  eyewear: 'PRODUCT',
 
-  // ─── APPOINTMENT SHOPS (18 categories) ─────────────────────────────
-  SALON_SPA:                { type: 'APPOINTMENT', displayName: 'Salon & Spa',                    icon: '💇', order: 35 },
-  MEDICAL_CLINIC:           { type: 'APPOINTMENT', displayName: 'Medical Clinic',                 icon: '🏥', order: 36 },
-  DENTAL_CLINIC:            { type: 'APPOINTMENT', displayName: 'Dental Clinic',                  icon: '🦷', order: 37 },
-  PATHOLOGY_DIAGNOSTIC_LAB: { type: 'APPOINTMENT', displayName: 'Pathology & Diagnostic Lab',     icon: '🔬', order: 38 },
-  PHYSIOTHERAPY_REHAB:      { type: 'APPOINTMENT', displayName: 'Physiotherapy & Rehab',          icon: '🦴', order: 39 },
-  VETERINARY_CLINIC:        { type: 'APPOINTMENT', displayName: 'Veterinary Clinic',              icon: '🐕', order: 40 },
-  COACHING_TUITION:         { type: 'APPOINTMENT', displayName: 'Coaching & Tuition Classes',     icon: '📖', order: 41 },
-  PHOTOGRAPHY_STUDIO:       { type: 'APPOINTMENT', displayName: 'Photography Studio',             icon: '📸', order: 42 },
-  CA_LEGAL_SERVICES:        { type: 'APPOINTMENT', displayName: 'CA & Legal Services',            icon: '⚖️', order: 43 },
-  INSURANCE_FINANCIAL:      { type: 'APPOINTMENT', displayName: 'Insurance & Financial Advisor',  icon: '🏦', order: 44 },
-  PEST_CONTROL:             { type: 'APPOINTMENT', displayName: 'Pest Control Services',          icon: '🐛', order: 45 },
-  PACKERS_MOVERS:           { type: 'APPOINTMENT', displayName: 'Packers & Movers',               icon: '📦', order: 46 },
-  TRAVEL_AGENT:             { type: 'APPOINTMENT', displayName: 'Travel Agent',                   icon: '✈️', order: 47 },
-  LAUNDRY_DRYCLEAN:         { type: 'APPOINTMENT', displayName: 'Laundry & Dry Clean',            icon: '👔', order: 48 },
-  COBBLER_SHOE_REPAIR:      { type: 'APPOINTMENT', displayName: 'Cobbler & Shoe Repair',          icon: '👞', order: 49 },
-  KEY_LOCKSMITH:            { type: 'APPOINTMENT', displayName: 'Key & Locksmith',                icon: '🔑', order: 50 },
-  EVENT_WEDDING_PLANNER:    { type: 'APPOINTMENT', displayName: 'Event & Wedding Planner',        icon: '🎉', order: 51 },
-  COURIER_LOGISTICS:        { type: 'APPOINTMENT', displayName: 'Courier & Logistics',            icon: '🚚', order: 52 },
+  healthcare: 'APPOINTMENT',
+  salon_wellness: 'APPOINTMENT',
+  education: 'APPOINTMENT',
+  professional: 'APPOINTMENT',
+  home_visit: 'APPOINTMENT',
+  laundry: 'APPOINTMENT',
+  event_creative: 'APPOINTMENT',
 
-  // ─── HYBRID SHOPS (14 categories) ──────────────────────────────────
-  RESTAURANT:               { type: 'HYBRID',      displayName: 'Restaurant & Food',              icon: '🍽️', order: 53 },
-  TIFFIN_CATERING:          { type: 'HYBRID',      displayName: 'Tiffin & Catering Service',      icon: '🍱', order: 54 },
-  TEA_COFFEE_CAFE:          { type: 'HYBRID',      displayName: 'Tea, Coffee & Cafe',             icon: '☕', order: 55 },
-  OPTICAL:                  { type: 'HYBRID',      displayName: 'Optical & Eye Care',             icon: '👓', order: 56 },
-  GARAGE_AUTO:              { type: 'HYBRID',      displayName: 'Garage & Auto Service',          icon: '🔧', order: 57 },
-  COMPUTER_MOBILE_REPAIR:   { type: 'HYBRID',      displayName: 'Computer & Mobile Repair',       icon: '💻', order: 58 },
-  AC_APPLIANCE_REPAIR:      { type: 'HYBRID',      displayName: 'AC & Appliance Repair',          icon: '❄️', order: 59 },
-  WATER_PURIFIER_RO:        { type: 'HYBRID',      displayName: 'Water Purifier & RO Service',    icon: '💧', order: 60 },
-  CAR_BIKE_DEALER:          { type: 'HYBRID',      displayName: 'Car & Bike Dealer',              icon: '🚗', order: 61 },
-  GYM_YOGA_STUDIO:          { type: 'HYBRID',      displayName: 'Gym & Yoga Studio',              icon: '🧘', order: 62 },
-  AYURVEDA_HOMEOPATHY:      { type: 'HYBRID',      displayName: 'Ayurveda & Homeopathy',          icon: '🌿', order: 63 },
-  INTERIOR_DESIGNER:        { type: 'HYBRID',      displayName: 'Interior Designer',              icon: '🎨', order: 64 },
-  PRINTING_XEROX:           { type: 'HYBRID',      displayName: 'Printing & Xerox',               icon: '🖨️', order: 65 },
-  TAILORING_ALTERATION:     { type: 'HYBRID',      displayName: 'Tailoring & Alteration',         icon: '🧵', order: 66 },
+  restaurant: 'HYBRID',
+  tiffin: 'HYBRID',
+  garage_repair: 'HYBRID',
+  tailoring: 'HYBRID',
+  print_counter: 'HYBRID',
+});
+
+/**
+ * The live categories, keyed by the slug the platform actually routes on.
+ *
+ * `archetype` is the key into ARCHETYPE_TO_TYPE above; `type` is derived
+ * rather than written out, so a category cannot be typed one way here and
+ * routed another way in the app.
+ *
+ * Display names match shop_categories.name so a Prisma-seeded catalogue and
+ * a SQL-seeded one read identically.
+ */
+const CATEGORY_MAP = {
+  // ─── Retail counters ────────────────────────────────────────────────
+  'grocery-supermarkets':        { archetype: 'retail', fixtureKey: 'KIRANA_GROCERY',           displayName: 'Grocery & Supermarket',        icon: '🛒', order: 1 },
+  'dairy-sweets-bakery':         { archetype: 'retail', fixtureKey: 'BAKERY_SWEETS',           displayName: 'Dairy, Sweets & Bakery',       icon: '🍰', order: 2 },
+  'fresh-produce-meat':          { archetype: 'pharmacy', fixtureKey: 'MEAT_FISH_POULTRY',         displayName: 'Fresh Produce & Meat',         icon: '🥬', order: 3 },
+  'pharmacy-healthcare':         { archetype: 'pharmacy', fixtureKey: 'PHARMACY',         displayName: 'Pharmacy & Healthcare',        icon: '💊', order: 4 },
+  'stationery-gifts-books':      { archetype: 'retail', fixtureKey: 'STATIONERY_BOOKSTORE',           displayName: 'Stationery, Gifts & Books',    icon: '📚', order: 5 },
+  'pet-care-supplies':           { archetype: 'retail', fixtureKey: 'PET_STORE',           displayName: 'Pet Care & Supplies',          icon: '🐾', order: 6 },
+  'pooja-samagri-religious':     { archetype: 'retail', fixtureKey: 'POOJA_RELIGIOUS',           displayName: 'Pooja Samagri & Religious',    icon: '🪔', order: 7 },
+  'hardware-sanitary':           { archetype: 'retail', fixtureKey: 'HARDWARE_PAINT',           displayName: 'Hardware & Sanitary',          icon: '🔨', order: 8 },
+  'clothing-fashion':            { archetype: 'retail', fixtureKey: 'CLOTHING_FASHION',           displayName: 'Clothing & Fashion',           icon: '👗', order: 9 },
+  'jewellery-gold':              { archetype: 'retail', fixtureKey: 'JEWELLERY',           displayName: 'Jewellery & Gold',             icon: '💍', order: 10 },
+  'florists-nurseries':          { archetype: 'fresh_perishable', fixtureKey: 'FLORIST', displayName: 'Florists & Nurseries',         icon: '💐', order: 11 },
+  'eyewear-opticians':           { archetype: 'eyewear', fixtureKey: 'OPTICAL',          displayName: 'Eyewear & Opticians',          icon: '👓', order: 12 },
+  'water-tanker-supply':         { archetype: 'subscription',     displayName: 'Water Tanker Supply',          icon: '🚰', order: 13 },
+  'gas-cylinder-lpg':            { archetype: 'subscription',     displayName: 'Gas Cylinder & LPG',           icon: '🛢️', order: 14 },
+
+  // ─── Food ───────────────────────────────────────────────────────────
+  'restaurants-cafes':           { archetype: 'restaurant', fixtureKey: 'RESTAURANT',       displayName: 'Restaurants & Cafes',          icon: '🍽️', order: 20 },
+  'tiffin-meal-subscription':    { archetype: 'tiffin', fixtureKey: 'TIFFIN_CATERING',           displayName: 'Tiffin & Meal Subscription',   icon: '🍱', order: 21 },
+
+  // ─── Repair and fitting ─────────────────────────────────────────────
+  'automotive-mechanic':         { archetype: 'garage_repair', fixtureKey: 'GARAGE_AUTO',    displayName: 'Automotive & Mechanic',        icon: '🔧', order: 30 },
+  'ac-appliance-repair':         { archetype: 'garage_repair', fixtureKey: 'AC_APPLIANCE_REPAIR',    displayName: 'AC & Appliance Repair',        icon: '❄️', order: 31 },
+  'mobile-computer-repair':      { archetype: 'garage_repair', fixtureKey: 'COMPUTER_MOBILE_REPAIR',    displayName: 'Mobile & Computer Repair',     icon: '📱', order: 32 },
+  'electricians-electronics':    { archetype: 'garage_repair', fixtureKey: 'ELECTRICAL_PLUMBING_SUPPLY',    displayName: 'Electricians & Electronics',   icon: '🔌', order: 33 },
+  'ro-water-purifier':           { archetype: 'garage_repair', fixtureKey: 'WATER_PURIFIER_RO',    displayName: 'RO & Water Purifier',          icon: '💧', order: 34 },
+  'tailoring-boutiques':         { archetype: 'tailoring', fixtureKey: 'TAILORING_ALTERATION',        displayName: 'Tailoring & Boutiques',        icon: '✂️', order: 35 },
+  'printing-xerox-dtp':          { archetype: 'print_counter', fixtureKey: 'PRINTING_XEROX',    displayName: 'Printing, Xerox & DTP',        icon: '🖨️', order: 36 },
+  'courier-parcel-services':     { archetype: 'print_counter', fixtureKey: 'COURIER_LOGISTICS',    displayName: 'Courier & Parcel Services',    icon: '📦', order: 37 },
+
+  // ─── Health ─────────────────────────────────────────────────────────
+  'dentists-orthodontists':      { archetype: 'healthcare', fixtureKey: 'DENTAL_CLINIC',       displayName: 'Dentists & Orthodontists',     icon: '🦷', order: 40 },
+  'pathology-labs':              { archetype: 'healthcare', fixtureKey: 'PATHOLOGY_DIAGNOSTIC_LAB',       displayName: 'Pathology Labs',               icon: '🧪', order: 41 },
+  'physiotherapy':               { archetype: 'healthcare', fixtureKey: 'PHYSIOTHERAPY_REHAB',       displayName: 'Physiotherapy',                icon: '🧑‍⚕️', order: 42 },
+  'ayurvedic-homeopathic':       { archetype: 'healthcare', fixtureKey: 'AYURVEDA_HOMEOPATHY',       displayName: 'Ayurvedic & Homeopathic',      icon: '🌿', order: 43 },
+  'dieticians-nutritionists':    { archetype: 'healthcare', fixtureKey: 'MEDICAL_CLINIC',       displayName: 'Dieticians & Nutritionists',   icon: '🥗', order: 44 },
+
+  // ─── Personal care ──────────────────────────────────────────────────
+  'salon-beauty-spa':            { archetype: 'salon_wellness', fixtureKey: 'SALON_SPA',   displayName: 'Salon, Beauty & Spa',          icon: '💇', order: 50 },
+  'gym-fitness':                 { archetype: 'salon_wellness', fixtureKey: 'GYM_YOGA_STUDIO',   displayName: 'Gym & Fitness',                icon: '🏋️', order: 51 },
+  'yoga-wellness':               { archetype: 'salon_wellness', fixtureKey: 'GYM_YOGA_STUDIO',   displayName: 'Yoga & Wellness',              icon: '🧘', order: 52 },
+  'car-bike-wash':               { archetype: 'salon_wellness', fixtureKey: 'CAR_BIKE_DEALER',   displayName: 'Car & Bike Wash',              icon: '🚿', order: 53 },
+  'laundry-dry-cleaning':        { archetype: 'laundry', fixtureKey: 'LAUNDRY_DRYCLEAN',          displayName: 'Laundry & Dry Cleaning',       icon: '🧺', order: 54 },
+
+  // ─── At your door ───────────────────────────────────────────────────
+  'home-services-plumbers':      { archetype: 'home_visit',       displayName: 'Plumber & Home Services',      icon: '🚰', order: 60 },
+  'pest-control':                { archetype: 'home_visit', fixtureKey: 'PEST_CONTROL',       displayName: 'Pest Control',                 icon: '🐜', order: 61 },
+  'deep-cleaning':               { archetype: 'home_visit',       displayName: 'Deep Cleaning',                icon: '🧹', order: 62 },
+  'locksmith-key-maker':         { archetype: 'home_visit', fixtureKey: 'KEY_LOCKSMITH',       displayName: 'Locksmith & Key Maker',        icon: '🔑', order: 63 },
+  'packers-movers':              { archetype: 'home_visit', fixtureKey: 'PACKERS_MOVERS',       displayName: 'Packers & Movers',             icon: '🚚', order: 64 },
+  'painting-renovation':         { archetype: 'home_visit',       displayName: 'Painting & Renovation',        icon: '🎨', order: 65 },
+  'security-cctv':               { archetype: 'home_visit',       displayName: 'Security & CCTV',              icon: '📹', order: 66 },
+
+  // ─── Learning ───────────────────────────────────────────────────────
+  'tutors-education':            { archetype: 'education', fixtureKey: 'COACHING_TUITION',        displayName: 'Tutors & Education',           icon: '📖', order: 70 },
+  'coaching-test-prep':          { archetype: 'education', fixtureKey: 'COACHING_TUITION',        displayName: 'Coaching & Test Prep',         icon: '🎓', order: 71 },
+  'driving-schools':             { archetype: 'education',        displayName: 'Driving Schools',              icon: '🚗', order: 72 },
+
+  // ─── Advisers ───────────────────────────────────────────────────────
+  'cas-tax-consultants':         { archetype: 'professional', fixtureKey: 'CA_LEGAL_SERVICES',     displayName: 'CAs & Tax Consultants',        icon: '📊', order: 80 },
+  'lawyers-advocates':           { archetype: 'professional', fixtureKey: 'CA_LEGAL_SERVICES',     displayName: 'Lawyers & Advocates',          icon: '⚖️', order: 81 },
+  'insurance-agents':            { archetype: 'professional', fixtureKey: 'INSURANCE_FINANCIAL',     displayName: 'Insurance Agents',             icon: '🛡️', order: 82 },
+  'real-estate-brokers':         { archetype: 'professional',     displayName: 'Real Estate Brokers',          icon: '🏘️', order: 83 },
+  'travel-agents-visa':          { archetype: 'professional', fixtureKey: 'TRAVEL_AGENT',     displayName: 'Travel Agents & Visa',         icon: '✈️', order: 84 },
+
+  // ─── Occasions ──────────────────────────────────────────────────────
+  'catering-party':              { archetype: 'event_creative', fixtureKey: 'TIFFIN_CATERING',   displayName: 'Catering & Party',             icon: '🎉', order: 90 },
+  'event-planners-decorators':   { archetype: 'event_creative', fixtureKey: 'EVENT_WEDDING_PLANNER',   displayName: 'Event Planners & Decorators',  icon: '🎪', order: 91 },
+  'wedding-party-planner':       { archetype: 'event_creative', fixtureKey: 'EVENT_WEDDING_PLANNER',   displayName: 'Wedding & Party Planner',      icon: '💒', order: 92 },
+  'photographers-videographers': { archetype: 'event_creative', fixtureKey: 'PHOTOGRAPHY_STUDIO',   displayName: 'Photographers & Videographers',icon: '📷', order: 93 },
+  'interior-design-decor':       { archetype: 'event_creative', fixtureKey: 'INTERIOR_DESIGNER',   displayName: 'Interior Design & Decor',      icon: '🛋️', order: 94 },
+  'astrologer-pandit':           { archetype: 'event_creative',   displayName: 'Astrologer & Pandit',          icon: '🔮', order: 95 },
+  'turf-grounds':                { archetype: 'event_creative',   displayName: 'Turf & Grounds',               icon: '🏟️', order: 96 },
 };
 
 /**
- * Get the category type for a given category slug
+ * The legacy key a category's fixture content is filed under.
+ *
+ * product-generator.js and slot-generator.js were written against the old
+ * SCREAMING_SNAKE taxonomy and index their catalogues by it. Renaming the
+ * slugs to the live kebab-case ones would have made every lookup miss — and
+ * both generators fall back silently, so the seeder would have produced shops
+ * with no products and no bookable slots and reported success.
+ *
+ * Rather than rewrite two large fixture files, the category carries the key
+ * its sample content lives under. Categories with no counterpart return null
+ * and simply seed without demo inventory, which is honest: there is no
+ * catalogue for them to borrow.
  */
+function getFixtureKey(slug) {
+  const entry = CATEGORY_MAP[slug];
+  return (entry && entry.fixtureKey) || null;
+}
+
+/** The commerce model for a slug, derived from its archetype. */
 function getCategoryType(slug) {
-  const entry = CATEGORY_TYPE_MAP[slug];
-  return entry ? entry.type : 'PRODUCT'; // Default to PRODUCT if unknown
+  const entry = CATEGORY_MAP[slug];
+  if (!entry) return null;
+  return ARCHETYPE_TO_TYPE[entry.archetype] || null;
 }
 
 /**
- * Get all categories as an array for seeding
+ * Every category, in the shape prisma/seed.js writes.
+ *
+ * `slug` is the live kebab-case key, so a Prisma-seeded shop resolves to its
+ * specialised view instead of falling through to the generic one.
  */
 function getAllCategories() {
-  return Object.entries(CATEGORY_TYPE_MAP).map(([slug, data]) => ({
+  return Object.entries(CATEGORY_MAP).map(([slug, data]) => ({
     slug,
     name: data.displayName,
-    categoryType: data.type,
+    categoryType: ARCHETYPE_TO_TYPE[data.archetype],
+    archetype: data.archetype,
+    fixtureKey: data.fixtureKey || null,
     iconUrl: data.icon,
     displayOrder: data.order,
   }));
 }
 
-/**
- * Get categories filtered by type
- */
+/** Categories filtered by commerce model: PRODUCT, APPOINTMENT or HYBRID. */
 function getCategoriesByType(type) {
-  return Object.entries(CATEGORY_TYPE_MAP)
-    .filter(([, data]) => data.type === type)
-    .map(([slug, data]) => ({
-      slug,
-      name: data.displayName,
-      categoryType: data.type,
-      iconUrl: data.icon,
-      displayOrder: data.order,
-    }));
+  return getAllCategories().filter((c) => c.categoryType === type);
 }
 
 module.exports = {
-  CATEGORY_TYPE_MAP,
+  CATEGORY_MAP,
+  ARCHETYPE_TO_TYPE,
   getCategoryType,
+  getFixtureKey,
   getAllCategories,
   getCategoriesByType,
 };

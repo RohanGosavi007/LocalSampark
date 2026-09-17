@@ -201,7 +201,12 @@ async function main() {
 
     // 5a. Seed Products for PRODUCT & HYBRID shops
     if (['PRODUCT', 'HYBRID'].includes(catData.categoryType)) {
-      const productsData = generateProductsForCategory(catData.slug, shop.id);
+      // The fixture catalogues are still filed under the old SCREAMING_SNAKE
+      // keys. `slug` is now the live kebab-case one the app routes on, so the
+      // fixture key is passed explicitly — otherwise every lookup would miss
+      // and both generators fail silently, seeding shops with no products and
+      // no bookable slots while reporting success.
+      const productsData = generateProductsForCategory(catData.fixtureKey || catData.slug, shop.id);
       await prisma.product.createMany({
         data: productsData,
       });
@@ -210,7 +215,7 @@ async function main() {
 
     // 5b. Seed Service Slots for APPOINTMENT & HYBRID shops
     if (['APPOINTMENT', 'HYBRID'].includes(catData.categoryType)) {
-      const slotsData = generateSlotsForCategory(catData.slug, shop.id);
+      const slotsData = generateSlotsForCategory(catData.fixtureKey || catData.slug, shop.id);
       if (slotsData.length > 0) {
         await prisma.serviceSlot.createMany({
           data: slotsData,

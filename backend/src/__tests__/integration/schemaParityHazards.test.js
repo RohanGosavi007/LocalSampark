@@ -5,30 +5,34 @@
  * about which side is authoritative, and guessing would move real data. What
  * they need meanwhile is to stop being silent, which is what this file does.
  *
- * ── 1. Two category taxonomies ─────────────────────────────────────────────
+ * ── 1. Two category taxonomies — now resolved ──────────────────────────────
  *
- * The app routes on `shop_categories.slug`, which is kebab-case, and all five
- * live routing maps agree with it. `prisma/seeders/category-type-map.js`
- * declares a second set of 66 categories keyed SCREAMING_SNAKE
- * (KIRANA_GROCERY, PHARMACY, …) and `prisma/seed.js` writes those keys
- * straight into `categories.slug`.
+ * `prisma/seeders/category-type-map.js` used to declare its own 66 categories
+ * keyed SCREAMING_SNAKE, and `prisma/seed.js` wrote those keys straight into
+ * `categories.slug`. Not one appeared in any routing map, so a Prisma-seeded
+ * clinic, salon and garage all rendered the generic RetailVisitorView — the
+ * failure an earlier fix removed from the kebab/snake migration, reintroduced
+ * through the seeder.
  *
- * Not one of those slugs appears in any routing map. A shop seeded through the
- * Prisma path therefore renders the generic RetailVisitorView — which is
- * precisely the failure an earlier fix removed from the kebab/snake migration,
- * reintroduced through the seeder.
+ * The map now keys on the live kebab-case slugs and derives the commerce model
+ * from the backend's ARCHETYPE_MAP rather than restating it. These tests hold
+ * the two sets identical, so a category added to one and not the other fails
+ * here rather than seeding into the generic view.
  *
- * ── 2. Two shop tables ─────────────────────────────────────────────────────
+ * ── 2. Two shop tables — now resolved ──────────────────────────────────────
  *
- * Raw SQL writes and reads `local_shops`. Prisma's Shop model is `@@map`ped to
- * `shops`. GET /shops already branches on the engine — SQLite reads
- * local_shops, Postgres goes through Prisma — but POST /shops/register writes
- * only to local_shops. On Postgres, a shop that registers successfully is
- * therefore absent from the listing that is supposed to show it.
+ * Raw SQL writes and reads `local_shops`; Prisma's Shop model is `@@map`ped to
+ * `shops`, a different table. POST /shops/register wrote only to local_shops
+ * while five read paths went through Prisma, so on PostgreSQL a shop could
+ * register successfully and be invisible to the listing, the pincode directory
+ * a customer browses, the admin shop count, and the delivery controller's
+ * logistics lookup — which failed with "No active logistics channel found in
+ * region" however many shops the platform had.
  *
- * These tests assert the shape of the problem, not a desired end state, so they
- * keep passing while it exists and start failing the moment someone believes
- * they have unified the two and has not.
+ * All five now read local_shops, the table the writes already target. That
+ * needed no data migration and is engine-independent, which is why it was the
+ * smaller change as well as the correct one. These tests hold the reads on the
+ * same table as the writes.
  */
 
 process.env.USE_SQLITE = 'true';
@@ -60,27 +64,63 @@ describe('category taxonomy split', () => {
     return new Set([...body.matchAll(/'([a-z0-9-]+)'\s*:/g)].map((m) => m[1]));
   }
 
-  test('the Prisma seeder emits slugs no router can resolve', () => {
+  test('every slug the Prisma seeder emits resolves to a specialised view', () => {
     const seeded = getAllCategories().map((c) => c.slug);
     const routable = liveRouterKeys();
 
     expect(seeded.length).toBeGreaterThan(0);
     expect(routable.size).toBeGreaterThan(0);
 
-    const resolvable = seeded.filter((slug) => routable.has(slug));
-
-    // This is the hazard, asserted as it stands. If a later change makes the
-    // seeder emit routable slugs, this test fails and should be replaced by
-    // one asserting full coverage — that failure is the point.
-    expect(resolvable).toHaveLength(0);
+    // The seeder used to emit 66 SCREAMING_SNAKE keys, none of which appeared
+    // in any routing map, so a Prisma-seeded clinic, salon and garage all
+    // rendered the generic RetailVisitorView. Full coverage is the assertion
+    // now; a single miss is a category that seeds into the generic view.
+    const unroutable = seeded.filter((slug) => !routable.has(slug));
+    expect(unroutable).toEqual([]);
   });
 
-  test('the seeder taxonomy is a different shape from the live one', () => {
+  test('the seeder speaks the live kebab-case taxonomy', () => {
+    const seeded = getAllCategories().map((c) => c.slug);
+    expect(seeded.every((s) => /^[a-z0-9-]+$/.test(s))).toBe(true);
+  });
+
+  test('every category is typed, and typed from its archetype', () => {
+    const all = getAllCategories();
+
+    // The commerce model is derived from the backend's ARCHETYPE_MAP rather
+    // than restated, so a category cannot be typed one way here and routed
+    // another way in the app.
+    expect(all.every((c) => ['PRODUCT', 'APPOINTMENT', 'HYBRID'].includes(c.categoryType))).toBe(true);
+    expect(all.every((c) => typeof c.archetype === 'string' && c.archetype.length > 0)).toBe(true);
+  });
+
+  test('every seeded slug exists as a live category', async () => {
+    const result = await query('SELECT slug FROM shop_categories WHERE is_active = 1');
+    const live = new Set((result.rows || result).map((r) => r.slug));
     const seeded = getAllCategories().map((c) => c.slug);
 
-    // SCREAMING_SNAKE on one side, kebab-case on the other. Two vocabularies
-    // for one concept, neither aware of the other.
-    expect(seeded.every((s) => /^[A-Z][A-Z0-9_]*$/.test(s))).toBe(true);
+    // One direction only. The test database carries a handful of extra
+    // categories that jest.globalSetup seeds for its own fixture shops
+    // ('grocery', 'pharmacy', 'salon', 'hardware'), so the live set is a
+    // superset here. What must hold is that the seeder invents nothing: a slug
+    // it emits that no category row backs would seed a shop into a category
+    // the directory does not list.
+    expect(seeded.filter((s) => !live.has(s))).toEqual([]);
+    expect(seeded.length).toBeGreaterThanOrEqual(50);
+  });
+
+  test('fixture content still resolves after the rename', () => {
+    // product-generator and slot-generator index their catalogues by the old
+    // SCREAMING_SNAKE keys and fall back silently on a miss, so renaming the
+    // slugs without this bridge would have seeded shops with no products and
+    // no bookable slots while reporting success.
+    const { generateProductsForCategory } = require('../../../prisma/seeders/product-generator');
+
+    for (const category of getAllCategories()) {
+      const key = category.fixtureKey || category.slug;
+      const products = generateProductsForCategory(key, 'test-shop') || [];
+      expect(products.length).toBeGreaterThan(0);
+    }
   });
 
   test('the live database uses the kebab-case taxonomy', async () => {
@@ -93,57 +133,80 @@ describe('category taxonomy split', () => {
 });
 
 describe('shop table split', () => {
-  test('Prisma maps Shop to `shops`, while the SQL layer uses `local_shops`', () => {
-    const schema = fs.readFileSync(path.join(REPO, 'backend/prisma/schema.prisma'), 'utf8');
+  const routes = () => fs.readFileSync(
+    path.join(REPO, 'backend/src/modules/ecommerce/routes/shop.routes.js'),
+    'utf8'
+  );
 
-    // The mapping that makes these two different tables rather than one.
-    expect(schema).toMatch(/@@map\("shops"\)/);
-    expect(schema).not.toMatch(/@@map\("local_shops"\)/);
-  });
-
-  test('registration writes only to local_shops', () => {
-    const routes = fs.readFileSync(
-      path.join(REPO, 'backend/src/modules/ecommerce/routes/shop.routes.js'),
-      'utf8'
-    );
-
-    const registerAt = routes.indexOf("router.post('/register'");
+  test('registration still writes local_shops', () => {
+    const src = routes();
+    const registerAt = src.indexOf("router.post('/register'");
     expect(registerAt).toBeGreaterThan(-1);
-
-    const body = routes.slice(registerAt, registerAt + 4000);
-    expect(body).toContain('INSERT INTO local_shops');
-    // No second write to the Prisma-side table, which is why a shop registered
-    // on Postgres does not appear in a listing served from it.
-    expect(body).not.toMatch(/prisma\.shop\.create/);
+    expect(src.slice(registerAt, registerAt + 6000)).toContain('INSERT INTO local_shops');
   });
 
-  test('the listing route still branches on the engine', () => {
-    const routes = fs.readFileSync(
-      path.join(REPO, 'backend/src/modules/ecommerce/routes/shop.routes.js'),
+  test('the listing reads the same table, on every engine', () => {
+    const src = routes();
+    const listAt = src.indexOf("router.get('/', async");
+    const body = src.slice(listAt, src.indexOf("router.post('/register'", listAt));
+
+    expect(body).toContain('FROM local_shops');
+
+    // Comments stripped first: the replacement is explained in prose that
+    // names what it replaced, and a substring check would find that prose.
+    const code = body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+    // The engine branch was the workaround that kept the two halves apart.
+    expect(code).not.toContain('prisma.shop.findMany');
+    expect(code).not.toContain("USE_SQLITE === 'true'");
+  });
+
+  test('no read path goes to the Prisma shop table any more', () => {
+    // Five call sites read `shops` while registration wrote `local_shops`: the
+    // listing, the pincode directory, the admin shop count and two lookups in
+    // the delivery controller. A shop that registered was invisible to all of
+    // them.
+    const files = [
+      'backend/src/modules/ecommerce/routes/shop.routes.js',
+      'backend/src/modules/ecommerce/controllers/pincode-directory.controller.js',
+      'backend/src/modules/crm/controllers/admin-revenue.controller.js',
+      'backend/src/modules/services/controllers/delivery.controller.js',
+    ];
+
+    for (const relative of files) {
+      const src = fs.readFileSync(path.join(REPO, relative), 'utf8');
+
+      // Strip comments before looking for calls, since the fix is explained in
+      // prose that names the thing it replaced.
+      const code = src
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+
+      expect(code).not.toMatch(/prisma\.shop\.(findMany|findFirst|count|create)/);
+    }
+  });
+
+  test('the pincode directory keeps its payload shape', () => {
+    // Clients depend on these field names. local_shops has no column behind
+    // some of them, so they are derived where that is honest and null where it
+    // is not — but they must still be present.
+    const src = fs.readFileSync(
+      path.join(REPO, 'backend/src/modules/ecommerce/controllers/pincode-directory.controller.js'),
       'utf8'
     );
 
-    const listAt = routes.indexOf("router.get('/', async");
-    const body = routes.slice(listAt, listAt + 2500);
-
-    // SQLite reads local_shops directly; anything else goes through Prisma.
-    // The branch is the workaround, and it is also the evidence of the split.
-    expect(body).toContain("USE_SQLITE === 'true'");
-    expect(body).toContain('FROM local_shops');
-    expect(body).toContain('prisma.shop.findMany');
+    for (const field of ['logoUrl', 'bannerUrl', 'estimatedDeliveryTime', 'deliveryAvailable', 'pickupAvailable', 'totalRatings']) {
+      expect(src).toContain(field);
+    }
   });
 
   test('only local_shops exists in the SQL-layer database', async () => {
     const result = await query(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shops', 'local_shops', 'categories', 'shop_categories')"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shops', 'local_shops')"
     );
-    const tables = (result.rows || result).map((r) => r.name).sort();
+    const tables = (result.rows || result).map((r) => r.name);
 
-    // The Prisma-side tables are absent here entirely, so any code path that
-    // reaches them in dev is reading a different database or failing.
     expect(tables).toContain('local_shops');
-    expect(tables).toContain('shop_categories');
     expect(tables).not.toContain('shops');
-    expect(tables).not.toContain('categories');
   });
 });

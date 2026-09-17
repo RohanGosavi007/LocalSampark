@@ -90,12 +90,19 @@ const requestDelivery = async (req, res, next) => {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    // Find or create default logistics shop
-    let shop = await prisma.shop.findFirst({
-      where: { categoryType: { in: ['PRODUCT', 'HYBRID'] } }
-    });
+    // Find a default logistics shop in local_shops.
+    //
+    // This read prisma.shop, whose model is @@mapped to `shops` — not the table
+    // registration writes to. In production that lookup found nothing and every
+    // parcel request failed with "No active logistics channel found in region",
+    // however many shops the platform actually had.
+    let shop = await queryOne(
+      `SELECT * FROM local_shops
+        WHERE is_active = 1 AND (delivery_available = 1 OR pickup_available = 1)
+        ORDER BY created_at ASC LIMIT 1`
+    );
     if (!shop) {
-      shop = await prisma.shop.findFirst();
+      shop = await queryOne('SELECT * FROM local_shops WHERE is_active = 1 ORDER BY created_at ASC LIMIT 1');
     }
 
     if (!shop) {
