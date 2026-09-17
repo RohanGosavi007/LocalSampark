@@ -3,6 +3,7 @@ const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { v4: uuidv4 } = require('uuid');
+const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');
 
 // --- 1. CORE SOCIETY & MEMBERS ---
 router.post('/admin/create', authenticate, async (req, res) => {
@@ -143,6 +144,68 @@ router.get('/module/:module_name', authenticate, async (req, res) => {
 
 // ─── NOTICES ─────────────────────────────────────────────────────────────────
 // The society page reads /society/notices; this router is also mounted there.
+
+/**
+ * People waiting to be let into the society.
+ *
+ * A society is a closed community and the committee decides who is in it. The
+ * admin console had a queue for this and no endpoint behind it.
+ */
+router.get('/members/pending', authenticate, requireCapability(CAPABILITIES.MANAGE_SOCIETY), async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT sm.id, sm.flat_number, sm.role, sm.status, sm.created_at,
+              u.full_name, u.phone_number
+         FROM society_members sm
+         LEFT JOIN users u ON u.id = sm.user_id
+        WHERE sm.society_id = $1 AND LOWER(COALESCE(sm.status, '')) = 'pending'
+        ORDER BY sm.created_at ASC`,
+      [req.societyId]
+    );
+
+    res.json({ success: true, members: result.rows || result || [] });
+  } catch (error) { next(error); }
+});
+
+/**
+ * Approve or reject an applicant.
+ *
+ * Scoped by society as well as by member id: the id alone would let a committee
+ * member of one society decide an application to another.
+ *
+ * A rejection deactivates rather than deletes. The row is the record that
+ * somebody asked and was turned down, which is exactly what a committee needs
+ * when the same person applies again.
+ */
+router.post('/members/decision', authenticate, requireCapability(CAPABILITIES.MANAGE_SOCIETY), async (req, res, next) => {
+  try {
+    const { memberId, decision } = req.body;
+    if (!memberId || !['approved', 'rejected'].includes(String(decision))) {
+      return res.status(400).json({ success: false, message: 'memberId and a decision of approved or rejected are required' });
+    }
+
+    const approved = decision === 'approved';
+    const result = await query(
+      `UPDATE society_members
+          SET status = $1, is_active = $2
+        WHERE id = $3 AND society_id = $4 AND LOWER(COALESCE(status, '')) = 'pending'`,
+      [decision, approved ? 1 : 0, memberId, req.societyId]
+    );
+
+    if (result.rowCount === 0) {
+      // Either it is not this society's application, or somebody on the
+      // committee decided it a moment ago. Both are a 409 rather than a
+      // silent success.
+      return res.status(409).json({
+        success: false,
+        message: 'That application is no longer pending, or does not belong to this society.',
+      });
+    }
+
+    res.json({ success: true, memberId, decision });
+  } catch (error) { next(error); }
+});
+
 router.get('/notices', authenticate, async (req, res, next) => {
   try {
     const societyId = req.query.societyId
@@ -171,19 +234,23 @@ router.get('/notices', authenticate, async (req, res, next) => {
   }
 });
 
-router.post('/notices', authenticate, async (req, res, next) => {
+/**
+ * Posting a notice reaches every phone in the society at once.
+ *
+ * The society was taken from `req.body.societyId` with no check at all, falling
+ * back to the caller's first membership. So any resident of any society could
+ * name another society and broadcast into it — and a notice cannot be recalled.
+ * requireCapability answers "may this person run *this* society" before the
+ * handler sees it, and hands back the verified id on req.societyId.
+ */
+router.post('/notices', authenticate, requireCapability(CAPABILITIES.MANAGE_SOCIETY), async (req, res, next) => {
   try {
-    const { title, content, priority, societyId: bodySocietyId } = req.body;
+    const { title, content, priority } = req.body;
     if (!title || !content) {
       return res.status(400).json({ success: false, message: 'Title and content are required' });
     }
 
-    const societyId = bodySocietyId
-      || req.user.society_id
-      || (await queryOne('SELECT society_id FROM society_members WHERE user_id = $1 LIMIT 1', [req.user.id]))?.society_id;
-    if (!societyId) {
-      return res.status(403).json({ success: false, message: 'No society is associated with this account' });
-    }
+    const societyId = req.societyId;
 
     const VALID = ['normal', 'high', 'urgent'];
     const id = uuidv4();

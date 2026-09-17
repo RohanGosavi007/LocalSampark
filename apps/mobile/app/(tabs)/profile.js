@@ -127,36 +127,72 @@ export default function ProfileScreen() {
 
         {/* SOCIETY MODULE SHORTCUTS */}
         {activeRole === 'resident' && (
-          <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/ResidentDashboard')}>
-            <Text style={{fontSize: 24, marginRight: 12}}>🏢</Text>
-            <View style={{flex: 1}}>
-              <Text style={styles.adminTitle}>My Society Dashboard</Text>
-              <Text style={styles.adminSub}>Access gate approvals, smart intercom, and 30+ features</Text>
-            </View>
-            <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/FlatPortal')}>
+              <Text style={{fontSize: 24, marginRight: 12}}>🏠</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.adminTitle}>My Flat</Text>
+                <Text style={styles.adminSub}>Approve visitors, guest passes, leave-at-gate</Text>
+              </View>
+              <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/ResidentDashboard')}>
+              <Text style={{fontSize: 24, marginRight: 12}}>🏢</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.adminTitle}>My Society Dashboard</Text>
+                <Text style={styles.adminSub}>Bills, amenities, complaints, notices</Text>
+              </View>
+              <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {activeRole === 'guard' && (
-          <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/GuardDashboard')}>
-            <Text style={{fontSize: 24, marginRight: 12}}>👮‍♂️</Text>
-            <View style={{flex: 1}}>
-              <Text style={styles.adminTitle}>Security Guard Terminal</Text>
-              <Text style={styles.adminSub}>Manage visitors, parcel desk, and CCTV alerts</Text>
-            </View>
-            <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
-          </TouchableOpacity>
+          <>
+            {/* The console first: it is what a guard opens during a shift. The
+                log is a reference, and a reference above the thing you use
+                every two minutes is a tap in the way. */}
+            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/GateConsole')}>
+              <Text style={{fontSize: 24, marginRight: 12}}>🛡️</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.adminTitle}>Gate Console</Text>
+                <Text style={styles.adminSub}>Log a visitor, check a vehicle, raise an alert</Text>
+              </View>
+              <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/GuardDashboard')}>
+              <Text style={{fontSize: 24, marginRight: 12}}>📋</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.adminTitle}>Today&apos;s Gate Log</Text>
+                <Text style={styles.adminSub}>Visitors, parcels held, staff on site</Text>
+              </View>
+              <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {activeRole === 'society_admin' && (
-          <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/AdminDashboard')}>
-            <Text style={{fontSize: 24, marginRight: 12}}>💼</Text>
-            <View style={{flex: 1}}>
-              <Text style={styles.adminTitle}>Society Admin Panel</Text>
-              <Text style={styles.adminSub}>Manage billing, members, and group buys</Text>
-            </View>
-            <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/SocietyDesk')}>
+              <Text style={{fontSize: 24, marginRight: 12}}>🗂️</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.adminTitle}>Society Desk</Text>
+                <Text style={styles.adminSub}>Member approvals, gate cover, broadcast a notice</Text>
+              </View>
+              <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.adminPanelBtn} onPress={() => router.push('/modules/society/AdminDashboard')}>
+              <Text style={{fontSize: 24, marginRight: 12}}>💼</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.adminTitle}>Society Admin Panel</Text>
+                <Text style={styles.adminSub}>Billing, members, group buys</Text>
+              </View>
+              <Text style={{color: '#64748b', fontSize: 18}}>›</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {activeRole === 'housekeeping' && (

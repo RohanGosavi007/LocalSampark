@@ -279,3 +279,104 @@ describe('society context for the client', () => {
     await expect(caps.societyContextFor(reqFor(OUTSIDER))).resolves.toEqual([]);
   });
 });
+
+describe('member approval queue', () => {
+  const APPLICANT = 'sc-applicant';
+  let applicationId;
+
+  beforeEach(async () => {
+    await query("DELETE FROM society_members WHERE user_id = $1", [APPLICANT]);
+    await query("DELETE FROM users WHERE id = $1", [APPLICANT]);
+    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)',
+      [APPLICANT, 'SC Applicant', '9855000077', 'user']);
+
+    applicationId = crypto.randomUUID();
+    await query(
+      `INSERT INTO society_members (id, society_id, user_id, flat_number, role, is_active, status)
+       VALUES ($1, $2, $3, '204', 'resident', 0, 'pending')`,
+      [applicationId, SOC_A, APPLICANT]
+    );
+  });
+
+  afterEach(async () => {
+    await query("DELETE FROM society_members WHERE user_id = $1", [APPLICANT]);
+    await query("DELETE FROM users WHERE id = $1", [APPLICANT]);
+  });
+
+  test('a pending application appears for its own society only', async () => {
+    const mine = await query(
+      "SELECT id FROM society_members WHERE society_id = $1 AND LOWER(COALESCE(status,'')) = 'pending'",
+      [SOC_A]
+    );
+    const theirs = await query(
+      "SELECT id FROM society_members WHERE society_id = $1 AND LOWER(COALESCE(status,'')) = 'pending'",
+      [SOC_B]
+    );
+
+    expect((mine.rows || mine).map((r) => r.id)).toContain(applicationId);
+    expect((theirs.rows || theirs).map((r) => r.id)).not.toContain(applicationId);
+  });
+
+  test('approving activates the membership', async () => {
+    const result = await query(
+      `UPDATE society_members SET status = 'approved', is_active = 1
+        WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
+      [applicationId, SOC_A]
+    );
+    expect(result.rowCount).toBe(1);
+
+    // And the capability follows from the membership, with no second step.
+    expect(await caps.hasSocietyCapability(reqFor(APPLICANT), SOC_A, caps.CAPABILITIES.APPROVE_VISITOR, '204')).toBe(true);
+  });
+
+  test('a rejection deactivates rather than deleting', async () => {
+    await query(
+      `UPDATE society_members SET status = 'rejected', is_active = 0
+        WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
+      [applicationId, SOC_A]
+    );
+
+    // The row is the record that somebody asked and was turned down — which is
+    // exactly what a committee needs when the same person applies again.
+    const row = await queryOne('SELECT status FROM society_members WHERE id = $1', [applicationId]);
+    expect(row).toBeTruthy();
+    expect(row.status).toBe('rejected');
+
+    expect(await caps.hasSocietyCapability(reqFor(APPLICANT), SOC_A, caps.CAPABILITIES.APPROVE_VISITOR)).toBe(false);
+  });
+
+  test("a committee member of another society cannot decide this application", async () => {
+    // Scoped by society as well as by member id: the id alone would let a
+    // committee member of one society decide an application to another.
+    const result = await query(
+      `UPDATE society_members SET status = 'approved', is_active = 1
+        WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
+      [applicationId, SOC_B]
+    );
+    expect(result.rowCount).toBe(0);
+  });
+
+  test('deciding twice is refused rather than silently repeated', async () => {
+    const first = await query(
+      `UPDATE society_members SET status = 'approved', is_active = 1
+        WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
+      [applicationId, SOC_A]
+    );
+    const second = await query(
+      `UPDATE society_members SET status = 'rejected', is_active = 0
+        WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
+      [applicationId, SOC_A]
+    );
+
+    expect(first.rowCount).toBe(1);
+    // Two committee members opening the queue together must not be able to
+    // approve and reject the same person.
+    expect(second.rowCount).toBe(0);
+  });
+
+  test('only a society admin holds the capability the queue requires', async () => {
+    expect(await caps.hasSocietyCapability(reqFor(ADMIN_A), SOC_A, caps.CAPABILITIES.MANAGE_SOCIETY)).toBe(true);
+    expect(await caps.hasSocietyCapability(reqFor(RESIDENT_101), SOC_A, caps.CAPABILITIES.MANAGE_SOCIETY)).toBe(false);
+    expect(await caps.hasSocietyCapability(reqFor(GUARD_A), SOC_A, caps.CAPABILITIES.MANAGE_SOCIETY)).toBe(false);
+  });
+});
