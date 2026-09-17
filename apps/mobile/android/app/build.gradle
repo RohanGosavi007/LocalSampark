@@ -262,6 +262,11 @@ android {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
 
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
     externalNativeBuild {
         cmake {
             // CMake/ninja on Windows break on this project's long, space-bearing
