@@ -4,8 +4,8 @@ import React from 'react';
 import { fetchJson } from '../../lib/api';
 
 export default function SettingsTab({ API_BASE, authHeaders }) {
-  const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
-  const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
+  const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+  const btnPrimary = { padding: '0.6rem 1.2rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
@@ -19,7 +19,7 @@ export default function SettingsTab({ API_BASE, authHeaders }) {
       ].map(s => (
         <div key={s.title} style={cardStyle}>
           <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{s.title}</h3>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>{s.desc}</p>
+          <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>{s.desc}</p>
           <button onClick={async () => {
             try {
               // Via fetchJson so a 401/500 actually throws. With bare fetch

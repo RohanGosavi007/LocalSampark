@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
 import { fetchJson } from '../../lib/api';
 
-const columnStyle = { flex: 1, background: '#0f172a', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b', display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '240px' };
-const cardStyle = { background: '#1e293b', padding: '1rem', borderRadius: '0.75rem', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '0.5rem' };
-const btnAction = { padding: '0.35rem 0.7rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.4rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem' };
+const columnStyle = { flex: 1, background: 'var(--ground)', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '240px' };
+const cardStyle = { background: 'var(--surface-1)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '0.5rem' };
+const btnAction = { padding: '0.35rem 0.7rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.4rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem' };
 
 export default function LeadsCRMTab({ API_BASE, authHeaders }) {
   const [leads, setLeads] = useState([]);
@@ -44,10 +44,10 @@ export default function LeadsCRMTab({ API_BASE, authHeaders }) {
   };
 
   const stages = [
-    { key: 'SCRAPED', title: '🔍 New Scraped Leads', color: '#94a3b8' },
-    { key: 'CONTACTED', title: '📞 Pitch Contacted', color: '#38bdf8' },
-    { key: 'VERIFIED', title: '🛡️ Claim Verified', color: '#f59e0b' },
-    { key: 'SUBSCRIBED', title: '💎 Active SaaS Subscriber', color: '#4ade80' }
+    { key: 'SCRAPED', title: '🔍 New Scraped Leads', color: 'var(--ink-muted)' },
+    { key: 'CONTACTED', title: '📞 Pitch Contacted', color: 'var(--info)' },
+    { key: 'VERIFIED', title: '🛡️ Claim Verified', color: 'var(--warning)' },
+    { key: 'SUBSCRIBED', title: '💎 Active SaaS Subscriber', color: 'var(--success)' }
   ];
 
   return (
@@ -55,8 +55,8 @@ export default function LeadsCRMTab({ API_BASE, authHeaders }) {
       <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: '#f8fafc' }}>🎯 Franchise Lead Conversion Pipeline</h3>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>Convert scraped local merchant leads into active paying SaaS subscribers.</p>
+          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: 'var(--ink)' }}>🎯 Franchise Lead Conversion Pipeline</h3>
+          <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>Convert scraped local merchant leads into active paying SaaS subscribers.</p>
         </div>
         <button onClick={fetchLeads} style={{ ...btnAction, padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}>{loading ? 'Loading...' : 'Refresh Board'}</button>
       </div>
@@ -67,15 +67,15 @@ export default function LeadsCRMTab({ API_BASE, authHeaders }) {
           <div key={stage.key} style={columnStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ color: stage.color, fontWeight: 700, fontSize: '0.85rem' }}>{stage.title}</span>
-              <span style={{ background: '#334155', color: '#fff', borderRadius: '50px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700 }}>
+              <span style={{ background: 'var(--surface-2)', color: 'var(--ink)', borderRadius: '50px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700 }}>
                 {leads.filter(l => l.status === stage.key).length}
               </span>
             </div>
 
             {leads.filter(l => l.status === stage.key).map(lead => (
               <div key={lead.id} style={cardStyle}>
-                <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{lead.business_name}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{lead.category} • {lead.phone}</div>
+                <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.9rem' }}>{lead.business_name}</div>
+                <div style={{ color: 'var(--ink-muted)', fontSize: '0.78rem' }}>{lead.category} • {lead.phone}</div>
                 <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
                   {stage.key !== 'SUBSCRIBED' && (
                     <button 

@@ -28,27 +28,27 @@ import { fetchJson } from '../../lib/api';
  */
 
 const card = {
-  background: '#1e293b',
+  background: 'var(--surface-1)',
   padding: '1.5rem',
   borderRadius: '1rem',
-  border: '1px solid #334155',
+  border: '1px solid var(--line)',
 };
 
 const btn = {
   padding: '0.6rem 1.2rem',
-  background: '#4f46e5',
+  background: 'var(--accent)',
   border: 'none',
-  color: '#fff',
+  color: 'var(--on-solid)',
   borderRadius: '0.5rem',
   fontWeight: 700,
   cursor: 'pointer',
   fontSize: '0.85rem',
 };
-const btnGhost = { ...btn, background: 'transparent', border: '1px solid #475569', color: '#cbd5e1' };
+const btnGhost = { ...btn, background: 'transparent', border: '1px solid var(--line-strong)', color: 'var(--ink)' };
 
-const label = { color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 };
+const label = { color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600 };
 const mono = { fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' };
-const muted = { color: '#64748b', fontSize: '0.75rem' };
+const muted = { color: 'var(--ink-subtle)', fontSize: '0.75rem' };
 
 const VIEWS = [
   ['overview', 'Overview'],
@@ -90,7 +90,7 @@ function Stat({ title, value, caption, color }) {
   return (
     <div style={card}>
       <div style={label}>{title}</div>
-      <div style={{ ...mono, fontSize: '1.6rem', fontWeight: 800, color: color || '#e2e8f0', marginTop: '0.4rem' }}>
+      <div style={{ ...mono, fontSize: '1.6rem', fontWeight: 800, color: color || 'var(--ink)', marginTop: '0.4rem' }}>
         {value}
       </div>
       {caption ? <div style={{ ...muted, marginTop: '0.2rem' }}>{caption}</div> : null}
@@ -116,12 +116,12 @@ function Grid({ children, min = '220px' }) {
  */
 function Status({ enabled, built, emptyLabel = 'no data yet' }) {
   if (!enabled) {
-    return <span style={{ color: '#64748b', fontWeight: 700, fontSize: '0.8rem' }}>● disabled</span>;
+    return <span style={{ color: 'var(--ink-subtle)', fontWeight: 700, fontSize: '0.8rem' }}>● disabled</span>;
   }
   if (!built) {
-    return <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '0.8rem' }}>● enabled, {emptyLabel}</span>;
+    return <span style={{ color: 'var(--warning)', fontWeight: 700, fontSize: '0.8rem' }}>● enabled, {emptyLabel}</span>;
   }
-  return <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.8rem' }}>● active</span>;
+  return <span style={{ color: 'var(--success)', fontWeight: 700, fontSize: '0.8rem' }}>● active</span>;
 }
 
 /**
@@ -241,7 +241,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
   const on = (key) => cfg[key] === true || cfg[key] === 'true';
 
   if (loading && !status) {
-    return <div style={{ padding: '2rem', color: '#94a3b8' }}>Loading ML insights…</div>;
+    return <div style={{ padding: '2rem', color: 'var(--ink-muted)' }}>Loading ML insights…</div>;
   }
 
   return (
@@ -251,14 +251,14 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
       {notice ? (
         <div style={{
           ...card,
-          borderColor: '#4f46e5',
-          background: '#1e1b4b',
+          borderColor: 'var(--accent)',
+          background: 'var(--accent-quiet)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
         >
-          <span style={{ color: '#c7d2fe', fontSize: '0.85rem' }}>{notice}</span>
+          <span style={{ color: 'var(--accent-text)', fontSize: '0.85rem' }}>{notice}</span>
           <button type="button" style={btnGhost} onClick={() => { setNotice(null); load(); }}>
             Refresh status
           </button>
@@ -338,8 +338,8 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                   ['Narrative badges', 'ml_narratives_enabled', true, ''],
                   ['Feature store', 'ml_featurestore_enabled', true, ''],
                 ].map(([name, key, built, emptyLabel]) => (
-                  <tr key={key} style={{ borderTop: '1px solid #334155' }}>
-                    <td style={{ padding: '0.6rem 0', color: '#e2e8f0' }}>{name}</td>
+                  <tr key={key} style={{ borderTop: '1px solid var(--line)' }}>
+                    <td style={{ padding: '0.6rem 0', color: 'var(--ink)' }}>{name}</td>
                     <td style={{ padding: '0.6rem 0', ...mono, ...muted }}>{key}</td>
                     <td style={{ padding: '0.6rem 0', textAlign: 'right' }}>
                       <Status enabled={on(key)} built={built} emptyLabel={emptyLabel} />
@@ -406,10 +406,10 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                   flex: 1,
                   minWidth: '220px',
                   padding: '0.6rem',
-                  background: '#0f172a',
-                  border: '1px solid #334155',
+                  background: 'var(--ground)',
+                  border: '1px solid var(--line)',
                   borderRadius: '0.5rem',
-                  color: '#e2e8f0',
+                  color: 'var(--ink)',
                   ...mono,
                 }}
               />
@@ -444,7 +444,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                 </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', marginTop: '0.75rem' }}>
                   <thead>
-                    <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                    <tr style={{ textAlign: 'left', color: 'var(--ink-muted)' }}>
                       <th style={{ padding: '0.4rem 0' }}>Nearest node</th>
                       <th style={{ padding: '0.4rem 0' }}>Similarity</th>
                       <th style={{ padding: '0.4rem 0' }}>Degree</th>
@@ -452,9 +452,9 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                   </thead>
                   <tbody>
                     {(inspect.nearest || []).map((row) => (
-                      <tr key={row.node} style={{ borderTop: '1px solid #334155' }}>
-                        <td style={{ padding: '0.4rem 0', ...mono, color: '#e2e8f0' }}>{row.node}</td>
-                        <td style={{ padding: '0.4rem 0', ...mono, color: '#38bdf8' }}>{num(row.similarity, 3)}</td>
+                      <tr key={row.node} style={{ borderTop: '1px solid var(--line)' }}>
+                        <td style={{ padding: '0.4rem 0', ...mono, color: 'var(--ink)' }}>{row.node}</td>
+                        <td style={{ padding: '0.4rem 0', ...mono, color: 'var(--info)' }}>{num(row.similarity, 3)}</td>
                         <td style={{ padding: '0.4rem 0', ...mono, ...muted }}>{int(row.degree)}</td>
                       </tr>
                     ))}
@@ -504,7 +504,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
             </div>
 
             {status?.sequence?.active ? (
-              <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.85rem', color: '#cbd5e1' }}>
+              <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink)' }}>
                 <div>Architecture: d_model {int(status.sequence.d_model)}, {int(status.sequence.n_heads)} heads, window {int(status.sequence.max_len)}</div>
                 <div>Vocabulary: {int(status.sequence.vocabulary)} categories</div>
                 <div>Trained on {int(status.sequence.metrics?.train_examples)} examples from {int(status.sequence.metrics?.sequences)} sessions</div>
@@ -557,7 +557,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
               diagonal means the model carries no information about who is persuadable — whatever its
               accuracy at predicting conversion.
             </div>
-            <div style={{ ...muted, marginTop: '0.5rem', color: '#f59e0b' }}>
+            <div style={{ ...muted, marginTop: '0.5rem', color: 'var(--warning)' }}>
               Treatment here is observational, not randomised. Read the curve before trusting the estimate.
             </div>
           </div>
@@ -591,7 +591,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
             {simulation && simulation.simulations ? (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                  <tr style={{ textAlign: 'left', color: 'var(--ink-muted)' }}>
                     <th style={{ padding: '0.5rem 0' }}>Requested</th>
                     <th style={{ padding: '0.5rem 0' }}>Applied</th>
                     <th style={{ padding: '0.5rem 0' }}>NDCG loss</th>
@@ -601,10 +601,10 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                 </thead>
                 <tbody>
                   {simulation.simulations.map((row) => (
-                    <tr key={row.requested_strength} style={{ borderTop: '1px solid #334155' }}>
-                      <td style={{ padding: '0.5rem 0', ...mono, color: '#e2e8f0' }}>{num(row.requested_strength, 2)}</td>
-                      <td style={{ padding: '0.5rem 0', ...mono, color: '#38bdf8' }}>{num(row.applied_strength, 3)}</td>
-                      <td style={{ padding: '0.5rem 0', ...mono, color: row.ndcg_loss > 0.03 ? '#f59e0b' : '#22c55e' }}>
+                    <tr key={row.requested_strength} style={{ borderTop: '1px solid var(--line)' }}>
+                      <td style={{ padding: '0.5rem 0', ...mono, color: 'var(--ink)' }}>{num(row.requested_strength, 2)}</td>
+                      <td style={{ padding: '0.5rem 0', ...mono, color: 'var(--info)' }}>{num(row.applied_strength, 3)}</td>
+                      <td style={{ padding: '0.5rem 0', ...mono, color: row.ndcg_loss > 0.03 ? 'var(--warning)' : 'var(--success)' }}>
                         {pct(row.ndcg_loss, 2)}
                       </td>
                       <td style={{ padding: '0.5rem 0', ...mono, ...muted }}>{int(row.moved)}</td>
@@ -699,7 +699,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
             {Array.isArray(status?.vector_index?.shards) && status.vector_index.shards.length > 0 ? (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
-                  <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                  <tr style={{ textAlign: 'left', color: 'var(--ink-muted)' }}>
                     <th style={{ padding: '0.4rem 0' }}>Shard</th>
                     <th style={{ padding: '0.4rem 0' }}>Items</th>
                     <th style={{ padding: '0.4rem 0' }}>Layers</th>
@@ -708,8 +708,8 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                 </thead>
                 <tbody>
                   {status.vector_index.shards.map((shard) => (
-                    <tr key={shard.shard} style={{ borderTop: '1px solid #334155' }}>
-                      <td style={{ padding: '0.4rem 0', ...mono, color: '#e2e8f0' }}>{shard.shard}</td>
+                    <tr key={shard.shard} style={{ borderTop: '1px solid var(--line)' }}>
+                      <td style={{ padding: '0.4rem 0', ...mono, color: 'var(--ink)' }}>{shard.shard}</td>
                       <td style={{ padding: '0.4rem 0', ...mono }}>{int(shard.size)}</td>
                       <td style={{ padding: '0.4rem 0', ...mono, ...muted }}>{int(shard.layers)}</td>
                       <td style={{ padding: '0.4rem 0', ...mono, ...muted }}>{num(shard.avg_degree_layer0, 1)}</td>
@@ -732,7 +732,7 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
             {Array.isArray(status?.feature_store?.freshness) ? (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
-                  <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                  <tr style={{ textAlign: 'left', color: 'var(--ink-muted)' }}>
                     <th style={{ padding: '0.4rem 0' }}>Feature</th>
                     <th style={{ padding: '0.4rem 0' }}>Rows</th>
                     <th style={{ padding: '0.4rem 0' }}>Age</th>
@@ -742,8 +742,8 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                 </thead>
                 <tbody>
                   {status.feature_store.freshness.map((row) => (
-                    <tr key={row.feature} style={{ borderTop: '1px solid #334155' }}>
-                      <td style={{ padding: '0.4rem 0', ...mono, color: '#e2e8f0' }}>{row.feature}</td>
+                    <tr key={row.feature} style={{ borderTop: '1px solid var(--line)' }}>
+                      <td style={{ padding: '0.4rem 0', ...mono, color: 'var(--ink)' }}>{row.feature}</td>
                       <td style={{ padding: '0.4rem 0', ...mono, ...muted }}>{int(row.rows)}</td>
                       <td style={{ padding: '0.4rem 0', ...mono }}>
                         {row.age_ms == null ? '—' : `${Math.round(row.age_ms / 60000)}m`}
@@ -751,10 +751,10 @@ export default function MLInsightsTab({ API_BASE, authHeaders }) {
                       <td style={{ padding: '0.4rem 0', ...mono, ...muted }}>{Math.round(row.sla_ms / 60000)}m</td>
                       <td style={{ padding: '0.4rem 0', fontWeight: 700 }}>
                         {row.stale === null
-                          ? <span style={{ color: '#64748b' }}>never materialised</span>
+                          ? <span style={{ color: 'var(--ink-subtle)' }}>never materialised</span>
                           : row.stale
-                            ? <span style={{ color: '#ef4444' }}>stale</span>
-                            : <span style={{ color: '#22c55e' }}>fresh</span>}
+                            ? <span style={{ color: 'var(--danger)' }}>stale</span>
+                            : <span style={{ color: 'var(--success)' }}>fresh</span>}
                       </td>
                     </tr>
                   ))}

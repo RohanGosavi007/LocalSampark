@@ -66,36 +66,50 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#4f46e5',
+  // One value, not a media-query pair: the browser chrome should follow the
+  // user's in-app choice, not the OS, so applyTheme() rewrites this meta tag
+  // whenever the theme changes. #4f46e5 was an indigo that matched neither
+  // the old palette nor the new one.
+  themeColor: '#F6F8FB',
 };
 
-// Script to apply saved dark mode BEFORE hydration (prevents flash)
+// Applies the stored theme before first paint, so there is no flash of the
+// wrong palette. This must stay in step with applyTheme() in
+// contexts/ThemeContext.js — it writes the same three markers, on the same
+// elements, from the same localStorage key.
+//
+// It runs in <head> and touches only documentElement, because <body> does not
+// exist yet at that point; the provider adds the body classes on mount and the
+// CSS matches on either selector, so nothing flashes in between.
 const themeScript = `
-  try {
-    const theme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (theme === 'dark' || (!theme && prefersDark)) {
-      document.body.classList.add('dark-mode');
-      document.documentElement.classList.add('dark');
-    } else {
-      document.body.classList.add('light-mode');
-    }
-  } catch(e) {}
+  (function () {
+    try {
+      var stored = localStorage.getItem('theme');
+      var pref = (stored === 'light' || stored === 'dark' || stored === 'system') ? stored : 'system';
+      var resolved = pref === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : pref;
+      var root = document.documentElement;
+      root.classList.toggle('dark', resolved === 'dark');
+      root.setAttribute('data-theme', resolved);
+    } catch (e) {}
+  })();
 `;
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Must run before the first paint, and before any stylesheet applies,
+            or the page flashes the wrong palette on every load. */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#2563eb" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body suppressHydrationWarning>
         <LanguageProvider>
-          <script dangerouslySetInnerHTML={{ __html: themeScript }} />
           <script
             dangerouslySetInnerHTML={{
               __html: `

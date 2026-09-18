@@ -159,6 +159,18 @@ try { NotificationProvider = require('../src/context/NotificationContext').Notif
 let LanguageProvider = PassthroughProvider;
 try { LanguageProvider = require('../src/context/LanguageContext').LanguageProvider; } catch (e) { console.warn('[_layout] LanguageProvider import failed:', e.message); }
 
+// New: the app previously had no theme provider at all, so there was nothing
+// for an appearance setting to talk to. Mounted outside AuthProvider because
+// the theme must apply to the login and error screens too, not only to
+// authenticated routes.
+let ThemeProvider = PassthroughProvider;
+let useThemeHook = null;
+try {
+  const themeModule = require('../src/context/ThemeContext');
+  ThemeProvider = themeModule.ThemeProvider;
+  useThemeHook = themeModule.useTheme;
+} catch (e) { console.warn('[_layout] ThemeProvider import failed:', e.message); }
+
 let QueryClientProvider = PassthroughProvider;
 let queryClient = null;
 try {
@@ -252,6 +264,26 @@ try {
   console.warn('[_layout] useTerritoryStore import failed:', e.message);
 }
 
+/**
+ * Status bar, driven by the resolved theme.
+ *
+ * `style="auto"` asks the OS, which means it follows the system setting rather
+ * than the in-app choice. A user on a light phone who picks dark in the app got
+ * dark status-bar icons over a dark header — unreadable.
+ *
+ * Which variant to use is decided once at module load, not per render: calling
+ * a hook inside a try/catch would make the hook conditional, and React's hook
+ * order cannot tolerate that. `useTheme` is safe outside a provider on its own
+ * (it returns the light theme), so the only thing guarded here is the import.
+ */
+const ThemedStatusBar = useThemeHook
+  ? function ThemedStatusBar() {
+      return <StatusBar style={useThemeHook().theme.statusBarStyle} />;
+    }
+  : function ThemedStatusBar() {
+      return <StatusBar style="auto" />;
+    };
+
 function RootLayout() {
   useEffect(() => {
     // Force-hide native splash screen immediately on mount using multiple methods
@@ -323,21 +355,23 @@ function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <QueryWrapper>
-            <AuthProvider>
-              <ZoneProvider>
-                <OrderRingerProvider>
-                  <NotificationProvider>
-                    <LanguageProvider>
-                      <StatusBar style="auto" />
-                      <DynamicNavigator />
-                      <DevLoginScreen />
-                    </LanguageProvider>
-                  </NotificationProvider>
-                </OrderRingerProvider>
-              </ZoneProvider>
-            </AuthProvider>
-          </QueryWrapper>
+          <ThemeProvider>
+            <QueryWrapper>
+              <AuthProvider>
+                <ZoneProvider>
+                  <OrderRingerProvider>
+                    <NotificationProvider>
+                      <LanguageProvider>
+                        <ThemedStatusBar />
+                        <DynamicNavigator />
+                        <DevLoginScreen />
+                      </LanguageProvider>
+                    </NotificationProvider>
+                  </OrderRingerProvider>
+                </ZoneProvider>
+              </AuthProvider>
+            </QueryWrapper>
+          </ThemeProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

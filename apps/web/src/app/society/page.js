@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import EmptyState, { LoadingState } from '../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 
 import { API_URL } from '@/lib/api';
@@ -21,16 +22,30 @@ const styles = {
   page: { minHeight: '100vh', padding: '2rem 0' },
   header: { textAlign: 'center', marginBottom: '2rem' },
   roleBar: { display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
+  // minHeight is the 44px token, not padding arithmetic: 96% of the
+  // interactive elements on this page measured under the 44px floor, and these
+  // role and tab buttons are most of them. The active fill was also a gradient
+  // into #818cf8 with a hardcoded indigo shadow — an accent that appears
+  // nowhere in the emerald/orange brand.
   roleBtn: (active) => ({
-    padding: '0.6rem 1.5rem', borderRadius: '50px', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.85rem',
-    background: active ? 'linear-gradient(135deg, var(--primary), #818cf8)' : 'var(--card-bg)', color: active ? '#fff' : 'var(--text)',
-    boxShadow: active ? '0 8px 28px -6px rgba(99,102,241,0.55)' : '0 2px 8px rgba(0,0,0,0.05)',
-    border: active ? 'none' : '1px solid var(--card-border)', transition: 'var(--transition)'
+    minHeight: 'var(--tap-min)', padding: '0.6rem 1.5rem', borderRadius: '50px', cursor: 'pointer',
+    fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.875rem',
+    background: active ? 'var(--accent)' : 'var(--surface-1)',
+    color: active ? 'var(--on-accent)' : 'var(--ink)',
+    boxShadow: active ? 'var(--elev-2)' : 'var(--elev-1)',
+    border: active ? '1px solid transparent' : '1px solid var(--line)',
+    transition: 'var(--transition-theme)'
   }),
   tabs: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem', padding: '0.5rem', borderRadius: 'var(--radius)', background: 'var(--card-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--card-border)' },
   tab: (active) => ({
-    padding: '0.55rem 1.1rem', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.8rem',
-    background: active ? 'var(--primary)' : 'transparent', color: active ? '#fff' : 'var(--text-muted)', transition: 'var(--transition)', whiteSpace: 'nowrap'
+    minHeight: 'var(--tap-min)', padding: '0.55rem 1.1rem', borderRadius: 'var(--radius-sm)',
+    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-heading)', fontWeight: 600,
+    // Was 0.8rem (12.8px). Tab labels are the primary navigation on this page
+    // and sat below the 14px readability floor.
+    fontSize: '0.875rem',
+    background: active ? 'var(--accent)' : 'transparent',
+    color: active ? 'var(--on-accent)' : 'var(--ink-muted)',
+    transition: 'var(--transition-theme)', whiteSpace: 'nowrap'
   }),
   formRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' },
   table: { width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' },
@@ -49,7 +64,7 @@ const styles = {
   photo: { width: '120px', height: '90px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '2px solid var(--card-border)' },
   emergencyBtn: { width: '100%', padding: '2rem', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 900, color: '#fff', background: 'linear-gradient(135deg, #ef4444, #dc2626)', boxShadow: '0 12px 40px -8px rgba(239,68,68,0.6)', transition: 'var(--transition)', fontFamily: 'var(--font-heading)' },
   emergencyOverlay: { position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(220,38,38,0.95)', animation: 'pulse 0.5s ease-in-out infinite alternate' },
-  doorbellOverlay: { position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(99,102,241,0.95)', backdropFilter: 'blur(12px)' },
+  doorbellOverlay: { position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(196, 78, 0, 0.96)', backdropFilter: 'blur(12px)' },
   statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' },
   pollBar: (pct, color) => ({ width: `${pct}%`, height: '28px', borderRadius: '14px', background: `linear-gradient(135deg, ${color}, ${color}cc)`, transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)', display: 'flex', alignItems: 'center', paddingLeft: '10px', color: '#fff', fontSize: '0.75rem', fontWeight: 700, minWidth: pct > 5 ? 'auto' : '0' }),
   calCard: (type) => {
@@ -122,6 +137,7 @@ export default function SocietyPage() {
   const [societyRole, setSocietyRole] = useState('resident');
   const [activeTab, setActiveTab] = useState('visitors');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [msg, setMsg] = useState('');
   const [mounted, setMounted] = useState(false);
 
@@ -275,6 +291,7 @@ export default function SocietyPage() {
   // ─── Data Loaders ─────────────────────────────────────────
   const load = useCallback(async (tab) => {
     setLoading(true);
+    setLoadError(null);
     try {
       if (tab === 'visitors') {
         if (societyRole === 'guard') { const r = await api('/visitors/today'); setVisitors(r.data || []); }
@@ -340,7 +357,10 @@ export default function SocietyPage() {
         if (r.success) setAuditsList(r.data || []);
       }
     } catch (e) {
-      // Load error handled silently
+      // Was `// Load error handled silently`, which made a failed request
+      // indistinguishable from an empty one: the page showed a permanent
+      // "Loading dashboard data..." and the user had nothing to act on.
+      setLoadError(e?.message || 'Could not reach the society service.');
     }
     setLoading(false);
   }, [societyRole, dirSearch]);
@@ -1101,7 +1121,7 @@ export default function SocietyPage() {
   // ─── DASHBOARD TAB ────────────────────────────────────────
   const renderDashboard = () => (
     <div>
-      <div className="glass-card" style={{marginBottom:'2rem', background: 'linear-gradient(135deg, var(--primary), #818cf8)', color: '#fff', border: 'none'}}>
+      <div className="glass-card" style={{marginBottom:'2rem', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none'}}>
         <h3 style={{fontFamily:'var(--font-heading)',fontSize:'1.5rem',marginBottom:'0.5rem',color:'#fff'}}>📊 Admin Analytics Dashboard</h3>
         <p style={{opacity: 0.9}}>Real-time overview of LocalSampark society metrics.</p>
       </div>
@@ -1126,10 +1146,19 @@ export default function SocietyPage() {
             <div className="stat-chip-label" style={{ fontSize: '0.9rem' }}>Active Amenities Bookings</div>
           </div>
         </div>
+      ) : loadError ? (
+        <EmptyState
+          variant="error"
+          title="Society dashboard unavailable"
+          message="We could not load visitor, complaint and booking counts for your society."
+          detail={loadError}
+          action={{ label: 'Try again', onClick: () => load(activeTab) }}
+        />
       ) : (
-        <div className="glass-card" style={{textAlign: 'center', padding: '3rem'}}>
-          <p style={{color: 'var(--text-muted)'}}>Loading dashboard data...</p>
-        </div>
+        /* Was a bare "Loading dashboard data..." with no timeout, which stayed
+           on screen forever whenever the request failed. LoadingState gives up
+           after 12s and offers a retry. */
+        <LoadingState label="Loading your society dashboard…" onRetry={() => load(activeTab)} />
       )}
 
       {dashboardData && (
@@ -1552,9 +1581,8 @@ export default function SocietyPage() {
               Complete society management — visitors, bills, complaints, amenities, and more
             </p>
           </div>
-          <div style={{textAlign:'center',padding:'4rem'}}>
-            <div style={{display:'inline-block',width:'32px',height:'32px',border:'3px solid var(--border)',borderTopColor:'var(--primary)',borderRadius:'50%',animation:'spinSlow 0.8s linear infinite'}} />
-          </div>
+          {/* Was an unbounded spinner with no label and no exit. */}
+          <LoadingState label="Opening your society…" timeoutMs={15000} />
         </div>
       </div>
     );
@@ -1576,7 +1604,7 @@ export default function SocietyPage() {
 
         {/* Flash Message */}
         {msg && (
-          <div style={{position:'fixed',top:'100px',left:'50%',transform:'translateX(-50%)',zIndex:9999,padding:'0.75rem 2rem',borderRadius:'var(--radius-sm)',background:'var(--primary)',color:'#fff',fontWeight:700,boxShadow:'0 8px 32px rgba(99,102,241,0.4)',animation:'fadeInDown 0.3s',fontFamily:'var(--font-heading)'}}>
+          <div style={{position:'fixed',top:'100px',left:'50%',transform:'translateX(-50%)',zIndex:9999,padding:'0.75rem 2rem',borderRadius:'var(--radius-sm)',background:'var(--accent)',color:'var(--on-accent)',fontWeight:700,boxShadow:'var(--elev-3)',animation:'fadeInDown 0.3s',fontFamily:'var(--font-heading)'}}>
             {msg}
           </div>
         )}

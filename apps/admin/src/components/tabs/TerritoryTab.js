@@ -37,25 +37,25 @@ import {
 const TerritoryMap = dynamic(() => import('../territory/TerritoryMap'), {
   ssr: false,
   loading: () => (
-    <div style={{ height: 520, display: 'grid', placeItems: 'center', color: '#64748b', border: '1px solid #334155', borderRadius: '0.75rem' }}>
+    <div style={{ height: 520, display: 'grid', placeItems: 'center', color: 'var(--ink-subtle)', border: '1px solid var(--line)', borderRadius: '0.75rem' }}>
       Loading map…
     </div>
   ),
 });
 
-const card = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
+const card = { background: 'var(--surface-1)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--line)' };
 const btn = {
-  padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff',
+  padding: '0.6rem 1.2rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)',
   borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem',
 };
-const btnGhost = { ...btn, background: 'transparent', border: '1px solid #475569', color: '#cbd5e1' };
-const btnDanger = { ...btn, background: '#dc2626' };
-const label = { color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 };
+const btnGhost = { ...btn, background: 'transparent', border: '1px solid var(--line-strong)', color: 'var(--ink)' };
+const btnDanger = { ...btn, background: 'var(--danger)' };
+const label = { color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600 };
 const mono = { fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' };
-const muted = { color: '#64748b', fontSize: '0.75rem' };
+const muted = { color: 'var(--ink-subtle)', fontSize: '0.75rem' };
 const input = {
-  padding: '0.6rem', background: '#0f172a', border: '1px solid #334155',
-  borderRadius: '0.5rem', color: '#e2e8f0', width: '100%',
+  padding: '0.6rem', background: 'var(--ground)', border: '1px solid var(--line)',
+  borderRadius: '0.5rem', color: 'var(--ink)', width: '100%',
 };
 
 const VIEWS = [
@@ -78,7 +78,7 @@ function Stat({ title, value, caption, color }) {
   return (
     <div style={card}>
       <div style={label}>{title}</div>
-      <div style={{ ...mono, fontSize: '1.6rem', fontWeight: 800, color: color || '#e2e8f0', marginTop: '0.4rem' }}>{value}</div>
+      <div style={{ ...mono, fontSize: '1.6rem', fontWeight: 800, color: color || 'var(--ink)', marginTop: '0.4rem' }}>{value}</div>
       {caption ? <div style={{ ...muted, marginTop: '0.2rem' }}>{caption}</div> : null}
     </div>
   );
@@ -274,11 +274,11 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
       <TabError error={error} onRetry={load} />
 
       {coverage && quarantined > 0 ? (
-        <div style={{ ...card, borderColor: '#f59e0b', background: '#251a05' }}>
-          <div style={{ color: '#fbbf24', fontWeight: 800, marginBottom: '0.4rem' }}>
+        <div style={{ ...card, borderColor: 'var(--warning)', background: '#251a05' }}>
+          <div style={{ color: 'var(--warning)', fontWeight: 800, marginBottom: '0.4rem' }}>
             {int(quarantined)} of {int(coverage.territories)} boundaries are unverified and do not attribute revenue
           </div>
-          <div style={{ color: '#fcd34d', fontSize: '0.82rem', lineHeight: 1.6 }}>
+          <div style={{ color: 'var(--warning)', fontSize: '0.82rem', lineHeight: 1.6 }}>
             The stored boundaries are 5&nbsp;km circles generated around centroids that are uniform random
             noise — territories sharing a pincode prefix sit ~900&nbsp;km apart where reality is under 60&nbsp;km.
             GPS attribution is switched off for them, and franchise revenue is attributed by <strong>pincode</strong>,
@@ -289,8 +289,8 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
       ) : null}
 
       {notice ? (
-        <div style={{ ...card, borderColor: '#4f46e5', background: '#1e1b4b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: '#c7d2fe', fontSize: '0.85rem' }}>{notice}</span>
+        <div style={{ ...card, borderColor: 'var(--accent)', background: 'var(--accent-quiet)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: 'var(--accent-text)', fontSize: '0.85rem' }}>{notice}</span>
           <button type="button" style={btnGhost} onClick={() => setNotice(null)}>Dismiss</button>
         </div>
       ) : null}
@@ -342,7 +342,7 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
             />
 
             {drawing ? (
-              <div style={{ ...card, marginTop: '0.75rem', borderColor: '#a78bfa' }}>
+              <div style={{ ...card, marginTop: '0.75rem', borderColor: 'var(--line-accent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ color: '#ddd6fe', fontSize: '0.85rem' }}>
                     Click the map to place points. {drawPoints.length} placed
@@ -377,11 +377,11 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
                 {validation ? (
                   <div style={{ marginTop: '0.75rem', fontSize: '0.82rem' }}>
                     {validation.valid ? (
-                      <span style={{ color: '#22c55e' }}>
+                      <span style={{ color: 'var(--success)' }}>
                         No conflicts. Area {Number(validation.area_km2 || 0).toFixed(2)} km².
                       </span>
                     ) : (
-                      <div style={{ color: '#fca5a5' }}>
+                      <div style={{ color: 'var(--danger)' }}>
                         {/* Shape problems first: an operator whose outline crosses
                             itself does not also need to hear about overlaps. */}
                         {(validation.errors || []).map((e) => (
@@ -395,7 +395,7 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
                         ) : null}
 
                         {(validation.conflicts || []).slice(0, 5).map((c) => (
-                          <div key={c.territory_id} style={{ ...muted, color: '#fca5a5' }}>
+                          <div key={c.territory_id} style={{ ...muted, color: 'var(--danger)' }}>
                             {c.name} ({c.pincode}) —{' '}
                             {c.code === 'overlap'
                               ? `${c.overlap_km2} km² of shared ground`
@@ -431,20 +431,20 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
 
             {selected ? (
               <div style={card}>
-                <div style={{ color: '#e2e8f0', fontWeight: 800 }}>{selected.name}</div>
+                <div style={{ color: 'var(--ink)', fontWeight: 800 }}>{selected.name}</div>
                 <div style={{ ...mono, ...muted, marginTop: '0.2rem' }}>{selected.pincode}</div>
 
-                <div style={{ marginTop: '0.75rem', fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.8 }}>
+                <div style={{ marginTop: '0.75rem', fontSize: '0.82rem', color: 'var(--ink)', lineHeight: 1.8 }}>
                   <div>
                     Boundary:{' '}
                     {selected.boundary_verified
-                      ? <span style={{ color: '#22c55e', fontWeight: 700 }}>verified</span>
-                      : <span style={{ color: '#f59e0b', fontWeight: 700 }}>unverified — not attributing</span>}
+                      ? <span style={{ color: 'var(--success)', fontWeight: 700 }}>verified</span>
+                      : <span style={{ color: 'var(--warning)', fontWeight: 700 }}>unverified — not attributing</span>}
                   </div>
                   <div>
                     Franchise:{' '}
                     {selected.franchise_name
-                      ? <span style={{ color: '#e2e8f0' }}>{selected.franchise_name}</span>
+                      ? <span style={{ color: 'var(--ink)' }}>{selected.franchise_name}</span>
                       : <span style={muted}>unassigned</span>}
                   </div>
                 </div>
@@ -482,8 +482,8 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
                   onClick={() => { setSelected(territory); setDrawing(false); setDrawPoints([]); }}
                   style={{
                     display: 'block', width: '100%', textAlign: 'left', background: 'transparent',
-                    border: 'none', borderBottom: '1px solid #1e293b', padding: '0.5rem 0',
-                    color: String(territory.id) === String(selected?.id) ? '#38bdf8' : '#cbd5e1',
+                    border: 'none', borderBottom: '1px solid var(--line)', padding: '0.5rem 0',
+                    color: String(territory.id) === String(selected?.id) ? 'var(--info)' : 'var(--ink)',
                     cursor: 'pointer', fontSize: '0.82rem',
                   }}
                 >
@@ -533,20 +533,20 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
 
           {bulkResult ? (
             <div style={{ marginTop: '1.25rem' }}>
-              <div style={{ color: '#22c55e', fontWeight: 700 }}>
+              <div style={{ color: 'var(--success)', fontWeight: 700 }}>
                 {bulkResult.assigned_count} assigned
               </div>
               {bulkResult.failed_count > 0 ? (
                 <>
-                  <div style={{ color: '#fca5a5', fontWeight: 700, marginTop: '0.5rem' }}>
+                  <div style={{ color: 'var(--danger)', fontWeight: 700, marginTop: '0.5rem' }}>
                     {bulkResult.failed_count} not assigned
                   </div>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', marginTop: '0.4rem' }}>
                     <tbody>
                       {bulkResult.failed.map((row, i) => (
-                        <tr key={`${row.pincode}-${i}`} style={{ borderTop: '1px solid #334155' }}>
-                          <td style={{ padding: '0.35rem 0', ...mono, color: '#e2e8f0', width: 120 }}>{String(row.pincode)}</td>
-                          <td style={{ padding: '0.35rem 0', color: '#94a3b8' }}>{row.reason}</td>
+                        <tr key={`${row.pincode}-${i}`} style={{ borderTop: '1px solid var(--line)' }}>
+                          <td style={{ padding: '0.35rem 0', ...mono, color: 'var(--ink)', width: 120 }}>{String(row.pincode)}</td>
+                          <td style={{ padding: '0.35rem 0', color: 'var(--ink-muted)' }}>{row.reason}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -571,7 +571,7 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                <tr style={{ textAlign: 'left', color: 'var(--ink-muted)' }}>
                   <th style={{ padding: '0.5rem 0' }}>Pincode</th>
                   <th style={{ padding: '0.5rem 0' }}>Territory</th>
                   <th style={{ padding: '0.5rem 0' }}>Requests</th>
@@ -581,11 +581,11 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
               </thead>
               <tbody>
                 {gaps.map((gap) => (
-                  <tr key={gap.id} style={{ borderTop: '1px solid #334155' }}>
-                    <td style={{ padding: '0.5rem 0', ...mono, color: '#e2e8f0' }}>{gap.pincode}</td>
-                    <td style={{ padding: '0.5rem 0', color: '#cbd5e1' }}>{gap.territory_name || <span style={muted}>no territory</span>}</td>
+                  <tr key={gap.id} style={{ borderTop: '1px solid var(--line)' }}>
+                    <td style={{ padding: '0.5rem 0', ...mono, color: 'var(--ink)' }}>{gap.pincode}</td>
+                    <td style={{ padding: '0.5rem 0', color: 'var(--ink)' }}>{gap.territory_name || <span style={muted}>no territory</span>}</td>
                     <td style={{ padding: '0.5rem 0', ...mono }}>{int(gap.request_count)}</td>
-                    <td style={{ padding: '0.5rem 0', ...mono, color: Number(gap.interest_count) > 0 ? '#22c55e' : undefined }}>
+                    <td style={{ padding: '0.5rem 0', ...mono, color: Number(gap.interest_count) > 0 ? 'var(--success)' : undefined }}>
                       {int(gap.interest_count)}
                     </td>
                     <td style={{ padding: '0.5rem 0', ...muted }}>{gap.last_requested_at}</td>

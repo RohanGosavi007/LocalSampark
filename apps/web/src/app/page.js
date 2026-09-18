@@ -16,6 +16,7 @@ import { Button } from './components/ui/Button';
 import { cn } from './components/ui/Button';
 import { StoreIcon, CommunityIcon, DeliveryIcon, ProduceIcon } from './components/ui/RichIcons';
 import { useLanguage } from './components/LanguageToggle';
+import PlatformMap, { PlatformRail } from './components/PlatformMap';
 
 // ── Data ──────────────────────────────────────────────────────
 
@@ -216,7 +217,7 @@ export default function HomePage() {
         {/* ══════════════════════════════════════════════════════════
             HERO SECTION — Spatial Design with Mesh Gradient
            ══════════════════════════════════════════════════════════ */}
-        <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <section className="relative pt-20 pb-10 lg:pt-24 lg:pb-14 overflow-hidden">
           {/* Animated mesh gradient orbs */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
             <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-blobBounce" />
@@ -260,23 +261,13 @@ export default function HomePage() {
                   </Button>
                 </div>
 
-                {/* Micro Stats */}
-                <div className="flex flex-wrap gap-8 items-center pt-6 border-t border-border/50">
-                  <div>
-                    <p className="text-3xl font-heading font-black text-text">0%</p>
-                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">{t('stat_commission')}</p>
-                  </div>
-                  <div className="w-px h-10 bg-border"></div>
-                  <div>
-                    <p className="text-3xl font-heading font-black text-text">2hrs</p>
-                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">{t('stat_delivery')}</p>
-                  </div>
-                  <div className="w-px h-10 bg-border"></div>
-                  <div>
-                    <p className="text-3xl font-heading font-black text-text">25+</p>
-                    <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">{t('stat_zones')}</p>
-                  </div>
-                </div>
+                {/* Was three micro-stats — 0% commission, 2hrs delivery, 25+
+                    zones — which repeated three of the four counters in the
+                    stats ticker immediately below and told a first-time
+                    visitor nothing about what the app actually does. The rail
+                    puts the platform's breadth in the first viewport, which
+                    was the audit's central finding about this page. */}
+                <PlatformRail />
               </motion.div>
 
               {/* Hero Visual — 3D App Feature Showcase */}
@@ -284,7 +275,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1, delay: 0.2 }}
-                className="relative h-[400px] lg:h-[600px] w-full rounded-3xl overflow-hidden"
+                className="relative h-[360px] lg:h-[500px] w-full rounded-3xl overflow-hidden"
               >
                 {/* Gradient Background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 rounded-3xl" />
@@ -362,6 +353,16 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            PLATFORM MAP — what this app actually is
+            Placed directly under the hero, above the stats ticker. The audit's
+            central finding about this page was that a first-time visitor saw a
+            hero, a download button and three counters — a delivery-app first
+            impression for a platform running 24 verticals. The bento grid that
+            named those verticals sat below the fold, behind three overlays.
+           ══════════════════════════════════════════════════════════ */}
+        <PlatformMap />
 
         {/* ══════════════════════════════════════════════════════════
             STATS TICKER — Animated Counter
@@ -590,7 +591,10 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <Button variant="ghost" size="sm" className="mt-4 w-full opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                  {/* Was opacity-0 until hover, so on any touch device this control was
+                      invisible and unreachable — and to a keyboard user it was a
+                      focusable target with nothing rendered. */}
+                  <Button variant="ghost" size="sm" className="mt-4 w-full" asChild>
                     <a href={`/shops?zone=${z.zone.toLowerCase().replace(' ', '-')}`}>
                       <Eye className="w-4 h-4 mr-1" /> Explore Zone
                     </a>

@@ -39,7 +39,7 @@ export default function FranchisePage() {
         {/* Hero */}
         <section style={{ padding: '7rem 0 5rem', position: 'relative', overflow: 'hidden', background: 'var(--hero-bg)', backgroundSize: '300% 300%' }}>
           <div style={{ position: 'absolute', top: '-120px', right: '-80px', width: '600px', height: '600px', borderRadius: '50%', background: 'rgba(249,115,22,0.12)', filter: 'blur(100px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-80px', left: '-60px', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(99,102,241,0.12)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-80px', left: '-60px', width: '400px', height: '400px', borderRadius: '50%', background: 'var(--accent-quiet)', filter: 'blur(80px)', pointerEvents: 'none' }} />
           <div className="container" style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
             <span className="badge badge-secondary" style={{ marginBottom: '1.5rem', fontSize: '0.85rem' }}>🤝 Partner Program</span>
             <h1 style={{ fontSize: '4rem', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.5rem' }}>
@@ -113,7 +113,7 @@ export default function FranchisePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem' }}>
               {STEPS.map((step, i) => (
                 <div key={i} className="glass-card" style={{ textAlign: 'center', padding: '2.5rem 1.75rem' }}>
-                  <div style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg, var(--primary), #818cf8)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.25rem', fontWeight: 900, color: 'white' }}>{step.n}</div>
+                  <div style={{ width: '60px', height: '60px', background: 'var(--accent)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.25rem', fontWeight: 900, color: 'white' }}>{step.n}</div>
                   <h3 style={{ fontSize: '1.1rem', marginBottom: '0.6rem' }}>{step.title}</h3>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.65, margin: 0 }}>{step.desc}</p>
                 </div>

@@ -9,51 +9,137 @@
    Dark-first, vibrant, 3D-ready glassmorphism, Bento Grid
    ============================================================ */
 
+/* ============================================================
+   THEME LAYER
+   ------------------------------------------------------------
+   Two complete palettes generated from the same key set in
+   packages/shared/design-tokens.js (theme.light / theme.dark).
+
+   Previously this file carried a light :root, a hand-written dark
+   override, and a prefers-color-scheme block whose :not() guard tested
+   body[data-theme] while the attribute was only ever set on <html> —
+   so the guard could never fire. Dark had also drifted onto an indigo
+   accent (#6366F1) that appears nowhere in the emerald/orange brand,
+   which is why the two themes read as different products.
+
+   The DOM contract is now single and explicit. ThemeProvider sets all
+   three markers together on every change:
+
+       <html class="dark" data-theme="dark">  +  <body class="dark-mode">
+
+   class="dark" drives Tailwind dark: variants (darkMode: 'class'),
+   data-theme drives these variables, and body.dark-mode keeps the ~40
+   legacy rules further down this file working. Writing all three from
+   one place is what makes it impossible for them to disagree.
+
+   Every legacy token name is preserved — 300 routes reference them.
+   ============================================================ */
+
 :root {
-  /* === INDIAN HYPERLOCAL ECOMMERCE MODE (Emerald/Indigo) === */
-  /* Values retuned for higher chroma; every token name is unchanged, so all
-     existing pages pick up the new palette without edits. Mirrors
-     packages/shared/design-tokens.js — change both together. */
-  --primary:       #00C880; /* Emerald, lifted for saturation on glass */
-  --primary-hover: #00A468;
+  color-scheme: light;
+
+  /* Brand identity, theme-independent */
+  --brand-emerald: #00C880;
+  --brand-orange:  #FF6A00;
+  --brand-crimson: #FF2D55;
+  --violet:        #7C5CFF;
+  --violet-glass:  rgba(124, 92, 255, 0.16);
+  --cyan:          #00D9F5;
+  --cyan-glass:    rgba(0, 217, 245, 0.16);
+  --trust:         #12152E;
+  --promo:         #FFD400;
+
+  /* Elevation ramp. In light, depth is carried by shadow rather than by
+     value, so the surfaces converge on white and shadows do the work. */
+  --ground:        #F6F8FB;
+  --ground-alt:    #FFFFFF;
+  --sunken:        #EEF2F7;
+  --surface-1:     #FFFFFF;
+  --surface-2:     #FFFFFF;
+  --surface-3:     #FFFFFF;
+  --surface-4:     #FFFFFF;
+  --surface-glass: rgba(255, 255, 255, 0.72);
+
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(15,23,41,0.05);
+  --elev-2: 0 2px 4px rgba(15,23,41,0.06), 0 8px 16px -8px rgba(15,23,41,0.10);
+  --elev-3: 0 4px 8px rgba(15,23,41,0.07), 0 16px 32px -12px rgba(15,23,41,0.14);
+  --elev-4: 0 8px 16px rgba(15,23,41,0.08), 0 32px 64px -24px rgba(15,23,41,0.20);
+
+  /* Lines */
+  --line:        #E3E8EF;
+  --line-strong: #CBD5E1;
+  --line-accent: rgba(0, 132, 83, 0.32);
+
+  /* Ink */
+  --ink:         #0F1729;
+  --ink-muted:   #5A6B84;
+  --ink-subtle:  #8496AC;
+  --ink-inverse: #FFFFFF;
+
+  /* Accent. A fill and a label have different contrast jobs: the
+     brand emerald (#00C880) reaches only 2.2:1 against white and #00A468 only
+     3.2:1 under a white label, both of which fail AA for a 16px button label.
+     #008453 clears 4.5:1 in BOTH directions, so one value serves as the fill
+     and as text on a light ground. --brand-emerald stays available for
+     decorative fills and gradients that carry no text. */
+  --accent:       #008453;
+  --accent-hover: #00734A;
+  --accent-text:  #008453;
+  --accent-quiet: rgba(0, 132, 83, 0.10);
+  --on-accent:    #FFFFFF;
+  /* Ink for text sitting on a saturated semantic fill (a success chip, a
+     danger button). In light the fills are dark, so white is correct. */
+  --on-solid: #FFFFFF;
+
+
+  --success: #0A7D53;  --success-quiet: rgba(10, 125, 83, 0.10);
+  --warning: #B45309;  --warning-quiet: rgba(180, 83, 9, 0.10);
+  --danger:  #D42348;  --danger-quiet:  rgba(212, 35, 72, 0.10);
+  --info:    #0369A1;  --info-quiet:    rgba(3, 105, 161, 0.10);
+
+  --scrim: rgba(15, 23, 41, 0.45);
+
+  /* Legacy aliases, mapped onto the ramp above. These names are
+     load-bearing across 300 routes and must not be removed; their values
+     now come from one place instead of being maintained per theme. */
+  --primary:       var(--accent);
+  --primary-hover: var(--accent-hover);
   --primary-light: #E6FBF3;
-  --primary-glass: rgba(0, 200, 128, 0.16);
+  --primary-glass: var(--accent-quiet);
 
-  --secondary:       #FF6A00; /* Hyper orange */
-  --secondary-hover: #D95400;
+  --secondary:       #E85D00;
+  --secondary-hover: #C44E00;
   --secondary-light: #FFF2E8;
-  --secondary-glass: rgba(255, 106, 0, 0.16);
+  --secondary-glass: rgba(232, 93, 0, 0.10);
 
-  --accent:       #FF2D55; /* Crimson pushed toward magenta */
   --accent-light: #FFE9EE;
-  --accent-glass: rgba(255, 45, 85, 0.16);
+  --accent-glass: rgba(212, 35, 72, 0.10);
 
-  /* Added: the palette had no cool accent, which left dark surfaces and
-     depth cues relying entirely on warm hues. */
-  --violet:       #7C5CFF;
-  --violet-glass: rgba(124, 92, 255, 0.16);
-  --cyan:         #00D9F5;
-  --cyan-glass:   rgba(0, 217, 245, 0.16);
+  --background:     var(--ground);
+  --background-alt: var(--ground-alt);
+  --card-bg:        var(--surface-1);
+  --card-border:    var(--line);
+  --border:         var(--line);
+  --text:           var(--ink);
+  --text-muted:     var(--ink-muted);
+  --nav-bg:         var(--surface-glass);
+  --glow-color:     rgba(0, 132, 83, 0.22);
 
-  --trust:        #12152E; /* Deep indigo */
-  --promo:        #FFD400; /* Electric yellow */
+  --section-alt: linear-gradient(135deg, #F6F8FB 0%, #EEF2F7 100%);
+  --hero-bg:     linear-gradient(135deg, #E9F9F2 0%, #FFF4EC 52%, #FDECEF 100%);
 
-  --background:     #F8FAFC; 
-  --background-alt: #FFFFFF;
-  --card-bg:        rgba(255, 255, 255, 0.95);
-  --card-border:    #F0F0F5; /* Ultra-thin border */
-  --text:           #1A1D36; /* Using Trust Color for main text */
-  --text-muted:     #64748B;
-  --border:         #F0F0F5;
-  --glow-color:     rgba(0, 200, 128, 0.32);
-  --nav-bg:         rgba(255, 255, 255, 0.85); /* Frosted Glass Base */
-  --section-alt:    linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
-  --hero-bg:        linear-gradient(135deg, #E6F7F1 0%, #FFF0E6 50%, #FCEAEA 100%);
+  --shadow-sm:   var(--elev-1);
+  --shadow-md:   var(--elev-2);
+  --shadow-lg:   var(--elev-3);
+  --shadow-xl:   var(--elev-4);
+  --shadow-2xl:  var(--elev-4);
+  --shadow-glow: 0 0 20px var(--glow-color);
 
-  /* Typography Scale */
-  --font-heading: 'Outfit', sans-serif;
-  --font-body:    'Inter', sans-serif;
-  
+  /* Typography */
+  --font-heading: "Outfit", sans-serif;
+  --font-body:    "Inter", sans-serif;
+
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -65,7 +151,7 @@
   --text-5xl: 3rem;
   --text-6xl: 3.75rem;
 
-  /* Spacing Scale */
+  /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -75,78 +161,151 @@
   --space-12: 3rem;
   --space-16: 4rem;
   --space-20: 5rem;
-  
-  --transition:   all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Minimum hit area. The audit measured 63-93% of interactive elements
+     on the live site below this. */
+  --tap-min: 44px;
+  --tap-comfortable: 48px;
+
+  --transition:      all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast: all 0.15s ease;
-  
-  --radius:       1.25rem;
-  --radius-sm:    0.75rem;
-  --radius-lg:    1.75rem;
-  --radius-full:  9999px;
+  /* Theme swap only. Short, so a toggle reads as instant, and scoped to
+     colour so layout never animates during it. */
+  --transition-theme: background-color 160ms linear, border-color 160ms linear, color 160ms linear;
 
-  /* Elevation System */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-glow: 0 0 20px var(--glow-color);
+  --radius:      1.25rem;
+  --radius-sm:   0.75rem;
+  --radius-lg:   1.75rem;
+  --radius-full: 9999px;
 }
 
-/* === DARK MODE === */
-body.dark-mode,
+/* Dark. A six-step ramp on warm-neutral slate rather than a near-black.
+   The previous ground (#060b18) sits at ~3% luminance, which leaves
+   nowhere to go below the base surface — a sunken well or an inset field
+   has to be faked with a border. Starting at #0F1520 keeps a real step in
+   both directions and stops shadow detail from crushing. */
+html.dark,
 [data-theme="dark"],
-.dark {
-  --background:     #060b18;
-  --background-alt: #0d1526;
-  --card-bg:        rgba(13, 21, 38, 0.85);
-  --card-border:    rgba(99, 102, 241, 0.25);
-  --text:           #f1f5f9;
-  --text-muted:     #94a3b8;
-  --border:         #1e2d4a;
-  --glow-color:     rgba(99, 102, 241, 0.4);
-  --nav-bg:         rgba(6, 11, 24, 0.9);
-  
-  --primary-light:  rgba(99, 102, 241, 0.15);
-  --primary-glass:  rgba(99, 102, 241, 0.2);
-  --secondary-light:rgba(249, 115, 22, 0.15);
-  --secondary-glass:rgba(249, 115, 22, 0.2);
-  --accent-light:   rgba(16, 185, 129, 0.15);
-  --accent-glass:   rgba(16, 185, 129, 0.2);
-  
-  --section-alt:    linear-gradient(135deg, #060b18 0%, #0d0520 100%);
-  --hero-bg:        linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+body.dark-mode {
+  color-scheme: dark;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  --ground:        #0F1520;
+  --ground-alt:    #131A27;
+  --sunken:        #0A0F18;
+  --surface-1:     #151C29;
+  --surface-2:     #1B2433;
+  --surface-3:     #232B3A;
+  --surface-4:     #2B3446;
+  --surface-glass: rgba(21, 28, 41, 0.72);
+
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(0,0,0,0.40);
+  --elev-2: 0 2px 6px rgba(0,0,0,0.45), 0 10px 20px -10px rgba(0,0,0,0.55);
+  --elev-3: 0 4px 12px rgba(0,0,0,0.50), 0 20px 40px -16px rgba(0,0,0,0.65);
+  --elev-4: 0 8px 20px rgba(0,0,0,0.55), 0 36px 72px -28px rgba(0,0,0,0.75);
+
+  --line:        #26303F;
+  --line-strong: #35415A;
+  --line-accent: rgba(0, 200, 128, 0.28);
+
+  --ink:         #F1F5F9;
+  --ink-muted:   #9AA8BC;
+  --ink-subtle:  #6B7C93;
+  --ink-inverse: #0F1520;
+
+  /* On slate the full-chroma emerald clears 7:1 against --surface-1, so
+     fill and label can be the same value. Its ink goes dark instead. */
+  --accent:       #00C880;
+  --accent-hover: #19D492;
+  --accent-text:  #2BE0A0;
+  --accent-quiet: rgba(0, 200, 128, 0.14);
+  --on-accent:    #052E21;
+  /* In dark the semantic fills are bright (#2BE0A0, #FBBF24), so white ink on
+     them fails contrast badly; the ink goes near-black instead. */
+  --on-solid: #0F1520;
+
+
+  --success: #2BE0A0;  --success-quiet: rgba(43, 224, 160, 0.14);
+  --warning: #FBBF24;  --warning-quiet: rgba(251, 191, 36, 0.14);
+  --danger:  #FF5273;  --danger-quiet:  rgba(255, 82, 115, 0.14);
+  --info:    #38BDF8;  --info-quiet:    rgba(56, 189, 248, 0.14);
+
+  --scrim: rgba(3, 6, 12, 0.65);
+
+  --primary-light:   rgba(0, 200, 128, 0.16);
+  --secondary:       #FF7A1A;
+  --secondary-hover: #E56200;
+  --secondary-light: rgba(255, 122, 26, 0.16);
+  --secondary-glass: rgba(255, 122, 26, 0.14);
+  --accent-light:    rgba(255, 82, 115, 0.16);
+  --accent-glass:    rgba(255, 82, 115, 0.14);
+
+  --glow-color: rgba(0, 200, 128, 0.28);
+
+  --section-alt: linear-gradient(135deg, #0F1520 0%, #131A27 100%);
+  --hero-bg:     linear-gradient(140deg, #0F1520 0%, #10261F 48%, #1B2433 100%);
 }
 
+/* System preference, for the first paint before any choice is stored.
+   Guarded on <html> having no explicit data-theme, which is where the
+   attribute is actually written. The previous guard tested <body> and
+   therefore could never match. */
 @media (prefers-color-scheme: dark) {
-  body:not(.light-mode):not([data-theme="light"]) {
-    --background:     #060b18;
-    --background-alt: #0d1526;
-    --card-bg:        rgba(13, 21, 38, 0.85);
-    --card-border:    rgba(99, 102, 241, 0.25);
-    --text:           #f1f5f9;
-    --text-muted:     #94a3b8;
-    --border:         #1e2d4a;
-    --glow-color:     rgba(99, 102, 241, 0.4);
-    --nav-bg:         rgba(6, 11, 24, 0.9);
-    
-    --primary-light:  rgba(99, 102, 241, 0.15);
-    --primary-glass:  rgba(99, 102, 241, 0.2);
-    --secondary-light:rgba(249, 115, 22, 0.15);
-    --secondary-glass:rgba(249, 115, 22, 0.2);
-    --accent-light:   rgba(16, 185, 129, 0.15);
-    --accent-glass:   rgba(16, 185, 129, 0.2);
-    
-    --section-alt:    linear-gradient(135deg, #060b18 0%, #0d0520 100%);
-    --hero-bg:        linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  html:not([data-theme]) {
+    color-scheme: dark;
 
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+    --ground:        #0F1520;
+    --ground-alt:    #131A27;
+    --sunken:        #0A0F18;
+    --surface-1:     #151C29;
+    --surface-2:     #1B2433;
+    --surface-3:     #232B3A;
+    --surface-4:     #2B3446;
+    --surface-glass: rgba(21, 28, 41, 0.72);
+
+    --elev-1: 0 1px 2px rgba(0,0,0,0.40);
+    --elev-2: 0 2px 6px rgba(0,0,0,0.45), 0 10px 20px -10px rgba(0,0,0,0.55);
+    --elev-3: 0 4px 12px rgba(0,0,0,0.50), 0 20px 40px -16px rgba(0,0,0,0.65);
+    --elev-4: 0 8px 20px rgba(0,0,0,0.55), 0 36px 72px -28px rgba(0,0,0,0.75);
+
+    --line:        #26303F;
+    --line-strong: #35415A;
+    --line-accent: rgba(0, 200, 128, 0.28);
+
+    --ink:         #F1F5F9;
+    --ink-muted:   #9AA8BC;
+    --ink-subtle:  #6B7C93;
+    --ink-inverse: #0F1520;
+
+    --accent:       #00C880;
+    --accent-hover: #19D492;
+    --accent-text:  #2BE0A0;
+    --accent-quiet: rgba(0, 200, 128, 0.14);
+    --on-accent:    #052E21;
+  /* In dark the semantic fills are bright (#2BE0A0, #FBBF24), so white ink on
+     them fails contrast badly; the ink goes near-black instead. */
+  --on-solid: #0F1520;
+
+
+    --success: #2BE0A0;  --success-quiet: rgba(43, 224, 160, 0.14);
+    --warning: #FBBF24;  --warning-quiet: rgba(251, 191, 36, 0.14);
+    --danger:  #FF5273;  --danger-quiet:  rgba(255, 82, 115, 0.14);
+    --info:    #38BDF8;  --info-quiet:    rgba(56, 189, 248, 0.14);
+
+    --scrim: rgba(3, 6, 12, 0.65);
+
+    --primary-light:   rgba(0, 200, 128, 0.16);
+    --secondary:       #FF7A1A;
+    --secondary-hover: #E56200;
+    --secondary-light: rgba(255, 122, 26, 0.16);
+    --secondary-glass: rgba(255, 122, 26, 0.14);
+    --accent-light:    rgba(255, 82, 115, 0.16);
+    --accent-glass:    rgba(255, 82, 115, 0.14);
+
+    --glow-color: rgba(0, 200, 128, 0.28);
+
+    --section-alt: linear-gradient(135deg, #0F1520 0%, #131A27 100%);
+    --hero-bg:     linear-gradient(140deg, #0F1520 0%, #10261F 48%, #1B2433 100%);
   }
 }
 
@@ -304,7 +463,10 @@ body {
   background: var(--background);
   color: var(--text);
   line-height: 1.65;
-  transition: background-color 0.4s ease, color 0.3s ease;
+  /* 400ms was long enough that a theme swap read as a slow fade rather than a
+     state change. Scoped to colour via --transition-theme so layout never
+     animates during it. */
+  transition: var(--transition-theme);
   /* Subtle dot-grid texture */
   background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
   background-size: 28px 28px;
@@ -537,7 +699,9 @@ img { max-width: 100%; display: block; object-fit: cover; }
    GRADIENT TEXT
    ============================================================ */
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary) 0%, #818cf8 40%, var(--secondary) 100%);
+  /* Was emerald -> #818cf8 (indigo) -> orange. The indigo midpoint dominated
+     the ramp and is not in the brand, so headings rendered violet. */
+  background: linear-gradient(135deg, var(--brand-emerald) 0%, var(--cyan) 45%, var(--brand-orange) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -552,6 +716,11 @@ img { max-width: 100%; display: block; object-fit: cover; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* The 0.85rem padding suggests ~45px, but any page that overrides padding —
+     and several do — dropped the button below the floor. The header's Sign Up
+     measured 40px tall. A min-height holds the hit area regardless of what a
+     caller does to the padding. */
+  min-height: var(--tap-min);
   padding: 0.85rem 2rem;
   font-family: var(--font-heading);
   font-weight: 600;
@@ -579,13 +748,18 @@ img { max-width: 100%; display: block; object-fit: cover; }
 .btn:active { transform: scale(0.97); }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), #818cf8);
-  color: white;
-  box-shadow: 0 8px 28px -6px rgba(99, 102, 241, 0.55);
+  /* Was a gradient into indigo with a hardcoded indigo shadow, and `color:
+     white` regardless of theme — white on the bright dark-mode emerald is
+     2.2:1. Now a flat accent fill with --on-accent, which is white in light
+     and near-black in dark, and clears 4.5:1 in both. */
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--elev-2);
 }
 .btn-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 36px -6px rgba(99, 102, 241, 0.65);
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--elev-3);
 }
 
 .btn-secondary {
@@ -922,11 +1096,14 @@ body.dark-mode .form-input,
 
 /* ── Animated Mesh Gradient Background ── */
 .mesh-gradient-bg {
+  /* Was led by rgba(99,102,241,.15) — indigo — at 20% 50%, the largest stop and
+     the one behind the hero copy. Re-led with the brand emerald, with cyan and
+     orange as the supporting stops. */
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 80%, rgba(249, 115, 22, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse at 40% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 50%, rgba(0, 200, 128, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 217, 245, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(255, 106, 0, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 30%, rgba(0, 200, 128, 0.06) 0%, transparent 50%),
     var(--background);
   background-size: 200% 200%;
   animation: meshShift 20s ease-in-out infinite;
@@ -934,11 +1111,11 @@ body.dark-mode .form-input,
 
 .mesh-gradient-dark {
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.25) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.20) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 80%, rgba(225, 29, 72, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 40% 30%, rgba(245, 158, 11, 0.10) 0%, transparent 50%),
-    #060b18;
+    radial-gradient(ellipse at 20% 50%, rgba(0, 200, 128, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 217, 245, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(255, 106, 0, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 30%, rgba(0, 200, 128, 0.08) 0%, transparent 50%),
+    var(--ground);
   background-size: 200% 200%;
   animation: meshShift 20s ease-in-out infinite;
 }
@@ -999,8 +1176,11 @@ body.dark-mode .form-input,
 body.dark-mode .glass-card-v2-light,
 [data-theme="dark"] .glass-card-v2-light,
 .dark .glass-card-v2-light {
-  background: rgba(13, 21, 38, 0.75);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  /* Every card on every dark page was outlined in indigo, which is the single
+     biggest reason the dark theme read as a different product. Now the slate
+     surface and emerald-tinted line from the token ramp. */
+  background: var(--surface-1);
+  border: 1px solid var(--line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 10px 40px -10px rgba(0, 0, 0, 0.5),
@@ -1010,7 +1190,7 @@ body.dark-mode .glass-card-v2-light,
 body.dark-mode .glass-card-v2-light:hover,
 [data-theme="dark"] .glass-card-v2-light:hover,
 .dark .glass-card-v2-light:hover {
-  background: rgba(13, 21, 38, 0.9);
+  background: var(--surface-2);
 }
 
 .glass-card-v2-light:hover {
@@ -1025,7 +1205,10 @@ body.dark-mode .glass-card-v2-light:hover,
 
 /* ── Gradient Text V2 — Vibrant Emerald→Indigo→Violet ── */
 .gradient-text-v2 {
-  background: linear-gradient(135deg, #10B981 0%, #6366F1 50%, #8B5CF6 100%);
+  /* Was emerald -> #6366F1 -> #8B5CF6, i.e. two thirds violet. This is the
+     class on the hero's "Connected", so the single largest word on the site
+     was rendered in a colour that appears nowhere else in the brand. */
+  background: linear-gradient(120deg, var(--brand-emerald) 0%, var(--cyan) 50%, var(--brand-orange) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1228,4 +1411,28 @@ body.dark-mode .glass-card-v2-light:hover,
 @keyframes marquee {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
+}
+
+/* ── Row actions that appear on hover ──────────────────────────────────────
+   Five admin tables used `opacity-0 group-hover:opacity-100` for their row
+   action buttons. That works with a mouse and fails everywhere else: a touch
+   device has no hover, so the controls were unreachable, and a keyboard user
+   could focus a button that rendered nothing.
+
+   This hides them only when a fine pointer is available — so phones and
+   tablets always show them — and reveals them on focus-within as well as
+   hover, so tabbing into a row brings its actions up. */
+.reveal-actions {
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group:not(:hover) .reveal-actions:not(:focus-within) {
+    opacity: 0;
+  }
+  .group:hover .reveal-actions,
+  .reveal-actions:focus-within {
+    opacity: 1;
+  }
 }

@@ -32,11 +32,16 @@ const Button = React.forwardRef(({
     icon: "btn-icon"
   };
   
+  // Every size carries the 44px hit-area floor. `sm` rendered at 35px tall,
+  // and it is the size used for in-card actions across the site — six of the
+  // fifteen remaining under-target elements on the landing page were a single
+  // `size="sm"` button repeated in a grid. Fixing the primitive fixes all of
+  // them, which is the point of having a primitive.
   const sizes = {
-    sm: "px-3 py-1.5 text-sm gap-1.5",
-    md: "px-6 py-3 text-base gap-2",
-    lg: "px-8 py-4 text-lg gap-3",
-    icon: "p-2",
+    sm: "px-3.5 py-1.5 min-h-[var(--tap-min)] text-sm gap-1.5",
+    md: "px-6 py-3 min-h-[var(--tap-min)] text-base gap-2",
+    lg: "px-8 py-4 min-h-[var(--tap-comfortable)] text-lg gap-3",
+    icon: "p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)]",
   };
 
   const buttonClasses = cn(

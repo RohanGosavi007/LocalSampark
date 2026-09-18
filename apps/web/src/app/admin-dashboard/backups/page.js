@@ -182,7 +182,7 @@ export default function BackupsDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 reveal-actions">
                       <button 
                         onClick={() => handleRestore(backup.id)}
                         disabled={restoringId === backup.id}

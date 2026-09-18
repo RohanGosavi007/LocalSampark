@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
 import { fetchJson } from '../../lib/api';
 
-const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
-const btnPrimary = { padding: '0.5rem 1rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
-const btnSuccess = { ...btnPrimary, background: '#10b981' };
-const btnDanger = { ...btnPrimary, background: '#ef4444' };
+const cardStyle = { background: 'var(--surface-1)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+const btnPrimary = { padding: '0.5rem 1rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
+const btnSuccess = { ...btnPrimary, background: 'var(--success)' };
+const btnDanger = { ...btnPrimary, background: 'var(--danger)' };
 
 export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
   const [features, setFeatures] = useState([]);
@@ -83,9 +83,9 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
   };
 
   const phaseGrouped = {
-    1: { name: 'Phase 1: The Wedge (Months 1-3)', color: '#38bdf8', items: features.filter(f => f.phase === 1) },
-    2: { name: 'Phase 2: The Expansion (Months 4-8)', color: '#facc15', items: features.filter(f => f.phase === 2) },
-    3: { name: 'Phase 3: The Super-App (Months 9-12)', color: '#a855f7', items: features.filter(f => f.phase === 3) }
+    1: { name: 'Phase 1: The Wedge (Months 1-3)', color: 'var(--info)', items: features.filter(f => f.phase === 1) },
+    2: { name: 'Phase 2: The Expansion (Months 4-8)', color: 'var(--warning)', items: features.filter(f => f.phase === 2) },
+    3: { name: 'Phase 3: The Super-App (Months 9-12)', color: 'var(--accent-text)', items: features.filter(f => f.phase === 3) }
   };
 
   return (
@@ -94,7 +94,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>🚀 10x Go-To-Market Launch Control Center</h2>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Dynamically control module availability, hyper-local beta pincodes, and 'Coming Soon' experiences.</p>
+          <p style={{ color: 'var(--ink-muted)', margin: 0 }}>Dynamically control module availability, hyper-local beta pincodes, and 'Coming Soon' experiences.</p>
         </div>
         <button onClick={fetchFeatures} style={btnPrimary}>{loading ? 'Refreshing...' : 'Refresh Matrix'}</button>
       </div>
@@ -130,11 +130,11 @@ function FeatureCard({ feature, onToggle, onSaveDetails, isSaving }) {
   const [error, setError] = useState(null);
 
   return (
-    <div style={{ ...cardStyle, borderLeft: feature.is_enabled ? '4px solid #10b981' : '4px solid #ef4444' }}>
+    <div style={{ ...cardStyle, borderLeft: feature.is_enabled ? '4px solid var(--success)' : '4px solid var(--danger)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
         <div>
-          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', color: '#f8fafc' }}>{feature.title}</h4>
-          <span style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>{feature.feature_key}</span>
+          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', color: 'var(--ink)' }}>{feature.title}</h4>
+          <span style={{ fontSize: '0.75rem', color: 'var(--ink-subtle)', fontFamily: 'monospace' }}>{feature.feature_key}</span>
         </div>
         <button 
           onClick={onToggle} 
@@ -145,12 +145,12 @@ function FeatureCard({ feature, onToggle, onSaveDetails, isSaving }) {
         </button>
       </div>
 
-      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.25rem' }}>{feature.description}</p>
+      <p style={{ color: 'var(--ink-muted)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>{feature.description}</p>
 
       {/* Config details */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: '#0f172a', padding: '1rem', borderRadius: '0.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--ground)', padding: '1rem', borderRadius: '0.5rem' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 600 }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>
             Beta Pincodes (comma separated for soft-launch):
           </label>
           <input 
@@ -158,33 +158,33 @@ function FeatureCard({ feature, onToggle, onSaveDetails, isSaving }) {
             value={pincodes} 
             onChange={e => setPincodes(e.target.value)}
             placeholder="e.g. 411001, 411002"
-            style={{ width: '100%', padding: '0.4rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '0.25rem', fontSize: '0.8rem' }}
+            style={{ width: '100%', padding: '0.4rem', background: 'var(--surface-1)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: '0.25rem', fontSize: '0.8rem' }}
           />
         </div>
 
         {!feature.is_enabled && (
           <>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 600 }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>
                 'Coming Soon' Modal Headline:
               </label>
               <input 
                 type="text" 
                 value={headline} 
                 onChange={e => setHeadline(e.target.value)}
-                style={{ width: '100%', padding: '0.4rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '0.25rem', fontSize: '0.8rem' }}
+                style={{ width: '100%', padding: '0.4rem', background: 'var(--surface-1)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: '0.25rem', fontSize: '0.8rem' }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 600 }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>
                 'Coming Soon' Message Body:
               </label>
               <textarea 
                 value={message} 
                 onChange={e => setMessage(e.target.value)}
                 rows={2}
-                style={{ width: '100%', padding: '0.4rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '0.25rem', fontSize: '0.8rem' }}
+                style={{ width: '100%', padding: '0.4rem', background: 'var(--surface-1)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: '0.25rem', fontSize: '0.8rem' }}
               />
             </div>
           </>

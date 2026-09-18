@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
 import { fetchJson } from '../../lib/api';
 
-const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
-const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
-const btnDanger = { ...btnPrimary, background: '#ef4444' };
-const btnSuccess = { ...btnPrimary, background: '#10b981' };
+const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+const btnPrimary = { padding: '0.6rem 1.2rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
+const btnDanger = { ...btnPrimary, background: 'var(--danger)' };
+const btnSuccess = { ...btnPrimary, background: 'var(--success)' };
 
 export default function DeliveryTab({ API_BASE, authHeaders }) {
   const [agents, setAgents] = useState([]);
@@ -51,7 +51,7 @@ export default function DeliveryTab({ API_BASE, authHeaders }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.5rem 0' }}>🚴 Delivery Fleet Management</h3>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>Onboard delivery agents, verify documents, track live fleet status, and monitor delivery performance across zones.</p>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>Onboard delivery agents, verify documents, track live fleet status, and monitor delivery performance across zones.</p>
           </div>
           <button onClick={fetchAgents} style={btnPrimary}>{loading ? 'Loading...' : 'Refresh'}</button>
         </div>
@@ -59,31 +59,31 @@ export default function DeliveryTab({ API_BASE, authHeaders }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #334155' }}>
+              <tr style={{ borderBottom: '1px solid var(--line)' }}>
                 {['Agent Name', 'Phone', 'Zone', 'Vehicle', 'Status', 'Total Deliveries', 'Actions'].map(h => 
-                  <th key={h} style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600 }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600 }}>{h}</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {agents.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No delivery agents found.</td></tr>
+                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--ink-subtle)' }}>No delivery agents found.</td></tr>
               ) : agents.map((agent) => (
-                <tr key={agent.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#f8fafc' }}>{agent.name || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{agent.phone || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#64748b' }}>{agent.zone || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{agent.vehicle_type || '—'}</td>
+                <tr key={agent.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: 'var(--ink)' }}>{agent.name || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-muted)' }}>{agent.phone || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-subtle)' }}>{agent.zone || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-muted)' }}>{agent.vehicle_type || '—'}</td>
                   <td style={{ padding: '0.85rem 1rem' }}>
                     <span style={{ 
-                      background: agent.status === 'active' ? '#052e16' : (agent.status === 'pending' ? '#431407' : '#1e1b4b'), 
-                      color: agent.status === 'active' ? '#4ade80' : (agent.status === 'pending' ? '#fb923c' : '#a5b4fc'), 
+                      background: agent.status === 'active' ? 'var(--success-quiet)' : (agent.status === 'pending' ? 'var(--warning-quiet)' : 'var(--accent-quiet)'), 
+                      color: agent.status === 'active' ? 'var(--success)' : (agent.status === 'pending' ? 'var(--warning)' : 'var(--accent-text)'), 
                       padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700 
                     }}>
                       {agent.status === 'active' ? 'Active' : (agent.status === 'pending' ? 'Pending' : 'Offline')}
                     </span>
                   </td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{agent.total_deliveries || 0}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-muted)' }}>{agent.total_deliveries || 0}</td>
                   <td style={{ padding: '0.85rem 1rem', display: 'flex', gap: '0.5rem' }}>
                     {agent.status === 'pending' && (
                       <button onClick={() => handleStatusChange(agent.id, 'active')} style={{ ...btnSuccess, padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}>Approve</button>

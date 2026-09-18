@@ -1,10 +1,180 @@
-/* apps/admin/src/app/globals.css */
+/* apps/admin/src/app/globals.css
+   ============================================================
+   FRANCHISE CONSOLE — THEME LAYER
+   ------------------------------------------------------------
+   This file was 44 lines of hardcoded slate: `background-color: #0f172a` on
+   the body, `#1e293b` on the sidebar, `#334155` on its borders. The console had
+   no Tailwind, no PostCSS and no tokens, and the 41 tab components carried
+   1,070 inline style objects with 1,092 literal hex values between them. It was
+   dark-only with no path to a light mode.
+
+   The values below mirror apps/web/src/app/globals.css and
+   packages/shared/design-tokens.js, so the console and the consumer site share
+   one palette instead of two that drift. Token names are identical across the
+   two apps on purpose: a component moved between them keeps working.
+
+   Only 66 distinct colours were in use, and the nine commonest accounted for
+   ~810 of the 1,092 occurrences, which is what made a mechanical sweep onto
+   these tokens possible.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --brand-emerald: #00C880;
+  --brand-orange:  #FF6A00;
+
+  /* Elevation ramp */
+  --ground:      #F6F8FB;
+  --ground-alt:  #FFFFFF;
+  --sunken:      #EEF2F7;
+  --surface-1:   #FFFFFF;
+  --surface-2:   #FFFFFF;
+  --surface-3:   #FFFFFF;
+
+  --elev-1: 0 1px 2px rgba(15,23,41,0.05);
+  --elev-2: 0 2px 4px rgba(15,23,41,0.06), 0 8px 16px -8px rgba(15,23,41,0.10);
+  --elev-3: 0 4px 8px rgba(15,23,41,0.07), 0 16px 32px -12px rgba(15,23,41,0.14);
+
+  /* Lines */
+  --line:        #E3E8EF;
+  --line-strong: #CBD5E1;
+  --line-accent: rgba(0, 132, 83, 0.32);
+
+  /* Ink */
+  --ink:         #0F1729;
+  --ink-muted:   #5A6B84;
+  --ink-subtle:  #8496AC;
+  --ink-inverse: #FFFFFF;
+
+  /* Accent. #008453 clears 4.5:1 against white in both directions, so it works
+     as a fill under a white label and as text on a light surface. */
+  --accent:       #008453;
+  --accent-hover: #00734A;
+  --accent-text:  #008453;
+  --accent-quiet: rgba(0, 132, 83, 0.10);
+  --on-accent:    #FFFFFF;
+  /* Ink for text sitting on a saturated semantic fill (a success chip, a
+     danger button). In light the fills are dark, so white is correct. */
+  --on-solid: #FFFFFF;
+
+
+  --success: #0A7D53;  --success-quiet: rgba(10, 125, 83, 0.10);
+  --warning: #B45309;  --warning-quiet: rgba(180, 83, 9, 0.10);
+  --danger:  #D42348;  --danger-quiet:  rgba(212, 35, 72, 0.10);
+  --info:    #0369A1;  --info-quiet:    rgba(3, 105, 161, 0.10);
+
+  --scrim: rgba(15, 23, 41, 0.45);
+
+  --radius:    1rem;
+  --radius-sm: 0.625rem;
+
+  /* 44px is the hit-area floor Apple and Android both publish. */
+  --tap-min: 44px;
+  --tap-comfortable: 48px;
+
+  --transition-theme: background-color 160ms linear, border-color 160ms linear, color 160ms linear;
+}
+
+html.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ground:      #0F1520;
+  --ground-alt:  #131A27;
+  --sunken:      #0A0F18;
+  --surface-1:   #151C29;
+  --surface-2:   #1B2433;
+  --surface-3:   #232B3A;
+
+  --elev-1: 0 1px 2px rgba(0,0,0,0.40);
+  --elev-2: 0 2px 6px rgba(0,0,0,0.45), 0 10px 20px -10px rgba(0,0,0,0.55);
+  --elev-3: 0 4px 12px rgba(0,0,0,0.50), 0 20px 40px -16px rgba(0,0,0,0.65);
+
+  --line:        #26303F;
+  --line-strong: #35415A;
+  --line-accent: rgba(0, 200, 128, 0.28);
+
+  --ink:         #F1F5F9;
+  --ink-muted:   #9AA8BC;
+  --ink-subtle:  #6B7C93;
+  --ink-inverse: #0F1520;
+
+  --accent:       #00C880;
+  --accent-hover: #19D492;
+  --accent-text:  #2BE0A0;
+  --accent-quiet: rgba(0, 200, 128, 0.14);
+  --on-accent:    #052E21;
+  /* In dark the semantic fills are bright (#2BE0A0, #FBBF24), so white ink on
+     them fails contrast badly; the ink goes near-black instead. */
+  --on-solid: #0F1520;
+
+
+  --success: #2BE0A0;  --success-quiet: rgba(43, 224, 160, 0.14);
+  --warning: #FBBF24;  --warning-quiet: rgba(251, 191, 36, 0.14);
+  --danger:  #FF5273;  --danger-quiet:  rgba(255, 82, 115, 0.14);
+  --info:    #38BDF8;  --info-quiet:    rgba(56, 189, 248, 0.14);
+
+  --scrim: rgba(3, 6, 12, 0.65);
+}
+
+/* First paint before any preference is stored. Guarded on <html> having no
+   explicit data-theme, which is where the attribute is written. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    color-scheme: dark;
+
+    --ground:      #0F1520;
+    --ground-alt:  #131A27;
+    --sunken:      #0A0F18;
+    --surface-1:   #151C29;
+    --surface-2:   #1B2433;
+    --surface-3:   #232B3A;
+
+    --elev-1: 0 1px 2px rgba(0,0,0,0.40);
+    --elev-2: 0 2px 6px rgba(0,0,0,0.45), 0 10px 20px -10px rgba(0,0,0,0.55);
+    --elev-3: 0 4px 12px rgba(0,0,0,0.50), 0 20px 40px -16px rgba(0,0,0,0.65);
+
+    --line:        #26303F;
+    --line-strong: #35415A;
+    --line-accent: rgba(0, 200, 128, 0.28);
+
+    --ink:         #F1F5F9;
+    --ink-muted:   #9AA8BC;
+    --ink-subtle:  #6B7C93;
+    --ink-inverse: #0F1520;
+
+    --accent:       #00C880;
+    --accent-hover: #19D492;
+    --accent-text:  #2BE0A0;
+    --accent-quiet: rgba(0, 200, 128, 0.14);
+    --on-accent:    #052E21;
+  /* In dark the semantic fills are bright (#2BE0A0, #FBBF24), so white ink on
+     them fails contrast badly; the ink goes near-black instead. */
+  --on-solid: #0F1520;
+
+
+    --success: #2BE0A0;  --success-quiet: rgba(43, 224, 160, 0.14);
+    --warning: #FBBF24;  --warning-quiet: rgba(251, 191, 36, 0.14);
+    --danger:  #FF5273;  --danger-quiet:  rgba(255, 82, 115, 0.14);
+    --info:    #38BDF8;  --info-quiet:    rgba(56, 189, 248, 0.14);
+
+    --scrim: rgba(3, 6, 12, 0.65);
+  }
+}
+
+/* ── Shell ─────────────────────────────────────────────────── */
+
+* , *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #0f172a; /* Slate 900 */
-  color: #f8fafc; /* Slate 50 */
+  background-color: var(--ground);
+  color: var(--ink);
+  transition: var(--transition-theme);
 }
 
 .admin-layout {
@@ -14,18 +184,35 @@ body {
 
 .sidebar {
   width: 290px;
-  background-color: #1e293b; /* Slate 800 */
-  border-right: 1px solid #334155; /* Slate 700 */
+  background-color: var(--surface-1);
+  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s;
+  transition: width 0.3s, var(--transition-theme);
 }
 
 .main-content {
   flex: 1;
   padding: 2.5rem;
-  background-color: #0f172a;
+  background-color: var(--ground);
   overflow-y: auto;
+}
+
+/* Every interactive element in the console gets the hit-area floor, so the 41
+   tab components do not each have to remember it. The audit measured 63-93% of
+   controls on the consumer site below 44px; this console was never measured but
+   is built the same way. */
+button,
+.admin-layout a[role='button'],
+select {
+  min-height: var(--tap-min);
+}
+
+/* A visible focus ring. The console had none, so keyboard operation was
+   possible but invisible. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media (max-width: 768px) {
@@ -35,7 +222,7 @@ body {
   .sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #334155;
+    border-bottom: 1px solid var(--line);
     height: auto;
   }
   .main-content {

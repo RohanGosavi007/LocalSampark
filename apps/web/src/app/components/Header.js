@@ -11,13 +11,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import VoiceSearch from '../../components/VoiceSearch';
+import { ThemeToggle } from './ui/ThemeToggle';
 
 const AccountDropdown = dynamic(() => import('./AccountDropdown'), { ssr: false });
 
 export default function Header() {
   const { user, activeRole, assignedRoles, switchRole, logout, mockLogin } = useAuth();
   const { t } = useLanguage();
-  const [darkMode, setDarkMode] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [scrolled, setScrolled] = useState(false);
@@ -35,16 +35,6 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    setDarkMode(document.body.classList.contains('dark-mode'));
-  }, []);
-
-  const toggleTheme = () => {
-    localStorage.setItem('theme', darkMode ? 'light' : 'dark');
-    // Full reload so every page/section (which may read theme only on mount) re-renders consistently
-    window.location.reload();
-  };
 
   const handleSaveLocation = (e) => {
     e.preventDefault();
@@ -281,7 +271,7 @@ export default function Header() {
             />
             <button 
               onClick={() => setShowVoiceSearch(true)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
             >
               <Mic className="w-4 h-4" />
             </button>
@@ -333,15 +323,13 @@ export default function Header() {
 
           {/* Dev Quick Login moved to FloatingDevDock component */}
 
-          <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors">
-            {darkMode ? '☀️' : '🌙'}
-          </button>
+          <ThemeToggle />
 
           {/* Cart Icon */}
           <a 
             href="/checkout"
             aria-label="Open Shopping Cart"
-            className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative block"
+            className="p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative"
           >
             <ShoppingCart className="w-5 h-5" />
             <span className="absolute top-0 right-0 w-4 h-4 bg-secondary text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-background">
@@ -393,8 +381,8 @@ export default function Header() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <a href="/login" className="hidden sm:block text-sm font-semibold text-text hover:text-primary transition-colors px-2">Log In</a>
-              <a href="/register" className="btn btn-primary px-4 py-2 text-sm h-10 rounded-full flex items-center gap-2 shadow-md">
+              <a href="/login" className="hidden sm:inline-flex items-center text-sm font-semibold text-text hover:text-primary transition-colors px-3 min-h-[var(--tap-min)]">Log In</a>
+              <a href="/register" className="btn btn-primary px-4 py-2 text-sm rounded-full flex items-center gap-2 shadow-md">
                 <User className="w-4 h-4" /> <span className="hidden sm:inline">Sign Up</span>
               </a>
             </div>
@@ -402,7 +390,7 @@ export default function Header() {
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="2xl:hidden p-2 text-text-muted hover:text-text focus:outline-none"
+            className="2xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

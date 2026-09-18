@@ -10,6 +10,10 @@ export default function AdminLoginPage() {
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1); // 1 = Phone, 2 = Pin + OTP
   const [message, setMessage] = useState('');
+  // The three failure paths all prefix with ❌; the two success paths use 🔐
+  // and ✅. Deriving the tone from the message keeps one source of truth rather
+  // than a second piece of state that can fall out of step with it.
+  const isFailure = message.startsWith('❌');
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = async (e) => {
@@ -70,37 +74,45 @@ export default function AdminLoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0f172a',
+      background: 'var(--ground)',
       fontFamily: 'Inter, system-ui, sans-serif',
-      color: '#f8fafc',
+      color: 'var(--ink)',
       padding: '1rem'
     }}>
       <div style={{
         width: '100%',
         maxWidth: '420px',
         padding: '2.5rem',
-        background: '#1e293b',
+        background: 'var(--surface-1)',
         borderRadius: '1rem',
-        border: '1px solid #334155',
+        border: '1px solid var(--line)',
         boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span style={{ fontSize: '3rem' }}>🔒</span>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '1rem', color: '#fff' }}>LocalSampark Control Center</h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>Authorized Personnel Only</p>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '1rem', color: 'var(--ink)' }}>LocalSampark Control Center</h2>
+          <p style={{ color: 'var(--ink-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>Authorized Personnel Only</p>
         </div>
 
         {message && (
-          <div style={{
-            padding: '0.75rem',
-            borderRadius: '0.5rem',
-            background: 'rgba(79, 70, 229, 0.15)',
-            border: '1px solid #4f46e5',
-            color: '#818cf8',
-            fontSize: '0.85rem',
-            marginBottom: '1.5rem',
-            fontWeight: 600
-          }}>
+          /* One style served every message, so "Login Failed" and "Dev login
+             failed" rendered in the success green with an indigo wash — a
+             failure that reads as a success. The tone now follows the message:
+             all three failure paths prefix with ❌. */
+          <div
+            role={isFailure ? 'alert' : 'status'}
+            aria-live={isFailure ? 'assertive' : 'polite'}
+            style={{
+              padding: '0.75rem',
+              borderRadius: '0.5rem',
+              background: isFailure ? 'var(--danger-quiet)' : 'var(--success-quiet)',
+              border: `1px solid ${isFailure ? 'var(--danger)' : 'var(--success)'}`,
+              color: isFailure ? 'var(--danger)' : 'var(--success)',
+              fontSize: '0.85rem',
+              marginBottom: '1.5rem',
+              fontWeight: 600
+            }}
+          >
             {message}
           </div>
         )}
@@ -108,7 +120,7 @@ export default function AdminLoginPage() {
         {step === 1 ? (
           <form onSubmit={handleSendOtp}>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>ADMIN PHONE NUMBER</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--ink-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>ADMIN PHONE NUMBER</label>
               <input
                 type="tel"
                 placeholder="e.g. +91 99999 99999"
@@ -119,9 +131,9 @@ export default function AdminLoginPage() {
                   width: '100%',
                   padding: '0.75rem 1rem',
                   borderRadius: '0.5rem',
-                  border: '1px solid #334155',
-                  background: '#0f172a',
-                  color: '#fff',
+                  border: '1px solid var(--line)',
+                  background: 'var(--ground)',
+                  color: 'var(--ink)',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box'
                 }}
@@ -133,8 +145,8 @@ export default function AdminLoginPage() {
               style={{
                 width: '100%',
                 padding: '0.75rem',
-                background: '#4f46e5',
-                color: '#fff',
+                background: 'var(--accent)',
+                color: 'var(--on-solid)',
                 border: 'none',
                 borderRadius: '0.5rem',
                 fontWeight: 700,
@@ -149,7 +161,7 @@ export default function AdminLoginPage() {
         ) : (
           <form onSubmit={handleAdminVerify}>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>ENTER SMS OTP</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--ink-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>ENTER SMS OTP</label>
               <input
                 type="text"
                 placeholder="XXXXXX"
@@ -160,16 +172,16 @@ export default function AdminLoginPage() {
                   width: '100%',
                   padding: '0.75rem 1rem',
                   borderRadius: '0.5rem',
-                  border: '1px solid #334155',
-                  background: '#0f172a',
-                  color: '#fff',
+                  border: '1px solid var(--line)',
+                  background: 'var(--ground)',
+                  color: 'var(--ink)',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box'
                 }}
               />
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>ENTER 6-DIGIT ADMIN PIN</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--ink-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>ENTER 6-DIGIT ADMIN PIN</label>
               <input
                 type="password"
                 placeholder="••••••"
@@ -181,9 +193,9 @@ export default function AdminLoginPage() {
                   width: '100%',
                   padding: '0.75rem 1rem',
                   borderRadius: '0.5rem',
-                  border: '1px solid #334155',
-                  background: '#0f172a',
-                  color: '#fff',
+                  border: '1px solid var(--line)',
+                  background: 'var(--ground)',
+                  color: 'var(--ink)',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
                   letterSpacing: '0.25em'
@@ -196,8 +208,8 @@ export default function AdminLoginPage() {
               style={{
                 width: '100%',
                 padding: '0.75rem',
-                background: '#10b981',
-                color: '#fff',
+                background: 'var(--success)',
+                color: 'var(--on-solid)',
                 border: 'none',
                 borderRadius: '0.5rem',
                 fontWeight: 700,
@@ -214,7 +226,7 @@ export default function AdminLoginPage() {
                 width: '100%',
                 background: 'none',
                 border: 'none',
-                color: '#6366f1',
+                color: 'var(--accent-text)',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 marginTop: '1.25rem',
@@ -226,15 +238,15 @@ export default function AdminLoginPage() {
           </form>
         )}
 
-        <div style={{ marginTop: '2rem', borderTop: '1px solid #334155', paddingTop: '1.25rem' }}>
+        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--line)', paddingTop: '1.25rem' }}>
           <button
             onClick={handleQuickLogin}
             style={{
               width: '100%',
               padding: '0.5rem',
-              background: '#0f172a',
-              color: '#94a3b8',
-              border: '1px solid #334155',
+              background: 'var(--ground)',
+              color: 'var(--ink-muted)',
+              border: '1px solid var(--line)',
               borderRadius: '0.35rem',
               fontSize: '0.75rem',
               fontWeight: 600,

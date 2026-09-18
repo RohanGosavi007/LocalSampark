@@ -103,7 +103,7 @@ export default function ShopCategoriesPage() {
                   <p className="text-slate-500 dark:text-slate-400 text-xs">/{cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-')}</p>
                 </div>
               </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+              <div className="flex gap-2 reveal-actions">
                 <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-white transition"><Edit2 className="w-4 h-4"/></button>
                 <button className="p-2 text-red-400 hover:text-red-300 transition"><Trash2 className="w-4 h-4"/></button>
               </div>

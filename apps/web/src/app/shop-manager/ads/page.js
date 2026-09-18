@@ -139,7 +139,7 @@ export default function AdsManagerPage() {
                       <p className="font-bold text-emerald-600">{c.roas}x</p>
                     </td>
                     <td className="p-4 pr-6 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-2 reveal-actions">
                         <button onClick={() => toggleCampaign(c.id)} className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-blue-100 hover:text-blue-600 transition-colors">
                           {c.status === 'active' ? <Pause size={16} /> : <Play size={16} />}
                         </button>

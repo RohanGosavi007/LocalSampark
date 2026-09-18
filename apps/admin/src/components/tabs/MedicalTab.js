@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
 import { fetchJson } from '../../lib/api';
 
-const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
-const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
-const btnDanger = { ...btnPrimary, background: '#ef4444' };
-const btnSuccess = { ...btnPrimary, background: '#10b981' };
+const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+const btnPrimary = { padding: '0.6rem 1.2rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
+const btnDanger = { ...btnPrimary, background: 'var(--danger)' };
+const btnSuccess = { ...btnPrimary, background: 'var(--success)' };
 
 export default function MedicalTab({ API_BASE, authHeaders }) {
   const [dataList, setDataList] = useState([]);
@@ -50,8 +50,8 @@ export default function MedicalTab({ API_BASE, authHeaders }) {
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.5rem 0', color: '#f8fafc' }}>🏥 Medical & Health Services</h3>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>Manage registered health service providers, clinics. Verify medical practitioner credentials.</p>
+            <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.5rem 0', color: 'var(--ink)' }}>🏥 Medical & Health Services</h3>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>Manage registered health service providers, clinics. Verify medical practitioner credentials.</p>
           </div>
           <button onClick={fetchData} style={btnPrimary}>{loading ? 'Loading...' : 'Refresh'}</button>
         </div>
@@ -59,26 +59,26 @@ export default function MedicalTab({ API_BASE, authHeaders }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #334155' }}>
+              <tr style={{ borderBottom: '1px solid var(--line)' }}>
                 {['Doctor / Provider Name', 'Specialization', 'License No', 'Clinic', 'Consultation Fee', 'Verified', 'Actions'].map(h => 
-                  <th key={h} style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600 }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600 }}>{h}</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {dataList.length === 0 ? (
-                <tr><td colSpan={10} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No medical practitioners registered yet.</td></tr>
+                <tr><td colSpan={10} style={{ padding: '2rem', textAlign: 'center', color: 'var(--ink-subtle)' }}>No medical practitioners registered yet.</td></tr>
               ) : dataList.map((item, i) => (
-                <tr key={item.id || i} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#f8fafc' }}>{item.name || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{item.specialization || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#94a3b8' }}>{item.license_no || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#64748b' }}>{item.clinic_name || '—'}</td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#4ade80', fontWeight: 700 }}>₹{item.consultation_fee || 500}</td>
+                <tr key={item.id || i} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: 'var(--ink)' }}>{item.name || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-muted)' }}>{item.specialization || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-muted)' }}>{item.license_no || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-subtle)' }}>{item.clinic_name || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', color: 'var(--success)', fontWeight: 700 }}>₹{item.consultation_fee || 500}</td>
                   <td style={{ padding: '0.85rem 1rem' }}>
                     <span style={{ 
-                      background: item.is_verified ? '#052e16' : '#1e1b4b', 
-                      color: item.is_verified ? '#4ade80' : '#a5b4fc', 
+                      background: item.is_verified ? 'var(--success-quiet)' : 'var(--accent-quiet)', 
+                      color: item.is_verified ? 'var(--success)' : 'var(--accent-text)', 
                       padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700 
                     }}>
                       {item.is_verified ? 'Verified' : 'Pending'}

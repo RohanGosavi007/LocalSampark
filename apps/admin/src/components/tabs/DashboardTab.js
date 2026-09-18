@@ -6,17 +6,17 @@ import React from 'react';
 // of its own. The parent surfaces load failures.
 
 export default function DashboardTab({ summaryStats, pendingShops, API_BASE, authHeaders, approveShop, rejectShop }) {
-  const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
-  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600, borderBottom: '1px solid #334155' };
-  const tdStyle = { padding: '0.85rem 1rem', color: '#cbd5e1', borderBottom: '1px solid #1e293b' };
-  const btnSuccess = { background: '#10b981', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 };
-  const btnDanger = { background: '#ef4444', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 };
+  const cardStyle = { background: 'var(--surface-1)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600, borderBottom: '1px solid var(--line)' };
+  const tdStyle = { padding: '0.85rem 1rem', color: 'var(--ink)', borderBottom: '1px solid var(--line)' };
+  const btnSuccess = { background: 'var(--success)', color: 'var(--on-solid)', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 };
+  const btnDanger = { background: 'var(--danger)', color: 'var(--on-solid)', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 };
 
   const stats = [
-    { label: 'Total Revenue', value: summaryStats?.totalRevenue ? `₹${summaryStats.totalRevenue.toLocaleString()}` : '₹14,82,900', color: '#10b981', icon: '💰' },
-    { label: 'Active Shops', value: summaryStats?.totalShops ? summaryStats.totalShops.toLocaleString() : '1,248', color: '#3b82f6', icon: '🏪' },
-    { label: 'Pending Approvals', value: (pendingShops || []).length || '12', color: '#f59e0b', icon: '⏳' },
-    { label: 'Franchise Partners', value: summaryStats?.franchisePartners ? summaryStats.franchisePartners : '42', color: '#8b5cf6', icon: '🏢' }
+    { label: 'Total Revenue', value: summaryStats?.totalRevenue ? `₹${summaryStats.totalRevenue.toLocaleString()}` : '₹14,82,900', color: 'var(--success)', icon: '💰' },
+    { label: 'Active Shops', value: summaryStats?.totalShops ? summaryStats.totalShops.toLocaleString() : '1,248', color: 'var(--info)', icon: '🏪' },
+    { label: 'Pending Approvals', value: (pendingShops || []).length || '12', color: 'var(--warning)', icon: '⏳' },
+    { label: 'Franchise Partners', value: summaryStats?.franchisePartners ? summaryStats.franchisePartners : '42', color: 'var(--accent-text)', icon: '🏢' }
   ];
 
   return (
@@ -26,8 +26,8 @@ export default function DashboardTab({ summaryStats, pendingShops, API_BASE, aut
         {stats.map((s, idx) => (
           <div key={idx} style={{ ...cardStyle, borderLeft: `4px solid ${s.color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>{s.label}</p>
-              <h3 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0.25rem 0 0', color: '#f8fafc' }}>{s.value}</h3>
+              <p style={{ color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>{s.label}</p>
+              <h3 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0.25rem 0 0', color: 'var(--ink)' }}>{s.value}</h3>
             </div>
             <span style={{ fontSize: '2rem', opacity: 0.8 }}>{s.icon}</span>
           </div>
@@ -37,8 +37,8 @@ export default function DashboardTab({ summaryStats, pendingShops, API_BASE, aut
       {/* Pending Shop Approvals Table */}
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#f8fafc' }}>⏳ Priority Merchant Approvals</h3>
-          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Requires Verification</span>
+          <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--ink)' }}>⏳ Priority Merchant Approvals</h3>
+          <span style={{ color: 'var(--ink-muted)', fontSize: '0.85rem' }}>Requires Verification</span>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
@@ -54,7 +54,7 @@ export default function DashboardTab({ summaryStats, pendingShops, API_BASE, aut
             <tbody>
               {(!pendingShops || pendingShops.length === 0) ? (
                 <tr>
-                  <td colSpan="4" style={{ ...tdStyle, textAlign: 'center', color: '#64748b', padding: '2rem' }}>
+                  <td colSpan="4" style={{ ...tdStyle, textAlign: 'center', color: 'var(--ink-subtle)', padding: '2rem' }}>
                     No pending shop approvals found.
                   </td>
                 </tr>
@@ -62,17 +62,17 @@ export default function DashboardTab({ summaryStats, pendingShops, API_BASE, aut
                 pendingShops.map((shop) => (
                   <tr key={shop.id}>
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>{shop.name || 'Unnamed Shop'}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>ID: {shop.id}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{shop.name || 'Unnamed Shop'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>ID: {shop.id}</div>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ background: '#0f172a', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.78rem' }}>
+                      <span style={{ background: 'var(--ground)', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.78rem' }}>
                         {shop.category || 'Retail'}
                       </span>
                     </td>
                     <td style={tdStyle}>
                       <div>{shop.owner_name || 'N/A'}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{shop.phone}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>{shop.phone}</div>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>

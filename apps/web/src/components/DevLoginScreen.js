@@ -25,7 +25,7 @@ export default function DevLoginScreen() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] bg-slate-950/90 backdrop-blur border border-slate-700 p-4 rounded-xl shadow-2xl">
+    <div data-dev-dock className="fixed bottom-4 right-4 z-[9999] bg-slate-950/90 backdrop-blur border border-slate-700 p-4 rounded-xl shadow-2xl">
       <h3 className="text-white text-xs font-bold mb-3 uppercase tracking-wider">Dev Quick Login</h3>
       <div className="grid grid-cols-2 gap-2">
         <button onClick={() => handleMockLogin('user')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">Customer</button>

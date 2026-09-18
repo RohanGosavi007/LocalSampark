@@ -31,9 +31,9 @@ export default function TabError({ error, onRetry }) {
         borderRadius: '0.75rem',
         // Amber for "you need to sign in", red for an actual failure — the
         // operator's next action is different in each case.
-        background: isAuth ? '#2a2005' : '#2a0a0a',
-        border: `1px solid ${isAuth ? '#a16207' : '#7f1d1d'}`,
-        color: isAuth ? '#fcd34d' : '#fca5a5',
+        background: isAuth ? 'var(--warning-quiet)' : 'var(--danger-quiet)',
+        border: `1px solid ${isAuth ? 'var(--warning)' : 'var(--danger)'}`,
+        color: isAuth ? 'var(--warning)' : 'var(--danger)',
       }}
     >
       <span aria-hidden="true" style={{ fontSize: '1.1rem', lineHeight: 1.2 }}>
@@ -55,7 +55,7 @@ export default function TabError({ error, onRetry }) {
           style={{
             padding: '0.4rem 0.9rem',
             background: 'transparent',
-            border: `1px solid ${isAuth ? '#a16207' : '#7f1d1d'}`,
+            border: `1px solid ${isAuth ? 'var(--warning)' : 'var(--danger)'}`,
             color: 'inherit',
             borderRadius: '0.5rem',
             fontWeight: 700,

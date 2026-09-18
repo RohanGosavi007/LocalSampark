@@ -45,26 +45,26 @@ import { fetchJson } from '../../lib/api';
  */
 
 const cardStyle = {
-  background: '#1e293b',
+  background: 'var(--surface-1)',
   padding: '1.5rem',
   borderRadius: '1rem',
-  border: '1px solid #334155',
+  border: '1px solid var(--line)',
   flex: 1,
 };
 
 const btnPrimary = {
   padding: '0.6rem 1.2rem',
-  background: '#4f46e5',
+  background: 'var(--accent)',
   border: 'none',
-  color: '#fff',
+  color: 'var(--on-solid)',
   borderRadius: '0.5rem',
   fontWeight: 700,
   cursor: 'pointer',
   fontSize: '0.85rem',
 };
 
-const labelStyle = { color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 };
-const captionStyle = { color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.2rem' };
+const labelStyle = { color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600 };
+const captionStyle = { color: 'var(--ink-muted)', fontSize: '0.75rem', marginTop: '0.2rem' };
 
 /** Formats a number as INR without inventing precision the API did not send. */
 function inr(value) {
@@ -122,7 +122,7 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
       <div
         style={{
           ...cardStyle,
-          borderLeft: '3px solid #4f46e5',
+          borderLeft: '3px solid var(--accent)',
           display: 'flex',
           gap: '1rem',
           alignItems: 'flex-start',
@@ -130,20 +130,20 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
         }}
       >
         <span aria-hidden="true" style={{ fontSize: '1.1rem' }}>🧭</span>
-        <div style={{ fontSize: '0.83rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+        <div style={{ fontSize: '0.83rem', color: 'var(--ink)', lineHeight: 1.6 }}>
           This tab covers territory business performance. For model behaviour, open{' '}
-          <strong style={{ color: '#f8fafc' }}>ML Control Center</strong> (ranking weights, kill
-          switches, curation) or <strong style={{ color: '#f8fafc' }}>ML Governance &amp; A/B</strong>{' '}
+          <strong style={{ color: 'var(--ink)' }}>ML Control Center</strong> (ranking weights, kill
+          switches, curation) or <strong style={{ color: 'var(--ink)' }}>ML Governance &amp; A/B</strong>{' '}
           (multi-objective configuration, experiments, drift, the AI moderation queue).
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: '#f8fafc' }}>
+          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: 'var(--ink)' }}>
             📊 Territory Performance &amp; Intelligence
           </h3>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+          <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>
             Gross Merchandise Value, order and dispatch volume, and lead pipeline for the selected territory.
           </p>
         </div>
@@ -153,7 +153,7 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
       </div>
 
       {!data && !error && !loading ? (
-        <div style={{ ...cardStyle, flex: undefined, color: '#94a3b8', fontSize: '0.9rem' }}>
+        <div style={{ ...cardStyle, flex: undefined, color: 'var(--ink-muted)', fontSize: '0.9rem' }}>
           No analytics have been reported for this territory yet.
         </div>
       ) : null}
@@ -188,11 +188,11 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
           </div>
 
           <div style={{ ...cardStyle, flex: undefined }}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 1rem 0', fontSize: '1rem' }}>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 1rem 0', fontSize: '1rem' }}>
               📈 Demand Distribution by Sector
             </h4>
             {categories.length === 0 ? (
-              <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+              <div style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem' }}>
                 No sector breakdown available for this period.
               </div>
             ) : (
@@ -204,18 +204,18 @@ export default function AIAnalyticsTab({ API_BASE, authHeaders }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      borderBottom: '1px solid #334155',
+                      borderBottom: '1px solid var(--line)',
                       paddingBottom: '0.75rem',
                     }}
                   >
                     <div>
-                      <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{c.category}</div>
-                      <div style={{ color: '#64748b', fontSize: '0.78rem' }}>Quarterly volume</div>
+                      <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.9rem' }}>{c.category}</div>
+                      <div style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem' }}>Quarterly volume</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: '#4ade80', fontWeight: 800, fontSize: '1rem' }}>{inr(c.revenue)}</div>
+                      <div style={{ color: 'var(--success)', fontWeight: 800, fontSize: '1rem' }}>{inr(c.revenue)}</div>
                       {c.growth ? (
-                        <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.75rem' }}>{c.growth}</div>
+                        <div style={{ color: 'var(--accent-text)', fontWeight: 700, fontSize: '0.75rem' }}>{c.growth}</div>
                       ) : null}
                     </div>
                   </div>

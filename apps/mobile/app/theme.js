@@ -1,51 +1,65 @@
 // LocalSampark Mobile Design Tokens
-// Shared theme constants for consistent styling across all 66 modules
-// Spatial Design System v2.0 — Unified with Web Design Language
+//
+// This module carried its own brand — a Swiggy-style orange #F05A28 — while
+// src/theme/theme.js carried emerald #00C880 and src/theme/index.js carried the
+// shared tokens. Three palettes were live at once, and which one a screen got
+// depended on which of the three it happened to import. The four screens on
+// this file (carpool, checkout, services, shop-detail) were the odd ones out.
+//
+// Values now derive from packages/shared/design-tokens.js via
+// src/theme/design-tokens.js. Every exported NAME is unchanged, so those four
+// screens need no edit; only the colours converge.
+//
+// New work should use `useTheme()` from src/context/ThemeContext.js instead,
+// which is theme-aware. These constants are a single fixed palette and cannot
+// respond to light/dark — they are kept for the screens not yet migrated.
+import tokens from '../src/theme/design-tokens';
+
+const { brand, theme: palettes } = tokens;
+const L = palettes.light;
+const D = palettes.dark;
 
 export const COLORS = {
-  // Vibrant Primary palette (Swiggy-style)
-  primary: '#F05A28', 
-  primaryHover: '#E04A1B',
-  primaryLight: '#FFEDF1',
-  primaryGlass: 'rgba(240, 90, 40, 0.1)',
+  primary: brand.primary,
+  primaryHover: brand.primaryHover,
+  primaryLight: brand.primaryLight,
+  primaryGlass: L.accentQuiet,
 
-  // Secondary
-  secondary: '#10b981',
-  secondaryHover: '#059669',
-  secondaryLight: '#ecfdf5',
-  secondaryGlass: 'rgba(16, 185, 129, 0.1)',
+  // Was #10b981, a second green that read as a near-duplicate of the primary.
+  // The shared secondary is the brand orange, which gives an actual contrast.
+  secondary: brand.secondary,
+  secondaryHover: brand.secondaryHover,
+  secondaryLight: brand.secondaryLight,
+  secondaryGlass: L.secondaryQuiet,
 
-  // Backgrounds
-  background: '#F8F9FA',
-  backgroundAlt: '#FFFFFF',
-  cardBg: '#FFFFFF',
+  background: L.ground,
+  backgroundAlt: L.groundAlt,
+  cardBg: L.surface1,
 
-  // Text
-  text: '#1C1C1E',
-  textMuted: '#8E8E93',
-  textLight: '#C7C7CC',
+  text: L.text,
+  textMuted: L.textMuted,
+  textLight: L.textSubtle,
 
-  // Borders
-  border: '#E5E5EA',
-  borderLight: '#F2F2F7',
+  border: L.border,
+  borderLight: L.sunken,
 
-  // Semantic Status colors
-  success: '#34C759',
-  warning: '#FF9500',
-  error: '#FF3B30',
-  info: '#3b82f6',
+  success: L.success,
+  warning: L.warning,
+  error: L.danger,
+  info: L.info,
 };
 
-// Dark-mode-first surfaces for the spatial design language
+// Dark surfaces. The previous values were a near-black (#060b18) with
+// indigo-tinted borders; both now come from the shared six-step slate ramp.
 export const DARK_COLORS = {
-  background: '#060b18',
-  backgroundAlt: '#0d1526',
-  surface: 'rgba(13, 21, 38, 0.85)',
-  surfaceGlass: 'rgba(255, 255, 255, 0.04)',
-  text: '#f1f5f9',
-  textMuted: '#94a3b8',
-  border: '#1e2d4a',
-  borderGlass: 'rgba(255, 255, 255, 0.08)',
+  background: D.ground,
+  backgroundAlt: D.groundAlt,
+  surface: D.surface1,
+  surfaceGlass: D.surfaceGlass,
+  text: D.text,
+  textMuted: D.textMuted,
+  border: D.border,
+  borderGlass: D.borderStrong,
 };
 
 // Mesh gradient color arrays for LinearGradient
@@ -55,8 +69,10 @@ export const GRADIENTS = {
   meshWarm: ['#1a0a2e', '#16213e', '#0f3460'],
   heroLight: ['#e0e7ff', '#f0fdf4', '#ffffff'],
 
-  primary: ['#F05A28', '#f97316', '#ea580c'],
-  primaryGlow: ['#F05A28', '#f59e0b'],
+  // Was an orange ramp from the old brand; now the emerald CTA gradient the
+  // web app and src/theme use, so a button looks the same on both platforms.
+  primary: [brand.primary, '#00D9A6', brand.primaryHover],
+  primaryGlow: [brand.primary, brand.cyan],
   success: ['#10B981', '#059669'],
   violet: ['#8B5CF6', '#6366F1', '#4F46E5'],
   rose: ['#EC4899', '#E11D48'],
@@ -97,7 +113,7 @@ export const GLASS = {
 // Colored glow shadow presets
 export const SPATIAL = {
   glowPrimary: {
-    shadowColor: '#F05A28',
+    shadowColor: brand.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -154,10 +170,14 @@ export const TYPOGRAPHY = {
   },
 };
 
+// Aligned to the shared type scale. This file previously started at 10 and set
+// body copy at 14; the audit found 1,296 uses of fontSize 12 across the app and
+// no coherent scale at all (31 distinct values). 12 is now the smallest step and
+// is for labels, not prose.
 export const FONT_SIZES = {
-  xs: 10,
-  sm: 12,
-  base: 14,
+  xs: 12,
+  sm: 14,
+  base: 16,
   md: 16,
   lg: 18,
   xl: 20,
@@ -199,7 +219,7 @@ export const SHADOWS = {
     elevation: 8,
   },
   glow: {
-    shadowColor: '#F05A28',
+    shadowColor: brand.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

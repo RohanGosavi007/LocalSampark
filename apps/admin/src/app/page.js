@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { API_BASE, getAuthHeaders } from '../lib/api';
+import { ThemeToggle } from '../context/ThemeContext';
 
 import DashboardTab from '../components/tabs/DashboardTab';
 import UsersTab from '../components/tabs/UsersTab';
@@ -57,17 +58,17 @@ const authHeaders = getAuthHeaders;
 // ─── Sub-components ───────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const map = {
-    'Active': { bg: '#052e16', color: '#4ade80' },
-    'Pending': { bg: '#431407', color: '#fb923c' },
-    'Onboarding': { bg: '#1e1b4b', color: '#a5b4fc' },
-    'Suspended': { bg: '#450a0a', color: '#f87171' },
-    'Open': { bg: '#042f2e', color: '#5eead4' },
-    'Active (Pilot)': { bg: '#052e16', color: '#4ade80' },
-    'Franchise Assigned': { bg: '#1e1b4b', color: '#a5b4fc' },
-    'Audit Pending': { bg: '#431407', color: '#fb923c' },
-    'Accepting Leads': { bg: '#042f2e', color: '#5eead4' },
+    'Active': { bg: '#052e16', color: 'var(--success)' },
+    'Pending': { bg: '#431407', color: 'var(--warning)' },
+    'Onboarding': { bg: '#1e1b4b', color: 'var(--accent-text)' },
+    'Suspended': { bg: '#450a0a', color: 'var(--danger)' },
+    'Open': { bg: '#042f2e', color: 'var(--info)' },
+    'Active (Pilot)': { bg: '#052e16', color: 'var(--success)' },
+    'Franchise Assigned': { bg: '#1e1b4b', color: 'var(--accent-text)' },
+    'Audit Pending': { bg: '#431407', color: 'var(--warning)' },
+    'Accepting Leads': { bg: '#042f2e', color: 'var(--info)' },
   };
-  const style = map[status] || { bg: '#1e293b', color: '#94a3b8' };
+  const style = map[status] || { bg: '#1e293b', color: 'var(--ink-muted)' };
 
   return (
     <span style={{ background: style.bg, color: style.color, padding: '0.25rem 0.7rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -77,11 +78,11 @@ const StatusBadge = ({ status }) => {
 };
 
 const Stat = ({ label, value, diff, icon, color }) => (
-  <div style={{ background: '#1e293b', padding: '1.75rem', borderRadius: '1rem', border: '1px solid #334155', borderLeft: `5px solid ${color}`, position: 'relative', overflow: 'hidden' }}>
+  <div style={{ background: 'var(--surface-1)', padding: '1.75rem', borderRadius: '1rem', border: '1px solid var(--line)', borderLeft: `5px solid ${color}`, position: 'relative', overflow: 'hidden' }}>
     <div style={{ position: 'absolute', right: '1.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '2.5rem', opacity: 0.1 }}>{icon}</div>
-    <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{label}</p>
-    <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: '#fff', margin: '0 0 0.3rem' }}>{value}</h2>
-    <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 700 }}>{diff}</span>
+    <p style={{ fontSize: '0.8rem', color: 'var(--ink-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{label}</p>
+    <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 0.3rem' }}>{value}</h2>
+    <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 700 }}>{diff}</span>
   </div>
 );
 
@@ -435,19 +436,23 @@ export default function AdminDashboardPage() {
   const tabStyle = (id) => ({
     display: 'flex', alignItems: 'center', gap: '0.75rem',
     padding: '0.8rem 1rem', borderRadius: '0.5rem',
-    background: activeTab === id ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : 'transparent',
-    color: activeTab === id ? '#ffffff' : '#94a3b8',
+    // The token sweep matched `prop: 'value'` and so skipped these two, whose
+    // value sits behind a conditional. In light mode the result was white ink
+    // on a pale active pill at 1.12:1 — the selected nav item was unreadable,
+    // which is the one item a user most needs to see.
+    background: activeTab === id ? 'var(--accent)' : 'transparent',
+    color: activeTab === id ? 'var(--on-accent)' : 'var(--ink-muted)',
     border: 'none', textAlign: 'left', cursor: 'pointer',
     fontWeight: 600, fontSize: '0.9rem', transition: 'all 0.2s',
     width: '100%',
   });
 
-  const cardStyle = { background: '#1e293b', padding: '2rem', borderRadius: '1rem', border: '1px solid #334155' };
-  const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #334155', background: '#0f172a', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '0.95rem' };
-  const btnPrimary = { padding: '0.6rem 1.2rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
-  const btnSuccess = { ...btnPrimary, background: '#10b981' };
-  const btnDanger = { ...btnPrimary, background: '#ef4444' };
-  const btnWarning = { ...btnPrimary, background: '#f97316' };
+  const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+  const inputStyle = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', fontFamily: 'Inter, sans-serif', fontSize: '0.95rem' };
+  const btnPrimary = { padding: '0.6rem 1.2rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' };
+  const btnSuccess = { ...btnPrimary, background: 'var(--success)' };
+  const btnDanger = { ...btnPrimary, background: 'var(--danger)' };
+  const btnWarning = { ...btnPrimary, background: 'var(--warning)' };
 
   const { admin, loading } = useAdminAuth();
 
@@ -459,8 +464,8 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
-        <p style={{ color: '#94a3b8' }}>Loading Admin Console...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ground)' }}>
+        <p style={{ color: 'var(--ink-muted)' }}>Loading Admin Console...</p>
       </div>
     );
   }
@@ -482,24 +487,24 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', color: '#f8fafc', background: '#0f172a', minHeight: '100vh', display: 'flex' }}>
+    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', color: 'var(--ink)', background: 'var(--ground)', minHeight: '100vh', display: 'flex' }}>
 
       {/* Sidebar */}
-      <aside style={{ width: '290px', background: '#0b1120', borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', padding: '2rem 1.25rem', flexShrink: 0 }}>
+      <aside style={{ width: '290px', background: 'var(--sunken)', borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', padding: '2rem 1.25rem', flexShrink: 0 }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2.5rem', padding: '0 0.75rem' }}>
-          <div style={{ background: 'linear-gradient(135deg, #4f46e5, #f97316)', padding: '0.5rem 0.7rem', borderRadius: '0.75rem', fontSize: '1.25rem' }}>🏘️</div>
+          <div style={{ background: 'linear-gradient(135deg, var(--accent), var(--warning))', padding: '0.5rem 0.7rem', borderRadius: '0.75rem', fontSize: '1.25rem' }}>🏘️</div>
           <div>
             <p style={{ fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>LocalSampark</p>
-            <p style={{ fontSize: '0.72rem', color: '#64748b', margin: 0 }}>God-Mode Admin Panel</p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--ink-subtle)', margin: 0 }}>God-Mode Admin Panel</p>
           </div>
         </div>
 
         {/* Zone Info — Dynamic */}
-        <div style={{ background: '#1e293b', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1.5rem', fontSize: '0.82rem' }}>
-          <p style={{ color: '#94a3b8', margin: '0 0 0.3rem' }}>Platform Overview</p>
-          <p style={{ fontWeight: 700, color: '#f8fafc', margin: 0 }}>📍 {summaryStats ? `${summaryStats.activeRegions} Active / ${summaryStats.totalRegions} Total Zones` : 'Loading...'}</p>
-          <p style={{ color: '#4ade80', margin: '0.2rem 0 0', fontWeight: 600 }}>● {summaryStats ? `${summaryStats.totalUsers.toLocaleString()} Users — ${summaryStats.totalShops} Shops` : '...'}</p>
+        <div style={{ background: 'var(--surface-1)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1.5rem', fontSize: '0.82rem' }}>
+          <p style={{ color: 'var(--ink-muted)', margin: '0 0 0.3rem' }}>Platform Overview</p>
+          <p style={{ fontWeight: 700, color: 'var(--ink)', margin: 0 }}>📍 {summaryStats ? `${summaryStats.activeRegions} Active / ${summaryStats.totalRegions} Total Zones` : 'Loading...'}</p>
+          <p style={{ color: 'var(--success)', margin: '0.2rem 0 0', fontWeight: 600 }}>● {summaryStats ? `${summaryStats.totalUsers.toLocaleString()} Users — ${summaryStats.totalShops} Shops` : '...'}</p>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, overflowY: 'auto' }}>
@@ -512,11 +517,11 @@ export default function AdminDashboardPage() {
         </nav>
 
         {/* Admin badge */}
-        <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#1e293b', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>A</div>
+        <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--surface-1)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--warning))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>A</div>
           <div>
             <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>Super Admin</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Full Access</p>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>Full Access</p>
           </div>
         </div>
       </aside>
@@ -524,16 +529,20 @@ export default function AdminDashboardPage() {
       {/* Main */}
       <main style={{ flex: 1, padding: '2.5rem', overflowY: 'auto', maxHeight: '100vh' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #1e293b' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--line)' }}>
           <div>
             <h1 style={{ fontSize: '1.9rem', fontWeight: 800, margin: 0, textTransform: 'capitalize' }}>
               {navItems.find(n => n.id === activeTab)?.icon} {navItems.find(n => n.id === activeTab)?.label}
             </h1>
-            <p style={{ color: '#64748b', margin: '0.3rem 0 0', fontSize: '0.9rem' }}>LocalSampark Platform Control — Pune Pilot v2.0</p>
+            <p style={{ color: 'var(--ink-subtle)', margin: '0.3rem 0 0', fontSize: '0.9rem' }}>LocalSampark Platform Control — Pune Pilot v2.0</p>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <span style={{ background: '#10b981', color: '#fff', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 700 }}>● System Online</span>
-            <span style={{ background: '#1e293b', color: '#94a3b8', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.8rem' }}>v2.0.1</span>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {/* The console had no appearance control because it had no light
+                mode to switch to — the body background was a hardcoded
+                #0f172a. */}
+            <ThemeToggle />
+            <span style={{ background: 'var(--success-quiet)', color: 'var(--success)', border: '1px solid var(--success)', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 700 }}>● System Online</span>
+            <span style={{ background: 'var(--surface-1)', border: '1px solid var(--line)', color: 'var(--ink-muted)', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.8rem' }}>v2.0.1</span>
           </div>
         </div>
 

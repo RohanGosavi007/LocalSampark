@@ -17,10 +17,10 @@ export default function CivicTab({ API_BASE, authHeaders }) {
     setLoading(false);
   }, []);
 
-  const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
-  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600, borderBottom: '1px solid #334155' };
-  const tdStyle = { padding: '0.85rem 1rem', color: '#cbd5e1', borderBottom: '1px solid #1e293b' };
-  const btnPrimary = { padding: '0.4rem 0.8rem', background: '#4f46e5', border: 'none', color: '#fff', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' };
+  const cardStyle = { background: 'var(--surface-1)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600, borderBottom: '1px solid var(--line)' };
+  const tdStyle = { padding: '0.85rem 1rem', color: 'var(--ink)', borderBottom: '1px solid var(--line)' };
+  const btnPrimary = { padding: '0.4rem 0.8rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -28,13 +28,13 @@ export default function CivicTab({ API_BASE, authHeaders }) {
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#f8fafc' }}>🏛️ Civic & Legal Services</h3>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0.2rem 0 0' }}>Audit legal aid, panchayat queries, and scheme integrators.</p>
+            <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--ink)' }}>🏛️ Civic & Legal Services</h3>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: '0.2rem 0 0' }}>Audit legal aid, panchayat queries, and scheme integrators.</p>
           </div>
           <button style={btnPrimary}>View Compliance Report</button>
         </div>
         
-        {loading ? <p style={{ color: '#94a3b8' }}>Loading civic metrics...</p> : (
+        {loading ? <p style={{ color: 'var(--ink-muted)' }}>Loading civic metrics...</p> : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
               <thead>
@@ -48,12 +48,12 @@ export default function CivicTab({ API_BASE, authHeaders }) {
               <tbody>
                 {data.map(d => (
                   <tr key={d.id}>
-                    <td style={{ ...tdStyle, fontWeight: 700, color: '#f8fafc' }}>{d.module}</td>
+                    <td style={{ ...tdStyle, fontWeight: 700, color: 'var(--ink)' }}>{d.module}</td>
                     <td style={tdStyle}>{d.count}</td>
                     <td style={tdStyle}>
-                      <span style={{ color: d.status === 'Active' ? '#4ade80' : '#fb923c', fontWeight: 700 }}>{d.status}</span>
+                      <span style={{ color: d.status === 'Active' ? 'var(--success)' : 'var(--warning)', fontWeight: 700 }}>{d.status}</span>
                     </td>
-                    <td style={tdStyle}><button style={{ ...btnPrimary, background: '#334155' }}>Manage</button></td>
+                    <td style={tdStyle}><button style={{ ...btnPrimary, background: 'var(--surface-2)' }}>Manage</button></td>
                   </tr>
                 ))}
               </tbody>

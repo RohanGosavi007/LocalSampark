@@ -169,7 +169,7 @@ export default function UsersManagementPage() {
                     {new Date(user.created_at).toLocaleDateString()}
                   </td>
                   <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
+                    <div className="flex justify-end gap-2 reveal-actions">
                       <button 
                         onClick={() => { setEditingUserId(user.id); setEditRole(user.role || 'user'); }}
                         className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-700 transition"

@@ -42,19 +42,19 @@ export default function LanguageToggle() {
     <div className="flex items-center gap-1 bg-background-alt p-1 rounded-full border border-border shadow-inner">
       <button 
         onClick={() => changeLanguage('en')}
-        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${lang === 'en' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text hover:bg-border/30'}`}
+        className={`inline-flex items-center justify-center px-3 min-h-[var(--tap-min)] min-w-[var(--tap-min)] rounded-full text-sm font-bold transition-colors ${lang === 'en' ? 'bg-[color:var(--accent)] text-[color:var(--on-accent)] shadow-[var(--elev-1)]' : 'text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] hover:bg-[color:var(--accent-quiet)]'}`}
       >
         EN
       </button>
       <button 
         onClick={() => changeLanguage('hi')}
-        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${lang === 'hi' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text hover:bg-border/30'}`}
+        className={`inline-flex items-center justify-center px-3 min-h-[var(--tap-min)] min-w-[var(--tap-min)] rounded-full text-sm font-bold transition-colors ${lang === 'hi' ? 'bg-[color:var(--accent)] text-[color:var(--on-accent)] shadow-[var(--elev-1)]' : 'text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] hover:bg-[color:var(--accent-quiet)]'}`}
       >
         हिं
       </button>
       <button 
         onClick={() => changeLanguage('mr')}
-        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${lang === 'mr' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text hover:bg-border/30'}`}
+        className={`inline-flex items-center justify-center px-3 min-h-[var(--tap-min)] min-w-[var(--tap-min)] rounded-full text-sm font-bold transition-colors ${lang === 'mr' ? 'bg-[color:var(--accent)] text-[color:var(--on-accent)] shadow-[var(--elev-1)]' : 'text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] hover:bg-[color:var(--accent-quiet)]'}`}
       >
         मरा
       </button>

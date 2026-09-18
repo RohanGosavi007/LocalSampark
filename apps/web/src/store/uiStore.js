@@ -1,41 +1,15 @@
 import { create } from 'zustand';
 
 export const useUIStore = create((set) => ({
-  // Theme
-  theme: typeof window !== 'undefined' 
-    ? localStorage.getItem('theme') || 'light' 
-    : 'light',
-  setTheme: (theme) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', theme);
-      if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-        document.body.classList.remove('light-mode');
-        document.documentElement.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark-mode');
-        document.body.classList.add('light-mode');
-        document.documentElement.classList.remove('dark');
-      }
-    }
-    set({ theme });
-  },
-  toggleTheme: () => set((state) => {
-    const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', newTheme);
-      if (newTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        document.body.classList.remove('light-mode');
-        document.documentElement.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark-mode');
-        document.body.classList.add('light-mode');
-        document.documentElement.classList.remove('dark');
-      }
-    }
-    return { theme: newTheme };
-  }),
+  // Theme lives in contexts/ThemeContext.js, not here.
+  //
+  // This store used to carry its own `theme` / `setTheme` / `toggleTheme`
+  // slice that wrote the same localStorage key and the same DOM classes as the
+  // provider and the pre-hydration script. Three writers meant no single place
+  // to reason about which theme was active, and the drift between them is what
+  // broke Bright Mode: the provider read a different key and forced dark on
+  // every load. Nothing consumed this slice, so it is removed rather than
+  // wrapped — `useTheme()` is the only entry point.
 
   // Language
   language: 'en',

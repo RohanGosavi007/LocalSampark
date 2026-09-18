@@ -79,7 +79,7 @@ export default function EarnPage() {
       <main style={{ flex: 1 }}>
 
         {/* Hero */}
-        <section style={{ padding: '6rem 0 4rem', background: 'radial-gradient(circle at 70% 30%, rgba(99,102,241,0.08) 0%, transparent 50%)' }}>
+        <section style={{ padding: '6rem 0 4rem', background: 'radial-gradient(circle at 70% 30%, rgba(0,200,128,0.08) 0%, transparent 50%)' }}>
           <div className="container" style={{ textAlign: 'center' }}>
             <span className="badge badge-primary" style={{ marginBottom: '1rem' }}>💸 Earning Opportunities</span>
             <h1 style={{ fontSize: '3.2rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: '1.25rem' }}>

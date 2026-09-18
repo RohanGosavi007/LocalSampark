@@ -17,6 +17,7 @@ import {
 import StoriesRow from '../components/StoriesRow';
 import WebRTCIntercom from '../../components/WebRTCIntercom';
 import { useAuth } from '@/context/AuthContext';
+import PlatformMap from '../components/PlatformMap';
 
 // Map service IDs to lucide icons
 const SERVICE_ICON_MAP = {
@@ -67,6 +68,17 @@ export default function DashboardPage() {
   const handleBook = (service) => { setSelectedService(service); setRequestSent(false); };
   const confirmBooking = (e) => { e.preventDefault(); setRequestSent(true); };
 
+  // Was a hardcoded "Abhi!" regardless of who was signed in or what time it
+  // was. A dashboard that greets everyone by the same name is worse than no
+  // greeting at all.
+  const greeting = React.useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+  const firstName = (user?.name || '').trim().split(' ')[0];
+
   const [walletBalance] = useState(1250.50);
   const [orders] = useState([
     { id: '#LS-2041', shop: 'Sharma Grocery', items: 'Milk × 2, Bread × 1', amount: '₹88', status: 'Delivered', date: 'Today, 10:30 AM' },
@@ -105,6 +117,52 @@ export default function DashboardPage() {
     { label: 'Events', href: '/events', sub: '2 upcoming' },
   ];
 
+  // Each tile is a number plus the screen that acts on it. Values still come
+  // from the local placeholder state this page has always used; wiring them to
+  // the API is a separate change, and inventing live numbers here would be
+  // worse than showing the same placeholders in a better shape.
+  const glanceTiles = [
+    {
+      label: 'Wallet',
+      // toLocaleString drops a trailing zero, so 1250.50 rendered as "1,250.5"
+      // \u2014 a money figure that reads like a rounding bug.
+      value:
+        '\u20B9' +
+        walletBalance.toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+      note: 'Tap to top up',
+      href: '/wallet',
+      Icon: Wallet,
+      tone: 'var(--accent-text)',
+    },
+    {
+      label: 'Active orders',
+      value: orders.filter((o) => o.status !== 'Delivered').length,
+      note: 'Out for delivery',
+      href: '/order-tracking',
+      Icon: Package,
+      tone: 'var(--warning)',
+    },
+    {
+      label: 'Society',
+      value: feedItems.filter((f) => f.type === 'alert').length,
+      note: 'Alerts at your gate',
+      href: '/society',
+      Icon: Building2,
+      tone: 'var(--danger)',
+    },
+    {
+      label: 'Today',
+      value: appointments.length,
+      note: 'Bookings scheduled',
+      href: '/dashboard',
+      Icon: CalendarDays,
+      tone: 'var(--info)',
+    },
+  ];
+
   const priorityConfig = {
     high: { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20' },
     medium: { color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
@@ -120,8 +178,108 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-20 lg:pt-24 pb-16">
         <div className="container">
+
+
+          {/* ── AT A GLANCE ──────────────────────────────────────────
+              This page used to open on "Neighborhood Services" and three
+              identical service cards - same generic icon, same
+              "(4.8 - 120 Reviews)", same full-width green button - with the
+              greeting buried below them. A dashboard's first job is to answer
+              "what needs my attention", so state comes first and browsing
+              follows.
+
+              Built on surface and ink tokens rather than a white-on-gradient
+              block. The old banner hardcoded white text over an
+              emerald-to-indigo gradient, so it looked identical in both themes
+              and carried an indigo that is not in the brand.
+             ────────────────────────────────────────────────────────── */}
+          <div className="mb-8">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+              <div>
+                <p className="text-sm text-[color:var(--ink-muted)] mb-1 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" aria-hidden="true" />
+                  {user?.zone || 'Dhanori, Pune'}
+                </p>
+                <h1 className="text-3xl lg:text-4xl font-heading font-black text-[color:var(--ink)]">
+                  {greeting}{firstName ? ', ' + firstName : ''}
+                </h1>
+              </div>
+              <a
+                href="/profile"
+                className="inline-flex items-center gap-2 px-4 min-h-[var(--tap-min)]
+                  rounded-full border border-[color:var(--line)] bg-[color:var(--surface-1)]
+                  text-sm font-semibold text-[color:var(--ink-muted)]
+                  hover:text-[color:var(--ink)] hover:border-[color:var(--line-accent)]
+                  transition-colors"
+              >
+                <Eye className="w-4 h-4" aria-hidden="true" /> View profile
+              </a>
+            </div>
+
+            {/* The live state row. Four numbers a resident checks, each one a
+                link to the screen that resolves it - not decoration. */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {glanceTiles.map(({ label, value, note, href, Icon, tone }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="group flex flex-col gap-1 p-4 rounded-[var(--radius-sm)]
+                    bg-[color:var(--surface-1)] border border-[color:var(--line)]
+                    hover:border-[color:var(--line-accent)]
+                    focus-visible:outline-none focus-visible:ring-2
+                    focus-visible:ring-[color:var(--accent)]
+                    transition-colors"
+                >
+                  <span className="flex items-center gap-2 text-sm text-[color:var(--ink-muted)]">
+                    <Icon className="w-4 h-4" style={{ color: tone }} aria-hidden="true" />
+                    {label}
+                  </span>
+                  <span className="text-2xl font-heading font-black text-[color:var(--ink)] tabular-nums">
+                    {value}
+                  </span>
+                  <span className="text-sm text-[color:var(--ink-subtle)]">{note}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* ── STORIES ROW ──────────────────────────── */}
+          <StoriesRow />
+
+          {/* ── QUICK LINKS GRID ────────────────────── */}
+          <h2 className="text-xl font-heading font-bold text-text mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" /> Quick Access
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-12">
+            {quickLinks.map((link, i) => {
+              const IconComp = ICON_MAP[link.label] || Star;
+              const gradient = COLOR_MAP[link.label] || 'from-primary to-indigo-500';
+              return (
+                <motion.a key={link.label} href={link.href}
+                  initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.04 }}
+                  className="glass-card rounded-2xl p-4 border border-border flex flex-col items-center text-center group hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer"
+                >
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-3 text-white shadow-md group-hover:scale-110 transition-transform`}>
+                    <IconComp className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-heading font-bold text-text mb-0.5">{link.label}</span>
+                  <span className="text-[10px] text-text-muted">{link.sub}</span>
+                </motion.a>
+              );
+            })}
+          </div>
+
+          {/* ── WHAT ELSE IS HERE ────────────────────────────────────
+              A first-time user reaching the dashboard has seen the hero and
+              little else. This is the same vertical map as the landing page,
+              in its compact form, so the platform's full surface is reachable
+              from the one screen people actually land on after signing in.
+             ────────────────────────────────────────────────────────── */}
+          <div className="mb-4">
+            <PlatformMap compact heading="Everything else in your neighbourhood" />
+          </div>
 
           {/* ── TOP SERVICES ────────────────────────── */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
@@ -163,64 +321,14 @@ export default function DashboardPage() {
             })}
           </div>
           <div className="text-center mb-12">
-            <a href="/services"><Button variant="secondary">View All Services →</Button></a>
-          </div>
-
-          {/* ── WELCOME BANNER ──────────────────────── */}
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
-            className="glass-card rounded-3xl p-8 mb-10 bg-gradient-to-br from-primary via-indigo-500 to-secondary text-white relative overflow-hidden shadow-xl shadow-primary/20"
-          >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Welcome back,</p>
-                <h2 className="text-2xl lg:text-3xl font-heading font-black mb-2">Abhi! 👋</h2>
-                <p className="text-sm text-white/70">Your neighborhood is buzzing with activity today.</p>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="text-3xl font-heading font-black">₹{walletBalance.toLocaleString()}</p>
-                  <p className="text-xs text-white/70 mt-1">Wallet Balance</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-heading font-black">3</p>
-                  <p className="text-xs text-white/70 mt-1">Notifications</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* ── STORIES ROW ──────────────────────────── */}
-          <StoriesRow />
-
-          {/* ── QUICK LINKS GRID ────────────────────── */}
-          <h2 className="text-xl font-heading font-bold text-text mb-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" /> Quick Access
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-12">
-            {quickLinks.map((link, i) => {
-              const IconComp = ICON_MAP[link.label] || Star;
-              const gradient = COLOR_MAP[link.label] || 'from-primary to-indigo-500';
-              return (
-                <motion.a key={link.label} href={link.href}
-                  initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.04 }}
-                  className="glass-card rounded-2xl p-4 border border-border flex flex-col items-center text-center group hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer"
-                >
-                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-3 text-white shadow-md group-hover:scale-110 transition-transform`}>
-                    <IconComp className="w-5 h-5" />
-                  </div>
-                  <span className="text-sm font-heading font-bold text-text mb-0.5">{link.label}</span>
-                  <span className="text-[10px] text-text-muted">{link.sub}</span>
-                </motion.a>
-              );
-            })}
+            <Button variant="secondary" asChild><a href="/services">View All Services →</a></Button>
           </div>
 
           {/* ── TABS: Feed / Jobs / Orders / Appointments ─── */}
           <div className="flex flex-wrap gap-2 mb-6">
             {['feed', 'jobs', 'orders', 'appointments'].map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2 rounded-full text-sm font-heading font-bold transition-all duration-300 ${
+                className={`px-5 py-2 min-h-[var(--tap-min)] inline-flex items-center rounded-full text-sm font-heading font-bold transition-colors ${
                   activeTab === tab
                     ? 'bg-primary text-white shadow-md shadow-primary/30'
                     : 'bg-background-alt text-text-muted border border-border hover:text-primary hover:border-primary/50'

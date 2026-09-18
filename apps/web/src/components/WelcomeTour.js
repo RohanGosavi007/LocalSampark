@@ -15,6 +15,9 @@ import { X, ChevronRight, MapPin, MessageSquare, ShoppingBag } from 'lucide-reac
  */
 const TOUR_SUPPRESSED_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
 
+/** Where ConsentBanner stores its answer. Read, never written, from here. */
+const CONSENT_KEY = 'localsampark_consent';
+
 export default function WelcomeTour() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
@@ -27,13 +30,53 @@ export default function WelcomeTour() {
   useEffect(() => {
     if (suppressed) {
       setIsVisible(false);
-      return;
+      return undefined;
     }
-    // Show only once per user
-    const hasSeenTour = localStorage.getItem('localsampark_tour_seen');
-    if (!hasSeenTour) {
+
+    let seen;
+    try {
+      seen = localStorage.getItem('localsampark_tour_seen');
+    } catch {
+      // Storage blocked. Showing the tour on every visit is worse than never
+      // showing it, so treat an unreadable store as "already seen".
+      return undefined;
+    }
+    if (seen) return undefined;
+
+    /**
+     * Queue behind the consent banner.
+     *
+     * Both mount from app/layout.js on first visit, so a new visitor got this
+     * full-screen modal, the consent banner and the dev dock at once — three
+     * overlays over a blurred hero, which is the only thing on the page that
+     * explains the product. Consent goes first because it is a legal gate and
+     * the user cannot dismiss it by ignoring it; the tour waits its turn.
+     *
+     * Polled rather than evented because the banner writes plain localStorage
+     * and a `storage` event only fires in *other* tabs, never the one that
+     * wrote it.
+     */
+    const answered = () => {
+      try {
+        return Boolean(localStorage.getItem(CONSENT_KEY));
+      } catch {
+        return true;
+      }
+    };
+
+    if (answered()) {
       setIsVisible(true);
+      return undefined;
     }
+
+    const poll = setInterval(() => {
+      if (answered()) {
+        clearInterval(poll);
+        setIsVisible(true);
+      }
+    }, 400);
+
+    return () => clearInterval(poll);
   }, [suppressed]);
 
   const completeTour = () => {

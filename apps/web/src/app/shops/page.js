@@ -13,6 +13,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ShopCardSkeleton } from '../../components/ui/Skeleton';
+import EmptyState from '../components/ui/EmptyState';
 import { ShopCard } from '../../components/ShopCard';
 import TrackedItem from '../../components/TrackedItem';
 import { initTelemetry, resetImpressions } from '../../lib/telemetry';
@@ -30,6 +31,11 @@ export default function ShopsPage() {
   const [highlights, setHighlights] = useState([]);
   const [flashSales, setFlashSales] = useState([]);
   const [loading, setLoading] = useState(true);
+  // A failed request and an empty result are different situations and need
+  // different messages. Without this, an unreachable backend rendered "No shops
+  // found — try adjusting your filters", which sends the user to fiddle with
+  // filters that were never the problem.
+  const [loadError, setLoadError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [locationError, setLocationError] = useState(false);
@@ -112,6 +118,7 @@ export default function ShopsPage() {
     }
     
     setHighlights([]);
+    setLoadError(null);
 
     fetch(url)
       .then(res => res.json())
@@ -133,6 +140,7 @@ export default function ShopsPage() {
       })
       .catch(err => {
         console.error('Failed to load shops:', err);
+        setLoadError(err?.message || 'Could not reach the shops service.');
         setLoading(false);
       });
   }, []);
@@ -202,6 +210,13 @@ export default function ShopsPage() {
       return matchesDelivery && matchesTopRated;
     });
   }, [searchActive, searchResults, filteredShops, filterDelivery, filterTopRated]);
+
+  // Whether the empty result is the user's own doing. "No shops match these
+  // filters" with a clear-filters button is actionable; "no shops here yet" with
+  // a register-your-shop link is the right message for a genuinely empty zone.
+  const hasActiveFilters = Boolean(
+    searchTerm || selectedCategory || filterOpen || filterDelivery || filterTopRated
+  );
 
   const sortedShops = useMemo(() => {
     // Relevance order is the point of a search result; re-sorting it by
@@ -346,13 +361,13 @@ export default function ShopsPage() {
                   onChange={setSearchTerm}
                   onSelectShop={(item) => { window.location.href = `/shops/${item.id}`; }}
                   placeholder="Search shops, services, categories..."
-                  inputClassName="w-full bg-background border border-border rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                  inputClassName="w-full bg-background border border-border rounded-full py-2 min-h-[var(--tap-min)] pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 />
               </div>
               
               <button 
                 onClick={() => setFilterOpen(!filterOpen)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 border ${
+                className={`flex items-center gap-2 px-4 py-2 min-h-[var(--tap-min)] rounded-full text-sm font-bold transition-colors border ${
                   filterOpen ? 'bg-green-500 text-white border-green-500' : 'bg-background text-text border-border hover:border-green-500/50'
                 }`}
               >
@@ -361,7 +376,7 @@ export default function ShopsPage() {
               
               <button 
                 onClick={() => setFilterDelivery(!filterDelivery)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 border ${
+                className={`flex items-center gap-2 px-4 py-2 min-h-[var(--tap-min)] rounded-full text-sm font-bold transition-colors border ${
                   filterDelivery ? 'bg-primary text-white border-primary' : 'bg-background text-text border-border hover:border-primary/50'
                 }`}
               >
@@ -370,7 +385,7 @@ export default function ShopsPage() {
               
               <button 
                 onClick={() => setFilterTopRated(!filterTopRated)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 border ${
+                className={`flex items-center gap-2 px-4 py-2 min-h-[var(--tap-min)] rounded-full text-sm font-bold transition-colors border ${
                   filterTopRated ? 'bg-amber-500 text-white border-amber-500' : 'bg-background text-text border-border hover:border-amber-500/50'
                 }`}
               >
@@ -380,7 +395,7 @@ export default function ShopsPage() {
             
             <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
               <select 
-                className="bg-background border border-border rounded-full py-2 px-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="bg-background border border-border rounded-full py-2 px-4 min-h-[var(--tap-min)] text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
               >
@@ -392,13 +407,13 @@ export default function ShopsPage() {
               <div className="flex bg-card-bg border border-border rounded-full p-1">
                 <button 
                   onClick={() => setViewMode('list')} 
-                  className={`p-2 rounded-full transition-colors ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-text-muted hover:text-text'}`}
+                  className={`p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full transition-colors ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-text-muted hover:text-text'}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={() => setViewMode('map')} 
-                  className={`p-2 rounded-full transition-colors ${viewMode === 'map' ? 'bg-background shadow-sm text-primary' : 'text-text-muted hover:text-text'}`}
+                  className={`p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full transition-colors ${viewMode === 'map' ? 'bg-background shadow-sm text-primary' : 'text-text-muted hover:text-text'}`}
                 >
                   <MapIcon className="w-4 h-4" />
                 </button>
@@ -414,17 +429,45 @@ export default function ShopsPage() {
                   <ShopCardSkeleton key={i} />
                 ))}
               </div>
+            ) : loadError ? (
+              <EmptyState
+                variant="error"
+                title="Could not load shops near you"
+                message="The shops service did not respond. Nothing is wrong with your filters — this is on our side."
+                detail={loadError}
+                action={{ label: 'Try again', onClick: () => window.location.reload() }}
+                className="max-w-2xl mx-auto"
+              />
             ) : sortedShops.length === 0 ? (
-              <div className="text-center py-20 bg-card-bg rounded-3xl border border-dashed border-border max-w-2xl mx-auto">
-                <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                  <Search className="w-8 h-8 text-text-muted" />
-                </div>
-                <h3 className="text-2xl font-heading font-bold mb-2">No shops found</h3>
-                <p className="text-text-muted">Try adjusting your filters or search term to find what you're looking for.</p>
-                <Button onClick={() => { setSearchTerm(''); setFilterDelivery(false); setFilterOpen(false); setFilterTopRated(false); setSelectedCategory(''); }} variant="outline" className="mt-6">
-                  Clear All Filters
-                </Button>
-              </div>
+              <EmptyState
+                title={hasActiveFilters ? 'No shops match these filters' : 'No shops here yet'}
+                message={
+                  hasActiveFilters
+                    ? 'Nothing in your area matches every filter at once. Clearing them usually brings results back.'
+                    : 'We have not onboarded any shops in this area yet. If you run one, you can be the first.'
+                }
+                action={
+                  hasActiveFilters
+                    ? {
+                        label: 'Clear all filters',
+                        icon: false,
+                        onClick: () => {
+                          setSearchTerm('');
+                          setFilterDelivery(false);
+                          setFilterOpen(false);
+                          setFilterTopRated(false);
+                          setSelectedCategory('');
+                        },
+                      }
+                    : { label: 'Register your shop', icon: false, onClick: () => { window.location.href = '/register-shop'; } }
+                }
+                secondaryAction={
+                  hasActiveFilters
+                    ? undefined
+                    : { label: 'Browse all services', onClick: () => { window.location.href = '/services'; } }
+                }
+                className="max-w-2xl mx-auto"
+              />
             ) : viewMode === 'map' ? (
               <LazyMap location={location} sortedShops={sortedShops} onSelectShop={handleQuickView} />
             ) : sortedShops.length > 12 ? (

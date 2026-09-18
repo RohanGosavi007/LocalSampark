@@ -12,7 +12,8 @@
 import { Platform } from 'react-native';
 import tokens from './design-tokens';
 
-const { brand, neutral, category, glass, mesh, motion, type, radius, gradients } = tokens;
+const { brand, neutral, category, glass, mesh, motion, type, radius, gradients, theme: palettes, shadow, touch } =
+  tokens;
 
 export const colors = {
   primary: brand.primary,
@@ -106,6 +107,128 @@ export const timing = {
   bezier: motion.easing,
 };
 
-export const theme = { colors, spacing, radii, typography, elevation, glow, timing, gradients };
+// ─── Light / dark palettes ───────────────────────────────────────────────────
+// Added in the theme-system overhaul. The mobile app previously had no dark
+// mode at all: no ThemeContext, no appearance setting, and a single palette in
+// design-tokens.js with nothing to switch to. Grepping all 582 mobile source
+// files for isDark / darkMode / useColorScheme / toggleTheme returned one hit,
+// in an unrelated shop module.
+//
+// `buildTheme` returns the same shape for either mode, so a screen written
+// against it works in both without conditionals. The brand values are shared;
+// only the surfaces, lines and ink change.
+
+/**
+ * @param {'light'|'dark'} mode
+ * @returns a full theme object for that mode.
+ */
+export function buildTheme(mode = 'light') {
+  const p = palettes[mode] || palettes.light;
+  const isDark = mode === 'dark';
+
+  return {
+    mode,
+    isDark,
+
+    colors: {
+      // Brand, identical in both modes so identity does not shift.
+      primary: brand.primary,
+      primaryHover: brand.primaryHover,
+      primaryLight: brand.primaryLight,
+      primaryDeep: brand.primaryDeep,
+      violet: brand.violet,
+      cyan: brand.cyan,
+      promo: brand.promo,
+
+      // Surfaces, from the shared ramp.
+      ground: p.ground,
+      groundAlt: p.groundAlt,
+      sunken: p.sunken,
+      surface1: p.surface1,
+      surface2: p.surface2,
+      surface3: p.surface3,
+      surface4: p.surface4,
+      surfaceGlass: p.surfaceGlass,
+
+      border: p.border,
+      borderStrong: p.borderStrong,
+      borderAccent: p.borderAccent,
+
+      text: p.text,
+      textMuted: p.textMuted,
+      textSubtle: p.textSubtle,
+      textInverse: p.textInverse,
+
+      accent: p.accent,
+      accentHover: p.accentHover,
+      accentText: p.accentText,
+      accentQuiet: p.accentQuiet,
+      onAccent: p.onAccent,
+
+      secondary: p.secondary,
+      secondaryQuiet: p.secondaryQuiet,
+
+      success: p.success,
+      successQuiet: p.successQuiet,
+      warning: p.warning,
+      warningQuiet: p.warningQuiet,
+      error: p.danger,
+      errorQuiet: p.dangerQuiet,
+      danger: p.danger,
+      dangerQuiet: p.dangerQuiet,
+      info: p.info,
+      infoQuiet: p.infoQuiet,
+
+      scrim: p.scrim,
+      glow: p.glow,
+
+      // Aliases for the ~570 screens that hardcode their colours today and
+      // will be migrated onto tokens surface by surface. Keeping the old names
+      // pointed at the new ramp means a screen can be converted with an import
+      // change rather than a rewrite.
+      background: p.ground,
+      backgroundAlt: p.groundAlt,
+      surface: p.surface1,
+      cardBg: p.surface1,
+      textPrimary: p.text,
+      textSecondary: p.textMuted,
+      textTertiary: p.textSubtle,
+      divider: p.border,
+      overlay: p.scrim,
+
+      glass,
+      category,
+      mesh,
+    },
+
+    spacing,
+    radii,
+    typography,
+    gradients,
+    timing,
+    touch,
+
+    /** Native elevation, tinted per mode. */
+    elevation: (level = 1) => elevation(level, isDark ? '#000000' : '#0F1729'),
+    /** Coloured glow; falls back to plain elevation below Android API 28. */
+    glow: (color = p.accent, level = 3) => elevation(level, color),
+
+    /**
+     * expo-status-bar style. Getting this wrong is the most visible theming
+     * bug on Android: dark icons on a dark header are simply unreadable.
+     */
+    statusBarStyle: isDark ? 'light' : 'dark',
+  };
+}
+
+export const lightTheme = buildTheme('light');
+export const darkTheme = buildTheme('dark');
+
+/** Kept so `import { touch } from '../theme'` works alongside the palettes. */
+export { touch, shadow };
+
+// The original flat export. Still the light theme, so the two modules that
+// already import `colors` / `theme` directly keep working unchanged.
+export const theme = { colors, spacing, radii, typography, elevation, glow, timing, gradients, touch };
 
 export default theme;

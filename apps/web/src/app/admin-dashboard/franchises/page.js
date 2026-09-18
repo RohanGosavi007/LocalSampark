@@ -123,7 +123,7 @@ export default function FranchisesManagementPage() {
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-emerald-400">{f.revenue_split || 0}%</span>
-                        <button onClick={() => { setEditingSplit(f.id); setSplitValue(f.revenue_split || 0); }} className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition"><Edit className="w-4 h-4"/></button>
+                        <button onClick={() => { setEditingSplit(f.id); setSplitValue(f.revenue_split || 0); }} className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white reveal-actions"><Edit className="w-4 h-4"/></button>
                       </div>
                     )}
                   </td>

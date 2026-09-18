@@ -20,32 +20,32 @@ import { fetchJson } from '../../lib/api';
  */
 
 const card = {
-  background: '#1e293b',
+  background: 'var(--surface-1)',
   padding: '1.5rem',
   borderRadius: '1rem',
-  border: '1px solid #334155',
+  border: '1px solid var(--line)',
 };
 
 const btnPrimary = {
   padding: '0.6rem 1.2rem',
-  background: '#4f46e5',
+  background: 'var(--accent)',
   border: 'none',
-  color: '#fff',
+  color: 'var(--on-solid)',
   borderRadius: '0.5rem',
   fontWeight: 700,
   cursor: 'pointer',
   fontSize: '0.85rem',
 };
 
-const btnDanger = { ...btnPrimary, background: '#dc2626' };
+const btnDanger = { ...btnPrimary, background: 'var(--danger)' };
 const btnGhost = {
   ...btnPrimary,
   background: 'transparent',
-  border: '1px solid #475569',
-  color: '#cbd5e1',
+  border: '1px solid var(--line-strong)',
+  color: 'var(--ink)',
 };
 
-const label = { color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 };
+const label = { color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600 };
 const mono = { fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' };
 
 const WEIGHT_LABELS = {
@@ -75,7 +75,7 @@ function Stat({ title, value, caption, color }) {
     <div style={card}>
       <div style={label}>{title}</div>
       <div style={{ ...mono, fontSize: '1.8rem', fontWeight: 800, color, marginTop: '0.5rem' }}>{value}</div>
-      {caption ? <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.2rem' }}>{caption}</div> : null}
+      {caption ? <div style={{ color: 'var(--ink-subtle)', fontSize: '0.75rem', marginTop: '0.2rem' }}>{caption}</div> : null}
     </div>
   );
 }
@@ -235,8 +235,8 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: '#f8fafc' }}>🧠 ML Control Center</h3>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: 'var(--ink)' }}>🧠 ML Control Center</h3>
+          <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>
             Ranking weights, kill switches and live performance. Changes apply without a restart.
           </p>
         </div>
@@ -254,29 +254,29 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
       </div>
 
       {notice ? (
-        <div style={{ ...card, borderColor: '#166534', background: '#052e16', color: '#86efac', fontSize: '0.85rem', padding: '0.85rem 1.25rem' }}>
+        <div style={{ ...card, borderColor: 'var(--success)', background: 'var(--success-quiet)', color: 'var(--success)', fontSize: '0.85rem', padding: '0.85rem 1.25rem' }}>
           {notice}
         </div>
       ) : null}
 
       {!config && !error ? (
-        <div style={{ ...card, color: '#94a3b8', fontSize: '0.9rem' }}>Loading ML configuration…</div>
+        <div style={{ ...card, color: 'var(--ink-muted)', fontSize: '0.9rem' }}>Loading ML configuration…</div>
       ) : null}
 
       {config ? (
         <>
           {/* Readiness — states plainly what the engine is actually doing. */}
           {readiness && !readiness.cf_ready ? (
-            <div style={{ ...card, borderLeft: '3px solid #f59e0b' }}>
-              <div style={{ color: '#fbbf24', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>
+            <div style={{ ...card, borderLeft: '3px solid var(--warning)' }}>
+              <div style={{ color: 'var(--warning)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>
                 Running on heuristics, not a trained model
               </div>
-              <p style={{ color: '#cbd5e1', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--ink)', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>
                 Collaborative filtering needs interaction history the platform has only just started
                 recording. The collaborative weight stays at zero until it has support, so today's
                 ranking is proximity, content similarity, rating and freshness.
                 <br />
-                <span style={{ ...mono, color: '#94a3b8' }}>
+                <span style={{ ...mono, color: 'var(--ink-muted)' }}>
                   {Number(readiness.weighted_events).toLocaleString('en-IN')} / {Number(readiness.target_events).toLocaleString('en-IN')} weighted events
                   {' · '}
                   {Number(readiness.active_users).toLocaleString('en-IN')} / {Number(readiness.target_users).toLocaleString('en-IN')} active users
@@ -287,11 +287,11 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
 
           {/* Master switch + per-surface */}
           <div style={card}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 1rem 0', fontSize: '1rem' }}>Switches</h4>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.9rem', borderBottom: '1px solid #334155' }}>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 1rem 0', fontSize: '1rem' }}>Switches</h4>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.9rem', borderBottom: '1px solid var(--line)' }}>
               <div>
-                <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>ML ranking</div>
-                <div style={{ color: '#64748b', fontSize: '0.78rem' }}>
+                <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.9rem' }}>ML ranking</div>
+                <div style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem' }}>
                   When off, every surface serves the deterministic distance-and-popularity baseline.
                 </div>
               </div>
@@ -299,7 +299,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                 type="button"
                 onClick={() => save('ml_enabled', !mlOn)}
                 disabled={saving === 'ml_enabled'}
-                style={{ ...btnPrimary, background: mlOn ? '#16a34a' : '#475569', minWidth: '90px' }}
+                style={{ ...btnPrimary, background: mlOn ? '#16a34a' : 'var(--surface-2)', minWidth: '90px' }}
               >
                 {mlOn ? 'ON' : 'OFF'}
               </button>
@@ -308,7 +308,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
               {SURFACES.map(([key, name]) => (
                 <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                  <span style={{ color: mlOn ? '#cbd5e1' : '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>{name}</span>
+                  <span style={{ color: mlOn ? 'var(--ink)' : 'var(--ink-subtle)', fontSize: '0.85rem', fontWeight: 600 }}>{name}</span>
                   <button
                     type="button"
                     onClick={() => save(key, !values[key])}
@@ -317,7 +317,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                       ...btnPrimary,
                       padding: '0.35rem 0.8rem',
                       fontSize: '0.75rem',
-                      background: values[key] ? '#0e7490' : '#475569',
+                      background: values[key] ? '#0e7490' : 'var(--surface-2)',
                       opacity: mlOn ? 1 : 0.5,
                     }}
                   >
@@ -330,8 +330,8 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
 
           {/* Weights */}
           <div style={card}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Scoring weights</h4>
-            <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 1.2rem 0' }}>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Scoring weights</h4>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.8rem', margin: '0 0 1.2rem 0' }}>
               Raw values are what you set. Applied values are renormalised to sum to 1, which is what
               lets a term sit at zero without rescaling the others.
             </p>
@@ -342,15 +342,15 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                 return (
                   <div key={key}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#e2e8f0', fontSize: '0.87rem', fontWeight: 600 }}>
+                      <span style={{ color: 'var(--ink)', fontSize: '0.87rem', fontWeight: 600 }}>
                         {name}
                         {key === 'ml_w_cf' && Number(values[key]) === 0 ? (
-                          <span style={{ color: '#f59e0b', fontSize: '0.72rem', marginLeft: '0.5rem', fontWeight: 700 }}>
+                          <span style={{ color: 'var(--warning)', fontSize: '0.72rem', marginLeft: '0.5rem', fontWeight: 700 }}>
                             AWAITING DATA
                           </span>
                         ) : null}
                       </span>
-                      <span style={{ ...mono, color: '#94a3b8', fontSize: '0.8rem' }}>
+                      <span style={{ ...mono, color: 'var(--ink-muted)', fontSize: '0.8rem' }}>
                         raw {Number(draft[key] ?? 0).toFixed(2)} · applied {applied != null ? applied.toFixed(3) : '—'}
                       </span>
                     </div>
@@ -383,14 +383,14 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                 );
               })}
 
-              <div style={{ borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+              <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
-                  <span style={{ color: '#e2e8f0', fontSize: '0.87rem', fontWeight: 600 }}>Exploration rate (ε)</span>
-                  <span style={{ ...mono, color: '#94a3b8', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--ink)', fontSize: '0.87rem', fontWeight: 600 }}>Exploration rate (ε)</span>
+                  <span style={{ ...mono, color: 'var(--ink-muted)', fontSize: '0.8rem' }}>
                     {(Number(draft.ml_epsilon ?? 0) * 100).toFixed(0)}% of slots
                   </span>
                 </div>
-                <p style={{ color: '#64748b', fontSize: '0.78rem', margin: '0 0 0.5rem 0' }}>
+                <p style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', margin: '0 0 0.5rem 0' }}>
                   Slots given to lower-scoring, rarely-shown merchants. Without it the ranking
                   converges on the same dozen shops and the rest never gather the data to compete.
                 </p>
@@ -420,8 +420,8 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
 
           {/* Curation */}
           <div style={card}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Curation</h4>
-            <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 1.2rem 0' }}>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Curation</h4>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.8rem', margin: '0 0 1.2rem 0' }}>
               Pin a merchant to a fixed slot, multiply its score, or remove it from
               recommendations. A weight changes how a signal is valued for everyone; an override is
               a statement about one merchant, so every change needs a reason and is written to the
@@ -437,7 +437,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                   onChange={(e) => setCurateForm((f) => ({ ...f, item_id: e.target.value }))}
                   placeholder="uuid"
                   required
-                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', fontSize: '0.82rem' }}
                 />
               </div>
 
@@ -447,7 +447,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                   id="curate-type"
                   value={curateForm.override_type}
                   onChange={(e) => setCurateForm((f) => ({ ...f, override_type: e.target.value }))}
-                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', fontSize: '0.82rem' }}
                 >
                   <option value="pin">Pin to slot</option>
                   <option value="boost">Boost score</option>
@@ -462,7 +462,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                     id="curate-pos" type="number" min="0" max="99"
                     value={curateForm.pinned_position}
                     onChange={(e) => setCurateForm((f) => ({ ...f, pinned_position: e.target.value }))}
-                    style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                    style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', fontSize: '0.82rem' }}
                   />
                 </div>
               ) : null}
@@ -474,7 +474,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                     id="curate-boost" type="number" min="0.1" max="5" step="0.1"
                     value={curateForm.boost_factor}
                     onChange={(e) => setCurateForm((f) => ({ ...f, boost_factor: e.target.value }))}
-                    style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                    style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', fontSize: '0.82rem' }}
                   />
                 </div>
               ) : null}
@@ -487,7 +487,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                   onChange={(e) => setCurateForm((f) => ({ ...f, reason: e.target.value }))}
                   placeholder="Why is this merchant being promoted or removed?"
                   required minLength={3}
-                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: '0.82rem' }}
+                  style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', fontSize: '0.82rem' }}
                 />
               </div>
 
@@ -498,9 +498,9 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
               </div>
             </form>
 
-            <div style={{ marginTop: '1.25rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+            <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
               {overrides.length === 0 ? (
-                <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                <div style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem' }}>
                   No overrides. The feed is ranked purely by score.
                 </div>
               ) : (
@@ -508,13 +508,13 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                   {overrides.map((o) => (
                     <div key={o.item_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.86rem' }}>
+                        <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.86rem' }}>
                           {o.item_name || o.item_id}
                           <span style={{
                             marginLeft: '0.6rem', fontSize: '0.68rem', fontWeight: 700,
                             padding: '0.15rem 0.45rem', borderRadius: '0.25rem',
-                            background: o.override_type === 'block' ? '#450a0a' : '#082f49',
-                            color: o.override_type === 'block' ? '#fca5a5' : '#7dd3fc',
+                            background: o.override_type === 'block' ? 'var(--danger-quiet)' : '#082f49',
+                            color: o.override_type === 'block' ? 'var(--danger)' : '#7dd3fc',
                             textTransform: 'uppercase', letterSpacing: '0.05em',
                           }}>
                             {o.override_type}
@@ -522,7 +522,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                             {o.override_type === 'boost' ? ` ×${o.boost_factor}` : ''}
                           </span>
                         </div>
-                        <div style={{ color: '#64748b', fontSize: '0.76rem' }}>{o.reason || 'No reason recorded'}</div>
+                        <div style={{ color: 'var(--ink-subtle)', fontSize: '0.76rem' }}>{o.reason || 'No reason recorded'}</div>
                       </div>
                       <button
                         type="button"
@@ -541,7 +541,7 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
 
           {/* Metrics */}
           <div>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 0.75rem 0', fontSize: '1rem' }}>Last 24 hours</h4>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 0.75rem 0', fontSize: '1rem' }}>Last 24 hours</h4>
             {metrics ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                 <Stat
@@ -570,11 +570,11 @@ export default function MLControlTab({ API_BASE, authHeaders }) {
                 />
               </div>
             ) : (
-              <div style={{ ...card, color: '#94a3b8', fontSize: '0.88rem' }}>
+              <div style={{ ...card, color: 'var(--ink-muted)', fontSize: '0.88rem' }}>
                 No interaction data in this window yet.
               </div>
             )}
-            <p style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '0.75rem', maxWidth: '70ch', lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', marginTop: '0.75rem', maxWidth: '70ch', lineHeight: 1.6 }}>
               Coverage is the guardrail. Click-through rate rises happily while the feed shows the
               same fifteen merchants to everyone — in a marketplace where every merchant pays, that
               is a commercial problem before it is a modelling one.

@@ -34,10 +34,10 @@ import 'leaflet/dist/leaflet.css';
 const DEFAULT_CENTER = [18.5913, 73.8987];
 
 const STYLES = {
-  verified: { color: '#22c55e', weight: 2, fillOpacity: 0.12, dashArray: null },
-  unverified: { color: '#f59e0b', weight: 2, fillOpacity: 0.08, dashArray: '6 4' },
-  conflict: { color: '#ef4444', weight: 3, fillOpacity: 0.28, dashArray: null },
-  selected: { color: '#38bdf8', weight: 4, fillOpacity: 0.2, dashArray: null },
+  verified: { color: 'var(--success)', weight: 2, fillOpacity: 0.12, dashArray: null },
+  unverified: { color: 'var(--warning)', weight: 2, fillOpacity: 0.08, dashArray: '6 4' },
+  conflict: { color: 'var(--danger)', weight: 3, fillOpacity: 0.28, dashArray: null },
+  selected: { color: 'var(--info)', weight: 4, fillOpacity: 0.2, dashArray: null },
   drawing: { color: '#a78bfa', weight: 3, fillOpacity: 0.2, dashArray: '4 4' },
 };
 
@@ -131,7 +131,7 @@ export default function TerritoryMap({
     || DEFAULT_CENTER;
 
   return (
-    <div style={{ position: 'relative', height, borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid #334155' }}>
+    <div style={{ position: 'relative', height, borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid var(--line)' }}>
       <MapContainer
         center={mapCenter}
         zoom={11}
@@ -188,11 +188,11 @@ export default function TerritoryMap({
           left: 10,
           zIndex: 1000,
           background: 'rgba(15, 23, 42, 0.92)',
-          border: '1px solid #334155',
+          border: '1px solid var(--line)',
           borderRadius: '0.5rem',
           padding: '0.6rem 0.75rem',
           fontSize: '0.72rem',
-          color: '#cbd5e1',
+          color: 'var(--ink)',
           lineHeight: 1.7,
         }}
       >

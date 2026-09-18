@@ -9,9 +9,9 @@ export default function UsersTab({ API_BASE, authHeaders }) {
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  const cardStyle = { background: '#1e293b', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #334155' };
-  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 600, borderBottom: '1px solid #334155' };
-  const tdStyle = { padding: '0.85rem 1rem', color: '#cbd5e1', borderBottom: '1px solid #1e293b' };
+  const cardStyle = { background: 'var(--surface-1)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--line)' };
+  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600, borderBottom: '1px solid var(--line)' };
+  const tdStyle = { padding: '0.85rem 1rem', color: 'var(--ink)', borderBottom: '1px solid var(--line)' };
 
   useEffect(() => {
     fetchUsers();
@@ -44,8 +44,8 @@ export default function UsersTab({ API_BASE, authHeaders }) {
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#f8fafc' }}>👥 Platform User Directory</h3>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>View all registered consumer accounts and credentials.</p>
+            <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--ink)' }}>👥 Platform User Directory</h3>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>View all registered consumer accounts and credentials.</p>
           </div>
 
           <input
@@ -53,12 +53,12 @@ export default function UsersTab({ API_BASE, authHeaders }) {
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ background: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '0.4rem 0.8rem', borderRadius: '0.5rem' }}
+            style={{ background: 'var(--ground)', border: '1px solid var(--line)', color: 'var(--ink)', padding: '0.4rem 0.8rem', borderRadius: '0.5rem' }}
           />
         </div>
 
         {loading ? (
-          <p style={{ color: '#94a3b8' }}>Loading users...</p>
+          <p style={{ color: 'var(--ink-muted)' }}>Loading users...</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
@@ -72,7 +72,7 @@ export default function UsersTab({ API_BASE, authHeaders }) {
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" style={{ ...tdStyle, textAlign: 'center', color: '#64748b', padding: '2rem' }}>
+                    <td colSpan="3" style={{ ...tdStyle, textAlign: 'center', color: 'var(--ink-subtle)', padding: '2rem' }}>
                       No users found.
                     </td>
                   </tr>
@@ -80,12 +80,12 @@ export default function UsersTab({ API_BASE, authHeaders }) {
                   filteredUsers.map((u) => (
                     <tr key={u.id}>
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: '#f8fafc' }}>{u.full_name || 'Anonymous User'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>ID: {u.id}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{u.full_name || 'Anonymous User'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>ID: {u.id}</div>
                       </td>
                       <td style={tdStyle}>
                         <div>{u.email || 'No email registered'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.phone_number}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>{u.phone_number}</div>
                       </td>
                       <td style={tdStyle}>
                         <span style={{

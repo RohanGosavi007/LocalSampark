@@ -76,12 +76,12 @@ export default function TestRunnerPage() {
   };
 
   return (
-    <div style={{ padding: '30px', fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: '#0f172a', color: '#f8fafc', minHeight: '100vh' }}>
-      <header style={{ marginBottom: '30px', borderBottom: '1px solid #334155', pb: '20px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#38bdf8', margin: '0 0 8px 0' }}>
+    <div style={{ padding: '30px', fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: 'var(--ground)', color: 'var(--ink)', minHeight: '100vh' }}>
+      <header style={{ marginBottom: '30px', borderBottom: '1px solid var(--line)', pb: '20px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--info)', margin: '0 0 8px 0' }}>
           ⚡ LocalSampark Automation Test Control Center
         </h1>
-        <p style={{ color: '#94a3b8', margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', margin: 0 }}>
           Execute and monitor 315+ full-stack automated tests across Unit, API, E2E, Visual, and Load testing suites.
         </p>
       </header>
@@ -89,8 +89,8 @@ export default function TestRunnerPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px' }}>
         
         {/* Left Side: Test Suites List */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px', border: '1px solid #334155' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#f1f5f9', marginTop: 0, marginBottom: '16px' }}>
+        <div style={{ backgroundColor: 'var(--surface-1)', borderRadius: '12px', padding: '20px', border: '1px solid var(--line)' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--ink)', marginTop: 0, marginBottom: '16px' }}>
             Available Test Suites
           </h2>
 
@@ -102,7 +102,7 @@ export default function TestRunnerPage() {
                 padding: '14px',
                 borderRadius: '8px',
                 background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                color: '#fff',
+                color: 'var(--on-solid)',
                 border: 'none',
                 fontWeight: '700',
                 cursor: isExecuting ? 'not-allowed' : 'pointer',
@@ -122,14 +122,14 @@ export default function TestRunnerPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px 14px',
-                  backgroundColor: selectedSuite === s.id ? '#334155' : '#0f172a',
+                  backgroundColor: selectedSuite === s.id ? 'var(--surface-2)' : 'var(--ground)',
                   borderRadius: '8px',
-                  border: '1px solid #334155'
+                  border: '1px solid var(--line)'
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>{s.name}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{s.category}</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--ink)' }}>{s.name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--ink-subtle)' }}>{s.category}</div>
                 </div>
 
                 <button
@@ -138,8 +138,8 @@ export default function TestRunnerPage() {
                   style={{
                     padding: '6px 12px',
                     borderRadius: '6px',
-                    backgroundColor: isExecuting ? '#475569' : '#0284c7',
-                    color: '#fff',
+                    backgroundColor: isExecuting ? 'var(--surface-2)' : 'var(--info)',
+                    color: 'var(--ink)',
                     border: 'none',
                     fontSize: '12px',
                     fontWeight: '600',
@@ -154,10 +154,10 @@ export default function TestRunnerPage() {
         </div>
 
         {/* Right Side: Live Terminal Console Output */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px', border: '1px solid #334155', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ backgroundColor: 'var(--surface-1)', borderRadius: '12px', padding: '20px', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column' }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#f1f5f9', margin: 0 }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--ink)', margin: 0 }}>
               Execution Output & Logs
             </h2>
 
@@ -167,7 +167,7 @@ export default function TestRunnerPage() {
                 borderRadius: '20px',
                 fontSize: '12px',
                 fontWeight: '600',
-                backgroundColor: activeRun.status === 'running' ? '#eab308' : activeRun.status === 'passed' ? '#22c55e' : '#ef4444',
+                backgroundColor: activeRun.status === 'running' ? 'var(--warning)' : activeRun.status === 'passed' ? 'var(--success)' : 'var(--danger)',
                 color: '#000'
               }}>
                 {activeRun.status.toUpperCase()}
@@ -177,24 +177,24 @@ export default function TestRunnerPage() {
 
           <div style={{
             flex: 1,
-            backgroundColor: '#020617',
+            backgroundColor: 'var(--sunken)',
             borderRadius: '8px',
             padding: '16px',
             fontFamily: 'Consolas, Monaco, "Andale Mono", monospace',
             fontSize: '13px',
-            color: '#38bdf8',
+            color: 'var(--info)',
             overflowY: 'auto',
             minHeight: '450px',
             maxHeight: '600px',
-            border: '1px solid #1e293b'
+            border: '1px solid var(--line)'
           }}>
             {logs.length === 0 ? (
-              <div style={{ color: '#475569', textAlign: 'center', marginTop: '150px' }}>
+              <div style={{ color: 'var(--ink-subtle)', textAlign: 'center', marginTop: '150px' }}>
                 Select a test suite from the left and click "Run" to view live execution details.
               </div>
             ) : (
               logs.map((line, idx) => (
-                <div key={idx} style={{ marginBottom: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: line.includes('PASSED') || line.includes('passed') ? '#4ade80' : line.includes('FAIL') || line.includes('failed') || line.includes('❌') ? '#f87171' : '#cbd5e1' }}>
+                <div key={idx} style={{ marginBottom: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: line.includes('PASSED') || line.includes('passed') ? 'var(--success)' : line.includes('FAIL') || line.includes('failed') || line.includes('❌') ? 'var(--danger)' : 'var(--ink)' }}>
                   {line}
                 </div>
               ))

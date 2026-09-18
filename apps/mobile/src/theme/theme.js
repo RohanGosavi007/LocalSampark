@@ -1,57 +1,66 @@
 // apps/mobile/src/theme/theme.js
-// Spatial Design System v2.0 — Unified with Web Design Language
+//
+// Legacy fixed palette for the 8 screens that import it (ShopByCategory,
+// ResidentDashboard, CheckoutScreen and friends). The brand was already
+// reconciled with the shared tokens; the surfaces, ink and semantic colours
+// were not, so they still carried their own literals and drifted from both
+// design-tokens.js and the web app.
+//
+// Every value now derives from packages/shared/design-tokens.js. Exported names
+// are unchanged, so no screen needs an edit.
+//
+// New work should use `useTheme()` from src/context/ThemeContext.js instead:
+// these constants are one fixed palette and cannot respond to light/dark.
+import tokens from './design-tokens';
+
+const { brand, theme: palettes } = tokens;
+const L = palettes.light;
+const D = palettes.dark;
 
 export const COLORS = {
-  // Brand Colors — retuned to the shared emerald/indigo system in
-  // theme/design-tokens.js. This file previously carried its own orange
-  // Swiggy/Blinkit-style brand, which put the 8 screens still importing
-  // theme.js (ShopByCategory, ResidentDashboard, CheckoutScreen, etc.) out
-  // of sync with everything reading theme/index.js.
-  primary: '#00C880',       // Emerald
-  primaryLight: '#E6FBF3',
-  primaryDark: '#00A468',
-  secondary: '#FF6A00',     // Hyper orange, now the secondary accent
-  
-  // Backgrounds
-  background: '#F8F9FA',    // Off-white for overall app background
-  surface: '#FFFFFF',       // Pure white for cards and sheets
-  
-  // Typography
-  textPrimary: '#1E1E1E',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  textInverse: '#FFFFFF',
+  primary: brand.primary,
+  primaryLight: brand.primaryLight,
+  primaryDark: brand.primaryHover,
+  secondary: brand.secondary,
+
+  background: L.ground,
+  surface: L.surface1,
+
+  textPrimary: L.text,
+  textSecondary: L.textMuted,
+  textTertiary: L.textSubtle,
+  textInverse: L.textInverse,
   // Aliases some screens (ResidentDashboard, etc.) read directly.
-  text: '#1E1E1E',
-  textMuted: '#6B7280',
-  cardBg: '#FFFFFF',
+  text: L.text,
+  textMuted: L.textMuted,
+  cardBg: L.surface1,
 
-  // Semantic Colors
-  success: '#10B981',       // Crisp green
-  successLight: '#D1FAE5',
-  error: '#EF4444',         // Crisp red
-  errorLight: '#FEE2E2',
-  warning: '#F59E0B',
-  warningLight: '#FEF3C7',
-  info: '#3B82F6',
-  infoLight: '#DBEAFE',
+  success: L.success,
+  successLight: L.successQuiet,
+  error: L.danger,
+  errorLight: L.dangerQuiet,
+  warning: L.warning,
+  warningLight: L.warningQuiet,
+  info: L.info,
+  infoLight: L.infoQuiet,
 
-  // Structural
-  border: '#E5E7EB',
-  divider: '#F3F4F6',
-  overlay: 'rgba(0,0,0,0.4)',
+  border: L.border,
+  divider: L.sunken,
+  overlay: L.scrim,
 };
 
-// Dark-mode-first surfaces for the spatial design language
+// Dark surfaces, from the shared six-step slate ramp. These were a near-black
+// #060b18 ground with indigo-tinted borders, an accent hue that appears nowhere
+// in the emerald/orange brand.
 export const DARK_COLORS = {
-  background: '#060b18',
-  backgroundAlt: '#0d1526',
-  surface: 'rgba(13, 21, 38, 0.85)',
-  surfaceGlass: 'rgba(255, 255, 255, 0.04)',
-  text: '#f1f5f9',
-  textMuted: '#94a3b8',
-  border: '#1e2d4a',
-  borderGlass: 'rgba(255, 255, 255, 0.08)',
+  background: D.ground,
+  backgroundAlt: D.groundAlt,
+  surface: D.surface1,
+  surfaceGlass: D.surfaceGlass,
+  text: D.text,
+  textMuted: D.textMuted,
+  border: D.border,
+  borderGlass: D.borderStrong,
 };
 
 // Mesh gradient color arrays for LinearGradient

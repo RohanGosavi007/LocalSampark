@@ -19,26 +19,26 @@ import { fetchJson } from '../../lib/api';
  */
 
 const card = {
-  background: '#1e293b',
+  background: 'var(--surface-1)',
   padding: '1.5rem',
   borderRadius: '1rem',
-  border: '1px solid #334155',
+  border: '1px solid var(--line)',
 };
 
 const btn = {
   padding: '0.6rem 1.2rem',
-  background: '#4f46e5',
+  background: 'var(--accent)',
   border: 'none',
-  color: '#fff',
+  color: 'var(--on-solid)',
   borderRadius: '0.5rem',
   fontWeight: 700,
   cursor: 'pointer',
   fontSize: '0.85rem',
 };
-const btnGhost = { ...btn, background: 'transparent', border: '1px solid #475569', color: '#cbd5e1' };
-const btnDanger = { ...btn, background: '#dc2626' };
+const btnGhost = { ...btn, background: 'transparent', border: '1px solid var(--line-strong)', color: 'var(--ink)' };
+const btnDanger = { ...btn, background: 'var(--danger)' };
 
-const label = { color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 };
+const label = { color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600 };
 const mono = { fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' };
 
 const VIEWS = [
@@ -66,7 +66,7 @@ function Stat({ title, value, caption, color }) {
     <div style={card}>
       <div style={label}>{title}</div>
       <div style={{ ...mono, fontSize: '1.6rem', fontWeight: 800, color, marginTop: '0.4rem' }}>{value}</div>
-      {caption ? <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.2rem' }}>{caption}</div> : null}
+      {caption ? <div style={{ color: 'var(--ink-subtle)', fontSize: '0.75rem', marginTop: '0.2rem' }}>{caption}</div> : null}
     </div>
   );
 }
@@ -183,8 +183,8 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: '#f8fafc' }}>⚖️ ML Governance &amp; Experimentation</h3>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0', color: 'var(--ink)' }}>⚖️ ML Governance &amp; Experimentation</h3>
+          <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: 0 }}>
             Multi-objective model configuration, canary experiments, drift monitoring and the AI risk queue.
           </p>
         </div>
@@ -193,7 +193,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderBottom: '1px solid #334155', paddingBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}>
         {VIEWS.map(([id, name]) => (
           <button
             key={id}
@@ -201,14 +201,14 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
             onClick={() => setView(id)}
             style={{
               ...btn,
-              background: view === id ? '#4f46e5' : 'transparent',
-              border: view === id ? 'none' : '1px solid #334155',
-              color: view === id ? '#fff' : '#94a3b8',
+              background: view === id ? 'var(--accent)' : 'transparent',
+              border: view === id ? 'none' : '1px solid var(--line)',
+              color: view === id ? 'var(--on-solid)' : 'var(--ink-muted)',
             }}
           >
             {name}
             {id === 'moderation' && queue.length > 0 ? (
-              <span style={{ marginLeft: '0.5rem', background: '#dc2626', borderRadius: '999px', padding: '0.05rem 0.4rem', fontSize: '0.7rem' }}>
+              <span style={{ marginLeft: '0.5rem', background: 'var(--danger)', borderRadius: '999px', padding: '0.05rem 0.4rem', fontSize: '0.7rem' }}>
                 {queue.length}
               </span>
             ) : null}
@@ -217,13 +217,13 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
       </div>
 
       {notice ? (
-        <div style={{ ...card, borderColor: '#166534', background: '#052e16', color: '#86efac', fontSize: '0.85rem', padding: '0.85rem 1.25rem' }}>
+        <div style={{ ...card, borderColor: 'var(--success)', background: 'var(--success-quiet)', color: 'var(--success)', fontSize: '0.85rem', padding: '0.85rem 1.25rem' }}>
           {notice}
         </div>
       ) : null}
 
       {!config && !error ? (
-        <div style={{ ...card, color: '#94a3b8', fontSize: '0.9rem' }}>Loading governance data…</div>
+        <div style={{ ...card, color: 'var(--ink-muted)', fontSize: '0.9rem' }}>Loading governance data…</div>
       ) : null}
 
       {/* ── MODEL CONFIGURATION ───────────────────────────────── */}
@@ -232,8 +232,8 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
-                <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.95rem' }}>Multi-task ranking (MMoE)</div>
-                <div style={{ color: '#64748b', fontSize: '0.8rem', maxWidth: '62ch', lineHeight: 1.55 }}>
+                <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.95rem' }}>Multi-task ranking (MMoE)</div>
+                <div style={{ color: 'var(--ink-subtle)', fontSize: '0.8rem', maxWidth: '62ch', lineHeight: 1.55 }}>
                   Scores each listing on click probability, conversion probability and quality, then
                   multiplies them. A product rather than a sum, so a listing cannot compensate for
                   being unclickable by being close. Off means the weighted-sum ranker serves.
@@ -243,7 +243,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                 type="button"
                 onClick={() => save('ml_mmoe_enabled', !mmoeOn)}
                 disabled={saving === 'ml_mmoe_enabled'}
-                style={{ ...btn, background: mmoeOn ? '#16a34a' : '#475569', minWidth: '90px' }}
+                style={{ ...btn, background: mmoeOn ? '#16a34a' : 'var(--surface-2)', minWidth: '90px' }}
               >
                 {mmoeOn ? 'ON' : 'OFF'}
               </button>
@@ -251,19 +251,19 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
           </div>
 
           <div style={card}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 1rem 0', fontSize: '1rem' }}>Objective exponents</h4>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 1rem 0', fontSize: '1rem' }}>Objective exponents</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               {EXPONENTS.map(([key, name, hint]) => {
                 const [min, max] = bounds[key] || [0, 5];
                 return (
                   <div key={key}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.25rem' }}>
-                      <span style={{ color: '#e2e8f0', fontSize: '0.87rem', fontWeight: 600 }}>{name}</span>
-                      <span style={{ ...mono, color: '#94a3b8', fontSize: '0.8rem' }}>
+                      <span style={{ color: 'var(--ink)', fontSize: '0.87rem', fontWeight: 600 }}>{name}</span>
+                      <span style={{ ...mono, color: 'var(--ink-muted)', fontSize: '0.8rem' }}>
                         {Number(draft[key] ?? 0).toFixed(2)}
                       </span>
                     </div>
-                    <div style={{ color: '#64748b', fontSize: '0.76rem', marginBottom: '0.4rem' }}>{hint}</div>
+                    <div style={{ color: 'var(--ink-subtle)', fontSize: '0.76rem', marginBottom: '0.4rem' }}>{hint}</div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       <input
                         id={`exp-${key}`}
@@ -286,7 +286,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                 );
               })}
             </div>
-            <p style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '1rem', maxWidth: '70ch', lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', marginTop: '1rem', maxWidth: '70ch', lineHeight: 1.6 }}>
               An exponent of 0 switches its objective off entirely — x⁰ is 1 — which is a legitimate
               way to isolate the others while tuning.
             </p>
@@ -295,8 +295,8 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
               <div>
-                <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.95rem' }}>Home layout bandit</div>
-                <div style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.95rem' }}>Home layout bandit</div>
+                <div style={{ color: 'var(--ink-subtle)', fontSize: '0.8rem' }}>
                   LinUCB orders the home modules per user. Explores where it is uncertain, not at random.
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                   type="button"
                   onClick={() => save('ml_bandit_enabled', !banditOn)}
                   disabled={saving === 'ml_bandit_enabled'}
-                  style={{ ...btn, background: banditOn ? '#16a34a' : '#475569', minWidth: '90px' }}
+                  style={{ ...btn, background: banditOn ? '#16a34a' : 'var(--surface-2)', minWidth: '90px' }}
                 >
                   {banditOn ? 'ON' : 'OFF'}
                 </button>
@@ -318,7 +318,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '420px' }}>
                 <thead>
-                  <tr style={{ color: '#64748b', textAlign: 'left' }}>
+                  <tr style={{ color: 'var(--ink-subtle)', textAlign: 'left' }}>
                     <th style={{ padding: '0.5rem 0.75rem' }}>Module</th>
                     <th style={{ padding: '0.5rem 0.75rem' }}>Times shown</th>
                     <th style={{ padding: '0.5rem 0.75rem' }}>Mean reward</th>
@@ -326,10 +326,10 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                 </thead>
                 <tbody>
                   {banditArms.map((arm) => (
-                    <tr key={arm.arm} style={{ borderTop: '1px solid #334155', color: '#e2e8f0' }}>
+                    <tr key={arm.arm} style={{ borderTop: '1px solid var(--line)', color: 'var(--ink)' }}>
                       <td style={{ padding: '0.55rem 0.75rem', fontWeight: 600 }}>{arm.arm}</td>
                       <td style={{ ...mono, padding: '0.55rem 0.75rem' }}>{Number(arm.pulls).toLocaleString('en-IN')}</td>
-                      <td style={{ ...mono, padding: '0.55rem 0.75rem', color: arm.mean_reward == null ? '#64748b' : '#4ade80' }}>
+                      <td style={{ ...mono, padding: '0.55rem 0.75rem', color: arm.mean_reward == null ? 'var(--ink-subtle)' : 'var(--success)' }}>
                         {arm.mean_reward == null ? 'never shown' : arm.mean_reward.toFixed(4)}
                       </td>
                     </tr>
@@ -345,27 +345,27 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
       {config && view === 'experiments' ? (
         <>
           <div style={card}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 0.75rem 0', fontSize: '1rem' }}>Experiments</h4>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 0.75rem 0', fontSize: '1rem' }}>Experiments</h4>
             {experiments.length === 0 ? (
-              <div style={{ color: '#64748b', fontSize: '0.88rem' }}>
+              <div style={{ color: 'var(--ink-subtle)', fontSize: '0.88rem' }}>
                 No experiments defined. All traffic sees production behaviour.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {experiments.map((exp) => (
-                  <div key={exp.key} style={{ borderTop: '1px solid #334155', paddingTop: '0.85rem' }}>
+                  <div key={exp.key} style={{ borderTop: '1px solid var(--line)', paddingTop: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                       <div>
-                        <span style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{exp.key}</span>
+                        <span style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.9rem' }}>{exp.key}</span>
                         <span style={{
                           marginLeft: '0.6rem', fontSize: '0.68rem', fontWeight: 700, padding: '0.15rem 0.45rem',
                           borderRadius: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em',
-                          background: exp.is_active ? '#052e16' : '#1e293b',
-                          color: exp.is_active ? '#86efac' : '#64748b',
+                          background: exp.is_active ? 'var(--success-quiet)' : 'var(--surface-1)',
+                          color: exp.is_active ? 'var(--success)' : 'var(--ink-subtle)',
                         }}>
                           {exp.is_active ? 'running' : 'stopped'}
                         </span>
-                        <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                        <div style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
                           {exp.traffic_pct}% of traffic ·{' '}
                           {(exp.variants || []).map((v) => `${v.name} ${v.weight}`).join(' / ')}
                         </div>
@@ -382,17 +382,17 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
 
           {results ? (
             <div style={card}>
-              <h4 style={{ color: '#f8fafc', margin: '0 0 0.25rem 0', fontSize: '1rem' }}>
+              <h4 style={{ color: 'var(--ink)', margin: '0 0 0.25rem 0', fontSize: '1rem' }}>
                 {results.experiment}
               </h4>
-              <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '1rem' }}>
+              <div style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', marginBottom: '1rem' }}>
                 Last {results.window_hours} hours. Variants are recomputed with the same function that
                 served them, so this cannot disagree with what users actually saw.
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '600px' }}>
                   <thead>
-                    <tr style={{ color: '#64748b', textAlign: 'left' }}>
+                    <tr style={{ color: 'var(--ink-subtle)', textAlign: 'left' }}>
                       <th style={{ padding: '0.5rem 0.75rem' }}>Variant</th>
                       <th style={{ padding: '0.5rem 0.75rem' }}>Users</th>
                       <th style={{ padding: '0.5rem 0.75rem' }}>Impressions</th>
@@ -405,20 +405,20 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                     {(results.variants || []).map((v, i) => {
                       const sig = (results.significance || []).find((s) => s.variant === v.variant);
                       return (
-                        <tr key={v.variant} style={{ borderTop: '1px solid #334155', color: '#e2e8f0' }}>
+                        <tr key={v.variant} style={{ borderTop: '1px solid var(--line)', color: 'var(--ink)' }}>
                           <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700 }}>
-                            {v.variant}{i === 0 ? <span style={{ color: '#64748b', fontWeight: 400 }}> (control)</span> : null}
+                            {v.variant}{i === 0 ? <span style={{ color: 'var(--ink-subtle)', fontWeight: 400 }}> (control)</span> : null}
                           </td>
                           <td style={{ ...mono, padding: '0.55rem 0.75rem' }}>{v.subjects}</td>
                           <td style={{ ...mono, padding: '0.55rem 0.75rem' }}>{v.impressions}</td>
                           <td style={{ ...mono, padding: '0.55rem 0.75rem' }}>{pct(v.ctr)}</td>
                           <td style={{ ...mono, padding: '0.55rem 0.75rem' }}>{pct(v.cvr)}</td>
                           <td style={{ padding: '0.55rem 0.75rem', fontSize: '0.78rem', fontWeight: 700,
-                            color: !sig ? '#64748b'
+                            color: !sig ? 'var(--ink-subtle)'
                               : sig.verdict === 'better' ? '#4ade80'
                               : sig.verdict === 'worse' ? '#f87171' : '#94a3b8' }}>
                             {sig ? sig.verdict.replace(/_/g, ' ') : '—'}
-                            {sig && sig.z != null ? <span style={{ ...mono, color: '#64748b', fontWeight: 400 }}> z={sig.z}</span> : null}
+                            {sig && sig.z != null ? <span style={{ ...mono, color: 'var(--ink-subtle)', fontWeight: 400 }}> z={sig.z}</span> : null}
                           </td>
                         </tr>
                       );
@@ -426,7 +426,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                   </tbody>
                 </table>
               </div>
-              <p style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '0.9rem', maxWidth: '70ch', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', marginTop: '0.9rem', maxWidth: '70ch', lineHeight: 1.6 }}>
                 A verdict of &ldquo;insufficient data&rdquo; means fewer than 30 clicks in an arm, where the
                 normal approximation behind the z-test is not trustworthy regardless of how large the
                 difference looks.
@@ -440,11 +440,11 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
       {config && view === 'drift' ? (
         <>
           {driftReport?.alert ? (
-            <div style={{ ...card, borderLeft: '3px solid #dc2626' }}>
-              <div style={{ color: '#f87171', fontWeight: 700, fontSize: '0.92rem', marginBottom: '0.3rem' }}>
+            <div style={{ ...card, borderLeft: '3px solid var(--danger)' }}>
+              <div style={{ color: 'var(--danger)', fontWeight: 700, fontSize: '0.92rem', marginBottom: '0.3rem' }}>
                 {driftReport.drifted_features.length} feature(s) have drifted significantly
               </div>
-              <div style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
+              <div style={{ color: 'var(--ink)', fontSize: '0.85rem' }}>
                 {driftReport.drifted_features.join(', ')} — PSI above {driftReport.thresholds.alert}. The
                 ranker keeps serving; its inputs no longer resemble the period it was tuned against.
               </div>
@@ -452,8 +452,8 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
           ) : null}
 
           <div style={card}>
-            <h4 style={{ color: '#f8fafc', margin: '0 0 0.25rem 0', fontSize: '1rem' }}>Population Stability Index</h4>
-            <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '1rem', maxWidth: '72ch', lineHeight: 1.6 }}>
+            <h4 style={{ color: 'var(--ink)', margin: '0 0 0.25rem 0', fontSize: '1rem' }}>Population Stability Index</h4>
+            <div style={{ color: 'var(--ink-subtle)', fontSize: '0.78rem', marginBottom: '1rem', maxWidth: '72ch', lineHeight: 1.6 }}>
               Last {driftReport?.window_days ?? 7} days against the {driftReport?.window_days ?? 7} before.
               Below {driftReport?.thresholds?.warn ?? 0.1} is stable, above {driftReport?.thresholds?.alert ?? 0.25} is
               a significant shift. Nothing fails when a feature drifts — that is why it is measured.
@@ -461,7 +461,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '520px' }}>
                 <thead>
-                  <tr style={{ color: '#64748b', textAlign: 'left' }}>
+                  <tr style={{ color: 'var(--ink-subtle)', textAlign: 'left' }}>
                     <th style={{ padding: '0.5rem 0.75rem' }}>Feature</th>
                     <th style={{ padding: '0.5rem 0.75rem' }}>PSI</th>
                     <th style={{ padding: '0.5rem 0.75rem' }}>Status</th>
@@ -470,16 +470,16 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
                 </thead>
                 <tbody>
                   {(driftReport?.features || []).map((f) => (
-                    <tr key={f.feature} style={{ borderTop: '1px solid #334155', color: '#e2e8f0' }}>
+                    <tr key={f.feature} style={{ borderTop: '1px solid var(--line)', color: 'var(--ink)' }}>
                       <td style={{ padding: '0.55rem 0.75rem', fontWeight: 600 }}>{f.feature}</td>
                       <td style={{ ...mono, padding: '0.55rem 0.75rem' }}>{f.psi == null ? '—' : f.psi.toFixed(4)}</td>
                       <td style={{ padding: '0.55rem 0.75rem', fontSize: '0.78rem', fontWeight: 700,
-                        color: f.status === 'drifted' ? '#f87171'
+                        color: f.status === 'drifted' ? 'var(--danger)'
                           : f.status === 'shifting' ? '#fbbf24'
                           : f.status === 'stable' ? '#4ade80' : '#64748b' }}>
                         {f.status.replace(/_/g, ' ')}
                       </td>
-                      <td style={{ ...mono, padding: '0.55rem 0.75rem', color: '#94a3b8' }}>
+                      <td style={{ ...mono, padding: '0.55rem 0.75rem', color: 'var(--ink-muted)' }}>
                         {f.recent_samples ?? 0} / {f.reference_samples ?? 0}
                       </td>
                     </tr>
@@ -495,7 +495,7 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
       {config && view === 'moderation' ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ color: '#64748b', fontSize: '0.85rem', maxWidth: '68ch', lineHeight: 1.6 }}>
+            <div style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', maxWidth: '68ch', lineHeight: 1.6 }}>
               Statistical outliers, not rule hits. These are listings far from what the population
               looks like, which is how unfamiliar abuse gets caught — and also why every item needs a
               human decision rather than an automatic block.
@@ -523,32 +523,32 @@ export default function MLGovernanceTab({ API_BASE, authHeaders }) {
 
           <div style={card}>
             {queue.length === 0 ? (
-              <div style={{ color: '#64748b', fontSize: '0.88rem' }}>
+              <div style={{ color: 'var(--ink-subtle)', fontSize: '0.88rem' }}>
                 Nothing flagged. Either the catalogue looks normal or there is not yet enough of it to
                 establish what normal is.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {queue.map((item) => (
-                  <div key={item.id} style={{ borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+                  <div key={item.id} style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                           <span style={{
                             ...mono, fontWeight: 800, fontSize: '1rem',
-                            color: item.risk_score >= 70 ? '#f87171' : item.risk_score >= 40 ? '#fbbf24' : '#94a3b8',
+                            color: item.risk_score >= 70 ? 'var(--danger)' : item.risk_score >= 40 ? 'var(--warning)' : 'var(--ink-muted)',
                           }}>
                             {Math.round(item.risk_score)}
                           </span>
-                          <span style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.88rem' }}>
+                          <span style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.88rem' }}>
                             {item.detector.replace(/_/g, ' ')}
                           </span>
-                          <span style={{ ...mono, color: '#64748b', fontSize: '0.74rem' }}>
+                          <span style={{ ...mono, color: 'var(--ink-subtle)', fontSize: '0.74rem' }}>
                             {item.entity_type}:{String(item.entity_id).slice(0, 8)}…
                           </span>
                         </div>
                         <pre style={{
-                          ...mono, color: '#94a3b8', fontSize: '0.74rem', margin: '0.5rem 0 0',
+                          ...mono, color: 'var(--ink-muted)', fontSize: '0.74rem', margin: '0.5rem 0 0',
                           whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: '70ch',
                         }}>
                           {typeof item.evidence === 'object' ? JSON.stringify(item.evidence) : String(item.evidence || '')}

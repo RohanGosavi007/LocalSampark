@@ -15,11 +15,25 @@ const PAGES_TO_TEST = [
   { name: 'Services', url: '/services' },
 ];
 
+/**
+ * Playwright's webServer runs `next dev`, which compiles each route on its
+ * first request — the landing page is ~6,000 modules and takes over a minute
+ * cold. The default 30s navigation timeout is shorter than that, so every test
+ * here failed on `page.goto` before asserting anything.
+ *
+ * `load` is also the wrong signal: these pages hold open requests to the API
+ * and to a Supabase realtime socket, so it can never fire even once the page
+ * is usable. `domcontentloaded` is what these assertions actually need.
+ */
+const NAV = { waitUntil: 'domcontentloaded', timeout: 180000 };
+
 test.describe('Accessibility Tests', () => {
+  test.describe.configure({ timeout: 240000 });
+
 
   for (const page of PAGES_TO_TEST) {
     test(`${page.name} - should have proper document structure`, async ({ page: pw }) => {
-      await pw.goto(page.url);
+      await pw.goto(page.url, NAV);
       
       // Check for exactly one <h1>
       const h1Count = await pw.locator('h1').count();
@@ -31,7 +45,7 @@ test.describe('Accessibility Tests', () => {
     });
 
     test(`${page.name} - images should have alt text`, async ({ page: pw }) => {
-      await pw.goto(page.url);
+      await pw.goto(page.url, NAV);
       
       const images = pw.locator('img');
       const count = await images.count();
@@ -45,7 +59,7 @@ test.describe('Accessibility Tests', () => {
     });
 
     test(`${page.name} - interactive elements should be keyboard accessible`, async ({ page: pw }) => {
-      await pw.goto(page.url);
+      await pw.goto(page.url, NAV);
       
       // All buttons should be focusable
       const buttons = pw.locator('button');
@@ -66,7 +80,7 @@ test.describe('Accessibility Tests', () => {
     });
 
     test(`${page.name} - form inputs should have labels`, async ({ page: pw }) => {
-      await pw.goto(page.url);
+      await pw.goto(page.url, NAV);
       
       const inputs = pw.locator('input:not([type="hidden"])');
       const count = await inputs.count();

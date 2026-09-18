@@ -87,13 +87,13 @@ export default function Footer() {
 
               {/* Social */}
               <div className="flex gap-3">
-                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-background rounded-full flex items-center justify-center border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-primary/30 text-sm font-bold">
+                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 bg-background rounded-full flex items-center justify-center border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-primary/30 text-sm font-bold">
                     FB
                   </a>
-                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-background rounded-full flex items-center justify-center border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-primary/30 text-sm font-bold">
+                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 bg-background rounded-full flex items-center justify-center border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-primary/30 text-sm font-bold">
                     IG
                   </a>
-                  <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-background rounded-full flex items-center justify-center border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-primary/30 text-sm font-bold">
+                  <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 bg-background rounded-full flex items-center justify-center border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-primary/30 text-sm font-bold">
                     GH
                   </a>
               </div>
@@ -107,7 +107,7 @@ export default function Footer() {
                   <ul className="space-y-4">
                     {links.map(link => (
                       <li key={link.href}>
-                        <a href={link.href} className="text-text-muted hover:text-primary text-sm font-medium transition-colors flex items-center gap-2 group">
+                        <a href={link.href} className="text-text-muted hover:text-primary text-sm font-medium transition-colors inline-flex items-center gap-2 group min-h-[var(--tap-min)]">
                           <span className="w-1.5 h-1.5 rounded-full bg-border group-hover:bg-primary transition-colors"></span>
                           {link.label}
                         </a>
@@ -156,7 +156,7 @@ export default function Footer() {
                 { label: 'Terms of Service', href: '/terms' },
                 { label: 'Security', href: '/security' }
               ].map(l => (
-                <a key={l.label} href={l.href} className="text-sm font-medium text-text-muted hover:text-primary transition-colors flex items-center gap-1 group">
+                <a key={l.label} href={l.href} className="text-sm font-medium text-text-muted hover:text-primary transition-colors inline-flex items-center gap-1 group min-h-[var(--tap-min)]">
                   {l.label} <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -mt-1" />
                 </a>
               ))}

@@ -44,7 +44,7 @@ export default function DownloadPage() {
       <main style={{ flex: 1 }}>
 
         {/* Hero */}
-        <section style={{ padding: '7rem 0 5rem', background: 'radial-gradient(circle at 80% 30%, rgba(99,102,241,0.1) 0%, transparent 50%), radial-gradient(circle at 20% 70%, rgba(249,115,22,0.07) 0%, transparent 50%)' }}>
+        <section style={{ padding: '7rem 0 5rem', background: 'radial-gradient(circle at 80% 30%, rgba(0,200,128,0.10) 0%, transparent 50%), radial-gradient(circle at 20% 70%, rgba(249,115,22,0.07) 0%, transparent 50%)' }}>
           <div className="container">
             <div className="grid-2" style={{ gap: '5rem', alignItems: 'center' }}>
               <div>

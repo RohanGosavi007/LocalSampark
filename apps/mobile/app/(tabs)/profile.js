@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Tex
 import { Image } from 'expo-image';
 import { useAuth } from '../../src/context/AuthContext';
 import { router } from 'expo-router';
+import AppearanceSetting from '../../src/components/AppearanceSetting';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -235,6 +236,15 @@ export default function ProfileScreen() {
             </View>
           </View>
         )}
+
+        {/* Appearance. The app had no theme control at all until now — the
+            reason "bright mode doesn't work" was that there was nothing to
+            switch. Placed above Personal Information because it applies to
+            every role, while the fields below are identity data. */}
+        <View style={styles.formSection}>
+          <Text style={styles.sectionHeader}>Display</Text>
+          <AppearanceSetting />
+        </View>
 
         <View style={styles.formSection}>
           <Text style={styles.sectionHeader}>Personal Information</Text>
