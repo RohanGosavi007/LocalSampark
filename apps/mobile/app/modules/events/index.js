@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, Alert, Switch, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 
 export default function EventsScreen() {
   const [activeTab, setActiveTab] = useState('browse'); // browse, host, my_events, admin

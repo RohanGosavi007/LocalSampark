@@ -4,7 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput 
 import * as Haptics from 'expo-haptics';
 import Skeleton from '../../../src/components/Skeleton';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function MobileDonations() {
   const [activeTab, setActiveTab] = useState('nidhi'); // 'nidhi', 'annadaanam', 'ngos'
   const [ngos, setNgos] = useState([]);

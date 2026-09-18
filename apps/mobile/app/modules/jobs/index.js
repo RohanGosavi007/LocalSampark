@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 const SKILLED_CATEGORIES = [
   "Plumber", "Electrician", "Welder", "AC Technician", "IT Technician", "Drivers", "Mechanic", "Carpenter", "Locksmith"
 ];

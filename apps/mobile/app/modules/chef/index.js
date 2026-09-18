@@ -2,7 +2,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Switch, TextInput } from 'react-native';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function MobileHomeChef() {
   const [viewMode, setViewMode] = useState('order'); // 'order' or 'chef'
 

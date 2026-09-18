@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Ale
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function AdminApprovalsScreen() {
   const [activeTab, setActiveTab] = useState('shops');
   const [loading, setLoading] = useState(true);

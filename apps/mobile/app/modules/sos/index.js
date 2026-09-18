@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
 import { useAuth } from '../../../src/context/AuthContext';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function MobileSOS() {
   const { authToken } = useAuth();
   const [loading, setLoading] = useState(false);

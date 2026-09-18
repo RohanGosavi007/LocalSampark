@@ -2,7 +2,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, Modal, Switch } from 'react-native';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function MobileCommunityGarage() {
   const [tab, setTab] = useState('browse'); // browse, list, rentals
   const [items, setItems] = useState([]);

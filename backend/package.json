@@ -9,6 +9,8 @@
     "start": "node src/server.js",
     "migrate": "node src/migrations/run.js",
     "seed": "node src/seeds/run.js",
+    "seed:demo": "node src/seeds/seed-investor-demo.js",
+    "seed:demo:verify": "node src/seeds/seed-investor-demo.js --verify",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",

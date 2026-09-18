@@ -4,8 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../../theme';
-import { getServiceIcon } from '../../config/icons';
-import { apiGet, apiPost } from '../../config/api';
+import { getServiceIcon } from '../../../src/config/icons';
+import { apiGet, apiPost } from '../../../src/config/api';
 
 export const STATIC_SERVICES = [
   { id: 'laundry', category: 'Cleaning', name: 'Premium Laundry & Dry Cleaning', desc: 'Doorstep pickup, wash, steam iron, and delivery within 24 hours.', rate: '₹79/kg', commission: '10% Platform Booking Commission', provider: 'Dhanori Cleaners & Dryers' },

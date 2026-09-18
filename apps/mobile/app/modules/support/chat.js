@@ -2,7 +2,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function MobileSupportChat() {
   const [messages, setMessages] = useState([
     { role: 'bot', text: 'Hi! Welcome to LocalSampark Support. How can I help you today?' }

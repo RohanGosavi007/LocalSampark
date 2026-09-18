@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../../theme';
-import { apiGet, apiPost } from '../../config/api';
+import { apiGet, apiPost } from '../../../src/config/api';
 
 const POPULAR_ROUTES = [
   { from: 'Dhanori', to: 'Hinjewadi', riders: 42, icon: 'laptop-outline', color: '#6366f1' },

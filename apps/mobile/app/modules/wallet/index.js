@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function WalletScreen() {
   const [balance, setBalance] = useState(0.00);
   const [amountInput, setAmountInput] = useState('');

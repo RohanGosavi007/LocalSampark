@@ -3,7 +3,20 @@
 /**
  * Shared API configuration for LocalSampark Admin Panel.
  */
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+/**
+ * apps/admin/vercel.json sets NEXT_PUBLIC_API_URL to a value that already ends
+ * in /api/v1, while render.yaml passes a bare origin. Appending the version
+ * segment unconditionally produced /api/v1/api/v1/... on Vercel, so every
+ * console request 404'd there. Accept either form.
+ *
+ * Kept in step with the same helper in apps/web/src/lib/api.js.
+ */
+function toOrigin(value) {
+  if (!value) return null;
+  return value.replace(/\/+$/, '').replace(/\/api\/v\d+$/, '');
+}
+
+export const API_URL = toOrigin(process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:5000';
 export const API_BASE = `${API_URL}/api/v1`;
 
 /**

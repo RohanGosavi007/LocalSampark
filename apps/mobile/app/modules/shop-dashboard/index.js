@@ -19,7 +19,7 @@ import ProfessionalManager from './components/ProfessionalManager';
 import EducationEventsManager from './components/EducationEventsManager';
 import CampaignBuilder from './components/CampaignBuilder';
 import { useLanguage } from '../../../src/context/LanguageContext';
-import LanguageToggle from '../../components/LanguageToggle';
+import LanguageToggle from '../../../src/components/LanguageToggle';
 import { fetchWithFallback } from '../../../src/utils/mockDataHelper';
 import DemoBadge from '../../../src/components/DemoBadge';
 

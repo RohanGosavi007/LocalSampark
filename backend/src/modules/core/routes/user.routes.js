@@ -1,20 +1,52 @@
 const express = require('express');
 const router = express.Router();
-// One shared client instead of a per-module pool; see config/prisma.js.
-const prisma = require('../../../config/prisma').sharedPrisma;
+const { query, queryOne } = require('../../../config/database');
+const crypto = require('crypto');
 const { authenticate } = require('../../../middleware/auth.middleware');
+
+/**
+ * GET and PUT /me read the users table directly.
+ *
+ * They used to go through Prisma while `authenticate` — and every other route
+ * in this file — went through config/database. Those are two different
+ * datasources: config/prisma.js builds a real PrismaClient even when
+ * USE_SQLITE=true, so with the local SQLite configuration the middleware
+ * authenticated against SQLite and this handler then queried Supabase. The
+ * observed result was a 500 on every call:
+ *
+ *     FATAL: (ENOIDENTIFIER) no tenant identifier provided
+ *
+ * /users/me is the first call every client makes after login, so this single
+ * split broke the opening screen of both apps. The rest of this file already
+ * used `query`; these two now match it.
+ */
+
+/** The users table is snake_case; Prisma's model was camelCase. Serve both so
+ *  no existing client breaks on the change. */
+function presentUser(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    id: row.id,
+    name: row.full_name ?? row.name ?? null,
+    fullName: row.full_name ?? row.name ?? null,
+    phone: row.phone_number ?? row.phone ?? null,
+    avatarUrl: row.avatar_url ?? null,
+    regionId: row.region_id ?? null,
+    isActive: row.is_active === 1 || row.is_active === true,
+    isVerified: row.is_verified === 1 || row.is_verified === true,
+  };
+}
 
 router.get('/me', authenticate, async (req, res, next) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
-    
+    const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.user.id]);
     if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found' });
     }
-    
-    res.json(user);
+    // Never ship the hash, whatever else the row carries.
+    delete user.password_hash;
+    res.json(presentUser(user));
   } catch (error) {
     next(error);
   }
@@ -22,27 +54,42 @@ router.get('/me', authenticate, async (req, res, next) => {
 
 router.put('/me', authenticate, async (req, res, next) => {
   try {
-    // Note: languagePreference and bio were removed in the Postgres migration.
     const { fullName, name, email, avatarUrl, regionId } = req.body;
-    
-    const user = await prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-            name: name || fullName || undefined,
-            email: email || undefined,
-            avatarUrl: avatarUrl || undefined,
-            regionId: regionId || undefined
-        }
-    });
-    
-    res.json(user);
+
+    // Only the fields actually supplied are written, so a partial update does
+    // not blank the rest of the profile.
+    const updates = [];
+    const params = [];
+    const set = (column, value) => {
+      if (value === undefined || value === null || value === '') return;
+      params.push(value);
+      updates.push(`${column} = $${params.length}`);
+    };
+
+    set('full_name', name || fullName);
+    set('email', email);
+    set('avatar_url', avatarUrl);
+    set('region_id', regionId);
+
+    if (!updates.length) {
+      const current = await queryOne('SELECT * FROM users WHERE id = $1', [req.user.id]);
+      if (current) delete current.password_hash;
+      return res.json(presentUser(current));
+    }
+
+    params.push(req.user.id);
+    await query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${params.length}`,
+      params
+    );
+
+    const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    if (user) delete user.password_hash;
+    res.json(presentUser(user));
   } catch (error) {
     next(error);
   }
 });
-
-const { query } = require('../../../config/database');
-const crypto = require('crypto');
 
 router.get('/me/wallet', authenticate, async (req, res, next) => {
   try {

@@ -8,7 +8,7 @@ import ImageUploader from '../../../src/components/ImageUploader';
 import { useAuth } from '../../../src/context/AuthContext';
 import Constants from 'expo-constants';
 
-import { API_V1, API_BASE_URL } from '../../config/api';
+import { API_V1, API_BASE_URL } from '../../../src/config/api';
 export default function DeliveryOnboardingScreen() {
   const router = useRouter();
   const { authState } = useAuth();

@@ -356,15 +356,22 @@ async function getTodayStaffAttendance(req, res, next) {
     const societyId = await societyIdFor(req);
     if (!requireSociety(societyId, res)) return;
 
+    // TO_CHAR is PostgreSQL-only; SQLite has no such function and this handler
+    // returned a 500 on every call in the SQLite configuration
+    // ("SQLITE_ERROR: no such function: TO_CHAR"). The date column stores a
+    // plain YYYY-MM-DD string, so computing today in JS and binding it as a
+    // parameter is both portable and index-friendly.
+    const today = new Date().toISOString().slice(0, 10);
+
     const data = await queryMany(
       `SELECT a.id, a.staff_id, a.check_in_time, a.check_out_time, a.status,
               s.staff_name, s.staff_type
          FROM society_staff_attendance a
          LEFT JOIN society_domestic_staff s ON a.staff_id = s.id
         WHERE a.society_id = $1
-          AND a.date = TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
+          AND a.date = $2
         ORDER BY a.check_in_time DESC`,
-      [societyId]
+      [societyId, today]
     );
     res.json({ success: true, data });
   } catch (error) { next(error); }

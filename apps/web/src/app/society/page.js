@@ -4,17 +4,50 @@ import EmptyState, { LoadingState } from '../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 
 import { API_URL } from '@/lib/api';
-const API = `${API_URL}/api/v1/society-management`;
+const V1 = `${API_URL}/api/v1`;
+const API = `${V1}/society-management`;
+
+/**
+ * Society features are spread across several routers, not one.
+ *
+ * This helper used to prepend `/society-management` to everything, so a call
+ * like api('/society-analytics/dashboard') hit
+ * /society-management/society-analytics/dashboard — a 404. Probed against a
+ * running server, 20 of this page's 23 endpoints were 404ing that way.
+ *
+ * A path beginning with one of the sibling router prefixes below is treated as
+ * absolute; everything else keeps the /society-management default.
+ */
+const SIBLING_ROUTERS = [
+  '/societies/', '/society/', '/society-admin/', '/society-analytics/',
+  '/society-billing/', '/society-compliance/', '/society-erp/', '/society-forum/',
+  '/society-guard/', '/society-messaging/', '/society-move/', '/society-preapproval/',
+  '/society-shifts/', '/society-integration/',
+];
+
+function resolve(path) {
+  return SIBLING_ROUTERS.some((p) => path.startsWith(p)) ? `${V1}${path}` : `${API}${path}`;
+}
 
 // ─── API Helper ─────────────────────────────────────────────
 async function api(path, options = {}) {
   const token = localStorage.getItem('auth_token');
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(resolve(path), {
     ...options,
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
     body: options.body ? JSON.stringify(options.body) : undefined
   });
-  return res.json();
+
+  // A 404 used to parse into `{error: ...}` and then collapse to [] at the call
+  // site, so a missing route looked exactly like an empty list. Surfacing it
+  // lets the tab render its error state instead of an empty table.
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(body?.error || body?.message || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return body;
 }
 
 // ─── Inline Styles ──────────────────────────────────────────
@@ -310,7 +343,7 @@ export default function SocietyPage() {
       }
       else if (tab === 'bills') {
         if (societyRole === 'admin') { const r = await api('/bills'); setBills(r.data || []); const s = await api('/bills/summary'); setBillSummary(s.data || null); }
-        else { const r = await api('/my-bills'); setBills(r.data || []); }
+        else { const r = await api('/society-billing/my-bills'); setBills(r.data || []); }
       }
       else if (tab === 'parking') { const r = await api(societyRole === 'resident' ? '/my-parking' : '/parking'); setParkingSlots(r.data || []); }
       else if (tab === 'amenities') { const r = await api('/amenities'); setAmenities(r.data || []); if (societyRole === 'resident') { const b = await api('/my-bookings'); setMyBookings(b.data || []); } }
@@ -326,10 +359,13 @@ export default function SocietyPage() {
       else if (tab === 'emergency') { const r = await api('/emergency/active'); setEmergencies(r.data || []); }
       else if (tab === 'directory') { const r = await api(`/directory${dirSearch ? `?search=${dirSearch}` : ''}`); setDirectory(r.data || []); }
       else if (tab === 'events') { const r = await api('/events'); setEvents(r.data || []); }
-      else if (tab === 'notices') { 
-        const r = await fetch(`${API_URL}/api/v1/society/notices`, { headers: { 'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` }}); 
-        const d = await r.json(); 
-        setNotices(d.data || []); 
+      else if (tab === 'notices') {
+        // Was a bare fetch reading localStorage 'token', while every other
+        // call on this page reads 'auth_token' — so the notices tab was
+        // unauthenticated even when the rest of the page was signed in. It
+        // also bypassed api(), so a failure could not surface as an error.
+        const d = await api('/societies/notices');
+        setNotices(d.data || []);
       }
       else if (tab === 'settings') { const r = await api('/settings'); setSettings(r.data || {}); }
       else if (tab === 'dashboard' && societyRole === 'admin') {

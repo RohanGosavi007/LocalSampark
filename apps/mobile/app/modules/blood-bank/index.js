@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Tex
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
-import { API_V1 } from '../../config/api';
+import { API_V1 } from '../../../src/config/api';
 export default function BloodDonationScreen() {
   const [activeTab, setActiveTab] = useState('requests'); // requests, donors, admin
   const [requests, setRequests] = useState([]);

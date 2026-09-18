@@ -147,13 +147,53 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
           '+919000000012': 'super_admin'
         };
         const mockRole = roleMap[phoneNumber] || 'CUSTOMER';
-        user = {
-          id: `mock-user-${Date.now()}`,
-          phone: phoneNumber,
-          name: fullName || `Demo ${mockRole}`,
-          role: mockRole,
-          regionId: regionId || 'zone_kothrud'
-        };
+
+        // Prefer the seeded row over a synthesised one.
+        //
+        // This branch used to hand back `id: mock-user-${Date.now()}` and never
+        // persist it, so the JWT carried an id that existed nowhere. Every
+        // authenticated request then failed the lookup in auth.middleware.js —
+        //
+        //     queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId])
+        //
+        // — and returned `401 User not found.`. Verified against a running
+        // server: a valid society_admin token was rejected by all 25 society
+        // endpoints. The demo accounts could sign in and then do nothing.
+        //
+        // seeds/seed-investor-demo.js creates these twelve as real rows through
+        // the same query layer the middleware reads, so look them up there. The
+        // synthesised object remains as a fallback for an unseeded database, to
+        // keep the previous behaviour rather than start failing the login too.
+        const seeded = await queryOne(
+          'SELECT * FROM users WHERE phone_number = $1 OR phone = $1 LIMIT 1',
+          [phoneNumber]
+        ).catch(() => null);
+
+        user = seeded
+          ? {
+              id: seeded.id,
+              phone: seeded.phone_number || seeded.phone || phoneNumber,
+              name: seeded.full_name || fullName || `Demo ${mockRole}`,
+              // The seeded row is authoritative for the role: it is what RBAC
+              // and every capability check will read from the database.
+              role: seeded.role || mockRole,
+              regionId: seeded.region_id || regionId || 'zone_kothrud',
+              tokenVersion: seeded.token_version ?? 0,
+            }
+          : {
+              id: `mock-user-${Date.now()}`,
+              phone: phoneNumber,
+              name: fullName || `Demo ${mockRole}`,
+              role: mockRole,
+              regionId: regionId || 'zone_kothrud',
+            };
+
+        if (!seeded) {
+          console.warn(
+            `[auth] demo login ${phoneNumber} has no seeded user row; the token ` +
+            'will be rejected by authenticated routes. Run: npm run seed:demo --workspace=backend'
+          );
+        }
       } else {
         user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
       }
@@ -213,13 +253,53 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
           '+919000000012': 'super_admin'
         };
         const mockRole = roleMap[phoneNumber] || 'CUSTOMER';
-        user = {
-          id: `mock-user-${Date.now()}`,
-          phone: phoneNumber,
-          name: fullName || `Demo ${mockRole}`,
-          role: mockRole,
-          regionId: regionId || 'zone_kothrud'
-        };
+
+        // Prefer the seeded row over a synthesised one.
+        //
+        // This branch used to hand back `id: mock-user-${Date.now()}` and never
+        // persist it, so the JWT carried an id that existed nowhere. Every
+        // authenticated request then failed the lookup in auth.middleware.js —
+        //
+        //     queryOne('SELECT * FROM users WHERE id = $1', [decoded.userId])
+        //
+        // — and returned `401 User not found.`. Verified against a running
+        // server: a valid society_admin token was rejected by all 25 society
+        // endpoints. The demo accounts could sign in and then do nothing.
+        //
+        // seeds/seed-investor-demo.js creates these twelve as real rows through
+        // the same query layer the middleware reads, so look them up there. The
+        // synthesised object remains as a fallback for an unseeded database, to
+        // keep the previous behaviour rather than start failing the login too.
+        const seeded = await queryOne(
+          'SELECT * FROM users WHERE phone_number = $1 OR phone = $1 LIMIT 1',
+          [phoneNumber]
+        ).catch(() => null);
+
+        user = seeded
+          ? {
+              id: seeded.id,
+              phone: seeded.phone_number || seeded.phone || phoneNumber,
+              name: seeded.full_name || fullName || `Demo ${mockRole}`,
+              // The seeded row is authoritative for the role: it is what RBAC
+              // and every capability check will read from the database.
+              role: seeded.role || mockRole,
+              regionId: seeded.region_id || regionId || 'zone_kothrud',
+              tokenVersion: seeded.token_version ?? 0,
+            }
+          : {
+              id: `mock-user-${Date.now()}`,
+              phone: phoneNumber,
+              name: fullName || `Demo ${mockRole}`,
+              role: mockRole,
+              regionId: regionId || 'zone_kothrud',
+            };
+
+        if (!seeded) {
+          console.warn(
+            `[auth] demo login ${phoneNumber} has no seeded user row; the token ` +
+            'will be rejected by authenticated routes. Run: npm run seed:demo --workspace=backend'
+          );
+        }
       } else {
         throw dbError;
       }

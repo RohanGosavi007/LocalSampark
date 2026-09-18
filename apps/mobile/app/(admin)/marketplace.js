@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicat
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { API_BASE } from '../config/api';
+import { API_BASE } from '../../src/config/api';
 
 export default function AdminMarketplaceScreen() {
   const router = useRouter();
