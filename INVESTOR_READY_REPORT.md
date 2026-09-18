@@ -67,7 +67,7 @@ npm run seed:demo --workspace=backend          # seed
 npm run seed:demo:verify --workspace=backend   # check without writing
 ```
 
-Run twice back to back: **193 rows both times, zero failed inserts, all eight checks green.** Idempotency is by construction — every row carries a deterministic `demo-` id and the run tears its own rows down first, children before parents.
+Run twice back to back: **205 rows both times, zero failed inserts, all nine checks green.** Idempotency is by construction — every row carries a deterministic `demo-` id and the run tears its own rows down first, children before parents.
 
 | Dataset | Seeded |
 |---|---:|
@@ -78,13 +78,14 @@ Run twice back to back: **193 rows both times, zero failed inserts, all eight ch
 | Applicants across Applied → Screening → Interview → Offered | 30 |
 | Properties (1/2/3 BHK, commercial, rent and sale) | 8 |
 | Carpool routes with real coordinates and seat pricing | 5 |
+| Orders across the delivery lifecycle, with line items | 4 |
 | Society: members, bills, complaints, amenities, notices, polls, packages, parking, staff, pre-approved visitors | 6/6/4/4/3/1/4/6/4/3 |
 
 Three things the seeder does that matter for a live demo:
 
 - **Bills are a mix of paid and pending**, and complaints span open / in-progress / resolved, so no screen is uniformly green.
 - **Shop hours vary by category** — the pharmacy is 24×7, the farm store opens at 06:00 — because the urgent-intent path filters on "open now", and a catalogue that all closes at 21:00 goes empty after 21:00.
-- **It reports what it could not write** rather than swallowing it. That is how the four schema mismatches in the first run were found (`job_applications.job_id` points at `job_vacancies`, not `admin_jobs`; `society_parking_slots.assigned_to` at `society_members`, not `users`; `carpool_rides` requires WKT coordinates; `society_members` is unique per user).
+- **It reports what it could not write** rather than swallowing it. That is how five schema mismatches were found (`job_applications.job_id` points at `job_vacancies`, not `admin_jobs`; `society_parking_slots.assigned_to` at `society_members`, not `users`; `carpool_rides` requires WKT coordinates; `society_members` is unique per user; `society_complaint_activity` holds an FK onto complaints, so the teardown order mattered).
 
 ### Demo personas
 
@@ -116,6 +117,9 @@ OTP is always `123456`. The short-circuit is gated to non-production — a test 
 | 3 | The notices tab read `localStorage['token']` while every other call on the page reads `'auth_token'`, so it was unauthenticated even when signed in | code read |
 | 4 | `GET /society-management/staff/attendance/today` returned 500 on every call: `TO_CHAR` is PostgreSQL-only and SQLite has no such function | server log |
 | 5 | `apps/mobile/app/config` and `app/components` sat inside the Expo Router tree, making `config/api.js` addressable as a route, and `LanguageToggle` existed twice | failing test, 43 assertions |
+| 6 | **Every socket authorisation check refused every legitimate user.** The handshake assigned the decoded JWT verbatim to `socket.user`, but the payload names the subject `userId` while every handler reads `socket.user.id` — so the society flat room, the gatekeeper room and the `VISITOR_RESPONSE` relay all compared `undefined` against a real id | live socket probe: a seeded resident was refused their own flat |
+| 7 | **No `join_order_room` handler existed at all.** `orderSocket.js` and `trackingSocket.js` broadcast every update to `order_<id>`; nothing ever joined those rooms, so live order tracking could not work for any client on any platform | route table read, then confirmed live |
+| 8 | `SocketProvider`, `ConfigProvider` and `ToastProvider` were imported into the web `layout.js` and never rendered. `ToastProvider` mounts react-hot-toast's `<Toaster>`, so all **33 files calling `toast()` were writing to a surface that did not exist** — every success and error notification in the web app was silent | import-vs-JSX diff |
 
 **Fixes.** The society helper now recognises sibling router prefixes and resolves them absolutely, and throws on non-2xx so a failed tab renders the error state added in the UI pass rather than an empty table. The notices call goes through the helper. `TO_CHAR` is replaced with a bound parameter (portable and index-friendly) — `500 → 200`. The two mobile directories were moved to `src/`, 34 importers rewritten and verified to resolve, and the duplicate `LanguageToggle` deleted.
 
@@ -127,7 +131,7 @@ Everything below was executed, not inspected.
 
 | Suite | Result |
 |---|---|
-| `backend` unit + integration (`npm run test:unit`) | **892 passed, 53/53 suites** |
+| `backend` unit + integration (`npm run test:unit`) | **897 passed, 54/54 suites** |
 | `apps/mobile` jest | **211 passed, 10/10 suites** |
 | `apps/web` production build | **300 routes, clean** |
 | `apps/admin` production build | **clean** |
@@ -135,11 +139,12 @@ Everything below was executed, not inspected.
 | Touch targets (`tests/e2e/accessibility/touch-targets.spec.js`) | **5 passed** — 0% under 44px on all four routes |
 | Pre-existing a11y suite | **22 passed** (was 4 failing) |
 | Demo personas + API base (`backend/src/__tests__/demo-personas.test.js`) | **11 passed**, new |
-| Seeder idempotency | 193 rows, identical on re-run, 8/8 checks |
+| Socket handshake + order rooms (`backend/src/__tests__/socketAuth.test.js`) | **5 passed**, new |
+| Seeder idempotency | **205 rows, identical on re-run, zero failed inserts, 9/9 checks** |
 
 Both backend suites that were failing before this work now pass. `categoryRouterParity` was fixed by the directory move; `mlRanker` passes in isolation and in the full run — it had been failing only as a cross-suite state leak.
 
-New regression guards added this pass: theme (6), touch targets (5), mobile design tokens (35), demo personas and API base (11).
+New regression guards added this pass: theme (6), touch targets (5), mobile design tokens (35), demo personas and API base (11), socket handshake and order rooms (5).
 
 ---
 
@@ -168,11 +173,25 @@ Under `USE_SQLITE=true` every endpoint in that list returns 500. **Two options:*
 
 I did not choose between these because the first is a credentials question only you can answer. If the demo runs on SQLite, treat this list as the set of screens that will fail.
 
-### 5.2 Real-time sync is still not working on either platform
+### 5.2 Real-time — foundation built and verified, screens not yet subscribed
 
-Documented in `PARITY_AUDIT.md` §2 and unchanged by this pass. The backend's socket.io server is live with ten namespaces. The web app's `SocketProvider` is imported into `layout.js` and never mounted, and `useSocket` has zero consumers; nine pages instead open their own ad-hoc connections. The mobile app's complete `socketService` has **zero importers**, and `OrderTrackingView` renders a `MockSocket` that invents driver positions with `Math.random()` every three seconds.
+This was the section that said nothing worked. The transport layer now does:
 
-Nothing in the brief's "action on web appears on mobile without a refresh" works today. `ConfigProvider` and `ToastProvider` are also imported and never mounted, so every toast in the web app is inert.
+| | before | after |
+|---|---|---|
+| `socket.user.id` from a `userId` token | `undefined` | resolved |
+| resident joins own flat room | refused | **joined** |
+| guard joins gatekeeper room | refused | **joined** |
+| non-member joins a flat room | refused | refused |
+| customer / rider / shop owner join order room | *no handler existed* | **joined** |
+| unrelated user or anonymous joins order room | *no handler existed* | refused |
+| web `SocketProvider` mounted | no | yes |
+| mobile socket connection | none | one authenticated connection |
+| mobile order tracking | `Math.random()` | real `order_status_*` events |
+
+All verified against a live server and pinned by `backend/src/__tests__/socketAuth.test.js`, which runs a real socket.io server in-process.
+
+**What remains:** the nine web pages that each open their own ad-hoc `io()` connection should move onto the now-mounted shared provider, and the mobile screens beyond order tracking (gate console, society notices, shop orders) still need to subscribe. The plumbing they would use is in place and tested; the per-screen wiring is not done.
 
 ### 5.3 Mobile society module is still largely static
 

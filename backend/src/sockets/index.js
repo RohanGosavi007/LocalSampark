@@ -11,6 +11,7 @@ const marketplaceSocket = require('./marketplaceSocket');
 const jobsSocket = require('./jobsSocket');
 const territorySocket = require('./territorySocket');
 const societyCaps = require('../modules/community/middleware/society-capability');
+const { queryOne } = require('../config/database');
 
 let io;
 
@@ -49,7 +50,25 @@ const initSockets = (server) => {
       // dev fallback the rest of the app uses, so locally issued tokens failed
       // to verify here for reasons that looked like a socket bug.
       const decoded = jwt.verify(token, getJwtSecret());
-      socket.user = decoded;
+
+      // The token payload carries the subject as `userId` (see generateTokens
+      // in modules/core/routes/auth.routes.js), but every socket handler in
+      // this file and in the feature sockets reads `socket.user.id` — the
+      // society flat and gatekeeper rooms included. Assigning `decoded`
+      // verbatim left `.id` undefined, so those membership checks compared
+      // undefined against a real user id and refused *everyone*, including the
+      // rightful resident. Normalising here fixes the whole set rather than
+      // each call site.
+      socket.user = {
+        ...decoded,
+        id: decoded.id || decoded.userId || decoded.sub || null,
+        isGuest: false,
+      };
+
+      if (!socket.user.id) {
+        socket.user = { isGuest: true, id: `guest_${socket.id.substring(0, 8)}` };
+      }
+
       next();
     } catch (error) {
       // Degrade gracefully to guest session instead of killing socket connection
@@ -140,6 +159,74 @@ const initSockets = (server) => {
         at: new Date().toISOString(),
       });
     });
+
+    /**
+     * Order tracking room.
+     *
+     * orderSocket.js and trackingSocket.js broadcast every order update to
+     * `order_<id>` / `order:<id>` — and **nothing ever joined those rooms**.
+     * There was no join handler at all, on either side, so live order tracking
+     * could not work for any client. The mobile app papered over it with a
+     * MockSocket that invented driver coordinates; the web pages simply showed
+     * whatever the last poll returned.
+     *
+     * Membership is checked server-side rather than trusted from the payload,
+     * for the same reason the flat and gate rooms are: the handshake degrades
+     * an unrecognised token to a guest instead of refusing, so an unchecked
+     * join would let anyone watch any order — the address, the items and the
+     * rider's live position — by guessing an id.
+     *
+     * Three parties may listen: the customer, the assigned delivery agent, and
+     * the shop the order was placed with.
+     */
+    const joinOrderRoom = async (payload) => {
+      const orderId = typeof payload === 'string' ? payload : payload?.orderId;
+      if (!orderId) return;
+
+      const userId = socket.user?.id;
+      if (!userId || socket.user?.isGuest) {
+        return socket.emit('socket_error', { event: 'join_order_room', reason: 'not_authorised' });
+      }
+
+      let order;
+      try {
+        order = await queryOne(
+          `SELECT o.id, o.user_id, o.assigned_agent_id, o.shop_id, s.owner_id
+             FROM orders o
+             LEFT JOIN local_shops s ON s.id = o.shop_id
+            WHERE o.id = $1`,
+          [orderId]
+        );
+      } catch (e) {
+        console.warn('[Socket.io] join_order_room lookup failed:', e.message);
+        return socket.emit('socket_error', { event: 'join_order_room', reason: 'lookup_failed' });
+      }
+
+      if (!order) {
+        return socket.emit('socket_error', { event: 'join_order_room', reason: 'not_found' });
+      }
+
+      const permitted =
+        String(order.user_id) === String(userId) ||
+        String(order.assigned_agent_id || '') === String(userId) ||
+        String(order.owner_id || '') === String(userId);
+
+      if (!permitted) {
+        return socket.emit('socket_error', { event: 'join_order_room', reason: 'not_authorised' });
+      }
+
+      // Both spellings, because the broadcasters use both.
+      socket.join(`order_${orderId}`);
+      socket.join(`order:${orderId}`);
+      socket.emit('joined_order_room', { orderId });
+    };
+
+    socket.on('join_order_room', joinOrderRoom);
+    // The web SocketContext's joinOrderRoom helper emits 'order:track'. Both
+    // names run the same authorised handler — calling it directly, because on
+    // the server `socket.emit` sends *to the client* and would not re-enter
+    // this handler at all.
+    socket.on('order:track', joinOrderRoom);
 
     orderSocket(io, socket);
     tokenQueueSocket(io, socket);

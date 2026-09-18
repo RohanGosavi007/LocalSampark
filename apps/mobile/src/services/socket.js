@@ -19,13 +19,26 @@ class SocketService {
     this.socket = null;
     this.connected = false;
     this.listeners = new Map();
+    this.token = null;
   }
 
-  connect(shopId) {
+  /**
+   * @param {string|null} shopId  optional room to join on connect
+   * @param {string|null} token   JWT for the handshake
+   *
+   * The token matters. backend/src/sockets/index.js authenticates the
+   * handshake and *degrades an unrecognised token to a guest session* rather
+   * than refusing, so connecting without one appeared to work while silently
+   * failing every authorisation check — a resident would never receive their
+   * own flat's visitor alerts, with no error to explain it.
+   */
+  connect(shopId, token = null) {
     if (!io) {
       console.warn('[Socket] socket.io-client not installed, skipping connection');
       return;
     }
+
+    if (token) this.token = token;
 
     if (this.socket) {
       if (this.socket.connected) {
@@ -35,11 +48,18 @@ class SocketService {
       this.socket.connect();
     } else {
       this.socket = io(SOCKET_URL, {
-        transports: ['websocket'],
+        // Both transports, not websocket alone: a websocket upgrade is the
+        // first thing a captive portal or corporate proxy blocks, and with a
+        // single transport the client then never connects at all.
+        transports: ['websocket', 'polling'],
+        auth: this.token ? { token: this.token } : undefined,
+        extraHeaders: this.token ? { Authorization: `Bearer ${this.token}` } : undefined,
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 3000,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
+        reconnectionDelayMax: 15000,
+        timeout: 10000,
       });
 
       this.socket.on('connect', () => {
@@ -71,6 +91,31 @@ class SocketService {
     if (this.socket && this.connected) {
       this.socket.emit('join_user_room', userId);
     }
+  }
+
+  /**
+   * Order tracking room.
+   *
+   * orderSocket.js broadcasts to both `order_<id>` and `order:<id>`, and emits
+   * both a generic `order_status_update` and a per-order
+   * `order_status_<id>` — so a screen can listen for its own order without
+   * filtering the firehose.
+   */
+  joinOrder(orderId) {
+    if (this.socket && this.connected && orderId) {
+      this.socket.emit('join_order_room', orderId);
+      this.socket.emit('order:track', orderId);
+    }
+  }
+
+  /**
+   * Force a fresh connection. Android suspends a socket held across a long
+   * background and the client does not reliably notice, so the app reconnects
+   * on foreground rather than showing data that quietly stopped updating.
+   */
+  reconnect() {
+    if (!this.socket) return;
+    if (!this.socket.connected) this.socket.connect();
   }
 
   disconnect() {

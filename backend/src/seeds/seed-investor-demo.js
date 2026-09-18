@@ -289,6 +289,8 @@ async function clearOwned(table, column, prefix) {
  * being idempotent.
  */
 const TEARDOWN_ORDER = [
+  ['order_items', 'id', 'demo-item-'],
+  ['orders', 'id', 'demo-order-'],
   ['job_applications', 'id', 'demo-app-'],
   ['society_visitor_preapprovals', 'id', 'demo-'],
   ['society_parking_slots', 'id', 'demo-'],
@@ -296,6 +298,9 @@ const TEARDOWN_ORDER = [
   ['society_polls', 'id', 'demo-'],
   ['society_notices', 'id', 'demo-'],
   ['society_amenities', 'id', 'demo-'],
+  // society_complaint_activity has an FK onto society_complaints, so the
+  // child rows have to go first or the complaints DELETE is refused.
+  ['society_complaint_activity', 'complaint_id', 'demo-'],
   ['society_complaints', 'id', 'demo-'],
   ['society_maintenance_bills', 'id', 'demo-'],
   ['society_domestic_staff', 'id', 'demo-'],
@@ -465,6 +470,65 @@ async function seedJobs() {
   return count;
 }
 
+/**
+ * Orders across the delivery lifecycle.
+ *
+ * "My Orders" was empty for every persona, which is the first tab a consumer
+ * opens. One order is left `out_for_delivery` and assigned to the delivery
+ * persona, so the live tracking screen has something real to subscribe to
+ * rather than the random-walk MockSocket it used to render.
+ */
+async function seedOrders() {
+  const shop = SHOPS[0];
+  const rows = [
+    ['delivered', 'paid', 288, 'Delivered yesterday'],
+    ['out_for_delivery', 'paid', 462, 'On the way now'],
+    ['preparing', 'paid', 175, 'Being packed'],
+    ['pending', 'pending', 640, 'Awaiting confirmation'],
+  ];
+
+  let count = 0;
+  for (let i = 0; i < rows.length; i += 1) {
+    const [orderStatus, paymentStatus, total, note] = rows[i];
+    const id = `demo-order-${String(i + 1).padStart(2, '0')}`;
+
+    const ok = await insert('orders', {
+      id,
+      user_id: userId(1),
+      shop_id: shop.id,
+      total_amount: total,
+      delivery_fee: 25,
+      payment_method: i === 3 ? 'cod' : 'upi',
+      payment_status: paymentStatus,
+      order_status: orderStatus,
+      status: orderStatus,
+      delivery_address: 'B-404, Pride Aashiyana, Dhanori, Pune 411015',
+      delivery_coordinate: 'POINT(73.8987 18.5913)',
+      // Only the in-flight order has a rider; the others are done or not yet
+      // dispatched, and a delivered order with a live rider reads as a bug.
+      assigned_agent_id: orderStatus === 'out_for_delivery' ? userId(7) : null,
+      special_instructions: note,
+    });
+    if (!ok) continue;
+    count += 1;
+
+    const items = shop.products.slice(i, i + 2);
+    for (let j = 0; j < items.length; j += 1) {
+      const [name, price] = items[j];
+      await insert('order_items', {
+        id: `demo-item-${String(i + 1).padStart(2, '0')}-${j + 1}`,
+        order_id: id,
+        product_id: `demo-prod-01-${String(i + j + 1).padStart(2, '0')}`,
+        name,
+        price,
+        price_at_buy: price,
+        quantity: j + 1,
+      });
+    }
+  }
+  return count;
+}
+
 async function seedProperties() {
   let count = 0;
   for (let i = 0; i < PROPERTIES.length; i += 1) {
@@ -534,13 +598,29 @@ async function seedSociety() {
   // Members
   // society_members is UNIQUE on (society_id, user_id), so each flat needs its
   // own persona rather than the same three cycled across six flats.
-  const memberPersonas = [3, 2, 1, 5, 6, 11];
+  //
+  // The `role` here is not decoration: middleware/society-capability.js maps it
+  // to capabilities, and only the roles in its ROLE_CAPABILITIES table grant
+  // anything. An earlier version of this seeder used 'committee', which is not
+  // in that table — so the society_admin persona held a membership that
+  // granted nothing, and the guard was not a member at all, which is why the
+  // gatekeeper socket room refused them.
+  const MEMBERS = [
+    { persona: 3, role: 'society_admin', occupancy: 'owner' },   // full rights
+    { persona: 4, role: 'guard', occupancy: 'staff' },           // LOG_GATE_ENTRY
+    { persona: 2, role: 'resident', occupancy: 'owner' },
+    { persona: 1, role: 'resident', occupancy: 'tenant' },
+    { persona: 5, role: 'owner', occupancy: 'owner' },
+    { persona: 6, role: 'tenant', occupancy: 'tenant' },
+  ];
+
   let n = 0;
-  for (let i = 0; i < flats.length; i += 1) {
+  for (let i = 0; i < MEMBERS.length; i += 1) {
+    const m = MEMBERS[i];
     if (await insert('society_members', {
-      id: `demo-member-${i + 1}`, society_id: sid, user_id: userId(memberPersonas[i]),
-      flat_number: flats[i], role: i === 0 ? 'committee' : 'resident',
-      is_active: 1, occupancy_type: i % 3 === 0 ? 'tenant' : 'owner', status: 'approved',
+      id: `demo-member-${i + 1}`, society_id: sid, user_id: userId(m.persona),
+      flat_number: flats[i], role: m.role,
+      is_active: 1, occupancy_type: m.occupancy, status: 'approved',
     })) n += 1;
   }
   out.members = n;
@@ -699,6 +779,7 @@ async function verify() {
     ['job_applications', "SELECT COUNT(*) AS c FROM job_applications WHERE id LIKE 'demo-app-%'", JOBS.length * 3],
     ['properties', "SELECT COUNT(*) AS c FROM properties WHERE id LIKE 'demo-prop-%'", PROPERTIES.length],
     ['carpool_rides', "SELECT COUNT(*) AS c FROM carpool_rides WHERE id LIKE 'demo-ride-%'", RIDES.length],
+    ['orders', "SELECT COUNT(*) AS c FROM orders WHERE id LIKE 'demo-order-%'", 4],
   ];
 
   let ok = true;
@@ -748,6 +829,9 @@ async function main() {
 
   const props = await seedProperties();
   console.log(`  properties       ${props}`);
+
+  const orders = await seedOrders();
+  console.log(`  orders           ${orders} across the delivery lifecycle`);
 
   const rides = await seedCarpool();
   console.log(`  carpool rides    ${rides}`);

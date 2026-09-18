@@ -135,20 +135,38 @@ export default function RootLayout({ children }) {
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
           <a href="#main-content" className="skip-link">Skip to main content</a>
           <ServiceWorkerRegistrar />
+          {/* SocketProvider, ConfigProvider and ToastProvider were all imported
+              at the top of this file and never rendered.
+
+              The consequences were not cosmetic. ToastProvider renders
+              react-hot-toast's <Toaster>, so all 33 files that call toast()
+              were writing to a surface that did not exist — every success and
+              error notification in the app was silent. SocketProvider is the
+              app's shared realtime connection; with it unmounted, useSocket()
+              had no value to return, and nine pages had each grown their own
+              ad-hoc io() connection instead.
+
+              ToastProvider is a sibling, not a wrapper: it renders <Toaster />
+              and takes no children. */}
           <QueryProvider>
             <ThemeProvider>
-              <AuthProvider>
-                <ZoneProvider>
-                  <LocationProvider>
-                    <PageTransition>
-                      {children}
-                    </PageTransition>
-                    <ConsentBanner />
-                    <WelcomeTour />
-                    <DevLoginScreen />
-                  </LocationProvider>
-                </ZoneProvider>
-              </AuthProvider>
+              <ConfigProvider>
+                <AuthProvider>
+                  <SocketProvider>
+                    <ZoneProvider>
+                      <LocationProvider>
+                        <PageTransition>
+                          {children}
+                        </PageTransition>
+                        <ToastProvider />
+                        <ConsentBanner />
+                        <WelcomeTour />
+                        <DevLoginScreen />
+                      </LocationProvider>
+                    </ZoneProvider>
+                  </SocketProvider>
+                </AuthProvider>
+              </ConfigProvider>
             </ThemeProvider>
           </QueryProvider>
         </LanguageProvider>

@@ -163,6 +163,12 @@ try { LanguageProvider = require('../src/context/LanguageContext').LanguageProvi
 // for an appearance setting to talk to. Mounted outside AuthProvider because
 // the theme must apply to the login and error screens too, not only to
 // authenticated routes.
+// New: src/services/socket.js was a complete socket client with zero
+// importers, so the Android app had no realtime of any kind. SocketProvider
+// owns one authenticated connection for the whole app.
+let SocketProvider = PassthroughProvider;
+try { SocketProvider = require('../src/context/SocketContext').SocketProvider; } catch (e) { console.warn('[_layout] SocketProvider import failed:', e.message); }
+
 let ThemeProvider = PassthroughProvider;
 let useThemeHook = null;
 try {
@@ -358,6 +364,7 @@ function RootLayout() {
           <ThemeProvider>
             <QueryWrapper>
               <AuthProvider>
+                <SocketProvider>
                 <ZoneProvider>
                   <OrderRingerProvider>
                     <NotificationProvider>
@@ -369,6 +376,7 @@ function RootLayout() {
                     </NotificationProvider>
                   </OrderRingerProvider>
                 </ZoneProvider>
+                </SocketProvider>
               </AuthProvider>
             </QueryWrapper>
           </ThemeProvider>
