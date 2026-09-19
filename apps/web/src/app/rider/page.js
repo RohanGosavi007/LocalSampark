@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import { Package, MapPin, CheckCircle, Navigation, Phone } from 'lucide-react';
-import io from 'socket.io-client';
+import { getSharedSocket } from '@/context/SocketContext';
 
 export default function RiderDashboard() {
   const [rider, setRider] = useState(null);
@@ -32,7 +32,10 @@ export default function RiderDashboard() {
 
         setRider(data.rider);
 
-        const s = io(BACKEND_URL);
+        // Shared, authenticated connection. This opened its own with no
+        // token, so any room the server guards was refused.
+        const s = getSharedSocket();
+        if (!s) return;
         socketRef.current = s;
         setSocket(s);
 
@@ -81,7 +84,8 @@ export default function RiderDashboard() {
       if (watchIdRef.current !== null && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
-      if (socketRef.current) socketRef.current.disconnect();
+      // Shared socket: drop this screen's listeners, do not close it.
+      if (socketRef.current) socketRef.current.removeAllListeners('rider:assignment');
     };
   }, []);
 

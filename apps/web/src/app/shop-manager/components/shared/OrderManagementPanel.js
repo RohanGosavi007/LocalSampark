@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 import { API_BASE } from '@/lib/api';
-import io from 'socket.io-client';
+import { getSharedSocket } from '@/context/SocketContext';
 
 // ─── STATUS CONFIG ──────────────────────────────────────────────
 const ORDER_STATUS_CONFIG = {
@@ -55,8 +55,10 @@ export default function OrderManagementPanel({ token, shopId }) {
 
   useEffect(() => {
     if (!shopId) return;
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const socket = io(BACKEND_URL);
+    // Shared, authenticated connection; join_shop_room is authorised
+    // server-side and an anonymous socket would be refused.
+    const socket = getSharedSocket();
+    if (!socket) return undefined;
 
     socket.emit('join_shop_room', shopId);
 
@@ -72,7 +74,8 @@ export default function OrderManagementPanel({ token, shopId }) {
     });
 
     return () => {
-      socket.disconnect();
+      socket.off('NEW_ORDER');
+      socket.off('ORDER_STATUS_CHANGED');
     };
   }, [shopId, activeTab, fetchOrders]);
 

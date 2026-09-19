@@ -1,6 +1,6 @@
 # LocalSampark — Investor Readiness Report
 
-**Date:** 2026-09-18
+**Date:** 2026-09-19
 **Scope:** `apps/web`, `apps/admin`, `apps/mobile`, `backend`
 **Companion documents:** [`PARITY_AUDIT.md`](PARITY_AUDIT.md) (feature parity matrix), [`DESIGN_AUDIT.md`](DESIGN_AUDIT.md) (UI/UX audit)
 
@@ -42,7 +42,7 @@ FATAL: (ENOIDENTIFIER) no tenant identifier provided (external_id or sni_hostnam
 
 **Fixed.** `GET` and `PUT /users/me` now use `config/database`, matching the rest of the file, which already did. A `presentUser()` mapper serves both the snake_case row and the camelCase keys Prisma used, so no client breaks on the change.
 
-**Not fixed, and it is the largest remaining risk — see §5.1.** Thirteen other modules still call Prisma and will 500 the same way under `USE_SQLITE=true`.
+**All thirteen other Prisma modules have since been migrated too — see §5.1.** There is no Prisma left in the application code.
 
 ### 1.3 Deployed to Vercel, every API call from both web apps 404s
 
@@ -131,7 +131,7 @@ Everything below was executed, not inspected.
 
 | Suite | Result |
 |---|---|
-| `backend` unit + integration (`npm run test:unit`) | **897 passed, 54/54 suites** |
+| `backend` unit + integration (`npm run test:unit`) | **901 passed, 55/55 suites** |
 | `apps/mobile` jest | **211 passed, 10/10 suites** |
 | `apps/web` production build | **300 routes, clean** |
 | `apps/admin` production build | **clean** |
@@ -140,40 +140,54 @@ Everything below was executed, not inspected.
 | Pre-existing a11y suite | **22 passed** (was 4 failing) |
 | Demo personas + API base (`backend/src/__tests__/demo-personas.test.js`) | **11 passed**, new |
 | Socket handshake + order rooms (`backend/src/__tests__/socketAuth.test.js`) | **5 passed**, new |
+| No-Prisma guard (`backend/src/__tests__/noPrismaSplitBrain.test.js`) | **4 passed**, new |
+| Auth flows under `USE_SQLITE` (live probe) | **13 passed** |
+| Migrated endpoints under `USE_SQLITE` (live probe) | **12 passed** |
 | Seeder idempotency | **205 rows, identical on re-run, zero failed inserts, 9/9 checks** |
 
 Both backend suites that were failing before this work now pass. `categoryRouterParity` was fixed by the directory move; `mlRanker` passes in isolation and in the full run — it had been failing only as a cross-suite state leak.
 
-New regression guards added this pass: theme (6), touch targets (5), mobile design tokens (35), demo personas and API base (11), socket handshake and order rooms (5).
+New regression guards added this pass: theme (6), touch targets (5), mobile design tokens (35), demo personas and API base (11), socket handshake and order rooms (5), and the no-Prisma guard (4).
 
 ---
 
-## 5. What is **not** done
+## 5. Status of the two items previously left open, and what remains
 
 Stated plainly, because a demo is not the place to discover these.
 
-### 5.1 Thirteen modules still read a second database — highest remaining risk
+### 5.1 The second database is gone — resolved
 
-`config/prisma.js` returns `null` under `USE_SQLITE=true`, but `getSharedPrisma()` then constructs a `PrismaClient` anyway, so these modules talk to Supabase PostgreSQL while the other 294 files talk to SQLite:
+This was the largest remaining risk. It is closed: **there is no Prisma left in the application code.**
 
-```
-core/routes/auth.routes.js (24 call sites)     ecommerce/routes/cart.routes.js (6)
-ecommerce/controllers/shop-management (9)      services/controllers/delivery.controller.js (5)
-ecommerce/controllers/unified-superapp (8)     ecommerce/routes/shop.routes.js (5)
-crm/controllers/admin-revenue (7)              crm/controllers/admin-krishi (4)
-core/services/upload.service.js (3)            tenant/tenant-module.controller.js (2)
-services/routes/tracking.routes.js (2)         ecommerce/controllers/pincode-directory (1)
-crm/controllers/admin-health.controller.js (1)
-```
+`config/prisma.js` built a `PrismaClient` even under `USE_SQLITE=true` — `getSharedPrisma()` falls back to `new PrismaClient()` when the guarded factory returns null — pointed at `DATABASE_URL`. Worse than a second datasource, its schema modelled tables this database does not have: `Shop` is `@@map`ped to `shops`, `Product` to `products`, `Appointment` to `appointments`, and `ServiceSlot` / `DeliveryRoute` / `Tenant` to tables no migration creates at all. **Eleven of the nineteen mapped tables are absent.** The real ones are `local_shops`, `shop_products` and `shop_appointments`.
 
-Under `USE_SQLITE=true` every endpoint in that list returns 500. **Two options:**
+All 41 call sites across 13 modules now use `config/database`:
 
-- **Run the demo on PostgreSQL** (`USE_SQLITE=false`), which is the production configuration and the only one where both layers agree. This needs working Supabase credentials — the value in `backend/.env` is redacted here, so I could not verify it.
-- **Migrate those thirteen modules** to `config/database`, as `/users/me` now is. Roughly 77 call sites.
+| Module | Calls | What it reads now |
+|---|---:|---|
+| `core/routes/auth.routes.js` | 19 | `users`, `regions`, `wallets`, `email_verification_tokens`, `password_reset_tokens`, `local_shops` |
+| `ecommerce/routes/cart.routes.js` | 6 | `cart_items` joined to `shop_products` and `local_shops` |
+| `crm/controllers/admin-revenue.controller.js` | 5 | `regions`, `users`, `orders` |
+| `crm/controllers/admin-krishi.controller.js` | 4 | `admin_krishi_listings` |
+| `ecommerce/routes/shop.routes.js` | 3 | `shop_services`, `shop_appointments` |
+| `core/services/upload.service.js` | 3 | `file_uploads` |
+| `services/routes/tracking.routes.js` | 1 | `orders` |
+| `services/controllers/delivery.controller.js` | 1 | `orders` |
+| `crm/controllers/admin-health.controller.js` | 1 | `admin_audit_log` |
+| `middleware/auth.middleware.js` | — | engine branch removed |
+| `tenant/tenant-module.controller.js` | — | calls were already commented out; no `tenants` table exists |
 
-I did not choose between these because the first is a credentials question only you can answer. If the demo runs on SQLite, treat this list as the set of screens that will fail.
+Three defects surfaced during the migration and were fixed with it:
 
-### 5.2 Real-time — foundation built and verified, screens not yet subscribed
+- **`/tracking/:orderId` answered 404 for every order ever placed**, because `delivery_routes` does not exist. It also nudged the coordinates by `(Math.random() - 0.5) * 0.001` "for realism" — the same invented movement the mobile tracker drew. It now reads `orders`, and is **authorised**: the route was authenticated but not authorised, so any signed-in user could track any order, delivery address included.
+- **P2P parcel requests could not be stored at all.** `delivery.controller.js` wrote `orders` in paise columns (`subtotalPaise`, `totalAmountPaise`) that do not exist, plus a nested `deliveryRoute`. It now writes `orders`, with a CSPRNG delivery OTP.
+- **Appointment booking wrote a table that does not exist.** The double-booking guard cited migration 106, whose unique index is on `shop_appointments` — so the index was never protecting the code path in use. Now it is, with the constraint violation translated into the same 409 the pre-check returns.
+
+Verified under `USE_SQLITE=true`, where every one of these used to 500: **13 auth-flow assertions and 12 endpoint assertions pass**, covering OTP registration, refresh, email registration, single-use verification (including replay refusal), login, wrong-password rejection, forgot/reset password with old-password invalidation, cart add/over-stock/remove, tracking for customer and rider, and the admin dashboard, krishi and analytics reads.
+
+Pinned by `backend/src/__tests__/noPrismaSplitBrain.test.js`, which fails if anything imports the client, calls `prisma.<model>.<method>()`, branches auth on the engine, or queries the three phantom table names.
+
+### 5.2 Real-time — transport built, web fully consolidated, mobile screens partly subscribed
 
 This was the section that said nothing worked. The transport layer now does:
 
@@ -191,7 +205,16 @@ This was the section that said nothing worked. The transport layer now does:
 
 All verified against a live server and pinned by `backend/src/__tests__/socketAuth.test.js`, which runs a real socket.io server in-process.
 
-**What remains:** the nine web pages that each open their own ad-hoc `io()` connection should move onto the now-mounted shared provider, and the mobile screens beyond order tracking (gate console, society notices, shop orders) still need to subscribe. The plumbing they would use is in place and tested; the per-screen wiring is not done.
+**The nine ad-hoc web connections are now consolidated.** They had drifted in ways that mattered: **five sent no auth token**, and because the handshake degrades an unrecognised connection to a guest rather than refusing, those pages connected and were then refused every authorised room with nothing to explain it. Only one stripped `/api/v1` from the URL, which socket.io needs as a bare origin.
+
+Four screens moved to hooks (`tracking`, `resident`, `gatekeeper`, `shop-dashboard`); five kept their effect bodies and take the shared connection through `getSharedSocket()`, so working code was not rewritten for no gain. Their `disconnect()` calls became listener removals — closing a shared socket on one screen's unmount would drop realtime everywhere else.
+
+Two more defects fell out of that work:
+
+- **`/resident` joined `flat_SOC-123_A-402`** — a hardcoded society and flat. Every resident on the platform listened to the same fake room, so nobody received their own visitor alerts. It now resolves the real membership from the server, and `join_flat_room` verifies it.
+- **`/gatekeeper` POSTed visitors to an authenticated route with no `Authorization` header**, and joined the gate room with `{ gateId: 'GATE-1' }` and no society — which the server requires, since the gate id alone is not unique and every deployment's first gate is called GATE-1. Both fixed; the room is joined once on mount rather than per submit.
+
+**What remains:** mobile screens beyond order tracking (gate console, society notices, shop orders) still need to subscribe. The transport, the hooks and the authorisation are in place and tested.
 
 ### 5.3 Mobile society module is still largely static
 
@@ -199,7 +222,7 @@ Eleven of sixteen society tabs make no API call; five are `"Feature coming soon.
 
 ### 5.4 Not started from the brief
 
-Phase 4 in full (Zod/Yup schema validation across forms, offline retry queues, image fallbacks, React 18/19 hook modernisation), the consumer shop gaps (reviews, Q&A, offers, global search), and carpool OTP verification on mobile.
+Phase 4 in full (Zod/Yup schema validation across forms, offline retry queues, image fallbacks, React 18/19 hook modernisation), the consumer shop gaps (reviews, Q&A, offers, global search), carpool OTP verification on mobile, and the mobile society tabs in §5.3.
 
 ---
 

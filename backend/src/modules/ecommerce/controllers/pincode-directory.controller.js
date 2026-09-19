@@ -9,7 +9,6 @@
 // 5. Server-side Latency Logging Audit
 // ═══════════════════════════════════════════════════════════════════════
 
-const prisma = require('../../../../prisma/client');
 const { query } = require('../../../config/database');
 
 // In-Memory LRU Cache Fallback

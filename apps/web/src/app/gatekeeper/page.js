@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { UserPlus, Package, Car, Users, CheckCircle, XCircle, Languages, WifiOff } from 'lucide-react';
-import io from 'socket.io-client';
+import { useSocket, useSocketEvent } from '@/context/SocketContext';
 import { useLanguage } from '../components/LanguageToggle';
 import { saveToSyncQueue, getSyncQueue, flushSyncQueue } from '../../utils/offlineSync';
 
@@ -14,6 +14,50 @@ export default function GatekeeperPortal() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncs, setPendingSyncs] = useState(0);
   const { t, language, setLanguage } = useLanguage();
+
+  /*
+   * The gate room, joined once on mount rather than per submit.
+   *
+   * join_gatekeeper_room is authorised server-side: the caller must hold the
+   * LOG_GATE_ENTRY capability for that society. The society comes from the
+   * guard's own membership, not from the page — the old code hardcoded
+   * `GATE-1` and sent no society at all, so the join was refused and the guard
+   * never received the resident's answer.
+   */
+  const { joinGatekeeperRoom, isConnected } = useSocket();
+  const [gate, setGate] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { API_URL } = await import('@/lib/api');
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/v1/societies/my-society`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) return;
+        const body = await res.json();
+        const data = body?.data || body;
+        if (!cancelled && data?.society_id) {
+          setGate({ societyId: data.society_id, gateId: data.gate_id || 'default' });
+        }
+      } catch {
+        // Not assigned to a society, or the service is down.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (gate) joinGatekeeperRoom(gate.societyId, gate.gateId);
+  }, [gate, joinGatekeeperRoom, isConnected]);
+
+  useSocketEvent('VISITOR_RESPONSE', (response) => {
+    if (response?.status) setStatus(response.status);
+  });
 
   // Monitor network status
   useEffect(() => {
@@ -55,30 +99,34 @@ export default function GatekeeperPortal() {
         return;
       }
 
-      // Mock socket connection just for demo listening 
-      const socket = io(BACKEND_URL);
-      
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // The /society-management router is authenticated end to end. This
+          // POST sent no Authorization header, so every visitor logged from the
+          // gate was rejected with a 401 that the page reported as success.
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(form)
       });
-      
-      if (res.ok) {
-        // Listen for real response from resident
-        socket.emit('join_gatekeeper_room', { gateId: 'GATE-1' }); // optional room logic
-        
-        socket.on('VISITOR_RESPONSE', (response) => {
-          setStatus(response.status);
-          socket.disconnect();
-        });
 
-        // Fallback timeout in case resident doesn't answer in 30s
+      if (res.ok) {
+        /*
+         * The gate room is joined once, on mount, by the effect above — not
+         * here. This used to open a fresh unauthenticated socket per submit and
+         * emit `join_gatekeeper_room` with `{ gateId: 'GATE-1' }` and no
+         * societyId, which the server requires: the gate id alone is not unique
+         * across societies, and every deployment's first gate is called GATE-1.
+         * The join was refused, so the guard never heard the resident's answer.
+         */
+        setStatus('waiting');
+
+        // Auto-deny if the resident does not answer. Kept from the original.
         setTimeout(() => {
-          if (socket.connected) {
-            setStatus('denied'); // auto deny or timeout
-            socket.disconnect();
-          }
+          setStatus((current) => (current === 'waiting' ? 'denied' : current));
         }, 30000);
       }
     } catch (err) {

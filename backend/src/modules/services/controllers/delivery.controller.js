@@ -1,6 +1,4 @@
 const crypto = require('crypto');
-// One shared client instead of a per-module pool; see config/prisma.js.
-const prisma = require('../../../config/prisma').sharedPrisma;
 const { query, queryOne } = require('../../../config/database');
 const geo = require('../../../utils/geo');
 
@@ -114,42 +112,53 @@ const requestDelivery = async (req, res, next) => {
     const orderNumber = `LS-P2P-${Date.now().toString().slice(-6)}`;
 
     // Create Order and DeliveryRoute
-    const newOrder = await prisma.order.create({
-      data: {
-        orderNumber,
+    /*
+     * Rewritten off Prisma.
+     *
+     * This wrote `orders` in paise columns — subtotalPaise, deliveryFeePaise,
+     * totalAmountPaise — none of which exist; the real column is
+     * `total_amount`, in rupees. It also created a nested `deliveryRoute`, a
+     * model @@mapped to a `delivery_routes` table no migration creates. So a
+     * P2P parcel request could not be stored at all, on either engine.
+     *
+     * `orders` is the table the merchant queue, the rider job list and the
+     * socket rooms all already read, so the job appears everywhere it should.
+     */
+    const orderId = crypto.randomUUID();
+    const totalAmount = (finalFeePaise + 500) / 100;
+
+    await query(
+      `INSERT INTO orders
+         (id, user_id, shop_id, total_amount, delivery_fee, platform_fee,
+          payment_method, payment_status, order_status, status,
+          fulfillment_method, delivery_address, delivery_coordinate,
+          special_instructions, otp_code, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'COD', 'pending', 'pending', 'pending',
+               'DELIVERY', $7, $8, $9, $10, ${NOW})`,
+      [
+        orderId,
         userId,
-        shopId: shop.id,
-        status: 'PENDING',
-        subtotalPaise: 0,
-        deliveryFeePaise: finalFeePaise,
-        platformFeePaise: 500,
-        totalAmountPaise: finalFeePaise + 500,
-        paymentMethod: 'COD',
-        paymentStatus: 'PENDING',
-        fulfillmentMethod: 'DELIVERY',
-        specialInstructions: `[P2P Parcel] ${packageDetails} | Pickup: ${pickupAddress || 'Address'} -> Drop: ${deliveryAddress || 'Address'}`,
-        deliveryRoute: {
-          create: {
-            status: 'PENDING',
-            pickupLatitude: pickupLat ? parseFloat(pickupLat) : shop.latitude,
-            pickupLongitude: pickupLng ? parseFloat(pickupLng) : shop.longitude,
-            dropLatitude: dropLat ? parseFloat(dropLat) : null,
-            dropLongitude: dropLng ? parseFloat(dropLng) : null,
-            distanceKm: parseFloat(estimatedDistanceKm) || 3.5,
-            estimatedMinutes: Math.round((parseFloat(estimatedDistanceKm) || 3.5) * 5 + 10),
-          }
-        }
-      },
-      include: {
-        deliveryRoute: true
-      }
-    });
+        shop.id,
+        totalAmount,
+        finalFeePaise / 100,
+        5,
+        deliveryAddress || 'Address',
+        `POINT(${dropLng || shop.longitude} ${dropLat || shop.latitude})`,
+        `[P2P Parcel] ${packageDetails} | Pickup: ${pickupAddress || 'Address'} -> Drop: ${deliveryAddress || 'Address'}`,
+        // The rider must quote this back to close the delivery; completeJob
+        // compares it. Six digits from the CSPRNG, not Math.random().
+        String(crypto.randomInt(100000, 1000000)),
+      ]
+    );
+
+    const newOrder = await queryOne('SELECT * FROM orders WHERE id = $1', [orderId]);
+    newOrder.orderNumber = orderNumber;
 
     // Notify online riders via WebSocket
     const io = req.app.get('io');
     if (io) {
       io.emit('new_delivery_job', {
-        jobId: newOrder.deliveryRoute?.id,
+        jobId: newOrder.id,
         orderId: newOrder.id,
         orderNumber: newOrder.orderNumber,
         pincode,
@@ -161,7 +170,7 @@ const requestDelivery = async (req, res, next) => {
       success: true,
       message: 'P2P Delivery requested successfully. Finding nearest delivery partner.',
       order: newOrder,
-      jobId: newOrder.deliveryRoute?.id
+      jobId: newOrder.id
     });
   } catch (error) {
     next(error);

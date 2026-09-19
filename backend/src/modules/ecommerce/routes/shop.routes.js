@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
-// One shared client instead of a per-module pool; see config/prisma.js.
-const prisma = require('../../../config/prisma').sharedPrisma;
 const { apiCache } = require('../../../middleware/cache.middleware');
 const { generateMockProducts, generateMockServices, generateMockStaff } = require('../../../utils/mockDataGenerator');
 
@@ -19,6 +17,8 @@ const useMockCatalog = () =>
 const { authenticate } = require('../../../middleware/auth.middleware');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+// NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
+const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
 /**
  * Delivery handover code written to shop_orders.tracking_otp.
@@ -410,7 +410,18 @@ router.post('/:id/appointments', authenticate, async (req, res, next) => {
     const { serviceSlotId, scheduledDate, scheduledTime, paymentMethod, customerNotes, patientSymptoms } = req.body;
     
     // Fetch service slot
-    const slot = await prisma.serviceSlot.findUnique({ where: { id: serviceSlotId } });
+    /*
+     * Rewritten off Prisma. `ServiceSlot` is @@mapped to `service_slots` and
+     * `Appointment` to `appointments` — neither table exists here. The real
+     * ones are `shop_services` and `shop_appointments`, and the unique index
+     * migration 106 adds (and which the comment below relies on) is on
+     * shop_appointments (shop_id, staff_id, appointment_date, time_slot). So
+     * the index was never protecting the code path actually in use.
+     */
+    const slot = await queryOne(
+      'SELECT * FROM shop_services WHERE id = $1 AND shop_id = $2',
+      [serviceSlotId, req.params.id]
+    );
     if (!slot) return res.status(404).json({ error: 'Service slot not found' });
 
     // Refuse a slot that is already taken.
@@ -419,15 +430,15 @@ router.post('/:id/appointments', authenticate, async (req, res, next) => {
     // actually holds under concurrency — two customers tapping "confirm" on the
     // last evening slot at the same moment. This check exists so the ordinary
     // case gets a clear 409 rather than a constraint-violation stack trace.
-    const clash = await prisma.appointment.findFirst({
-      where: {
-        shopId: req.params.id,
-        serviceSlotId,
-        scheduledDate: new Date(scheduledDate),
-        scheduledTime,
-        status: { notIn: ['CANCELLED', 'NO_SHOW'] },
-      },
-    });
+    const clash = await queryOne(
+      `SELECT id FROM shop_appointments
+        WHERE shop_id = $1
+          AND appointment_date = $2
+          AND time_slot = $3
+          AND UPPER(COALESCE(status, '')) NOT IN ('CANCELLED', 'NO_SHOW')
+        LIMIT 1`,
+      [req.params.id, scheduledDate, scheduledTime]
+    );
 
     if (clash) {
       return res.status(409).json({
@@ -437,31 +448,51 @@ router.post('/:id/appointments', authenticate, async (req, res, next) => {
       });
     }
 
-    // Create appointment via Prisma
-    const appt = await prisma.appointment.create({
-      data: {
-        // crypto.randomUUID rather than Date.now()+random(1000). The old form
-        // drew from a thousand values inside a single millisecond, so two
-        // simultaneous bookings collided about once in a thousand — rare enough
-        // to survive testing and frequent enough to happen in production.
-        bookingNumber: 'LS-BK-' + crypto.randomUUID(),
-        userId: req.user.id,
-        shopId: req.params.id,
-        serviceSlotId: serviceSlotId,
-        status: 'REQUESTED',
-        serviceName: slot.serviceName,
-        providerName: slot.providerName,
-        scheduledDate: new Date(scheduledDate),
-        scheduledTime: scheduledTime,
-        durationMinutes: slot.durationMinutes,
-        pricePaise: slot.pricePaise,
-        paymentMethod: paymentMethod || 'COD',
-        customerNotes: customerNotes,
-        patientSymptoms: patientSymptoms ? JSON.stringify(patientSymptoms) : null
-      }
-    });
+    // crypto.randomUUID rather than Date.now()+random(1000). The old form drew
+    // from a thousand values inside a single millisecond, so two simultaneous
+    // bookings collided about once in a thousand — rare enough to survive
+    // testing and frequent enough to happen in production.
+    const appointmentId = crypto.randomUUID();
+    const bookingNumber = 'LS-BK-' + crypto.randomUUID();
 
-    res.status(201).json({ success: true, appointment: appt });
+    try {
+      await query(
+        `INSERT INTO shop_appointments
+           (id, shop_id, user_id, service_id, appointment_date, time_slot,
+            status, payment_method, payment_status, service_price, final_price,
+            customer_notes, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'REQUESTED', $7, 'pending', $8, $8, $9, ${NOW})`,
+        [
+          appointmentId, req.params.id, req.user.id, serviceSlotId,
+          scheduledDate, scheduledTime, paymentMethod || 'COD',
+          slot.price, customerNotes || null,
+        ]
+      );
+    } catch (e) {
+      // The unique index is the real guard; translate its violation into the
+      // same 409 the pre-check returns rather than a 500.
+      if (/UNIQUE|duplicate key/i.test(e.message || '')) {
+        return res.status(409).json({
+          success: false,
+          error: 'That slot has just been taken. Please choose another time.',
+          code: 'SLOT_UNAVAILABLE',
+        });
+      }
+      throw e;
+    }
+
+    const appt = await queryOne('SELECT * FROM shop_appointments WHERE id = $1', [appointmentId]);
+
+    res.status(201).json({
+      success: true,
+      appointment: {
+        ...appt,
+        bookingNumber,
+        serviceName: slot.name,
+        durationMinutes: slot.duration_minutes,
+        patientSymptoms: patientSymptoms || null,
+      },
+    });
   } catch (error) {
     // The index fired, meaning another request claimed the slot between the
     // check above and this insert. That is the race the index exists for, and

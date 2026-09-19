@@ -70,7 +70,6 @@ const upload = multer({
   }
 });
 
-const prisma = require('../../../config/prisma');
 
 // ─── UPLOAD SERVICE FUNCTIONS ──────────────────────────────────────
 
@@ -80,20 +79,21 @@ const prisma = require('../../../config/prisma');
 async function recordUpload(uploaderId, file, purpose, referenceId) {
   const relativePath = `/uploads/${purpose}/${file.filename}`;
   
-  const uploadRecord = await prisma.fileUpload.create({
-    data: {
-      uploaderId: uploaderId || null,
-      fileName: file.originalname,
-      filePath: relativePath,
-      fileType: file.mimetype,
-      fileSize: file.size,
-      purpose: purpose || 'general',
-      referenceId: referenceId || null
-    }
-  });
+  // file_uploads, through config/database. Prisma pointed at a different
+  // datasource, so an upload recorded here could not be found by any other
+  // module — and under USE_SQLITE it threw outright.
+  const uploadId = crypto.randomUUID();
+  await query(
+    `INSERT INTO file_uploads
+       (id, uploader_id, user_id, file_name, file_path, file_type, mime_type,
+        file_size, purpose, reference_id, created_at)
+     VALUES ($1, $2, $2, $3, $4, $5, $5, $6, $7, $8, ${NOW})`,
+    [uploadId, uploaderId || null, file.originalname, relativePath,
+     file.mimetype, file.size, purpose || 'general', referenceId || null]
+  );
 
   return {
-    id: uploadRecord.id,
+    id: uploadId,
     url: relativePath,
     originalName: file.originalname,
     size: file.size,
@@ -105,15 +105,15 @@ async function recordUpload(uploaderId, file, purpose, referenceId) {
  * Delete a file from disk and database
  */
 async function deleteUpload(fileId) {
-  const record = await prisma.fileUpload.findUnique({ where: { id: fileId } });
+  const record = await queryOne('SELECT * FROM file_uploads WHERE id = $1', [fileId]);
   if (!record) return false;
 
-  const fullPath = path.join(__dirname, '../../public', record.filePath);
+  const fullPath = path.join(__dirname, '../../public', record.file_path);
   if (fs.existsSync(fullPath)) {
     fs.unlinkSync(fullPath);
   }
 
-  await prisma.fileUpload.delete({ where: { id: fileId } });
+  await query('DELETE FROM file_uploads WHERE id = $1', [fileId]);
   return true;
 }
 

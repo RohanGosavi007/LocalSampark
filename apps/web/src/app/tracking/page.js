@@ -3,7 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import { useSearchParams } from 'next/navigation';
 import { Package, Clock, Truck, CheckCircle, MapPin } from 'lucide-react';
-import io from 'socket.io-client';
+import { useSocket, useSocketEvent } from '@/context/SocketContext';
 
 function TrackingPageInner() {
   const searchParams = useSearchParams();
@@ -11,27 +11,30 @@ function TrackingPageInner() {
   
   const [status, setStatus] = useState('accepted'); // pending, accepted, preparing, dispatched, delivered
   const [riderLocation, setRiderLocation] = useState(null);
-  const [socket, setSocket] = useState(null);
+
+  // Was its own unauthenticated io(BACKEND_URL). join_order_room is authorised
+  // server-side now — only the customer, the assigned rider and the shop may
+  // listen — so an anonymous socket is refused, which is the point.
+  const { joinOrderRoom, isConnected } = useSocket();
 
   useEffect(() => {
-    if (!orderId) return;
+    if (orderId) joinOrderRoom(orderId);
+  }, [orderId, joinOrderRoom, isConnected]);
 
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const s = io(BACKEND_URL);
-    setSocket(s);
+  useSocketEvent('ORDER_STATUS_CHANGED', (data) => {
+    if (data?.status) setStatus(data.status);
+  });
 
-    s.emit('join_order_room', orderId);
+  // The server also emits a per-order event, which avoids filtering a stream
+  // of every order on the platform.
+  useSocketEvent(orderId ? `order_status_${orderId}` : null, (data) => {
+    if (data?.status) setStatus(data.status);
+  });
 
-    s.on('ORDER_STATUS_CHANGED', (data) => {
-      setStatus(data.status);
-    });
-
-    s.on('RIDER_LOCATION_UPDATE', (data) => {
-      setRiderLocation({ lat: data.latitude, lng: data.longitude });
-    });
-
-    return () => s.disconnect();
-  }, [orderId]);
+  useSocketEvent('RIDER_LOCATION_UPDATE', (data) => {
+    if (data?.latitude == null || data?.longitude == null) return;
+    setRiderLocation({ lat: data.latitude, lng: data.longitude });
+  });
 
   const steps = [
     { id: 'accepted', label: 'Order Accepted', icon: CheckCircle },

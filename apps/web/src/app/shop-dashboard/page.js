@@ -15,7 +15,7 @@ import LeadCRMCenter from './components/LeadCRMCenter';
 import CampaignManager from './components/CampaignManager';
 import AIInsightsWidget from './components/AIInsightsWidget';
 import AudioNotifier from '@/components/ui/AudioNotifier';
-import { io } from 'socket.io-client';
+import { useSocket, useSocketEvent } from '@/context/SocketContext';
 import SalesChart from '../../components/charts/SalesChart';
 import OnboardingChecklist from '../../components/OnboardingChecklist';
 import StockAlerts from '../../components/StockAlerts';
@@ -36,23 +36,23 @@ export default function ShopDashboardPage() {
     }
   }, [isAuthenticated, loading, router]);
 
+  /*
+   * Was its own io() with no auth token, and connecting straight to
+   * NEXT_PUBLIC_API_URL — which may carry the /api/v1 path segment that
+   * socket.io cannot use as an origin. The shared provider handles both, and
+   * queues the join until the handshake completes rather than emitting inside
+   * an on('connect') handler that a reconnect would not re-run.
+   */
+  const { joinShopRoom, isConnected } = useSocket();
+
   useEffect(() => {
-    if (user?.shop_id) {
-      const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
-      
-      newSocket.on('connect', () => {
-        newSocket.emit('join_shop_room', user.shop_id);
-      });
+    if (user?.shop_id) joinShopRoom(user.shop_id);
+  }, [user, joinShopRoom, isConnected]);
 
-      newSocket.on('merchant_new_order', (order) => {
-        setHasNewOrder(true);
-        setTimeout(() => setHasNewOrder(false), 2000); // Reset chime state after 2 seconds
-      });
-
-      setSocket(newSocket);
-      return () => newSocket.disconnect();
-    }
-  }, [user]);
+  useSocketEvent('merchant_new_order', () => {
+    setHasNewOrder(true);
+    setTimeout(() => setHasNewOrder(false), 2000);
+  });
 
   // Simplified Map: Category slug -> Archetype View + Theme Category
   const getArchetypeConfig = (category) => {

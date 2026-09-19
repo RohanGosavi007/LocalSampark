@@ -23,15 +23,6 @@ function passesCsrf(req, res) {
   return !res.headersSent;
 }
 
-let _prisma = null;
-const getPrisma = () => {
-  if (process.env.USE_SQLITE === 'true') return null;
-  if (!_prisma) {
-    _prisma = require('../config/prisma').sharedPrisma;
-  }
-  return _prisma;
-};
-
 // Verify JWT token middleware
 const authenticate = async (req, res, next) => {
   try {
@@ -270,17 +261,18 @@ const verifyRole = (allowedRoles) => {
         return res.status(403).json({ success: false, error: 'Token missing role context.' });
       }
 
-      // Token Versioning strict check
-      let user = null;
-      if (process.env.USE_SQLITE === 'true') {
-        const { queryOne } = require('../config/database');
-        user = await queryOne('SELECT token_version as tokenVersion FROM users WHERE id = $1', [decoded.userId]);
-      } else {
-        user = await getPrisma().user.findUnique({
-          where: { id: decoded.userId },
-          select: { tokenVersion: true }
-        });
-      }
+      // Token versioning, strict.
+      //
+      // This branched on the engine: SQLite through config/database, everything
+      // else through Prisma. config/database already abstracts both, and the
+      // Prisma branch read a different datasource from the one `authenticate`
+      // above uses — so on Postgres this check and the authentication that
+      // preceded it could disagree about whether a user exists. One path now.
+      const { queryOne } = require('../config/database');
+      const user = await queryOne(
+        'SELECT token_version as tokenVersion FROM users WHERE id = $1',
+        [decoded.userId]
+      );
       
       if (!user || user.tokenVersion !== decoded.tokenVersion) {
         return res.status(401).json({ success: false, error: 'Session invalidated. Please login again.' });

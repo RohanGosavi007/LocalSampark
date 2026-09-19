@@ -161,8 +161,13 @@ const getDashboardStats = async (req, res, next) => {
         console.warn('Dashboard stats sqlite error:', e.message);
       }
     } else {
-      // One shared client instead of a per-module pool; see config/prisma.js.
-      const prisma = require('../../../config/prisma').sharedPrisma;
+      // All six counts now come from config/database. The four Prisma ones
+      // read a different datasource from the two that were already migrated,
+      // so this dashboard mixed numbers from two databases in a single row of
+      // tiles — and threw entirely under USE_SQLITE.
+      const count = (sql, params = []) =>
+        query(sql, params).then((r) => Number((r.rows || r)[0]?.count || 0));
+
       [shopsCount, activeRegions, totalRegions, totalUsers, totalOrders, completedOrders] = await Promise.all([
         // local_shops, not prisma.shop. The Prisma model is @@mapped to
         // `shops`, which is not the table shop registration writes to — so this
@@ -170,11 +175,16 @@ const getDashboardStats = async (req, res, next) => {
         // platform.
         query('SELECT COUNT(*) AS count FROM local_shops')
           .then((r) => Number((r.rows || r)[0]?.count || 0)),
-        prisma.region.count({ where: { isActive: true } }),
-        prisma.region.count(),
-        prisma.user.count(),
-        prisma.order.count(),
-        prisma.order.count({ where: { status: 'DELIVERED' } })
+        count('SELECT COUNT(*) AS count FROM regions WHERE is_active = 1'),
+        count('SELECT COUNT(*) AS count FROM regions'),
+        count('SELECT COUNT(*) AS count FROM users'),
+        count('SELECT COUNT(*) AS count FROM orders'),
+        // orders carries both `order_status` and `status`; checkout writes the
+        // first and several older paths write the second, so count either.
+        count(
+          `SELECT COUNT(*) AS count FROM orders
+            WHERE LOWER(COALESCE(order_status, status, '')) = 'delivered'`
+        ),
       ]);
     }
 

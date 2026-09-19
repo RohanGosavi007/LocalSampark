@@ -1,7 +1,8 @@
 const os = require('os');
 const crypto = require('crypto');
-const prisma = require('../../../config/prisma');
 const { query } = require('../../../config/database');
+// NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
+const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
 exports.getHealthMetrics = async (req, res, next) => {
   try {
@@ -66,15 +67,21 @@ exports.clearGlobalCache = async (req, res, next) => {
     // For MVP, we simulate a successful cache purge.
     const adminId = req.user.id || req.user.userId;
     try {
-      await prisma.adminAuditLog.create({
-        data: {
+      // admin_audit_log.ip_address is NOT NULL, so the caller's address is
+      // recorded rather than omitted — an audit row that cannot say where the
+      // action came from is not much of an audit row.
+      await query(
+        `INSERT INTO admin_audit_log
+           (id, admin_id, action, target_type, target_id, ip_address, user_agent, details, created_at)
+         VALUES ($1, $2, 'CACHE_PURGE', 'system', 'cache', $3, $4, $5, ${NOW})`,
+        [
+          crypto.randomUUID(),
           adminId,
-          action: 'CACHE_PURGE',
-          targetType: 'system',
-          targetId: 'cache',
-          details: 'Global cache flushed from Performance Dashboard'
-        }
-      });
+          req.ip || req.connection?.remoteAddress || 'unknown',
+          (req.get && req.get('user-agent')) || null,
+          'Global cache flushed from Performance Dashboard',
+        ]
+      );
     } catch(e) {
       console.error('Failed to log audit:', e);
     }

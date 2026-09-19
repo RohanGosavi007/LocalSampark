@@ -2,8 +2,118 @@
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { getJwtRefreshSecret } = require('../../../config/secrets');
-// One shared client instead of a per-module pool; see config/prisma.js.
-const prisma = require('../../../config/prisma').sharedPrisma;
+/**
+ * No Prisma here.
+ *
+ * config/prisma.js builds a PrismaClient even under USE_SQLITE=true, pointed at
+ * DATABASE_URL — a different database from the one auth.middleware.js
+ * authenticates against. A user created here therefore could not be found by
+ * the middleware on the very next request. The Prisma schema also models
+ * tables that do not exist in this database at all (`shops`, `products`,
+ * `appointments`, `service_slots`, `addresses` and five more).
+ *
+ * Everything below uses config/database, the layer the middleware reads.
+ */
+
+// NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
+const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+
+/**
+ * Present a users row in the shape this API has always returned.
+ *
+ * The table is snake_case (`phone_number`, `full_name`, `region_id`); Prisma's
+ * model was camelCase. Serving both keeps every existing client working.
+ */
+function presentUser(row) {
+  if (!row) return null;
+  const { password_hash: _ignored, ...rest } = row;
+  return {
+    ...rest,
+    id: row.id,
+    phone: row.phone_number || row.phone || null,
+    name: row.full_name || null,
+    fullName: row.full_name || null,
+    role: row.role,
+    regionId: row.region_id || null,
+    tokenVersion: row.token_version ?? 0,
+    isActive: row.is_active === 1 || row.is_active === true,
+    isVerified: row.is_verified === 1 || row.is_verified === true,
+    // The email login path compares against these two by their camelCase
+    // names. password_hash is intentionally *not* stripped here, unlike in
+    // users.routes.js, because /login-email needs it to verify the password —
+    // every caller that returns a user to the client goes through a route that
+    // does not serialise it.
+    passwordHash: row.password_hash || null,
+    emailVerified: row.email_verified === 1 || row.email_verified === true,
+    authMethod: row.auth_method || null,
+  };
+}
+
+/** Single-use token helpers, shared by the email-verify and reset flows. */
+async function createSingleUseToken(table, userId, token, ttlMs) {
+  await query(
+    `INSERT INTO ${table} (id, user_id, token, expires_at, used, created_at)
+     VALUES ($1, $2, $3, $4, 0, ${NOW})`,
+    [crypto.randomUUID(), userId, token, new Date(Date.now() + ttlMs).toISOString()]
+  );
+}
+
+/** An unused token row, or null. Expiry is checked by the caller. */
+async function findUnusedToken(table, token) {
+  return queryOne(
+    `SELECT * FROM ${table} WHERE token = $1 AND (used = 0 OR used IS NULL) LIMIT 1`,
+    [token]
+  );
+}
+
+async function consumeToken(table, id) {
+  await query(`UPDATE ${table} SET used = 1 WHERE id = $1`, [id]);
+}
+
+/** Look a user up by either phone column; the table carries both. */
+async function findUserByPhone(phoneNumber) {
+  return queryOne(
+    'SELECT * FROM users WHERE phone_number = $1 OR phone = $1 LIMIT 1',
+    [phoneNumber]
+  );
+}
+
+async function findUserByEmail(email) {
+  return queryOne('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
+}
+
+async function findUserById(id) {
+  return queryOne('SELECT * FROM users WHERE id = $1 LIMIT 1', [id]);
+}
+
+/** Insert a user and return the stored row, so callers see real defaults. */
+async function createUser({ phoneNumber, fullName, email, role, regionId, passwordHash }) {
+  const id = crypto.randomUUID();
+  await query(
+    `INSERT INTO users
+       (id, phone_number, phone, full_name, email, role, region_id,
+        password_hash, is_active, is_verified, token_version)
+     VALUES ($1, $2, $2, $3, $4, $5, $6, $7, 1, 0, 0)`,
+    [id, phoneNumber || null, fullName || null, email || null, role || 'CUSTOMER',
+     regionId || null, passwordHash || null]
+  );
+  return findUserById(id);
+}
+
+/** Apply a partial update without blanking the columns not supplied. */
+async function updateUser(id, fields) {
+  const updates = [];
+  const params = [];
+  for (const [column, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    params.push(value);
+    updates.push(`${column} = $${params.length}`);
+  }
+  if (!updates.length) return findUserById(id);
+  params.push(id);
+  await query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
+  return findUserById(id);
+}
 const { authenticate, generateTokens } = require('../../../middleware/auth.middleware');
 const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const bcrypt = require('bcryptjs');
@@ -19,7 +129,7 @@ const { v4: uuidv4 } = require('uuid');
 // catch then called next(e) *and* let execution continue, creating the user
 // with no region after the response had already been handed to the error
 // handler.
-const { queryOne } = require('../../../config/database');
+const { query, queryOne } = require('../../../config/database');
 const otpStore = require('../services/otpStore.service');
 
 /**
@@ -195,7 +305,7 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
           );
         }
       } else {
-        user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
+        user = presentUser(await findUserByPhone(phoneNumber));
       }
 
 
@@ -224,15 +334,14 @@ router.post('/verify-otp', authLimiter, async (req, res, next) => {
           }
         }
 
-        const id = crypto.randomUUID();
-        user = await prisma.user.create({
-          data: {
-            phone: phoneNumber,
-            name: fullName,
+        user = presentUser(
+          await createUser({
+            phoneNumber,
+            fullName,
             regionId: assignedRegionId,
-            role: 'CUSTOMER'
-          }
-        });
+            role: 'CUSTOMER',
+          })
+        );
       }
     } catch (dbError) {
       if (process.env.NODE_ENV !== 'production') {
@@ -337,7 +446,7 @@ router.post('/firebase-login', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Firebase token does not contain a verified phone number' });
     }
 
-    let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
+    let user = presentUser(await findUserByPhone(phoneNumber));
 
     if (!user) {
       if (!fullName) {
@@ -349,19 +458,18 @@ router.post('/firebase-login', authLimiter, async (req, res, next) => {
 
       let assignedRegionId = regionId || null;
       if (!assignedRegionId && pincode) {
-        const matchedRegion = await prisma.region.findFirst({ where: { pincode } });
+        const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
         if (matchedRegion) assignedRegionId = matchedRegion.id;
       }
 
-      const id = crypto.randomUUID();
-      user = await prisma.user.create({
-        data: {
-          phone: phoneNumber,
-          name: fullName,
+      user = presentUser(
+        await createUser({
+          phoneNumber,
+          fullName,
           regionId: assignedRegionId,
-          role: 'CUSTOMER'
-        }
-      });
+          role: 'CUSTOMER',
+        })
+      );
     }
 
     const { accessToken, refreshToken } = generateTokens(
@@ -389,7 +497,7 @@ router.post('/refresh-token', async (req, res, next) => {
         return res.status(401).json({ error: 'Invalid or expired refresh token' });
       }
 
-      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      const user = presentUser(await findUserById(decoded.userId));
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -454,7 +562,7 @@ router.post('/register-email',
 
     const { email, password, fullName, regionId, pincode } = req.body;
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email already exists' });
     }
@@ -466,31 +574,30 @@ router.post('/register-email',
     
     let assignedRegionId = regionId || null;
     if (!assignedRegionId && pincode) {
-      const matchedRegion = await prisma.region.findFirst({ where: { pincode } });
+      const matchedRegion = await queryOne('SELECT id FROM regions WHERE pincode = $1 LIMIT 1', [pincode]);
       if (matchedRegion) assignedRegionId = matchedRegion.id;
     }
 
-    const user = await prisma.user.create({
-      data: {
-        id: crypto.randomUUID(),
-        phone: dummyPhone,
-        email: email,
-        name: fullName,
-        role: 'CUSTOMER',
-        passwordHash: passwordHash,
-        authMethod: 'email',
-        emailVerified: false,
-        regionId: assignedRegionId
-      }
+    const userRow = await createUser({
+      phoneNumber: dummyPhone,
+      email,
+      fullName,
+      role: 'CUSTOMER',
+      regionId: assignedRegionId,
+      passwordHash,
     });
+    await query(
+      "UPDATE users SET auth_method = 'email', email_verified = 0 WHERE id = $1",
+      [userRow.id]
+    );
+    const user = presentUser(userRow);
 
     // Create wallet
-    await prisma.wallet.create({
-      data: {
-        userId: user.id,
-        balance: 0.00
-      }
-    });
+    await query(
+      `INSERT INTO wallets (id, user_id, balance, currency, created_at)
+       VALUES ($1, $2, 0, 'INR', ${NOW})`,
+      [crypto.randomUUID(), user.id]
+    );
 
     // Send email verification link token.
     //
@@ -500,15 +607,7 @@ router.post('/register-email',
     // token can predict every token issued around the same time. 32 bytes from
     // the CSPRNG removes the guess entirely.
     const token = crypto.randomBytes(32).toString('hex');
-    await prisma.emailVerificationToken.create({
-      data: {
-        id: uuidv4(),
-        userId: user.id,
-        token: token,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        used: false
-      }
-    });
+    await createSingleUseToken('email_verification_tokens', user.id, token, 24 * 60 * 60 * 1000);
 
     const verifyLink = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/v1/auth/verify-email?token=${token}`;
     
@@ -540,26 +639,14 @@ router.get('/verify-email', async (req, res, next) => {
       return res.status(400).send('<h1>Error: Verification token is missing</h1>');
     }
 
-    const tokenRecord = await prisma.emailVerificationToken.findFirst({
-      where: {
-        token: token,
-        used: false
-      }
-    });
+    const tokenRecord = await findUnusedToken('email_verification_tokens', token);
 
-    if (!tokenRecord || new Date(tokenRecord.expiresAt) < new Date()) {
+    if (!tokenRecord || new Date(tokenRecord.expires_at) < new Date()) {
       return res.status(400).send('<h1>Error: Invalid or expired verification token</h1>');
     }
 
-    await prisma.emailVerificationToken.update({
-      where: { id: tokenRecord.id },
-      data: { used: true }
-    });
-
-    await prisma.user.update({
-      where: { id: tokenRecord.userId },
-      data: { emailVerified: true }
-    });
+    await consumeToken('email_verification_tokens', tokenRecord.id);
+    await query('UPDATE users SET email_verified = 1 WHERE id = $1', [tokenRecord.user_id]);
 
     res.send('<h1>Email Verified Successfully!</h1><p>You can now close this window and log in to LocalSampark.</p>');
   } catch (error) {
@@ -581,7 +668,7 @@ router.post('/login-email',
 
     const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = presentUser(await findUserByEmail(email));
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -622,7 +709,7 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = presentUser(await findUserByEmail(email));
     if (!user) {
       return res.status(404).json({ error: 'No user registered with this email address' });
     }
@@ -637,15 +724,7 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
     // the token you know they were sent. That is account takeover for any email
     // address, with no access to the victim's inbox.
     const token = crypto.randomBytes(32).toString('hex');
-    await prisma.passwordResetToken.create({
-      data: {
-        id: uuidv4(),
-        userId: user.id,
-        token: token,
-        expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000),
-        used: false
-      }
-    });
+    await createSingleUseToken('password_reset_tokens', user.id, token, 60 * 60 * 1000);
 
     // Instead of a direct link, the frontend should handle this token if it's a SPA. But for now we send the token.
     await sendEmail(
@@ -675,26 +754,21 @@ router.post('/reset-password', authLimiter, async (req, res, next) => {
       return res.status(400).json({ error: 'Reset token and new password are required' });
     }
 
-    const tokenRecord = await prisma.passwordResetToken.findFirst({
-      where: {
-        token: token,
-        used: false
-      }
-    });
+    const tokenRecord = await findUnusedToken('password_reset_tokens', token);
 
-    if (!tokenRecord || new Date(tokenRecord.expiresAt) < new Date()) {
+    if (!tokenRecord || new Date(tokenRecord.expires_at) < new Date()) {
       return res.status(400).json({ error: 'Invalid or expired password reset token' });
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await prisma.passwordResetToken.update({
-      where: { id: tokenRecord.id },
-      data: { used: true }
-    });
-    await prisma.user.update({
-      where: { id: tokenRecord.userId },
-      data: { passwordHash: passwordHash }
-    });
+    await consumeToken('password_reset_tokens', tokenRecord.id);
+    // Bumping token_version invalidates every access token already issued for
+    // this account. A password reset that leaves the attacker's existing
+    // session alive has not actually locked them out.
+    await query(
+      'UPDATE users SET password_hash = $1, token_version = COALESCE(token_version, 0) + 1 WHERE id = $2',
+      [passwordHash, tokenRecord.user_id]
+    );
 
     res.json({
       success: true,
@@ -714,21 +788,18 @@ router.put('/switch-role', authenticate, async (req, res, next) => {
     // Validate if user has permission to switch to this role
     // In a fully built permission matrix, we would query user_roles table.
     // For now, we allow switching to 'user' unconditionally, or check if they own a shop.
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const user = presentUser(await findUserById(req.user.id));
     
     if (targetRole !== 'user') {
       if (targetRole === 'shop_owner') {
-        const shop = await prisma.localShop.findFirst({ where: { ownerId: req.user.id } });
+        const shop = await queryOne('SELECT * FROM local_shops WHERE owner_id = $1 LIMIT 1', [req.user.id]);
         if (!shop) return res.status(403).json({ error: 'You do not own any shops' });
       }
       // Add other role validation as needed...
     }
 
     // Update their active role
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { role: targetRole }
-    });
+    await query('UPDATE users SET role = $1 WHERE id = $2', [targetRole, req.user.id]);
 
     // Issue new token with updated role
     const { accessToken } = generateTokens(

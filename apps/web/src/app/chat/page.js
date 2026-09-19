@@ -47,15 +47,22 @@ export default function ChatPage() {
 
     // Socket.io connection
     try {
-      const { io } = require('socket.io-client');
-      const socketUrl = API_URL.replace('/api/v1', '');
-      socketRef.current = io(socketUrl, { auth: { token }, transports: ['websocket', 'polling'] });
+      // This was the only page that both authenticated its socket and
+      // stripped /api/v1 from the URL. The shared connection now does that for
+      // every page, so there is no reason to open a second one here.
+      const { getSharedSocket } = require('@/context/SocketContext');
+      socketRef.current = getSharedSocket();
+      if (!socketRef.current) return undefined;
       
       socketRef.current.on('new_message', (msg) => {
         setMessages(prev => [...prev, msg]);
       });
 
-      return () => { if (socketRef.current) socketRef.current.disconnect(); };
+      // Remove this page's listener rather than closing the socket — it is
+      // shared, and disconnecting it here would kill realtime everywhere else.
+      return () => {
+        if (socketRef.current) socketRef.current.off('new_message');
+      };
     } catch (e) {
       // Socket.io not available, handled silently
     }

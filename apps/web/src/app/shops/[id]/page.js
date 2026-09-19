@@ -1,6 +1,6 @@
 'use client';
 import { API_URL, getAuthHeaders } from '@/lib/api';
-import { io } from 'socket.io-client';
+import { getSharedSocket } from '@/context/SocketContext';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
@@ -127,8 +127,8 @@ export default function ShopDetailPage() {
     fetchShopData();
 
     // WebSocket real-time inventory sync
-    const socketUrl = API_URL.replace('/api/v1', '');
-    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+    const socket = getSharedSocket();
+    if (!socket) return undefined;
     
     socket.on('connect', () => {
       socket.emit('join_shop_room', id);
@@ -145,7 +145,7 @@ export default function ShopDetailPage() {
         scriptElement.parentNode.removeChild(scriptElement);
       }
       if (socket) {
-        socket.disconnect();
+        socket.off('inventory_update');
       }
     };
   }, [id]);

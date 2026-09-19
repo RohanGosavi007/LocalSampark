@@ -13,7 +13,9 @@ const toggleSocietyModule = async (req, res, next) => {
         }
 
         // Mocking the tenant settings update
-        // await prisma.tenant.update({ where: { id: tenantId }, data: { societyModuleEnabled: isEnabled }});
+        // There is no tenants table in this schema; Prisma's Tenant model
+        // maps to one no migration creates. Left as an explicit no-op
+        // rather than a call that would throw.
         
         console.log(`[TenantManager] Society Module for tenant ${tenantId} set to ${isEnabled}`);
         
@@ -25,8 +27,7 @@ const getModuleStatus = async (req, res, next) => {
     try {
         const { tenantId } = req.query;
         // Mock DB fetch
-        // const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }});
-        // const isEnabled = tenant.societyModuleEnabled;
+        // Same: no tenants table exists, so the flag is not persisted yet.
         
         const isEnabled = true; // Mock true for now
         

@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
-import { io } from 'socket.io-client';
+import { getSharedSocket } from '@/context/SocketContext';
 
 // Fix Leaflet's default icon path issues in Next.js
 delete L.Icon.Default.prototype._getIconUrl;
@@ -47,8 +47,10 @@ export default function LogisticsMap() {
     ]);
 
     // 2. Setup WebSocket for Live Telemetry
-    const socketUrl = API_URL.replace('/api/v1', '');
-    const socket = io(socketUrl, { transports: ['websocket'] });
+    // Was websocket-only, which never connects behind a proxy that blocks
+    // the upgrade. The shared connection falls back to polling.
+    const socket = getSharedSocket();
+    if (!socket) return undefined;
 
     socket.on('connect', () => {
       socket.emit('admin:logistics:subscribe');
@@ -69,7 +71,7 @@ export default function LogisticsMap() {
     });
 
     return () => {
-      socket.disconnect();
+      socket.off('telemetry:update');
     };
   }, [API_URL]);
 

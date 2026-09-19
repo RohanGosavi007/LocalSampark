@@ -3,36 +3,63 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { Store, MessageSquare, Briefcase, FileText, Wallet, PhoneCall, Check, X, Car } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import io from 'socket.io-client';
+import { useSocket, useSocketEvent } from '@/context/SocketContext';
 
 export default function ResidentSuperApp() {
   const router = useRouter();
   
   const [intercomCall, setIntercomCall] = useState(null);
-  const [socket, setSocket] = useState(null);
+  const [society, setSociety] = useState(null);
 
+  const { joinFlatRoom, emit, isConnected } = useSocket();
+
+  /*
+   * This used to join `flat_SOC-123_A-402` — a hardcoded society and flat.
+   * Every resident on the platform therefore listened to the same fake room,
+   * so nobody received their own visitor alerts and anyone could have read
+   * whatever landed in it.
+   *
+   * The real membership comes from the server, and join_flat_room now verifies
+   * it: a resident reaches their own flat, a society admin may listen while
+   * covering the desk, and nobody reaches a society they do not belong to.
+   */
   useEffect(() => {
-    // Connect to WebSocket for Intercom Calls
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const s = io(BACKEND_URL);
-    setSocket(s);
-
-    // Mock resident joining their flat room
-    const mockSocietyId = 'SOC-123';
-    const mockFlat = 'A-402';
-    s.emit('join_flat_room', { societyId: mockSocietyId, flatNo: mockFlat });
-
-    // Listen for gatekeeper calls
-    s.on('VISITOR_ALERT', (data) => {
-      setIntercomCall(data);
-    });
-
-    return () => s.disconnect();
+    let cancelled = false;
+    (async () => {
+      try {
+        const { API_URL } = await import('@/lib/api');
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/v1/societies/my-society`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) return;
+        const body = await res.json();
+        const data = body?.data || body;
+        if (!cancelled && data?.society_id && data?.flat_number) {
+          setSociety({ societyId: data.society_id, flatNo: data.flat_number });
+        }
+      } catch {
+        // Not a society member, or the service is down. No room to join.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  useEffect(() => {
+    if (society) joinFlatRoom(society.societyId, society.flatNo);
+  }, [society, joinFlatRoom, isConnected]);
+
+  useSocketEvent('VISITOR_ALERT', (data) => setIntercomCall(data));
+
   const handleIntercomAction = (status) => {
-    if (socket && intercomCall) {
-      socket.emit('VISITOR_RESPONSE', { visitorId: intercomCall.id, status });
+    if (intercomCall && society) {
+      emit('VISITOR_RESPONSE', {
+        societyId: society.societyId,
+        visitorId: intercomCall.id,
+        status,
+      });
     }
     setIntercomCall(null);
   };
