@@ -6,10 +6,10 @@ ON CONFLICT (name) DO NOTHING;
 -- Seed Admin Config settings
 INSERT INTO admin_config (config_key, config_value, config_category, description)
 VALUES 
-('feed_radius_km', '3.5', 'community', 'Maximum radius for community feed posts'),
-('delivery_base_fee', '20.00', 'delivery', 'Base delivery charge in INR'),
-('delivery_per_km_fee', '8.00', 'delivery', 'Per kilometer delivery charge in INR'),
-('points_per_post', '5', 'loyalty', 'Loyalty points awarded for creating a post')
+('feed_radius_km', '3.5'::jsonb, 'community', 'Maximum radius for community feed posts'),
+('delivery_base_fee', '20.00'::jsonb, 'delivery', 'Base delivery charge in INR'),
+('delivery_per_km_fee', '8.00'::jsonb, 'delivery', 'Per kilometer delivery charge in INR'),
+('points_per_post', '5'::jsonb, 'loyalty', 'Loyalty points awarded for creating a post')
 ON CONFLICT (config_key) DO NOTHING;
 
 -- Seed Societies in Dhanori
@@ -53,7 +53,7 @@ VALUES
   true,
   true,
   'approved',
-  1
+  true
 )
 ON CONFLICT DO NOTHING;
 
