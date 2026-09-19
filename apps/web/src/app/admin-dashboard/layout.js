@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { AdminAuthProvider } from '@/context/AdminAuthContext';
+import { AdminAuthProvider, useAdminAuth } from '@/context/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Wallet, Users, Settings, LogOut, MapPin, Briefcase, 
