@@ -18,6 +18,7 @@
 -- different stages, so collapsing them would be a guess about intent.
 
 -- ── home_service_bookings ──────────────────────────────────────────────────
+ALTER TABLE home_service_bookings ADD COLUMN IF NOT EXISTS customer_id TEXT;
 ALTER TABLE home_service_bookings ADD COLUMN IF NOT EXISTS booking_ref TEXT;
 ALTER TABLE home_service_bookings ADD COLUMN IF NOT EXISTS category_id TEXT;
 ALTER TABLE home_service_bookings ADD COLUMN IF NOT EXISTS booking_date TIMESTAMP WITH TIME ZONE;
