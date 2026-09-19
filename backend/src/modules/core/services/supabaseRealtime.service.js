@@ -5,13 +5,17 @@ let supabaseUrl = process.env.SUPABASE_URL || 'https://xyzcompany.supabase.co';
 let supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'public-anon-key';
 
 const WebSocket = require('ws');
+if (typeof globalThis.WebSocket === 'undefined') {
+  globalThis.WebSocket = WebSocket;
+}
 
 let supabase = null;
 
 try {
   supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
-    global: { WebSocket }
+    global: { WebSocket },
+    realtime: { transport: WebSocket }
   });
   logger.info('✅ Supabase Realtime client initialized');
 } catch (error) {
