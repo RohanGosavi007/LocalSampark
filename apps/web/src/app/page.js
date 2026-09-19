@@ -78,6 +78,16 @@ const PILLARS = [
     span: '',
   },
   { 
+    title: 'pillar_real_estate', 
+    icon: Building2, 
+    link: '/properties', 
+    desc: 'pillar_real_estate_desc',
+    badge: '🏢 0% Brokerage',
+    gradient: 'from-amber-500/20 via-orange-500/10 to-transparent',
+    borderHover: 'hover:border-amber-500/40',
+    span: '',
+  },
+  { 
     title: 'pillar_earn', 
     icon: HandCoins, 
     link: '/earn', 

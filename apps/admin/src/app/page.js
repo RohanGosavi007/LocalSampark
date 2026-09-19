@@ -405,7 +405,7 @@ export default function AdminDashboardPage() {
     { id: 'subscriptions', label: 'Subscription Plans', icon: '📦' },
     { id: 'premium', label: 'Premium Members', icon: '👑' },
     { id: 'sos', label: 'SOS & Emergency', icon: '🚨' },
-    { id: 'properties', label: 'House Rental Audit', icon: '🏢' },
+    { id: 'properties', label: 'Real Estate & Properties', icon: '🏢' },
     { id: 'rbac', label: 'RBAC & Roles', icon: '🔐' },
     { id: 'audit', label: 'Audit Logs', icon: '📋' },
     { id: 'crm', label: 'CRM & Engagement', icon: '📈' },

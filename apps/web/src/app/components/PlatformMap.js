@@ -72,7 +72,7 @@ const CLUSTERS = [
       { label: 'Townsquare', href: '/community', Icon: MessageSquare, note: 'Ask, sell, alert' },
       { label: 'Events', href: '/events', Icon: CalendarDays, note: 'Meetups and drives' },
       { label: 'Local jobs', href: '/jobs', Icon: Briefcase, note: 'Gigs and full-time' },
-      { label: 'Properties', href: '/properties', Icon: Building, note: 'Rent and resale' },
+      { label: 'Real Estate & Rentals', href: '/properties', Icon: Building, note: 'Flats, PGs & 0% brokerage' },
       { label: 'Earn with us', href: '/earn', Icon: HandCoins, note: 'Deliver, refer, partner' },
       { label: 'Wallet', href: '/wallet', Icon: Wallet, note: 'Pay and get paid' },
     ],
@@ -242,7 +242,7 @@ export function PlatformRail({ className = '' }) {
   const items = [
     ...CLUSTERS[0].items.slice(0, 4),
     ...CLUSTERS[1].items.slice(0, 3),
-    ...CLUSTERS[2].items.slice(0, 3),
+    ...CLUSTERS[2].items.slice(0, 4),
   ];
 
   return (

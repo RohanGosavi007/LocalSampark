@@ -55,7 +55,7 @@ const sidebarGroups = [
       { label: 'Shop Categories', icon: Briefcase, path: '/admin-dashboard/shop-categories' },
       { label: 'Marketplace Audit', icon: ShoppingBag, path: '/admin-dashboard/marketplace' },
       { label: 'Home Chef & Tiffin', icon: Utensils, path: '/admin-dashboard/chef' },
-      { label: 'Properties & Rentals', icon: Key, path: '/admin-dashboard/properties' },
+      { label: 'Real Estate & Properties', icon: Key, path: '/admin-dashboard/properties' },
     ]
   },
   {

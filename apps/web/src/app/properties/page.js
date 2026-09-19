@@ -1,15 +1,17 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, MapPin, Search, Filter, Phone, MessageCircle, 
-  Eye, CheckCircle2, BedDouble, Bath, Square, ChevronRight, X
+  Eye, CheckCircle2, BedDouble, Bath, Square, ChevronRight, X,
+  Building2, PlusCircle, Sparkles, Building
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
+import { API_BASE } from '@/lib/api';
 
 const INITIAL_PROPERTIES = [
   {
@@ -55,6 +57,67 @@ export default function PropertiesPage() {
   const [filterType, setFilterType] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [tourModal, setTourModal] = useState(false);
+  const [postModal, setPostModal] = useState(false);
+  const [newProp, setNewProp] = useState({
+    title: '',
+    type: 'Rent Flat',
+    price: '',
+    location: '',
+    beds: 2,
+    baths: 2,
+    sqft: 950,
+  });
+
+  useEffect(() => {
+    const fetchApiProperties = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/properties`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.properties) && data.properties.length > 0) {
+          const formatted = data.properties.map(p => ({
+            id: p.id,
+            title: p.title,
+            type: p.property_type || (p.listing_type === 'SELL' ? 'Sell' : 'Rent Flat'),
+            price: typeof p.price === 'number' ? `₹${p.price.toLocaleString()}/mo` : p.price,
+            location: p.address || 'Pune Zone',
+            beds: p.beds || 2,
+            baths: p.baths || 2,
+            sqft: p.sqft || 1000,
+            owner: { name: p.owner_name || 'Verified Owner', verified: true, role: 'Owner' },
+            description: p.description || 'Verified local property listing with 0% brokerage.',
+            images: p.images_json ? (typeof p.images_json === 'string' ? JSON.parse(p.images_json) : p.images_json) : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80'],
+            has3DTour: Boolean(p.has_3d_tour || p.has3DTour),
+          }));
+          setProperties(prev => [...formatted, ...prev]);
+        }
+      } catch (err) {
+        // Keep initial demo properties on offline/API error
+      }
+    };
+    fetchApiProperties();
+  }, []);
+
+  const handlePostListing = (e) => {
+    e.preventDefault();
+    if (!newProp.title || !newProp.price || !newProp.location) return;
+    const added = {
+      id: Date.now(),
+      title: newProp.title,
+      type: newProp.type,
+      price: newProp.price.startsWith('₹') ? newProp.price : `₹${newProp.price}`,
+      location: newProp.location,
+      beds: Number(newProp.beds) || 1,
+      baths: Number(newProp.baths) || 1,
+      sqft: Number(newProp.sqft) || 500,
+      owner: { name: 'You (Owner)', verified: true, role: 'Owner' },
+      description: 'Newly listed property direct from owner. Zero brokerage fee.',
+      images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80'],
+      has3DTour: true,
+    };
+    setProperties([added, ...properties]);
+    setPostModal(false);
+    setNewProp({ title: '', type: 'Rent Flat', price: '', location: '', beds: 2, baths: 2, sqft: 950 });
+  };
 
   const filteredProperties = properties.filter(p => {
     if (filterType !== 'All' && p.type !== filterType) return false;
@@ -70,9 +133,11 @@ export default function PropertiesPage() {
         <div className="container max-w-7xl">
           
           <div className="text-center mb-12">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20"><Home className="w-4 h-4 mr-2"/> Broker-Free Real Estate</Badge>
-            <h1 className="text-4xl md:text-6xl font-heading font-black mb-6">Find Your Next Home</h1>
-            <p className="text-text-muted max-w-2xl mx-auto text-lg">Direct listings from owners and verified builders. Explore properties with immersive 3D tours.</p>
+            <Badge className="mb-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-4 py-1.5 font-bold inline-flex items-center">
+              <Building2 className="w-4 h-4 mr-2 text-emerald-500"/> Real Estate & Property Rentals
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-heading font-black mb-4">Broker-Free Real Estate</h1>
+            <p className="text-text-muted max-w-2xl mx-auto text-lg">Direct listings from owners and verified builders. 100% verified flats, PGs, villas, and commercial spaces with immersive 3D virtual tours and 0% brokerage.</p>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -113,7 +178,9 @@ export default function PropertiesPage() {
                         </div>
 
                         <div className="border-t border-border pt-6">
-                            <Button className="w-full shadow-lg shadow-primary/20">Post Free Listing</Button>
+                            <Button onClick={() => setPostModal(true)} className="w-full shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                              <PlusCircle className="w-4 h-4" /> Post Free Listing
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -204,6 +271,113 @@ export default function PropertiesPage() {
                     </div>
                 </motion.div>
             </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Post Free Property Listing Modal */}
+      <AnimatePresence>
+        {postModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-background w-full max-w-lg rounded-3xl overflow-hidden border border-border shadow-2xl p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 mb-1">0% Brokerage</Badge>
+                  <h3 className="text-2xl font-black font-heading text-text">Post Property Listing</h3>
+                </div>
+                <button onClick={() => setPostModal(false)} className="p-2 hover:bg-background-alt rounded-full transition-colors"><X className="w-5 h-5"/></button>
+              </div>
+
+              <form onSubmit={handlePostListing} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Property Title</label>
+                  <input
+                    required
+                    type="text"
+                    value={newProp.title}
+                    onChange={(e) => setNewProp({ ...newProp, title: e.target.value })}
+                    placeholder="e.g. Spacious 2 BHK near Metro Station"
+                    className="w-full bg-background-alt border border-border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Type</label>
+                    <select
+                      value={newProp.type}
+                      onChange={(e) => setNewProp({ ...newProp, type: e.target.value })}
+                      className="w-full bg-background-alt border border-border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="Rent Flat">Rent Flat</option>
+                      <option value="PG">PG</option>
+                      <option value="Sell">Sell</option>
+                      <option value="Commercial">Commercial</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Monthly Price / Cost</label>
+                    <input
+                      required
+                      type="text"
+                      value={newProp.price}
+                      onChange={(e) => setNewProp({ ...newProp, price: e.target.value })}
+                      placeholder="e.g. 24,000/mo"
+                      className="w-full bg-background-alt border border-border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Location / Society</label>
+                  <input
+                    required
+                    type="text"
+                    value={newProp.location}
+                    onChange={(e) => setNewProp({ ...newProp, location: e.target.value })}
+                    placeholder="e.g. Ganga Aria, Dhanori, Pune"
+                    className="w-full bg-background-alt border border-border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Beds</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newProp.beds}
+                      onChange={(e) => setNewProp({ ...newProp, beds: e.target.value })}
+                      className="w-full bg-background-alt border border-border rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Baths</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newProp.baths}
+                      onChange={(e) => setNewProp({ ...newProp, baths: e.target.value })}
+                      className="w-full bg-background-alt border border-border rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Sq Ft</label>
+                    <input
+                      type="number"
+                      value={newProp.sqft}
+                      onChange={(e) => setNewProp({ ...newProp, sqft: e.target.value })}
+                      className="w-full bg-background-alt border border-border rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <Button type="button" variant="outline" onClick={() => setPostModal(false)} className="flex-1">Cancel</Button>
+                  <Button type="submit" className="flex-1 shadow-lg shadow-primary/20">Publish Listing</Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
       

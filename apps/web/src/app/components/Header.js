@@ -78,7 +78,11 @@ export default function Header() {
     const isStaffRole = ['society_admin', 'security_guard', 'moderator', 'super_admin', 'admin', 'territory_admin', 'area_agent', 'field_agent', 'delivery_agent', 'service_provider', 'shop_owner'].includes(activeRole);
 
     return (
-      <div className="hidden 2xl:flex items-center gap-6 relative">
+      <div className="hidden xl:flex items-center gap-5 relative">
+          <a href="/properties" className="text-text font-bold text-sm hover:text-primary transition-colors flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <Building className="w-4 h-4 text-emerald-500" />
+            <span>{t('nav_properties')}</span>
+          </a>
           <a href="/features" className="text-text font-medium text-sm hover:text-primary transition-colors">Features</a>
           <a href="/jobs" className="text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_jobs')}</a>
           <a href="/franchise" className="text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_franchise_header')}</a>
@@ -121,7 +125,7 @@ export default function Header() {
                   </a>
                   <a href="/properties" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                     <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-md"><Building className="w-4 h-4" /></div>
-                    <div><p className="text-sm font-semibold">{t('nav_properties')}</p><p className="text-xs text-text-muted">Rentals & PGs</p></div>
+                    <div><p className="text-sm font-semibold">{t('nav_properties')}</p><p className="text-xs text-text-muted">Flats, PGs & 0% Brokerage</p></div>
                   </a>
                   <a href="/marketplace" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                     <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-md"><ShoppingBag className="w-4 h-4" /></div>
@@ -390,7 +394,7 @@ export default function Header() {
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="2xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none"
+            className="xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -405,7 +409,7 @@ export default function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: '100vh' }}
             exit={{ opacity: 0, height: 0 }}
-            className="2xl:hidden fixed inset-0 top-[72px] bg-background z-40 overflow-y-auto"
+            className="xl:hidden fixed inset-0 top-[72px] bg-background z-40 overflow-y-auto"
           >
             <div className="p-4 flex flex-col gap-6">
               {/* Mobile Search & Location */}
@@ -424,6 +428,10 @@ export default function Header() {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Platform</p>
+                  <a href="/properties" className="p-3 font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl flex items-center gap-2.5">
+                    <Building className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <span>{t('nav_properties')} (Flats, PGs & 0% Brokerage)</span>
+                  </a>
                   <a href="/shops" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_shops_dir')}</a>
                   <a href="/marketplace" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_market')}</a>
                   <a href="/carpool" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_carpool')}</a>
