@@ -55,4 +55,4 @@ cron.schedule('*/5 * * * *', async () => {
     } catch (error) {
         console.error('[Job Error] Overstay monitor failed:', error.message);
     }
-});
+}, { recoverMissedExecutions: false });

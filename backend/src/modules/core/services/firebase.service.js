@@ -11,7 +11,7 @@ function initFirebase() {
   try {
     const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     
-    if (serviceAccountStr) {
+    if (serviceAccountStr && serviceAccountStr.trim().startsWith('{')) {
       const serviceAccount = JSON.parse(serviceAccountStr);
       if (serviceAccount.private_key) {
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
@@ -21,8 +21,18 @@ function initFirebase() {
       });
       initialized = true;
       console.log('[Firebase] Admin SDK initialized successfully');
+    } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && !process.env.FIREBASE_PRIVATE_KEY.includes('REDACTED')) {
+      admin.initializeApp({
+        credential: admin.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        })
+      });
+      initialized = true;
+      console.log('[Firebase] Admin SDK initialized via individual env vars');
     } else {
-      console.warn('[Firebase] Warning: FIREBASE_SERVICE_ACCOUNT_JSON not set. Firebase Auth verification will be mocked.');
+      console.warn('[Firebase] Warning: Valid Firebase credentials not configured. Firebase Auth verification will be mocked (development mode).');
     }
   } catch (error) {
     console.error('[Firebase] Failed to initialize Admin SDK:', error.message);

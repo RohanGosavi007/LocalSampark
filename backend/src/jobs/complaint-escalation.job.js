@@ -75,4 +75,4 @@ cron.schedule('*/30 * * * *', async () => {
     } catch (error) {
         console.error('[Job Error] Complaint escalation failed:', error);
     }
-});
+}, { recoverMissedExecutions: false });
