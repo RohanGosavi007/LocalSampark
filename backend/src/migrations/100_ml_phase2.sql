@@ -254,7 +254,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_ml_coldstart_unique
 -- Every new subsystem defaults to off. A migration that switches on a ranking
 -- change is a deploy that changes what every user sees without anyone deciding
 -- to; the decision belongs in the admin console, on a named actor's account.
-INSERT INTO admin_config (id, config_key, config_value, config_category, description, is_active) VALUES
+INSERT INTO admin_config (id, config_key, config_value, config_category, description, is_active)
+SELECT v.id::uuid, v.config_key, to_jsonb(v.config_value), v.config_category, v.description, v.is_active
+FROM (VALUES
     ('b2e1d3c5-0002-4000-8000-000000000001', 'ml_graph_enabled',       'false', 'ml', 'Add the LightGCN society-affinity term to ranking.', TRUE),
     ('b2e1d3c5-0002-4000-8000-000000000002', 'ml_graph_layers',        '3',     'ml', 'Propagation rounds in the graph embedding job. Beyond four, embeddings over-smooth.', TRUE),
     ('b2e1d3c5-0002-4000-8000-000000000003', 'ml_graph_dim',           '32',    'ml', 'Graph embedding dimension.', TRUE),
@@ -291,6 +293,7 @@ INSERT INTO admin_config (id, config_key, config_value, config_category, descrip
 
     ('b2e1d3c5-0002-4000-8000-00000000001b', 'ml_featurestore_enabled','true',  'ml', 'Serve ranking features through the feature store rather than ad-hoc queries.', TRUE),
     ('b2e1d3c5-0002-4000-8000-00000000001c', 'ml_featurestore_ttl_ms', '60000', 'ml', 'Online feature cache lifetime.', TRUE)
+) AS v(id, config_key, config_value, config_category, description, is_active)
 ON CONFLICT (config_key) DO NOTHING;
 
 COMMIT;

@@ -554,7 +554,18 @@ ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_photo_url TEXT;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS created_at TEXT DEFAULT CURRENT_TIMESTAMP;
 
--- admin_roles: 1 column(s) the development database is missing
+-- admin_roles: create table if missing, and ensure granted_by column exists
+CREATE TABLE IF NOT EXISTS admin_roles (
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
+    permissions TEXT DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    granted_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, role)
+);
 ALTER TABLE admin_roles ADD COLUMN IF NOT EXISTS granted_by TEXT;
 
 -- carpool_live_locations: 1 column(s) the development database is missing
@@ -902,11 +913,37 @@ ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS make_model TEXT;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS parking_slot TEXT;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS rfid_tag_id TEXT;
 
--- equipment_listings: absent from a fresh migration; review the PostgreSQL DDL by hand
---   (the SQLite definition is in 076_fresh_migration_parity.sqlite.sql).
+-- equipment_listings
+CREATE TABLE IF NOT EXISTS equipment_listings (
+    id SERIAL PRIMARY KEY,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    item_name TEXT NOT NULL,
+    category TEXT,
+    daily_price NUMERIC(10, 2) DEFAULT 0,
+    security_deposit NUMERIC(10, 2) DEFAULT 0,
+    description TEXT,
+    image_url TEXT,
+    status TEXT DEFAULT 'available',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
--- loyalty_wallets: absent from a fresh migration; review the PostgreSQL DDL by hand
---   (the SQLite definition is in 076_fresh_migration_parity.sqlite.sql).
+-- loyalty_wallets
+CREATE TABLE IF NOT EXISTS loyalty_wallets (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    total_coins INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
--- volunteer_tasks: absent from a fresh migration; review the PostgreSQL DDL by hand
---   (the SQLite definition is in 076_fresh_migration_parity.sqlite.sql).
+-- volunteer_tasks
+CREATE TABLE IF NOT EXISTS volunteer_tasks (
+    id SERIAL PRIMARY KEY,
+    poster_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    bounty_coins INTEGER DEFAULT 0,
+    type TEXT,
+    status TEXT DEFAULT 'open',
+    volunteer_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

@@ -283,12 +283,12 @@ CREATE TABLE IF NOT EXISTS medical_requests (
 
 -- messages (from src\create_messages_table.js)
 CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        sender_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-        receiver_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+        sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id UUID REFERENCES users(id) ON DELETE CASCADE,
         message_text TEXT,
-        is_read BOOLEAN DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- user_fcm_tokens (from src\modules\core\routes\notification.routes.js)

@@ -38,7 +38,7 @@ ALTER TABLE user_documents ADD COLUMN IF NOT EXISTS document_number TEXT;
 ALTER TABLE user_documents ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 
 -- guard-shift.controller.js records who rostered the shift.
-ALTER TABLE society_guard_shifts ADD COLUMN IF NOT EXISTS created_by TEXT REFERENCES users(id);
+ALTER TABLE society_guard_shifts ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);
 
 -- admin-marketing.controller.js sends broadcasts with a deep link and a
 -- displayed sender, and tracks send state.
@@ -54,7 +54,7 @@ ALTER TABLE equipment_listings ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEF
 -- medical_requests serves two features: an admin logging a patient emergency
 -- (patient_name, blood_group) and a resident requesting an item through
 -- services/medical.controller.js. The resident-side columns were missing.
-ALTER TABLE medical_requests ADD COLUMN IF NOT EXISTS requester_id TEXT REFERENCES users(id);
+ALTER TABLE medical_requests ADD COLUMN IF NOT EXISTS requester_id UUID REFERENCES users(id);
 ALTER TABLE medical_requests ADD COLUMN IF NOT EXISTS required_item TEXT;
 ALTER TABLE medical_requests ADD COLUMN IF NOT EXISTS description TEXT;
 
@@ -66,7 +66,7 @@ ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS schedule TEXT;
 
 -- bills.routes.js scopes utility bills to a user and names the biller.
 ALTER TABLE utility_bills ADD COLUMN IF NOT EXISTS provider TEXT;
-ALTER TABLE utility_bills ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);
+ALTER TABLE utility_bills ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id);
 CREATE INDEX IF NOT EXISTS idx_utility_bills_user ON utility_bills(user_id);
 
 ALTER TABLE volunteer_tasks ADD COLUMN IF NOT EXISTS description TEXT;
@@ -107,7 +107,7 @@ ALTER TABLE ad_campaigns ADD COLUMN IF NOT EXISTS radius_km REAL;
 
 -- job_postings is reached two ways: by the employer who posted it, and by the
 -- company profile it belongs to. shop_id covers neither.
-ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS employer_id TEXT REFERENCES users(id);
+ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS employer_id UUID REFERENCES users(id);
 ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS company_id TEXT REFERENCES company_profiles(id);
 CREATE INDEX IF NOT EXISTS idx_job_postings_employer ON job_postings(employer_id);
 CREATE INDEX IF NOT EXISTS idx_job_postings_company  ON job_postings(company_id);

@@ -22,7 +22,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS pincode VARCHAR(10);
-ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS territory_id UUID REFERENCES territories(id) ON DELETE SET NULL;
+ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS territory_id TEXT REFERENCES territories(id) ON DELETE SET NULL;
 ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS franchise_partner_id UUID REFERENCES franchise_partners(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_crm_leads_pincode ON crm_leads(pincode);

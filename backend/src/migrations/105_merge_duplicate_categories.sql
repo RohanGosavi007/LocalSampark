@@ -106,7 +106,7 @@ UPDATE category_territory_matrix SET category_id = (
 
 -- Finally hide the duplicates from the directory.
 UPDATE shop_categories
-   SET is_active = FALSE
+   SET is_active = 0
  WHERE slug IN (SELECT duplicate_slug FROM category_merges);
 
 DROP TABLE category_merges;

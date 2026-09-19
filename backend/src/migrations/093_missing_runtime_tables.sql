@@ -25,7 +25,7 @@ BEGIN;
 -- nothing on our side would know.
 CREATE TABLE IF NOT EXISTS payments (
     id               TEXT PRIMARY KEY,
-    user_id          TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id          UUID REFERENCES users(id) ON DELETE SET NULL,
     order_id         TEXT,
     amount           REAL NOT NULL,
     currency         TEXT DEFAULT 'INR',
@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
 -- individual earnings that roll up into one.
 CREATE TABLE IF NOT EXISTS franchise_earnings (
     id           TEXT PRIMARY KEY,
-    franchise_id TEXT REFERENCES franchise_partners(id) ON DELETE CASCADE,
+    franchise_id UUID REFERENCES franchise_partners(id) ON DELETE CASCADE,
     amount       REAL NOT NULL DEFAULT 0,
     -- bill_payment | order_commission | subscription | ...
     source_type  TEXT,
@@ -60,8 +60,8 @@ CREATE INDEX IF NOT EXISTS idx_franchise_earnings_partner ON franchise_earnings(
 -- flagging unusual withdrawal activity.
 CREATE TABLE IF NOT EXISTS payout_requests (
     id           TEXT PRIMARY KEY,
-    shop_id      TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    requested_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    shop_id      UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
     amount       REAL NOT NULL DEFAULT 0,
     -- pending | approved | paid | rejected
     status       TEXT NOT NULL DEFAULT 'pending',
@@ -76,7 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_payout_requests_status ON payout_requests(status)
 -- ─── CRM: leads, campaigns, tickets, disputes ────────────────────────────────
 CREATE TABLE IF NOT EXISTS leads (
     id                TEXT PRIMARY KEY,
-    shop_id           TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id           UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     lead_number       TEXT,
     name              TEXT,
     phone             TEXT,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS leads (
     budget            REAL,
     location          TEXT,
     property_type     TEXT,
-    user_id           TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id           UUID REFERENCES users(id) ON DELETE SET NULL,
     referred_by       TEXT,
     -- new | contacted | qualified | won | lost
     pipeline_stage    TEXT DEFAULT 'new',
@@ -106,14 +106,14 @@ CREATE TABLE IF NOT EXISTS lead_activities (
     notes          TEXT,
     call_duration  INTEGER,
     next_follow_up TIMESTAMPTZ,
-    created_by     TEXT REFERENCES users(id) ON DELETE SET NULL,
+    created_by     UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_lead_activities_lead ON lead_activities(lead_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS directory_listings (
     id               TEXT PRIMARY KEY,
-    shop_id          TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id          UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     title            TEXT NOT NULL,
     description      TEXT,
     listing_type     TEXT,
@@ -132,7 +132,7 @@ CREATE INDEX IF NOT EXISTS idx_directory_listings_shop ON directory_listings(sho
 
 CREATE TABLE IF NOT EXISTS crm_campaigns (
     id              TEXT PRIMARY KEY,
-    owner_id        TEXT REFERENCES users(id) ON DELETE CASCADE,
+    owner_id        UUID REFERENCES users(id) ON DELETE CASCADE,
     campaign_type   TEXT,
     target_audience TEXT,
     status          TEXT DEFAULT 'draft',
@@ -145,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_campaigns_owner ON crm_campaigns(owner_id, cr
 -- datetime columns and status are load-bearing.
 CREATE TABLE IF NOT EXISTS shop_campaigns (
     id                 TEXT PRIMARY KEY,
-    shop_id            TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id            UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     title              TEXT NOT NULL,
     discount_type      TEXT,
     discount_value     REAL,
@@ -163,14 +163,14 @@ CREATE INDEX IF NOT EXISTS idx_shop_campaigns_window ON shop_campaigns(status, s
 
 CREATE TABLE IF NOT EXISTS support_tickets (
     id          TEXT PRIMARY KEY,
-    user_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
     subject     TEXT,
     description TEXT,
     category    TEXT,
     priority    TEXT DEFAULT 'medium',
     -- open | in_progress | resolved | closed
     status      TEXT DEFAULT 'open',
-    assigned_to TEXT REFERENCES users(id) ON DELETE SET NULL,
+    assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW(),
     updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -178,9 +178,9 @@ CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status,
 
 CREATE TABLE IF NOT EXISTS disputes (
     id          TEXT PRIMARY KEY,
-    user_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
     order_id    TEXT,
-    shop_id     TEXT REFERENCES local_shops(id) ON DELETE SET NULL,
+    shop_id     UUID REFERENCES local_shops(id) ON DELETE SET NULL,
     type        TEXT,
     description TEXT,
     -- open | investigating | resolved | rejected
@@ -196,7 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_disputes_user ON disputes(user_id);
 -- ─── Service verticals ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS care_providers (
     id          TEXT PRIMARY KEY,
-    user_id     TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
     name        TEXT,
     care_type   TEXT,
     pincode     TEXT,
@@ -210,7 +210,7 @@ CREATE INDEX IF NOT EXISTS idx_care_providers_status ON care_providers(status);
 CREATE TABLE IF NOT EXISTS care_requests (
     id          TEXT PRIMARY KEY,
     provider_id TEXT REFERENCES care_providers(id) ON DELETE CASCADE,
-    user_id     TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
     date        TEXT,
     notes       TEXT,
     status      TEXT DEFAULT 'pending',
@@ -220,7 +220,7 @@ CREATE INDEX IF NOT EXISTS idx_care_requests_provider ON care_requests(provider_
 
 CREATE TABLE IF NOT EXISTS home_chef_meals (
     id               TEXT PRIMARY KEY,
-    chef_id          TEXT REFERENCES users(id) ON DELETE CASCADE,
+    chef_id          UUID REFERENCES users(id) ON DELETE CASCADE,
     meal_name        TEXT NOT NULL,
     description      TEXT,
     price            REAL NOT NULL DEFAULT 0,
@@ -237,7 +237,7 @@ CREATE INDEX IF NOT EXISTS idx_home_chef_meals_chef ON home_chef_meals(chef_id, 
 CREATE TABLE IF NOT EXISTS home_chef_orders (
     id               TEXT PRIMARY KEY,
     meal_id          TEXT REFERENCES home_chef_meals(id) ON DELETE CASCADE,
-    customer_id      TEXT REFERENCES users(id) ON DELETE CASCADE,
+    customer_id      UUID REFERENCES users(id) ON DELETE CASCADE,
     quantity         INTEGER NOT NULL DEFAULT 1,
     final_price      REAL NOT NULL DEFAULT 0,
     discount_applied REAL DEFAULT 0,
@@ -249,7 +249,7 @@ CREATE INDEX IF NOT EXISTS idx_home_chef_orders_customer ON home_chef_orders(cus
 
 CREATE TABLE IF NOT EXISTS medical_donors (
     id          TEXT PRIMARY KEY,
-    user_id     TEXT REFERENCES users(id) ON DELETE CASCADE,
+    user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
     blood_group TEXT,
     pincode     TEXT,
     location    TEXT,
@@ -260,7 +260,7 @@ CREATE INDEX IF NOT EXISTS idx_medical_donors_lookup ON medical_donors(blood_gro
 
 CREATE TABLE IF NOT EXISTS pet_services (
     id          TEXT PRIMARY KEY,
-    shop_id     TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id     UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     name        TEXT NOT NULL,
     description TEXT,
     price       REAL,
@@ -272,8 +272,8 @@ CREATE TABLE IF NOT EXISTS pet_services (
 
 CREATE TABLE IF NOT EXISTS daily_subscriptions (
     id           TEXT PRIMARY KEY,
-    user_id      TEXT REFERENCES users(id) ON DELETE CASCADE,
-    shop_id      TEXT REFERENCES local_shops(id) ON DELETE SET NULL,
+    user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
+    shop_id      UUID REFERENCES local_shops(id) ON DELETE SET NULL,
     product_name TEXT,
     quantity     INTEGER DEFAULT 1,
     frequency    TEXT DEFAULT 'daily',
@@ -287,8 +287,8 @@ CREATE INDEX IF NOT EXISTS idx_daily_subscriptions_user ON daily_subscriptions(u
 
 CREATE TABLE IF NOT EXISTS group_buying_deals (
     id              TEXT PRIMARY KEY,
-    shop_id         TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    product_id      TEXT REFERENCES shop_products(id) ON DELETE SET NULL,
+    shop_id         UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    product_id      UUID REFERENCES shop_products(id) ON DELETE SET NULL,
     title           TEXT NOT NULL,
     min_buyers      INTEGER NOT NULL DEFAULT 1,
     current_buyers  INTEGER NOT NULL DEFAULT 0,
@@ -303,8 +303,8 @@ CREATE INDEX IF NOT EXISTS idx_group_buying_status ON group_buying_deals(status,
 
 CREATE TABLE IF NOT EXISTS trust_reviews (
     id                TEXT PRIMARY KEY,
-    shop_id           TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
-    user_id           TEXT REFERENCES users(id) ON DELETE CASCADE,
+    shop_id           UUID REFERENCES local_shops(id) ON DELETE CASCADE,
+    user_id           UUID REFERENCES users(id) ON DELETE CASCADE,
     video_url         TEXT,
     rating            INTEGER,
     review_text       TEXT,
@@ -317,7 +317,7 @@ CREATE INDEX IF NOT EXISTS idx_trust_reviews_shop ON trust_reviews(shop_id, crea
 -- The counter is upserted per shop, so shop_id must be unique for the
 -- ON CONFLICT (shop_id) in token-queue.routes.js to resolve.
 CREATE TABLE IF NOT EXISTS token_queues (
-    shop_id             TEXT PRIMARY KEY REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id             UUID PRIMARY KEY REFERENCES local_shops(id) ON DELETE CASCADE,
     current_token       INTEGER DEFAULT 0,
     total_tokens_today  INTEGER DEFAULT 0,
     avg_service_minutes INTEGER DEFAULT 10,
@@ -327,11 +327,11 @@ CREATE TABLE IF NOT EXISTS token_queues (
 
 CREATE TABLE IF NOT EXISTS token_queue_visitors (
     id            TEXT PRIMARY KEY,
-    shop_id       TEXT REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id       UUID REFERENCES local_shops(id) ON DELETE CASCADE,
     token_number  INTEGER NOT NULL,
     visitor_name  TEXT,
     visitor_phone TEXT,
-    user_id       TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id       UUID REFERENCES users(id) ON DELETE SET NULL,
     service_type  TEXT,
     status        TEXT DEFAULT 'waiting',
     created_at    TIMESTAMPTZ DEFAULT NOW()
@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS job_card_milestones (
     status       TEXT DEFAULT 'pending',
     notes        TEXT,
     photos       TEXT DEFAULT '[]',
-    completed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    completed_by UUID REFERENCES users(id) ON DELETE SET NULL,
     completed_at TIMESTAMPTZ,
     created_at   TIMESTAMPTZ DEFAULT NOW(),
     updated_at   TIMESTAMPTZ DEFAULT NOW()
@@ -381,8 +381,8 @@ CREATE INDEX IF NOT EXISTS idx_job_card_milestones ON job_card_milestones(job_ca
 -- ─── Community ───────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS garage_sale_items (
     id          TEXT PRIMARY KEY,
-    seller_id   TEXT REFERENCES users(id) ON DELETE CASCADE,
-    buyer_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+    seller_id   UUID REFERENCES users(id) ON DELETE CASCADE,
+    buyer_id    UUID REFERENCES users(id) ON DELETE SET NULL,
     item_name   TEXT NOT NULL,
     description TEXT,
     price_coins INTEGER DEFAULT 0,
@@ -393,8 +393,8 @@ CREATE INDEX IF NOT EXISTS idx_garage_sale_status ON garage_sale_items(status, c
 
 CREATE TABLE IF NOT EXISTS lost_found_alerts (
     id           TEXT PRIMARY KEY,
-    user_id      TEXT REFERENCES users(id) ON DELETE CASCADE,
-    finder_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
+    finder_id    UUID REFERENCES users(id) ON DELETE SET NULL,
     item_name    TEXT NOT NULL,
     description  TEXT,
     pincode      TEXT,
@@ -406,8 +406,8 @@ CREATE INDEX IF NOT EXISTS idx_lost_found_status ON lost_found_alerts(status, pi
 
 CREATE TABLE IF NOT EXISTS scrap_requests (
     id                TEXT PRIMARY KEY,
-    resident_id       TEXT REFERENCES users(id) ON DELETE CASCADE,
-    dealer_id         TEXT REFERENCES users(id) ON DELETE SET NULL,
+    resident_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+    dealer_id         UUID REFERENCES users(id) ON DELETE SET NULL,
     scrap_type        TEXT,
     approx_weight     REAL,
     address           TEXT,
@@ -456,7 +456,7 @@ CREATE TABLE IF NOT EXISTS admin_environment_requests (
     id            TEXT PRIMARY KEY,
     material_type TEXT,
     reporter_name TEXT,
-    reporter_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
+    reporter_id   UUID REFERENCES users(id) ON DELETE SET NULL,
     pincode       TEXT,
     notes         TEXT,
     status        TEXT DEFAULT 'pending',
@@ -467,7 +467,7 @@ CREATE TABLE IF NOT EXISTS admin_mobility_vehicles (
     id          TEXT PRIMARY KEY,
     vehicle_no  TEXT,
     driver_name TEXT,
-    driver_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
+    driver_id   UUID REFERENCES users(id) ON DELETE SET NULL,
     vehicle_type TEXT,
     status      TEXT DEFAULT 'active',
     is_verified BOOLEAN DEFAULT FALSE,

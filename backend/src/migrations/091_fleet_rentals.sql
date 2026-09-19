@@ -15,7 +15,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS fleet_assets (
     id                    TEXT PRIMARY KEY,
-    shop_id               TEXT NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id               UUID NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
     name                  TEXT NOT NULL,
     asset_type            TEXT,
     model                 TEXT,
@@ -43,12 +43,12 @@ CREATE TABLE IF NOT EXISTS fleet_assets (
 
 CREATE TABLE IF NOT EXISTS rental_bookings (
     id               TEXT PRIMARY KEY,
-    shop_id          TEXT NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
+    shop_id          UUID NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
     asset_id         TEXT NOT NULL REFERENCES fleet_assets(id) ON DELETE CASCADE,
     booking_number   TEXT UNIQUE NOT NULL,
     customer_name    TEXT,
     customer_phone   TEXT,
-    user_id          TEXT REFERENCES users(id) ON DELETE SET NULL,
+    user_id          UUID REFERENCES users(id) ON DELETE SET NULL,
     start_date       TIMESTAMPTZ,
     end_date         TIMESTAMPTZ,
     duration_type    TEXT,

@@ -11,7 +11,7 @@
 -- .catch(() => {}) -- so every marketplace chat message was thrown away without
 -- a trace. The listing is what the socket actually knows, so it is stored.
 
-ALTER TABLE marketplace_chat_messages ADD COLUMN IF NOT EXISTS listing_id TEXT REFERENCES marketplace_listings(id);
+ALTER TABLE marketplace_chat_messages ADD COLUMN IF NOT EXISTS listing_id UUID REFERENCES marketplace_listings(id);
 CREATE INDEX IF NOT EXISTS idx_marketplace_chat_listing
     ON marketplace_chat_messages(listing_id, created_at);
 

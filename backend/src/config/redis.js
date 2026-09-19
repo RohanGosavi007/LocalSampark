@@ -12,6 +12,17 @@ async function connectRedis() {
     }
     // Auto-heal common typo where host and port are joined with hyphen: red-xxxx-6379 -> red-xxxx:6379
     redisUrl = redisUrl.replace(/(red-[a-z0-9]+)-(\d{4,5})/i, (match, host, port) => `${host}:${port}`);
+
+    // If REDIS_PASSWORD is provided and not already in URL, embed it in the URL so duplicated clients inherit auth seamlessly
+    if (process.env.REDIS_PASSWORD && !redisUrl.includes('@')) {
+      try {
+        const u = new URL(redisUrl);
+        u.password = process.env.REDIS_PASSWORD;
+        redisUrl = u.toString();
+      } catch (e) {
+        redisUrl = redisUrl.replace('://', `://:${encodeURIComponent(process.env.REDIS_PASSWORD)}@`);
+      }
+    }
   }
 
   redisClient = createClient({

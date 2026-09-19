@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS attribution_policies (
     -- NULL territory_id is the platform-wide default. A row naming a territory
     -- overrides it for orders whose pickup falls there, which is how a single
     -- renegotiated city is handled without touching everyone else.
-    territory_id            UUID REFERENCES territories(id) ON DELETE CASCADE,
+    territory_id            TEXT REFERENCES territories(id) ON DELETE CASCADE,
 
     pickup_share_percent    DECIMAL(5,2) NOT NULL,
     delivery_share_percent  DECIMAL(5,2) NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS order_territory_attribution (
     -- or three rows; a same-territory order produces one.
     role                    VARCHAR(20) NOT NULL,
 
-    territory_id            UUID REFERENCES territories(id) ON DELETE SET NULL,
+    territory_id            TEXT REFERENCES territories(id) ON DELETE SET NULL,
     franchise_partner_id    UUID REFERENCES franchise_partners(id) ON DELETE SET NULL,
 
     share_percent           DECIMAL(5,2) NOT NULL,

@@ -320,8 +320,8 @@ async function startServer() {
     }
 
     // Connect to Redis
-    await connectRedis();
-    if (redisClient) {
+    const activeRedis = await connectRedis();
+    if (activeRedis) {
       logger.info('✅ Redis connected');
     }
 
@@ -332,7 +332,7 @@ async function startServer() {
 
     // Make supabase accessible to routes
     app.set('supabaseRealtime', supabaseRealtime);
-    app.set('redisClient', redisClient);
+    app.set('redisClient', activeRedis);
 
 
     // Start HTTP server
@@ -355,10 +355,10 @@ async function startServer() {
 
     // Initialize Queue Engine (BullMQ if Redis connected, Synchronous Fallback otherwise)
     const { startQueueEngine } = require('./jobs/worker');
-    startQueueEngine(redisClient);
+    startQueueEngine(activeRedis);
     
     // 10x Scale: Initialize Async Notification Queue
-    notificationService.initQueue(redisClient);
+    notificationService.initQueue(activeRedis);
 
     // ML config invalidation. Without this, a change to a ranking weight — or
     // the kill switch — reaches other instances only when their 30s cache

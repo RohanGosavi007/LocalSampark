@@ -163,7 +163,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_ml_feature_snapshot_unique
 -- multi-task composite reduce exactly to the plain product of its three
 -- probabilities — a neutral starting point rather than an opinion.
 INSERT INTO admin_config (config_key, config_value, config_category, description, is_active)
-SELECT v.k, v.val, 'ml', v.descr, TRUE
+SELECT v.k, to_jsonb(v.val), 'ml', v.descr, TRUE
   FROM (VALUES
     ('ml_mmoe_enabled',      'false', 'Use the multi-task (pCTR/pCVR/pQuality) ranker instead of the weighted-sum ranker.'),
     ('ml_mmoe_alpha',        '1.0',   'Exponent on pCTR in the composite score.'),

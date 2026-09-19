@@ -23,4 +23,4 @@ ALTER TABLE society_members ALTER COLUMN flat_number DROP NOT NULL;
 -- Non-flat members are looked up by role within a society (the gate roster, the
 -- committee list), which is a different access path from the resident lookup.
 CREATE INDEX IF NOT EXISTS idx_society_members_role
-    ON society_members(society_id, role) WHERE is_active = TRUE;
+    ON society_members(society_id, role) WHERE is_active = 1;

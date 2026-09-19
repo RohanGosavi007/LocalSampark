@@ -15,6 +15,19 @@
 -- controller was ever called found no table. It is declared here so a migrated
 -- database has it from the start.
 
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    admin_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    target_type TEXT,
+    target_id TEXT,
+    ip_address TEXT DEFAULT '',
+    user_agent TEXT,
+    details TEXT,
+    admin_name TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS admin_name TEXT;
 
 CREATE TABLE IF NOT EXISTS admin_roles_config (

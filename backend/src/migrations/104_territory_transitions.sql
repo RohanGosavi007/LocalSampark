@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS territory_transitions (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id             UUID REFERENCES users(id) ON DELETE CASCADE,
 
-    from_territory_id   UUID REFERENCES territories(id) ON DELETE SET NULL,
-    to_territory_id     UUID REFERENCES territories(id) ON DELETE SET NULL,
+    from_territory_id   TEXT REFERENCES territories(id) ON DELETE SET NULL,
+    to_territory_id     TEXT REFERENCES territories(id) ON DELETE SET NULL,
 
     latitude            DOUBLE PRECISION,
     longitude           DOUBLE PRECISION,

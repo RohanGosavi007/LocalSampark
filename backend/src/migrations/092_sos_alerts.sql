@@ -16,7 +16,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS sos_alerts (
     id         TEXT PRIMARY KEY,
-    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     -- medical, safety, fire, accident — free text, set by the caller.
     type       TEXT,
     latitude   DOUBLE PRECISION,
@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS sos_alerts (
 );
 
 CREATE TABLE IF NOT EXISTS emergency_contacts (
-    user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    contact_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contact_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at      TIMESTAMPTZ DEFAULT NOW(),
     -- addContact relies on ON CONFLICT DO NOTHING, which needs this pair to be
     -- the conflict target.

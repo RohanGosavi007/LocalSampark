@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS franchise_territories (
     id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     franchise_partner_id    UUID NOT NULL REFERENCES franchise_partners(id) ON DELETE CASCADE,
-    territory_id            UUID NOT NULL REFERENCES territories(id) ON DELETE CASCADE,
+    territory_id            TEXT NOT NULL REFERENCES territories(id) ON DELETE CASCADE,
 
     -- Denormalised from territories at assignment time. Attribution reads this
     -- on every order, and joining to territories for a six-character string on
@@ -123,7 +123,7 @@ CREATE INDEX IF NOT EXISTS idx_franchise_territory_pincode
 CREATE TABLE IF NOT EXISTS territory_assignment_log (
     id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-    territory_id            UUID NOT NULL REFERENCES territories(id) ON DELETE CASCADE,
+    territory_id            TEXT NOT NULL REFERENCES territories(id) ON DELETE CASCADE,
     pincode                 VARCHAR(10) NOT NULL,
 
     from_franchise_id       UUID REFERENCES franchise_partners(id) ON DELETE SET NULL,
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS territory_coverage_gaps (
     id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     pincode                 VARCHAR(10) NOT NULL,
-    territory_id            UUID REFERENCES territories(id) ON DELETE SET NULL,
+    territory_id            TEXT REFERENCES territories(id) ON DELETE SET NULL,
 
     -- How many times the platform was asked to serve this area and could not
     -- attribute it to anyone.

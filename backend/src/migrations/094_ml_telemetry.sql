@@ -131,7 +131,7 @@ CREATE INDEX IF NOT EXISTS idx_ml_affinity_source ON ml_item_affinity(item_type,
 -- reach. ml_enabled defaults to false: the engine ships dark and is switched on
 -- deliberately.
 INSERT INTO admin_config (config_key, config_value, config_category, description, is_active)
-SELECT v.k, v.val, 'ml', v.descr, TRUE
+SELECT v.k, to_jsonb(v.val), 'ml', v.descr, TRUE
   FROM (VALUES
     ('ml_enabled',            'false', 'Master switch. When false every ML endpoint serves the deterministic distance-and-popularity baseline.'),
     ('ml_enabled_shops',      'true',  'Per-surface switch for the shop feed. Has no effect while ml_enabled is false.'),
