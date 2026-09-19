@@ -112,20 +112,28 @@ export default function AdminLayout({ children }) {
 function AdminLayoutInner({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, activeRole, loading } = useAuth();
+  const { user, activeRole, loading: authLoading } = useAuth();
+  const { adminUser, role: adminRole, loading: adminLoading } = useAdminAuth();
   
   const [theme, setTheme] = useState('cyber-dark'); // 'cyber-dark' | 'glass-light'
   const [openGroups, setOpenGroups] = useState({ 'System': true });
   const [search, setSearch] = useState('');
+  const [omniOpen, setOmniOpen] = useState(false);
+  const [omniSearch, setOmniSearch] = useState('');
+  const [omniResults, setOmniResults] = useState([]);
+
+  const effectiveUser = user || adminUser;
+  const isSuperAdmin = activeRole === 'super_admin' || user?.role === 'super_admin' || adminRole === 'super_admin' || adminUser?.role === 'super_admin';
+  const loading = authLoading || adminLoading;
 
   // Enforce RBAC
   useEffect(() => {
     if (!loading) {
-      if (!user || (activeRole !== 'super_admin' && user?.role !== 'super_admin')) {
+      if (!effectiveUser || !isSuperAdmin) {
         router.push('/login?error=unauthorized');
       }
     }
-  }, [user, activeRole, loading, router]);
+  }, [effectiveUser, isSuperAdmin, loading, router]);
 
   useEffect(() => {
     // Apply theme to document
@@ -150,7 +158,39 @@ function AdminLayoutInner({ children }) {
     }
   }, [theme]);
 
-  if (loading || !user || (activeRole !== 'super_admin' && user?.role !== 'super_admin')) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setOmniOpen(o => !o);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!omniSearch || omniSearch.length < 3) {
+      setOmniResults([]);
+      return;
+    }
+    const fetchOmni = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('auth_token')) : '';
+        const res = await fetch(`${API_BASE}/admin/search?q=${omniSearch}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setOmniResults(data.results);
+        }
+      } catch(e) {}
+    };
+    const timer = setTimeout(fetchOmni, 300);
+    return () => clearTimeout(timer);
+  }, [omniSearch]);
+
+  if (loading || !effectiveUser || !isSuperAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -170,42 +210,6 @@ function AdminLayoutInner({ children }) {
   const filteredItems = search 
     ? allItems.filter(item => item.label.toLowerCase().includes(search.toLowerCase()))
     : [];
-
-  const [omniOpen, setOmniOpen] = useState(false);
-  const [omniSearch, setOmniSearch] = useState('');
-  const [omniResults, setOmniResults] = useState([]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setOmniOpen(o => !o);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    if (!omniSearch || omniSearch.length < 3) {
-      setOmniResults([]);
-      return;
-    }
-    const fetchOmni = async () => {
-      try {
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch(`${API_BASE}/admin/search?q=${omniSearch}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          setOmniResults(data.results);
-        }
-      } catch(e) {}
-    };
-    const timer = setTimeout(fetchOmni, 300);
-    return () => clearTimeout(timer);
-  }, [omniSearch]);
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-base)', color: 'var(--text-main)', transition: 'all 0.3s ease' }}>
