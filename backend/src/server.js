@@ -95,32 +95,31 @@ const allowedOrigins = [
   'http://localhost:3002',
   'http://localhost:5000',
   process.env.CLIENT_URL,
-  process.env.ADMIN_URL
+  process.env.ADMIN_URL,
+  process.env.RENDER_EXTERNAL_URL,
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin && process.env.NODE_ENV !== 'production') return callback(null, true);
-    // Allow requests with no origin for mobile apps, rely on JWT for security
+    // Allow requests with no origin for mobile apps, curl, and server-to-server calls
     if (!origin) {
-      if (process.env.NODE_ENV === 'production') {
-        logger.warn(`CORS: Request with missing origin blocked/allowed depending on policy (Likely Mobile Client)`);
-      }
       return callback(null, true);
     }
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    // Render preview/staging deploys get a generated *.onrender.com hostname,
-    // so a wildcard was allowed here. But `credentials: true` is set above,
-    // which means ANY other tenant on onrender.com could make authenticated
-    // cross-origin calls with the browser attaching our cookies. Keep the
-    // convenience for non-production deploys only; production must name its
-    // origins in CLIENT_URL / ADMIN_URL.
-    if (process.env.NODE_ENV !== 'production' && origin.endsWith('.onrender.com')) {
+
+    // Allow all Render service domains (localsampark-web, localsampark API, admin, preview URLs)
+    if (origin.endsWith('.onrender.com') || /^https?:\/\/(localhost|127\.0\.0\.1|.*\.onrender\.com)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
+
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+
+    logger.warn(`CORS: Origin ${origin} blocked`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

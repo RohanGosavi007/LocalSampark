@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS admin_ads (
         status TEXT DEFAULT 'active',
         clicks INTEGER DEFAULT 0,
         impressions INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_alerts_log (from src\modules\crm\controllers\admin-alerts.controller.js)
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS admin_animal_requests (
         location TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
         dispatched INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_animal_rescue (from src\modules\crm\controllers\admin-animal.controller.js)
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS admin_charity_campaigns (
         raised_amount REAL DEFAULT 0,
         status TEXT DEFAULT 'active',
         verified_ngo INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_civic_issues (from src\modules\crm\routes\admin.routes.js)
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS admin_civic_issues (
         department TEXT,
         status TEXT DEFAULT 'pending',
         escalated INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_krishi_listings (from src\modules\crm\routes\admin.routes.js)
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS admin_krishi_listings (
         verified_farmer INTEGER DEFAULT 0,
         auto_expire INTEGER DEFAULT 1,
         status TEXT DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_localization (from src\modules\crm\controllers\admin-languages.controller.js)
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS admin_medical_requests (
         location TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
         dispatched INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_mobility_fleet (from src\modules\crm\routes\admin.routes.js)
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS admin_mobility_fleet (
         rc_number TEXT,
         verified_driver INTEGER DEFAULT 0,
         status TEXT DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_scrap_requests (from src\modules\crm\routes\admin.routes.js)
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS admin_scrap_requests (
         address TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
         dispatched INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_settings (from src\modules\crm\routes\admin.routes.js)
@@ -177,8 +177,8 @@ CREATE TABLE IF NOT EXISTS admin_support_tickets (
         subject TEXT NOT NULL,
         description TEXT NOT NULL,
         status TEXT DEFAULT 'open',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- admin_utility_bills (from src\modules\crm\routes\admin.routes.js)
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS admin_utility_bills (
         amount REAL NOT NULL,
         status TEXT DEFAULT 'pending',
         payment_cleared INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- charity_campaigns (from src\modules\crm\controllers\admin-charity.controller.js)
@@ -244,7 +244,7 @@ CREATE TABLE IF NOT EXISTS franchise_lead_crm (
         phone TEXT,
         pincode TEXT,
         status TEXT DEFAULT 'SCRAPED',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- logistics_agents (from src\modules\logistics\controllers\agents.controller.js)
@@ -263,7 +263,7 @@ CREATE TABLE IF NOT EXISTS loyalty_points (
         user_id TEXT,
         points INTEGER,
         reason TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- medical_requests (from src\modules\crm\controllers\admin-medical.controller.js)
@@ -297,8 +297,8 @@ CREATE TABLE IF NOT EXISTS user_fcm_tokens (
           user_id TEXT NOT NULL,
           fcm_token TEXT NOT NULL,
           platform TEXT DEFAULT 'android',
-          created_at DATETIME DEFAULT (datetime('now')),
-          updated_at DATETIME DEFAULT (datetime('now')),
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(user_id, fcm_token)
 );
 

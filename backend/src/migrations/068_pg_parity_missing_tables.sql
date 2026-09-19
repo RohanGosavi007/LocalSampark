@@ -16,7 +16,7 @@
 
 -- admin_jobs
 CREATE TABLE IF NOT EXISTS admin_jobs (
- id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+ id TEXT PRIMARY KEY DEFAULT md5(random()::text || clock_timestamp()::text),
  title TEXT,
  description TEXT,
  salary TEXT,
@@ -595,7 +595,7 @@ CREATE TABLE IF NOT EXISTS marketplace_seller_scores (
 
 -- shop_settings
 CREATE TABLE IF NOT EXISTS shop_settings (
- id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+ id TEXT PRIMARY KEY DEFAULT md5(random()::text || clock_timestamp()::text),
  shop_id TEXT NOT NULL,
  settings TEXT DEFAULT '{}',
  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

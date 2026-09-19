@@ -29,7 +29,7 @@ ALTER TABLE delivery_jobs ADD COLUMN IF NOT EXISTS agent_id INTEGER;
 
 -- feature_flags: 2 column(s) absent from a fresh migration
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS name TEXT;
-ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- franchise_partners: 9 column(s) absent from a fresh migration
 ALTER TABLE franchise_partners ADD COLUMN IF NOT EXISTS product_commission_percent REAL DEFAULT 5.0;
@@ -61,7 +61,7 @@ ALTER TABLE job_walkin_events ADD COLUMN IF NOT EXISTS salary_range TEXT;
 ALTER TABLE local_job_postings ADD COLUMN IF NOT EXISTS shop_id TEXT;
 ALTER TABLE local_job_postings ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE local_job_postings ADD COLUMN IF NOT EXISTS salary REAL;
-ALTER TABLE local_job_postings ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE local_job_postings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- local_shops: 4 column(s) absent from a fresh migration
 ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS pincode TEXT;
@@ -70,17 +70,17 @@ ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS rating REAL DEFAULT 0;
 ALTER TABLE local_shops ADD COLUMN IF NOT EXISTS is_featured INTEGER DEFAULT 0;
 
 -- localization_dictionaries: 1 column(s) absent from a fresh migration
-ALTER TABLE localization_dictionaries ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE localization_dictionaries ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- loyalty_transactions: 2 column(s) absent from a fresh migration
 ALTER TABLE loyalty_transactions ADD COLUMN IF NOT EXISTS type TEXT;
 ALTER TABLE loyalty_transactions ADD COLUMN IF NOT EXISTS source TEXT;
 
 -- marketplace_auctions: 1 column(s) absent from a fresh migration
-ALTER TABLE marketplace_auctions ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT datetime('now');
+ALTER TABLE marketplace_auctions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- marketplace_escrow: 1 column(s) absent from a fresh migration
-ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT datetime('now');
+ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- medical_providers: 3 column(s) absent from a fresh migration
 ALTER TABLE medical_providers ADD COLUMN IF NOT EXISTS name TEXT;
@@ -266,7 +266,7 @@ ALTER TABLE society_document_templates ADD COLUMN IF NOT EXISTS is_active INTEGE
 ALTER TABLE society_document_templates ADD COLUMN IF NOT EXISTS created_at TEXT DEFAULT CURRENT_TIMESTAMP;
 
 -- society_emergency_alerts: 1 column(s) absent from a fresh migration
-ALTER TABLE society_emergency_alerts ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE society_emergency_alerts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- society_expense_categories: 4 column(s) absent from a fresh migration
 ALTER TABLE society_expense_categories ADD COLUMN IF NOT EXISTS parent_category TEXT;
@@ -323,7 +323,7 @@ ALTER TABLE society_gates ADD COLUMN IF NOT EXISTS assigned_guards TEXT;
 ALTER TABLE society_gates ADD COLUMN IF NOT EXISTS created_at TEXT DEFAULT CURRENT_TIMESTAMP;
 
 -- society_guard_reminders: 1 column(s) absent from a fresh migration
-ALTER TABLE society_guard_reminders ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE society_guard_reminders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- society_guard_shift_swaps: 9 column(s) absent from a fresh migration
 ALTER TABLE society_guard_shift_swaps ADD COLUMN IF NOT EXISTS society_id TEXT DEFAULT '';
@@ -574,7 +574,7 @@ ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS full_name TEXT;
 -- delivery_jobs: 3 column(s) the development database is missing
 ALTER TABLE delivery_jobs ADD COLUMN IF NOT EXISTS batch_id TEXT;
 ALTER TABLE delivery_jobs ADD COLUMN IF NOT EXISTS assigned_agent_id TEXT;
-ALTER TABLE delivery_jobs ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE delivery_jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- employer_job_analytics: 5 column(s) the development database is missing
 ALTER TABLE employer_job_analytics ADD COLUMN IF NOT EXISTS employer_id TEXT DEFAULT '';
@@ -610,7 +610,7 @@ ALTER TABLE home_service_providers ADD COLUMN IF NOT EXISTS is_available INTEGER
 
 -- job_referrals: 2 column(s) the development database is missing
 ALTER TABLE job_referrals ADD COLUMN IF NOT EXISTS bounty_paid INTEGER DEFAULT 0;
-ALTER TABLE job_referrals ADD COLUMN IF NOT EXISTS converted_at DATETIME;
+ALTER TABLE job_referrals ADD COLUMN IF NOT EXISTS converted_at TIMESTAMPTZ;
 
 -- job_skill_assessments: 1 column(s) the development database is missing
 ALTER TABLE job_skill_assessments ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'intermediate';
@@ -647,14 +647,14 @@ ALTER TABLE loyalty_transactions ADD COLUMN IF NOT EXISTS reference_id TEXT;
 ALTER TABLE loyalty_transactions ADD COLUMN IF NOT EXISTS description TEXT;
 
 -- marketplace_auctions: 1 column(s) the development database is missing
-ALTER TABLE marketplace_auctions ADD COLUMN IF NOT EXISTS starts_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE marketplace_auctions ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- marketplace_escrow: 5 column(s) the development database is missing
 ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS razorpay_payment_id TEXT;
 ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS razorpay_order_id TEXT;
-ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS held_at DATETIME DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS refunded_at DATETIME;
-ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS resolved_at DATETIME;
+ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS held_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
+ALTER TABLE marketplace_escrow ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
 
 -- marketplace_seller_scores: 4 column(s) the development database is missing
 ALTER TABLE marketplace_seller_scores ADD COLUMN IF NOT EXISTS verified_email INTEGER DEFAULT 0;
@@ -697,7 +697,7 @@ ALTER TABLE shop_qa ADD COLUMN IF NOT EXISTS answered_by TEXT;
 ALTER TABLE shop_qa ADD COLUMN IF NOT EXISTS updated_at TEXT DEFAULT CURRENT_TIMESTAMP;
 
 -- society_advance_account: 1 column(s) the development database is missing
-ALTER TABLE society_advance_account ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE society_advance_account ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- society_agm_minutes: 1 column(s) the development database is missing
 ALTER TABLE society_agm_minutes ADD COLUMN IF NOT EXISTS published_by TEXT;
@@ -716,13 +716,13 @@ ALTER TABLE society_amenity_locks ADD COLUMN IF NOT EXISTS flat_number TEXT DEFA
 
 -- society_asset_maintenance_log: 3 column(s) the development database is missing
 ALTER TABLE society_asset_maintenance_log ADD COLUMN IF NOT EXISTS service_type TEXT;
-ALTER TABLE society_asset_maintenance_log ADD COLUMN IF NOT EXISTS service_date DATETIME;
+ALTER TABLE society_asset_maintenance_log ADD COLUMN IF NOT EXISTS service_date TIMESTAMPTZ;
 ALTER TABLE society_asset_maintenance_log ADD COLUMN IF NOT EXISTS notes TEXT;
 
 -- society_assets: 3 column(s) the development database is missing
 ALTER TABLE society_assets ADD COLUMN IF NOT EXISTS name TEXT DEFAULT '';
 ALTER TABLE society_assets ADD COLUMN IF NOT EXISTS category TEXT;
-ALTER TABLE society_assets ADD COLUMN IF NOT EXISTS amc_expiry DATETIME;
+ALTER TABLE society_assets ADD COLUMN IF NOT EXISTS amc_expiry TIMESTAMPTZ;
 
 -- society_billing_config: 2 column(s) the development database is missing
 ALTER TABLE society_billing_config ADD COLUMN IF NOT EXISTS sinking_fund_rate_percent REAL;
@@ -759,8 +759,8 @@ ALTER TABLE society_emergency_alerts ADD COLUMN IF NOT EXISTS flat_number TEXT;
 ALTER TABLE society_emergency_alerts ADD COLUMN IF NOT EXISTS resolved_at TEXT;
 
 -- society_fire_safety: 2 column(s) the development database is missing
-ALTER TABLE society_fire_safety ADD COLUMN IF NOT EXISTS last_inspection DATETIME;
-ALTER TABLE society_fire_safety ADD COLUMN IF NOT EXISTS next_due DATETIME;
+ALTER TABLE society_fire_safety ADD COLUMN IF NOT EXISTS last_inspection TIMESTAMPTZ;
+ALTER TABLE society_fire_safety ADD COLUMN IF NOT EXISTS next_due TIMESTAMPTZ;
 
 -- society_flat_ledger: 2 column(s) the development database is missing
 ALTER TABLE society_flat_ledger ADD COLUMN IF NOT EXISTS carpet_area REAL;
@@ -804,8 +804,8 @@ ALTER TABLE society_notices ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'norm
 ALTER TABLE society_notices ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1;
 
 -- society_patrol_logs: 4 column(s) the development database is missing
-ALTER TABLE society_patrol_logs ADD COLUMN IF NOT EXISTS start_time DATETIME;
-ALTER TABLE society_patrol_logs ADD COLUMN IF NOT EXISTS end_time DATETIME;
+ALTER TABLE society_patrol_logs ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
+ALTER TABLE society_patrol_logs ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ;
 ALTER TABLE society_patrol_logs ADD COLUMN IF NOT EXISTS scanned_checkpoints_json TEXT;
 ALTER TABLE society_patrol_logs ADD COLUMN IF NOT EXISTS completion_percent REAL;
 
@@ -866,8 +866,8 @@ ALTER TABLE society_utility_deliveries ADD COLUMN IF NOT EXISTS gate_id TEXT;
 ALTER TABLE society_utility_deliveries ADD COLUMN IF NOT EXISTS utility_type TEXT;
 
 -- society_vehicle_log: 4 column(s) the development database is missing
-ALTER TABLE society_vehicle_log ADD COLUMN IF NOT EXISTS entry_time DATETIME;
-ALTER TABLE society_vehicle_log ADD COLUMN IF NOT EXISTS exit_time DATETIME;
+ALTER TABLE society_vehicle_log ADD COLUMN IF NOT EXISTS entry_time TIMESTAMPTZ;
+ALTER TABLE society_vehicle_log ADD COLUMN IF NOT EXISTS exit_time TIMESTAMPTZ;
 ALTER TABLE society_vehicle_log ADD COLUMN IF NOT EXISTS vehicle_photo_url TEXT;
 ALTER TABLE society_vehicle_log ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'entered';
 

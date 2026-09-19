@@ -91,11 +91,12 @@ async function runHourlyMaintenance() {
 
 async function runHighFrequencyTasks() {
   try {
+    const nowIso = new Date().toISOString();
     const dueReminders = await query(`
       SELECT sgr.*, u.full_name as created_by_name FROM society_guard_reminders sgr
       JOIN users u ON sgr.created_by = u.id
-      WHERE sgr.status = 'active' AND sgr.reminder_time <= CURRENT_TIMESTAMP
-    `);
+      WHERE sgr.status = 'active' AND sgr.reminder_time <= $1
+    `, [nowIso]);
     
     const rows = dueReminders.rows || dueReminders || [];
     for (const reminder of rows) {
