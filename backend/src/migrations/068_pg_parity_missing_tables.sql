@@ -82,8 +82,7 @@ CREATE TABLE IF NOT EXISTS carpool_group_members (
  user_id TEXT NOT NULL,
  role TEXT DEFAULT 'member',
  joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(group_id, user_id),
-  FOREIGN KEY (group_id) REFERENCES carpool_groups(id)
+  UNIQUE(group_id, user_id)
 );
 
 -- carpool_groups
@@ -116,8 +115,7 @@ CREATE TABLE IF NOT EXISTS carpool_live_locations (
  speed DOUBLE PRECISION DEFAULT 0,
  heading DOUBLE PRECISION DEFAULT 0,
  accuracy DOUBLE PRECISION DEFAULT 0,
- recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (ride_id) REFERENCES carpool_rides(id)
+ recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- carpool_ratings
@@ -289,8 +287,7 @@ CREATE TABLE IF NOT EXISTS job_assessment_attempts (
  passed INTEGER DEFAULT 0,
  answers TEXT,
  started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
- completed_at TIMESTAMP WITH TIME ZONE,
-  FOREIGN KEY (assessment_id) REFERENCES job_skill_assessments(id)
+ completed_at TIMESTAMP WITH TIME ZONE
 );
 
 -- job_chat_messages
@@ -344,8 +341,7 @@ CREATE TABLE IF NOT EXISTS job_referrals (
  bounty_amount DOUBLE PRECISION DEFAULT 0,
  bounty_paid INTEGER DEFAULT 0,
  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
- converted_at TIMESTAMP WITH TIME ZONE,
-  FOREIGN KEY (job_id) REFERENCES job_postings(id)
+ converted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- job_required_skills
@@ -456,8 +452,7 @@ CREATE TABLE IF NOT EXISTS marketplace_auction_bids (
  auction_id TEXT NOT NULL,
  bidder_id TEXT NOT NULL,
  bid_amount DOUBLE PRECISION NOT NULL,
- bid_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (auction_id) REFERENCES marketplace_auctions(id)
+ bid_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- marketplace_auctions
@@ -472,8 +467,7 @@ CREATE TABLE IF NOT EXISTS marketplace_auctions (
  starts_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
  ends_at TIMESTAMP WITH TIME ZONE NOT NULL,
  status TEXT DEFAULT 'active',
- winner_id TEXT,
-  FOREIGN KEY (listing_id) REFERENCES marketplace_listings(id)
+ winner_id TEXT
 );
 
 -- marketplace_categories
@@ -526,8 +520,7 @@ CREATE TABLE IF NOT EXISTS marketplace_escrow (
  refunded_at TIMESTAMP WITH TIME ZONE,
  dispute_reason TEXT,
  dispute_at TIMESTAMP WITH TIME ZONE,
- resolved_at TIMESTAMP WITH TIME ZONE,
-  FOREIGN KEY (listing_id) REFERENCES marketplace_listings(id)
+ resolved_at TIMESTAMP WITH TIME ZONE
 );
 
 -- marketplace_offers
