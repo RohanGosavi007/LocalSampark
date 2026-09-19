@@ -136,9 +136,20 @@ async function runMigration() {
         }
       }
     } else {
-      const sqlPath = path.join(__dirname, 'init.sql');
-      const sql = fs.readFileSync(sqlPath, 'utf8');
-      await pool.query(sql);
+      const checkTables = await pool.query(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'"
+      );
+      if (checkTables.rows.length === 0) {
+        console.log('🔄 Fresh database detected: applying base schema (init.sql)...');
+        const sqlPath = path.join(__dirname, 'init.sql');
+        const sql = fs.readFileSync(sqlPath, 'utf8');
+        try {
+          await pool.query(sql);
+          console.log('✅ Base schema initialized successfully');
+        } catch (initErr) {
+          console.warn('⚠️ Base schema initialization notice: ' + initErr.message);
+        }
+      }
 
       // Numbered Postgres migrations were never applied here: this branch ran
       // init.sql and stopped, so every NNN_*.sql file was inert. They are

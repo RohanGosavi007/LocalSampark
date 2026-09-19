@@ -5,8 +5,17 @@ let hasLoggedError = false;
 let redisClient = null;
 
 async function connectRedis() {
+  let redisUrl = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`;
+  if (typeof redisUrl === 'string') {
+    if (!redisUrl.startsWith('redis://') && !redisUrl.startsWith('rediss://')) {
+      redisUrl = 'redis://' + redisUrl;
+    }
+    // Auto-heal common typo where host and port are joined with hyphen: red-xxxx-6379 -> red-xxxx:6379
+    redisUrl = redisUrl.replace(/(red-[a-z0-9]+)-(\d{4,5})/i, (match, host, port) => `${host}:${port}`);
+  }
+
   redisClient = createClient({
-    url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
+    url: redisUrl,
     password: process.env.REDIS_PASSWORD || undefined,
     socket: {
       reconnectStrategy: (retries) => {
@@ -22,7 +31,7 @@ async function connectRedis() {
     // Only log if it's not a closed connection error
     if (err.message !== 'Connection is closed') {
       if (!hasLoggedError) {
-        logger.error('Redis Client Error: ' + err.message);
+        logger.warn('Redis notice: ' + err.message + ' (using synchronous queue fallback)');
         hasLoggedError = true;
       }
     }

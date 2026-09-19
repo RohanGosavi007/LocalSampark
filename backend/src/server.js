@@ -297,6 +297,27 @@ async function startServer() {
       await fixSchemaGaps();
     } else {
       logger.info('✅ PostgreSQL connected');
+      // Auto-apply schema migrations if on a fresh database or pending migrations exist
+      try {
+        const { runMigration } = require('./migrations/run');
+        logger.info('🔄 Checking and applying PostgreSQL database migrations...');
+        await runMigration();
+        logger.info('✅ PostgreSQL schema verified and up to date');
+
+        // Check if fresh database needs initial seed data (e.g. fresh database)
+        const regionCheck = await query('SELECT count(*) as count FROM regions');
+        const regionCount = parseInt(regionCheck.rows?.[0]?.count || 0, 10);
+        if (regionCount === 0) {
+          logger.info('🌱 Fresh database detected. Seeding initial pilot data...');
+          const fs = require('fs');
+          const path = require('path');
+          const seedSql = fs.readFileSync(path.join(__dirname, 'seeds', 'dhanori.sql'), 'utf8');
+          await query(seedSql);
+          logger.info('✅ Initial database seed completed');
+        }
+      } catch (migErr) {
+        logger.warn('⚠️ PostgreSQL migration/seed notice: ' + migErr.message);
+      }
     }
 
     // Connect to Redis
