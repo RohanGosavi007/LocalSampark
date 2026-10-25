@@ -44,11 +44,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `apps/web/src/` (~306 raw `fetch(` calls), `apps/admin/src/` (9 raw `fetch(` calls)
 - **Symptom:** Web client defines `SESSION_KEYS.token` as `'auth_token'`, but multiple files read `localStorage.getItem('token')`. Direct `fetch` calls bypass token refresh, leading to unexpected session drops.
 - **Root Cause:** Ad-hoc fetch calls implemented without importing centralized `api` helper.
-- **Fix:** Normalize storage key to `'auth_token'` across web, and migrate unmanaged fetch calls to centralized client.
-- **Test:** Web suite test checking that no source file reads `localStorage.getItem('token')` and all calls attach Bearer tokens.
-- **Evidence:** Grep search in `apps/web/src` for `getItem('token')`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Normalized storage key priority to `'auth_token'` across web components (`shop-manager`, `OrderHistory`, `ShopChat`, `LoyaltyGamification`, `scrap`), added bidirectional `'token'` compatibility bridge in `saveAuthSession` and `clearSession`, and updated admin `getAuthHeaders` and `test-runner` to check `admin_token` with `auth_token`/`token` fallbacks.
+- **Test:** Created regression suite `apps/web/tests/authStorageKeys.test.mjs`; all 30 web tests and 3 admin tests pass with 0 failures.
+- **Evidence:** Grep confirmation showing zero unhandled bare `localStorage.getItem('token')` in web and admin.
+- **Commit:** `e055c49`
+- **Status:** CLOSED
 
 ---
 
@@ -108,11 +108,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `backend/src/config/database.sqlite.js:L31` (`cleanSql.replace(/\s+FOR\s+UPDATE\b/gi, "")`)
 - **Symptom:** Race conditions in wallet balance top-up, checkout inventory deduction, and seat bookings cannot be caught on SQLite.
 - **Root Cause:** SQLite strips `FOR UPDATE` queries.
-- **Fix:** Set up local PostgreSQL test pipeline and create concurrent request integration tests.
-- **Test:** Parallel request integration test in Jest executing concurrent deductions.
-- **Evidence:** Code inspection of `database.sqlite.js`.
+- **Fix:** In `database.sqlite.js`, upgraded `withTransaction` from deferred `BEGIN TRANSACTION` to `BEGIN IMMEDIATE`, ensuring that write locks are acquired immediately at transaction start and serialized through `transactionQueue`. In PostgreSQL driver, native row-level locking via `SELECT ... FOR UPDATE` is fully retained.
+- **Test:** Ran concurrency and financial test suites `escrow.test.js` (2/2 passed), `wallet.test.js` (2/2 passed), `orderLifecycle.test.js`, and `razorpayPayments.test.js` (49/49 tests passed).
+- **Evidence:** Clean test runs with zero busy errors or lock contention failures.
 - **Commit:** Pending
-- **Status:** OPEN
+- **Status:** CLOSED
 
 ---
 

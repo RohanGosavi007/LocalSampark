@@ -413,7 +413,7 @@ async function withTransaction(callback) {
   if (transactionScope.getStore()) return callback(transactionClient);
 
   const run = () => transactionScope.run({ open: true }, async () => {
-    await runStatement('BEGIN TRANSACTION');
+    await runStatement('BEGIN IMMEDIATE');
     try {
       const result = await callback(transactionClient);
       await runStatement('COMMIT');
