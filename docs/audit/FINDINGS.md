@@ -111,7 +111,7 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Fix:** In `database.sqlite.js`, upgraded `withTransaction` from deferred `BEGIN TRANSACTION` to `BEGIN IMMEDIATE`, ensuring that write locks are acquired immediately at transaction start and serialized through `transactionQueue`. In PostgreSQL driver, native row-level locking via `SELECT ... FOR UPDATE` is fully retained.
 - **Test:** Ran concurrency and financial test suites `escrow.test.js` (2/2 passed), `wallet.test.js` (2/2 passed), `orderLifecycle.test.js`, and `razorpayPayments.test.js` (49/49 tests passed).
 - **Evidence:** Clean test runs with zero busy errors or lock contention failures.
-- **Commit:** Pending
+- **Commit:** `2270f96`
 - **Status:** CLOSED
 
 ---
