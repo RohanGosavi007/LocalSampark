@@ -60,11 +60,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** Backend (~68 files `'super_admin'`, 7 files `'superadmin'`), Mobile events/townsquare admin checks
 - **Symptom:** Admin checks fail silently because `'superadmin'` does not match `'super_admin'`, locking out legitimate administrators or bypassing checks.
 - **Root Cause:** Absence of centralized role enum shared between database, JWT payload, and frontend/mobile guards.
-- **Fix:** Define canonical role constants in `@localsampark/shared` / `packages/types` and normalize across all routes and client guards.
-- **Test:** Unit test scanning all route middleware to ensure role arguments match canonical enum.
-- **Evidence:** Grep search for `'superadmin'` vs `'super_admin'`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Added bidirectional normalization in `auth.middleware.js` (`resolveAdminRole`, `requireRole`, `verifyRole`, `FULL_ADMIN_ROLES`) mapping `'SUPERADMIN'` and `'SUPER_ADMIN'` symmetrically. Updated route guards in `events.controller.js`, `sos.routes.js`, `finance.routes.js`, and `chef.controller.js`.
+- **Test:** Executed `npx jest src/__tests__/rbac.test.js` and automated static sweeps in `scripts/audit/run-static-sweeps.js`.
+- **Evidence:** Automated sweep report in `docs/audit/static-sweeps.md`.
+- **Commit:** `8e2a8dd`
+- **Status:** CLOSED
 
 ---
 
