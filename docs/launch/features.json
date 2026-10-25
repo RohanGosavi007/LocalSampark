@@ -486,8 +486,8 @@
       "All metrics computed from PostgreSQL aggregations with zero placeholder numbers"
     ],
     "tests": ["[A1.1] admin: kpi metrics aggregation"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Real DB data only."
   },
   {
@@ -501,8 +501,8 @@
       "Shop suspension and ban kill-switch"
     ],
     "tests": ["[A2.1] admin: seller approval and suspension"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Statutory KYC compliance."
   },
   {
@@ -516,8 +516,8 @@
       "Restricted goods enforcement filter (blocking medicines, alcohol, tobacco, weapons)"
     ],
     "tests": ["[A3.1] admin: category management and restricted goods rules"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Blocks prohibited categories at launch."
   },
   {
@@ -532,8 +532,8 @@
       "SLA breach alerts for delayed preparations or deliveries"
     ],
     "tests": ["[A4.1] admin: order search and emergency intervention"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Commerce operational control."
   },
   {
@@ -547,8 +547,8 @@
       "Approve or reject refund with double-entry ledger adjustment"
     ],
     "tests": ["[A5.1] admin: dispute resolution and refund execution"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Resolves customer complaints."
   },
   {
@@ -562,8 +562,8 @@
       "COD settlement reconciliation view"
     ],
     "tests": ["[A6.1] admin: commission rate configuration"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Enforces 0% commission at launch."
   },
   {
@@ -577,8 +577,8 @@
       "Featured shops and promoted categories placement controls"
     ],
     "tests": ["[A7.1] admin: coupon creation and banner cms"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Directly controls C3 and C7."
   },
   {
@@ -592,8 +592,8 @@
       "Immutable audit log recording every administrative action with user ID, IP, timestamp, and diff"
     ],
     "tests": ["[A8.1] admin: rbac route permission guard", "[A8.2] admin: immutable audit log record"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Enforces L1 and L4."
   },
   {
@@ -607,8 +607,8 @@
       "Unserviceable customer waitlist review and export"
     ],
     "tests": ["[A9.1] admin: zone polygon and serviceability check"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Directly manages C2."
   },
   {
@@ -622,8 +622,8 @@
       "Rider dispute handling"
     ],
     "tests": ["[A10.1] admin: rider fleet status and cash reconciliation"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Ensures COD funds reach the platform/shop."
   },
   {
@@ -637,8 +637,8 @@
       "SLA compliance metrics export"
     ],
     "tests": ["[A11.1] admin: grievance ticket workflow"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "India e-commerce statutory requirement."
   },
   {
@@ -652,8 +652,8 @@
       "Flags drive API middleware (403/404), web navigation menus, and mobile tabs dynamically"
     ],
     "tests": ["[A12.1] admin: feature flag toggle hides navigation and blocks route"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Central to launch scoping (D1)."
   },
   {
@@ -667,8 +667,8 @@
       "Seller-wise sales and payout reconciliation report"
     ],
     "tests": ["[A13.1] admin: gst tcs csv export generation"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Statutory tax compliance."
   },
   {
@@ -682,8 +682,8 @@
       "Broadcast history and delivery analytics"
     ],
     "tests": ["[A14.1] admin: broadcast respecting consent flag"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/adminCommerceOps.test.js"],
     "notes": "Complies with DPDP consent requirements."
   },
   {

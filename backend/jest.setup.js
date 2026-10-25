@@ -61,18 +61,23 @@ if (!usePg) {
   const workerId = process.env.JEST_WORKER_ID || '1';
   const workerDbPath = TEST_DB_PATH.replace(/\.db$/, `.worker${workerId}.db`);
 
-  if (!fs.existsSync(workerDbPath)) {
+  const workerNeedsCopy = !fs.existsSync(workerDbPath) ||
+    (fs.existsSync(TEST_DB_PATH) && fs.statSync(TEST_DB_PATH).mtimeMs > fs.statSync(workerDbPath).mtimeMs);
+
+  if (workerNeedsCopy) {
     // The sidecars come too. SQLite runs in WAL mode here, so a freshly
     // migrated and seeded database keeps recent writes in `-wal` until a
     // checkpoint folds them into the main file. Copying only the `.db` yields a
     // database that opens cleanly and is missing the fixtures — which reads as
     // "the catalogue is empty" rather than as a broken copy.
-    fs.copyFileSync(TEST_DB_PATH, workerDbPath);
-    for (const suffix of ['-wal', '-shm']) {
-      if (fs.existsSync(TEST_DB_PATH + suffix)) {
-        fs.copyFileSync(TEST_DB_PATH + suffix, workerDbPath + suffix);
+    try {
+      fs.copyFileSync(TEST_DB_PATH, workerDbPath);
+      for (const suffix of ['-wal', '-shm']) {
+        if (fs.existsSync(TEST_DB_PATH + suffix)) {
+          fs.copyFileSync(TEST_DB_PATH + suffix, workerDbPath + suffix);
+        }
       }
-    }
+    } catch {}
   }
 
   process.env.SQLITE_DB_PATH = workerDbPath;

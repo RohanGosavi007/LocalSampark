@@ -1,4 +1,4 @@
-**Next action:** Milestone M4: Operations (Phase M4.3: Admin Commerce Ops A1–A14).
+**Next action:** Milestone M5: After-Order Experience (Returns, Reviews, Support, Invoices).
 
 ---
 
@@ -10,7 +10,7 @@
 | **M1** | P0 Security & Launch Blockers | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T08-42-54/` |
 | **M2** | Open Leads & Platform Hygiene | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
 | **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
-| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **IN PROGRESS (M4.1 & M4.2 VERIFIED)** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-25-08/` |
+| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-52-40/` |
 | **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | NOT STARTED | — | — |
 | **M6** | Web Quality, SEO, Performance & Legal Compliance | NOT STARTED | — | — |
 | **M7** | Android Release Hardening, Permissions & E2E Smoke | NOT STARTED | — | — |
@@ -81,6 +81,23 @@
 - [x] **R5 (COD Cash Ledger & Floating Cash Limits):** Automatic cash collection recording in `delivery_agents.cash_in_hand` and `rider_cash_ledger` upon COD delivery completion; automatic duty block when cash exceeds threshold (e.g. ₹3,000); physical cash deposit and reconciliation endpoint (`POST /admin/delivery/agents/:id/deposit-cash`) clearing cash in hand and unblocking the rider.
 - [x] **Verification:** Verified via `riderFleet.test.js` (18/18 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
+#### Phase M4.3: Admin Commerce Ops Hub (A1–A14)
+- [x] **A1 (Commerce KPI Dashboard):** Live database aggregations computing Platform GMV, Order counts, AOV, cancellations, returns, and active shops/riders/customers from real database transactions with 0 mock values.
+- [x] **A2 (Store & Seller Governance):** Multi-filter shop registry (`GET /admin/commerce/shops`), approval status transitions (`PUT /admin/commerce/shops/:id/status`), and emergency store suspension kill-switch (`POST /admin/commerce/shops/:id/suspend`) with mandatory reason and immutable audit log.
+- [x] **A3 (Catalog Moderation & Categories):** Global category taxonomy CRUD (`GET/POST/PUT/DELETE /admin/commerce/categories`), moderation queue (`GET /admin/commerce/products/moderation`), and restricted goods filter (blocking weapons, narcotics, tobacco, alcohol, controlled substances) with administrative actioning (`POST /admin/commerce/products/:id/moderate`).
+- [x] **A4 (Order Operations & Interventions):** Multi-filter order search across customer, shop, date, and status (`GET /admin/commerce/orders`), chronological event timeline inspection (`GET /admin/commerce/orders/:id/timeline`), emergency force-cancellation (`POST /admin/commerce/orders/:id/cancel`), manual administrative wallet refund (`POST /admin/commerce/orders/:id/refund`), rider re-assignment (`POST /admin/commerce/orders/:id/reassign`), and operational SLA breach detection (`GET /admin/commerce/sla-breaches`).
+- [x] **A5 (Returns & Dispute Resolution Queue):** Customer dispute review queue (`GET /admin/commerce/disputes`) and administrative resolution (`POST /admin/commerce/disputes/:id/resolve`) with automated customer wallet refund and double-entry platform ledger adjustment.
+- [x] **A6 (Payouts & Commission Configuration):** Configurable platform commission defaulting to 0% at launch (`GET/PUT /admin/commerce/commission`), and granular per-shop commission rate overrides (`PUT /admin/commerce/shops/:id/commission`).
+- [x] **A7 (Promotions, Coupons & Banner CMS):** Platform-wide coupon creation (`POST /admin/commerce/coupons`) and banner CMS management (`GET/POST/DELETE /admin/commerce/banners`) with priority ordering and target actions.
+- [x] **A8 (RBAC & Immutable Audit Log):** Least privilege authentication and permission guards (`authenticate` + `requireAdmin`) protecting all routes, and append-only administrative audit log records (`admin_audit_log`) capturing admin ID, action, target, IP address, and payload diffs.
+- [x] **A9 (Serviceability Zones):** Geofence zone listings and pilot status toggles (`GET/PUT /admin/commerce/zones`), and unserviceable customer demand inquiry waitlist (`GET /admin/commerce/waitlist`).
+- [x] **A10 (Delivery Fleet & Cash Reconciliation):** Real-time delivery fleet monitoring (`GET /admin/commerce/fleet/live`) and COD cash-in-hand reconciliation summary (`GET /admin/commerce/fleet/cash-summary`) tracking threshold adherence and auto-blocked riders.
+- [x] **A11 (Grievance & Support Management):** Hybrid support ticket and statutory grievance register (`GET/PUT /admin/commerce/grievances`) enforcing India Consumer Protection 48-hour statutory acknowledgement SLA and 30-day resolution tracking.
+- [x] **A12 (Feature Flags & Vertical Kill Switches):** Single-source feature flag registry (`GET/PUT /admin/commerce/feature-flags`) backing runtime Express middleware and client navigation gating.
+- [x] **A13 (Financial & Tax Report Exports):** Hybrid reporting engine (`GET /admin/commerce/reports/export`) delivering standard operational CSV exports and statutory GST Section 52 1% TCS compliance reports formatted for Chartered Accountant review.
+- [x] **A14 (Broadcast Notifications):** Geo-targeted push announcements (`POST /admin/commerce/broadcast`) with zone and recipient role filtering and immutable administrative audit trail.
+- [x] **Verification:** Verified via `adminCommerceOps.test.js` (32/32 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
 ---
 
 ## 3. Session Log
@@ -135,6 +152,18 @@
   - Implemented R5 (COD Cash Ledger & Limits): cash collection recording upon COD delivery; auto-block when cash exceeds threshold (e.g. ₹3,000); physical hub deposit reconciliation `POST /admin/delivery/agents/:id/deposit-cash`.
   - Created test suite `backend/src/__tests__/unit/riderFleet.test.js` (18/18 pass on both SQLite and PostgreSQL).
   - Executed verification harness: Gates G1 (ESLint 0 errors), G4 (migrations/seed verify), G5 (all write routes protected), G6 (concurrency suite on Postgres), G15 (policy tests 0 violations) all PASS cleanly.
+
+- **2026-10-25 (Session 7 — Phase M4.3 Admin Commerce Ops Hub):**
+  - Authored comprehensive technical specification `docs/launch/specs/2026-10-25-admin-commerce-ops-design.md`.
+  - Applied migrations `132_admin_commerce_ops.sql` and SQLite twin `132_admin_commerce_ops.sqlite.sql` introducing `platform_banners`, `unserviceable_waitlist`, and extending `support_tickets` (`is_statutory`, `acknowledged_at`, `grievance_officer`), `local_shops` (`commission_rate`), and `orders` (`cancellation_reason`).
+  - Implemented `adminReporting.service.js` supporting both standard order CSV export and GST Section 52 TCS 1% CA audit reporting (`A13`).
+  - Implemented `adminAudit.service.js` recording immutable administrative operations into `admin_audit_log` with admin ID, target, IP address, and diff payload (`A8`).
+  - Built unified modular controller `admin-commerce.controller.js` and sub-router `admin-commerce.routes.js` implementing all 14 capabilities (`A1`–`A14`).
+  - Authored comprehensive test suite `backend/src/__tests__/unit/adminCommerceOps.test.js` covering 32 test cases across all capabilities.
+  - Verified 100% dual-engine parity: 32/32 passed on SQLite and 32/32 passed on PostgreSQL.
+  - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
+  - Marked `A1`–`A14` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M4 complete.
+
 
 
 

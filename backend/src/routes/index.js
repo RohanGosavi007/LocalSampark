@@ -147,6 +147,7 @@ router.use('/sync', require('../modules/core/routes/sync.routes'));
 
 // ─── CRM & ADMIN DOMAIN ───────────────────────────────────
 router.use('/finance', adminLimiter, require('../modules/crm/routes/finance.routes'));
+router.use('/admin/commerce', adminLimiter, require('../modules/crm/routes/admin-commerce.routes'));
 router.use('/admin', adminLimiter, require('../modules/crm/routes/admin.routes'));
 router.use('/disputes', require('../modules/crm/routes/disputes.routes'));
 router.use('/franchise', require('../modules/crm/routes/franchise.routes'));
