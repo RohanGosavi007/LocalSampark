@@ -386,9 +386,16 @@
       "Admin KYC verification and approval",
       "Online/Offline duty availability toggle with geofence check"
     ],
-    "tests": ["[R1.1] rider: duty toggle and status update"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "tests": [
+      "[R1.1] rider: onboarding invalid aadhaar rejection",
+      "[R1.2] rider: onboarding submission and pending kyc",
+      "[R1.3] rider: profile masking and status retrieval",
+      "[R1.4] rider: admin kyc approval flow",
+      "[R2.1] rider: pilot zone geofence validation",
+      "[R2.2] rider: online/offline duty status toggle"
+    ],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/riderFleet.test.js"],
     "notes": "Rider app lives in Android mobile app."
   },
   {
@@ -401,9 +408,14 @@
       "Accept or decline assignment with timeout re-dispatch",
       "Order details, pickup shop address, and customer delivery address view"
     ],
-    "tests": ["[R2.1] rider: dispatch assignment and accept flow"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "tests": [
+      "[R3.1] rider: proximity-sorted job listings",
+      "[R3.2] rider: atomic job acceptance",
+      "[R3.3] rider: duplicate claim prevention",
+      "[R3.4] rider: job release/rejection back to ready pool"
+    ],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/riderFleet.test.js"],
     "notes": "Uses existing dispatch queue."
   },
   {
@@ -417,9 +429,13 @@
       "Delivery completion requiring customer delivery OTP or photo proof of drop-off",
       "State transition to DELIVERED"
     ],
-    "tests": ["[R3.1] rider: delivery otp verification and completion"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "tests": [
+      "[R4.1] rider: pickup confirmation to out_for_delivery",
+      "[R4.2] rider: timing-safe invalid handover code rejection",
+      "[R4.3] rider: valid OTP delivery completion and wallet credit"
+    ],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/riderFleet.test.js"],
     "notes": "Prevents unauthorized delivery completion."
   },
   {
@@ -432,9 +448,11 @@
       "Live coordinates streamed via WebSocket to customer tracking screen",
       "Zero simulated or mock coordinates in production mode"
     ],
-    "tests": ["[R4.1] rider: real-time coordinate ingestion"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "tests": [
+      "[R2.3] rider: battery-aware GPS coordinate ingestion and live tracking history"
+    ],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/riderFleet.test.js"],
     "notes": "No simulated GPS movement in production."
   },
   {
@@ -447,9 +465,14 @@
       "Cash deposit and reconciliation workflow with admin/hub",
       "Delivery payout earnings ledger and withdrawal history"
     ],
-    "tests": ["[R5.1] rider: cod cash ledger entry and reconciliation"],
-    "status": "NOT STARTED",
-    "evidence": [],
+    "tests": [
+      "[R5.1] rider: cod cash collection ledger record",
+      "[R5.2] rider: cash in hand position and limit status",
+      "[R5.3] rider: auto-block duty online when cash exceeds threshold",
+      "[R5.4] rider: physical hub cash deposit and unblock"
+    ],
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/riderFleet.test.js"],
     "notes": "Uses existing rider_cash_ledger table."
   },
   {

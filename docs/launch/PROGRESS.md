@@ -1,4 +1,4 @@
-**Next action:** Milestone M4: Operations (Phase M4.2: Rider Fleet R1–R5, Phase M4.3: Admin Commerce Ops A1–A14).
+**Next action:** Milestone M4: Operations (Phase M4.3: Admin Commerce Ops A1–A14).
 
 ---
 
@@ -10,7 +10,7 @@
 | **M1** | P0 Security & Launch Blockers | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T08-42-54/` |
 | **M2** | Open Leads & Platform Hygiene | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
 | **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
-| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **IN PROGRESS (M4.1 VERIFIED)** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-42-48/` |
+| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **IN PROGRESS (M4.1 & M4.2 VERIFIED)** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-25-08/` |
 | **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | NOT STARTED | — | — |
 | **M6** | Web Quality, SEO, Performance & Legal Compliance | NOT STARTED | — | — |
 | **M7** | Android Release Hardening, Permissions & E2E Smoke | NOT STARTED | — | — |
@@ -73,6 +73,14 @@
 - [x] **S4 (Seller Financials & 0% Launch Commission):** 0% platform commission enforced as default in `platformConfig.service.js` (launch zero-commission model, configurable for future up to 50%); periodic/daily settlement statement endpoint `GET /shops/:shopId/settlements/statement` reconciling gross sales, COD cash collected by shop, gateway fees, and net balance from double-entry ledger `platform_ledger_entries`; downloadable CSV statement export `GET /shops/:shopId/settlements/statement/csv`.
 - [x] **Verification:** Verified via `sellerOperations.test.js` (14/14 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
+#### Phase M4.2: Rider Fleet Operations (R1, R2, R3, R4, R5)
+- [x] **R1 & N3 (Rider Onboarding & KYC):** Validated statutory fields (12-digit Aadhaar, IFSC regex, vehicle type, vehicle RC, bank account details); migration `131_rider_kyc_banking.sql` and SQLite twin; private storage isolation for KYC documents with short-lived signed URLs (10m TTL); admin KYC verification queue (`GET /admin/delivery/pending-kyc`) and review actions (approve, reject, request resubmission with reason); user role promotion to `delivery_agent` on KYC approval.
+- [x] **R2 (Rider Duty Toggle & Live Geolocation):** Online/offline toggle (`PUT /delivery/duty`) validating approved KYC, floating cash limits, and Pune/Dhanori pilot zone geofence (18.40–18.75 lat, 73.70–74.05 lng); battery-aware GPS heartbeat ingestion (`POST /delivery/location`) maintaining foreign-key synchronized `delivery_riders` records, logging spatial traces in `live_tracking`, and broadcasting `RIDER_LOCATION_UPDATE` events to active order WebSocket rooms.
+- [x] **R3 (Dispatch Queue & Auto-Assignment):** Proximity-sorted dispatch queue (`GET /delivery/jobs`) computing distances using Haversine formula from rider GPS fix to shop/pickup location; atomic job acceptance (`POST /delivery/jobs/:jobId/accept`) transitioning order to `assigned` and rider to `on_delivery` while preventing duplicate claims; job release/rejection (`POST /delivery/jobs/:jobId/reject`) resetting order back to ready pool.
+- [x] **R4 (Pickup & Verification Handover):** Pickup confirmation (`POST /delivery/jobs/:jobId/pickup`) transitioning order status to `out_for_delivery`; timing-safe delivery verification (`POST /delivery/jobs/:jobId/complete`) comparing customer OTP code with constant-time equality (`crypto.timingSafeEqual`) to prevent timing side-channel attacks; automatic rider earnings credit to wallet upon successful delivery.
+- [x] **R5 (COD Cash Ledger & Floating Cash Limits):** Automatic cash collection recording in `delivery_agents.cash_in_hand` and `rider_cash_ledger` upon COD delivery completion; automatic duty block when cash exceeds threshold (e.g. ₹3,000); physical cash deposit and reconciliation endpoint (`POST /admin/delivery/agents/:id/deposit-cash`) clearing cash in hand and unblocking the rider.
+- [x] **Verification:** Verified via `riderFleet.test.js` (18/18 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
 ---
 
 ## 3. Session Log
@@ -117,15 +125,17 @@
   - Resolved S2, C9 & N7: implemented product variants CRUD API (`/shops/:shopId/products/:productId/variants`), implemented `invoice.service.js` with `generateOrderInvoice` and `streamInvoicePdf` generating GST-compliant tax invoices with shop GSTIN, FSSAI, itemized breakup, delivery fee, and totals via `pdfkit`; verified via `variantAndInvoice.test.js` (6/6 pass on SQLite and PostgreSQL).
   - Executed verification harness: Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
-- **2026-10-25 (Session 5 — Phase M4.1 Seller Operations Hub):**
-  - Designed and authored technical specification `docs/launch/specs/2026-10-25-seller-operations-design.md` and implementation plan `plan_m4_1.md`.
-  - Implemented S1 (KYC & Private Storage): enhanced `vendor-kyc.routes.js` with signed URLs via `LocalStorageProvider`/`S3StorageProvider`, resubmission workflow, statutory fields sync, and dual `/admin/kyc` mounting.
-  - Implemented S2 (Catalog Inventory): added availability toggle `PATCH /shops/:shopId/products/:productId/availability` and low-stock alerts `GET /shops/:shopId/products/low-stock` in `shop.routes.js`.
-  - Implemented S3 (Kitchen Display & Thermal Slips): added order accept `PUT /orders/:orderId/accept`, order reject with mandatory reason `PUT /orders/:orderId/reject`, and 80mm ESC/POS thermal packing slip generator `GET /orders/:orderId/packing-slip` in `order.routes.js`.
-  - Implemented S4 (Financials & 0% Launch Commission): updated `default_commission_percent` default to 0 in `platformConfig.service.js`; added settlement statement and CSV export endpoints in `payout.routes.js` integrated with `platform_ledger_entries`.
-  - Resolved PostgreSQL parameter type deduction and dialect compatibility in `orderLifecycle.service.js` and `shop.routes.js`.
-  - Created unit test suite `backend/src/__tests__/unit/sellerOperations.test.js` (14/14 pass on both SQLite and local PostgreSQL).
-  - Executed verification harness: Gates G1 (ESLint 0 errors), G4 (migrations/seed verify), G5 (1,156 write routes protected), G6 (5/5 concurrency tests), G15 (8/8 policy checks, 0 violations) all PASS cleanly.
+- **2026-10-25 (Session 6 — Phase M4.2 Rider Fleet Operations):**
+  - Authored technical architecture specification `docs/launch/specs/2026-10-25-rider-fleet-design.md`.
+  - Applied migrations `131_rider_kyc_banking.sql` and SQLite twin `131_rider_kyc_banking.sqlite.sql` adding `bank_account_number`, `bank_ifsc`, `bank_account_name`, `aadhaar_image_url`, and `rejection_reason` to `delivery_agents`.
+  - Implemented R1 (Rider Onboarding & KYC): statutory input validation, masked profile endpoint `GET /delivery/profile`, admin KYC queue `GET /admin/delivery/pending-kyc` with signed document URLs, and admin approval/rejection/resubmission actions.
+  - Implemented R2 (Duty Toggle & Geolocation): online/offline toggle `PUT /delivery/duty` enforcing KYC status, Pune/Dhanori geofence, and floating cash limits; GPS heartbeat endpoint `POST /delivery/location` recording in `live_tracking` with foreign-key synchronized `delivery_riders` rows and broadcasting `RIDER_LOCATION_UPDATE` events.
+  - Implemented R3 (Dispatch Queue & Auto-Assignment): proximity-sorted job pool `GET /delivery/jobs` with nearest pickup ordering, atomic job claiming `POST /delivery/jobs/:jobId/accept`, and job release/rejection `POST /delivery/jobs/:jobId/reject` back to ready pool.
+  - Implemented R4 (Pickup & Verification Handover): pickup confirmation `POST /delivery/jobs/:jobId/pickup` to `out_for_delivery`; timing-safe OTP handover verification `POST /delivery/jobs/:jobId/complete` using `crypto.timingSafeEqual`, crediting rider earnings to wallet.
+  - Implemented R5 (COD Cash Ledger & Limits): cash collection recording upon COD delivery; auto-block when cash exceeds threshold (e.g. ₹3,000); physical hub deposit reconciliation `POST /admin/delivery/agents/:id/deposit-cash`.
+  - Created test suite `backend/src/__tests__/unit/riderFleet.test.js` (18/18 pass on both SQLite and PostgreSQL).
+  - Executed verification harness: Gates G1 (ESLint 0 errors), G4 (migrations/seed verify), G5 (all write routes protected), G6 (concurrency suite on Postgres), G15 (policy tests 0 violations) all PASS cleanly.
+
 
 
 

@@ -7,6 +7,9 @@ const { authenticate, requireAdmin, requireStaff, requireSuperAdmin } = require(
 const { pageParams, likePattern } = require('../../../utils/paging');
 const { requirePermission } = require('../../../middleware/rbac.middleware');
 const rateLimit = require('express-rate-limit');
+const { getStorageProvider } = require('../../../services/storage');
+
+const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
 // Phase 48: God-Mode Security & Rate Limiting
 const globalAdminLimiter = rateLimit({
@@ -1291,31 +1294,118 @@ router.get('/delivery/overview', authenticate, requireAdmin, async (req, res, ne
   }
 });
 
-// â”€â”€â”€ Phase 2.5: Admin Tab Endpoints â”€â”€â”€
+// ─── Phase 2.5: Admin Delivery Fleet Endpoints (R1, R5) ───
 router.get('/delivery/agents', authenticate, requireAdmin, async (req, res, next) => {
   try {
+    const { kyc_status, status } = req.query;
+    const filter = kyc_status || status;
+    const params = [];
+    let where = '';
+    if (filter) {
+      params.push(String(filter).toLowerCase());
+      where = ' WHERE LOWER(da.kyc_status) = $1';
+    }
+
     const agents = await query(`
-      SELECT da.*, u.full_name as name, u.phone_number as phone 
+      SELECT da.*, u.full_name as name, u.phone_number as phone, u.email as email
       FROM delivery_agents da 
       JOIN users u ON da.user_id = u.id 
+      ${where}
       ORDER BY da.created_at DESC LIMIT 50
-    `);
-    res.json({ agents: agents.rows || agents });
+    `, params);
+
+    const rows = agents.rows || agents || [];
+    const storage = getStorageProvider();
+    const enriched = await Promise.all(rows.map(async (agent) => {
+      const docFields = ['profile_image_url', 'dl_image_url', 'rc_image_url', 'aadhaar_image_url'];
+      const signedDocs = {};
+      for (const f of docFields) {
+        if (agent[f]) {
+          try {
+            signedDocs[`${f}_signed`] = await storage.getSignedUrl(agent[f], 600);
+          } catch {
+            signedDocs[`${f}_signed`] = null;
+          }
+        }
+      }
+      return { ...agent, ...signedDocs };
+    }));
+
+    res.json({ agents: enriched });
   } catch (e) { next(e); }
 });
 
-router.put('/delivery/agents/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+router.get('/delivery/pending-kyc', authenticate, requireAdmin, async (req, res, next) => {
   try {
-        const { status } = req.body || {};
-    // 'active' is what lets a rider see and accept delivery jobs.
-    if (!['pending', 'active', 'suspended', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'status must be pending, active, suspended or rejected' });
-    }
-    const updated = await query('UPDATE delivery_agents SET kyc_status = $1 WHERE id = $2', [status, req.params.id]);
-    if (updated && updated.rowCount === 0) return res.status(404).json({ error: 'Delivery agent not found' });
-    res.json({ success: true });
+    const agents = await query(`
+      SELECT da.*, u.full_name as name, u.phone_number as phone, u.email as email
+      FROM delivery_agents da 
+      JOIN users u ON da.user_id = u.id 
+      WHERE LOWER(COALESCE(da.kyc_status, 'pending')) IN ('pending', 'resubmission')
+      ORDER BY da.created_at ASC LIMIT 50
+    `);
+
+    const rows = agents.rows || agents || [];
+    const storage = getStorageProvider();
+    const enriched = await Promise.all(rows.map(async (agent) => {
+      const docFields = ['profile_image_url', 'dl_image_url', 'rc_image_url', 'aadhaar_image_url'];
+      const signedDocs = {};
+      for (const f of docFields) {
+        if (agent[f]) {
+          try {
+            signedDocs[`${f}_signed`] = await storage.getSignedUrl(agent[f], 600);
+          } catch {
+            signedDocs[`${f}_signed`] = null;
+          }
+        }
+      }
+      return { ...agent, ...signedDocs };
+    }));
+
+    res.json({ success: true, count: enriched.length, agents: enriched });
   } catch (e) { next(e); }
 });
+
+const handleAgentKycStatusUpdate = async (req, res, next) => {
+  try {
+    const { status, rejectionReason, rejection_reason } = req.body || {};
+    const rawStatus = String(status || '').toLowerCase();
+    const reason = rejectionReason || rejection_reason || null;
+
+    const VALID_STATUSES = ['pending', 'active', 'approved', 'verified', 'suspended', 'rejected', 'resubmission'];
+    if (!VALID_STATUSES.includes(rawStatus)) {
+      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+
+    const agent = await queryOne('SELECT * FROM delivery_agents WHERE CAST(id AS TEXT) = $1 OR CAST(user_id AS TEXT) = $1', [String(req.params.id)]);
+    if (!agent) return res.status(404).json({ error: 'Delivery agent not found' });
+
+    const targetKycStatus = (rawStatus === 'approved' || rawStatus === 'verified') ? 'approved' : rawStatus;
+
+    if (['approved', 'active', 'verified'].includes(rawStatus)) {
+      await query(
+        `UPDATE delivery_agents
+            SET kyc_status = $1, rejection_reason = NULL, updated_at = ${NOW}
+          WHERE id = $2`,
+        [targetKycStatus, agent.id]
+      );
+      // Promote user role to delivery_agent
+      await query("UPDATE users SET role = 'delivery_agent' WHERE id = $1", [agent.user_id]);
+    } else {
+      await query(
+        `UPDATE delivery_agents
+            SET kyc_status = $1, rejection_reason = $2, updated_at = ${NOW}
+          WHERE id = $3`,
+        [targetKycStatus, reason, agent.id]
+      );
+    }
+
+    res.json({ success: true, agentId: agent.id, kycStatus: targetKycStatus });
+  } catch (e) { next(e); }
+};
+
+router.put('/delivery/agents/:id/status', authenticate, requireAdmin, handleAgentKycStatusUpdate);
+router.put('/delivery/agents/:id/kyc', authenticate, requireAdmin, handleAgentKycStatusUpdate);
 
 /*
  * A second GET /societies used to sit here.

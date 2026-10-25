@@ -155,6 +155,18 @@ async function setupTestDb() {
       kyc_status TEXT DEFAULT 'pending',
       is_online INTEGER DEFAULT 0,
       coordinate TEXT,
+      rc_number TEXT,
+      bank_account_number TEXT,
+      bank_ifsc TEXT,
+      bank_account_name TEXT,
+      aadhaar_image_url TEXT,
+      rejection_reason TEXT,
+      full_name TEXT,
+      status TEXT DEFAULT 'offline',
+      current_lat REAL,
+      current_lng REAL,
+      rating REAL,
+      cash_in_hand REAL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )

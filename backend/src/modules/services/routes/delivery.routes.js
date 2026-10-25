@@ -57,7 +57,9 @@ router.get('/cash', authenticate, requireRider, async (req, res, next) => {
       [String(req.user.id)]
     );
     const limit = await platformConfig.get('rider_cash_limit');
-        res.json({ success: true, data: { cashInHand: Number(agent && agent.cash_in_hand) || 0, limit, ledger } });
+    const cashInHand = Number(agent && agent.cash_in_hand) || 0;
+    const isBlocked = limit > 0 && cashInHand >= limit;
+    res.json({ success: true, data: { cashInHand, limit, isBlocked, ledger } });
   } catch (error) {
     next(error);
   }
@@ -104,6 +106,8 @@ router.get('/jobs', authenticate, requireRider, deliveryController.getJobs);
 router.get('/my-jobs', authenticate, requireRider, deliveryController.getMyJobs);
 router.post('/jobs/:jobId/accept', authenticate, requireRider, deliveryController.acceptJob);
 router.post('/jobs/:jobId/status', authenticate, requireRider, deliveryController.updateJobStatus);
+router.post('/jobs/:jobId/pickup', authenticate, requireRider, deliveryController.pickupJob);
+router.post('/jobs/:jobId/reject', authenticate, requireRider, deliveryController.rejectJob);
 // Completing a delivery: the rider quotes the customer's handover code.
 // Limited per rider and job, because the code is four or six digits and the
 // only thing between a rider and "delivered" (and the delivery fee) is
@@ -111,6 +115,9 @@ router.post('/jobs/:jobId/status', authenticate, requireRider, deliveryControlle
 router.post('/jobs/:jobId/complete', authenticate, requireRider, handoverCodeLimiter, deliveryController.completeJob);
 // Anyone may apply; applying grants nothing until it is approved.
 router.post('/onboarding', authenticate, deliveryController.onboarding);
+router.get('/profile', authenticate, deliveryController.getProfile);
+router.put('/duty', authenticate, requireRider, deliveryController.updateDutyStatus);
+router.post('/location', authenticate, requireRider, deliveryController.updateLocation);
 router.get('/analytics', authenticate, requireRider, deliveryController.getAnalytics);
 
 // The same action under its older name. This path had its own handler, which
