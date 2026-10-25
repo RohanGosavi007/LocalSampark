@@ -12,7 +12,7 @@ const postMeal = async (req, res, next) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    if (!['admin', 'superadmin', 'verified_chef'].includes(userRole)) {
+    if (!['admin', 'super_admin', 'superadmin', 'verified_chef'].includes(userRole)) {
       return res.status(403).json({ error: 'You must have the "Verified Chef" tag to post meals. Contact an Admin.' });
     }
 

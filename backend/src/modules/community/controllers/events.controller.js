@@ -68,7 +68,7 @@ const createEvent = async (req, res, next) => {
     const userRole = req.user.role;
 
     let status = 'pending';
-    if (['admin', 'superadmin', 'territory_admin', 'shop_owner'].includes(userRole)) {
+    if (['admin', 'super_admin', 'superadmin', 'territory_admin', 'shop_owner'].includes(userRole)) {
       status = 'active';
     }
 

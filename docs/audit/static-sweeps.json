@@ -1,0 +1,2117 @@
+{
+  "sqlInterpolation": [
+    {
+      "file": "backend/src/controllers/universal-catalog.controller.js",
+      "line": 97,
+      "interpolation": "INSERT_ITEM",
+      "snippet": "const result = await query(`${INSERT_ITEM} RETURNING id`, [shopId, ...item.values]);"
+    },
+    {
+      "file": "backend/src/controllers/universal-catalog.controller.js",
+      "line": 260,
+      "interpolation": "params.length",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/controllers/universal-order.controller.js",
+      "line": 51,
+      "interpolation": "placeholders(itemIds.length, 2)",
+      "snippet": "const catalogRows = await queryMany("
+    },
+    {
+      "file": "backend/src/controllers/universal-order.controller.js",
+      "line": 168,
+      "interpolation": "placeholders(orders.length)",
+      "snippet": "const itemRows = await queryMany("
+    },
+    {
+      "file": "backend/src/controllers/universal-order.controller.js",
+      "line": 208,
+      "interpolation": "placeholders(orders.length)",
+      "snippet": "const itemRows = await queryMany("
+    },
+    {
+      "file": "backend/src/jobs/amc-expiry-alert.job.js",
+      "line": 27,
+      "interpolation": "dayOf('amc_end_date')",
+      "snippet": "const expiringAssets = await queryMany(`"
+    },
+    {
+      "file": "backend/src/jobs/campaign-schedule.job.js",
+      "line": 27,
+      "interpolation": "AS_TEXT('end_datetime')",
+      "snippet": "const ended = await query("
+    },
+    {
+      "file": "backend/src/jobs/campaign-schedule.job.js",
+      "line": 35,
+      "interpolation": "AS_TEXT('start_datetime')",
+      "snippet": "const started = await query("
+    },
+    {
+      "file": "backend/src/jobs/lease-expiry-reminder.job.js",
+      "line": 15,
+      "interpolation": "dayOf('expiry_date')",
+      "snippet": "const expiringVerifications = await queryMany(`"
+    },
+    {
+      "file": "backend/src/jobs/lease-expiry-reminder.job.js",
+      "line": 41,
+      "interpolation": "dayOf('tenant_lease_end')",
+      "snippet": "const expiringLeases = await queryMany(`"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 53,
+      "interpolation": "q(table)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 63,
+      "interpolation": "q(table)",
+      "snippet": "const indexes = await db.queryMany("
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 102,
+      "interpolation": "q(view.name)",
+      "snippet": "await db.query(`DROP VIEW IF EXISTS ${q(view.name)}`);"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 105,
+      "interpolation": "q(tmp)",
+      "snippet": "await db.query(`DROP TABLE IF EXISTS ${q(tmp)}`);"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 106,
+      "interpolation": "columnDefs.join(',\\n  ')",
+      "snippet": "await db.query(`CREATE TABLE ${q(tmp)} (\\n  ${columnDefs.join(',\\n  ')}\\n)`);"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 109,
+      "interpolation": "q(table)",
+      "snippet": "await db.query("
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 114,
+      "interpolation": "q(table)",
+      "snippet": "await db.query(`DROP TABLE ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 116,
+      "interpolation": "q(table)",
+      "snippet": "await db.query(`ALTER TABLE ${q(tmp)} RENAME TO ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/migrations/098_sqlite_shop_id_text.js",
+      "line": 123,
+      "interpolation": "q(table)",
+      "snippet": "await db.query(`ALTER TABLE ${q(tmp)} RENAME TO ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 38,
+      "interpolation": "q(TABLE)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(TABLE)})`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 45,
+      "interpolation": "TABLE",
+      "snippet": "const indexes = await db.queryMany("
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 48,
+      "interpolation": "q(TABLE)",
+      "snippet": "const foreignKeys = await db.queryMany(`PRAGMA foreign_key_list(${q(TABLE)})`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 71,
+      "interpolation": "q(tmp)",
+      "snippet": "await db.query(`DROP TABLE IF EXISTS ${q(tmp)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 72,
+      "interpolation": "columnDefs.join(',\\n  ')",
+      "snippet": "await db.query(`CREATE TABLE ${q(tmp)} (\\n  ${columnDefs.join(',\\n  ')}\\n)`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 73,
+      "interpolation": "q(TABLE)",
+      "snippet": "await db.query(`INSERT INTO ${q(tmp)} (${columnList}) SELECT ${columnList} FROM ${q(TABLE)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 78,
+      "interpolation": "q(TABLE)",
+      "snippet": "const before = await db.queryMany(`SELECT COUNT(*) AS n FROM ${q(TABLE)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 79,
+      "interpolation": "q(tmp)",
+      "snippet": "const after = await db.queryMany(`SELECT COUNT(*) AS n FROM ${q(tmp)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 81,
+      "interpolation": "q(tmp)",
+      "snippet": "await db.query(`DROP TABLE IF EXISTS ${q(tmp)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 85,
+      "interpolation": "q(TABLE)",
+      "snippet": "await db.query(`DROP TABLE ${q(TABLE)}`);"
+    },
+    {
+      "file": "backend/src/migrations/109_admin_audit_log_ip_default.js",
+      "line": 86,
+      "interpolation": "q(TABLE)",
+      "snippet": "await db.query(`ALTER TABLE ${q(tmp)} RENAME TO ${q(TABLE)}`);"
+    },
+    {
+      "file": "backend/src/migrations/114_relax_unwritten_not_null.js",
+      "line": 42,
+      "interpolation": "q(table)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/116_fk_index_parity.js",
+      "line": 60,
+      "interpolation": "q(table)",
+      "snippet": "const fks = await db.queryMany(`PRAGMA foreign_key_list(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/116_fk_index_parity.js",
+      "line": 62,
+      "interpolation": "q(table)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/118_orders_delivery_nullable.js",
+      "line": 32,
+      "interpolation": "q(TABLE)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(TABLE)})`);"
+    },
+    {
+      "file": "backend/src/migrations/120_jobs_application_parent.js",
+      "line": 65,
+      "interpolation": "q(table)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/120_jobs_application_parent.js",
+      "line": 68,
+      "interpolation": "q(table)",
+      "snippet": "const fks = await db.queryMany(`PRAGMA foreign_key_list(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/120_jobs_application_parent.js",
+      "line": 82,
+      "interpolation": "q(table)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/125_fk_index_backfill.js",
+      "line": 54,
+      "interpolation": "columns",
+      "snippet": "await db.query(`CREATE INDEX IF NOT EXISTS ${name} ON ${q(table)} (${columns})`);"
+    },
+    {
+      "file": "backend/src/migrations/125_fk_index_backfill.js",
+      "line": 62,
+      "interpolation": "q(table)",
+      "snippet": "const fks = await db.queryMany(`PRAGMA foreign_key_list(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/125_fk_index_backfill.js",
+      "line": 66,
+      "interpolation": "q(table)",
+      "snippet": "for (const idx of await db.queryMany(`PRAGMA index_list(${q(table)})`)) {"
+    },
+    {
+      "file": "backend/src/migrations/125_fk_index_backfill.js",
+      "line": 67,
+      "interpolation": "q(idx.name)",
+      "snippet": "const first = (await db.queryMany(`PRAGMA index_info(${q(idx.name)})`))[0];"
+    },
+    {
+      "file": "backend/src/migrations/125_fk_index_backfill.js",
+      "line": 70,
+      "interpolation": "q(table)",
+      "snippet": "const pk = (await db.queryMany(`PRAGMA table_info(${q(table)})`)).find((c) => c.pk);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 103,
+      "interpolation": "q(table)",
+      "snippet": "const info = await db.queryMany(`PRAGMA table_info(${q(table)})`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 118,
+      "interpolation": "q(view.name)",
+      "snippet": "for (const view of views) await db.query(`DROP VIEW IF EXISTS ${q(view.name)}`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 120,
+      "interpolation": "q(tmp)",
+      "snippet": "await db.query(`DROP TABLE IF EXISTS ${q(tmp)}`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 122,
+      "interpolation": "q(table)",
+      "snippet": "await db.query(`INSERT INTO ${q(tmp)} (${columnList}) SELECT ${columnList} FROM ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 124,
+      "interpolation": "q(table)",
+      "snippet": "const before = await db.queryMany(`SELECT COUNT(*) AS n FROM ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 125,
+      "interpolation": "q(tmp)",
+      "snippet": "const after = await db.queryMany(`SELECT COUNT(*) AS n FROM ${q(tmp)}`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 130,
+      "interpolation": "q(table)",
+      "snippet": "await db.query(`DROP TABLE ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/migrations/lib/sqliteRebuild.js",
+      "line": 131,
+      "interpolation": "q(table)",
+      "snippet": "await db.query(`ALTER TABLE ${q(tmp)} RENAME TO ${q(table)}`);"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 77,
+      "interpolation": "VISITOR_COLUMNS",
+      "snippet": "const data = await queryMany("
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 87,
+      "interpolation": "VISITOR_COLUMNS",
+      "snippet": "const data = await queryMany("
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 127,
+      "interpolation": "MEMBER_SELECT",
+      "snippet": "const rows = (await queryMany(`${MEMBER_SELECT} ORDER BY sm.flat_number`, [req.societyId]))"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 134,
+      "interpolation": "MEMBER_SELECT",
+      "snippet": "let rows = (await queryMany(`${MEMBER_SELECT} ORDER BY sm.flat_number`, [req.societyId]))"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 374,
+      "interpolation": "BILL_SELECT",
+      "snippet": "const rows = await queryMany(`${BILL_SELECT} ORDER BY b.created_at DESC LIMIT 500`, [req.societyId])"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 381,
+      "interpolation": "BILL_SELECT",
+      "snippet": "const rows = await queryMany("
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 471,
+      "interpolation": "PARKING_SELECT",
+      "snippet": "ok(res, await queryMany(`${PARKING_SELECT} ORDER BY slot_number`, [req.societyId]));"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 477,
+      "interpolation": "PARKING_SELECT",
+      "snippet": "ok(res, await queryMany(`${PARKING_SELECT} AND LOWER(flat_number) = LOWER($2) ORDER BY slot_number`,"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 611,
+      "interpolation": "COMPLAINT_SELECT",
+      "snippet": "ok(res, await queryMany(`${COMPLAINT_SELECT} ORDER BY c.created_at DESC LIMIT 300`, [req.societyId])"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 615,
+      "interpolation": "COMPLAINT_SELECT",
+      "snippet": "ok(res, await queryMany(`${COMPLAINT_SELECT} AND c.user_id = $2 ORDER BY c.created_at DESC`, [req.so"
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 638,
+      "interpolation": "allowedFrom.map((s) => `'${s",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 918,
+      "interpolation": "keys.map((k, i) => `${k",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-resident.controller.js",
+      "line": 924,
+      "interpolation": "keys.map((_, i) => `$${i + 3",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/community/controllers/society-visitor.controller.js",
+      "line": 328,
+      "interpolation": "stampColumn ? `, ${stampColumn",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/community/routes/donations.routes.js",
+      "line": 63,
+      "interpolation": "CROWDFUND_SELECT",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/community/routes/donations.routes.js",
+      "line": 95,
+      "interpolation": "CROWDFUND_SELECT",
+      "snippet": "const created = await queryOne(`${CROWDFUND_SELECT} WHERE id = $1`, [id]);"
+    },
+    {
+      "file": "backend/src/modules/community/routes/donations.routes.js",
+      "line": 296,
+      "interpolation": "CROWDFUND_SELECT",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/community/routes/feed.routes.js",
+      "line": 67,
+      "interpolation": "geom ? geom : 'NULL'",
+      "snippet": "const post = await queryOne(`INSERT INTO posts (user_id, content, media_urls, post_type, region_id, "
+    },
+    {
+      "file": "backend/src/modules/community/routes/scrap.routes.js",
+      "line": 78,
+      "interpolation": "PING_SELECT",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/community/routes/society.routes.js",
+      "line": 230,
+      "interpolation": "order",
+      "snippet": "const result = await query(`SELECT * FROM ${name} WHERE society_id = $1 ORDER BY ${order} LIMIT 50`,"
+    },
+    {
+      "file": "backend/src/modules/community/routes/volunteer.routes.js",
+      "line": 40,
+      "interpolation": "TASK_SELECT",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/community/routes/volunteer.routes.js",
+      "line": 156,
+      "interpolation": "HERO_BADGE_THRESHOLD",
+      "snippet": "await client.query("
+    },
+    {
+      "file": "backend/src/modules/community/routes/volunteer.routes.js",
+      "line": 219,
+      "interpolation": "TASK_SELECT",
+      "snippet": "const result = await query(`${TASK_SELECT} WHERE t.status = $1`, ['open']);"
+    },
+    {
+      "file": "backend/src/modules/core/controllers/loyalty.controller.js",
+      "line": 118,
+      "interpolation": "NOW",
+      "snippet": "await client.query("
+    },
+    {
+      "file": "backend/src/modules/core/controllers/sos.controller.js",
+      "line": 83,
+      "interpolation": "NOW",
+      "snippet": "const alert = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/core/routes/auth.routes.js",
+      "line": 55,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/core/routes/auth.routes.js",
+      "line": 115,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${params.length}`, params);"
+    },
+    {
+      "file": "backend/src/modules/core/routes/auth.routes.js",
+      "line": 726,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/core/routes/dashboards.routes.js",
+      "line": 80,
+      "interpolation": "DAY_KEY",
+      "snippet": "const bookings = firstOf(await query("
+    },
+    {
+      "file": "backend/src/modules/core/routes/dashboards.routes.js",
+      "line": 91,
+      "interpolation": "DAY_KEY",
+      "snippet": "const trend = rowsOf(await query("
+    },
+    {
+      "file": "backend/src/modules/core/routes/dashboards.routes.js",
+      "line": 135,
+      "interpolation": "DAY_KEY",
+      "snippet": "const counts = firstOf(await query("
+    },
+    {
+      "file": "backend/src/modules/core/routes/dashboards.routes.js",
+      "line": 229,
+      "interpolation": "MONTH_KEY.replace(/created_at/g, 'o.created_at')",
+      "snippet": "const monthly = rowsOf(await query("
+    },
+    {
+      "file": "backend/src/modules/core/routes/user.routes.js",
+      "line": 88,
+      "interpolation": "params.length",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-analytics.controller.js",
+      "line": 88,
+      "interpolation": "DAY_KEY",
+      "snippet": "const rows = rowsOf(await query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-analytics.controller.js",
+      "line": 124,
+      "interpolation": "groupKey",
+      "snippet": "const revenueRows = rowsOf(await query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-analytics.controller.js",
+      "line": 136,
+      "interpolation": "groupKey",
+      "snippet": "const signupRows = rowsOf(await query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-approvals.controller.js",
+      "line": 274,
+      "interpolation": "idColumn",
+      "snippet": "await query(`UPDATE ${tableName} SET ${statusColumn} = $1, is_active = true WHERE ${idColumn} = $2`,"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-approvals.controller.js",
+      "line": 276,
+      "interpolation": "idColumn",
+      "snippet": "await query(`UPDATE ${tableName} SET ${statusColumn} = $1 WHERE ${idColumn} = $2`, [approvedValue, i"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-approvals.controller.js",
+      "line": 281,
+      "interpolation": "idColumn",
+      "snippet": "await query(`UPDATE ${tableName} SET ${statusColumn} = $1 WHERE ${idColumn} = $2`, [rejectedValue, i"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-approvals.controller.js",
+      "line": 283,
+      "interpolation": "idColumn",
+      "snippet": "await query(`DELETE FROM ${tableName} WHERE ${idColumn} = $1`, [id]);"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-godmode.controller.js",
+      "line": 27,
+      "interpolation": "params.length",
+      "snippet": "const users = await query(`"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-health.controller.js",
+      "line": 106,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-krishi.controller.js",
+      "line": 22,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/finance.controller.js",
+      "line": 66,
+      "interpolation": "bucket('period_end')",
+      "snippet": "query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/finance.controller.js",
+      "line": 73,
+      "interpolation": "bucket('paid_at')",
+      "snippet": "query("
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/finance.controller.js",
+      "line": 80,
+      "interpolation": "bucket('paid_at')",
+      "snippet": "query("
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin-pricing.routes.js",
+      "line": 169,
+      "interpolation": "PLAN_WITH_SUBSCRIBERS",
+      "snippet": "const rows = await queryMany(`${PLAN_WITH_SUBSCRIBERS} ORDER BY p.price_monthly ASC, p.name ASC`);"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin-pricing.routes.js",
+      "line": 189,
+      "interpolation": "PLAN_WITH_SUBSCRIBERS",
+      "snippet": "const created = await queryOne(`${PLAN_WITH_SUBSCRIBERS} WHERE p.id = $1`, [id]);"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin-pricing.routes.js",
+      "line": 221,
+      "interpolation": "fields.length + 1",
+      "snippet": "await query(`UPDATE saas_plans SET ${sets.join(', ')} WHERE id = $${fields.length + 1}`, [...fields."
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin-pricing.routes.js",
+      "line": 223,
+      "interpolation": "PLAN_WITH_SUBSCRIBERS",
+      "snippet": "const updated = await queryOne(`${PLAN_WITH_SUBSCRIBERS} WHERE p.id = $1`, [req.params.id]);"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin.routes.js",
+      "line": 124,
+      "interpolation": "where",
+      "snippet": "const total = Number((await queryOne(`SELECT count(*) AS n FROM community_posts cp ${where}`, params"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin.routes.js",
+      "line": 127,
+      "interpolation": "params.length",
+      "snippet": "const rows = await query("
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin.routes.js",
+      "line": 693,
+      "interpolation": "params.length",
+      "snippet": "const shops = await query(`"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin.routes.js",
+      "line": 1068,
+      "interpolation": "params.length",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin.routes.js",
+      "line": 1154,
+      "interpolation": "params.length",
+      "snippet": "const logs = await query(`"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fleet-assets.routes.js",
+      "line": 97,
+      "interpolation": "NOW",
+      "snippet": "const result = await query(`INSERT INTO fleet_assets (id, shop_id, name, asset_type, model, registra"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fleet-assets.routes.js",
+      "line": 131,
+      "interpolation": "NOW",
+      "snippet": "await query(`UPDATE fleet_assets SET status = $1, status_notes = $2, expected_return_date = $3,"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fleet-assets.routes.js",
+      "line": 175,
+      "interpolation": "NOW",
+      "snippet": "await query(`INSERT INTO rental_bookings (id, shop_id, asset_id, booking_number, customer_name, cust"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fleet-assets.routes.js",
+      "line": 186,
+      "interpolation": "NOW",
+      "snippet": "await query(`UPDATE fleet_assets SET status = 'reserved', updated_at = ${NOW} WHERE id = $1 AND shop"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fleet-assets.routes.js",
+      "line": 253,
+      "interpolation": "NOW",
+      "snippet": "await query(`INSERT INTO fleet_asset_logs (id, asset_id, log_type, operator_name, fuel_added, hours_"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/franchise.routes.js",
+      "line": 81,
+      "interpolation": "placeholders",
+      "snippet": "const shopsData = await query("
+    },
+    {
+      "file": "backend/src/modules/crm/routes/franchise.routes.js",
+      "line": 276,
+      "interpolation": "params.length",
+      "snippet": "const leads = await queryMany("
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fraud.routes.js",
+      "line": 55,
+      "interpolation": "paramIdx",
+      "snippet": "const signals = await queryMany(`SELECT * FROM fraud_signals ${whereClause}"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/pincode-directory.controller.js",
+      "line": 83,
+      "interpolation": "params.length",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/pos.controller.js",
+      "line": 48,
+      "interpolation": "placeholders",
+      "snippet": "const found = rowsOf(await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 284,
+      "interpolation": "where",
+      "snippet": "const countRow = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 290,
+      "interpolation": "pagedParams.length",
+      "snippet": "const rows = await queryMany("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 489,
+      "interpolation": "params.length",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 705,
+      "interpolation": "params.length",
+      "snippet": "const updated = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1029,
+      "interpolation": "idx",
+      "snippet": "const updated = await queryOne(`UPDATE shop_staff SET ${updates.join(', ')} WHERE id = $${idx} RETUR"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1230,
+      "interpolation": "idx",
+      "snippet": "const updated = await queryOne(`UPDATE job_cards SET ${updates.join(', ')} WHERE id = $${idx} RETURN"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1267,
+      "interpolation": "idx + 1",
+      "snippet": "const jobCards = await query(`SELECT jc.*, u.full_name as customer_name, u.phone_number as customer_"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1379,
+      "interpolation": "params.length",
+      "snippet": "const updated = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1449,
+      "interpolation": "updates.join(', ')",
+      "snippet": "const updated = await queryOne(`UPDATE restaurant_tables SET ${updates.join(', ')} WHERE id = $1 AND"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1531,
+      "interpolation": "idx",
+      "snippet": "await query(`UPDATE local_shops SET ${updates.join(', ')} WHERE id = $${idx}`, params);"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/controllers/shop-management.controller.js",
+      "line": 1558,
+      "interpolation": "idx + 1",
+      "snippet": "const history = await query(`SELECT * FROM visitor_order_history ${whereClause} ORDER BY created_at "
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/cart.routes.js",
+      "line": 26,
+      "interpolation": "ownerColumn",
+      "snippet": "const rows = await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/cart.routes.js",
+      "line": 114,
+      "interpolation": "ownerCol",
+      "snippet": "const existing = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/cart.routes.js",
+      "line": 158,
+      "interpolation": "ownerColumn",
+      "snippet": "const existingItem = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/cart.routes.js",
+      "line": 179,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/marketplace.routes.js",
+      "line": 165,
+      "interpolation": "pointSql(latitude, longitude)",
+      "snippet": "await query(`INSERT INTO marketplace_listings (id, seller_id, title, description, category, conditio"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/marketplace.routes.js",
+      "line": 195,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE marketplace_listings SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHER"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/marketplace.routes.js",
+      "line": 421,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE shop_products SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = "
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/order.routes.js",
+      "line": 76,
+      "interpolation": "placeholders(orders.length)",
+      "snippet": "const itemRows = await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/shop.routes.js",
+      "line": 210,
+      "interpolation": "conditions.join(' AND ')",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/shop.routes.js",
+      "line": 353,
+      "interpolation": "params.length",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/shop.routes.js",
+      "line": 509,
+      "interpolation": "coordinate",
+      "snippet": "const shop = await queryOne(`INSERT INTO local_shops (id, owner_id, region_id, name, description, ca"
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/shop.routes.js",
+      "line": 787,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/shop.routes.js",
+      "line": 1465,
+      "interpolation": "lat",
+      "snippet": "const created = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/ecommerce/routes/shop.routes.js",
+      "line": 1578,
+      "interpolation": "placeholders(orders.length)",
+      "snippet": "const itemRows = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/coldstart/coldStart.js",
+      "line": 444,
+      "interpolation": "placeholders",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/fairness/exposureFairness.js",
+      "line": 296,
+      "interpolation": "regionId ? 'region_id = $3' : 'region_id IS NULL'",
+      "snippet": "const existing = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/featurestore/index.js",
+      "line": 310,
+      "interpolation": "tuples.join(', ')",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ml/featurestore/registry.js",
+      "line": 66,
+      "interpolation": "placeholders(shopIds.length, 2)",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/featurestore/registry.js",
+      "line": 98,
+      "interpolation": "placeholders(userIds.length, 1)",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/featurestore/registry.js",
+      "line": 220,
+      "interpolation": "placeholders(ids.length, 0)",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/governance/driftMonitor.js",
+      "line": 117,
+      "interpolation": "column",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/graph/lightgcn.js",
+      "line": 336,
+      "interpolation": "regionClause",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/graph/lightgcn.js",
+      "line": 386,
+      "interpolation": "regionClause",
+      "snippet": "const engagement = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/graph/lightgcn.js",
+      "line": 544,
+      "interpolation": "tuples.join(', ')",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ml/jobs/matrix-builder.job.js",
+      "line": 198,
+      "interpolation": "tuples.join(', ')",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ml/narratives/justificationEngine.js",
+      "line": 115,
+      "interpolation": "placeholders",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/narratives/justificationEngine.js",
+      "line": 138,
+      "interpolation": "itemIds.map((_, i) => `$${i + 2",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/narratives/justificationEngine.js",
+      "line": 160,
+      "interpolation": "itemIds.map((_, i) => `$${i + 2",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/ranking/multiTaskRanker.js",
+      "line": 83,
+      "interpolation": "placeholders",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/routes/recommendations.routes.js",
+      "line": 63,
+      "interpolation": "params.length",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/safety/anomalyDetector.js",
+      "line": 457,
+      "interpolation": "params.length",
+      "snippet": "const res = await query("
+    },
+    {
+      "file": "backend/src/modules/ml/services/telemetry.service.js",
+      "line": 148,
+      "interpolation": "tuples.join(', ')",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/ml/services/telemetry.service.js",
+      "line": 218,
+      "interpolation": "where",
+      "snippet": "const totals = await query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 170,
+      "interpolation": "pointSql(drop.lat, drop.lng)",
+      "snippet": "await client.query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 242,
+      "interpolation": "where",
+      "snippet": "const rows = await query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 285,
+      "interpolation": "AVAILABLE_JOB",
+      "snippet": "const claimed = await query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 299,
+      "interpolation": "JOB_COLUMNS",
+      "snippet": "const row = await queryOne("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 361,
+      "interpolation": "NOW",
+      "snippet": "const delivered = await client.query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 442,
+      "interpolation": "NOW",
+      "snippet": "const updated = await query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 464,
+      "interpolation": "JOB_COLUMNS",
+      "snippet": "const rows = await query("
+    },
+    {
+      "file": "backend/src/modules/services/controllers/delivery.controller.js",
+      "line": 493,
+      "interpolation": "NOW",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 354,
+      "interpolation": "pointSql(recurring.to_lat, recurring.to_lng)",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced.routes.js",
+      "line": 542,
+      "interpolation": "OWN_JOBS",
+      "snippet": "? await query(`UPDATE job_applications SET stage = $1, interview_date = $2 WHERE id = $3 AND ${OWN_J"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced.routes.js",
+      "line": 543,
+      "interpolation": "OWN_JOBS",
+      "snippet": ": await query(`UPDATE job_applications SET stage = $1 WHERE id = $2 AND ${OWN_JOBS}3)`, [stage, appI"
+    },
+    {
+      "file": "backend/src/modules/services/routes/carpool.routes.js",
+      "line": 134,
+      "interpolation": "pointSql(to_lat, to_lng)",
+      "snippet": "await query(`INSERT INTO carpool_rides (id, driver_id, from_location, to_location, origin, destinati"
+    },
+    {
+      "file": "backend/src/modules/services/routes/carpool.routes.js",
+      "line": 172,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE carpool_rides SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = "
+    },
+    {
+      "file": "backend/src/modules/services/routes/carpool.routes.js",
+      "line": 467,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE carpool_vehicles SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id"
+    },
+    {
+      "file": "backend/src/modules/services/routes/equipment.routes.js",
+      "line": 314,
+      "interpolation": "LISTING_SELECT",
+      "snippet": "const result = await query(`${LISTING_SELECT} WHERE l.status = $1`, ['available']);"
+    },
+    {
+      "file": "backend/src/modules/services/routes/jobs.routes.js",
+      "line": 225,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE local_job_postings SET ${sets.join(', ')} WHERE id = $${params.length}`, params)"
+    },
+    {
+      "file": "backend/src/modules/services/routes/jobs.routes.js",
+      "line": 324,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE job_applications SET ${sets.join(', ')} WHERE id = $${params.length}`, params);"
+    },
+    {
+      "file": "backend/src/modules/services/routes/jobs.routes.js",
+      "line": 423,
+      "interpolation": "params.length",
+      "snippet": "await query(`UPDATE job_resumes SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $$"
+    },
+    {
+      "file": "backend/src/modules/services/routes/medical.routes.js",
+      "line": 148,
+      "interpolation": "REQUEST_SELECT",
+      "snippet": "const result = await query("
+    },
+    {
+      "file": "backend/src/modules/services/routes/services.routes.js",
+      "line": 84,
+      "interpolation": "params.length",
+      "snippet": "const rows = await query("
+    },
+    {
+      "file": "backend/src/modules/services/routes/services.routes.js",
+      "line": 113,
+      "interpolation": "params.length",
+      "snippet": "const rows = await query("
+    },
+    {
+      "file": "backend/src/routes/territory.routes.js",
+      "line": 282,
+      "interpolation": "params.length",
+      "snippet": "const res1 = await query("
+    },
+    {
+      "file": "backend/src/routes/territory.routes.js",
+      "line": 300,
+      "interpolation": "conditions.join(' AND ')",
+      "snippet": "const total = await queryOne("
+    },
+    {
+      "file": "backend/src/scripts/merge_duplicate_categories.js",
+      "line": 74,
+      "interpolation": "column",
+      "snippet": "const r = await queryOne(`SELECT COUNT(*) AS c FROM ${table} WHERE ${column} = $1`, [id]);"
+    },
+    {
+      "file": "backend/src/scripts/merge_duplicate_categories.js",
+      "line": 147,
+      "interpolation": "column",
+      "snippet": "await query(`UPDATE ${table} SET ${column} = $1 WHERE ${column} = $2`, [p.canonical.id, p.duplicate."
+    },
+    {
+      "file": "backend/src/scripts/qa_audit.js",
+      "line": 24,
+      "interpolation": "t",
+      "snippet": "const res = await query(`SELECT COUNT(*) as cnt FROM ${t}`);"
+    },
+    {
+      "file": "backend/src/seeds/seed-investor-demo.js",
+      "line": 479,
+      "interpolation": "column",
+      "snippet": "await query(`DELETE FROM ${table} WHERE ${column} LIKE $1`, [`${prefix}%`]);"
+    },
+    {
+      "file": "backend/src/seeds/seed-investor-demo.js",
+      "line": 542,
+      "interpolation": "name",
+      "snippet": "await query(`SELECT 1 FROM ${name} LIMIT 1`);"
+    },
+    {
+      "file": "backend/src/seeds/seed_shops.js",
+      "line": 188,
+      "interpolation": "geom",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/services/escrow.service.js",
+      "line": 100,
+      "interpolation": "placeholders",
+      "snippet": "const claimed = await client.query("
+    },
+    {
+      "file": "backend/src/services/offlineSync.service.js",
+      "line": 194,
+      "interpolation": "paramIdx",
+      "snippet": "await query("
+    },
+    {
+      "file": "backend/src/services/orderLifecycle.service.js",
+      "line": 372,
+      "interpolation": "sets.join(', ')",
+      "snippet": "const moved = await client.query("
+    },
+    {
+      "file": "backend/src/services/orderPlacement.service.js",
+      "line": 229,
+      "interpolation": "pointSql(drop.point && drop.point.lat, drop.point && drop.point.lng)",
+      "snippet": "await tx.query("
+    },
+    {
+      "file": "backend/src/services/payout.service.js",
+      "line": 115,
+      "interpolation": "SETTLEABLE",
+      "snippet": "const shops = await queryMany("
+    },
+    {
+      "file": "backend/src/services/payout.service.js",
+      "line": 157,
+      "interpolation": "SETTLEABLE",
+      "snippet": "const orders = await queryMany("
+    },
+    {
+      "file": "backend/src/services/platformConfig.service.js",
+      "line": 126,
+      "interpolation": "placeholders",
+      "snippet": "const rows = await queryMany(`SELECT config_key, config_value FROM admin_config WHERE config_key IN "
+    },
+    {
+      "file": "backend/src/services/shopAnalytics.service.js",
+      "line": 176,
+      "interpolation": "placeholders",
+      "snippet": "const users = await queryMany("
+    }
+  ],
+  "rawMathRandom": [
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 23,
+      "snippet": "this.x = (Math.random() - 0.5) * 300;"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 24,
+      "snippet": "this.y = (Math.random() - 0.5) * 300;"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 25,
+      "snippet": "this.z = Math.random() * 300 + 100; // Depth"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 26,
+      "snippet": "this.vx = (Math.random() - 0.5) * 0.5;"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 27,
+      "snippet": "this.vy = (Math.random() - 0.5) * 0.5;"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 28,
+      "snippet": "this.vz = -Math.random() * 0.5 - 0.2; // Move closer"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 29,
+      "snippet": "this.color = Math.random() > 0.5 ? '#4f46e5' : '#f97316';"
+    },
+    {
+      "file": "apps/web/src/app/components/HeroParticles.js",
+      "line": 30,
+      "snippet": "this.size = Math.random() * 2 + 1;"
+    },
+    {
+      "file": "apps/web/src/app/rewards/page.js",
+      "line": 11,
+      "snippet": "// Math.random() and display \"100 SC\" or \"Free Delivery\" that were never credited, list invented"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 15,
+      "snippet": "x: Math.random() * window.innerWidth,"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 16,
+      "snippet": "y: -20 - Math.random() * 100,"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 17,
+      "snippet": "rotation: Math.random() * 360,"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 18,
+      "snippet": "scale: 0.5 + Math.random() * 1,"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 19,
+      "snippet": "color: ['#00B074', '#FF5E00', '#FFD600', '#E52E2E'][Math.floor(Math.random() * 4)]"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 32,
+      "snippet": "rotate: p.rotation + 360 * (Math.random() > 0.5 ? 1 : -1),"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 35,
+      "snippet": "transition={{ duration: 2 + Math.random() * 2, ease: \"easeOut\" }}"
+    },
+    {
+      "file": "apps/web/src/components/ui/ConfettiSuccess.js",
+      "line": 41,
+      "snippet": "borderRadius: Math.random() > 0.5 ? '50%' : '2px'"
+    },
+    {
+      "file": "apps/web/src/components/VoiceSearch.js",
+      "line": 88,
+      "snippet": "height: `${Math.max(20, Math.random() * 100)}%`,"
+    },
+    {
+      "file": "apps/web/src/components/VoiceSearch.js",
+      "line": 90,
+      "snippet": "animationDuration: `${0.5 + Math.random() * 0.5}s`"
+    },
+    {
+      "file": "apps/mobile/app/modules/services/confirmation.js",
+      "line": 10,
+      "snippet": "const activeBookingId = bookingRef || `APT-${Math.floor(Math.random() * 9000) + 1000}`;"
+    },
+    {
+      "file": "apps/mobile/app/shop-manager/components/NativeInventoryManager.js",
+      "line": 142,
+      "snippet": "keyExtractor={item => item.id?.toString() || Math.random().toString()}"
+    },
+    {
+      "file": "apps/mobile/app/shop-manager/components/NativeStaffManager.js",
+      "line": 104,
+      "snippet": "keyExtractor={item => item.id?.toString() || Math.random().toString()}"
+    },
+    {
+      "file": "apps/mobile/app/subscriptions/index.js",
+      "line": 167,
+      "snippet": "keyExtractor={item => item.id?.toString() || Math.random().toString()}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 227,
+      "snippet": "var r = (Math.random() * 16) | 0;"
+    },
+    {
+      "file": "apps/mobile/src/components/OrderTrackingView.js",
+      "line": 11,
+      "snippet": "* handler pushed `18.5913 + Math.random() * 0.001` every three seconds. Anyone"
+    },
+    {
+      "file": "apps/mobile/src/context/SocketContext.js",
+      "line": 9,
+      "snippet": "* that invented driver coordinates with `Math.random()`."
+    },
+    {
+      "file": "apps/mobile/src/expo-crash-fix.js",
+      "line": 110,
+      "snippet": "var r = (Math.random() * 16) | 0;"
+    },
+    {
+      "file": "apps/mobile/src/screens/jobs/JobsScreen.js",
+      "line": 130,
+      "snippet": "dispatchId: `DISPATCH-${Math.floor(1000 + Math.random() * 9000)}`,"
+    }
+  ],
+  "emptyCatchBlocks": [
+    {
+      "file": "backend/src/config/database.js",
+      "line": 113,
+      "snippet": "} catch {}"
+    },
+    {
+      "file": "backend/src/config/database.js",
+      "line": 156,
+      "snippet": "} catch {}"
+    },
+    {
+      "file": "backend/src/config/redis.js",
+      "line": 68,
+      "snippet": "try { await redisClient.disconnect(); } catch (e) {}"
+    },
+    {
+      "file": "backend/src/jobs/overstay-monitor.job.js",
+      "line": 49,
+      "snippet": "} catch (memberErr) {}"
+    },
+    {
+      "file": "backend/src/migrations/run_064.js",
+      "line": 24,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "backend/src/modules/core/routes/user.routes.js",
+      "line": 187,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/core/routes/user.routes.js",
+      "line": 192,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/core/services/notification.service.js",
+      "line": 120,
+      "snippet": "} catch (e2) {}"
+    },
+    {
+      "file": "backend/src/modules/core/services/notification.service.js",
+      "line": 125,
+      "snippet": "} catch (e3) {}"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-fraud.controller.js",
+      "line": 26,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/crm/controllers/admin-fraud.controller.js",
+      "line": 44,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/admin-auth.routes.js",
+      "line": 142,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/fraud.routes.js",
+      "line": 90,
+      "snippet": "try { signal.details = JSON.parse(signal.details); } catch {}"
+    },
+    {
+      "file": "backend/src/modules/logistics/controllers/agents.controller.js",
+      "line": 22,
+      "snippet": "} catch (tableErr) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 137,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 256,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 263,
+      "snippet": "try { questions = JSON.parse(a.questions); } catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 278,
+      "snippet": "try { questions = JSON.parse(assessment.questions); } catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 312,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced-b.routes.js",
+      "line": 339,
+      "snippet": "try { days = JSON.parse(recurring.days_active || '[]'); } catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced.routes.js",
+      "line": 163,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced.routes.js",
+      "line": 333,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced.routes.js",
+      "line": 407,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "backend/src/modules/services/routes/advanced.routes.js",
+      "line": 434,
+      "snippet": "try { requiredSkills = typeof job.skills_required === 'string' ? JSON.parse(job.skills_required) : (job.skills_required || []); } catch (e) {}"
+    },
+    {
+      "file": "backend/src/server.js",
+      "line": 218,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/admin-dashboard/layout.js",
+      "line": 187,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/web/src/app/admin-dashboard/sos/page.js",
+      "line": 33,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/advanced/page.js",
+      "line": 439,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/advanced/page.js",
+      "line": 510,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/advanced/page.js",
+      "line": 518,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/carpool/page.js",
+      "line": 162,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/carpool/page.js",
+      "line": 173,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/carpool/page.js",
+      "line": 657,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/web/src/app/jobs/page.js",
+      "line": 166,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/jobs/page.js",
+      "line": 202,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/layout.js",
+      "line": 98,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/marketplace/page.js",
+      "line": 85,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/marketplace/page.js",
+      "line": 124,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/app/marketplace/page.js",
+      "line": 135,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/context/LocationContext.js",
+      "line": 111,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/context/LocationContext.js",
+      "line": 124,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/web/src/lib/firebase.js",
+      "line": 27,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/(tabs)/directory.js",
+      "line": 308,
+      "snippet": "try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch(e){}"
+    },
+    {
+      "file": "apps/mobile/app/advanced/index.js",
+      "line": 91,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/advanced/index.js",
+      "line": 127,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/advanced/index.js",
+      "line": 131,
+      "snippet": "const loadAuctions = async () => { try { const d = await apiGet('/marketplace/auctions'); setAuctions(d?.auctions || []); } catch(e){} };"
+    },
+    {
+      "file": "apps/mobile/app/advanced/index.js",
+      "line": 133,
+      "snippet": "const loadAssessments = async () => { try { const d = await apiGet('/jobs/assessments'); setAssessments(d?.assessments || []); } catch(e){} };"
+    },
+    {
+      "file": "apps/mobile/app/advanced/index.js",
+      "line": 136,
+      "snippet": "const loadGamify = async () => { try { const d = await apiGet('/gamification/profile'); setGamifyProfile(d?.profile); } catch(e){} };"
+    },
+    {
+      "file": "apps/mobile/app/advanced/index.js",
+      "line": 137,
+      "snippet": "const loadGroups = async () => { try { const d = await apiGet('/carpool/groups'); setGroups(d?.groups || []); } catch(e){} };"
+    },
+    {
+      "file": "apps/mobile/app/download/index.js",
+      "line": 14,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/jobs/index.js",
+      "line": 62,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/jobs/index.js",
+      "line": 80,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/location-select.js",
+      "line": 11,
+      "snippet": "try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/marketplace/index.js",
+      "line": 54,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/blood-bank/index.js",
+      "line": 31,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/blood-bank/index.js",
+      "line": 38,
+      "snippet": "} catch(e) {} finally {"
+    },
+    {
+      "file": "apps/mobile/app/modules/blood-bank/index.js",
+      "line": 47,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/blood-bank/index.js",
+      "line": 63,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/blood-bank/index.js",
+      "line": 81,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/blood-bank/index.js",
+      "line": 91,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/chef/index.js",
+      "line": 29,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/chef/index.js",
+      "line": 37,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/chef/index.js",
+      "line": 64,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/chef/index.js",
+      "line": 78,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 37,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 44,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 51,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 65,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 76,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 88,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 105,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/community_hub/index.js",
+      "line": 115,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/delivery/index.js",
+      "line": 36,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/delivery/index.js",
+      "line": 44,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/delivery/index.js",
+      "line": 58,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/delivery/index.js",
+      "line": 68,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 44,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 51,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 58,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 65,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 78,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 92,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 104,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/donations/index.js",
+      "line": 115,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/equipment/index.js",
+      "line": 29,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/equipment/index.js",
+      "line": 38,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/equipment/index.js",
+      "line": 55,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 36,
+      "snippet": "} catch(e) {} finally {"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 52,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 75,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 90,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 99,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 108,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/jobs/index.js",
+      "line": 47,
+      "snippet": "} catch (err) {} finally {"
+    },
+    {
+      "file": "apps/mobile/app/modules/jobs/index.js",
+      "line": 60,
+      "snippet": "} catch (err) {} finally {"
+    },
+    {
+      "file": "apps/mobile/app/modules/jobs/index.js",
+      "line": 80,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/jobs/index.js",
+      "line": 118,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/medical/index.js",
+      "line": 24,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/medical/index.js",
+      "line": 40,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/medical/index.js",
+      "line": 54,
+      "snippet": "} catch (err) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/shops/index.js",
+      "line": 126,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 62,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 69,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 86,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 101,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 116,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 131,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 146,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/modules/volunteer/index.js",
+      "line": 19,
+      "snippet": "} catch(e) {}"
+    },
+    {
+      "file": "apps/mobile/app/shop-manager/components/NativeOrdersManager.js",
+      "line": 127,
+      "snippet": "try { orderItems = JSON.parse(item.items || '[]'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/app/_layout.js",
+      "line": 30,
+      "snippet": "try { DevLoginScreen = require('../src/components/DevLoginScreen').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 73,
+      "snippet": "if (list) list.forEach((fn: Function) => { try { fn(...args); } catch (_) {} });"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 99,
+      "snippet": "} catch (_e) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 123,
+      "snippet": "} catch (_e) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 149,
+      "snippet": "} catch (_e) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 207,
+      "snippet": "try { list[i].apply(null, args); } catch (_e) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 257,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 259,
+      "snippet": "} catch (_error) {}"
+    },
+    {
+      "file": "apps/mobile/scripts/postinstall.js",
+      "line": 280,
+      "snippet": "} catch (_e) {}"
+    },
+    {
+      "file": "apps/mobile/src/components/AnimatedCategorySwiper.js",
+      "line": 47,
+      "snippet": "try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/components/WebRTCIntercomMobile.js",
+      "line": 87,
+      "snippet": "} catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/expo-crash-fix.js",
+      "line": 83,
+      "snippet": "try { list[i].apply(null, args); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/navigation/MorphingBottomTabs.js",
+      "line": 138,
+      "snippet": "try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/FleetAssetTracker.js",
+      "line": 7,
+      "snippet": "try { Haptics = require('expo-haptics'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/FleetAssetTracker.js",
+      "line": 76,
+      "snippet": "try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/FoodKDS.js",
+      "line": 5,
+      "snippet": "try { Haptics = require('expo-haptics'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/FoodKDS.js",
+      "line": 8,
+      "snippet": "const handleAction = () => { if (Haptics) { try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch(e) {} } };"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/JobCardConsole.js",
+      "line": 5,
+      "snippet": "try { Haptics = require('expo-haptics'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/JobCardConsole.js",
+      "line": 8,
+      "snippet": "const handleAction = () => { if (Haptics) { try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch(e) {} } };"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/LeadCRMCenter.js",
+      "line": 5,
+      "snippet": "try { Haptics = require('expo-haptics'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/LeadCRMCenter.js",
+      "line": 8,
+      "snippet": "const handleAction = () => { if (Haptics) { try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch(e) {} } };"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/QueueReceptionDesk.js",
+      "line": 7,
+      "snippet": "try { Haptics = require('expo-haptics'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/QueueReceptionDesk.js",
+      "line": 64,
+      "snippet": "try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/RetailPOS.js",
+      "line": 7,
+      "snippet": "try { Haptics = require('expo-haptics'); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/RetailPOS.js",
+      "line": 9,
+      "snippet": "try { NetInfo = require('@react-native-community/netinfo').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/components/RetailPOS.js",
+      "line": 71,
+      "snippet": "try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/SecurityDashboard.js",
+      "line": 102,
+      "snippet": "try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/ShopDashboard.js",
+      "line": 22,
+      "snippet": "try { FoodKDS = require('./components/FoodKDS').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/ShopDashboard.js",
+      "line": 23,
+      "snippet": "try { RetailPOS = require('./components/RetailPOS').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/ShopDashboard.js",
+      "line": 24,
+      "snippet": "try { QueueReceptionDesk = require('./components/QueueReceptionDesk').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/ShopDashboard.js",
+      "line": 25,
+      "snippet": "try { JobCardConsole = require('./components/JobCardConsole').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/ShopDashboard.js",
+      "line": 26,
+      "snippet": "try { FleetAssetTracker = require('./components/FleetAssetTracker').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/dashboards/ShopDashboard.js",
+      "line": 27,
+      "snippet": "try { LeadCRMCenter = require('./components/LeadCRMCenter').default; } catch (e) {}"
+    },
+    {
+      "file": "apps/mobile/src/screens/medical/MedicalScreen.js",
+      "line": 100,
+      "snippet": "} catch {}"
+    },
+    {
+      "file": "apps/mobile/src/store/useTerritoryStore.js",
+      "line": 81,
+      "snippet": "} catch {}"
+    },
+    {
+      "file": "apps/mobile/src/store/useTerritoryStore.js",
+      "line": 176,
+      "snippet": "} catch {}"
+    }
+  ],
+  "roleInconsistencies": [
+    {
+      "file": "backend/src/modules/community/controllers/events.controller.js",
+      "line": 71,
+      "match": "superadmin",
+      "snippet": "if (['admin', 'super_admin', 'superadmin', 'territory_admin', 'shop_owner'].includes(userRole)) {"
+    },
+    {
+      "file": "backend/src/modules/core/routes/sos.routes.js",
+      "line": 20,
+      "match": "superadmin",
+      "snippet": "router.get('/active', authenticate, requireAdmin, requireRole('admin', 'super_admin', 'superadmin', 'territory_admin', 'area_agent'), sosController.getActiveSOS);"
+    },
+    {
+      "file": "backend/src/modules/core/routes/sos.routes.js",
+      "line": 22,
+      "match": "superadmin",
+      "snippet": "router.post('/:id/resolve', authenticate, requireAdmin, requireRole('admin', 'super_admin', 'superadmin', 'territory_admin', 'area_agent'), sosController.resolveSOS);"
+    },
+    {
+      "file": "backend/src/modules/crm/routes/finance.routes.js",
+      "line": 8,
+      "match": "superadmin",
+      "snippet": "router.get('/export', authenticate, requireAdmin, requireRole('admin', 'super_admin', 'superadmin'), financeController.exportFinancials);"
+    },
+    {
+      "file": "backend/src/modules/ml/routes/phase2.routes.js",
+      "line": 40,
+      "match": "superadmin",
+      "snippet": "if (role === 'super_admin' || role === 'superadmin') return next();"
+    },
+    {
+      "file": "backend/src/modules/services/controllers/chef.controller.js",
+      "line": 15,
+      "match": "superadmin",
+      "snippet": "if (!['admin', 'super_admin', 'superadmin', 'verified_chef'].includes(userRole)) {"
+    },
+    {
+      "file": "backend/src/modules/services/routes/tracking.routes.js",
+      "line": 40,
+      "match": "superadmin",
+      "snippet": "const isStaff = ['admin', 'super_admin', 'superadmin', 'moderator']"
+    },
+    {
+      "file": "backend/src/routes/territory.routes.js",
+      "line": 37,
+      "match": "superadmin",
+      "snippet": "if (role === 'super_admin' || role === 'superadmin') return next();"
+    },
+    {
+      "file": "apps/mobile/app/modules/events/index.js",
+      "line": 47,
+      "match": "superadmin",
+      "snippet": "if (['superadmin', 'super_admin', 'admin', 'territory_admin', 'area_agent'].includes(activeRole)) {"
+    },
+    {
+      "file": "apps/mobile/app/modules/townsquare/index.js",
+      "line": 35,
+      "match": "superadmin",
+      "snippet": "if (['superadmin', 'super_admin', 'admin', 'territory_admin', 'area_agent'].includes(activeRole)) {"
+    }
+  ],
+  "potentialSecrets": []
+}

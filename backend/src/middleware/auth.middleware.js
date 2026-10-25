@@ -162,7 +162,7 @@ const optionalAuth = async (req, res, next) => {
  * now starts with no permissions: its holder can do exactly what the grant's
  * permissions say, on the routes that check them, and nothing else.
  */
-const FULL_ADMIN_ROLES = new Set(['ADMIN', 'SUPER_ADMIN']);
+const FULL_ADMIN_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'SUPERADMIN']);
 
 async function resolveAdminRole(req) {
   let adminRole = null;
@@ -177,7 +177,8 @@ async function resolveAdminRole(req) {
       [req.user.id || req.user.userId]
     );
     if (granted && granted.role) {
-      const role = String(granted.role).toUpperCase();
+      let role = String(granted.role).toUpperCase();
+      if (role === 'SUPERADMIN') role = 'SUPER_ADMIN';
       adminRole = {
         role,
         regionId: granted.regionId || granted.region_id || null,
@@ -252,8 +253,8 @@ const requireRole = (...roles) => {
     }
     // Normalise both sides: callers pass role names in mixed case and
     // req.adminRole.role may arrive either normalised or raw.
-    const actual = String(req.adminRole.role || '').toUpperCase();
-    const allowed = roles.map((r) => String(r).toUpperCase());
+    const actual = String(req.adminRole.role || '').toUpperCase().replace(/^SUPERADMIN$/, 'SUPER_ADMIN');
+    const allowed = roles.map((r) => String(r).toUpperCase().replace(/^SUPERADMIN$/, 'SUPER_ADMIN'));
     if (!allowed.includes(actual) && actual !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: `Required role: ${roles.join(' or ')}` });
     }
@@ -328,13 +329,15 @@ const verifyRole = (allowedRoles) => {
         return res.status(401).json({ success: false, error: 'Session invalidated. Please login again.' });
       }
 
-      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+      const roleUpper = String(userRole || '').toUpperCase().replace(/^SUPERADMIN$/, 'SUPER_ADMIN');
+      if (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN') {
         req.user = decoded;
         return next();
       }
 
       // Check granular roles
-      if (!allowedRoles.includes(userRole)) {
+      const allowedNormalized = (allowedRoles || []).map((r) => String(r).toUpperCase().replace(/^SUPERADMIN$/, 'SUPER_ADMIN'));
+      if (!allowedNormalized.includes(roleUpper) && !allowedRoles.includes(userRole)) {
         return res.status(403).json({ success: false, error: `Forbidden: Requires ${allowedRoles.join(' or ')}` });
       }
 

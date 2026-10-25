@@ -17,8 +17,8 @@ router.post('/trigger', authenticate, validate({
 router.post('/contacts', authenticate, sosController.addContact);
 
 // Admin Routes for SOS
-router.get('/active', authenticate, requireAdmin, requireRole('admin', 'superadmin', 'territory_admin', 'area_agent'), sosController.getActiveSOS);
+router.get('/active', authenticate, requireAdmin, requireRole('admin', 'super_admin', 'superadmin', 'territory_admin', 'area_agent'), sosController.getActiveSOS);
 router.get('/alerts', authenticate, requireAdmin, sosController.getActiveSOS);
-router.post('/:id/resolve', authenticate, requireAdmin, requireRole('admin', 'superadmin', 'territory_admin', 'area_agent'), sosController.resolveSOS);
+router.post('/:id/resolve', authenticate, requireAdmin, requireRole('admin', 'super_admin', 'superadmin', 'territory_admin', 'area_agent'), sosController.resolveSOS);
 
 module.exports = router;
