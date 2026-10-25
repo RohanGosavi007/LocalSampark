@@ -261,9 +261,9 @@
       "Admin review workflow: Pending, Approved, Rejected with reason, Resubmission"
     ],
     "tests": ["[S1.1] seller: kyc submission and secure document storage"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "KYC files in private storage only."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/sellerOperations.test.js"],
+    "notes": "KYC files in private storage only. Signed URLs, multi-state admin review (including resubmission) and auto-activation tested."
   },
   {
     "id": "S2",
@@ -285,8 +285,11 @@
       "[S2.4] deletes product variant"
     ],
     "status": "CODE COMPLETE",
-    "evidence": ["backend/src/__tests__/unit/variantAndInvoice.test.js"],
-    "notes": "Product variants API wired to product_variants table. Solves N7."
+    "evidence": [
+      "backend/src/__tests__/unit/variantAndInvoice.test.js",
+      "backend/src/__tests__/unit/sellerOperations.test.js"
+    ],
+    "notes": "Product variants API wired to product_variants table. One-tap availability toggles and low-stock alert feed fully tested."
   },
   {
     "id": "S3",
@@ -301,10 +304,16 @@
       "Fulfillment type support: self-delivery, platform rider, or customer pickup",
       "Thermal packing slip and GST-compliant invoice printing"
     ],
-    "tests": ["[S3.1] seller: order accept and state progression"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Uses existing OrderRingerContext."
+    "tests": [
+      "[S3.1] kitchen display order accept and reject with mandatory reason",
+      "[S3.2] 80mm ESC/POS monospace thermal packing slip generation"
+    ],
+    "status": "CODE COMPLETE",
+    "evidence": [
+      "backend/src/__tests__/unit/sellerOperations.test.js",
+      "backend/src/__tests__/unit/variantAndInvoice.test.js"
+    ],
+    "notes": "Kitchen display accept/reject flow with mandatory reasons, status transitions, and 80mm thermal packing slips tested."
   },
   {
     "id": "S4",
@@ -318,9 +327,9 @@
       "Downloadable financial CSV statements"
     ],
     "tests": ["[S4.1] seller: 0% launch commission calculation and statement generation"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Double-entry ledger backed."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/sellerOperations.test.js"],
+    "notes": "0% launch commission default enforced in platform configuration. Double-entry ledger settlement statements and CSV exports fully tested."
   },
   {
     "id": "S5",

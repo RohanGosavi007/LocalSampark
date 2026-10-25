@@ -1917,6 +1917,115 @@ router.delete('/:shopId/products/:productId/variants/:variantId', authenticate, 
 });
 
 /**
+ * PATCH /shops/:shopId/products/:productId/availability
+ * One-tap product availability toggle and inventory count adjustment (S2)
+ */
+router.patch('/:shopId/products/:productId/availability', authenticate, async (req, res, next) => {
+  try {
+    const { shopId, productId } = req.params;
+    const { is_active, inventory_count } = req.body;
+
+    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin && !req.user.isSuperAdmin) {
+      return res.status(403).json({ error: 'Not authorised to manage products for this shop' });
+    }
+
+    const sets = [];
+    const params = [];
+
+    if (typeof is_active === 'boolean' || is_active === 0 || is_active === 1) {
+      params.push(is_active ? 1 : 0);
+      sets.push(`is_active = $${params.length}`);
+    }
+
+    if (inventory_count !== undefined && inventory_count !== null && Number.isFinite(Number(inventory_count))) {
+      params.push(Math.max(0, parseInt(inventory_count, 10)));
+      sets.push(`inventory_count = $${params.length}`);
+    }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ error: 'Provide is_active boolean or inventory_count number' });
+    }
+
+    sets.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(productId, shopId);
+
+    const updated = await queryOne(
+      `UPDATE shop_products
+          SET ${sets.join(', ')}
+        WHERE id = $${params.length - 1} AND shop_id = $${params.length}
+        RETURNING *`,
+      params
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Product not found for this shop' });
+    }
+
+    res.json({
+      success: true,
+      productId: updated.id,
+      is_active: Boolean(updated.is_active),
+      inventory_count: updated.inventory_count,
+      product: updated,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /shops/:shopId/products/low-stock
+ * Query low-stock products and variants for kitchen/store manager alerts (S2)
+ */
+router.get('/:shopId/products/low-stock', authenticate, async (req, res, next) => {
+  try {
+    const { shopId } = req.params;
+    const threshold = parseInt(req.query.threshold || '5', 10);
+
+    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin && !req.user.isSuperAdmin) {
+      return res.status(403).json({ error: 'Not authorised to view inventory for this shop' });
+    }
+
+    const productsRes = await query(
+      `SELECT id, name, price, inventory_count, is_active
+         FROM shop_products
+        WHERE shop_id = $1
+          AND inventory_count <= $2
+          AND (is_active = 1 OR is_active IS NULL)
+        ORDER BY inventory_count ASC`,
+      [shopId, threshold]
+    );
+
+    const variantsRes = await query(
+      `SELECT pv.id, pv.product_id, pv.variant_name, pv.variant_value, pv.price_modifier, pv.inventory_count, p.name AS product_name
+         FROM product_variants pv
+         JOIN shop_products p ON pv.product_id = p.id
+        WHERE p.shop_id = $1
+          AND pv.inventory_count <= $2
+        ORDER BY pv.inventory_count ASC`,
+      [shopId, threshold]
+    );
+
+    const products = productsRes.rows || productsRes || [];
+    const variants = variantsRes.rows || variantsRes || [];
+
+    res.json({
+      success: true,
+      threshold,
+      count: products.length + variants.length,
+      products,
+      variants,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /shops/:id — a shop's public page.
  *
  * Declared last, so that every literal single-segment path above (/search,
@@ -1926,7 +2035,7 @@ router.delete('/:shopId/products/:productId/variants/:variantId', authenticate, 
 router.get('/:id', async (req, res, next) => {
   try {
     const shop = await queryOne(
-      "SELECT * FROM local_shops WHERE CAST(id AS TEXT) = $1 AND COALESCE(is_active, 1) = 1",
+      "SELECT * FROM local_shops WHERE CAST(id AS TEXT) = $1 AND (is_active = true OR is_active IS NULL)",
       [String(req.params.id)]
     );
     if (!shop) return res.status(404).json({ error: 'Shop not found' });

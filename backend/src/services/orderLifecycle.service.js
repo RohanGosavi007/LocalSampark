@@ -362,15 +362,15 @@ async function changeStatus({ orderId, to: requested, user, shopId = null, reaso
     // The gate. The status was read above; this changes the row only if it is
     // still in that status, so two requests cannot both apply the effects of
     // one transition (two refunds, two rider payments).
-    const sets = ['order_status = $1', 'status = $1', 'updated_at = CURRENT_TIMESTAMP'];
-    const params = [to, orderId, from];
+    const sets = ['order_status = $1', 'status = $2', 'updated_at = CURRENT_TIMESTAMP'];
+    const params = [to, to, orderId, from];
     if (to === 'delivered') sets.push('delivered_at = CURRENT_TIMESTAMP');
     if (to === 'cancelled' && reason) {
       params.push(`[Cancelled] ${String(reason).slice(0, 300)}`);
       sets.push(`special_instructions = $${params.length}`);
     }
     const moved = await client.query(
-      `UPDATE orders SET ${sets.join(', ')} WHERE id = $2 AND LOWER(COALESCE(order_status, 'pending')) = $3`,
+      `UPDATE orders SET ${sets.join(', ')} WHERE id = $3 AND LOWER(COALESCE(order_status, 'pending')) = $4`,
       params
     );
     if (!moved.rowCount) throw new LifecycleError(409, 'CONFLICT', 'This order has just been updated by someone else. Refresh and try again.');

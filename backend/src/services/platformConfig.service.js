@@ -51,7 +51,7 @@ const SETTINGS = {
   rider_cash_limit: number(3000, 0, 100000, 'Cash a rider may hold before taking another cash order', 'rider'),
 
   // ── Commission and settlement ────────────────────────────────────────────
-  default_commission_percent: number(5, 0, 50, 'Commission on a shop with no rate of its own or its category', 'settlement'),
+  default_commission_percent: number(0, 0, 50, 'Commission on a shop with no rate of its own or its category (0% at launch)', 'settlement'),
   gst_on_commission_percent: number(18, 0, 28, 'GST charged on the platform commission', 'settlement'),
     gateway_fee_percent: number(2, 0, 10, 'Payment gateway cost passed to the shop on orders paid online', 'settlement'),
   tds_on_sales_percent: number(0.1, 0, 5, 'Tax deducted at source on a shop\'s sales through the platform (s.194-O) — confirm with your accountant', 'settlement'),

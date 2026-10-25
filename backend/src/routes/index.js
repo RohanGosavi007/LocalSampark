@@ -136,6 +136,7 @@ router.use('/', require('../modules/services/routes/advanced-b.routes'));
 router.use('/shops', require('../modules/ecommerce/routes/shop-analytics.routes'));
 router.use('/shops', require('../modules/ecommerce/routes/payout.routes'));
 router.use('/shops', require('../modules/ecommerce/routes/vendor-kyc.routes'));
+router.use('/admin/kyc', adminLimiter, require('../modules/ecommerce/routes/vendor-kyc.routes'));
 
 // ─── 10x NEW: PRIVACY & DPDP COMPLIANCE ──────────────────
 router.use('/users', require('../modules/core/routes/privacy.routes'));

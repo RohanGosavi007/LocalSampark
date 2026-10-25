@@ -1,4 +1,4 @@
-**Next action:** Milestone M4: Operations (Seller Onboarding & KYC S1, Seller Catalog & Inventory S2, Kitchen Display & Order Handling S3, Seller Payouts S4, Rider App Flow R1-R5, Admin Commerce Ops A1-A14).
+**Next action:** Milestone M4: Operations (Phase M4.2: Rider Fleet R1–R5, Phase M4.3: Admin Commerce Ops A1–A14).
 
 ---
 
@@ -10,7 +10,7 @@
 | **M1** | P0 Security & Launch Blockers | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T08-42-54/` |
 | **M2** | Open Leads & Platform Hygiene | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
 | **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
-| **M4** | Operations (Seller Tools, Rider Flow, Admin Tabs) | NOT STARTED | — | — |
+| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **IN PROGRESS (M4.1 VERIFIED)** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-42-48/` |
 | **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | NOT STARTED | — | — |
 | **M6** | Web Quality, SEO, Performance & Legal Compliance | NOT STARTED | — | — |
 | **M7** | Android Release Hardening, Permissions & E2E Smoke | NOT STARTED | — | — |
@@ -65,6 +65,14 @@
 - [x] **S2 & C9 & N7 (Product Variants & GST Tax Invoice Generation):** Implemented product variants CRUD API (`/shops/:shopId/products/:productId/variants`); implemented `invoice.service.js` with `generateOrderInvoice` and `streamInvoicePdf` generating GST-compliant tax invoices with shop GSTIN, FSSAI, itemized breakup, delivery fee, and totals via `pdfkit`; verified via `variantAndInvoice.test.js` (6/6 pass on both SQLite and PostgreSQL).
 - [x] **Verification Gate Execution:** Gates G1, G4, G5, G6, G15 all PASS cleanly in verify-all runner.
 
+### Milestone 4: Operations
+#### Phase M4.1: Seller Operations Hub (S1, S2, S3, S4)
+- [x] **S1 & N3 (Seller Onboarding & KYC):** Private storage isolation for KYC documents (PAN, Aadhaar, FSSAI, bank cheque); short-lived signed URLs (10m) via `getStorageProvider().getSignedUrl(key)`; multi-state admin review (`pending`, `submitted`, `verified`, `rejected`, `resubmission`); automatic shop verification and activation on approval; sync of statutory compliance (`gstin`, `fssai_license_number`, `pan`) to `local_shops`; dual-mounted endpoints `/shops/...` and `/admin/kyc/...`.
+- [x] **S2 (Seller Catalog & Inventory Availability):** One-tap availability toggle `PATCH /shops/:shopId/products/:productId/availability` (`is_active`, `inventory_count`); real-time low-stock alert query `GET /shops/:shopId/products/low-stock?threshold=5` aggregating products and variants below safety stock levels.
+- [x] **S3 (Kitchen Display & Order Handling):** Acceptance endpoint `PUT /orders/:orderId/accept` (`pending` -> `confirmed`) broadcasting socket events; rejection endpoint `PUT /orders/:orderId/reject` (`pending` -> `cancelled`) with strict validation of mandatory rejection reason and automated refund triggers; 80mm ESC/POS monospace thermal packing slip endpoint `GET /orders/:orderId/packing-slip` supporting plaintext and structured JSON with itemized variant breakdowns, delivery instructions, and COD alerts.
+- [x] **S4 (Seller Financials & 0% Launch Commission):** 0% platform commission enforced as default in `platformConfig.service.js` (launch zero-commission model, configurable for future up to 50%); periodic/daily settlement statement endpoint `GET /shops/:shopId/settlements/statement` reconciling gross sales, COD cash collected by shop, gateway fees, and net balance from double-entry ledger `platform_ledger_entries`; downloadable CSV statement export `GET /shops/:shopId/settlements/statement/csv`.
+- [x] **Verification:** Verified via `sellerOperations.test.js` (14/14 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
 ---
 
 ## 3. Session Log
@@ -108,5 +116,16 @@
   - Resolved C6 & D6: created migration 130 (`delivery_fee`, `min_order_amount`, etc. on `local_shops`), implemented server-side cart with stock/price revalidation, multi-shop item grouping per D6, and guest-to-user cart merge on login; verified via `cartEngine.test.js` (4/4 pass on SQLite and PostgreSQL).
   - Resolved S2, C9 & N7: implemented product variants CRUD API (`/shops/:shopId/products/:productId/variants`), implemented `invoice.service.js` with `generateOrderInvoice` and `streamInvoicePdf` generating GST-compliant tax invoices with shop GSTIN, FSSAI, itemized breakup, delivery fee, and totals via `pdfkit`; verified via `variantAndInvoice.test.js` (6/6 pass on SQLite and PostgreSQL).
   - Executed verification harness: Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
+- **2026-10-25 (Session 5 — Phase M4.1 Seller Operations Hub):**
+  - Designed and authored technical specification `docs/launch/specs/2026-10-25-seller-operations-design.md` and implementation plan `plan_m4_1.md`.
+  - Implemented S1 (KYC & Private Storage): enhanced `vendor-kyc.routes.js` with signed URLs via `LocalStorageProvider`/`S3StorageProvider`, resubmission workflow, statutory fields sync, and dual `/admin/kyc` mounting.
+  - Implemented S2 (Catalog Inventory): added availability toggle `PATCH /shops/:shopId/products/:productId/availability` and low-stock alerts `GET /shops/:shopId/products/low-stock` in `shop.routes.js`.
+  - Implemented S3 (Kitchen Display & Thermal Slips): added order accept `PUT /orders/:orderId/accept`, order reject with mandatory reason `PUT /orders/:orderId/reject`, and 80mm ESC/POS thermal packing slip generator `GET /orders/:orderId/packing-slip` in `order.routes.js`.
+  - Implemented S4 (Financials & 0% Launch Commission): updated `default_commission_percent` default to 0 in `platformConfig.service.js`; added settlement statement and CSV export endpoints in `payout.routes.js` integrated with `platform_ledger_entries`.
+  - Resolved PostgreSQL parameter type deduction and dialect compatibility in `orderLifecycle.service.js` and `shop.routes.js`.
+  - Created unit test suite `backend/src/__tests__/unit/sellerOperations.test.js` (14/14 pass on both SQLite and local PostgreSQL).
+  - Executed verification harness: Gates G1 (ESLint 0 errors), G4 (migrations/seed verify), G5 (1,156 write routes protected), G6 (5/5 concurrency tests), G15 (8/8 policy checks, 0 violations) all PASS cleanly.
+
 
 

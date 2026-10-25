@@ -251,5 +251,199 @@ router.get('/:orderId/invoice/pdf', authenticate, async (req, res, next) => {
   }
 });
 
+/**
+ * PUT /orders/:orderId/accept
+ * Kitchen display: Accept incoming order (pending -> confirmed) (S3)
+ */
+router.put('/:orderId/accept', authenticate, async (req, res, next) => {
+  try {
+    let outcome;
+    try {
+      outcome = await lifecycle.changeStatus({
+        orderId: req.params.orderId,
+        to: 'confirmed',
+        user: req.user,
+      });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ error: error.message, code: error.code });
+      }
+      throw error;
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${req.params.orderId}`).emit('ORDER_STATUS_UPDATED', { orderId: req.params.orderId, status: 'confirmed' });
+    }
+
+    res.json({ success: true, orderId: req.params.orderId, status: 'confirmed' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /orders/:orderId/reject
+ * Kitchen display: Reject order with mandatory reason (pending -> cancelled) (S3)
+ */
+router.put('/:orderId/reject', authenticate, async (req, res, next) => {
+  try {
+    const reason = req.body.reason || req.body.cancellationReason || req.body.reason_code;
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({ error: 'Rejection reason is required' });
+    }
+
+    let outcome;
+    try {
+      outcome = await lifecycle.changeStatus({
+        orderId: req.params.orderId,
+        to: 'cancelled',
+        user: req.user,
+        reason: String(reason).trim(),
+      });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ error: error.message, code: error.code });
+      }
+      throw error;
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${req.params.orderId}`).emit('ORDER_STATUS_UPDATED', { orderId: req.params.orderId, status: 'cancelled', reason: String(reason).trim() });
+    }
+
+    res.json({ success: true, orderId: req.params.orderId, status: 'cancelled', reason: String(reason).trim(), refund: outcome.refund });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /orders/:orderId/packing-slip
+ * 80mm ESC/POS Monospace Thermal Packing Slip Generator (S3)
+ */
+router.get('/:orderId/packing-slip', authenticate, async (req, res, next) => {
+  try {
+    const order = await queryOne(
+      `SELECT o.*,
+              s.name AS shop_name, s.address AS shop_address, s.phone AS shop_phone,
+              s.gstin, s.fssai_license_number, s.owner_id AS shop_owner_id,
+              u.full_name AS customer_name, u.phone_number AS customer_phone
+         FROM orders o
+         LEFT JOIN local_shops s ON s.id = o.shop_id
+         LEFT JOIN users u ON u.id = o.user_id
+        WHERE o.id = $1`,
+      [req.params.orderId]
+    );
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const isOwner = order.shop_owner_id && String(order.shop_owner_id) === String(req.user.id);
+    const isCustomer = order.user_id && String(order.user_id) === String(req.user.id);
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin' || req.user.is_admin;
+    if (!isOwner && !isCustomer && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorised to view packing slip for this order' });
+    }
+
+    const itemsRes = await query('SELECT * FROM order_items WHERE order_id = $1', [req.params.orderId]);
+    const items = itemsRes.rows || itemsRes || [];
+
+    const W = 48; // 48-char standard for 80mm thermal receipt
+    const div = '-'.repeat(W);
+    const eqDiv = '='.repeat(W);
+    const center = (str) => {
+      const s = String(str || '').slice(0, W);
+      const pad = Math.max(0, Math.floor((W - s.length) / 2));
+      return ' '.repeat(pad) + s;
+    };
+    const row = (left, right) => {
+      const l = String(left || '');
+      const r = String(right || '');
+      const spaces = Math.max(1, W - l.length - r.length);
+      return l + ' '.repeat(spaces) + r;
+    };
+
+    const lines = [];
+    lines.push(eqDiv);
+    lines.push(center('LOCAL SAMPARK'));
+    lines.push(center('KITCHEN PACKING SLIP'));
+    lines.push(eqDiv);
+    lines.push(center(order.shop_name || 'Local Shop'));
+    if (order.shop_address) lines.push(center(order.shop_address));
+    const complianceParts = [];
+    if (order.fssai_license_number) complianceParts.push(`FSSAI: ${order.fssai_license_number}`);
+    if (order.gstin) complianceParts.push(`GSTIN: ${order.gstin}`);
+    if (complianceParts.length > 0) lines.push(center(complianceParts.join(' | ')));
+    lines.push(div);
+    lines.push(row(`Order : #${String(order.id).slice(0, 8).toUpperCase()}`, `Status: ${(order.order_status || order.status || 'PENDING').toUpperCase()}`));
+    lines.push(row(`Date  : ${new Date(order.created_at || Date.now()).toLocaleString('en-IN')}`, `Type: ${(order.fulfillment_method || 'DELIVERY').toUpperCase()}`));
+    lines.push(div);
+    lines.push(row('Customer:', order.customer_name || 'Guest User'));
+    if (order.customer_phone) lines.push(row('Phone   :', order.customer_phone));
+    if (order.delivery_address) lines.push(row('Address :', String(order.delivery_address).slice(0, 38)));
+    lines.push(div);
+    lines.push(row('ITEM', 'QTY   AMOUNT'));
+    lines.push(div);
+
+    for (const it of items) {
+      const itemName = String(it.name || 'Item').slice(0, 32);
+      const qtyStr = `x${it.quantity}`;
+      const amtStr = `Rs. ${(Number(it.price || 0) * Number(it.quantity || 1)).toFixed(2)}`;
+      lines.push(row(itemName, `${qtyStr.padEnd(5)} ${amtStr}`));
+    }
+
+    lines.push(div);
+    if (order.subtotal !== null && order.subtotal !== undefined) {
+      lines.push(row('Subtotal:', `Rs. ${Number(order.subtotal).toFixed(2)}`));
+    }
+    if (Number(order.delivery_fee) > 0) {
+      lines.push(row('Delivery Fee:', `Rs. ${Number(order.delivery_fee).toFixed(2)}`));
+    }
+    if (Number(order.discount) > 0) {
+      lines.push(row('Discount:', `-Rs. ${Number(order.discount).toFixed(2)}`));
+    }
+    lines.push(row('GRAND TOTAL:', `Rs. ${Number(order.total_amount || 0).toFixed(2)}`));
+    lines.push(div);
+
+    const isCod = String(order.payment_method || '').toUpperCase() === 'COD';
+    lines.push(center(`PAYMENT: ${isCod ? 'CASH ON DELIVERY (COD)' : 'PAID ONLINE'}`));
+    if (isCod) {
+      lines.push(center(`*** COLLECT Rs. ${Number(order.total_amount || 0).toFixed(2)} CASH ***`));
+    }
+    if (order.special_instructions) {
+      lines.push(div);
+      lines.push(`Notes: ${order.special_instructions}`);
+    }
+    lines.push(eqDiv);
+    lines.push(center('Thank You for Supporting Local!'));
+    lines.push(eqDiv);
+
+    const textSlip = lines.join('\n');
+
+    if (req.query.format === 'json') {
+      return res.json({
+        success: true,
+        orderId: order.id,
+        slipText: textSlip,
+        metadata: {
+          shopName: order.shop_name,
+          customerName: order.customer_name,
+          itemsCount: items.length,
+          totalAmount: Number(order.total_amount || 0),
+          isCod,
+        }
+      });
+    }
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send(textSlip);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
 
