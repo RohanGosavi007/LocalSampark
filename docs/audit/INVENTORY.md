@@ -32,5 +32,18 @@ This document serves as the master matrix driving Phase 2 and Phase 4. Every row
 
 ---
 
-## 2. Cross-Module Contract Diff Summary
-*To be populated during Phase 2 automated extraction (`scripts/audit/extract-contracts.js`).*
+## 2. Cross-Module Contract Diff Summary (Phase 2 Output)
+
+Automated extraction completed via `scripts/audit/extract-routes.js` and `scripts/audit/extract-client-calls.js`.
+
+- **Total Backend Endpoints Declared:** 1,092
+- **Total Client API Call Sites Discovered:** 814
+- **Verified Contract Matches:** 805 (98.8%)
+- **Method Mismatches:** 0
+- **Unmatched Client Calls (Potential 404s):** 1 (dynamic `${exportDef.path}` in `apps/web/src/app/society-admin/components/SocietyDataExport.js`)
+- **Backend Write Endpoints Without Explicit Auth Guard:** 114
+
+Detailed reports and breakdown are preserved in:
+- Route registry: [`docs/audit/routes.json`](file:///c:/localsampark%2004-09-2026/localsampark%2004-10-2026/docs/audit/routes.json)
+- Client network calls: [`docs/audit/client-calls.json`](file:///c:/localsampark%2004-09-2026/localsampark%2004-10-2026/docs/audit/client-calls.json)
+- Contract parity diff report: [`docs/audit/contracts-diff.md`](file:///c:/localsampark%2004-09-2026/localsampark%2004-10-2026/docs/audit/contracts-diff.md)

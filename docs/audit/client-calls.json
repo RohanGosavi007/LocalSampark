@@ -1,0 +1,6514 @@
+[
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/ads/page.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/admin/ads/banners",
+    "callSyntax": "fetch(API_BASE + '/admin/ads/banners'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/ads/page.js",
+    "line": 40,
+    "method": "POST",
+    "endpoint": "/admin/ads/banners",
+    "callSyntax": "fetch(API_BASE + '/admin/ads/banners'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/ads/page.js",
+    "line": 65,
+    "method": "PUT",
+    "endpoint": "/admin/ads/banners/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/ads/banners/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/alerts/page.js",
+    "line": 14,
+    "method": "GET",
+    "endpoint": "/public/stats",
+    "callSyntax": "apiGet('/public/stats'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/alerts/page.js",
+    "line": 22,
+    "method": "POST",
+    "endpoint": "/admin/alerts/broadcast",
+    "callSyntax": "fetch(API_BASE + '/admin/alerts/broadcast'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/analytics/page.js",
+    "line": 16,
+    "method": "GET",
+    "endpoint": "/admin/analytics/overview?duration=${duration}",
+    "callSyntax": "fetch(`${API_BASE}/admin/analytics/overview?duration=${durat"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/animal/page.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/animal/rescue",
+    "callSyntax": "fetch(API_BASE + '/admin/animal/rescue'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/animal/page.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/admin/animal/rescue",
+    "callSyntax": "fetch(API_BASE + '/admin/animal/rescue'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/animal/page.js",
+    "line": 71,
+    "method": "PUT",
+    "endpoint": "/admin/animal/rescue/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/animal/rescue/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/animal/page.js",
+    "line": 89,
+    "method": "PUT",
+    "endpoint": "/admin/animal/rescue/${id}/dispatch",
+    "callSyntax": "fetch(`${API_BASE}/admin/animal/rescue/${id}/dispatch`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/approvals/page.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/admin/approvals/pending",
+    "callSyntax": "fetch(API_BASE + '/admin/approvals/pending'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/approvals/page.js",
+    "line": 39,
+    "method": "PUT",
+    "endpoint": "/admin/approvals/${type}/${id}",
+    "callSyntax": "fetch(`${API_BASE}/admin/approvals/${type}/${id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/audit/page.js",
+    "line": 16,
+    "method": "GET",
+    "endpoint": "/admin/audit-logs",
+    "callSyntax": "fetch(API_BASE + '/admin/audit-logs'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/backups/page.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/admin/backups",
+    "callSyntax": "fetch(`${API_BASE}/admin/backups`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/backups/page.js",
+    "line": 39,
+    "method": "POST",
+    "endpoint": "/admin/backups/create",
+    "callSyntax": "fetch(`${API_BASE}/admin/backups/create`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/backups/page.js",
+    "line": 65,
+    "method": "POST",
+    "endpoint": "/admin/backups/${id}/restore",
+    "callSyntax": "fetch(`${API_BASE}/admin/backups/${id}/restore`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/bills/page.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/admin/bills",
+    "callSyntax": "fetch(API_BASE + '/admin/bills'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/bills/page.js",
+    "line": 48,
+    "method": "POST",
+    "endpoint": "/admin/bills",
+    "callSyntax": "fetch(API_BASE + '/admin/bills'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/bills/page.js",
+    "line": 75,
+    "method": "PUT",
+    "endpoint": "/admin/bills/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/bills/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/bills/page.js",
+    "line": 93,
+    "method": "PUT",
+    "endpoint": "/admin/bills/${id}/clear",
+    "callSyntax": "fetch(`${API_BASE}/admin/bills/${id}/clear`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/campaigns/page.js",
+    "line": 22,
+    "method": "POST",
+    "endpoint": "/admin/broadcast",
+    "callSyntax": "fetch(API_BASE + '/admin/broadcast'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/charity/page.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/admin/charity",
+    "callSyntax": "fetch(API_BASE + '/admin/charity'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/charity/page.js",
+    "line": 42,
+    "method": "POST",
+    "endpoint": "/admin/charity",
+    "callSyntax": "fetch(API_BASE + '/admin/charity'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/charity/page.js",
+    "line": 67,
+    "method": "PUT",
+    "endpoint": "/admin/charity/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/charity/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/charity/page.js",
+    "line": 85,
+    "method": "PUT",
+    "endpoint": "/admin/charity/${id}/verify",
+    "callSyntax": "fetch(`${API_BASE}/admin/charity/${id}/verify`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/charity/page.js",
+    "line": 108,
+    "method": "PUT",
+    "endpoint": "/admin/charity/${id}/raised",
+    "callSyntax": "fetch(`${API_BASE}/admin/charity/${id}/raised`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/civic/page.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/admin/civic/issues",
+    "callSyntax": "fetch(API_BASE + '/admin/civic/issues'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/civic/page.js",
+    "line": 46,
+    "method": "POST",
+    "endpoint": "/admin/civic/issues",
+    "callSyntax": "fetch(API_BASE + '/admin/civic/issues'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/civic/page.js",
+    "line": 71,
+    "method": "PUT",
+    "endpoint": "/admin/civic/issues/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/civic/issues/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/civic/page.js",
+    "line": 89,
+    "method": "PUT",
+    "endpoint": "/admin/civic/issues/${id}/escalate",
+    "callSyntax": "fetch(`${API_BASE}/admin/civic/issues/${id}/escalate`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/crm/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/admin/crm/users",
+    "callSyntax": "fetch(API_BASE + '/admin/crm/users'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/crm/page.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/admin/crm/loyalty",
+    "callSyntax": "fetch(API_BASE + '/admin/crm/loyalty'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/disputes/page.js",
+    "line": 16,
+    "method": "GET",
+    "endpoint": "/api/v1/disputes/admin",
+    "callSyntax": "fetch(`${API_URL}/api/v1/disputes/admin`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/disputes/page.js",
+    "line": 34,
+    "method": "PUT",
+    "endpoint": "/api/v1/disputes/${id}/resolve",
+    "callSyntax": "fetch(`${API_URL}/api/v1/disputes/${id}/resolve`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/environment/page.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/environment/scrap",
+    "callSyntax": "fetch(API_BASE + '/admin/environment/scrap'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/environment/page.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/admin/environment/scrap",
+    "callSyntax": "fetch(API_BASE + '/admin/environment/scrap'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/environment/page.js",
+    "line": 71,
+    "method": "PUT",
+    "endpoint": "/admin/environment/scrap/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/environment/scrap/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/environment/page.js",
+    "line": 89,
+    "method": "PUT",
+    "endpoint": "/admin/environment/scrap/${id}/dispatch",
+    "callSyntax": "fetch(`${API_BASE}/admin/environment/scrap/${id}/dispatch`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/finance-ledger/page.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/admin/payouts/pending",
+    "callSyntax": "fetch(API_BASE + '/admin/payouts/pending'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/finance-ledger/page.js",
+    "line": 38,
+    "method": "PUT",
+    "endpoint": "/admin/payouts/${id}/approve",
+    "callSyntax": "fetch(`${API_BASE}/admin/payouts/${id}/approve`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/franchises/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/admin/franchises?search=${search}",
+    "callSyntax": "fetch(`${API_BASE}/admin/franchises?search=${search}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/franchises/page.js",
+    "line": 41,
+    "method": "PUT",
+    "endpoint": "/admin/franchises/${id}/split",
+    "callSyntax": "fetch(`${API_BASE}/admin/franchises/${id}/split`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/jobs/page.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/jobs/overview-stats",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/jobs/overview-stats`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/jobs/page.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/admin/jobs",
+    "callSyntax": "fetch(`${API_BASE}/admin/jobs`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/jobs/page.js",
+    "line": 53,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/jobs/applications",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/jobs/applications`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/jobs/page.js",
+    "line": 76,
+    "method": "POST",
+    "endpoint": "/admin/jobs",
+    "callSyntax": "fetch(`${API_BASE}/admin/jobs`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/jobs/page.js",
+    "line": 102,
+    "method": "PUT",
+    "endpoint": "/admin/jobs/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/jobs/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/krishi/page.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/krishi",
+    "callSyntax": "fetch(API_BASE + '/admin/krishi'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/krishi/page.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/admin/krishi",
+    "callSyntax": "fetch(API_BASE + '/admin/krishi'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/krishi/page.js",
+    "line": 69,
+    "method": "PUT",
+    "endpoint": "/admin/krishi/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/krishi/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/krishi/page.js",
+    "line": 87,
+    "method": "PUT",
+    "endpoint": "/admin/krishi/${id}/verify",
+    "callSyntax": "fetch(`${API_BASE}/admin/krishi/${id}/verify`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/languages/page.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/admin/languages",
+    "callSyntax": "fetch(API_BASE + '/admin/languages'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/languages/page.js",
+    "line": 68,
+    "method": "PUT",
+    "endpoint": "/admin/languages",
+    "callSyntax": "fetch(API_BASE + '/admin/languages'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/layout.js",
+    "line": 180,
+    "method": "GET",
+    "endpoint": "/admin/search?q=${omniSearch}",
+    "callSyntax": "fetch(`${API_BASE}/admin/search?q=${omniSearch}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketing/page.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/admin/broadcasts/history",
+    "callSyntax": "fetch(API_BASE + '/admin/broadcasts/history'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketing/page.js",
+    "line": 41,
+    "method": "POST",
+    "endpoint": "/admin/broadcast",
+    "callSyntax": "fetch(API_BASE + '/admin/broadcast'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketplace/page.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/marketplace/stats",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/marketplace/stats`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketplace/page.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/marketplace/escrows",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/marketplace/escrows`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketplace/page.js",
+    "line": 47,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/marketplace/listings",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/marketplace/listings`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketplace/page.js",
+    "line": 68,
+    "method": "PUT",
+    "endpoint": "/admin/tri-category/marketplace/escrows/${id}/resolve",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/marketplace/escrows/${"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/marketplace/page.js",
+    "line": 87,
+    "method": "PUT",
+    "endpoint": "/admin/tri-category/marketplace/listings/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/marketplace/listings/$"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/medical/page.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/admin/medical/requests",
+    "callSyntax": "fetch(API_BASE + '/admin/medical/requests'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/medical/page.js",
+    "line": 45,
+    "method": "POST",
+    "endpoint": "/admin/medical/requests",
+    "callSyntax": "fetch(API_BASE + '/admin/medical/requests'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/medical/page.js",
+    "line": 70,
+    "method": "PUT",
+    "endpoint": "/admin/medical/requests/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/medical/requests/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/medical/page.js",
+    "line": 88,
+    "method": "PUT",
+    "endpoint": "/admin/medical/requests/${id}/dispatch",
+    "callSyntax": "fetch(`${API_BASE}/admin/medical/requests/${id}/dispatch`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/mobility/page.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/carpool/stats",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/carpool/stats`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/mobility/page.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/admin/tri-category/carpool/rides",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/carpool/rides`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/mobility/page.js",
+    "line": 47,
+    "method": "GET",
+    "endpoint": "/admin/mobility/fleet",
+    "callSyntax": "fetch(`${API_BASE}/admin/mobility/fleet`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/mobility/page.js",
+    "line": 68,
+    "method": "PUT",
+    "endpoint": "/admin/tri-category/carpool/rides/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/tri-category/carpool/rides/${id}/st"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/admin/god-mode/metrics",
+    "callSyntax": "fetch(API_BASE + '/admin/god-mode/metrics'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/performance/page.js",
+    "line": 15,
+    "method": "GET",
+    "endpoint": "/admin/health",
+    "callSyntax": "fetch(`${API_BASE}/admin/health`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/performance/page.js",
+    "line": 40,
+    "method": "POST",
+    "endpoint": "/admin/health/clear-cache",
+    "callSyntax": "fetch(`${API_BASE}/admin/health/clear-cache`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/roles/page.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/admin/roles",
+    "callSyntax": "fetch(API_BASE + '/admin/roles'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/roles/page.js",
+    "line": 62,
+    "method": "POST",
+    "endpoint": "/admin/roles",
+    "callSyntax": "fetch(API_BASE + '/admin/roles'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/security/page.js",
+    "line": 15,
+    "method": "GET",
+    "endpoint": "/admin/fraud-scan",
+    "callSyntax": "fetch(API_BASE + '/admin/fraud-scan'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/settings/page.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/admin/settings",
+    "callSyntax": "fetch(`${API_BASE}/admin/settings`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/settings/page.js",
+    "line": 57,
+    "method": "PUT",
+    "endpoint": "/admin/settings",
+    "callSyntax": "fetch(`${API_BASE}/admin/settings`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/shop-categories/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/shops/categories",
+    "callSyntax": "fetch(API_BASE + '/shops/categories'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/societies/page.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/admin/societies",
+    "callSyntax": "fetch(`${API_BASE}/admin/societies`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/sos/page.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/sos/alerts",
+    "callSyntax": "fetch(`${API_BASE}/sos/alerts`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/users/page.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/admin/users?page=${page}&search=${search}",
+    "callSyntax": "fetch(`${API_BASE}/admin/users?page=${page}&search=${search}"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/users/page.js",
+    "line": 45,
+    "method": "PUT",
+    "endpoint": "/admin/users/${id}/status",
+    "callSyntax": "fetch(`${API_BASE}/admin/users/${id}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/admin-dashboard/users/page.js",
+    "line": 66,
+    "method": "PUT",
+    "endpoint": "/admin/users/${id}/role",
+    "callSyntax": "fetch(`${API_BASE}/admin/users/${id}/role`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/auctions",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/auctions`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 40,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/auctions/${auctionId}/bid",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/auctions/${auctionId}/b"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 104,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/assessments",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/assessments`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 116,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/assessments/${activeQuiz.id}/submit",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/assessments/${activeQuiz.id}/s"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 205,
+    "method": "GET",
+    "endpoint": "/api/v1/gamification/profile",
+    "callSyntax": "fetch(`${API_URL}/api/v1/gamification/profile`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 206,
+    "method": "GET",
+    "endpoint": "/api/v1/gamification/leaderboard",
+    "callSyntax": "fetch(`${API_URL}/api/v1/gamification/leaderboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 291,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/groups",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/groups`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 296,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/groups",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/groups`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 300,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/groups",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/groups`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 308,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/groups/${groupId}/join",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/groups/${groupId}/join`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 406,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/cost-calculator",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/cost-calculator`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 417,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${otpRideId}/generate-otp",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${otpRideId}/generate"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 425,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${otpRideId}/verify-otp",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${otpRideId}/verify-o"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 436,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/carbon-dashboard",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/carbon-dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 444,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/price-suggest",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/price-suggest`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 454,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/escrow/create",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/escrow/create`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 464,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/seller-score/${trustSellerId}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/seller-score/${trustSel"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 476,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/resume-upload",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/resume-upload`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 487,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/skill-gap",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/skill-gap`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 497,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/alerts",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/alerts`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 507,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/alerts",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/alerts`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 515,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/employer/dashboard",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/employer/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 738,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/escrow/${escrowResult.id}/release",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/escrow/${escrowResult.i"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/advanced/page.js",
+    "line": 747,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/escrow/${escrowResult.id}/dispute",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/escrow/${escrowResult.i"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/bills/page.js",
+    "line": 33,
+    "method": "GET",
+    "endpoint": "/api/v1/bills/status",
+    "callSyntax": "fetch(`${API_URL}/api/v1/bills/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/bills/page.js",
+    "line": 56,
+    "method": "POST",
+    "endpoint": "/api/v1/bills/pay",
+    "callSyntax": "fetch(`${API_URL}/api/v1/bills/pay`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 78,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/my-rides",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/my-rides`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 81,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/vehicles",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/vehicles`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 96,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${selectedRide.id}/book",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${selectedRide.id}/bo"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 109,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${selectedRide.id}/bid",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${selectedRide.id}/bi"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 121,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 133,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/vehicles",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/vehicles`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 140,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/vehicles",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/vehicles`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 149,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${rideId}/sos",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${rideId}/sos`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 158,
+    "method": "GET",
+    "endpoint": "/api/v1/carpool/rides/${rideId}/chat",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${rideId}/chat`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 168,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${selectedRide.id}/chat",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${selectedRide.id}/ch"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/carpool/page.js",
+    "line": 652,
+    "method": "POST",
+    "endpoint": "/api/v1/carpool/rides/${selectedRide.id}/rate",
+    "callSyntax": "fetch(`${API_URL}/api/v1/carpool/rides/${selectedRide.id}/ra"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/chat/page.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/api/v1/chat/conversations",
+    "callSyntax": "fetch(`${API_URL}/api/v1/chat/conversations`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/chat/page.js",
+    "line": 80,
+    "method": "GET",
+    "endpoint": "/api/v1/chat/messages/${conv.id}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/chat/messages/${conv.id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/checkout/page.js",
+    "line": 96,
+    "method": "GET",
+    "endpoint": "/users/addresses",
+    "callSyntax": "fetch(`${API_BASE}/users/addresses`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/checkout/page.js",
+    "line": 110,
+    "method": "GET",
+    "endpoint": "/shops/${currentShopId}",
+    "callSyntax": "fetch(`${API_BASE}/shops/${currentShopId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/checkout/page.js",
+    "line": 214,
+    "method": "POST",
+    "endpoint": "/checkout",
+    "callSyntax": "fetch(`${API_BASE}/checkout`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/chef/page.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/api/v1/chef/meals",
+    "callSyntax": "fetch(`${API_URL}/api/v1/chef/meals`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/community/page.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/feed/posts?limit=50",
+    "callSyntax": "apiGet('/feed/posts?limit=50'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/community/page.js",
+    "line": 49,
+    "method": "POST",
+    "endpoint": "/feed/posts",
+    "callSyntax": "apiPost('/feed/posts'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/community/page.js",
+    "line": 61,
+    "method": "POST",
+    "endpoint": "/feed/posts/${id}/vote",
+    "callSyntax": "apiPost(`/feed/posts/${id}/vote`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/community-hub/page.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/api/v1/community-hub/lost/active",
+    "callSyntax": "fetch(`${API_URL}/api/v1/community-hub/lost/active`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/community-hub/page.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/api/v1/community-hub/garage/items",
+    "callSyntax": "fetch(`${API_URL}/api/v1/community-hub/garage/items`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/components/admin/PendingModule.js",
+    "line": 14,
+    "method": "GET",
+    "endpoint": "/admin/health",
+    "callSyntax": "fetch(`${API_BASE}/admin/health`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/components/Header.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/notifications",
+    "callSyntax": "apiGet('/notifications'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/components/Header.js",
+    "line": 40,
+    "method": "PUT",
+    "endpoint": "/notifications/read-all",
+    "callSyntax": "apiPut('/notifications/read-all'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/components/StoriesRow.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/stories",
+    "callSyntax": "apiGet('/stories'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/dashboard/page.js",
+    "line": 96,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "apiGet('/wallet/history'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/dashboard/page.js",
+    "line": 97,
+    "method": "GET",
+    "endpoint": "/orders/my-orders",
+    "callSyntax": "apiGet('/orders/my-orders'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/dashboard/page.js",
+    "line": 102,
+    "method": "GET",
+    "endpoint": "/services/my-bookings",
+    "callSyntax": "apiGet('/services/my-bookings'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/dashboard/page.js",
+    "line": 105,
+    "method": "GET",
+    "endpoint": "/jobs-board",
+    "callSyntax": "apiGet('/jobs-board'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/dashboard/page.js",
+    "line": 108,
+    "method": "GET",
+    "endpoint": "/feed/posts?limit=10",
+    "callSyntax": "apiGet('/feed/posts?limit=10'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery/page.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/api/v1/delivery/request",
+    "callSyntax": "fetch(`${API_URL}/api/v1/delivery/request`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 56,
+    "method": "GET",
+    "endpoint": "/delivery/jobs",
+    "callSyntax": "apiGet('/delivery/jobs'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 59,
+    "method": "GET",
+    "endpoint": "/delivery/my-jobs",
+    "callSyntax": "apiGet('/delivery/my-jobs'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 62,
+    "method": "GET",
+    "endpoint": "/delivery/analytics",
+    "callSyntax": "apiGet('/delivery/analytics'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 62,
+    "method": "GET",
+    "endpoint": "/delivery/my-jobs",
+    "callSyntax": "apiGet('/delivery/my-jobs'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 77,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${jobId}/accept",
+    "callSyntax": "apiPost(`/delivery/jobs/${jobId}/accept`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 87,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${otpModal.jobId}/complete",
+    "callSyntax": "apiPost(`/delivery/jobs/${otpModal.jobId}/complete`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/delivery-dashboard/page.js",
+    "line": 99,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/donations/page.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/api/v1/donations/campaigns",
+    "callSyntax": "fetch(`${API_URL}/api/v1/donations/campaigns`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/equipment/page.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/api/v1/equipment",
+    "callSyntax": "fetch(`${API_URL}/api/v1/equipment`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/events/page.js",
+    "line": 53,
+    "method": "POST",
+    "endpoint": "/api/v1/events/${selectedEvent.id}/tickets",
+    "callSyntax": "fetch(`${API_URL}/api/v1/events/${selectedEvent.id}/tickets`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/field-dashboard/page.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/dashboards/territory/field-dashboard",
+    "callSyntax": "apiGet('/dashboards/territory/field-dashboard'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/forgot-password/page.js",
+    "line": 30,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/send-otp",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/send-otp`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/forgot-password/page.js",
+    "line": 68,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/reset-password",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/reset-password`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise/territory/page.js",
+    "line": 16,
+    "method": "GET",
+    "endpoint": "/api/v1/territory/map",
+    "callSyntax": "fetch(`${BACKEND_URL}/api/v1/territory/map`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise-dashboard/components/FranchiseIntelligenceWidget.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/api/v1/franchise-intelligence/${zoneId}/health-scores",
+    "callSyntax": "fetch(`${API_URL}/api/v1/franchise-intelligence/${zoneId}/he"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise-dashboard/components/FranchiseIntelligenceWidget.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/api/v1/franchise-intelligence/${zoneId}/leads",
+    "callSyntax": "fetch(`${API_URL}/api/v1/franchise-intelligence/${zoneId}/le"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise-dashboard/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/api/v1/franchise/dashboard",
+    "callSyntax": "fetch(`${API_URL}/api/v1/franchise/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise-dashboard/revenue/page.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/api/v1/franchise/dashboard",
+    "callSyntax": "fetch(`${API_URL}/api/v1/franchise/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise-dashboard/shops/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/api/v1/franchise/dashboard",
+    "callSyntax": "fetch(`${API_URL}/api/v1/franchise/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/franchise-dashboard/shops/page.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/api/v1/shops?limit=20",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops?limit=20`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/gatekeeper/page.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/api/v1/societies/my-society",
+    "callSyntax": "fetch(`${API_URL}/api/v1/societies/my-society`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/health/page.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/medical/doctors",
+    "callSyntax": "apiGet('/medical/doctors'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/health/page.js",
+    "line": 40,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 92,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/applications",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/applications`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 95,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/saved",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/saved`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 101,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/resumes/me",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/resumes/me`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 109,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/recommendations",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/recommendations`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 112,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/salary-insights",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/salary-insights`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 113,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/companies",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/companies`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 163,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/postings/${jobId}/save",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/postings/${jobId}/save`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 172,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/apply",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/apply`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 192,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/resumes",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/resumes`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 208,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/resumes",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/resumes`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 242,
+    "method": "POST",
+    "endpoint": "/api/v1/upload",
+    "callSyntax": "fetch(`${API_URL}/api/v1/upload`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 251,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/resumes",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/resumes`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 283,
+    "method": "POST",
+    "endpoint": "/api/v1/jobs/postings",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/postings`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/jobs/page.js",
+    "line": 670,
+    "method": "GET",
+    "endpoint": "/api/v1/jobs/salary-insights?job_title=${salarySearch}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/jobs/salary-insights?job_title=${sa"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 66,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/categories",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/categories`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 67,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/flash-deals",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/flash-deals`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 72,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/saved",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/saved`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 82,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/${listingId}/save",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/${listingId}/save`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 90,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/${listing.id}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/${listing.id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 104,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/${selectedListing.id}/offer",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/${selectedListing.id}/o"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 120,
+    "method": "GET",
+    "endpoint": "/api/v1/marketplace/${listingId}/chat",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/${listingId}/chat`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 130,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace/${selectedListing.id}/chat",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace/${selectedListing.id}/c"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/marketplace/page.js",
+    "line": 144,
+    "method": "POST",
+    "endpoint": "/api/v1/marketplace",
+    "callSyntax": "fetch(`${API_URL}/api/v1/marketplace`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/order-tracking/page.js",
+    "line": 32,
+    "method": "GET",
+    "endpoint": "/orders/my-orders",
+    "callSyntax": "apiGet('/orders/my-orders'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/order-tracking/page.js",
+    "line": 67,
+    "method": "GET",
+    "endpoint": "/orders/${id}",
+    "callSyntax": "apiGet(`/orders/${id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/page.js",
+    "line": 189,
+    "method": "GET",
+    "endpoint": "/public/stats",
+    "callSyntax": "fetch(`${API_BASE}/public/stats`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/premium/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/premium/plan",
+    "callSyntax": "apiGet('/premium/plan'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/premium/page.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/premium/status",
+    "callSyntax": "apiGet('/premium/status'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/profile/page.js",
+    "line": 40,
+    "method": "GET",
+    "endpoint": "/users/me",
+    "callSyntax": "apiGet('/users/me'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/profile/page.js",
+    "line": 41,
+    "method": "GET",
+    "endpoint": "/loyalty/balance",
+    "callSyntax": "apiGet('/loyalty/balance'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/profile/page.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "/addresses",
+    "callSyntax": "apiGet('/addresses'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/profile/page.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/orders/my-orders",
+    "callSyntax": "apiGet('/orders/my-orders'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/profile/security/page.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/users/me/data-export",
+    "callSyntax": "apiGet('/users/me/data-export'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/profile/security/page.js",
+    "line": 43,
+    "method": "POST",
+    "endpoint": "/users/me/delete-account",
+    "callSyntax": "apiPost('/users/me/delete-account'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/properties/page.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/properties",
+    "callSyntax": "fetch(`${API_BASE}/properties`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/properties/page.js",
+    "line": 74,
+    "method": "POST",
+    "endpoint": "/properties",
+    "callSyntax": "fetch(`${API_BASE}/properties`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/referral/page.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/api/v1/referral/code",
+    "callSyntax": "fetch(`${API_URL}/api/v1/referral/code`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/resident/page.js",
+    "line": 34,
+    "method": "GET",
+    "endpoint": "/api/v1/societies/my-society",
+    "callSyntax": "fetch(`${API_URL}/api/v1/societies/my-society`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/rewards/page.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/loyalty/balance",
+    "callSyntax": "apiGet('/loyalty/balance'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/rewards/page.js",
+    "line": 43,
+    "method": "POST",
+    "endpoint": "/loyalty/spin",
+    "callSyntax": "apiPost('/loyalty/spin'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/rewards/page.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/loyalty/redeem",
+    "callSyntax": "apiPost('/loyalty/redeem'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/scrap/page.js",
+    "line": 45,
+    "method": "POST",
+    "endpoint": "/scrap/schedule",
+    "callSyntax": "fetch(`${API_BASE}/scrap/schedule`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/search/page.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/search?q=${encodeURIComponent(searchQuery)}",
+    "callSyntax": "fetch(`${BACKEND_URL}/api/v1/shops/search?q=${encodeURICompo"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 59,
+    "method": "GET",
+    "endpoint": "/api/v1/society-management/visitors/today",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/visitors/today`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 68,
+    "method": "GET",
+    "endpoint": "/api/v1/society-management/packages/pending",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/packages/pending"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 77,
+    "method": "GET",
+    "endpoint": "/api/v1/society-guard/gate/vehicle-log?societyId=1",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-guard/gate/vehicle-log?soci"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 86,
+    "method": "GET",
+    "endpoint": "/api/v1/society-guard/gate/utility-history?societyId=1",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-guard/gate/utility-history?"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 95,
+    "method": "GET",
+    "endpoint": "/api/v1/society-management/staff/attendance/today",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/staff/attendance"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 113,
+    "method": "GET",
+    "endpoint": "/api/v1/society-guard/gate/lookup-vehicle?vehicleNumber=${vehicleQuery}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-guard/gate/lookup-vehicle?v"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 125,
+    "method": "POST",
+    "endpoint": "/api/v1/society-management/visitors",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/visitors`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 133,
+    "method": "GET",
+    "endpoint": "/api/v1/society-management/visitors/today",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/visitors/today`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 144,
+    "method": "POST",
+    "endpoint": "/api/v1/society-guard/utility",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-guard/utility`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 159,
+    "method": "PUT",
+    "endpoint": "/api/v1/society-management/visitors/${id}/check-out",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/visitors/${id}/c"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 164,
+    "method": "GET",
+    "endpoint": "/api/v1/society-management/visitors/today",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/visitors/today`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 174,
+    "method": "POST",
+    "endpoint": "/api/v1/society-management/packages",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/packages`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 184,
+    "method": "GET",
+    "endpoint": "/api/v1/society-management/packages/pending",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/packages/pending"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/security-dashboard/page.js",
+    "line": 195,
+    "method": "POST",
+    "endpoint": "/api/v1/society-management/emergency",
+    "callSyntax": "fetch(`${API_URL}/api/v1/society-management/emergency`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/services/page.js",
+    "line": 66,
+    "method": "POST",
+    "endpoint": "/api/v1/services/book",
+    "callSyntax": "fetch(`${API_URL}/api/v1/services/book`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/FoodKDS.js",
+    "line": 98,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/kds",
+    "callSyntax": "apiGet('/shops/my-shop/kds'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/FoodKDS.js",
+    "line": 137,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/kds/${itemId}",
+    "callSyntax": "apiPut(`/shops/my-shop/kds/${itemId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/JobCardConsole.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/job-cards?limit=100",
+    "callSyntax": "apiGet('/shops/my-shop/job-cards?limit=100'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/JobCardConsole.js",
+    "line": 48,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/job-cards/${itemId}",
+    "callSyntax": "apiPut(`/shops/my-shop/job-cards/${itemId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/JobCardConsole.js",
+    "line": 59,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/job-cards",
+    "callSyntax": "apiPost('/shops/my-shop/job-cards'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/RetailPOS.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-dashboard/components/RetailPOS.js",
+    "line": 109,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/pos-sales",
+    "callSyntax": "apiPost('/shops/my-shop/pos-sales'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/ads/page.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/my-shop",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/my-shop`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/ads/page.js",
+    "line": 38,
+    "method": "GET",
+    "endpoint": "/api/v1/wallet/history",
+    "callSyntax": "fetch(`${API_URL}/api/v1/wallet/history`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/ads/page.js",
+    "line": 48,
+    "method": "GET",
+    "endpoint": "/api/v1/campaigns/${currentShop.id}/ads",
+    "callSyntax": "fetch(`${API_URL}/api/v1/campaigns/${currentShop.id}/ads`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/ads/page.js",
+    "line": 90,
+    "method": "POST",
+    "endpoint": "/api/v1/campaigns/purchase",
+    "callSyntax": "fetch(`${API_URL}/api/v1/campaigns/purchase`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/billing/page.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/my-shop",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/my-shop`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/billing/page.js",
+    "line": 31,
+    "method": "POST",
+    "endpoint": "/api/v1/subscriptions/vendor-saas/subscribe",
+    "callSyntax": "fetch(`${API_URL}/api/v1/subscriptions/vendor-saas/subscribe"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/bulk-upload/page.js",
+    "line": 49,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/products",
+    "callSyntax": "apiPost('/shops/my-shop/products'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 86,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 164,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/kds${statusParam}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/kds${statusParam}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 182,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/kds/${ticketId}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/kds/${ticketId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 358,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/tables",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/tables`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 369,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/tables/${tableId}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/tables/${tableId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 375,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/tables",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/tables`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/AdvancedRestaurantManager.js",
+    "line": 549,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/analytics?period=30d",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/analytics?period=30d`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/JobCardManager.js",
+    "line": 48,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/job-cards?status=${activeStatus}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/job-cards?status=${activeSt"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/JobCardManager.js",
+    "line": 61,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/job-cards/${jobCardId}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/job-cards/${jobCardId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/JobCardManager.js",
+    "line": 77,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/job-cards",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/job-cards`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/AppointmentManagementPanel.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/appointments?status=${activeTab}&date=${selectedDate}&limit=50",
+    "callSyntax": "fetch(\n        `${API_BASE}/shops/my-shop/appointments?statu"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/AppointmentManagementPanel.js",
+    "line": 52,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/appointments/${appointmentId}/status",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/appointments/${appointmentI"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/LeadCRMCenter.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/leads",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/leads`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/LeadCRMCenter.js",
+    "line": 74,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/leads/${itemId}/status",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/leads/${itemId}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/LeadCRMCenter.js",
+    "line": 92,
+    "method": "POST",
+    "endpoint": "/universal-catalog/${shopId}/leads",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/${shopId}/leads`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/OrderManagementPanel.js",
+    "line": 38,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/orders?status=${status}&limit=50",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/orders?status=${status}&lim"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/OrderManagementPanel.js",
+    "line": 84,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/orders/${orderId}/status",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/orders/${orderId}/status`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/OrderManagementPanel.js",
+    "line": 110,
+    "method": "PUT",
+    "endpoint": "/shops/${shopId}/orders/${orderId}/assign-rider",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}/orders/${orderId}/assign-"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopAnalyticsManager.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/my-shop/analytics-data",
+    "callSyntax": "fetch(`/api/v1/shops/my-shop/analytics-data`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopLedger.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/ledger",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/ledger`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopReviewsManager.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/reviews",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/reviews`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopReviewsManager.js",
+    "line": 54,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/reviews/${id}/reply",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/reviews/${id}/reply`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopSettingsManager.js",
+    "line": 101,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopSettingsManager.js",
+    "line": 136,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/settings",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/settings`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopStaffManager.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/staff",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/staff`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopStaffManager.js",
+    "line": 57,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/staff/${editingId}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/staff/${editingId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopStaffManager.js",
+    "line": 63,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/staff",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/staff`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/ShopStaffManager.js",
+    "line": 80,
+    "method": "DELETE",
+    "endpoint": "/shops/my-shop/staff/${id}",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/staff/${id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/UnifiedCatalogueManager.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/universal-catalog/${shopId}",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/${shopId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/UnifiedCatalogueManager.js",
+    "line": 119,
+    "method": "DELETE",
+    "endpoint": "/universal-catalog/item/${itemId}",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/item/${itemId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/UnifiedCatalogueManager.js",
+    "line": 160,
+    "method": "POST",
+    "endpoint": "/universal-catalog/${shopId}/bulk",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/${shopId}/bulk`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/shared/UnifiedCatalogueManager.js",
+    "line": 189,
+    "method": "POST",
+    "endpoint": "/universal-catalog/ai/generate-description",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/ai/generate-description"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/components/ShopManagerRouter.js",
+    "line": 225,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/studio/page.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/my-shop",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/my-shop`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/studio/page.js",
+    "line": 81,
+    "method": "POST",
+    "endpoint": "/api/v1/upload",
+    "callSyntax": "fetch(`${API_URL}/api/v1/upload`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/studio/page.js",
+    "line": 102,
+    "method": "POST",
+    "endpoint": "/api/v1/stories",
+    "callSyntax": "fetch(`${API_URL}/api/v1/stories`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shop-manager/[category]/page.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "fetch(`${API_BASE}/shops/my-shop/dashboard`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/page.js",
+    "line": 149,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/categories",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/categories`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/page.js",
+    "line": 154,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/nearby",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/nearby`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/BeautyVisitorView.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${shop.id}/staff/${selectedStaff.id}/slots?date=${appointmentDate}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/${selectedSt"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/CheckoutModal.js",
+    "line": 169,
+    "method": "POST",
+    "endpoint": "/shops/${shop.id}/orders",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shop.id}/orders`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/DoctorVisitorView.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${shop.id}/staff/${selectedStaff.id}/slots?date=${appointmentDate}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/${selectedSt"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/GarageVisitorView.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${shop.id}/staff/stf_garage/slots?date=${appointmentDate}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/stf_garage/s"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/HospitalVisitorView.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${shop.id}/staff/${selectedDoctor.id}/slots?date=${appointmentDate}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${shop.id}/staff/${selectedDo"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/LeadDirectoryVisitorView.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/api/v1/leads-crm/${shop.id}/listings",
+    "callSyntax": "fetch(`${API_URL}/api/v1/leads-crm/${shop.id}/listings`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/LeadDirectoryVisitorView.js",
+    "line": 48,
+    "method": "POST",
+    "endpoint": "/api/v1/leads-crm/${shop.id}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/leads-crm/${shop.id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/LoyaltyGamification.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/loyalty",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}/loyalty`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/OrderHistory.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/orders/history",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}/orders/history`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/OrderHistory.js",
+    "line": 61,
+    "method": "POST",
+    "endpoint": "/shops/${shopId}/orders/${ratingOrder}/review",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}/orders/${ratingOrder}/rev"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/RentalVisitorView.js",
+    "line": 33,
+    "method": "GET",
+    "endpoint": "/api/v1/fleet-assets/${shop.id}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/fleet-assets/${shop.id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/ShopChat.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/chat",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}/chat`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/components/ShopChat.js",
+    "line": 74,
+    "method": "POST",
+    "endpoint": "/shops/${shopId}/chat",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}/chat`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 73,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 74,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}/offers",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}/offers`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 75,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}/reviews",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}/reviews`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 76,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}/qa",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}/qa`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 77,
+    "method": "GET",
+    "endpoint": "/api/v1/universal-catalog/${id}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/universal-catalog/${id}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 100,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}/products",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}/products`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 108,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}/services",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}/services`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 112,
+    "method": "GET",
+    "endpoint": "/api/v1/shops/${id}/staff",
+    "callSyntax": "fetch(`${API_URL}/api/v1/shops/${id}/staff`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/shops/[id]/page.js",
+    "line": 316,
+    "method": "POST",
+    "endpoint": "/api/v1/book",
+    "callSyntax": "fetch(`${API_URL}/api/v1/book`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/society-admin/broadcast/page.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/society/my-society",
+    "callSyntax": "apiGet('/society/my-society'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/society-admin/broadcast/page.js",
+    "line": 30,
+    "method": "POST",
+    "endpoint": "/society/notices",
+    "callSyntax": "apiPost('/society/notices'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/society-admin/components/SocietyDataExport.js",
+    "line": 57,
+    "method": "GET",
+    "endpoint": "${exportDef.path}${qs ?",
+    "callSyntax": "fetch(`${API_BASE}${exportDef.path}${qs ? `"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/society-registration/page.js",
+    "line": 37,
+    "method": "POST",
+    "endpoint": "/society/register",
+    "callSyntax": "apiPost('/society/register'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/sos-dashboard/page.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/sos/active",
+    "callSyntax": "apiGet('/sos/active'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/sos-dashboard/page.js",
+    "line": 57,
+    "method": "POST",
+    "endpoint": "/sos/${id}/resolve",
+    "callSyntax": "apiPost(`/sos/${id}/resolve`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/story-create/page.js",
+    "line": 42,
+    "method": "POST",
+    "endpoint": "/stories",
+    "callSyntax": "apiPost('/stories'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/story-create/page.js",
+    "line": 39,
+    "method": "POST",
+    "endpoint": "/api/v1/upload",
+    "callSyntax": "fetch(`${API_URL}/api/v1/upload`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/subscriptions/page.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/api/v1/subscriptions/plans",
+    "callSyntax": "fetch(`${API_URL}/api/v1/subscriptions/plans`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/subscriptions/page.js",
+    "line": 53,
+    "method": "POST",
+    "endpoint": "/api/v1/subscriptions/subscribe",
+    "callSyntax": "fetch(`${API_URL}/api/v1/subscriptions/subscribe`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/wallet/page.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/api/v1/wallet/history",
+    "callSyntax": "fetch(`${API_URL}/api/v1/wallet/history`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/app/[state]/[city]/[zone]/page.js",
+    "line": 34,
+    "method": "GET",
+    "endpoint": "/api/v1/shops?limit=1",
+    "callSyntax": "fetch(`${apiUrl}/api/v1/shops?limit=1`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/admin/TerritoryAssignment.js",
+    "line": 57,
+    "method": "POST",
+    "endpoint": "/admin/territory-assignments",
+    "callSyntax": "apiPost('/admin/territory-assignments'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/admin/TerritoryAssignment.js",
+    "line": 71,
+    "method": "DELETE",
+    "endpoint": "/admin/territory-assignments/${assignmentId}",
+    "callSyntax": "apiDelete(`/admin/territory-assignments/${assignmentId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/admin/TerritoryAssignment.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/api/v1/zones/hierarchy/v2",
+    "callSyntax": "fetch(`${API_URL}/api/v1/zones/hierarchy/v2`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/admin/TerritoryAssignment.js",
+    "line": 26,
+    "method": "GET",
+    "endpoint": "/api/v1/admin/territory-assignments",
+    "callSyntax": "fetch(`${API_URL}/api/v1/admin/territory-assignments`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/admin/TerritoryAssignment.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/api/v1/admin/users?role=territory_admin,franchise_owner&limit=500",
+    "callSyntax": "fetch(`${API_URL}/api/v1/admin/users?role=territory_admin,fr"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/DynamicSuperAppShopView.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}",
+    "callSyntax": "fetch(`${API_BASE}/shops/${shopId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/DynamicSuperAppShopView.js",
+    "line": 94,
+    "method": "POST",
+    "endpoint": "/checkout",
+    "callSyntax": "fetch(`${API_BASE}/checkout`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/DynamicSuperAppShopView.js",
+    "line": 128,
+    "method": "POST",
+    "endpoint": "/book",
+    "callSyntax": "fetch(`${API_BASE}/book`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/LocationModal.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/api/v1/zones/search?q=${encodeURIComponent(searchQuery)}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/zones/search?q=${encodeURIComponent"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/PredictiveSearchBar.js",
+    "line": 59,
+    "method": "GET",
+    "endpoint": "/ml/search/suggest?q=${encodeURIComponent(q)}&limit=6",
+    "callSyntax": "fetch(\r\n          `${API_BASE}/ml/search/suggest?q=${encodeU"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/StockAlerts.js",
+    "line": 16,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/ui/TokenTrackerBar.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/token-queue/${shopId}",
+    "callSyntax": "apiGet(`/token-queue/${shopId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/components/ui/TokenTrackerBar.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/token-queue/${shopId}/join",
+    "callSyntax": "apiPost(`/token-queue/${shopId}/join`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AdminAuthContext.js",
+    "line": 50,
+    "method": "GET",
+    "endpoint": "/admin-auth/me",
+    "callSyntax": "fetch(`${API_BASE}/admin-auth/me`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AuthContext.js",
+    "line": 163,
+    "method": "POST",
+    "endpoint": "${endpoint}",
+    "callSyntax": "fetch(`${API_URL}${endpoint}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AuthContext.js",
+    "line": 182,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/firebase-login",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/firebase-login`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AuthContext.js",
+    "line": 197,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/verify-otp",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/verify-otp`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AuthContext.js",
+    "line": 218,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/login-email",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/login-email`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AuthContext.js",
+    "line": 237,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/register-email",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/register-email`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/AuthContext.js",
+    "line": 255,
+    "method": "POST",
+    "endpoint": "/api/v1/auth/logout",
+    "callSyntax": "fetch(`${API_URL}/api/v1/auth/logout`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/ConfigContext.js",
+    "line": 11,
+    "method": "GET",
+    "endpoint": "/api/v1/settings/theme",
+    "callSyntax": "fetch(`${API_URL}/api/v1/settings/theme`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/LocationContext.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/api/v1/zones/resolve?lat=${lat}&lng=${lng}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/zones/resolve?lat=${lat}&lng=${lng}"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/LocationContext.js",
+    "line": 58,
+    "method": "GET",
+    "endpoint": "/api/v1/zones/resolve?pincode=${pincode}",
+    "callSyntax": "fetch(`${API_URL}/api/v1/zones/resolve?pincode=${pincode}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/LocationContext.js",
+    "line": 90,
+    "method": "GET",
+    "endpoint": "/api/v1/zones/hierarchy",
+    "callSyntax": "fetch(`${API_URL}/api/v1/zones/hierarchy`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/SocketContext.js",
+    "line": 89,
+    "method": "GET",
+    "endpoint": "/health",
+    "callSyntax": "fetch(`${origin}/health`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/context/ZoneContext.js",
+    "line": 48,
+    "method": "GET",
+    "endpoint": "/zones/resolve?lat=${latitude}&lng=${longitude}",
+    "callSyntax": "apiGet(`/zones/resolve?lat=${latitude}&lng=${longitude}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/hooks/useOrders.js",
+    "line": 7,
+    "method": "GET",
+    "endpoint": "/orders/user/${userId}",
+    "callSyntax": "apiGet(`/orders/user/${userId}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/hooks/useProducts.js",
+    "line": 7,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/products",
+    "callSyntax": "apiGet(`/shops/${shopId}/products`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/hooks/useShopSearch.js",
+    "line": 58,
+    "method": "POST",
+    "endpoint": "/ml/search/semantic",
+    "callSyntax": "fetch(`${API_BASE}/ml/search/semantic`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/api.js",
+    "line": 234,
+    "method": "GET",
+    "endpoint": "${endpoint}",
+    "callSyntax": "fetch(`${API_BASE}${endpoint}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/api.js",
+    "line": 289,
+    "method": "GET",
+    "endpoint": "${endpoint}",
+    "callSyntax": "fetch(`${API_BASE}${endpoint}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/api.js",
+    "line": 303,
+    "method": "POST",
+    "endpoint": "${endpoint}",
+    "callSyntax": "fetch(`${API_BASE}${endpoint}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/api.js",
+    "line": 319,
+    "method": "PUT",
+    "endpoint": "${endpoint}",
+    "callSyntax": "fetch(`${API_BASE}${endpoint}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/deliveryQuote.js",
+    "line": 38,
+    "method": "POST",
+    "endpoint": "/checkout/quote",
+    "callSyntax": "fetch(`${API_BASE}/checkout/quote`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/payments.js",
+    "line": 37,
+    "method": "POST",
+    "endpoint": "${path}",
+    "callSyntax": "fetch(`${API_BASE}${path}`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/payments.js",
+    "line": 51,
+    "method": "GET",
+    "endpoint": "/payments/razorpay/config",
+    "callSyntax": "fetch(`${API_BASE}/payments/razorpay/config`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/telemetry.js",
+    "line": 177,
+    "method": "POST",
+    "endpoint": "/ml/events",
+    "callSyntax": "fetch(`${API_BASE}/ml/events`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/lib/telemetry.js",
+    "line": 218,
+    "method": "GET",
+    "endpoint": "/ml/config/public",
+    "callSyntax": "fetch(`${API_BASE}/ml/config/public`"
+  },
+  {
+    "app": "web",
+    "file": "apps/web/src/store/cartStore.js",
+    "line": 28,
+    "method": "POST",
+    "endpoint": "/api/v1/cart",
+    "callSyntax": "fetch(`${API_URL}/api/v1/cart`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/login/page.js",
+    "line": 26,
+    "method": "POST",
+    "endpoint": "/auth/send-otp",
+    "callSyntax": "fetch(`${API_BASE}/auth/send-otp`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 131,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/regions",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 146,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/franchises",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/franchises`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 155,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/dashboard",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/dashboard`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 164,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/revenue/chart",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/revenue/chart`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 172,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/users?page=${page}&limit=50&search=${encodeURIComponent(search)}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/users?page=${page}&limit=50&search=${encodeURIComponent(search)}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 201,
+    "method": "GET",
+    "endpoint": "${API_BASE}/shops?limit=100",
+    "callSyntax": "fetchJson(`${API_BASE}/shops?limit=100`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 222,
+    "method": "GET",
+    "endpoint": "${API_BASE}/properties?limit=100",
+    "callSyntax": "fetchJson(`${API_BASE}/properties?limit=100`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 251,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/regions/${id}/toggle",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions/${id}/toggle`, { method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 264,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/regions/${editTerritory.id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions/${editTerritory.id}`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 270,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/regions/${editTerritory.id}/features",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions/${editTerritory.id}/features`, {\r\n          method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 283,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/regions/${territoryId}/assign-franchise",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions/${territoryId}/assign-franchise`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 297,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/regions/${id}/toggle",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions/${id}/toggle`, { method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 306,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/shop/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/shop/${id}`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 317,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/shop/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/shop/${id}`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 329,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/users/${id}/ban",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/users/${id}/ban`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 339,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/users/${id}/role",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/users/${id}/role`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 349,
+    "method": "POST",
+    "endpoint": "${API_BASE}/admin/regions",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions`, {\r\n      method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/page.js",
+    "line": 364,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/property/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/property/${id}`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/settings/page.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/settings/theme",
+    "callSyntax": "fetchJson(`${API_BASE}/settings/theme`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/settings/page.js",
+    "line": 34,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/settings/theme",
+    "callSyntax": "fetchJson(`${API_BASE}/settings/theme`, {\r\n                method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/territories/page.js",
+    "line": 15,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/regions",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/regions`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/test-runner/page.js",
+    "line": 39,
+    "method": "GET",
+    "endpoint": "/api/v1/test-runner/status",
+    "callSyntax": "fetch('/api/v1/test-runner/status'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/app/test-runner/page.js",
+    "line": 59,
+    "method": "POST",
+    "endpoint": "/api/v1/test-runner/run",
+    "callSyntax": "fetch('/api/v1/test-runner/run'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/AdCampaignsTab.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "${API_BASE}/campaigns/geo-feed?lat=18.5912&lng=73.9015&radiusKm=${globalRadius}",
+    "callSyntax": "fetchJson(`${API_BASE}/campaigns/geo-feed?lat=18.5912&lng=73.9015&radiusKm=${globalRadius}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/AdCampaignsTab.js",
+    "line": 45,
+    "method": "POST",
+    "endpoint": "${API_BASE}/campaigns/purchase",
+    "callSyntax": "fetchJson(`${API_BASE}/campaigns/purchase`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/AIAnalyticsTab.js",
+    "line": 99,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/analytics/overview",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/analytics/overview`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/AuditTab.js",
+    "line": 26,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/audit?${qs}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/audit?${qs}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/BillsTab.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/bills",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/bills`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/ChefTab.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/shops?category=tiffin",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/shops?category=tiffin`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/CommunityTab.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/community/posts",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/community/posts`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/CommunityTab.js",
+    "line": 35,
+    "method": "DELETE",
+    "endpoint": "${API_BASE}/admin/community/posts/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/community/posts/${id}`, { method: 'DELETE'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/CRMTab.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/crm/leads?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/crm/leads?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/DeliveryTab.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/delivery/agents",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/delivery/agents`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/DeliveryTab.js",
+    "line": 35,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/delivery/agents/${id}/status",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/delivery/agents/${id}/status`, { \n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/EventsTab.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/events?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/events?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/FeatureRolloutTab.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "${API_BASE}/gtm/admin/features",
+    "callSyntax": "fetchJson(`${API_BASE}/gtm/admin/features`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/FeatureRolloutTab.js",
+    "line": 39,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/gtm/admin/features/${feature.feature_key}",
+    "callSyntax": "fetchJson(`${API_BASE}/gtm/admin/features/${feature.feature_key}`, {\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/FeatureRolloutTab.js",
+    "line": 64,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/gtm/admin/features/${feature_key}",
+    "callSyntax": "fetchJson(`${API_BASE}/gtm/admin/features/${feature_key}`, {\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/FranchiseTab.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/franchises",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/franchises`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/HomeServicesTab.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "${API_BASE}/services/home-services/bookings",
+    "callSyntax": "fetchJson(`${API_BASE}/services/home-services/bookings`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/JobsTab.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/jobs",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/jobs`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/JobsTab.js",
+    "line": 44,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/job/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/job/${id}`, { method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/JobsTab.js",
+    "line": 57,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/job/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/job/${id}`, {\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/LeadsCRMTab.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "${API_BASE}/franchise/leads",
+    "callSyntax": "fetchJson(`${API_BASE}/franchise/leads`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MarketplaceTab.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/marketplace/products?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/marketplace/products?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MedicalTab.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/medical/records?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/medical/records?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MedicalTab.js",
+    "line": 35,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/medical/doctors/${id}/verify",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/medical/doctors/${id}/verify`, {\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 102,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/config",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/config`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 103,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/metrics?hours=24",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/metrics?hours=24`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 104,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/readiness",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/readiness`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 105,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/overrides?surface=shops_home",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/overrides?surface=shops_home`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 130,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/ml/admin/config",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/config`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 149,
+    "method": "POST",
+    "endpoint": "${API_BASE}/ml/admin/kill",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/kill`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 167,
+    "method": "POST",
+    "endpoint": "${API_BASE}/ml/admin/config/reset",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/config/reset`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 195,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/ml/admin/overrides",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/overrides`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLControlTab.js",
+    "line": 213,
+    "method": "DELETE",
+    "endpoint": "${API_BASE}/ml/admin/overrides",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/overrides`, {\r\n        method: 'DELETE'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 93,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/config",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/config`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 94,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/experiments",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/experiments`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 95,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/drift",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/drift`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 96,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/moderation?status=pending&limit=50",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/moderation?status=pending&limit=50`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 97,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/bandit",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/bandit`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 120,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/ml/admin/config",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/config`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 133,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/admin/experiments/${encodeURIComponent(key)}/results",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/experiments/${encodeURIComponent(key)}/results`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 141,
+    "method": "POST",
+    "endpoint": "${API_BASE}/ml/admin/moderation/scan",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/moderation/scan`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 154,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/ml/admin/moderation/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/moderation/${id}`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLGovernanceTab.js",
+    "line": 167,
+    "method": "POST",
+    "endpoint": "${API_BASE}/ml/admin/bandit/reset",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/admin/bandit/reset`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLInsightsTab.js",
+    "line": 185,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/phase2/admin/status",
+    "callSyntax": "fetchJson(`${API_BASE}/ml/phase2/admin/status`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLInsightsTab.js",
+    "line": 201,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/phase2/admin/fairness/simulate?max_ndcg_loss=0.05",
+    "callSyntax": "fetchJson(\r\n        `${API_BASE}/ml/phase2/admin/fairness/simulate?max_ndcg_loss=0.05`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLInsightsTab.js",
+    "line": 227,
+    "method": "POST",
+    "endpoint": "${API_BASE}${path}",
+    "callSyntax": "fetchJson(`${API_BASE}${path}`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MLInsightsTab.js",
+    "line": 422,
+    "method": "GET",
+    "endpoint": "${API_BASE}/ml/phase2/admin/graph/inspect?node_type=merchant&node_id=${encodeURIComponent(inspectId.trim())}",
+    "callSyntax": "fetchJson(\r\n                      `${API_BASE}/ml/phase2/admin/graph/inspect?node_type=merchant&node_id=${encodeURIComponent(inspectId.trim())}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/MultilingualTab.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "${API_BASE}/multilingual/dictionary/hi",
+    "callSyntax": "fetchJson(`${API_BASE}/multilingual/dictionary/hi`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/PremiumTab.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/premium/users",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/premium/users`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/PropertiesTab.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/properties?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/properties?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/PropertiesTab.js",
+    "line": 38,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/property/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/property/${id}`, {\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/RBACTab.js",
+    "line": 39,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/users?limit=50",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/users?limit=50`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/RBACTab.js",
+    "line": 52,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/users/${userId}/role",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/users/${userId}/role`, {\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/RevenueTab.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/revenue/chart",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/revenue/chart`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/RevenueTab.js",
+    "line": 85,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/config/global_commission_split",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/config/global_commission_split`, {\r\n                method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/SettingsTab.js",
+    "line": 29,
+    "method": "POST",
+    "endpoint": "${API_BASE}/admin/settings/action",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/settings/action`, {\r\n                method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/ShopCategoriesTab.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/shop-categories",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/shop-categories`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/ShopsTab.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/shops?${qs}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/shops?${qs}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/ShopsTab.js",
+    "line": 68,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/admin/approvals/shop/${id}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/approvals/shop/${id}`, { method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/SocietyTab.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/societies?limit=50",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/societies?limit=50`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/SOSTab.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/sos/active?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/sos/active?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/SubscriptionsTab.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/subscriptions/all",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/subscriptions/all`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 119,
+    "method": "GET",
+    "endpoint": "${API_BASE}/territories/admin/list?${params}",
+    "callSyntax": "fetchJson(`${API_BASE}/territories/admin/list?${params}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 120,
+    "method": "GET",
+    "endpoint": "${API_BASE}/territories/admin/coverage",
+    "callSyntax": "fetchJson(`${API_BASE}/territories/admin/coverage`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 135,
+    "method": "GET",
+    "endpoint": "${API_BASE}/territories/admin/gaps?limit=100",
+    "callSyntax": "fetchJson(`${API_BASE}/territories/admin/gaps?limit=100`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 142,
+    "method": "GET",
+    "endpoint": "${API_BASE}/franchise/all",
+    "callSyntax": "fetchJson(`${API_BASE}/franchise/all`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 217,
+    "method": "PUT",
+    "endpoint": "${API_BASE}/territories/admin/${selected.id}/boundary",
+    "callSyntax": "fetchJson(`${API_BASE}/territories/admin/${selected.id}/boundary`, {\r\n        method: 'PUT'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 239,
+    "method": "POST",
+    "endpoint": "${API_BASE}/territories/admin/assign-bulk",
+    "callSyntax": "fetchJson(`${API_BASE}/territories/admin/assign-bulk`, {\r\n        method: 'POST'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/TerritoryTab.js",
+    "line": 256,
+    "method": "DELETE",
+    "endpoint": "${API_BASE}/territories/admin/${territoryId}/assignment",
+    "callSyntax": "fetchJson(`${API_BASE}/territories/admin/${territoryId}/assignment`, {\r\n        method: 'DELETE'"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/UsersTab.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/users?${qs}",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/users?${qs}`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/components/tabs/WalletTab.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "${API_BASE}/admin/wallet/transactions/all?page=${page}&limit=25",
+    "callSyntax": "fetchJson(`${API_BASE}/admin/wallet/transactions/all?page=${page}&limit=25`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/context/AdminAuthContext.js",
+    "line": 151,
+    "method": "GET",
+    "endpoint": "/admin-auth/me",
+    "callSyntax": "fetch(`${API_BASE}/admin-auth/me`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/context/AdminAuthContext.js",
+    "line": 180,
+    "method": "POST",
+    "endpoint": "/admin-auth/login",
+    "callSyntax": "fetch(`${API_BASE}/admin-auth/login`"
+  },
+  {
+    "app": "admin",
+    "file": "apps/admin/src/context/AdminAuthContext.js",
+    "line": 209,
+    "method": "POST",
+    "endpoint": "/admin-auth/logout",
+    "callSyntax": "fetch(`${API_BASE}/admin-auth/logout`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/community.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/community/posts",
+    "callSyntax": "fetch(`${API_BASE}/admin/community/posts`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/crm.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/crm/leads",
+    "callSyntax": "fetch(`${API_BASE}/admin/crm/leads`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/delivery.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/delivery/agents",
+    "callSyntax": "fetch(`${API_BASE}/admin/delivery/agents`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/events.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/events",
+    "callSyntax": "fetch(`${API_BASE}/admin/events`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/franchises.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/franchise/all",
+    "callSyntax": "apiGet('/franchise/all'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/franchises.js",
+    "line": 71,
+    "method": "PUT",
+    "endpoint": "/franchise/${editModal.id}/commission",
+    "callSyntax": "apiPut(`/franchise/${editModal.id}/commission`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/marketplace.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/marketplace/products",
+    "callSyntax": "fetch(`${API_BASE}/admin/marketplace/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/medical.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/medical/records",
+    "callSyntax": "fetch(`${API_BASE}/admin/medical/records`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/payouts.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/admin/payouts/pending",
+    "callSyntax": "apiGet('/admin/payouts/pending'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/payouts.js",
+    "line": 79,
+    "method": "PUT",
+    "endpoint": "/admin/payouts/${id}/approve",
+    "callSyntax": "apiPut(`/admin/payouts/${id}/approve`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/premium.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/premium/users",
+    "callSyntax": "fetch(`${API_BASE}/admin/premium/users`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/society.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/societies",
+    "callSyntax": "fetch(`${API_BASE}/admin/societies`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/sos.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/sos/active",
+    "callSyntax": "fetch(`${API_BASE}/admin/sos/active`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/subscriptions.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/subscriptions/all",
+    "callSyntax": "fetch(`${API_BASE}/admin/subscriptions/all`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(admin)/wallet.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/wallet/transactions/all",
+    "callSyntax": "fetch(`${API_BASE}/admin/wallet/transactions/all`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/active.js",
+    "line": 33,
+    "method": "GET",
+    "endpoint": "/delivery/my-jobs",
+    "callSyntax": "apiGet('/delivery/my-jobs'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/active.js",
+    "line": 52,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${job.id}/status",
+    "callSyntax": "apiPost(`/delivery/jobs/${job.id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/active.js",
+    "line": 70,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${job.id}/complete",
+    "callSyntax": "apiPost(`/delivery/jobs/${job.id}/complete`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/agents.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/territory/agents",
+    "callSyntax": "apiGet('/territory/agents'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/appointments.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/appointments",
+    "callSyntax": "apiGet('/shops/my-shop/appointments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/available.js",
+    "line": 33,
+    "method": "GET",
+    "endpoint": "/delivery/jobs",
+    "callSyntax": "apiGet('/delivery/jobs'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/available.js",
+    "line": 50,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${job.id}/accept",
+    "callSyntax": "apiPost(`/delivery/jobs/${job.id}/accept`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/bookings.js",
+    "line": 40,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/appointments",
+    "callSyntax": "apiGet('/shops/my-shop/appointments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/bookings.js",
+    "line": 77,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/appointments/${booking.id}/status",
+    "callSyntax": "apiPut(`/shops/my-shop/appointments/${booking.id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/community.js",
+    "line": 75,
+    "method": "GET",
+    "endpoint": "/feed/posts",
+    "callSyntax": "apiGet('/feed/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/community.js",
+    "line": 99,
+    "method": "POST",
+    "endpoint": "/feed/posts",
+    "callSyntax": "apiPost('/feed/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/earnings.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/delivery/analytics",
+    "callSyntax": "apiGet('/delivery/analytics'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/leads.js",
+    "line": 53,
+    "method": "GET",
+    "endpoint": "/crm/leads",
+    "callSyntax": "apiGet('/crm/leads'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/leads.js",
+    "line": 83,
+    "method": "PUT",
+    "endpoint": "/crm/leads/${lead.id}/status",
+    "callSyntax": "apiPut(`/crm/leads/${lead.id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/orders.js",
+    "line": 108,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/orders?limit=100",
+    "callSyntax": "apiGet('/shops/my-shop/orders?limit=100'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/orders.js",
+    "line": 145,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/orders/${order.id}/status",
+    "callSyntax": "apiPut(`/shops/my-shop/orders/${order.id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/products.js",
+    "line": 67,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/products.js",
+    "line": 77,
+    "method": "GET",
+    "endpoint": "/shops/${resolved}/products",
+    "callSyntax": "apiGet(`/shops/${resolved}/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/products.js",
+    "line": 145,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/products/${editingProduct.id}",
+    "callSyntax": "apiPut(`/shops/my-shop/products/${editingProduct.id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/products.js",
+    "line": 147,
+    "method": "POST",
+    "endpoint": "/shops/my-shop/products",
+    "callSyntax": "apiPost('/shops/my-shop/products'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/products.js",
+    "line": 173,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/products/${id}",
+    "callSyntax": "apiPut(`/shops/my-shop/products/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/revenue.js",
+    "line": 38,
+    "method": "GET",
+    "endpoint": "/admin/dashboard",
+    "callSyntax": "apiGet('/admin/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/revenue.js",
+    "line": 39,
+    "method": "GET",
+    "endpoint": "/admin/revenue/chart",
+    "callSyntax": "apiGet('/admin/revenue/chart'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/revenue.js",
+    "line": 40,
+    "method": "GET",
+    "endpoint": "/admin/payouts/pending",
+    "callSyntax": "apiGet('/admin/payouts/pending'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/reviews.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/reviews",
+    "callSyntax": "apiGet('/shops/my-shop/reviews'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/shops.js",
+    "line": 33,
+    "method": "GET",
+    "endpoint": "/territory/pending-approvals",
+    "callSyntax": "apiGet('/territory/pending-approvals'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/(tabs)/shops.js",
+    "line": 70,
+    "method": "PUT",
+    "endpoint": "/territory/shops/${shop.id}/approval",
+    "callSyntax": "apiPut(`/territory/shops/${shop.id}/approval`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/admin/territory-assignments.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/zones/hierarchy/v2",
+    "callSyntax": "apiGet('/zones/hierarchy/v2'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/admin/territory-assignments.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/admin/territory-assignments",
+    "callSyntax": "apiGet('/admin/territory-assignments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/admin/territory-assignments.js",
+    "line": 46,
+    "method": "DELETE",
+    "endpoint": "/admin/territory-assignments/${assignmentId}",
+    "callSyntax": "apiDelete(`/admin/territory-assignments/${assignmentId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 71,
+    "method": "POST",
+    "endpoint": "/carpool/cost-calculator",
+    "callSyntax": "apiPost('/carpool/cost-calculator'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 82,
+    "method": "POST",
+    "endpoint": "/carpool/rides/${otpRideId}/generate-otp",
+    "callSyntax": "apiPost(`/carpool/rides/${otpRideId}/generate-otp`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 89,
+    "method": "GET",
+    "endpoint": "/carpool/carbon-dashboard",
+    "callSyntax": "apiGet('/carpool/carbon-dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 96,
+    "method": "POST",
+    "endpoint": "/marketplace/price-suggest",
+    "callSyntax": "apiPost('/marketplace/price-suggest'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 103,
+    "method": "POST",
+    "endpoint": "/marketplace/escrow/create",
+    "callSyntax": "apiPost('/marketplace/escrow/create'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 110,
+    "method": "POST",
+    "endpoint": "/jobs/skill-gap",
+    "callSyntax": "apiPost('/jobs/skill-gap'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 117,
+    "method": "POST",
+    "endpoint": "/jobs/alerts",
+    "callSyntax": "apiPost('/jobs/alerts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 125,
+    "method": "GET",
+    "endpoint": "/jobs/alerts",
+    "callSyntax": "apiGet('/jobs/alerts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 131,
+    "method": "GET",
+    "endpoint": "/marketplace/auctions",
+    "callSyntax": "apiGet('/marketplace/auctions'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 132,
+    "method": "POST",
+    "endpoint": "/marketplace/auctions/${auctionId}/bid",
+    "callSyntax": "apiPost(`/marketplace/auctions/${auctionId}/bid`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 133,
+    "method": "GET",
+    "endpoint": "/jobs/assessments",
+    "callSyntax": "apiGet('/jobs/assessments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 135,
+    "method": "POST",
+    "endpoint": "/jobs/assessments/${activeQuiz.id}/submit",
+    "callSyntax": "apiPost(`/jobs/assessments/${activeQuiz.id}/submit`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 136,
+    "method": "GET",
+    "endpoint": "/gamification/profile",
+    "callSyntax": "apiGet('/gamification/profile'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 137,
+    "method": "GET",
+    "endpoint": "/carpool/groups",
+    "callSyntax": "apiGet('/carpool/groups'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 138,
+    "method": "POST",
+    "endpoint": "/carpool/groups",
+    "callSyntax": "apiPost('/carpool/groups'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 139,
+    "method": "POST",
+    "endpoint": "/carpool/groups/${id}/join",
+    "callSyntax": "apiPost(`/carpool/groups/${id}/join`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 286,
+    "method": "POST",
+    "endpoint": "/marketplace/escrow/${escrowResult.id}/release",
+    "callSyntax": "apiPost(`/marketplace/escrow/${escrowResult.id}/release`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/advanced/index.js",
+    "line": 294,
+    "method": "POST",
+    "endpoint": "/marketplace/escrow/${escrowResult.id}/dispute",
+    "callSyntax": "apiPost(`/marketplace/escrow/${escrowResult.id}/dispute`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/carpool/index.js",
+    "line": 58,
+    "method": "GET",
+    "endpoint": "/carpool/my-rides",
+    "callSyntax": "apiGet('/carpool/my-rides'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/carpool/index.js",
+    "line": 74,
+    "method": "POST",
+    "endpoint": "/carpool/rides/${selectedRide.id}/book",
+    "callSyntax": "apiPost(`/carpool/rides/${selectedRide.id}/book`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/carpool/index.js",
+    "line": 83,
+    "method": "POST",
+    "endpoint": "/carpool/rides/${selectedRide.id}/bid",
+    "callSyntax": "apiPost(`/carpool/rides/${selectedRide.id}/bid`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/carpool/index.js",
+    "line": 92,
+    "method": "POST",
+    "endpoint": "/carpool/rides",
+    "callSyntax": "apiPost('/carpool/rides'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/carpool/index.js",
+    "line": 102,
+    "method": "POST",
+    "endpoint": "/carpool/rides/${rideId}/sos",
+    "callSyntax": "apiPost(`/carpool/rides/${rideId}/sos`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/community-hub/group-buy.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/group-buy/active?zoneId=${zoneId}",
+    "callSyntax": "apiGet(`/group-buy/active?zoneId=${zoneId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/community-hub/group-buy.js",
+    "line": 33,
+    "method": "POST",
+    "endpoint": "/group-buy/${dealId}/join",
+    "callSyntax": "apiPost(`/group-buy/${dealId}/join`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/community-hub/trust-feed.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/trust-reviews/feed?zoneId=${zoneId}",
+    "callSyntax": "apiGet(`/trust-reviews/feed?zoneId=${zoneId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/crm/index.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/crm/dashboard",
+    "callSyntax": "apiGet('/crm/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/forgot-password.js",
+    "line": 21,
+    "method": "POST",
+    "endpoint": "/auth/forgot-password",
+    "callSyntax": "apiPost('/auth/forgot-password'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/forgot-password.js",
+    "line": 46,
+    "method": "POST",
+    "endpoint": "/auth/reset-password",
+    "callSyntax": "apiPost('/auth/reset-password'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/jobs/index.js",
+    "line": 48,
+    "method": "GET",
+    "endpoint": "/jobs/applications",
+    "callSyntax": "apiGet('/jobs/applications'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/jobs/index.js",
+    "line": 51,
+    "method": "GET",
+    "endpoint": "/jobs/resumes/me",
+    "callSyntax": "apiGet('/jobs/resumes/me'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/jobs/index.js",
+    "line": 52,
+    "method": "GET",
+    "endpoint": "/jobs/recommendations",
+    "callSyntax": "apiGet('/jobs/recommendations'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/jobs/index.js",
+    "line": 60,
+    "method": "POST",
+    "endpoint": "/jobs/postings/${jobId}/save",
+    "callSyntax": "apiPost(`/jobs/postings/${jobId}/save`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/jobs/index.js",
+    "line": 67,
+    "method": "POST",
+    "endpoint": "/jobs/apply",
+    "callSyntax": "apiPost('/jobs/apply'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/jobs/index.js",
+    "line": 77,
+    "method": "POST",
+    "endpoint": "/jobs/resumes",
+    "callSyntax": "apiPost('/jobs/resumes'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/location-select.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/zones/search?q=${encodeURIComponent(query)}",
+    "callSyntax": "fetch(`${API_URL}/zones/search?q=${encodeURIComponent(query)"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/marketplace/index.js",
+    "line": 46,
+    "method": "GET",
+    "endpoint": "/marketplace/categories",
+    "callSyntax": "apiGet('/marketplace/categories'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/marketplace/index.js",
+    "line": 52,
+    "method": "POST",
+    "endpoint": "/marketplace/${id}/save",
+    "callSyntax": "apiPost(`/marketplace/${id}/save`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/marketplace/index.js",
+    "line": 59,
+    "method": "GET",
+    "endpoint": "/marketplace/${item.id}",
+    "callSyntax": "apiGet(`/marketplace/${item.id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/marketplace/index.js",
+    "line": 68,
+    "method": "POST",
+    "endpoint": "/marketplace/${selectedItem.id}/offer",
+    "callSyntax": "apiPost(`/marketplace/${selectedItem.id}/offer`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/marketplace/index.js",
+    "line": 77,
+    "method": "POST",
+    "endpoint": "/marketplace",
+    "callSyntax": "apiPost('/marketplace'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/admin-dashboard/index.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/admin/approvals",
+    "callSyntax": "apiGet('/admin/approvals'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/admin-dashboard/index.js",
+    "line": 44,
+    "method": "PUT",
+    "endpoint": "/admin/approvals/${type}/${id}",
+    "callSyntax": "apiPut(`/admin/approvals/${type}/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/bills/index.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/bills/status",
+    "callSyntax": "apiGet('/bills/status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/bills/index.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "apiGet('/wallet/history'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/bills/index.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/bills/history",
+    "callSyntax": "apiGet('/bills/history'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/bills/index.js",
+    "line": 57,
+    "method": "POST",
+    "endpoint": "/bills/pay",
+    "callSyntax": "apiPost('/bills/pay'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/blood-bank/index.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/medical/requests",
+    "callSyntax": "apiGet('/medical/requests'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/blood-bank/index.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/medical/donors",
+    "callSyntax": "apiGet('/medical/donors'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/blood-bank/index.js",
+    "line": 45,
+    "method": "GET",
+    "endpoint": "/medical/admin/reward-status",
+    "callSyntax": "apiGet('/medical/admin/reward-status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/blood-bank/index.js",
+    "line": 57,
+    "method": "POST",
+    "endpoint": "/medical/requests",
+    "callSyntax": "apiPost('/medical/requests'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/blood-bank/index.js",
+    "line": 72,
+    "method": "POST",
+    "endpoint": "/medical/donors",
+    "callSyntax": "apiPost('/medical/donors'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/blood-bank/index.js",
+    "line": 86,
+    "method": "POST",
+    "endpoint": "/medical/admin/reward-toggle",
+    "callSyntax": "apiPost('/medical/admin/reward-toggle'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/care/index.js",
+    "line": 65,
+    "method": "GET",
+    "endpoint": "/care/providers",
+    "callSyntax": "apiGet('/care/providers'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/care/index.js",
+    "line": 90,
+    "method": "POST",
+    "endpoint": "/care/request",
+    "callSyntax": "apiPost('/care/request'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/carpool/index.js",
+    "line": 65,
+    "method": "GET",
+    "endpoint": "/carpool/vehicles",
+    "callSyntax": "apiGet('/carpool/vehicles'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/carpool/index.js",
+    "line": 83,
+    "method": "POST",
+    "endpoint": "/carpool/vehicles",
+    "callSyntax": "apiPost('/carpool/vehicles'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/carpool/index.js",
+    "line": 111,
+    "method": "POST",
+    "endpoint": "/carpool/rides/${otpRideId.trim()}/verify-otp",
+    "callSyntax": "apiPost(`/carpool/rides/${otpRideId.trim()}/verify-otp`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/carpool/index.js",
+    "line": 133,
+    "method": "GET",
+    "endpoint": "/carpool/rides",
+    "callSyntax": "apiGet('/carpool/rides'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/carpool/index.js",
+    "line": 169,
+    "method": "POST",
+    "endpoint": "/carpool/rides",
+    "callSyntax": "apiPost('/carpool/rides'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/carpool/index.js",
+    "line": 197,
+    "method": "POST",
+    "endpoint": "/carpool/rides/${id}/book",
+    "callSyntax": "apiPost(`/carpool/rides/${id}/book`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/chat/index.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/chat/conversations",
+    "callSyntax": "apiGet('/chat/conversations'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/checkout/index.js",
+    "line": 75,
+    "method": "GET",
+    "endpoint": "/users/addresses",
+    "callSyntax": "apiGet('/users/addresses'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/checkout/index.js",
+    "line": 97,
+    "method": "POST",
+    "endpoint": "/checkout/quote",
+    "callSyntax": "apiPost('/checkout/quote'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/checkout/index.js",
+    "line": 201,
+    "method": "POST",
+    "endpoint": "/checkout",
+    "callSyntax": "apiPost('/checkout'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/chef/index.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/chef/meals",
+    "callSyntax": "apiGet('/chef/meals'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/chef/index.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/chef/admin/coin-discount-status",
+    "callSyntax": "apiGet('/chef/admin/coin-discount-status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/chef/index.js",
+    "line": 53,
+    "method": "POST",
+    "endpoint": "/chef/meals/${checkoutModal.id}/order",
+    "callSyntax": "apiPost(`/chef/meals/${checkoutModal.id}/order`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/chef/index.js",
+    "line": 69,
+    "method": "POST",
+    "endpoint": "/chef/meals",
+    "callSyntax": "apiPost('/chef/meals'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community/index.js",
+    "line": 45,
+    "method": "GET",
+    "endpoint": "/feed/posts",
+    "callSyntax": "apiGet('/feed/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community/index.js",
+    "line": 80,
+    "method": "POST",
+    "endpoint": "/feed/posts/${id}/vote",
+    "callSyntax": "apiPost(`/feed/posts/${id}/vote`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community/index.js",
+    "line": 94,
+    "method": "POST",
+    "endpoint": "/feed/posts",
+    "callSyntax": "apiPost('/feed/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/community-hub/lost/active${pinQuery}",
+    "callSyntax": "apiGet(`/community-hub/lost/active${pinQuery}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "/community-hub/garage/items",
+    "callSyntax": "apiGet('/community-hub/garage/items'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 49,
+    "method": "GET",
+    "endpoint": "/community-hub/garage/admin/mode",
+    "callSyntax": "apiGet('/community-hub/garage/admin/mode'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 57,
+    "method": "POST",
+    "endpoint": "/community-hub/lost/post",
+    "callSyntax": "apiPost('/community-hub/lost/post'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 71,
+    "method": "POST",
+    "endpoint": "/community-hub/lost/${alertId}/resolve",
+    "callSyntax": "apiPost(`/community-hub/lost/${alertId}/resolve`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 82,
+    "method": "POST",
+    "endpoint": "/community-hub/garage/post",
+    "callSyntax": "apiPost('/community-hub/garage/post'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 97,
+    "method": "POST",
+    "endpoint": "/community-hub/garage/${checkoutModal.id}/buy",
+    "callSyntax": "apiPost(`/community-hub/garage/${checkoutModal.id}/buy`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/community_hub/index.js",
+    "line": 110,
+    "method": "POST",
+    "endpoint": "/community-hub/garage/admin/mode",
+    "callSyntax": "apiPost('/community-hub/garage/admin/mode'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/dashboard/index.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/orders/my-orders",
+    "callSyntax": "apiGet('/orders/my-orders'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/dashboard/index.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/feed/posts?limit=10",
+    "callSyntax": "apiGet('/feed/posts?limit=10'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/dashboard/index.js",
+    "line": 120,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery/index.js",
+    "line": 34,
+    "method": "GET",
+    "endpoint": "/delivery/jobs${pinQuery}",
+    "callSyntax": "apiGet(`/delivery/jobs${pinQuery}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery/index.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "/delivery/my-jobs",
+    "callSyntax": "apiGet('/delivery/my-jobs'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery/index.js",
+    "line": 49,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${jobId}/accept",
+    "callSyntax": "apiPost(`/delivery/jobs/${jobId}/accept`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery/index.js",
+    "line": 63,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${jobId}/complete",
+    "callSyntax": "apiPost(`/delivery/jobs/${jobId}/complete`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery-dashboard/earnings.js",
+    "line": 39,
+    "method": "GET",
+    "endpoint": "/delivery/analytics",
+    "callSyntax": "apiGet('/delivery/analytics'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery-dashboard/index.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/delivery/jobs",
+    "callSyntax": "apiGet('/delivery/jobs'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery-dashboard/index.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/delivery/my-jobs",
+    "callSyntax": "apiGet('/delivery/my-jobs'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery-dashboard/index.js",
+    "line": 39,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${jobId}/accept",
+    "callSyntax": "apiPost(`/delivery/jobs/${jobId}/accept`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery-dashboard/index.js",
+    "line": 57,
+    "method": "POST",
+    "endpoint": "/delivery/jobs/${otpModal.jobId}/complete",
+    "callSyntax": "apiPost(`/delivery/jobs/${otpModal.jobId}/complete`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/delivery-dashboard/onboarding.js",
+    "line": 40,
+    "method": "POST",
+    "endpoint": "/delivery/onboarding",
+    "callSyntax": "apiPost('/delivery/onboarding'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "/donations/ngos",
+    "callSyntax": "apiGet('/donations/ngos'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 49,
+    "method": "GET",
+    "endpoint": "/donations/crowdfund",
+    "callSyntax": "apiGet('/donations/crowdfund'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 56,
+    "method": "GET",
+    "endpoint": "/donations/rescue",
+    "callSyntax": "apiGet('/donations/rescue'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 63,
+    "method": "GET",
+    "endpoint": "/donations/admin/config",
+    "callSyntax": "apiGet('/donations/admin/config'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 72,
+    "method": "POST",
+    "endpoint": "/donations/crowdfund",
+    "callSyntax": "apiPost('/donations/crowdfund'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 86,
+    "method": "POST",
+    "endpoint": "/donations/crowdfund/${id}/donate",
+    "callSyntax": "apiPost(`/donations/crowdfund/${id}/donate`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 98,
+    "method": "POST",
+    "endpoint": "/donations/rescue",
+    "callSyntax": "apiPost('/donations/rescue'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/donations/index.js",
+    "line": 110,
+    "method": "POST",
+    "endpoint": "/donations/admin/config",
+    "callSyntax": "apiPost('/donations/admin/config'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/equipment/listings",
+    "callSyntax": "apiGet('/equipment/listings'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/equipment/rentals/me",
+    "callSyntax": "apiGet('/equipment/rentals/me'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/equipment/rentals/owner",
+    "callSyntax": "apiGet('/equipment/rentals/owner'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 48,
+    "method": "POST",
+    "endpoint": "/equipment/listings",
+    "callSyntax": "apiPost('/equipment/listings'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 60,
+    "method": "POST",
+    "endpoint": "/equipment/rent/${bookingModal.id}",
+    "callSyntax": "apiPost(`/equipment/rent/${bookingModal.id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 72,
+    "method": "POST",
+    "endpoint": "/equipment/rentals/${rentalId}/return",
+    "callSyntax": "apiPost(`/equipment/rentals/${rentalId}/return`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/equipment/index.js",
+    "line": 83,
+    "method": "POST",
+    "endpoint": "/equipment/rentals/${rentalId}/confirm-return",
+    "callSyntax": "apiPost(`/equipment/rentals/${rentalId}/confirm-return`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/events",
+    "callSyntax": "apiGet('/events'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/events/my-events",
+    "callSyntax": "apiGet('/events/my-events'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 49,
+    "method": "GET",
+    "endpoint": "/events/pending",
+    "callSyntax": "apiGet('/events/pending'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 70,
+    "method": "POST",
+    "endpoint": "/events",
+    "callSyntax": "apiPost('/events'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 81,
+    "method": "POST",
+    "endpoint": "/events/${bookingModal.id}/book",
+    "callSyntax": "apiPost(`/events/${bookingModal.id}/book`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 95,
+    "method": "POST",
+    "endpoint": "/events/${id}/approve",
+    "callSyntax": "apiPost(`/events/${id}/approve`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/events/index.js",
+    "line": 104,
+    "method": "POST",
+    "endpoint": "/events/${id}/reject",
+    "callSyntax": "apiPost(`/events/${id}/reject`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/franchise/index.js",
+    "line": 48,
+    "method": "POST",
+    "endpoint": "/franchise/register",
+    "callSyntax": "apiPost('/franchise/register'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/franchise-dashboard/index.js",
+    "line": 32,
+    "method": "GET",
+    "endpoint": "/territory/dashboard",
+    "callSyntax": "fetch(`${API_URL}/territory/dashboard`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/health/index.js",
+    "line": 51,
+    "method": "GET",
+    "endpoint": "/medical/doctors",
+    "callSyntax": "apiGet('/medical/doctors'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/health/index.js",
+    "line": 52,
+    "method": "GET",
+    "endpoint": "/shops?category=pharmacy-healthcare",
+    "callSyntax": "apiGet('/shops?category=pharmacy-healthcare'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/health/index.js",
+    "line": 106,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/jobs/index.js",
+    "line": 41,
+    "method": "GET",
+    "endpoint": "/jobs-board",
+    "callSyntax": "apiGet('/jobs-board'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/jobs/index.js",
+    "line": 58,
+    "method": "GET",
+    "endpoint": "/job-services/skills",
+    "callSyntax": "apiGet('/job-services/skills'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/jobs/index.js",
+    "line": 71,
+    "method": "POST",
+    "endpoint": "/jobs-board",
+    "callSyntax": "apiPost('/jobs-board'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/jobs/index.js",
+    "line": 97,
+    "method": "POST",
+    "endpoint": "/job-services/skills/book",
+    "callSyntax": "apiPost('/job-services/skills/book'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/jobs/index.js",
+    "line": 111,
+    "method": "POST",
+    "endpoint": "/job-services/skills/register",
+    "callSyntax": "apiPost('/job-services/skills/register'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/managers/BeautyManager.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/appointments",
+    "callSyntax": "apiGet('/shops/my-shop/appointments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/managers/DoctorManager.js",
+    "line": 13,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/marketplace/index.js",
+    "line": 49,
+    "method": "GET",
+    "endpoint": "/marketplace",
+    "callSyntax": "apiGet('/marketplace'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/marketplace/index.js",
+    "line": 79,
+    "method": "POST",
+    "endpoint": "/marketplace",
+    "callSyntax": "apiPost('/marketplace'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/medical/index.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/medical/requests",
+    "callSyntax": "apiGet('/medical/requests'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/medical/index.js",
+    "line": 34,
+    "method": "POST",
+    "endpoint": "/medical/requests",
+    "callSyntax": "apiPost('/medical/requests'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/medical/index.js",
+    "line": 45,
+    "method": "POST",
+    "endpoint": "/medical/donors",
+    "callSyntax": "apiPost('/medical/donors'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/merchant/ShopDashboard.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "apiGet('/shops/my-shop/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/merchant/ShopDashboard.js",
+    "line": 66,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/live-status",
+    "callSyntax": "apiPut('/shops/my-shop/live-status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/order-tracking/index.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/orders/my-orders",
+    "callSyntax": "apiGet('/orders/my-orders'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/pets/index.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/pets",
+    "callSyntax": "apiGet('/pets'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/pets/index.js",
+    "line": 40,
+    "method": "POST",
+    "endpoint": "/pets",
+    "callSyntax": "apiPost('/pets'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/pharmacy/index.js",
+    "line": 57,
+    "method": "GET",
+    "endpoint": "/shops?category=pharmacy-healthcare",
+    "callSyntax": "apiGet('/shops?category=pharmacy-healthcare'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/promotions/index.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/campaigns/geo-feed",
+    "callSyntax": "apiGet('/campaigns/geo-feed'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/properties/index.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/properties",
+    "callSyntax": "apiPost('/properties'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/properties/index.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/properties?type=${filterType}",
+    "callSyntax": "fetch(`${API_V1}/properties?type=${filterType}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/referral/index.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/referral/code",
+    "callSyntax": "apiGet('/referral/code'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/register-shop/index.js",
+    "line": 32,
+    "method": "POST",
+    "endpoint": "/shops",
+    "callSyntax": "apiPost('/shops'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/rewards/index.js",
+    "line": 14,
+    "method": "GET",
+    "endpoint": "/loyalty/balance",
+    "callSyntax": "apiGet('/loyalty/balance'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/rewards/index.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/loyalty/redeem",
+    "callSyntax": "apiPost('/loyalty/redeem'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/rewards/index.js",
+    "line": 67,
+    "method": "POST",
+    "endpoint": "/loyalty/spin",
+    "callSyntax": "apiPost('/loyalty/spin'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/scrap/index.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/scrap/pings${pinQuery}",
+    "callSyntax": "apiGet(`/scrap/pings${pinQuery}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/scrap/index.js",
+    "line": 45,
+    "method": "POST",
+    "endpoint": "/scrap/${id}/accept",
+    "callSyntax": "apiPost(`/scrap/${id}/accept`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/scrap/index.js",
+    "line": 54,
+    "method": "POST",
+    "endpoint": "/scrap/${id}/complete",
+    "callSyntax": "apiPost(`/scrap/${id}/complete`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/scrap/index.js",
+    "line": 77,
+    "method": "POST",
+    "endpoint": "/scrap/schedule",
+    "callSyntax": "apiPost('/scrap/schedule'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/service-booking/booking-detail.js",
+    "line": 47,
+    "method": "GET",
+    "endpoint": "/services/my-bookings",
+    "callSyntax": "apiGet('/services/my-bookings'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/service-booking/index.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/services/my-bookings",
+    "callSyntax": "apiGet('/services/my-bookings'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/service-dashboard/index.js",
+    "line": 32,
+    "method": "GET",
+    "endpoint": "/services/dashboard",
+    "callSyntax": "fetch(`${API_URL}/services/dashboard`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/services/index.js",
+    "line": 38,
+    "method": "GET",
+    "endpoint": "/services/nearby",
+    "callSyntax": "apiGet('/services/nearby'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/services/index.js",
+    "line": 41,
+    "method": "GET",
+    "endpoint": "/services",
+    "callSyntax": "apiGet('/services'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/services/index.js",
+    "line": 69,
+    "method": "GET",
+    "endpoint": "/users/addresses",
+    "callSyntax": "apiGet('/users/addresses'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/services/index.js",
+    "line": 101,
+    "method": "POST",
+    "endpoint": "/services/book",
+    "callSyntax": "apiPost('/services/book'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/shop/[id].js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/shops/${id}",
+    "callSyntax": "apiGet(`/shops/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/shop/[id].js",
+    "line": 39,
+    "method": "GET",
+    "endpoint": "/shops/${id}/products",
+    "callSyntax": "apiGet(`/shops/${id}/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/shop-dashboard/components/RetailManager.js",
+    "line": 15,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/shop-detail/index.js",
+    "line": 54,
+    "method": "GET",
+    "endpoint": "/shops/${id}",
+    "callSyntax": "apiGet(`/shops/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/shop-detail/index.js",
+    "line": 64,
+    "method": "GET",
+    "endpoint": "/shops/${id}/products",
+    "callSyntax": "apiGet(`/shops/${id}/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/shop-detail/index.js",
+    "line": 65,
+    "method": "GET",
+    "endpoint": "/shops/${id}/services",
+    "callSyntax": "apiGet(`/shops/${id}/services`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/FlatPortal.js",
+    "line": 51,
+    "method": "GET",
+    "endpoint": "/society-management/visitors/today",
+    "callSyntax": "apiGet('/society-management/visitors/today'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/FlatPortal.js",
+    "line": 52,
+    "method": "GET",
+    "endpoint": "/society-preapproval/pre-approve/my",
+    "callSyntax": "apiGet('/society-preapproval/pre-approve/my'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/FlatPortal.js",
+    "line": 83,
+    "method": "PUT",
+    "endpoint": "/society-management/visitors/status",
+    "callSyntax": "apiPut('/society-management/visitors/status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/FlatPortal.js",
+    "line": 99,
+    "method": "PUT",
+    "endpoint": "/society-preapproval/pre-approve/leave-at-gate",
+    "callSyntax": "apiPut('/society-preapproval/pre-approve/leave-at-gate'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/FlatPortal.js",
+    "line": 112,
+    "method": "POST",
+    "endpoint": "/society-preapproval/pre-approve",
+    "callSyntax": "apiPost('/society-preapproval/pre-approve'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/FlatPortal.js",
+    "line": 139,
+    "method": "DELETE",
+    "endpoint": "/society-preapproval/pre-approve/${pass.id}",
+    "callSyntax": "apiDelete(`/society-preapproval/pre-approve/${pass.id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/GateConsole.js",
+    "line": 106,
+    "method": "GET",
+    "endpoint": "/society-guard/gate/lookup-vehicle?plate=${encodeURIComponent(plate)}",
+    "callSyntax": "apiGet(`/society-guard/gate/lookup-vehicle?plate=${encodeURIComponent(plate)}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/GateConsole.js",
+    "line": 160,
+    "method": "POST",
+    "endpoint": "/society-management/emergency",
+    "callSyntax": "apiPost('/society-management/emergency'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/GuardDashboard.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "/society-management/visitors/today",
+    "callSyntax": "apiGet('/society-management/visitors/today'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/GuardDashboard.js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/society-management/packages/pending",
+    "callSyntax": "apiGet('/society-management/packages/pending'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/GuardDashboard.js",
+    "line": 44,
+    "method": "GET",
+    "endpoint": "/society-management/staff/attendance/today",
+    "callSyntax": "apiGet('/society-management/staff/attendance/today'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/SocietyDesk.js",
+    "line": 56,
+    "method": "GET",
+    "endpoint": "/societies/members/pending",
+    "callSyntax": "apiGet('/societies/members/pending'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/SocietyDesk.js",
+    "line": 57,
+    "method": "GET",
+    "endpoint": "/society-shifts/roster",
+    "callSyntax": "apiGet('/society-shifts/roster'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/SocietyDesk.js",
+    "line": 87,
+    "method": "POST",
+    "endpoint": "/societies/members/decision",
+    "callSyntax": "apiPost('/societies/members/decision'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/society/SocietyDesk.js",
+    "line": 139,
+    "method": "POST",
+    "endpoint": "/societies/notices",
+    "callSyntax": "apiPost('/societies/notices'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/sos/index.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/sos/index.js",
+    "line": 64,
+    "method": "POST",
+    "endpoint": "/sos/contacts",
+    "callSyntax": "apiPost('/sos/contacts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/sos-dashboard/index.js",
+    "line": 42,
+    "method": "GET",
+    "endpoint": "/sos/alerts",
+    "callSyntax": "apiGet('/sos/alerts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/sos-dashboard/index.js",
+    "line": 88,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 26,
+    "method": "GET",
+    "endpoint": "/subscriptions/plans",
+    "callSyntax": "apiGet('/subscriptions/plans'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 26,
+    "method": "GET",
+    "endpoint": "/subscriptions/my-subscriptions",
+    "callSyntax": "apiGet('/subscriptions/my-subscriptions'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 33,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "apiGet('/wallet/history'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 60,
+    "method": "POST",
+    "endpoint": "/subscriptions/subscribe",
+    "callSyntax": "apiPost('/subscriptions/subscribe'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 67,
+    "method": "PUT",
+    "endpoint": "/subscriptions/${sub.id}/resume",
+    "callSyntax": "apiPut(`/subscriptions/${sub.id}/resume`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 68,
+    "method": "PUT",
+    "endpoint": "/subscriptions/${sub.id}/pause",
+    "callSyntax": "apiPut(`/subscriptions/${sub.id}/pause`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/subscriptions/index.js",
+    "line": 69,
+    "method": "DELETE",
+    "endpoint": "/subscriptions/${sub.id}",
+    "callSyntax": "apiDelete(`/subscriptions/${sub.id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/support/chat.js",
+    "line": 26,
+    "method": "POST",
+    "endpoint": "/chatbot/message",
+    "callSyntax": "apiPost('/chatbot/message'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 50,
+    "method": "GET",
+    "endpoint": "/townsquare/news",
+    "callSyntax": "apiGet('/townsquare/news'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 67,
+    "method": "GET",
+    "endpoint": "/townsquare/polls",
+    "callSyntax": "apiGet('/townsquare/polls'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 74,
+    "method": "GET",
+    "endpoint": "/townsquare/news/pending",
+    "callSyntax": "apiGet('/townsquare/news/pending'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 96,
+    "method": "POST",
+    "endpoint": "/townsquare/news",
+    "callSyntax": "apiPost('/townsquare/news'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 106,
+    "method": "POST",
+    "endpoint": "/townsquare/polls/${pollId}/vote",
+    "callSyntax": "apiPost(`/townsquare/polls/${pollId}/vote`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 129,
+    "method": "POST",
+    "endpoint": "/townsquare/news/${id}/${action}",
+    "callSyntax": "apiPost(`/townsquare/news/${id}/${action}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/townsquare/index.js",
+    "line": 136,
+    "method": "POST",
+    "endpoint": "/townsquare/polls",
+    "callSyntax": "apiPost('/townsquare/polls'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/volunteer/index.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/volunteer/tasks",
+    "callSyntax": "apiGet('/volunteer/tasks'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/volunteer/index.js",
+    "line": 24,
+    "method": "POST",
+    "endpoint": "/volunteer/post",
+    "callSyntax": "apiPost('/volunteer/post'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/volunteer/index.js",
+    "line": 41,
+    "method": "POST",
+    "endpoint": "/volunteer/${taskId}/volunteer",
+    "callSyntax": "apiPost(`/volunteer/${taskId}/volunteer`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/volunteer/index.js",
+    "line": 53,
+    "method": "POST",
+    "endpoint": "/volunteer/${taskId}/complete",
+    "callSyntax": "apiPost(`/volunteer/${taskId}/complete`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/modules/wallet/index.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "apiGet('/wallet/history'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/orders/index.js",
+    "line": 16,
+    "method": "GET",
+    "endpoint": "/orders/my-orders",
+    "callSyntax": "apiGet('/orders/my-orders'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/orders/track/[id].js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/orders/${id}",
+    "callSyntax": "apiGet(`/orders/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/premium/index.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/premium/plan",
+    "callSyntax": "apiGet('/premium/plan'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/premium/index.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/premium/status",
+    "callSyntax": "apiGet('/premium/status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/profile/loyalty.js",
+    "line": 47,
+    "method": "GET",
+    "endpoint": "/loyalty/balance",
+    "callSyntax": "apiGet('/loyalty/balance'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/register.js",
+    "line": 38,
+    "method": "POST",
+    "endpoint": "/auth/register-email",
+    "callSyntax": "apiPost('/auth/register-email'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/search.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/shops/search?q=${encodeURIComponent(text)}",
+    "callSyntax": "apiGet(`/shops/search?q=${encodeURIComponent(text)}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/service-booking/index.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/services/my-bookings",
+    "callSyntax": "apiGet('/services/my-bookings'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeInventoryManager.js",
+    "line": 23,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/products",
+    "callSyntax": "apiGet(`/shops/${shopId}/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeOrdersManager.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/orders?status=${status}&limit=50",
+    "callSyntax": "apiGet(`/shops/my-shop/orders?status=${status}&limit=50`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeOrdersManager.js",
+    "line": 55,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/orders/${orderId}/status",
+    "callSyntax": "apiPut(`/shops/my-shop/orders/${orderId}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeSettingsManager.js",
+    "line": 20,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/settings",
+    "callSyntax": "apiGet(`/shops/${shopId}/settings`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeSettingsManager.js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "apiGet('/shops/my-shop/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeSettingsManager.js",
+    "line": 57,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/live-status",
+    "callSyntax": "apiPut('/shops/my-shop/live-status'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/components/NativeStaffManager.js",
+    "line": 21,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/staff",
+    "callSyntax": "apiGet(`/shops/${shopId}/staff`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shop-manager/index.js",
+    "line": 22,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/dashboard",
+    "callSyntax": "apiGet('/shops/my-shop/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shops/[id].js",
+    "line": 31,
+    "method": "GET",
+    "endpoint": "/shops/${id}",
+    "callSyntax": "apiGet(`/shops/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shops/[id].js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/shops/${id}/services",
+    "callSyntax": "apiGet(`/shops/${id}/services`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shops/[id].js",
+    "line": 39,
+    "method": "GET",
+    "endpoint": "/shops/${id}/staff",
+    "callSyntax": "apiGet(`/shops/${id}/staff`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/shops/[id].js",
+    "line": 43,
+    "method": "GET",
+    "endpoint": "/shops/${id}/products",
+    "callSyntax": "apiGet(`/shops/${id}/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/society/index.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/society/dashboard",
+    "callSyntax": "apiGet('/society/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/society-guard/visitor-entry.js",
+    "line": 13,
+    "method": "POST",
+    "endpoint": "/society-preapproval/pre-approve/verify",
+    "callSyntax": "apiPost('/society-preapproval/pre-approve/verify'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/society-registration/index.js",
+    "line": 28,
+    "method": "POST",
+    "endpoint": "/society/register",
+    "callSyntax": "apiPost('/society/register'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/story-create/index.js",
+    "line": 22,
+    "method": "POST",
+    "endpoint": "/townsquare/posts",
+    "callSyntax": "apiPost('/townsquare/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/subscriptions/index.js",
+    "line": 26,
+    "method": "GET",
+    "endpoint": "/subscriptions/plans",
+    "callSyntax": "apiGet('/subscriptions/plans'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/subscriptions/index.js",
+    "line": 48,
+    "method": "POST",
+    "endpoint": "/subscriptions/subscribe",
+    "callSyntax": "apiPost('/subscriptions/subscribe'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/tracking/index.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/orders/${orderId}",
+    "callSyntax": "apiGet(`/orders/${orderId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/app/tracking/[orderId].js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/orders/${orderId}",
+    "callSyntax": "apiGet(`/orders/${orderId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/ComingSoonModal.js",
+    "line": 18,
+    "method": "POST",
+    "endpoint": "/gtm/interest-lead",
+    "callSyntax": "fetch(`${API_BASE}/gtm/interest-lead`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/DashboardNativeTemplate.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/dashboard/metrics",
+    "callSyntax": "apiGet('/dashboard/metrics'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/DashboardNativeTemplate.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/shops",
+    "callSyntax": "apiGet('/shops'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/DashboardNativeTemplate.js",
+    "line": 66,
+    "method": "POST",
+    "endpoint": "/shops",
+    "callSyntax": "apiPost('/shops'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/ImageUploader.js",
+    "line": 60,
+    "method": "POST",
+    "endpoint": "/api/v1/upload",
+    "callSyntax": "fetch(`${API_URL}/api/v1/upload`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/KrishiServiceDetail.js",
+    "line": 34,
+    "method": "POST",
+    "endpoint": "/crm/leads",
+    "callSyntax": "apiPost('/crm/leads'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/PredictiveSearchBar.js",
+    "line": 65,
+    "method": "GET",
+    "endpoint": "/ml/search/suggest?q=${encodeURIComponent(q)}&limit=6",
+    "callSyntax": "fetch(\r\n          `${API_BASE}/ml/search/suggest?q=${encodeU"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/society/SocietyKit.js",
+    "line": 120,
+    "method": "GET",
+    "endpoint": "${SM}/context",
+    "callSyntax": "apiGet(`${SM}/context`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/components/StoriesRow.js",
+    "line": 65,
+    "method": "GET",
+    "endpoint": "/stories",
+    "callSyntax": "apiGet('/stories'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 303,
+    "method": "POST",
+    "endpoint": "/admin-auth/login",
+    "callSyntax": "apiPost('/admin-auth/login'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 46,
+    "method": "POST",
+    "endpoint": "${notifBase}/api/v1/notifications/register-token",
+    "callSyntax": "fetch(`${notifBase}/api/v1/notifications/register-token`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 115,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "fetch(`${API_URL}/wallet/history`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 163,
+    "method": "POST",
+    "endpoint": "/auth/send-otp",
+    "callSyntax": "fetch(`${API_URL}/auth/send-otp`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 177,
+    "method": "POST",
+    "endpoint": "/auth/verify-otp",
+    "callSyntax": "fetch(`${API_URL}/auth/verify-otp`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 356,
+    "method": "DELETE",
+    "endpoint": "${notifBase}/api/v1/notifications/register-token",
+    "callSyntax": "fetch(`${notifBase}/api/v1/notifications/register-token`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 389,
+    "method": "GET",
+    "endpoint": "/territory/pending-approvals",
+    "callSyntax": "fetch(`${API_URL}/territory/pending-approvals`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 419,
+    "method": "POST",
+    "endpoint": "${endpoint}",
+    "callSyntax": "fetch(`${API_URL}${endpoint}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 460,
+    "method": "POST",
+    "endpoint": "/auth/verify-otp",
+    "callSyntax": "fetch(`${API_URL}/auth/verify-otp`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/AuthContext.js",
+    "line": 512,
+    "method": "POST",
+    "endpoint": "/auth/login-email",
+    "callSyntax": "fetch(`${API_URL}/auth/login-email`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/NotificationContext.js",
+    "line": 40,
+    "method": "GET",
+    "endpoint": "/notifications",
+    "callSyntax": "fetch(`${API_URL}/notifications`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/NotificationContext.js",
+    "line": 89,
+    "method": "PUT",
+    "endpoint": "/notifications/${id}/read",
+    "callSyntax": "fetch(`${API_URL}/notifications/${id}/read`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/NotificationContext.js",
+    "line": 106,
+    "method": "PUT",
+    "endpoint": "/notifications/read-all",
+    "callSyntax": "fetch(`${API_URL}/notifications/read-all`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/OrderRingerContext.js",
+    "line": 159,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/orders/${orderId}/status",
+    "callSyntax": "apiPut(`/shops/my-shop/orders/${orderId}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/WalletContext.js",
+    "line": 24,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "fetch(`${API_URL}/wallet/history`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 34,
+    "method": "GET",
+    "endpoint": "/zones",
+    "callSyntax": "fetch(`${API_URL}/zones`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 58,
+    "method": "GET",
+    "endpoint": "/user-zones/saved-zones",
+    "callSyntax": "fetch(`${API_URL}/user-zones/saved-zones`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 81,
+    "method": "GET",
+    "endpoint": "/zones/${zoneId}",
+    "callSyntax": "fetch(`${API_URL}/zones/${zoneId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 107,
+    "method": "GET",
+    "endpoint": "/zones/resolve?lat=${location.coords.latitude}&lng=${location.coords.longitude}",
+    "callSyntax": "fetch(`${API_URL}/zones/resolve?lat=${location.coords.latitu"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 113,
+    "method": "GET",
+    "endpoint": "/zones/nearby?lat=${location.coords.latitude}&lng=${location.coords.longitude}&limit=1",
+    "callSyntax": "fetch(`${API_URL}/zones/nearby?lat=${location.coords.latitud"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 135,
+    "method": "GET",
+    "endpoint": "/zones/${zoneId}",
+    "callSyntax": "fetch(`${API_URL}/zones/${zoneId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 152,
+    "method": "PUT",
+    "endpoint": "/user-zones/zone",
+    "callSyntax": "fetch(`${API_URL}/user-zones/zone`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/context/ZoneContext.js",
+    "line": 174,
+    "method": "POST",
+    "endpoint": "/user-zones/saved-zones",
+    "callSyntax": "fetch(`${API_URL}/user-zones/saved-zones`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useHomeLayout.js",
+    "line": 59,
+    "method": "GET",
+    "endpoint": "/ml/layout/home?${params.toString()}",
+    "callSyntax": "fetch(`${API_BASE}/ml/layout/home?${params.toString()}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useHomeLayout.js",
+    "line": 95,
+    "method": "POST",
+    "endpoint": "/ml/layout/reward",
+    "callSyntax": "fetch(`${API_BASE}/ml/layout/reward`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useProducts.js",
+    "line": 7,
+    "method": "GET",
+    "endpoint": "/products",
+    "callSyntax": "apiGet('/products'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useProducts.js",
+    "line": 14,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}/products",
+    "callSyntax": "apiGet(`/shops/${shopId}/products`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useProducts.js",
+    "line": 24,
+    "method": "PUT",
+    "endpoint": "/marketplace/products/${productId}/inventory",
+    "callSyntax": "apiPut(`/marketplace/products/${productId}/inventory`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useShops.js",
+    "line": 117,
+    "method": "GET",
+    "endpoint": "/shops/${shopId}",
+    "callSyntax": "apiGet(`/shops/${shopId}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/hooks/useShopSearch.js",
+    "line": 47,
+    "method": "POST",
+    "endpoint": "/ml/search/semantic",
+    "callSyntax": "fetch(`${API_BASE}/ml/search/semantic`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/lib/api.js",
+    "line": 91,
+    "method": "POST",
+    "endpoint": "/auth/refresh-token",
+    "callSyntax": "fetch(`${API_BASE}/auth/refresh-token`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/lib/payments.js",
+    "line": 40,
+    "method": "GET",
+    "endpoint": "/payments/razorpay/config",
+    "callSyntax": "apiGet('/payments/razorpay/config'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/lib/payments.js",
+    "line": 54,
+    "method": "POST",
+    "endpoint": "/payments/razorpay/order",
+    "callSyntax": "apiPost('/payments/razorpay/order'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/lib/payments.js",
+    "line": 101,
+    "method": "POST",
+    "endpoint": "/payments/razorpay/verify",
+    "callSyntax": "apiPost('/payments/razorpay/verify'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/lib/telemetry.js",
+    "line": 179,
+    "method": "POST",
+    "endpoint": "/ml/events",
+    "callSyntax": "fetch(`${API_BASE}/ml/events`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/lib/telemetry.js",
+    "line": 214,
+    "method": "GET",
+    "endpoint": "/ml/config/public",
+    "callSyntax": "fetch(`${API_BASE}/ml/config/public`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/carpool/FindRide.js",
+    "line": 89,
+    "method": "GET",
+    "endpoint": "/carpool/rides",
+    "callSyntax": "apiGet('/carpool/rides'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/carpool/OfferRide.js",
+    "line": 27,
+    "method": "POST",
+    "endpoint": "/carpool/rides",
+    "callSyntax": "apiPost('/carpool/rides'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/community/TownsquareScreen.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/community/posts",
+    "callSyntax": "apiGet('/community/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/AdminDashboard.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/admin/analytics/overview?duration=week",
+    "callSyntax": "apiGet('/admin/analytics/overview?duration=week'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/CatalogManagerView.js",
+    "line": 17,
+    "method": "GET",
+    "endpoint": "/universal-catalog/${shop?.id || shop?.shop_id}",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/${shop?.id || shop?.sho"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/CatalogManagerView.js",
+    "line": 52,
+    "method": "POST",
+    "endpoint": "/universal-catalog/${shop?.id || shop?.shop_id}",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/${shop?.id || shop?.sho"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/CatalogManagerView.js",
+    "line": 78,
+    "method": "DELETE",
+    "endpoint": "/universal-catalog/item/${id}",
+    "callSyntax": "fetch(`${API_BASE}/universal-catalog/item/${id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/FleetAssetTracker.js",
+    "line": 37,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/FleetAssetTracker.js",
+    "line": 48,
+    "method": "GET",
+    "endpoint": "/fleet-assets/${resolved}",
+    "callSyntax": "apiGet(`/fleet-assets/${resolved}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/FleetAssetTracker.js",
+    "line": 49,
+    "method": "GET",
+    "endpoint": "/fleet-assets/${resolved}/bookings",
+    "callSyntax": "apiGet(`/fleet-assets/${resolved}/bookings`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/FleetAssetTracker.js",
+    "line": 97,
+    "method": "PUT",
+    "endpoint": "/fleet-assets/${shopId}/${booking.asset_id}/status",
+    "callSyntax": "apiPut(`/fleet-assets/${shopId}/${booking.asset_id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/QueueReceptionDesk.js",
+    "line": 32,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/appointments",
+    "callSyntax": "apiGet('/shops/my-shop/appointments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/QueueReceptionDesk.js",
+    "line": 71,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/appointments/${serving.id}/status",
+    "callSyntax": "apiPut(`/shops/my-shop/appointments/${serving.id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/QueueReceptionDesk.js",
+    "line": 73,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/appointments/${next.id}/status",
+    "callSyntax": "apiPut(`/shops/my-shop/appointments/${next.id}/status`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/RetailPOS.js",
+    "line": 38,
+    "method": "GET",
+    "endpoint": "/shops/my-shop",
+    "callSyntax": "apiGet('/shops/my-shop'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/components/RetailPOS.js",
+    "line": 81,
+    "method": "PUT",
+    "endpoint": "/shops/my-shop/products/${item.id}",
+    "callSyntax": "apiPut(`/shops/my-shop/products/${item.id}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/DeliveryDashboard.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/delivery/analytics",
+    "callSyntax": "apiGet('/delivery/analytics'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/DeliveryDashboard.js",
+    "line": 36,
+    "method": "GET",
+    "endpoint": "/delivery/my-jobs",
+    "callSyntax": "apiGet('/delivery/my-jobs'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/FieldDashboard.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/dashboards/territory/field-dashboard",
+    "callSyntax": "apiGet('/dashboards/territory/field-dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/FranchiseDashboard.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/dashboards/territory/dashboard",
+    "callSyntax": "apiGet('/dashboards/territory/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/FranchiseDashboard.js",
+    "line": 29,
+    "method": "GET",
+    "endpoint": "/territory/pending-approvals",
+    "callSyntax": "apiGet('/territory/pending-approvals'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/ResidentDashboard.js",
+    "line": 35,
+    "method": "GET",
+    "endpoint": "/feed/posts",
+    "callSyntax": "apiGet('/feed/posts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/SecurityDashboard.js",
+    "line": 40,
+    "method": "GET",
+    "endpoint": "/sos/alerts",
+    "callSyntax": "apiGet('/sos/alerts'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/SecurityDashboard.js",
+    "line": 41,
+    "method": "GET",
+    "endpoint": "/society-management/visitors/today",
+    "callSyntax": "apiGet('/society-management/visitors/today'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/SecurityDashboard.js",
+    "line": 100,
+    "method": "POST",
+    "endpoint": "/sos/${alert.id}/resolve",
+    "callSyntax": "apiPost(`/sos/${alert.id}/resolve`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/ServiceDashboard.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/dashboards/services/dashboard",
+    "callSyntax": "apiGet('/dashboards/services/dashboard'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/dashboards/ServiceDashboard.js",
+    "line": 28,
+    "method": "GET",
+    "endpoint": "/shops/my-shop/appointments",
+    "callSyntax": "apiGet('/shops/my-shop/appointments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/ecommerce/CheckoutScreen.js",
+    "line": 44,
+    "method": "POST",
+    "endpoint": "/checkout",
+    "callSyntax": "fetch(`${API_URL}/checkout`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/events/EventsScreen.js",
+    "line": 14,
+    "method": "GET",
+    "endpoint": "/events",
+    "callSyntax": "apiGet('/events'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/events/EventsScreen.js",
+    "line": 39,
+    "method": "POST",
+    "endpoint": "/events/${evt.id}/rsvp",
+    "callSyntax": "apiPost(`/events/${evt.id}/rsvp`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/jobs/JobsScreen.js",
+    "line": 57,
+    "method": "GET",
+    "endpoint": "/jobs/postings${catQuery}",
+    "callSyntax": "apiGet(`/jobs/postings${catQuery}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/jobs/JobsScreen.js",
+    "line": 109,
+    "method": "POST",
+    "endpoint": "/jobs/apply",
+    "callSyntax": "apiPost('/jobs/apply'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/medical/MedicalScreen.js",
+    "line": 27,
+    "method": "GET",
+    "endpoint": "/medical/doctors",
+    "callSyntax": "apiGet('/medical/doctors'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/medical/MedicalScreen.js",
+    "line": 102,
+    "method": "POST",
+    "endpoint": "/sos/trigger",
+    "callSyntax": "apiPost('/sos/trigger'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/medical/MedicalScreen.js",
+    "line": 147,
+    "method": "POST",
+    "endpoint": "/medical/appointments",
+    "callSyntax": "apiPost('/medical/appointments'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/properties/PropertiesScreen.js",
+    "line": 75,
+    "method": "GET",
+    "endpoint": "/properties",
+    "callSyntax": "apiGet('/properties'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/properties/PropertySearch.js",
+    "line": 83,
+    "method": "GET",
+    "endpoint": "/properties",
+    "callSyntax": "apiGet('/properties'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/services/HomeServicesScreen.js",
+    "line": 19,
+    "method": "GET",
+    "endpoint": "/home-services/categories",
+    "callSyntax": "apiGet('/home-services/categories'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/services/HomeServicesScreen.js",
+    "line": 25,
+    "method": "GET",
+    "endpoint": "/home-services/providers",
+    "callSyntax": "apiGet('/home-services/providers'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/services/HomeServicesScreen.js",
+    "line": 30,
+    "method": "GET",
+    "endpoint": "/users/addresses",
+    "callSyntax": "apiGet('/users/addresses'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/services/HomeServicesScreen.js",
+    "line": 68,
+    "method": "POST",
+    "endpoint": "/home-services/bookings",
+    "callSyntax": "apiPost('/home-services/bookings'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/screens/wallet/WalletScreen.js",
+    "line": 18,
+    "method": "GET",
+    "endpoint": "/wallet/history",
+    "callSyntax": "apiGet('/wallet/history'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/services/firebaseAuth.js",
+    "line": 19,
+    "method": "POST",
+    "endpoint": "/auth/firebase-login",
+    "callSyntax": "fetch(`${API_URL}/auth/firebase-login`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/services/gateQueue.js",
+    "line": 199,
+    "method": "POST",
+    "endpoint": "/society-management/visitors",
+    "callSyntax": "apiPost('/society-management/visitors'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/services/geofenceMonitor.js",
+    "line": 119,
+    "method": "POST",
+    "endpoint": "/territories/transitions",
+    "callSyntax": "apiPost('/territories/transitions'"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/services/territoryResolver.js",
+    "line": 238,
+    "method": "GET",
+    "endpoint": "/territories/resolve?${params.toString()}",
+    "callSyntax": "fetch(`${API_URL}/territories/resolve?${params.toString()}`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/services/territoryResolver.js",
+    "line": 344,
+    "method": "POST",
+    "endpoint": "/territories/interest",
+    "callSyntax": "fetch(`${API_URL}/territories/interest`"
+  },
+  {
+    "app": "mobile",
+    "file": "apps/mobile/src/store/cartStore.js",
+    "line": 22,
+    "method": "POST",
+    "endpoint": "/cart",
+    "callSyntax": "apiPost('/cart'"
+  }
+]
