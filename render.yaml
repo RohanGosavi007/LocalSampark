@@ -14,16 +14,16 @@ services:
     name: localsampark-api
     runtime: node
     region: singapore
-    plan: starter
-    # From the repository root: the only lockfile is the workspace root's, and npm ci refuses
-    # to run without one.
+    plan: free # Zero-cost launch plan (512MB RAM, 0.1 vCPU)
     buildCommand: npm ci --workspace=backend
     startCommand: npm start --workspace=backend
-    healthCheckPath: /health
+    healthCheckPath: /ready # Dual liveness & database readiness check
     autoDeploy: false # managed by GitHub Actions
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=440" # Stay safely within 512MB free tier cgroup
       - key: USE_SQLITE
         value: "false"
       # Schema migrations are applied on boot (server.js), so a deploy needs no extra step.
@@ -122,6 +122,9 @@ services:
         sync: false
 
   # 2. Redis (cache, rate limits, queues)
+  # NOTE for ₹0/mo launch: Render no longer provides a free Redis plan.
+  # The API automatically falls back to high-performance in-memory cache & rate-limiting
+  # when REDIS_URL is absent. Alternatively, connect a free Upstash Redis instance.
   - type: redis
     name: localsampark-redis
     region: singapore
@@ -133,7 +136,7 @@ services:
     name: localsampark-web
     runtime: node
     region: singapore
-    plan: starter
+    plan: free # Zero-cost launch plan (512MB RAM)
     buildCommand: npm ci && npm run build:web
     startCommand: npm run start --workspace=apps/web
     healthCheckPath: /api/health
@@ -142,7 +145,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_OPTIONS
-        value: "--max-old-space-size=4096"
+        value: "--max-old-space-size=440"
       # Baked into the browser bundle at build time.
       - key: NEXT_PUBLIC_API_URL
         fromService:
@@ -153,7 +156,10 @@ services:
         sync: false
 
 databases:
-  # 4. PostgreSQL (needs the PostGIS extension: CREATE EXTENSION postgis;)
+  # 4. PostgreSQL
+  # NOTE for ₹0/mo launch: Render's free PostgreSQL tier automatically terminates after 30 days.
+  # For permanent ₹0 hosting, configure DATABASE_URL in the Render dashboard pointing to a
+  # Supabase Free or Neon Free PostgreSQL instance (PostGIS enabled), or use this starter plan.
   - name: localsampark-db
     databaseName: localsampark
     user: localsampark_admin

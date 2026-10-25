@@ -142,7 +142,7 @@ if (process.env.NODE_ENV === 'production') {
   // over plain HTTP from inside the network. Redirecting those made every
   // probe a 301 that curl -f treats as success without ever reaching the app,
   // so an unhealthy instance still looked healthy. Exempt the probe paths.
-  const HTTPS_EXEMPT = new Set(['/health', '/metrics']);
+  const HTTPS_EXEMPT = new Set(['/health', '/metrics', '/ready']);
   app.use((req, res, next) => {
     if (HTTPS_EXEMPT.has(req.path)) return next();
     if (req.headers['x-forwarded-proto'] !== 'https') {
@@ -246,6 +246,62 @@ app.get('/health', async (req, res) => {
     return res.status(503).json(payload);
   }
   return res.status(200).json(payload);
+});
+
+app.get('/ready', async (req, res) => {
+  let isReady = true;
+  const checks = {};
+
+  if (isShuttingDown) {
+    return res.status(503).json({
+      status: 'draining',
+      ready: false,
+      message: 'Server is currently shutting down'
+    });
+  }
+
+  // 1. Check database connectivity
+  try {
+    await query('SELECT 1');
+    checks.database = 'connected';
+  } catch (e) {
+    checks.database = 'disconnected';
+    isReady = false;
+  }
+
+  // 2. Check schema migration table exists
+  try {
+    const isSqlite = process.env.USE_SQLITE === 'true' || !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('sqlite');
+    let count = 0;
+
+    if (isSqlite) {
+      const sqliteCheck = await query("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name IN ('users', 'orders', 'local_shops')");
+      const rows = sqliteCheck.rows || sqliteCheck;
+      count = parseInt(rows[0] ? (rows[0].count ?? rows[0]['count(*)']) : 0, 10);
+    } else {
+      const migrationCheck = await query(`
+        SELECT count(*) as count FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name IN ('users', 'orders', 'local_shops')
+      `);
+      const rows = migrationCheck.rows || migrationCheck;
+      count = parseInt(rows[0] ? (rows[0].count ?? rows[0]['count(*)']) : 0, 10);
+    }
+
+    checks.schema = count >= 3 ? 'ready' : 'incomplete';
+    if (count < 3) isReady = false;
+  } catch (err) {
+    checks.schema = 'check_failed';
+    isReady = false;
+  }
+
+  const statusCode = isReady ? 200 : 503;
+  return res.status(statusCode).json({
+    status: isReady ? 'ready' : 'not_ready',
+    ready: isReady,
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()) + 's',
+    checks
+  });
 });
 
 app.get('/metrics', (req, res) => {

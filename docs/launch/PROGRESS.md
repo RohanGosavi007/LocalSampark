@@ -118,6 +118,14 @@
 - [x] **N16 (AAB & Release Toolchain):** Configured release signing template `apps/mobile/android/keystore.properties.example` for Google Play App Signing; verified ProGuard rules in `apps/mobile/android/app/proguard-rules.pro` for Hermes, TurboModules, WatermelonDB, Sentry, and WebView interfaces; verified Hermes bytecode compilation across 5,551 modules (`npx expo export --platform android`).
 - [x] **E2E Smoke & Mobile Regression Verification:** Authored `apps/mobile/__tests__/permissionsAudit.test.js`; all 12 mobile test suites and 239 unit tests pass cleanly. Gates G1, G4, G5, G6, G9 (Mobile Jest, ESLint, expo-doctor & export), and G15 all pass cleanly.
 
+### Milestone 8: Zero-Cost Deployment Package & Runbook
+- [x] **Hosting Architecture Research & Documentation:** Evaluated current free-tier terms across compute (Render, Koyeb, Cloud Run, Oracle Cloud Always Free), database (Supabase, Neon), object storage (Cloudflare R2), and edge security (Cloudflare Free Zone); authored complete research evaluation in `docs/launch/ZERO_COST_ARCHITECTURE.md`.
+- [x] **Deployment Manifests & Environment Hardening:** Tuned `render.yaml` for `plan: free` with 512MB RAM bounds (`NODE_OPTIONS="--max-old-space-size=440"`) and `/ready` health probe; created sanitized production environment template `backend/.env.production.example`.
+- [x] **Disaster Recovery & Automated Backups (P10):** Created `scripts/backup/pg_dump_backup.js` and `scripts/backup/restore_backup.js` with AES-256-GCM encryption, SHA-256 checksums, dry-run restoration validation, and 7-day retention pruning.
+- [x] **Observability & Health Probes (P8):** Implemented `/ready` readiness check alongside `/health` in `backend/src/server.js`, verifying database connection and core schema tables.
+- [x] **Operational Runbook:** Documented step-by-step account provisioning, database migrations, super-admin provisioning, zero-downtime rolling updates, and incident response checklists in `docs/launch/LAUNCH_RUNBOOK.md`.
+- [x] **Verification:** Verified via unit test suites `healthReady.test.js` (3/3 pass) and `backupRestore.test.js` (5/5 pass) with 100% dual-engine parity on SQLite and PostgreSQL. Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
 ---
 
 ## 3. Session Log
@@ -216,3 +224,14 @@
   - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G9 (mobile Jest, ESLint, expo-doctor & Hermes export), and G15 (launch policy) all PASS cleanly.
   - Milestone M7 verified complete.
 
+- **2026-10-25 (Session 11 — Milestone M8 Zero-Cost Deployment Package & Runbook):**
+  - Authored comprehensive technical specification `docs/launch/specs/2026-10-25-zero-cost-deployment-design.md`.
+  - Authored `docs/launch/ZERO_COST_ARCHITECTURE.md` researching and evaluating free-tier terms (Render, Cloud Run, Koyeb, Oracle Cloud Always Free, Supabase, Neon, Cloudflare R2, Brevo, Resend, Sentry, FCM, Better Stack); documented three zero-cost deployment options with upgrade triggers and cost escalations.
+  - Tuned `render.yaml` for zero-cost operation (`plan: free`), bounded memory limits (`NODE_OPTIONS="--max-old-space-size=440"`), and configured `/ready` readiness probe.
+  - Created sanitized production environment template `backend/.env.production.example`.
+  - Implemented `/ready` readiness check alongside `/health` in `backend/src/server.js`, verifying database pool connectivity and core schema tables with dual-engine SQLite and PostgreSQL support.
+  - Implemented automated database backup and disaster recovery utilities `scripts/backup/pg_dump_backup.js` and `scripts/backup/restore_backup.js` featuring AES-256-GCM encryption, SHA-256 checksums, dry-run restoration validation, and 7-day retention pruning (P10).
+  - Authored comprehensive operational launch runbook `docs/launch/LAUNCH_RUNBOOK.md` detailing account provisioning, environment variable injection, database migration, super-admin provisioning, zero-downtime rolling updates, and incident response checklists.
+  - Authored unit test suites `backend/src/__tests__/unit/healthReady.test.js` (3/3 pass) and `backend/src/__tests__/unit/backupRestore.test.js` (5/5 pass) with 100% dual-engine parity.
+  - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
+  - Marked `P8` and `P10` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M8 complete.

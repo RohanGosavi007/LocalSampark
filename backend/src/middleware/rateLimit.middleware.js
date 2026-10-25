@@ -59,7 +59,7 @@ const roleBasedRateLimiter = rateLimit({
   max: (req, res) => getLimitForRole(req),
   message: { error: 'Too many requests. Please try again later.' },
   keyGenerator: zoneKeyGenerator,
-  skip: (req) => process.env.NODE_ENV === 'test' || req.path === '/health' || req.path === '/metrics',
+  skip: (req) => process.env.NODE_ENV === 'test' || req.path === '/health' || req.path === '/metrics' || req.path === '/ready',
   store: getStore('rl:api:'),
   handler: (req, res, next, options) => {
     logger.warn(`[RATE LIMIT] API limit hit: ${req.ip} | Zone: ${req.territoryId || 'none'} | Path: ${req.path}`);

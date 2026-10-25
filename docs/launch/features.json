@@ -826,9 +826,9 @@
       "`/ready` endpoint verifying database connection pool and migration status"
     ],
     "tests": ["[P8.1] observability: health and ready endpoints"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Enables uptime monitoring on free tier."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/healthReady.test.js"],
+    "notes": "Liveness /health, readiness /ready, and Prometheus /metrics endpoints with Sentry integration."
   },
   {
     "id": "P9",
@@ -857,9 +857,9 @@
       "Documented restore script verified locally"
     ],
     "tests": ["[P10.1] backup: pg_dump backup and restore dry-run script"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Prevents catastrophic data loss."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/backupRestore.test.js", "scripts/backup/pg_dump_backup.js", "scripts/backup/restore_backup.js"],
+    "notes": "Automated AES-256-GCM encrypted database dump, SHA-256 integrity digest, dry-run restoration, and 7-day retention."
   },
   {
     "id": "P11",
