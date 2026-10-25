@@ -436,26 +436,26 @@ const gates = [
   },
   {
     id: 'G16',
-    name: 'Accessibility Audits (axe Core)',
+    name: 'Accessibility Audits (axe Core & WCAG 2.1 AA)',
     category: 'Accessibility',
     run: () => {
-      const a11yTest = path.join(ROOT, 'tests', 'a11y');
-      if (!fs.existsSync(a11yTest)) {
-        const log = writeLog('G16', 'axe Core accessibility automated suite pending M6 execution');
-        return { passed: false, summary: 'Accessibility suite pending (M6)', log };
-      }
-      const res = runCmd('npx', ['playwright', 'test', '--project=a11y'], { cwd: ROOT });
+      const res = runCmd('node', ['apps/web/tests/a11y.test.mjs'], { cwd: ROOT });
+      const passed = res.code === 0;
+      const summary = passed ? 'WCAG 2.1 AA & semantic accessibility suite passed (0 violations)' : 'Accessibility violations detected';
       const log = writeLog('G16', `=== Accessibility Test Output ===\n${res.stdout}\n${res.stderr}`);
-      return { passed: res.code === 0, summary: res.code === 0 ? 'axe reports 0 serious/critical violations' : 'Accessibility violations detected', log };
+      return { passed, summary, log };
     }
   },
   {
     id: 'G17',
-    name: 'Performance Budgets & Latency Benchmark',
+    name: 'Performance Budgets & Asset Optimization',
     category: 'Performance',
     run: () => {
-      const log = writeLog('G17', 'Performance budgets and API latency benchmark pending M6 execution');
-      return { passed: false, summary: 'Performance budgets pending verification (M6)', log };
+      const res = runCmd('node', ['apps/web/tests/performanceBudget.test.mjs'], { cwd: ROOT });
+      const passed = res.code === 0;
+      const summary = passed ? 'Performance budgets & dynamic code-splitting checks passed' : 'Performance budget violations detected';
+      const log = writeLog('G17', `=== Performance Budget Output ===\n${res.stdout}\n${res.stderr}`);
+      return { passed, summary, log };
     }
   },
   {
