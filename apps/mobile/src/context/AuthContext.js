@@ -451,7 +451,11 @@ export function AuthProvider({ children }) {
         });
       setSupabaseRealtime(channel);
     } catch (e) {
-       const verifyOtp = async (phone, otp, fullName = '') => {
+      console.warn('initSupabaseRealtime error:', e.message);
+    }
+  };
+
+  const verifyOtp = async (phone, otp, fullName = '') => {
     try {
       const res = await fetch(`${API_URL}/auth/verify-otp`, {
         method: 'POST',
