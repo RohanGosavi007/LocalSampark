@@ -78,7 +78,7 @@ function validateEnv() {
    */
   if (isProduction) {
     const secret = process.env.JWT_SECRET || '';
-    const banned = ['test-secret', 'secret', 'changeme', 'localsampark', 'your-secret-key'];
+    const banned = ['test-secret', 'secret', 'changeme', 'localsampark', 'your-secret-key', 'production_super_secret'];
     if (secret.length < 32) {
       console.error(`❌ CRITICAL: JWT_SECRET is ${secret.length} characters; at least 32 are required in production.`);
       process.exit(1);

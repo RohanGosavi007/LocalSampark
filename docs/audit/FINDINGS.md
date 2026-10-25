@@ -124,11 +124,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `docker-compose.yml` (`JWT_SECRET=production_super_secret`)
 - **Symptom:** Potential deployment of known default secrets; unvalidated environment variables.
 - **Root Cause:** Hardcoded fallback values in docker compose and template drift.
-- **Fix:** Remove hardcoded fallback secrets; enforce strong secret generation in `envValidator.js`.
-- **Test:** Validation test asserting server refuses boot in production if default secrets are detected.
-- **Evidence:** Code inspection of `docker-compose.yml`.
+- **Fix:** Removed hardcoded `JWT_SECRET=production_super_secret` from `docker-compose.yml`, mapped to `${JWT_SECRET}`, and added `production_super_secret` to banned secret list in `backend/src/config/envValidator.js` which exits process on boot in production.
+- **Test:** Tested envValidator with `NODE_ENV=production` and verified deployConfig tests pass (`npx jest src/__tests__/deployConfig.test.js`).
+- **Evidence:** Verified clean execution of deployConfig.test.js.
 - **Commit:** Pending
-- **Status:** OPEN
+- **Status:** CLOSED
 
 ---
 
