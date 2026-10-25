@@ -113,6 +113,11 @@
 - [x] **Statutory & Store Readiness (Google Play & India E-Commerce Rules 2020):** Created public web Account & Data Deletion portal (`/account-deletion` and `/legal/account-deletion`) fulfilling Google Play User Data Policy with authenticated one-click action and unauthenticated public deletion request form (`POST /api/v1/users/account-deletion-request`); created Statutory Grievance Redressal portal (`/legal/grievance`) with designated Grievance Officer Rohan Gosavi, Dhanori, Pune, 48-hour acknowledgement SLA, and 30-day statutory resolution countdown; updated `LegalHub.js` with DPDP Act 2023 disclosures and Milestone M5 refund rules.
 - [x] **Verification:** Verified via web test suites `seo.test.mjs`, `a11y.test.mjs`, `legalCompliance.test.mjs`, `performanceBudget.test.mjs` (44/44 pass cleanly in `apps/web`); Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
+### Milestone 7: Android Release Hardening, Permissions & E2E Smoke
+- [x] **N12 (Android Permission Audit & Hardening):** Strict declaration of permissions (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `VIBRATE`) with 0 undeclared dangerous/restricted permissions (`READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `SYSTEM_ALERT_WINDOW`, `BIND_TELECOM_CONNECTION_SERVICE`, `FOREGROUND_SERVICE_MICROPHONE`). Stripped telecom call services (`VoiceConnectionService`, `withCallKeepConnectionService`). Built prebuild config plugin `apps/mobile/plugins/withTrimmedPermissions.js` to enforce strip rules.
+- [x] **N16 (AAB & Release Toolchain):** Configured release signing template `apps/mobile/android/keystore.properties.example` for Google Play App Signing; verified ProGuard rules in `apps/mobile/android/app/proguard-rules.pro` for Hermes, TurboModules, WatermelonDB, Sentry, and WebView interfaces; verified Hermes bytecode compilation across 5,551 modules (`npx expo export --platform android`).
+- [x] **E2E Smoke & Mobile Regression Verification:** Authored `apps/mobile/__tests__/permissionsAudit.test.js`; all 12 mobile test suites and 239 unit tests pass cleanly. Gates G1, G4, G5, G6, G9 (Mobile Jest, ESLint, expo-doctor & export), and G15 all pass cleanly.
+
 ---
 
 ## 3. Session Log
@@ -200,9 +205,14 @@
   - Implemented Statutory & Google Play Store Readiness: added public web Account & Data Deletion portal (`/account-deletion` and `/legal/account-deletion`) with backend endpoint `POST /api/v1/users/account-deletion-request`; created Statutory Grievance Redressal page (`/legal/grievance`) with Grievance Officer Rohan Gosavi, Dhanori, Pune, 48-hour acknowledgement SLA, and 30-day statutory resolution countdown; updated `LegalHub.js` with DPDP Act 2023 disclosures and Milestone M5 refund rules.
   - Authored web test suites `seo.test.mjs`, `a11y.test.mjs`, `legalCompliance.test.mjs`, and `performanceBudget.test.mjs`; all 44 unit tests pass cleanly in `apps/web`.
   - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
-  - Marked `P7`, `P12`, and `P13` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M6 complete.
-
-
-
-
+- **2026-10-25 (Session 10 — Milestone M7 Android Release Hardening, Permissions & E2E Smoke):**
+  - Authored comprehensive technical specification `docs/launch/specs/2026-10-25-android-hardening-design.md`.
+  - Implemented `N12`: audited and hardened `apps/mobile/app.json` and `apps/mobile/android/app/src/main/AndroidManifest.xml`; completely purged restricted audio and telephony permissions (`RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `SYSTEM_ALERT_WINDOW`, `BIND_TELECOM_CONNECTION_SERVICE`, `FOREGROUND_SERVICE_MICROPHONE`, `READ_MEDIA_IMAGES`); eliminated `withCallKeepConnectionService` and `VoiceConnectionService`.
+  - Built prebuild configuration plugin `apps/mobile/plugins/withTrimmedPermissions.js` to strip blacklisted permissions and telecom services during Expo prebuild.
+  - Implemented `N16`: configured release keystore properties template `apps/mobile/android/keystore.properties.example` for Google Play App Signing; verified ProGuard / R8 rules in `apps/mobile/android/app/proguard-rules.pro` for Hermes bytecode, TurboModules, WatermelonDB, Sentry, and WebView interfaces.
+  - Authored regression test suite `apps/mobile/__tests__/permissionsAudit.test.js` validating permission invariants, config plugin export, keystore template, and ProGuard rules.
+  - Executed mobile unit test suite: all 12 test suites and 239 unit tests PASS.
+  - Verified Hermes bytecode compilation via `npx expo export --platform android` cleanly compiling 5,551 modules.
+  - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G9 (mobile Jest, ESLint, expo-doctor & Hermes export), and G15 (launch policy) all PASS cleanly.
+  - Milestone M7 verified complete.
 
