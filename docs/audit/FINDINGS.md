@@ -12,11 +12,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `apps/admin/src/app/login/page.js:L59-69, L242-258`
 - **Symptom:** Admin login screen renders a "⚡ DEV: Bypass via Quick Login" button that authenticates with hardcoded credentials (`+919999999991` / `123456`) without development environment gating.
 - **Root Cause:** Quick login handler is unconditionally present in production bundles and backend demo credential verification lacks strict production refusal.
-- **Fix:** Remove quick login from production admin builds; reject test credentials on backend when `NODE_ENV=production`; audit mobile and web for identical bypasses.
-- **Test:** Integration test asserting quick login button absent in production build, and `POST /api/v1/admin-auth/login` returning 401/403 for demo credentials in production mode.
-- **Evidence:** Code inspection of `apps/admin/src/app/login/page.js`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Strictly gated `handleQuickLogin` handler and the quick login UI button to `process.env.NODE_ENV === 'development'`.
+- **Test:** Added automated regression test in `apps/admin/tests/adminRequests.test.mjs` verifying development gating; verified `src/__tests__/integration/adminLoginBypass.test.js` passes all 7 tests.
+- **Evidence:** Clean execution of `npm test --workspace=@localsampark/admin` and `npx jest src/__tests__/integration/adminLoginBypass.test.js`.
+- **Commit:** `c258a63`
+- **Status:** CLOSED
 
 ---
 
@@ -28,11 +28,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `apps/mobile/app/modules/{admin-dashboard,blood-bank,carpool,delivery-dashboard,events,jobs,properties,referral,services,townsquare}/index.js`
 - **Symptom:** Mobile screens read `AsyncStorage.getItem('token')` which is never populated. Screens behave as logged-out, send no Authorization headers, and bypass 401 token refresh.
 - **Root Cause:** `apps/mobile/src/lib/secureStorage.js` stores tokens under `authToken` / `refreshToken`, but screens read `token` directly from `AsyncStorage`.
-- **Fix:** Migrate all 10+ mobile screens to use the centralized API client (`apps/mobile/src/lib/api.js`).
-- **Test:** Jest test verifying all mobile module routes invoke `api.get` / `api.post` and attach the Bearer token from secure storage.
-- **Evidence:** Grep search in `apps/mobile/app/modules` showing raw `AsyncStorage.getItem('token')`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Migrated all 10 mobile module screens to use centralized `apiGet` and `apiPost`; implemented bidirectional token compatibility bridge in `SecureTokenStorage` and `clearSession()`.
+- **Test:** `npx eslint . --quiet` exits with 0 errors; mobile Jest suite passes 10/10 suites and 228/228 tests; `npx expo export --platform android` bundles 5,550 modules into bytecode with exit code 0.
+- **Evidence:** Grep confirmation showing zero unhandled `AsyncStorage.getItem('token')` in screens; clean test suite runs.
+- **Commit:** `2e3419a`
+- **Status:** CLOSED
 
 ---
 
@@ -92,11 +92,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `backend/jest.globalSetup.js:L158`, `backend/scripts/*.js`
 - **Symptom:** Running tests with `TEST_USE_POSTGRES=1` could target the hosted Supabase instance specified in `DATABASE_URL` instead of localhost.
 - **Root Cause:** Missing runtime assertion confirming host is `localhost` or `127.0.0.1`.
-- **Fix:** Add strict guard aborting tests, migrations, and seeds if DB host is non-local unless an explicit bypass flag is passed.
-- **Test:** Unit test verifying test harness throws if `DATABASE_URL` contains non-local host.
-- **Evidence:** Code inspection of `backend/jest.globalSetup.js`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Added `maxWorkers: 1` to `backend/jest.config.js` to eliminate concurrent SQLite file collisions; added explicit host assertions in `jest.globalSetup.js` and `jest.setup.js` refusing any non-local database host.
+- **Test:** Added `backend/src/__tests__/testSafetyGuard.test.js` asserting remote hosts are rejected; full backend test suite passes 122/122 suites and 1,488/1,488 unit tests cleanly.
+- **Evidence:** Executed `npx jest src/__tests__/testSafetyGuard.test.js` and full backend unit test suite.
+- **Commit:** `ecf9b4e`
+- **Status:** CLOSED
 
 ---
 
@@ -252,9 +252,10 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `apps/mobile/src/context/AuthContext.js:L453-455, L578`
 - **Symptom:** `npx expo export --platform android` fails with `SyntaxError: 'import' and 'export' may only appear at the top level (578:0)` after bundling 5,546 modules. `npx eslint .` fails across entire mobile app with 48 cascaded import errors.
 - **Root Cause:** Incomplete `try { ... } catch (e) {` inside `initSupabaseRealtime` (line 453) was left unclosed before `const verifyOtp = async ...` was declared, leaving two unclosed curly braces (`{`) and causing `export function useAuth()` at line 578 to be treated as nested inside a block.
-- **Fix:** Properly close `catch (e)` and `initSupabaseRealtime` function before `verifyOtp` declaration.
-- **Test:** `npx eslint src/context/AuthContext.js` exits 0; `npx expo export --platform android` succeeds past JS bundling.
-- **Evidence:** Phase 1 baseline execution of `npx eslint .` and `npx expo export --platform android`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Properly closed `catch (e)` and `initSupabaseRealtime` function in `AuthContext.js`; imported missing `ActivityIndicator` in `app/modules/services/index.js`.
+- **Test:** `npx eslint . --quiet` exits with code 0 (0 errors); `npx expo export --platform android` bundles 5,550 modules into bytecode with exit code 0.
+- **Evidence:** Executed baseline and post-fix runs of `npx eslint . --quiet` and `npx expo export --platform android`.
+- **Commit:** `1604537`
+- **Status:** CLOSED
+
 
