@@ -36,7 +36,9 @@ export const API_BASE = `${API_URL}/api/v1`;
  * "Authorization: Bearer null" on every signed-out request.
  */
 export function getAuthHeaders() {
-  const legacyToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+  const legacyToken = typeof window !== 'undefined'
+    ? (localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token') || null)
+    : null;
   const headers = { 'Content-Type': 'application/json' };
   if (legacyToken) headers.Authorization = `Bearer ${legacyToken}`;
   return headers;

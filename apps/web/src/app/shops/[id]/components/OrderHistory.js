@@ -39,9 +39,9 @@ export default function OrderHistory({ shopId, onReorder, onTrackOrder }) {
 
   async function fetchOrders() {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/shops/${shopId}/orders/history`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: token ? `Bearer ${token}` : '' }
       });
       if (res.ok) {
         const data = await res.json();
@@ -57,10 +57,10 @@ export default function OrderHistory({ shopId, onReorder, onTrackOrder }) {
   async function submitRating() {
     if (!ratingOrder || rating === 0) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
       await fetch(`${API_BASE}/shops/${shopId}/orders/${ratingOrder}/review`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
         body: JSON.stringify({ rating, review }),
       });
       setRatingOrder(null);

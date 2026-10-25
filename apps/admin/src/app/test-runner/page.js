@@ -34,10 +34,16 @@ export default function TestRunnerPage() {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
+  const getAdminToken = () => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('admin_token') || localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
+  };
+
   const fetchStatus = async () => {
     try {
+      const token = getAdminToken();
       const res = await fetch('/api/v1/test-runner/status', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
       const data = await res.json();
       if (data.success && data.activeRun) {
@@ -56,11 +62,12 @@ export default function TestRunnerPage() {
     setIsExecuting(true);
     setLogs([`🚀 Launching test suite: ${suiteId}...`]);
     try {
+      const token = getAdminToken();
       const res = await fetch('/api/v1/test-runner/run', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({ suite: suiteId })
       });

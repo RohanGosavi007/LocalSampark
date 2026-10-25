@@ -53,6 +53,7 @@ export function clearSession() {
   const ls = storage();
   if (!ls) return;
   Object.values(SESSION_KEYS).forEach((key) => ls.removeItem(key));
+  ls.removeItem('token');
   window.dispatchEvent(new Event('auth:expired'));
 }
 

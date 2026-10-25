@@ -42,11 +42,12 @@ export default function ScrapPage() {
     
     setIsSubmitting(true);
     try {
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
       const res = await fetch(`${API_BASE}/scrap/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify(form)
       });
