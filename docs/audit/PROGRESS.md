@@ -1,6 +1,6 @@
 # LocalSampark Audit Progress Tracker
 
-**Next action:** Complete Phase 0 environment setup (dependencies, local DB configuration script, Android toolchain verification), then run Phase 1 baselines.
+**Next action:** Phase 2 (Automated Inventory & Contract Extraction) and Phase 4 P0 fixes (L16 Mobile AuthContext build blocker, L1 Admin quick login bypass, L2 Mobile token key mismatch, L6 Test DB isolation).
 
 ---
 
@@ -10,17 +10,17 @@
   - [x] Switch to `audit/deep-debug-2026-10` branch
   - [x] Working tree count and secret scan completed
   - [x] Approved snapshot commit: `2ee06b7 chore: snapshot working tree before deep audit`
-- [ ] **Phase 0.2: Audit Ledger Initialized**
+- [x] **Phase 0.2: Audit Ledger Initialized**
   - [x] `AUDIT_BRIEF.md`
   - [x] `PROGRESS.md`
-  - [ ] `BASELINE.md`
-  - [ ] `INVENTORY.md`
-  - [ ] `FINDINGS.md`
-  - [ ] `NEEDS_OWNER.md`
-- [ ] **Phase 0.3: Dependency Alignment (Node 20 vs Node 24, npm ci warnings)**
-- [ ] **Phase 0.4: Local Infrastructure & Safety Scripts (`scripts/audit/use-local-env.ps1`)**
-- [ ] **Phase 0.5: Android Toolchain & SDK Validation**
-- [ ] **Phase 1: Baseline Measurements (Backend, Web, Admin, Mobile, E2E, Security)**
+  - [x] `BASELINE.md`
+  - [x] `INVENTORY.md`
+  - [x] `FINDINGS.md`
+  - [x] `NEEDS_OWNER.md`
+- [x] **Phase 0.3: Dependency Alignment (Node 20 vs Node 24, restored bin links via npm install)**
+- [x] **Phase 0.4: Local Infrastructure & Safety Scripts (`scripts/audit/use-local-env.ps1`, local PG verified)**
+- [x] **Phase 0.5: Android Toolchain & SDK Validation (Java 17, Gradle 8.14.3, adb verified)**
+- [x] **Phase 1: Baseline Measurements (Backend, Web, Admin, Mobile, E2E, Security recorded in BASELINE.md)**
 - [ ] **Phase 2: Automated Inventory & Contract Mappings (Routes, Sockets, Screens, Diff)**
 - [ ] **Phase 3: Automated Static Sweeps (Lint, Dead Code, Security, Async, Currency, IST/UTC)**
 - [ ] **Phase 4: Module-by-Module Deep Audit & Repair (21 Modules)**

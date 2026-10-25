@@ -237,7 +237,24 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Symptom:** Accumulation of ad-hoc scratch scripts and duplicate migration utilities causing confusion.
 - **Root Cause:** Historical debugging scripts not moved to `scripts/archive/`.
 - **Fix:** Audit all scripts, classify into active vs dead, and archive obsolete utilities with owner confirmation.
-- **Test:** Verify build and migrate pipelines remain 100% functional without stray scripts.
+- **Test:** Verify build and migrate pipelines remain functional without stray scripts.
 - **Evidence:** Directory listing of `backend/` and repository root.
 - **Commit:** Pending
 - **Status:** OPEN
+
+---
+
+### Lead L16: Mobile AuthContext Syntax Error Breaks Android Export & Linter
+- **ID:** AUTH-004 (L16)
+- **Severity:** P0 (Build Blocker)
+- **Platform:** Mobile (`apps/mobile`)
+- **Module:** Auth & Identity
+- **Location:** `apps/mobile/src/context/AuthContext.js:L453-455, L578`
+- **Symptom:** `npx expo export --platform android` fails with `SyntaxError: 'import' and 'export' may only appear at the top level (578:0)` after bundling 5,546 modules. `npx eslint .` fails across entire mobile app with 48 cascaded import errors.
+- **Root Cause:** Incomplete `try { ... } catch (e) {` inside `initSupabaseRealtime` (line 453) was left unclosed before `const verifyOtp = async ...` was declared, leaving two unclosed curly braces (`{`) and causing `export function useAuth()` at line 578 to be treated as nested inside a block.
+- **Fix:** Properly close `catch (e)` and `initSupabaseRealtime` function before `verifyOtp` declaration.
+- **Test:** `npx eslint src/context/AuthContext.js` exits 0; `npx expo export --platform android` succeeds past JS bundling.
+- **Evidence:** Phase 1 baseline execution of `npx eslint .` and `npx expo export --platform android`.
+- **Commit:** Pending
+- **Status:** OPEN
+
