@@ -297,6 +297,46 @@ export function runLaunchPolicyTests() {
   }
   addCheckResult('POL-08', 'No mojibake or UTF-8 BOM in source files', encodingViolations);
 
+  // -------------------------------------------------------------
+  // Check 9: Banned words and unsubstantiated claims in docs/launch (POL-09)
+  // -------------------------------------------------------------
+  const bannedWordViolations = [];
+  const launchDocsDir = path.join(ROOT, 'docs', 'launch');
+  const bannedPatterns = [
+    { pattern: /\b100%\s+production\s+ready\b/i, phrase: '100% production ready' },
+    { pattern: /\bzero-defect\b/i, phrase: 'zero-defect' },
+    { pattern: /\benterprise-grade\b/i, phrase: 'enterprise-grade' },
+    { pattern: /\brock-solid\b/i, phrase: 'rock-solid' },
+    { pattern: /\bbulletproof\b/i, phrase: 'bulletproof' },
+    { pattern: /\bmilitary-grade\b/i, phrase: 'military-grade' },
+    { pattern: /\bproduction-certified\b/i, phrase: 'production-certified' }
+  ];
+
+  if (fs.existsSync(launchDocsDir)) {
+    const files = fs.readdirSync(launchDocsDir).filter(f => f.endsWith('.md'));
+    for (const file of files) {
+      if (file === 'LAUNCH_BRIEF.md' || file === 'LAUNCH_PROGRAM_V3.md') continue;
+      const fullPath = path.join(launchDocsDir, file);
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (content.includes('SUPERSEDED') || content.includes('SUPERSEDED BY')) continue;
+
+      const lines = content.split('\n');
+      lines.forEach((line, idx) => {
+        for (const bp of bannedPatterns) {
+          if (bp.pattern.test(line)) {
+            bannedWordViolations.push({
+              file: `docs/launch/${file}`,
+              line: idx + 1,
+              snippet: line.trim(),
+              bannedPhrase: bp.phrase
+            });
+          }
+        }
+      });
+    }
+  }
+  addCheckResult('POL-09', 'No banned hyperbole or unsubstantiated 100% claims in launch docs', bannedWordViolations);
+
   return report;
 }
 

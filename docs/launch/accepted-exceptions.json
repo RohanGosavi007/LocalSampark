@@ -1,0 +1,68 @@
+[
+  {
+    "id": "GHSA-7f33-f3f5-hx78",
+    "gate": "G13",
+    "package": "postcss",
+    "scope": "root (next@15.0.0 dependency)",
+    "severity": "high",
+    "description": "PostCSS line return parsing vulnerability",
+    "exposureAnalysis": "Sub-dependency of Next.js 15 SSR compiler. In LocalSampark, CSS parsing occurs at build time via Next.js Webpack/Turbopack; no user-supplied CSS strings are compiled at runtime.",
+    "mitigation": "Requires upgrade to Next.js 16 (breaking framework upgrade with major router changes). Planned for post-launch milestone.",
+    "ownerApproved": null
+  },
+  {
+    "id": "GHSA-m6fv-jmc8-4pc4",
+    "gate": "G13",
+    "package": "node-fetch",
+    "scope": "root (face-api.js dependency)",
+    "severity": "high",
+    "description": "node-fetch denial of service / header leakage",
+    "exposureAnalysis": "Sub-dependency of TensorFlow.js face-api model used strictly within isolated face verification worker; does not handle arbitrary outbound URLs.",
+    "mitigation": "Upstream face-api.js maintainers have not released a v3 update. Replacing face-api requires vendor model migration.",
+    "ownerApproved": null
+  },
+  {
+    "id": "GHSA-w596-hm35-5959",
+    "gate": "G13",
+    "package": "decode-uri-component",
+    "scope": "apps/mobile (expo-router dependency)",
+    "severity": "high",
+    "description": "decode-uri-component regex denial of service",
+    "exposureAnalysis": "Deep-link path parsing within client Android application. Deep link URLs are constrained to the LocalSampark URI scheme.",
+    "mitigation": "Requires upgrade to Expo 55 / React Native 0.77+ which requires extensive mobile refactoring.",
+    "ownerApproved": null
+  },
+  {
+    "id": "GHSA-2r2c-g63r-vccr",
+    "gate": "G13",
+    "package": "node-forge",
+    "scope": "apps/mobile (@expo/cli build tools)",
+    "severity": "high",
+    "description": "node-forge ASN.1 signature verification issue",
+    "exposureAnalysis": "Development and build-time CLI toolchain dependency for local Expo metro bundler SSL certificates. Never packaged into release APK or runtime bundle.",
+    "mitigation": "Bundled internally with @expo/cli v52.",
+    "ownerApproved": null
+  },
+  {
+    "id": "DOCTOR-DEPENDENCIES",
+    "gate": "G9",
+    "package": "apps/mobile",
+    "scope": "expo-doctor",
+    "severity": "warning",
+    "description": "Check dependencies for packages that should not be installed directly",
+    "exposureAnalysis": "expo-doctor flags packages installed directly that are transitive Expo dependencies.",
+    "mitigation": "Review dependency tree in Phase V6.",
+    "ownerApproved": null
+  },
+  {
+    "id": "DOCTOR-CONFIG-SYNC",
+    "gate": "G9",
+    "package": "apps/mobile",
+    "scope": "expo-doctor",
+    "severity": "warning",
+    "description": "Check for app config fields that may not be synced in a non-CNG project",
+    "exposureAnalysis": "Native Android project uses prebuild / bare workflow (`apps/mobile/android`), where some fields in `app.json` are synced manually to native gradle files.",
+    "mitigation": "Audited in N12 and N16.",
+    "ownerApproved": null
+  }
+]
