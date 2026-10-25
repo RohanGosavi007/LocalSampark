@@ -35,11 +35,10 @@ export default function ServicesScreen() {
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      let result = await apiGet('/services/nearby', token);
+      let result = await apiGet('/services/nearby');
       let list = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : []);
       if (!list || list.length === 0) {
-        result = await apiGet('/services', token);
+        result = await apiGet('/services');
         list = Array.isArray(result) ? result : (Array.isArray(result?.services) ? result.services : (Array.isArray(result?.data) ? result.data : []));
       }
 
@@ -67,9 +66,7 @@ export default function ServicesScreen() {
 
   const fetchAddresses = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-      const res = await apiGet('/users/addresses', token);
+      const res = await apiGet('/users/addresses');
       if (res && Array.isArray(res.addresses) && res.addresses.length > 0) {
         setSavedAddresses(res.addresses);
         const defaultAddr = res.addresses.find(a => a.is_default) || res.addresses[0];
@@ -100,9 +97,8 @@ export default function ServicesScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
       const scheduled_time = `${bookingDate.toISOString().split('T')[0]} ${selectedTime}`;
-      const res = await apiPost('/services/book', { service_id: selectedService.id, scheduled_time, address: bookingAddress, promo: promoCode }, token);
+      const res = await apiPost('/services/book', { service_id: selectedService.id, scheduled_time, address: bookingAddress, promo: promoCode });
       if (res && res.error) {
         Alert.alert('Booking Failed', res.error);
         return;

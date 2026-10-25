@@ -119,7 +119,7 @@ async function refreshAccessToken() {
 async function clearSession() {
   await SecureTokenStorage.deleteToken('authToken');
   await SecureTokenStorage.deleteToken('refreshToken');
-  await AsyncStorage.multiRemove(['user', 'activeRole', 'assignedRoles']);
+  await AsyncStorage.multiRemove(['user', 'activeRole', 'assignedRoles', 'token']);
 }
 
 /**

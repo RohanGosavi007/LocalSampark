@@ -62,9 +62,7 @@ export default function CarpoolScreen() {
 
   const fetchVehicles = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-      const res = await apiGet('/carpool/vehicles', token);
+      const res = await apiGet('/carpool/vehicles');
       if (res && Array.isArray(res.vehicles)) {
         setVehicles(res.vehicles);
         if (res.vehicles.length > 0 && !selectedVehicleId) {
@@ -82,11 +80,6 @@ export default function CarpoolScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        Alert.alert('Login Required', 'Please login to manage your vehicles.');
-        return;
-      }
       const res = await apiPost('/carpool/vehicles', {
         vehicle_type: vehicleForm.vehicle_type,
         make: vehicleForm.make || null,
@@ -94,7 +87,7 @@ export default function CarpoolScreen() {
         plate_number: vehicleForm.plate_number.trim().toUpperCase(),
         total_seats: parseInt(vehicleForm.total_seats, 10) || 4,
         fuel_type: 'petrol'
-      }, token);
+      });
 
       if (res && res.error) {
         Alert.alert('Error', res.error);
@@ -115,15 +108,10 @@ export default function CarpoolScreen() {
     }
     setVerifyingOtp(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        Alert.alert('Login Required', 'Please login to verify ride OTPs.');
-        return;
-      }
       const res = await apiPost(`/carpool/rides/${otpRideId.trim()}/verify-otp`, {
         otp_code: otpCode.trim(),
         booking_id: otpBookingId.trim()
-      }, token);
+      });
 
       if (res && res.error) {
         Alert.alert('Verification Failed', res.error);
@@ -142,8 +130,7 @@ export default function CarpoolScreen() {
   const fetchRides = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      const result = await apiGet('/carpool/rides', token);
+      const result = await apiGet('/carpool/rides');
       const list = Array.isArray(result?.rides) ? result.rides : (Array.isArray(result?.data) ? result.data : []);
       if (list.length > 0) {
         setRides(list.map(r => ({
@@ -176,9 +163,6 @@ export default function CarpoolScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) { Alert.alert('Error', 'Please login to offer a ride'); return; }
-
       const departure_time = parseTimeToHHMM(form.time);
       const ride_date = new Date().toISOString().split('T')[0];
 
@@ -191,7 +175,7 @@ export default function CarpoolScreen() {
         seats_available: parseInt(form.seats, 10) || 3,
         vehicle_id: selectedVehicleId || undefined,
         gender_preference: form.gender === 'Women only' ? 'female' : 'any'
-      }, token);
+      });
 
       if (res && res.error) {
         Alert.alert('Failed to Post Ride', res.error);
@@ -210,12 +194,7 @@ export default function CarpoolScreen() {
   const joinRide = async (id) => {
     if (joinedIds.includes(id)) return;
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        Alert.alert('Login Required', 'Please login to join a carpool ride.');
-        return;
-      }
-      const res = await apiPost(`/carpool/rides/${id}/book`, { seats_booked: 1 }, token);
+      const res = await apiPost(`/carpool/rides/${id}/book`, { seats_booked: 1 });
       if (res && res.error) {
         Alert.alert('Booking Error', res.error);
         return;

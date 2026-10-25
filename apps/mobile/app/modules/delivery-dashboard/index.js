@@ -20,21 +20,12 @@ export default function DeliveryDashboardScreen() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-
       if (activeTab === 'available') {
-        const res = await fetch(`${API_V1}/delivery/jobs`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const json = await res.json();
-        if (json.success) setAvailableJobs(json.data);
+        const json = await apiGet('/delivery/jobs');
+        if (json && json.success) setAvailableJobs(json.data);
       } else if (activeTab === 'active') {
-        const res = await fetch(`${API_V1}/delivery/my-jobs`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const json = await res.json();
-        if (json.success) setMyJobs(json.data);
+        const json = await apiGet('/delivery/my-jobs');
+        if (json && json.success) setMyJobs(json.data);
       }
     } catch (e) {
       console.error(e);

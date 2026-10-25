@@ -25,11 +25,7 @@ export default function EventsScreen() {
 
   const fetchEvents = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/events`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      const data = await res.json();
+      const data = await apiGet('/events');
       if (Array.isArray(data)) {
         setEvents(data.map(e => ({
             id: e.id, title: e.title, description: e.description, event_date: e.event_date,
@@ -44,24 +40,14 @@ export default function EventsScreen() {
 
   const checkRoleAndFetch = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-      
-      const resMy = await fetch(`${API_V1}/events/my-events`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataMy = await resMy.json();
-      if (dataMy.success) setMyEvents(dataMy.data);
+      const dataMy = await apiGet('/events/my-events');
+      if (dataMy && dataMy.success) setMyEvents(dataMy.data);
 
-      const payloadStr = atob(token.split('.')[1]);
-      const payload = JSON.parse(payloadStr);
-      if (['superadmin', 'admin', 'territory_admin', 'area_agent'].includes(payload.role)) {
+      const activeRole = await AsyncStorage.getItem('activeRole');
+      if (['superadmin', 'super_admin', 'admin', 'territory_admin', 'area_agent'].includes(activeRole)) {
         setIsAdmin(true);
-        const resPending = await fetch(`${API_V1}/events/pending`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const dataPending = await resPending.json();
-        if (dataPending.success) setPendingEvents(dataPending.data);
+        const dataPending = await apiGet('/events/pending');
+        if (dataPending && dataPending.success) setPendingEvents(dataPending.data);
       }
     } catch(e) {}
   };
@@ -72,7 +58,6 @@ export default function EventsScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
       const payload = {
         title: newEvent.title,
         description: newEvent.description,
@@ -92,7 +77,6 @@ export default function EventsScreen() {
 
   const handleBookTicket = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
       const payload = { ...bookingData, numTickets: parseInt(bookingData.numTickets, 10) };
       const data = await apiPost(`/events/${bookingModal.id}/book`, payload);
       if (data.success) {
@@ -108,12 +92,7 @@ export default function EventsScreen() {
 
   const approveEvent = async (id) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/events/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await apiPost(`/events/${id}/approve`, {});
       Alert.alert('Admin', data.message);
       checkRoleAndFetch();
       fetchEvents();
@@ -122,14 +101,10 @@ export default function EventsScreen() {
 
   const rejectEvent = async (id) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/events/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await apiPost(`/events/${id}/reject`, {});
       Alert.alert('Admin', data.message);
       checkRoleAndFetch();
+      fetchEvents();
     } catch(e) {}
   };
 

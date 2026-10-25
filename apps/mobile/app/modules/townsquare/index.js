@@ -31,14 +31,10 @@ export default function TownSquareScreen() {
       const storedVotes = await AsyncStorage.getItem('votedPolls');
       if (storedVotes) setVotedPolls(JSON.parse(storedVotes));
 
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        // Simplified role check for mobile
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (['superadmin', 'admin', 'territory_admin', 'area_agent'].includes(payload.role)) {
-          setIsAdmin(true);
-          fetchPendingTips(token);
-        }
+      const activeRole = await AsyncStorage.getItem('activeRole');
+      if (['superadmin', 'super_admin', 'admin', 'territory_admin', 'area_agent'].includes(activeRole)) {
+        setIsAdmin(true);
+        fetchPendingTips();
       }
 
       await Promise.all([fetchNews(), fetchPolls()]);
@@ -51,12 +47,8 @@ export default function TownSquareScreen() {
 
   const fetchNews = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/townsquare/news`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiGet('/townsquare/news');
+      if (data && data.success) {
         const parsedNews = data.data.map(n => {
           try {
             const parsed = JSON.parse(n.content);
@@ -72,22 +64,15 @@ export default function TownSquareScreen() {
 
   const fetchPolls = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/townsquare/polls`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) setPolls(data.data);
+      const data = await apiGet('/townsquare/polls');
+      if (data && data.success) setPolls(data.data);
     } catch (e) {}
   };
 
-  const fetchPendingTips = async (token) => {
+  const fetchPendingTips = async () => {
     try {
-      const res = await fetch(`${API_V1}/townsquare/news/pending`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiGet('/townsquare/news/pending');
+      if (data && data.success) {
         const parsedPending = data.data.map(n => {
           try {
             const parsed = JSON.parse(n.content);
@@ -107,7 +92,6 @@ export default function TownSquareScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
       const payload = { title: newTipTitle, content: newTipContent, pincode: useTerritoryStore.getState().pincode || undefined, location: '' };
       const data = await apiPost('/townsquare/news', payload);
       Alert.alert('Success', data.message);
@@ -119,7 +103,6 @@ export default function TownSquareScreen() {
 
   const handleVote = async (pollId, optionId) => {
     try {
-      const token = await AsyncStorage.getItem('token');
       const data = await apiPost(`/townsquare/polls/${pollId}/vote`, { optionId });
       if (data.success) {
         Alert.alert('Success', data.message);

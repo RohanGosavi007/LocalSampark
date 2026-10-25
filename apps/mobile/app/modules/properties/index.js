@@ -41,31 +41,19 @@ export default function PropertiesScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        Alert.alert('Error', 'Please login to post a listing.');
-        return;
-      }
-      const res = await fetch(`${API_V1}/properties`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...newProperty,
-          location: 'Dhanori', // Mock location for mobile demo
-          type: newProperty.listing_type
-        })
+      const res = await apiPost('/properties', {
+        ...newProperty,
+        location: 'Dhanori',
+        type: newProperty.listing_type
       });
-      if (res.ok) {
+      if (res) {
         Alert.alert('Success', 'Property posted successfully');
         setIsModalOpen(false);
         setNewProperty({ title: '', listing_type: 'Rent Flat', price: '', description: '' });
         fetchProperties();
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to post listing');
+      Alert.alert('Error', error.message || 'Failed to post listing');
     }
   };
 

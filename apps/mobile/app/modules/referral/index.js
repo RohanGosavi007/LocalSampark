@@ -14,12 +14,8 @@ export default function ReferralScreen() {
 
   const fetchReferralData = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/referral/code`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.code) {
+      const data = await apiGet('/referral/code');
+      if (data && data.code) {
         setReferralCode(data.code);
       }
     } catch(e) { console.error(e); }

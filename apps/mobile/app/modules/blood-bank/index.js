@@ -53,7 +53,6 @@ export default function BloodDonationScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
       const payload = { ...newRequest, location: newRequest.location || 'Dhanori' };
       const data = await apiPost('/medical/requests', payload);
       if (data.success) {
@@ -70,7 +69,6 @@ export default function BloodDonationScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
       const data = await apiPost('/medical/donors', { ...donorForm, location: 'Dhanori' });
       if (data.success) {
         let msg = data.message;
@@ -85,7 +83,6 @@ export default function BloodDonationScreen() {
 
   const toggleAdminReward = async (enabled) => {
     try {
-      const token = await AsyncStorage.getItem('token');
       const data = await apiPost('/medical/admin/reward-toggle', { enabled });
       if (data.success) {
         setRewardEnabled(enabled);

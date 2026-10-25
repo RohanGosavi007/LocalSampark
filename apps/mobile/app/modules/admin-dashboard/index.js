@@ -22,12 +22,8 @@ export default function AdminApprovalsScreen() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_V1}/admin/approvals`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const json = await res.json();
-      if (json.success) {
+      const json = await apiGet('/admin/approvals');
+      if (json && json.success) {
         setData(json.data);
       }
     } catch (e) {
@@ -45,20 +41,11 @@ export default function AdminApprovalsScreen() {
         { text: 'Cancel', style: 'cancel' },
         { text: 'Yes', onPress: async () => {
           try {
-            const token = await AsyncStorage.getItem('token');
-            const res = await fetch(`${API_V1}/admin/approvals/${type}/${id}`, {
-              method: 'PUT',
-              headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ action })
-            });
-            const json = await res.json();
-            if (json.success) {
+            const json = await apiPut(`/admin/approvals/${type}/${id}`, { action });
+            if (json && json.success) {
               fetchData();
             } else {
-              Alert.alert('Error', json.error || 'Failed to update approval status');
+              Alert.alert('Error', json?.error || 'Failed to update approval status');
             }
           } catch (e) {
             Alert.alert('Error', 'Server error');

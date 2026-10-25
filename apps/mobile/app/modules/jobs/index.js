@@ -68,7 +68,6 @@ export default function JobsScreen() {
       return;
     }
     try {
-      const token = await AsyncStorage.getItem('token');
       const data = await apiPost('/jobs-board', newJob);
       if (data.success) {
         Alert.alert('Success', data.message);
@@ -109,7 +108,6 @@ export default function JobsScreen() {
 
   const handleRegisterFreelancer = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
       const data = await apiPost('/job-services/skills/register', newBooking);
       if (data.success) {
         Alert.alert('Success', data.message);

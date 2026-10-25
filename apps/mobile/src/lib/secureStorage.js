@@ -22,13 +22,18 @@ export const SecureTokenStorage = {
     try {
       if (Platform.OS !== 'web') {
         await SecureStore.setItemAsync(key, value);
-        return;
       }
       await AsyncStorage.setItem(`sec_${key}`, value);
+      if (key === 'authToken') {
+        // Compatibility bridge for legacy screens reading 'token'
+        await AsyncStorage.setItem('token', value);
+      }
     } catch (e) {
       console.warn(`SecureStore error for ${key}:`, e.message);
-      // Fallback for iOS/Android if SecureStore is completely broken (rare).
       await AsyncStorage.setItem(`sec_${key}`, value);
+      if (key === 'authToken') {
+        await AsyncStorage.setItem('token', value);
+      }
     }
   },
 
@@ -37,22 +42,38 @@ export const SecureTokenStorage = {
       if (Platform.OS !== 'web') {
         const secureVal = await SecureStore.getItemAsync(key).catch(() => null);
         if (secureVal) return secureVal;
+        if (key === 'token') {
+          const fallbackVal = await SecureStore.getItemAsync('authToken').catch(() => null);
+          if (fallbackVal) return fallbackVal;
+        }
       }
     } catch (e) {
       console.warn(`SecureStore getItem error for ${key}:`, e.message);
     }
-    return AsyncStorage.getItem(`sec_${key}`);
+    const secVal = await AsyncStorage.getItem(`sec_${key}`);
+    if (secVal) return secVal;
+    if (key === 'authToken' || key === 'token') {
+      return (await AsyncStorage.getItem('token')) || (await AsyncStorage.getItem('sec_authToken'));
+    }
+    return null;
   },
 
   async deleteToken(key) {
     try {
       if (Platform.OS !== 'web') {
         await SecureStore.deleteItemAsync(key).catch(() => null);
+        if (key === 'authToken') {
+          await SecureStore.deleteItemAsync('token').catch(() => null);
+        }
       }
     } catch (e) {
       console.warn(`SecureStore deleteItem error for ${key}:`, e.message);
     } finally {
       await AsyncStorage.removeItem(`sec_${key}`);
+      if (key === 'authToken' || key === 'token') {
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('sec_authToken');
+      }
     }
   },
 };
