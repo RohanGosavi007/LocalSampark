@@ -95,7 +95,7 @@ export default function Header() {
     const isStaffRole = ['society_admin', 'security_guard', 'moderator', 'super_admin', 'admin', 'territory_admin', 'area_agent', 'field_agent', 'delivery_agent', 'service_provider', 'shop_owner'].includes(activeRole);
 
     return (
-      <div className="hidden 2xl:flex items-center gap-5 relative">
+      <nav aria-label="Main Navigation" className="hidden 2xl:flex items-center gap-5 relative">
           <a href="/shops" className="text-text font-bold text-sm hover:text-primary transition-colors flex min-h-[44px] items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <Store className="w-4 h-4 text-primary" />
             <span>{t('nav_shops_dir')}</span>
@@ -293,12 +293,12 @@ export default function Header() {
             </a>
             </>
           )}
-        </div>
+        </nav>
       );
   };
 
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'backdrop-blur-xl bg-nav-bg shadow-sm' : 'bg-transparent'}`}>
+    <header role="banner" className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'backdrop-blur-xl bg-nav-bg shadow-sm' : 'bg-transparent'}`}>
       <div className="container mx-auto px-4 2xl:px-8 py-3 2xl:py-4 flex items-center justify-between gap-4">
         
         {/* Logo */}
@@ -314,7 +314,8 @@ export default function Header() {
         <div className="flex-1 max-w-2xl hidden md:flex items-center gap-3 relative z-50">
           <button 
             onClick={() => setShowLocationModal(!showLocationModal)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-background-alt border border-border hover:border-primary/50 transition-colors shadow-sm shrink-0"
+            aria-label="Select Delivery Location"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-background-alt border border-border hover:border-primary/50 transition-colors shadow-sm shrink-0 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus:outline-none"
           >
             <MapPin className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold truncate max-w-[120px]">{location?.addressLabel || t('set_loc')}</span>
@@ -332,7 +333,8 @@ export default function Header() {
             />
             <button 
               onClick={() => setShowVoiceSearch(true)}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              aria-label="Voice Search"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus:outline-none"
             >
               <Mic className="w-4 h-4" />
             </button>
@@ -403,14 +405,16 @@ export default function Header() {
             <div className="flex items-center gap-2">
               <a 
                 href="/chat"
-                className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative"
+                aria-label="Messages"
+                className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative focus-visible:ring-2 focus-visible:ring-primary focus:outline-none"
               >
                 <MessageSquare className="w-5 h-5" />
               </a>
 
               <button 
                 onClick={() => setActiveDropdown(activeDropdown === 'notifications' ? null : 'notifications')}
-                className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative"
+                aria-label="Notifications"
+                className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative focus-visible:ring-2 focus-visible:ring-primary focus:outline-none"
               >
                 <Bell className="w-5 h-5" />
                 {unread > 0 && <span className="absolute top-0 right-0 min-w-[10px] h-2.5 bg-red-500 rounded-full border-2 border-background animate-pulse"></span>}
@@ -455,7 +459,8 @@ export default function Header() {
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="2xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none"
+            aria-label="Toggle navigation menu"
+            className="2xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

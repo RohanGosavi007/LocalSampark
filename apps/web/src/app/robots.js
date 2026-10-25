@@ -1,10 +1,25 @@
 export default function robots() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://localsampark.com';
+
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin/', '/checkout/', '/shop-dashboard/', '/dashboard/'],
+      disallow: [
+        '/admin/',
+        '/admin-dashboard/',
+        '/shop-dashboard/',
+        '/shop-manager/',
+        '/delivery-dashboard/',
+        '/society-admin/',
+        '/society-admin-dashboard/',
+        '/gatekeeper/',
+        '/checkout/',
+        '/wallet/',
+        '/profile/',
+        '/api/'
+      ],
     },
-    sitemap: 'https://localsampark.com/sitemap.xml',
-  }
+    sitemap: `${baseUrl}/sitemap.xml`,
+  };
 }

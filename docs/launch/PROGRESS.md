@@ -1,4 +1,4 @@
-**Next action:** Milestone M6: Web Quality, SEO, Performance & Legal Compliance.
+**Next action:** Milestone M7: Android Release Hardening, Permissions & E2E Smoke.
 
 ---
 
@@ -12,7 +12,7 @@
 | **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
 | **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-52-40/` |
 | **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-24-11/` |
-| **M6** | Web Quality, SEO, Performance & Legal Compliance | NOT STARTED | — | — |
+| **M6** | Web Quality, SEO, Performance & Legal Compliance | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-47-04/` |
 | **M7** | Android Release Hardening, Permissions & E2E Smoke | NOT STARTED | — | — |
 | **M8** | Zero-Cost Deployment Package & Runbook | NOT STARTED | — | — |
 | **M9** | Final Regression & Launch Readiness Report | NOT STARTED | — | — |
@@ -106,6 +106,13 @@
 - [x] **C14 (In-App Support & Statutory Grievance Redressal):** Public statutory Grievance Officer directory (`GET /support/grievance-officer`), statutory grievance ticket registration (`POST /support/tickets` and `POST /orders/:id/support`), automated 48-hour acknowledgement timestamp recording, and 30-day statutory resolution SLA countdown.
 - [x] **Verification:** Verified via unit test suite `afterOrderExperience.test.js` (26/26 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
+### Milestone 6: Web Quality, SEO, Performance & Legal Compliance
+- [x] **P7 (Web SEO & Metadata Automation):** Dynamic XML sitemap generator (`apps/web/src/app/sitemap.js`) fetching live shops from API with statutory legal pages and graceful fallback, robots policy (`apps/web/src/app/robots.js`) protecting private administrative consoles, and Schema.org structured data component (`apps/web/src/components/seo/JsonLd.js`) implementing `Organization`, `LocalBusiness`, `Product`, and `BreadcrumbList` schemas.
+- [x] **P12 (Accessibility & WCAG 2.1 AA Compliance):** Added accessible skip-to-content link in `layout.js`, styled in `globals.css` with focus-visible visibility; established `<main id="main-content" tabIndex="-1">` in `page.js`; wrapped navigation in `<header role="banner">` and `<nav aria-label="Main Navigation">` in `Header.js`; added explicit `aria-label`s on icon-only buttons (location, search, mic, chat, notifications, mobile menu); ensured $\ge 44\text{px}$ touch targets.
+- [x] **P13 (Performance Budgets & Asset Optimization):** Isolated heavy 3D canvas dependencies (`@react-three/fiber`, `three`) via dynamic SSR-safe imports (`Floating3DCardLazy.js`); dynamically imported interactive Leaflet maps (`LazyMap.js`); kept landing page shopping path free of 3D bundle overhead.
+- [x] **Statutory & Store Readiness (Google Play & India E-Commerce Rules 2020):** Created public web Account & Data Deletion portal (`/account-deletion` and `/legal/account-deletion`) fulfilling Google Play User Data Policy with authenticated one-click action and unauthenticated public deletion request form (`POST /api/v1/users/account-deletion-request`); created Statutory Grievance Redressal portal (`/legal/grievance`) with designated Grievance Officer Rohan Gosavi, Dhanori, Pune, 48-hour acknowledgement SLA, and 30-day statutory resolution countdown; updated `LegalHub.js` with DPDP Act 2023 disclosures and Milestone M5 refund rules.
+- [x] **Verification:** Verified via web test suites `seo.test.mjs`, `a11y.test.mjs`, `legalCompliance.test.mjs`, `performanceBudget.test.mjs` (44/44 pass cleanly in `apps/web`); Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
 ---
 
 ## 3. Session Log
@@ -184,6 +191,16 @@
   - Verified 100% dual-engine parity: 26/26 passed on SQLite and 26/26 passed on PostgreSQL.
   - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
   - Marked `C10`, `C11`, `C14`, and `S6` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M5 complete.
+
+- **2026-10-25 (Session 9 — Milestone M6 Web Quality, SEO, Performance & Legal Compliance):**
+  - Authored comprehensive technical specification `docs/launch/specs/2026-10-25-web-quality-seo-legal-design.md`.
+  - Implemented `P7`: created `apps/web/src/components/seo/JsonLd.js` exporting Schema.org structured data (`Organization`, `LocalBusiness`, `Product`, `BreadcrumbList`); refactored `apps/web/src/app/sitemap.js` eliminating mock shops and fetching live shops from API with statutory legal routes; updated `apps/web/src/app/robots.js` with comprehensive disallow rules for private operational consoles.
+  - Implemented `P12`: added accessible skip-to-content link in `apps/web/src/app/layout.js`, styled `.skip-link` in `globals.css` with focus visibility; established `<main id="main-content" tabIndex="-1">` in `page.js`; updated `apps/web/src/app/components/Header.js` with `role="banner"`, `<nav aria-label="Main Navigation">`, and explicit `aria-label`s on interactive action buttons (location, voice search, chat, notifications, mobile menu).
+  - Implemented `P13`: verified dynamic SSR-safe code-splitting on heavy Three.js 3D cards (`Floating3DCardLazy.js`) and Leaflet maps (`LazyMap.js`), ensuring primary shopping and checkout bundles remain lightweight.
+  - Implemented Statutory & Google Play Store Readiness: added public web Account & Data Deletion portal (`/account-deletion` and `/legal/account-deletion`) with backend endpoint `POST /api/v1/users/account-deletion-request`; created Statutory Grievance Redressal page (`/legal/grievance`) with Grievance Officer Rohan Gosavi, Dhanori, Pune, 48-hour acknowledgement SLA, and 30-day statutory resolution countdown; updated `LegalHub.js` with DPDP Act 2023 disclosures and Milestone M5 refund rules.
+  - Authored web test suites `seo.test.mjs`, `a11y.test.mjs`, `legalCompliance.test.mjs`, and `performanceBudget.test.mjs`; all 44 unit tests pass cleanly in `apps/web`.
+  - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
+  - Marked `P7`, `P12`, and `P13` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M6 complete.
 
 
 

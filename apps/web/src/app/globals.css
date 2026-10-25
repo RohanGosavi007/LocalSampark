@@ -4,6 +4,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Accessible Skip to Content Link */
+.skip-link {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+.skip-link:focus {
+  top: 1rem;
+  left: 1rem;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
 /* ============================================================
    LOCALSAMPARK — PREMIUM DESIGN SYSTEM v4.0
    Dark-first, vibrant, 3D-ready glassmorphism, Bento Grid

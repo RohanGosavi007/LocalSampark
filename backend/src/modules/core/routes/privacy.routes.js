@@ -88,6 +88,51 @@ router.post('/me/delete-account', authenticate, async (req, res, next) => {
 });
 
 /**
+ * POST /api/v1/users/account-deletion-request
+ * Public account deletion request (Google Play Store compliance)
+ * Allows users who cannot sign in to request deletion of their account & data.
+ */
+router.post('/account-deletion-request', async (req, res, next) => {
+  try {
+    const { identifier, reason } = req.body || {};
+    if (!identifier || !String(identifier).trim()) {
+      return res.status(400).json({ success: false, error: 'Phone number or email is required' });
+    }
+
+    const { queryOne, query } = require('../../../config/database');
+    const crypto = require('crypto');
+    const cleanId = String(identifier).trim().toLowerCase();
+
+    // Lookup user by phone or email
+    const user = await queryOne(
+      'SELECT id, phone_number, email FROM users WHERE phone_number = $1 OR LOWER(email) = $1 LIMIT 1',
+      [cleanId]
+    );
+
+    const requestId = crypto.randomUUID();
+    const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+
+    if (user) {
+      await query(
+        `INSERT INTO data_subject_requests (id, user_id, request_type, status, details, created_at, updated_at)
+         VALUES ($1, $2, 'erasure', 'pending', $3, ${NOW}, ${NOW})`,
+        [requestId, user.id, JSON.stringify({ reason: reason || 'Public web deletion request', requested_at: new Date().toISOString() })]
+      );
+    }
+
+    logger.info(`[Privacy] Public account deletion request received: ${cleanId} (Request ID: ${requestId})`);
+
+    // Return uniform response to prevent user enumeration
+    res.json({
+      success: true,
+      message: 'Account deletion request received. If an account is associated with this contact, personal data will be purged within statutory timelines.',
+      requestId,
+      note: 'Financial tax transaction records will be retained in anonymized form as required by Indian tax law (GST Act).'
+    });
+  } catch (error) { next(error); }
+});
+
+/**
  * GET /api/v1/users/me/data-export
  * Right to Access — DPDP Section 11
  * Rate limited: 1 export per 24 hours

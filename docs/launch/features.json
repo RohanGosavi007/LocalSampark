@@ -810,9 +810,9 @@
       "Open Graph tags and canonical URLs on all public routes"
     ],
     "tests": ["[P7.1] seo: json-ld and dynamic sitemap generation"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Boosts organic discovery."
+    "status": "CODE COMPLETE",
+    "evidence": ["apps/web/tests/seo.test.mjs"],
+    "notes": "Dynamic API-backed sitemap, robots.txt, and Schema.org JSON-LD structured schemas."
   },
   {
     "id": "P8",
@@ -888,9 +888,9 @@
       "Touch targets >= 44px on mobile and web views"
     ],
     "tests": ["[P12.1] i18n: translation key coverage", "[P12.2] a11y: axe core accessibility check"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Ensures wide hyperlocal accessibility."
+    "status": "CODE COMPLETE",
+    "evidence": ["apps/web/tests/a11y.test.mjs"],
+    "notes": "Semantic HTML landmarks, skip links, aria-labels, and >= 44px touch targets."
   },
   {
     "id": "P13",
@@ -904,8 +904,8 @@
       "Android cold startup time <= 3s on mid-range profile"
     ],
     "tests": ["[P13.1] perf: api latency benchmark", "[P13.2] perf: bundle size budget checks"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Critical for low-cost Indian mobile devices."
+    "status": "CODE COMPLETE",
+    "evidence": ["apps/web/tests/performanceBudget.test.mjs"],
+    "notes": "Dynamic code splitting of heavy 3D canvas and maps out of critical shopping paths."
   }
 ]
