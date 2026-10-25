@@ -8,7 +8,7 @@ const fs = require('fs');
 
 // Force test environment
 process.env.NODE_ENV = 'test';
-process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
+process.env.USE_SQLITE = (process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true') ? 'false' : 'true';
 
 // The database path and the schema are owned by jest.globalSetup.js, which
 // builds an isolated file from the real migrations before any suite runs. This

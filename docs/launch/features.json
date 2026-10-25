@@ -1,0 +1,840 @@
+[
+  {
+    "id": "C1",
+    "title": "Customer Account & Authentication",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Sign-in supported via Google Sign-In and email OTP",
+      "Phone OTP supported behind configurable feature flag (off by default)",
+      "Zero OTPs leaked in production API responses",
+      "Native Android tokens stored exclusively in SecureStore",
+      "Session refresh, single logout, and logout from all devices working",
+      "In-app account deletion and public web deletion-request page compliant with Play policy",
+      "Data export request endpoint available"
+    ],
+    "tests": ["[C1.1] auth: reject OTP in production responses", "[C1.2] auth: secure storage isolation", "[C1.3] auth: account deletion flow"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Addresses N1 and N2."
+  },
+  {
+    "id": "C2",
+    "title": "Location & Serviceability",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "GPS detection and manual address/pincode selection",
+      "Saved addresses with geo-coordinates and pincode validation",
+      "Serviceability verification against Dhanori/Pune pilot zone",
+      "Clear unserviceable state with waitlist signup capture"
+    ],
+    "tests": ["[C2.1] location: pilot zone boundary check", "[C2.2] location: unserviceable waitlist capture"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Pilot zone defaults to Dhanori, Pune."
+  },
+  {
+    "id": "C3",
+    "title": "Discovery & Shop Listings",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Home feed displaying admin-managed banners, categories, and nearby shops",
+      "Shop directory with filters (open now, distance, rating, delivery time) and sorting",
+      "Shop detail page with operational hours, holidays, minimum order, fees, and catalog sections"
+    ],
+    "tests": ["[C3.1] discovery: nearby shops within radius", "[C3.2] discovery: shop hours and open status"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Real DB data only, zero Math.random."
+  },
+  {
+    "id": "C4",
+    "title": "Product Detail & Legal Metrology",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Product image gallery and selectable variants (size, weight, color)",
+      "Price, MRP, discount percentage, and quantity limit enforcement",
+      "Seller identity, FSSAI registration (for food), and return policy display",
+      "Legal metrology mandatory fields: net quantity, manufacturer/packer, country of origin, best before date",
+      "Verified-purchase customer reviews display"
+    ],
+    "tests": ["[C4.1] product: legal metrology validation", "[C4.2] product: variant selection and price sync"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Restricted categories (pharmacy, alcohol, tobacco, weapons) blocked at launch."
+  },
+  {
+    "id": "C5",
+    "title": "Catalog Search",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Autocomplete and typo-tolerant search across shops and products",
+      "Zero-cost PostgreSQL full-text search with pg_trgm as default",
+      "Category and price facet filtering",
+      "Typesense integration optional with automatic fallback"
+    ],
+    "tests": ["[C5.1] search: postgres fts and trgm fuzzy match"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Runs without external paid search services."
+  },
+  {
+    "id": "C6",
+    "title": "Cart Management",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Server-side cart synchronized across web and mobile sessions",
+      "Guest cart merged into user cart upon login",
+      "Real-time stock and price revalidation against catalog",
+      "Multi-shop cart item grouping per Decision D6",
+      "Per-shop minimum order and delivery fee validation"
+    ],
+    "tests": ["[C6.1] cart: multi-shop grouping", "[C6.2] cart: stock revalidation on item change"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Enforces server-side authority on all pricing and stock."
+  },
+  {
+    "id": "C7",
+    "title": "Database-Backed Coupon Engine",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Database schema for platform and shop-specific coupons",
+      "Coupon types: flat discount (paise), percentage with cap, and free delivery",
+      "Strict validation rules: min order, validity window, total and per-user limits, first-order only, eligible shops",
+      "Server-side quote calculation and checkout verification",
+      "Race-safe, idempotent redemption concurrency protection"
+    ],
+    "tests": ["[C7.1] coupon: database schema & validation rules", "[C7.2] coupon: race-safe redemption under concurrency"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Replaces hardcoded mock coupons (N5)."
+  },
+  {
+    "id": "C8",
+    "title": "Checkout Flow",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Address selection and delivery time slot selection (or ASAP)",
+      "Server-authoritative quote computing items, discounts, delivery fees, taxes, and total",
+      "Payment method handling: COD active by default; online prepaid (Razorpay) flagged",
+      "Idempotency-Key enforcement on order placement to prevent duplicate orders",
+      "Order confirmation screen and transactional event dispatch"
+    ],
+    "tests": ["[C8.1] checkout: server quote integrity", "[C8.2] checkout: idempotency key deduplication"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Supports COD and flagged online payments (D4)."
+  },
+  {
+    "id": "C9",
+    "title": "Order Management & Tracking",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Order list, detailed view, and status milestone timeline",
+      "Real-time status updates via WebSocket with polling fallback",
+      "Cancellation window enforcement based on order state",
+      "GST-ready invoice PDF generation (pdfkit)",
+      "Re-order and help/dispute entry points"
+    ],
+    "tests": ["[C9.1] order: canonical lifecycle transitions", "[C9.2] order: tax invoice pdf generation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Resolves N6 and N7."
+  },
+  {
+    "id": "C10",
+    "title": "Returns & Refunds",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Customer return request submission with reason codes and photo uploads",
+      "Seller and admin review and approval queue",
+      "Automated refund triggering to original payment method (or COD manual payout tracking)",
+      "End-to-end return status progression"
+    ],
+    "tests": ["[C10.1] returns: return request validation", "[C10.2] returns: refund ledger integration"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Handles COD refund logging."
+  },
+  {
+    "id": "C11",
+    "title": "Verified Reviews & Ratings",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Rating and review submission restricted to verified delivered purchasers",
+      "Seller reply capability",
+      "Abuse reporting and admin moderation queue",
+      "Consumer Protection (E-Commerce) Rules compliance (no fake/unverified reviews)"
+    ],
+    "tests": ["[C11.1] reviews: verified purchase enforcement"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "No unverified reviews allowed."
+  },
+  {
+    "id": "C12",
+    "title": "Wishlist & Saved Items",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "User wishlist persistence across sessions",
+      "Quick add-to-cart from wishlist",
+      "Recently viewed products drawer"
+    ],
+    "tests": ["[C12.1] wishlist: add, remove, and list items"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Consolidates duplicate wishlist tables."
+  },
+  {
+    "id": "C13",
+    "title": "Notification System",
+    "scope": "launch",
+    "platforms": ["api", "web", "android"],
+    "acceptance": [
+      "Push notification delivery matching client token type (FCM for native, Expo push aligned)",
+      "In-app notification inbox with read/unread tracking",
+      "Transactional email notifications (free tier Brevo/Resend)",
+      "User notification preferences and deep linking into order/shop screens"
+    ],
+    "tests": ["[C13.1] notifications: push token format alignment (N17)"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Resolves N17 token mismatch."
+  },
+  {
+    "id": "C14",
+    "title": "Support & Grievance Redressal",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Customer support ticket creation with unique ticket ID",
+      "Public statutory Grievance Officer information page",
+      "48-hour acknowledgement tracking and resolution SLA reporting under Consumer Protection Rules 2020",
+      "In-app order help workflow"
+    ],
+    "tests": ["[C14.1] grievance: ticket creation and 48hr sla tracking"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "India e-commerce mandatory requirement."
+  },
+  {
+    "id": "S1",
+    "title": "Seller Onboarding & KYC",
+    "scope": "launch",
+    "platforms": ["web", "android", "admin", "api"],
+    "acceptance": [
+      "Shop profile setup: geo-pin, operational hours, holidays, delivery radius, min order, delivery fee",
+      "KYC document uploads: PAN, optional GSTIN, FSSAI license (food), bank/UPI payout details",
+      "Secure private object storage for KYC documents with signed URL access (N3)",
+      "Admin review workflow: Pending, Approved, Rejected with reason, Resubmission"
+    ],
+    "tests": ["[S1.1] seller: kyc submission and secure document storage"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "KYC files in private storage only."
+  },
+  {
+    "id": "S2",
+    "title": "Seller Catalog & Inventory Management",
+    "scope": "launch",
+    "platforms": ["web", "android", "api"],
+    "acceptance": [
+      "Product CRUD with multiple variants (size, weight, pack, color)",
+      "Public CDN-backed image uploads with resizing and MIME verification",
+      "Price, MRP, HSN code, GST rate, and stock quantity tracking",
+      "Low-stock alert thresholds and one-tap availability toggles",
+      "Bulk CSV catalog import/export",
+      "Catalog moderation status checks (Restricted categories blocked)"
+    ],
+    "tests": ["[S2.1] catalog: product variant management", "[S2.2] catalog: restricted category blocking"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Solves N7 variant features."
+  },
+  {
+    "id": "S3",
+    "title": "Seller Order Operations & Kitchen Display",
+    "scope": "launch",
+    "platforms": ["web", "android", "api"],
+    "acceptance": [
+      "Audible new-order alerts via OrderRingerContext",
+      "Order acceptance or rejection with mandatory reason code",
+      "Auto-cancel timer for unaccepted orders",
+      "Order state transitions: Preparing -> Ready for Pickup -> Handed Over",
+      "Fulfillment type support: self-delivery, platform rider, or customer pickup",
+      "Thermal packing slip and GST-compliant invoice printing"
+    ],
+    "tests": ["[S3.1] seller: order accept and state progression"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Uses existing OrderRingerContext."
+  },
+  {
+    "id": "S4",
+    "title": "Seller Financials & Payouts",
+    "scope": "launch",
+    "platforms": ["web", "android", "admin", "api"],
+    "acceptance": [
+      "Daily settlement statements and COD cash collection reconciliation",
+      "0% platform commission enforced at launch (configurable for future)",
+      "Payout request submission and historical status ledger",
+      "Downloadable financial CSV statements"
+    ],
+    "tests": ["[S4.1] seller: 0% launch commission calculation and statement generation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Double-entry ledger backed."
+  },
+  {
+    "id": "S5",
+    "title": "Shop-Level Coupons & Offers",
+    "scope": "launch",
+    "platforms": ["web", "android", "api"],
+    "acceptance": [
+      "Seller can create shop-specific discount coupons within platform guardrails",
+      "Coupons automatically validated during cart quote for that shop only",
+      "Seller coupon usage analytics"
+    ],
+    "tests": ["[S5.1] shop-coupon: shop-specific scope validation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Integrated with C7 engine."
+  },
+  {
+    "id": "S6",
+    "title": "Seller Review Management",
+    "scope": "launch",
+    "platforms": ["web", "android", "api"],
+    "acceptance": [
+      "Seller can view verified customer ratings and reviews",
+      "Seller can post public replies to customer reviews",
+      "Seller can flag abusive reviews to admin moderation queue"
+    ],
+    "tests": ["[S6.1] seller: reply to verified review"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Complies with India e-commerce guidelines."
+  },
+  {
+    "id": "S7",
+    "title": "Seller Business Analytics",
+    "scope": "launch",
+    "platforms": ["web", "android", "api"],
+    "acceptance": [
+      "Dashboard displaying real GMV, order volume, average ticket size, and repeat customers",
+      "Top-performing products and sales by category",
+      "Zero mock data, zero Math.random generation"
+    ],
+    "tests": ["[S7.1] analytics: real database aggregation metrics"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Eliminates mock analytics."
+  },
+  {
+    "id": "R1",
+    "title": "Rider Onboarding & Duty Toggle",
+    "scope": "launch",
+    "platforms": ["android", "admin", "api"],
+    "acceptance": [
+      "Rider onboarding profile and driving license/vehicle document upload",
+      "Admin KYC verification and approval",
+      "Online/Offline duty availability toggle with geofence check"
+    ],
+    "tests": ["[R1.1] rider: duty toggle and status update"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Rider app lives in Android mobile app."
+  },
+  {
+    "id": "R2",
+    "title": "Rider Task Assignment & Dispatch",
+    "scope": "launch",
+    "platforms": ["android", "api"],
+    "acceptance": [
+      "Real-time delivery assignment broadcast to nearest available rider",
+      "Accept or decline assignment with timeout re-dispatch",
+      "Order details, pickup shop address, and customer delivery address view"
+    ],
+    "tests": ["[R2.1] rider: dispatch assignment and accept flow"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Uses existing dispatch queue."
+  },
+  {
+    "id": "R3",
+    "title": "Rider Fulfillment & Proof of Delivery",
+    "scope": "launch",
+    "platforms": ["android", "api"],
+    "acceptance": [
+      "Pickup from shop confirmation",
+      "In-app hand-off to Google Maps / external turn-by-turn navigation",
+      "Delivery completion requiring customer delivery OTP or photo proof of drop-off",
+      "State transition to DELIVERED"
+    ],
+    "tests": ["[R3.1] rider: delivery otp verification and completion"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Prevents unauthorized delivery completion."
+  },
+  {
+    "id": "R4",
+    "title": "Rider Real-Time Location Sharing",
+    "scope": "launch",
+    "platforms": ["android", "api", "web"],
+    "acceptance": [
+      "Battery-efficient background GPS tracking during active delivery task",
+      "Live coordinates streamed via WebSocket to customer tracking screen",
+      "Zero simulated or mock coordinates in production mode"
+    ],
+    "tests": ["[R4.1] rider: real-time coordinate ingestion"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "No simulated GPS movement in production."
+  },
+  {
+    "id": "R5",
+    "title": "Rider COD Cash Ledger & Earnings",
+    "scope": "launch",
+    "platforms": ["android", "admin", "api"],
+    "acceptance": [
+      "Rider cash-in-hand tracking for Cash on Delivery collections (`rider_cash_ledger`)",
+      "Cash deposit and reconciliation workflow with admin/hub",
+      "Delivery payout earnings ledger and withdrawal history"
+    ],
+    "tests": ["[R5.1] rider: cod cash ledger entry and reconciliation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Uses existing rider_cash_ledger table."
+  },
+  {
+    "id": "A1",
+    "title": "Admin Commerce KPI Dashboard",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Live operational metrics: Platform GMV, Order counts, AOV, Cancellation and Return rates",
+      "Active shops, active delivery riders, and customer counts",
+      "All metrics computed from PostgreSQL aggregations with zero placeholder numbers"
+    ],
+    "tests": ["[A1.1] admin: kpi metrics aggregation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Real DB data only."
+  },
+  {
+    "id": "A2",
+    "title": "Admin Seller & KYC Management",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Pending seller KYC document verification queue with secure image viewers",
+      "Approve, reject with statutory reasons, or request document resubmission",
+      "Shop suspension and ban kill-switch"
+    ],
+    "tests": ["[A2.1] admin: seller approval and suspension"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Statutory KYC compliance."
+  },
+  {
+    "id": "A3",
+    "title": "Admin Catalog Moderation & Categories",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Global category taxonomy management with icon and metadata controls",
+      "Product moderation queue for flag reports or new listings",
+      "Restricted goods enforcement filter (blocking medicines, alcohol, tobacco, weapons)"
+    ],
+    "tests": ["[A3.1] admin: category management and restricted goods rules"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Blocks prohibited categories at launch."
+  },
+  {
+    "id": "A4",
+    "title": "Admin Order Operations & Interventions",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Full order search across customer, shop, date, and order ID",
+      "Unified order timeline inspection showing all status changes and rider details",
+      "Admin emergency interventions: force cancel with reason, manual refund trigger, rider re-assignment",
+      "SLA breach alerts for delayed preparations or deliveries"
+    ],
+    "tests": ["[A4.1] admin: order search and emergency intervention"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Commerce operational control."
+  },
+  {
+    "id": "A5",
+    "title": "Admin Returns & Dispute Queue",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Dedicated queue for customer dispute escalations and return reviews",
+      "Review customer-provided photos and seller statements",
+      "Approve or reject refund with double-entry ledger adjustment"
+    ],
+    "tests": ["[A5.1] admin: dispute resolution and refund execution"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Resolves customer complaints."
+  },
+  {
+    "id": "A6",
+    "title": "Admin Payouts & Commission Configuration",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Global and per-shop commission rate configuration (defaults to 0% at launch)",
+      "Seller payout batch processing and status tracking",
+      "COD settlement reconciliation view"
+    ],
+    "tests": ["[A6.1] admin: commission rate configuration"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Enforces 0% commission at launch."
+  },
+  {
+    "id": "A7",
+    "title": "Admin Promotions, Campaigns & CMS",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Platform-wide coupon creation and budget management",
+      "Homepage banner CMS management with target URLs and active date windows",
+      "Featured shops and promoted categories placement controls"
+    ],
+    "tests": ["[A7.1] admin: coupon creation and banner cms"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Directly controls C3 and C7."
+  },
+  {
+    "id": "A8",
+    "title": "Admin RBAC & Immutable Audit Log",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Role-Based Access Control enforcing least privilege (Superadmin, Ops, Support, Finance)",
+      "Admin authentication requiring secure credentials with bypass disabled in production",
+      "Immutable audit log recording every administrative action with user ID, IP, timestamp, and diff"
+    ],
+    "tests": ["[A8.1] admin: rbac route permission guard", "[A8.2] admin: immutable audit log record"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Enforces L1 and L4."
+  },
+  {
+    "id": "A9",
+    "title": "Admin Serviceability Zones",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Geofence zone configuration with polygon and radius definitions",
+      "Zone activation and deactivation toggle (Dhanori/Pune pilot active)",
+      "Unserviceable customer waitlist review and export"
+    ],
+    "tests": ["[A9.1] admin: zone polygon and serviceability check"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Directly manages C2."
+  },
+  {
+    "id": "A10",
+    "title": "Admin Delivery Fleet & Cash Reconciliation",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Active delivery rider fleet monitoring map and status list",
+      "Daily COD cash collection and deposit reconciliation against rider cash ledger",
+      "Rider dispute handling"
+    ],
+    "tests": ["[A10.1] admin: rider fleet status and cash reconciliation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Ensures COD funds reach the platform/shop."
+  },
+  {
+    "id": "A11",
+    "title": "Admin Grievance & Support Management",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Support ticket triage and reply workflow",
+      "Statutory Grievance register with 48-hour response tracking",
+      "SLA compliance metrics export"
+    ],
+    "tests": ["[A11.1] admin: grievance ticket workflow"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "India e-commerce statutory requirement."
+  },
+  {
+    "id": "A12",
+    "title": "Admin Feature Flags & Vertical Kill Switches",
+    "scope": "launch",
+    "platforms": ["admin", "api", "web", "android"],
+    "acceptance": [
+      "Single-source feature flag registry backed by database and environment defaults",
+      "Kill switches for off-scope verticals (Society, Carpool, Jobs, SOS, Krishi, etc.)",
+      "Flags drive API middleware (403/404), web navigation menus, and mobile tabs dynamically"
+    ],
+    "tests": ["[A12.1] admin: feature flag toggle hides navigation and blocks route"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Central to launch scoping (D1)."
+  },
+  {
+    "id": "A13",
+    "title": "Admin Financial & Tax Report Exports",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "CSV export of all orders, sales, and platform transactions",
+      "GST / TCS Section 52 ready report formatted for Chartered Accountant compliance review",
+      "Seller-wise sales and payout reconciliation report"
+    ],
+    "tests": ["[A13.1] admin: gst tcs csv export generation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Statutory tax compliance."
+  },
+  {
+    "id": "A14",
+    "title": "Admin Broadcast Notifications",
+    "scope": "launch",
+    "platforms": ["admin", "api"],
+    "acceptance": [
+      "Geo-targeted broadcast push notifications to customers or sellers within a zone",
+      "Enforcement of user marketing consent preferences under DPDP Act 2023",
+      "Broadcast history and delivery analytics"
+    ],
+    "tests": ["[A14.1] admin: broadcast respecting consent flag"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Complies with DPDP consent requirements."
+  },
+  {
+    "id": "P1",
+    "title": "Canonical Commerce Pipeline",
+    "scope": "launch",
+    "platforms": ["api"],
+    "acceptance": [
+      "Single canonical quote API (`POST /checkout/quote`) and order creation API (`POST /checkout`)",
+      "Enforced state machine: PENDING_PAYMENT -> PLACED -> ACCEPTED -> PREPARING -> READY -> OUT_FOR_DELIVERY -> DELIVERED",
+      "Return state machine: RETURN_REQUESTED -> RETURN_APPROVED -> RETURNED -> REFUNDED",
+      "Terminal states: CANCELLED_BY_CUSTOMER, REJECTED_BY_SELLER, CANCELLED_BY_ADMIN, PAYMENT_FAILED, EXPIRED",
+      "Append-only status history table with role-based transition authorization",
+      "Legacy order creation routes safely proxy to canonical pipeline or return 410"
+    ],
+    "tests": ["[P1.1] pipeline: canonical state transitions", "[P1.2] pipeline: legacy order route proxies"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Resolves N6 pipeline fragmentation."
+  },
+  {
+    "id": "P2",
+    "title": "Payment Gateway Integration",
+    "scope": "launch",
+    "platforms": ["api"],
+    "acceptance": [
+      "Razorpay order creation, signature verification, and webhook handling",
+      "Idempotent webhook processing protecting against duplicate events",
+      "Automated payment reconciliation background job",
+      "Zero card or sensitive financial credential storage",
+      "Flagged off at launch (`ENABLE_ONLINE_PAYMENTS=false`) until KYC is complete (D4)"
+    ],
+    "tests": ["[P2.1] payments: razorpay signature verification and idempotent webhook"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "RBI & PCI-DSS compliant."
+  },
+  {
+    "id": "P3",
+    "title": "Double-Entry Financial Ledger",
+    "scope": "launch",
+    "platforms": ["api"],
+    "acceptance": [
+      "Immutable double-entry records for every money movement (orders, refunds, payouts, COD)",
+      "Account balances mathematically reproducible from ledger entries",
+      "Zero arbitrary balance mutations"
+    ],
+    "tests": ["[P3.1] ledger: double-entry balance reproducibility"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Guarantees financial auditability."
+  },
+  {
+    "id": "P4",
+    "title": "Cloud Object Storage & Media Pipeline",
+    "scope": "launch",
+    "platforms": ["api"],
+    "acceptance": [
+      "Pluggable storage provider interface (Local disk for dev, S3/Cloudflare R2 for production)",
+      "Public bucket + CDN for catalog and banner images with automated resizing",
+      "Private bucket + short-lived signed URLs for KYC documents and dispute proofs",
+      "MIME type magic-byte sniffing and strict file size enforcement",
+      "Migration utility for local uploads to object storage"
+    ],
+    "tests": ["[P4.1] media: storage provider interface", "[P4.2] media: mime sniffing and signed urls"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Resolves N3 ephemeral disk blocker."
+  },
+  {
+    "id": "P5",
+    "title": "Unified Notification Provider Engine",
+    "scope": "launch",
+    "platforms": ["api"],
+    "acceptance": [
+      "Abstract notification interface with adapters for FCM push, Brevo/Resend email, and SMS",
+      "Phone OTP and SMS notifications isolated behind flag (D3)",
+      "Development file/console transport for zero-cost testing"
+    ],
+    "tests": ["[P5.1] notifications: email and push transport adapters"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Supports zero-cost operation."
+  },
+  {
+    "id": "P6",
+    "title": "Unified Module Registry & Feature Flag System",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Single source of truth in `packages/shared` consumed across backend, web, mobile, and admin",
+      "Centralized module registry with explicit `launch`, `later`, and `off` verticals",
+      "Express middleware enforcing module availability (403/404 when disabled)",
+      "Web navigation and mobile tab bars dynamically hide disabled verticals"
+    ],
+    "tests": ["[P6.1] registry: shared module definitions and flag middleware"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Eliminates hardcoded vertical lists."
+  },
+  {
+    "id": "P7",
+    "title": "Web SEO & Metadata Automation",
+    "scope": "launch",
+    "platforms": ["web"],
+    "acceptance": [
+      "Server-rendered shop, product, and category pages using Next.js `generateMetadata`",
+      "Schema.org JSON-LD structured data for Product, Offer, LocalBusiness, and Breadcrumbs",
+      "Automated dynamic sitemap generation including active shops and products",
+      "Open Graph tags and canonical URLs on all public routes"
+    ],
+    "tests": ["[P7.1] seo: json-ld and dynamic sitemap generation"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Boosts organic discovery."
+  },
+  {
+    "id": "P8",
+    "title": "Observability & Health Checks",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Sentry integration on free tier across API, Web, Admin, and Mobile",
+      "Winston structured logging without sensitive token or credential leakage",
+      "`/health` endpoint for process liveness",
+      "`/ready` endpoint verifying database connection pool and migration status"
+    ],
+    "tests": ["[P8.1] observability: health and ready endpoints"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Enables uptime monitoring on free tier."
+  },
+  {
+    "id": "P9",
+    "title": "Security, Rate Limiting & Input Validation",
+    "scope": "launch",
+    "platforms": ["api", "web", "android", "admin"],
+    "acceptance": [
+      "Rate limiting on auth, OTP send, checkout quote, order creation, and coupon verification",
+      "Strict input validation and sanitization on all incoming requests (Joi/Zod)",
+      "Production-grade Content Security Policy (CSP) and HTTP security headers (Helmet)",
+      "`envValidator` refusing boot if production environment uses dangerous flags (N1)",
+      "Secret exposure scan finding zero tracked secrets (G14)"
+    ],
+    "tests": ["[P9.1] security: envValidator blocks production free otp", "[P9.2] security: rate limiter on auth routes"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "ASVS L2 security baseline."
+  },
+  {
+    "id": "P10",
+    "title": "Automated Database Backups",
+    "scope": "launch",
+    "platforms": ["api"],
+    "acceptance": [
+      "Nightly encrypted `pg_dump` script targeted to free object storage with retention policy",
+      "Documented restore script verified locally"
+    ],
+    "tests": ["[P10.1] backup: pg_dump backup and restore dry-run script"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Prevents catastrophic data loss."
+  },
+  {
+    "id": "P11",
+    "title": "Privacy-Friendly Product Analytics",
+    "scope": "launch",
+    "platforms": ["web", "android"],
+    "acceptance": [
+      "Lightweight privacy-friendly analytics on free tier",
+      "Explicit user consent capture before initiating tracking under DPDP Act 2023",
+      "Zero PII in analytics payloads"
+    ],
+    "tests": ["[P11.1] analytics: consent gate verification"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "DPDP Act compliant."
+  },
+  {
+    "id": "P12",
+    "title": "Accessibility & Internationalization",
+    "scope": "launch",
+    "platforms": ["web", "android"],
+    "acceptance": [
+      "Full localization support for English and Hindi (Marathi ready)",
+      "Zero hardcoded user-facing strings in commerce flows",
+      "Web accessibility: axe scan reports 0 serious or critical violations on key pages",
+      "Touch targets >= 44px on mobile and web views"
+    ],
+    "tests": ["[P12.1] i18n: translation key coverage", "[P12.2] a11y: axe core accessibility check"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Ensures wide hyperlocal accessibility."
+  },
+  {
+    "id": "P13",
+    "title": "Performance Budgets & Low-End Device Optimization",
+    "scope": "launch",
+    "platforms": ["web", "api", "android"],
+    "acceptance": [
+      "Web Core Web Vitals on mobile emulation: LCP <= 2.5s, CLS <= 0.1",
+      "Heavy 3D/canvas bundles excluded from critical shopping paths",
+      "API p95 latency <= 300ms on catalog, cart, and quote under seeded load",
+      "Android cold startup time <= 3s on mid-range profile"
+    ],
+    "tests": ["[P13.1] perf: api latency benchmark", "[P13.2] perf: bundle size budget checks"],
+    "status": "NOT STARTED",
+    "evidence": [],
+    "notes": "Critical for low-cost Indian mobile devices."
+  }
+]

@@ -22,10 +22,11 @@ const fs = require('fs');
 const { TEST_DB_PATH } = require('./jest.globalSetup');
 
 process.env.NODE_ENV = 'test';
-process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
+const usePg = process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true';
+process.env.USE_SQLITE = usePg ? 'false' : 'true';
 
 // L6 Safety Guard: Ensure test environment NEVER touches remote databases
-if (process.env.TEST_USE_POSTGRES) {
+if (usePg) {
   const dbUrl = process.env.DATABASE_URL || '';
   if (dbUrl) {
     try {
@@ -39,7 +40,7 @@ if (process.env.TEST_USE_POSTGRES) {
   }
 }
 
-if (!process.env.TEST_USE_POSTGRES) {
+if (!usePg) {
   // One database per jest worker.
   //
   // Jest runs suites in parallel across workers, and they all pointed at the

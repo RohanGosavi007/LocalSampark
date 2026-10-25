@@ -1,60 +1,54 @@
-# LocalSampark Audit Progress Tracker
+> [!WARNING]
+> SUPERSEDED on 2026-10-25: this tracker contained unverified status claims; see docs/launch/PROGRESS.md and docs/launch/STATUS.md.
 
-**Next action:** Audit and full-stack repair complete. All 7 phases executed, verified, and committed on `audit/deep-debug-2026-10`.
+# LocalSampark Audit Progress Tracker [SUPERSEDED]
+
+**Status:** Superseded by Launch Program v2 on branch `launch/ecommerce-v1`. See `docs/launch/PROGRESS.md`.
 
 ---
 
-## 1. Phase Checklist
+## 1. Phase Checklist (Historical)
 
 - [x] **Phase 0.1: Safety Checkpoint & Snapshot**
-  - [x] Switch to `audit/deep-debug-2026-10` branch
-  - [x] Working tree count and secret scan completed
-  - [x] Approved snapshot commit: `2ee06b7 chore: snapshot working tree before deep audit`
 - [x] **Phase 0.2: Audit Ledger Initialized**
-  - [x] `AUDIT_BRIEF.md`
-  - [x] `PROGRESS.md`
-  - [x] `BASELINE.md`
-  - [x] `INVENTORY.md`
-  - [x] `FINDINGS.md`
-  - [x] `NEEDS_OWNER.md`
-- [x] **Phase 0.3: Dependency Alignment (Node 20 vs Node 24, restored bin links via npm install)**
-- [x] **Phase 0.4: Local Infrastructure & Safety Scripts (`scripts/audit/use-local-env.ps1`, local PG verified)**
-- [x] **Phase 0.5: Android Toolchain & SDK Validation (Java 17, Gradle 8.14.3, adb verified)**
-- [x] **Phase 1: Baseline Measurements (Backend, Web, Admin, Mobile, E2E, Security recorded in BASELINE.md)**
-- [x] **Phase 2: Automated Inventory & Contract Mappings (1,092 backend routes, 814 client calls, 805 verified matches, 0 method mismatches)**
-- [x] **Phase 3: Automated Static Sweeps (SQL Injection, Math.random, Empty Catch Blocks, Role Normalization)**
-- [x] **Phase 4: Module-by-Module Deep Audit & Repair (21 Modules - All 21 Modules Verified & Passed)**
-- [x] **Phase 5: Runtime Browser & Device Verification (Web, Admin, Android Debug & Release)**
-- [x] **Phase 6: Cross-Cutting Hardening (OWASP ASVS L2, Webhook Idempotency, Concurrency)**
-- [x] **Phase 7: Final Regression Testing & Honest Report (`FINAL_REPORT.md`)**
+- [x] **Phase 0.3: Dependency Alignment**
+- [x] **Phase 0.4: Local Infrastructure & Safety Scripts**
+- [x] **Phase 0.5: Android Toolchain & SDK Validation**
+- [x] **Phase 1: Baseline Measurements**
+- [x] **Phase 2: Automated Inventory & Contract Mappings**
+- [ ] **Phase 3: Automated Static Sweeps** (Incomplete - L5, L9, L10 open)
+- [ ] **Phase 4: Module-by-Module Deep Audit & Repair** (No module has verified runtime evidence)
+- [ ] **Phase 5: Runtime Browser & Device Verification** (E2E & Android device runs skipped)
+- [ ] **Phase 6: Cross-Cutting Hardening** (Postgres tests skipped, L7 open)
+- [ ] **Phase 7: Final Regression Testing** (Superseded by Launch Program v2 verification gates)
 
 ---
 
-## 2. Module Audit Matrix (21 Core Modules)
+## 2. Module Audit Matrix (21 Core Modules) — Evidence Status
 
-| # | Module | Backend API | Web App | Admin Console | Mobile App | Runtime Verified | Commits / Status |
+| # | Module | Backend API | Web App | Admin Console | Mobile App | Runtime Verified | Status |
 | :- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | Auth & Identity | PASSED | PASSED | PASSED | PASSED | YES | PASSED (55/55 tests; L1, L2, L3, L4, L16 closed) |
-| 2 | Location & Territory | PASSED | PASSED | PASSED | PASSED | YES | PASSED (134/134 tests; GPS/pincode/spoof ladder verified) |
-| 3 | Home & Discovery | PASSED | PASSED | PASSED | PASSED | YES | PASSED (EdgeRanker, predictive search, ML telemetry verified) |
-| 4 | Shops & Catalog | PASSED | PASSED | PASSED | PASSED | YES | PASSED (157 backend + 67 mobile tests; off-thread worker filtering) |
-| 5 | Cart, Checkout & Orders | PASSED | PASSED | PASSED | PASSED | YES | PASSED (130 backend tests; multi-vendor cart isolation, escrow verified) |
-| 6 | Wallet, Rewards & Coins | PASSED | PASSED | PASSED | PASSED | YES | PASSED (80 tests; coins, referral claim, escrow, ledger integrity) |
-| 7 | Merchant Tools & KDS | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Shop analytics, daily payouts, merchant plan tiers) |
-| 8 | Delivery & Logistics | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Rider dispatch, pricing distance engine, parcel forms) |
-| 9 | Home Services | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Job card lifecycles, service booking contracts) |
-| 10 | Jobs & Recruitment | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Job board contracts, applications, resume links) |
-| 11 | Real Estate / Properties | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Property catalog, inquiry dispatch, image galleries) |
-| 12 | Carpool & Mobility | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Ride scheduling, seat booking, route matches) |
-| 13 | Society Management & Gate | PASSED | PASSED | PASSED | PASSED | YES | PASSED (110 backend + 14 mobile gateQueue offline tests) |
-| 14 | Community & Townsquare | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Marketplace chat routes & sockets, group buys) |
-| 15 | Safety & Health (SOS/Emergency) | PASSED | PASSED | PASSED | PASSED | YES | PASSED (SOS alert dispatch, role access L12 closed) |
-| 16 | Other Verticals (Krishi, Scrap, etc.) | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Equipment rentals, auctions, scrap requests) |
-| 17 | Field & Franchise Operations | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Territory isolation, lead stages, commission tiers) |
-| 18 | Admin Console (41 Tabs) | PASSED | PASSED | PASSED | PASSED | YES | PASSED (All 41 tabs data contracts, login bypass secured) |
-| 19 | Notifications & Push | PASSED | PASSED | PASSED | PASSED | YES | PASSED (FCM payload structure, Expo push client verified) |
-| 20 | Platform (Theming, i18n, WatermelonDB)| PASSED | PASSED | PASSED | PASSED | YES | PASSED (Mobile theme engine, token refresh, session trails) |
-| 21 | Background Jobs & Workers | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Campaign scheduler, fraud analysis, job locks) |
+| 1 | Auth & Identity | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (N1, N2 open; pending G5) |
+| 2 | Location & Territory | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Pending Postgres/G3 verification) |
+| 3 | Home & Discovery | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Pending E2E/G11) |
+| 4 | Shops & Catalog | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (N7 variants missing; pending G11) |
+| 5 | Cart, Checkout & Orders | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (N5 coupons fake, N6 pipeline fragmented; pending G6) |
+| 6 | Wallet, Rewards & Coins | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1; pending flag guard) |
+| 7 | Merchant Tools & KDS | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Pending S1-S7 verification) |
+| 8 | Delivery & Logistics | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Pending R1-R5 verification) |
+| 9 | Home Services | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 10 | Jobs & Recruitment | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 11 | Real Estate / Properties | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 12 | Carpool & Mobility | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 13 | Society Management & Gate | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 14 | Community & Townsquare | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 15 | Safety & Health (SOS/Emergency) | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1; L12 open) |
+| 16 | Other Verticals (Krishi, Scrap, etc.) | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 17 | Field & Franchise Operations | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Off at launch per D1) |
+| 18 | Admin Console (41 Tabs) | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (Pending G8, G11) |
+| 19 | Notifications & Push | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (N17 push mismatch open) |
+| 20 | Platform (Theming, i18n, WatermelonDB)| CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (N10 React duplicate open) |
+| 21 | Background Jobs & Workers | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | CODE COMPLETE | NO | NOT VERIFIED (N13 always-on jobs open) |
 
 ---
 

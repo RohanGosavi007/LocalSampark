@@ -155,11 +155,12 @@ module.exports = async function globalSetup() {
   // Must be set before config/database is first required, which the migration
   // runner does transitively.
   process.env.NODE_ENV = 'test';
-  process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
+  const usePg = process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true';
+  process.env.USE_SQLITE = usePg ? 'false' : 'true';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-not-used-in-production';
 
   // L6 Safety Guard: Ensure test environment NEVER touches remote databases
-  if (process.env.TEST_USE_POSTGRES) {
+  if (usePg) {
     const dbUrl = process.env.DATABASE_URL || '';
     if (dbUrl) {
       try {
