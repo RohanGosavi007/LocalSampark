@@ -1,6 +1,6 @@
 # LocalSampark Audit Progress Tracker
 
-**Next action:** Phase 4: Module-by-Module Deep Audit & Repair — Auditing Module 6: Wallet, Rewards & Coins and Module 7: Merchant Tools & KDS.
+**Next action:** Phase 4: Module-by-Module Deep Audit & Repair — Auditing Module 9: Home Services, Module 10: Jobs & Recruitment, and Module 11: Real Estate / Properties.
 
 ---
 
@@ -39,9 +39,9 @@
 | 3 | Home & Discovery | PASSED | PASSED | PASSED | PASSED | YES | PASSED (EdgeRanker, predictive search, ML telemetry verified) |
 | 4 | Shops & Catalog | PASSED | PASSED | PASSED | PASSED | YES | PASSED (157 backend + 67 mobile tests; off-thread worker filtering) |
 | 5 | Cart, Checkout & Orders | PASSED | PASSED | PASSED | PASSED | YES | PASSED (130 backend tests; multi-vendor cart isolation, escrow verified) |
-| 6 | Wallet, Rewards & Coins | PENDING | PENDING | PENDING | PENDING | NO | In queue |
-| 7 | Merchant Tools & KDS | PENDING | PENDING | PENDING | PENDING | NO | In queue |
-| 8 | Delivery & Logistics | PENDING | PENDING | PENDING | PENDING | NO | In queue |
+| 6 | Wallet, Rewards & Coins | PASSED | PASSED | PASSED | PASSED | YES | PASSED (80 tests; coins, referral claim, escrow, ledger integrity) |
+| 7 | Merchant Tools & KDS | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Shop analytics, daily payouts, merchant plan tiers) |
+| 8 | Delivery & Logistics | PASSED | PASSED | PASSED | PASSED | YES | PASSED (Rider dispatch, pricing distance engine, parcel forms) |
 | 9 | Home Services | PENDING | PENDING | PENDING | PENDING | NO | In queue |
 | 10 | Jobs & Recruitment | PENDING | PENDING | PENDING | PENDING | NO | In queue |
 | 11 | Real Estate / Properties | PENDING | PENDING | PENDING | PENDING | NO | In queue |
