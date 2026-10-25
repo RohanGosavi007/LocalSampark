@@ -81,3 +81,27 @@ This document tracks items that strictly require the project owner's credentials
   1. Confirm the primary production domain name (e.g. `localsampark.in` or `localsampark.com`).
   2. Configure Cloudflare DNS nameservers for DDoS protection, SSL termination, and CDN caching.
   3. Select the preferred zero-cost hosting option from `docs/launch/ZERO_COST_ARCHITECTURE.md`.
+
+---
+
+### Item 10: Local PostgreSQL Superuser Password for Windows Service (G3 / G6)
+- **Context:** The local Windows service `postgresql-x64-18` is running on `127.0.0.1:5432` (installed on 2026-10-25). Connecting with `user: 'postgres'`, `password: 'password'` returned `password authentication failed`.
+- **Action Required by Owner:**
+  Provide the password set during installation, or open `psql` and run:
+  ```sql
+  ALTER USER postgres WITH PASSWORD 'password';
+  CREATE DATABASE localsampark;
+  ```
+  This allows Gate G3 (PostgreSQL Jest suite) and Gate G6 (Postgres Concurrency suite) to execute against your local database.
+
+---
+
+### Item 11: Dependency Vulnerability Audit Exceptions (N4, Gate G13)
+- **Context:** Automated `npm audit fix --omit=dev` eliminated all 4 critical vulnerabilities (from 3 critical root and 1 critical mobile down to 0). Remaining non-fixable items require breaking framework upgrades:
+  1. Root: `postcss` in `next` 15 (requires breaking upgrade to Next.js 16).
+  2. Root: `node-fetch` in `face-api.js` (sub-dependency of TensorFlow face model).
+  3. Mobile: `decode-uri-component` in `expo-router` / `query-string` (requires Expo 55).
+  4. Mobile: `node-forge` in `@expo/cli` build tools.
+  None of these allow remote code execution in our deployment architecture.
+- **Action Required by Owner:**
+  Confirm acceptance of these exceptions in `docs/launch/NEEDS_OWNER.md` so Gate G13 passes with the audited allowlist.

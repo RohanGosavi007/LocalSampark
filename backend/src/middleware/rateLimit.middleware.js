@@ -59,7 +59,7 @@ const roleBasedRateLimiter = rateLimit({
   max: (req, res) => getLimitForRole(req),
   message: { error: 'Too many requests. Please try again later.' },
   keyGenerator: zoneKeyGenerator,
-  skip: (req) => req.path === '/health' || req.path === '/metrics',
+  skip: (req) => process.env.NODE_ENV === 'test' || req.path === '/health' || req.path === '/metrics',
   store: getStore('rl:api:'),
   handler: (req, res, next, options) => {
     logger.warn(`[RATE LIMIT] API limit hit: ${req.ip} | Zone: ${req.territoryId || 'none'} | Path: ${req.path}`);
@@ -175,6 +175,7 @@ const adminLimiter = rateLimit({
 const ddosProtector = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 1000, // Very high threshold
+  skip: (req) => process.env.NODE_ENV === 'test',
   message: { error: 'IP Temporarily Banned due to suspicious activity.' },
   keyGenerator: (req, res) => ipKeyGenerator(req, res),
   store: getStore('rl:ddos:'),

@@ -13,6 +13,8 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['<rootDir>/__tests__/**/*.test.js'],
   moduleNameMapper: {
+    '^react-native$': '<rootDir>/__tests__/__mocks__/reactNative.js',
+    '^expo-secure-store$': '<rootDir>/__tests__/__mocks__/expoSecureStore.js',
     '^@react-native-async-storage/async-storage$': '<rootDir>/__tests__/__mocks__/asyncStorage.js',
     '^expo-constants$': '<rootDir>/__tests__/__mocks__/expoConstants.js',
     '^expo-location$': '<rootDir>/__tests__/__mocks__/expoLocation.js',

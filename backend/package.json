@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "migrate": "node src/migrations/run.js",
+    "migrate:up": "node src/migrations/run.js",
     "seed": "node src/seeds/run.js",
     "seed:demo": "node src/seeds/seed-investor-demo.js",
     "seed:demo:verify": "node src/seeds/seed-investor-demo.js --verify",

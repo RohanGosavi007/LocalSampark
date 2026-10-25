@@ -258,4 +258,116 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Commit:** `1604537`
 - **Status:** CLOSED
 
+---
+
+### Finding N1: Free OTP Mode Hands Out Production Login Codes
+- **ID:** SEC-N01 (N1)
+- **Severity:** P0 (Security)
+- **Platform:** Backend (`backend`)
+- **Module:** Auth & Identity
+- **Location:** `backend/src/modules/core/routes/auth.routes.js:L220-240`, `backend/src/config/envValidator.js`
+- **Symptom:** With `ALLOW_FREE_OTP_MODE=true`, `POST /auth/send-otp` and `POST /auth/send-whatsapp-otp` leak the generated OTP in the HTTP JSON response body for any phone number.
+- **Root Cause:** Free OTP debugging mode was not restricted to development and lacked production environment validator gating.
+- **Fix:** Gated `response.otp = otp` behind `DEMO_LOGIN_ALLOWED() && ALLOW_FREE_OTP_MODE === 'true'`. Added fatal startup validator in `envValidator.js` that causes process exit if `NODE_ENV === 'production'` and `ALLOW_FREE_OTP_MODE === 'true'`.
+- **Test:** `backend/src/__tests__/authSecurity.test.js` passes 4/4 tests (`[N1.1]`-`[N1.4]`).
+- **Evidence:** `docs/audit/evidence/verify-2026-10-25T08-42-54/`
+- **Status:** VERIFIED
+
+---
+
+### Finding N2: Mobile Plain AsyncStorage Token Storage Regression
+- **ID:** SEC-N02 (N2)
+- **Severity:** P0 (Security Regression)
+- **Platform:** Mobile (`apps/mobile`)
+- **Module:** Auth & Storage
+- **Location:** `apps/mobile/src/lib/secureStorage.js`
+- **Symptom:** L2 bridge was copying access and refresh tokens into plain `AsyncStorage` (`sec_<key>` and `token`) even on Android, exposing tokens to plain file inspection and Android backup leaks.
+- **Root Cause:** Defensive fallback in L2 fix mirrored tokens into AsyncStorage unconditionally.
+- **Fix:** Reverted native token storage in `secureStorage.js` to strictly write via `SecureStore.setItemAsync`. Only web falls back to AsyncStorage. Added `cleanupLegacyStorage()` purging legacy plain tokens on boot.
+- **Test:** `apps/mobile/__tests__/secureStorage.test.js` passes 5/5 tests (`[N2.1]`-`[N2.5]`). All 233 mobile tests pass.
+- **Evidence:** `docs/audit/evidence/verify-2026-10-25T08-42-54/`
+- **Status:** VERIFIED
+
+---
+
+### Finding N3: Ephemeral Disk File Vanishing on Free Tiers
+- **ID:** ARCH-N03 (N3)
+- **Severity:** P0 (Launch Blocker)
+- **Platform:** Backend (`backend`)
+- **Module:** File Storage
+- **Location:** `backend/src/services/storage/`, `backend/src/modules/core/services/upload.service.js`
+- **Symptom:** Product images and KYC documents stored on local disk vanish on container restart on free ephemeral hosts.
+- **Root Cause:** File upload service was coupled directly to local filesystem `public/uploads` and `private_uploads`.
+- **Fix:** Architected pluggable storage provider abstraction (`StorageProvider`, `LocalStorageProvider`, `S3StorageProvider`). Public files routed to CDN prefix, private documents protected via AWS SigV4 signed URLs. Local filesystem retained for local development.
+- **Test:** `backend/src/__tests__/storageService.test.js` (3/3 passed) and `backend/src/__tests__/integration/uploads.test.js` (15/15 passed).
+- **Evidence:** `docs/audit/evidence/verify-2026-10-25T08-42-54/`
+- **Status:** VERIFIED
+
+---
+
+### Finding N4: Monorepo Dependency Vulnerabilities
+- **ID:** SEC-N04 (N4)
+- **Severity:** P0 (Security)
+- **Platform:** Root Workspace, Mobile Workspace
+- **Module:** Dependencies
+- **Location:** `package-lock.json`, `apps/mobile/package-lock.json`
+- **Symptom:** Audit reported 52 vulnerabilities at root (3 critical) and 24 in mobile (1 critical).
+- **Root Cause:** Outdated packages in lockfiles.
+- **Fix:** Ran automated non-breaking dependency remediation (`npm audit fix --omit=dev`). Critical vulnerabilities dropped to 0 across both root and mobile workspaces. Residual non-critical vulnerabilities requiring major breaks catalogued in `NEEDS_OWNER.md`.
+- **Status:** CODE COMPLETE
+
+---
+
+### Finding N8: Unsafe Migrations at Boot
+- **ID:** REL-N08 (N8)
+- **Severity:** P1 (Reliability)
+- **Platform:** Backend (`backend`)
+- **Module:** Database & Startup
+- **Location:** `backend/src/server.js:L305-340`, `backend/package.json`
+- **Symptom:** Server auto-runs migrations on boot with no advisory lock; if a migration fails, it logs a warning and serves requests with broken schema.
+- **Root Cause:** Unlocked migration loop and swallowed errors in startup lifecycle.
+- **Fix:** Wrapped boot migrations with PostgreSQL advisory lock `pg_try_advisory_lock(7429104)` with fallback `pg_advisory_lock`. Configured `process.exit(1)` on migration failure in production. Added `"migrate:up"` script alias in `backend/package.json`.
+- **Status:** VERIFIED
+
+---
+
+### Finding N11: Route-Auth Matrix Runtime Enforcement
+- **ID:** SEC-N11 (N11)
+- **Severity:** P1 (Security)
+- **Platform:** Backend (`backend`)
+- **Module:** API & Security Gate G5
+- **Location:** `scripts/verify/route-auth-matrix.mjs`
+- **Symptom:** Audit extractor previously claimed "114 unauthenticated write endpoints" due to static AST parsing failure on Express 5 router stacks.
+- **Root Cause:** Static analysis missed middleware spread (`...adminOnly`) and `router.use(authenticate)`.
+- **Fix:** Implemented runtime route-auth matrix test that boots Express router in-memory and executes HTTP write requests against all 1,164 endpoints. 20 public endpoints validated on allowlist, 1,144 endpoints verified protected with 401/403.
+- **Test:** Gate G5 passes 100%.
+- **Evidence:** `docs/audit/evidence/verify-2026-10-25T08-42-54/G5.log`
+- **Status:** VERIFIED
+
+---
+
+### Lead L1 (Follow-up): Admin Bypass Production Rejection Test
+- **ID:** SEC-001 (L1 Follow-up)
+- **Severity:** P0 (Security)
+- **Platform:** Backend (`backend`)
+- **Module:** Auth & CRM
+- **Location:** `backend/src/__tests__/adminAuthBypass.test.js`
+- **Fix:** Added production-mode test asserting that demo credentials (+919999999991) are strictly rejected with 401/503 when `NODE_ENV=production`.
+- **Test:** `adminAuthBypass.test.js` passes 2/2 tests.
+- **Status:** VERIFIED
+
+---
+
+### Lead L7 (Follow-up): Concurrency & Idempotency Suite on Postgres
+- **ID:** CONC-007 (L7 Follow-up)
+- **Severity:** P0 (Data Integrity Gate G6)
+- **Platform:** Backend (`backend`)
+- **Module:** Commerce & Payments
+- **Location:** `backend/src/__tests__/concurrency.test.js`
+- **Fix:** Created automated PostgreSQL concurrency suite testing 5 real race scenarios: stock unit race, duplicate idempotency key order deduplication, payment webhook duplicate idempotency, coupon limit race safety, and payout idempotency.
+- **Test:** Gate G6 passes 5/5 tests on local PostgreSQL.
+- **Evidence:** `docs/audit/evidence/verify-2026-10-25T08-42-54/G6.log`
+- **Status:** VERIFIED
+
+
 

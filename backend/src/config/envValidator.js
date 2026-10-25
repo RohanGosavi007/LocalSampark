@@ -95,6 +95,11 @@ function validateEnv() {
     process.exit(1);
   }
 
+  if (isProduction && (process.env.ALLOW_FREE_OTP_MODE === 'true' || process.env.ALLOW_FREE_OTP_MODE === '1')) {
+    console.error('❌ CRITICAL: ALLOW_FREE_OTP_MODE cannot be enabled in production. Insecure authentication bypass.');
+    process.exit(1);
+  }
+
   if (isProduction) {
     // Check production-specific vars
     const missingProd = [];

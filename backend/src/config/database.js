@@ -50,6 +50,13 @@ if (process.env.USE_SQLITE === 'true') {
    */
   function buildSslConfig(urlStr = null) {
     if (process.env.DB_SSL === 'false') return false;
+    const isLocal = Boolean(
+      (urlStr && (urlStr.includes('127.0.0.1') || urlStr.includes('localhost'))) ||
+      process.env.DB_HOST === '127.0.0.1' ||
+      process.env.DB_HOST === 'localhost'
+    );
+    if (isLocal && process.env.DB_SSL !== 'true') return false;
+
     if (process.env.DB_SSL_CA) {
       return { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n'), rejectUnauthorized: true };
     }

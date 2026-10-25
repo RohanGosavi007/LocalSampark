@@ -88,3 +88,8 @@ local.properties
 # Misc
 *.tgz
 .cache
+
+# Ephemeral user uploads
+/public/uploads/
+/private_uploads/
+

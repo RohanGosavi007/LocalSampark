@@ -203,8 +203,8 @@ router.post('/send-otp', authLimiter, validate({
     // preview deploy, or any process started without NODE_ENV all answered to
     // it. Only a process that says it is development or test may take the
     // shortcut.
-    const isFreeMode = DEMO_LOGIN_ALLOWED() || process.env.ALLOW_FREE_OTP_MODE === 'true';
-    const isDevNumber = isFreeMode && (phoneNumber.startsWith('+919000') || phoneNumber === '+919999999991');
+    const isFreeMode = DEMO_LOGIN_ALLOWED() && process.env.ALLOW_FREE_OTP_MODE === 'true';
+    const isDevNumber = DEMO_LOGIN_ALLOWED() && (phoneNumber.startsWith('+919000') || phoneNumber === '+919999999991');
     const otp = isDevNumber ? '123456' : generateOTP();
 
     if (!requireOtpStore(res)) return;
@@ -230,8 +230,8 @@ router.post('/send-otp', authLimiter, validate({
       provider: smsResult.provider,
     };
 
-    // Return OTP in response during development or free pilot mode
-    if (isFreeMode) {
+    // Return OTP in response STRICTLY during development or test when free OTP mode is explicitly set
+    if (DEMO_LOGIN_ALLOWED() && process.env.ALLOW_FREE_OTP_MODE === 'true') {
       response.otp = otp;
       response.message = 'OTP sent successfully (Use the code below or check server logs)';
     }
@@ -637,7 +637,7 @@ router.post('/send-whatsapp-otp', authLimiter, async (req, res, next) => {
     }
 
     const developer = DEMO_LOGIN_ALLOWED();
-    const isFreeMode = process.env.ALLOW_FREE_OTP_MODE === 'true';
+    const isFreeMode = developer && process.env.ALLOW_FREE_OTP_MODE === 'true';
     if (!whatsapp.isConfigured() && !developer && !isFreeMode) {
       return res.status(503).json({ error: 'WhatsApp codes are not available. Please use SMS or Email.', code: 'WHATSAPP_UNAVAILABLE' });
     }
@@ -664,7 +664,7 @@ router.post('/send-whatsapp-otp', authLimiter, async (req, res, next) => {
     res.json({
       success: true,
       message: whatsapp.isConfigured() ? 'WhatsApp OTP sent successfully' : 'WhatsApp code generated. Use code or tap link below.',
-      otp: (developer || isFreeMode) ? otp : undefined,
+      otp: (developer && isFreeMode) ? otp : undefined,
       whatsappWebLink: waLink
     });
   } catch (error) {

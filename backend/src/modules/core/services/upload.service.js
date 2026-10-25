@@ -33,6 +33,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
 const { getJwtSecret } = require('../../../config/secrets');
+const { getStorageProvider } = require('../../../services/storage');
 
 const PUBLIC_BASE = path.join(__dirname, '../../../../public/uploads');
 const PRIVATE_BASE = path.join(__dirname, '../../../../private_uploads');
@@ -203,15 +204,28 @@ async function storeFiles(files, { userId, purpose = 'general', module = null, r
     return { file, type };
   });
 
-  const dir = path.join(kind.private ? PRIVATE_BASE : PUBLIC_BASE, kind.dir);
-  await fs.promises.mkdir(dir, { recursive: true });
-
+  const storage = getStorageProvider();
   const stored = [];
   for (const { file, type } of checked) {
     const id = crypto.randomUUID();
     const name = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${TYPES[type]}`;
-    await fs.promises.writeFile(path.join(dir, name), file.buffer, { flag: 'wx' });
     const relative = kind.private ? `private/${kind.dir}/${name}` : `uploads/${kind.dir}/${name}`;
+
+    // Write through pluggable storage provider (local disk in dev, S3/R2 in production)
+    const storageRes = await storage.putObject({
+      key: relative,
+      buffer: file.buffer,
+      mimeType: type,
+      isPublic: !kind.private,
+    }).catch(async (err) => {
+      if (process.env.NODE_ENV !== 'production') {
+        const dir = path.join(kind.private ? PRIVATE_BASE : PUBLIC_BASE, kind.dir);
+        await fs.promises.mkdir(dir, { recursive: true });
+        await fs.promises.writeFile(path.join(dir, name), file.buffer, { flag: 'wx' });
+        return { key: relative, url: urlFor({ id, file_path: relative }) };
+      }
+      throw err;
+    });
 
     await query(
       `INSERT INTO file_uploads
@@ -221,7 +235,14 @@ async function storeFiles(files, { userId, purpose = 'general', module = null, r
         cleanTag(referenceId, 100), cleanTag(module, 40), kind.private ? '0' : '1']
     );
 
-    stored.push({ id, url: urlFor({ id, file_path: relative }), name: cleanName(file.originalname), size: file.size, type, private: kind.private });
+    stored.push({
+      id,
+      url: kind.private ? urlFor({ id, file_path: relative }) : (storageRes.url || urlFor({ id, file_path: relative })),
+      name: cleanName(file.originalname),
+      size: file.size,
+      type,
+      private: kind.private,
+    });
   }
   return stored;
 }

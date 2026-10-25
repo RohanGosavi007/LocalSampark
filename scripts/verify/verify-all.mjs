@@ -43,9 +43,12 @@ fs.mkdirSync(evidenceDir, { recursive: true });
 
 function runCmd(cmd, cmdArgs, { cwd = ROOT, env = process.env, timeout = 300000 } = {}) {
   const isWindows = process.platform === 'win32';
+  const formattedArgs = isWindows
+    ? cmdArgs.map((a) => (typeof a === 'string' && a.includes(' ') && !a.startsWith('"') ? `"${a}"` : a))
+    : cmdArgs;
 
   try {
-    const res = spawnSync(cmd, cmdArgs, {
+    const res = spawnSync(cmd, formattedArgs, {
       cwd,
       env: { ...env, FORCE_COLOR: '0', CI: 'true' },
       encoding: 'utf8',
@@ -109,7 +112,7 @@ const gates = [
         SUPABASE_URL: '',
         NODE_ENV: 'test'
       };
-      const res = runCmd('npx', ['jest', '--forceExit', '--json', `--outputFile="${jsonReportPath}"`], {
+      const res = runCmd('npx', ['jest', '--forceExit', '--json', `--outputFile=${jsonReportPath}`], {
         cwd: path.join(ROOT, 'backend'),
         env,
         timeout: 240000
@@ -154,7 +157,7 @@ const gates = [
       };
 
       const jsonReportPath = path.join(evidenceDir, 'jest-postgres.json');
-      const res = runCmd('npx', ['jest', '--forceExit', '--json', `--outputFile="${jsonReportPath}"`], {
+      const res = runCmd('npx', ['jest', '--forceExit', '--json', `--outputFile=${jsonReportPath}`], {
         cwd: path.join(ROOT, 'backend'),
         env,
         timeout: 240000
@@ -217,9 +220,22 @@ const gates = [
         const log = writeLog('G6', 'Postgres concurrency and idempotency test suite pending implementation (M1/M3)');
         return { passed: false, summary: 'Concurrency suite on Postgres pending implementation', log };
       }
-      const res = runCmd('npx', ['jest', 'concurrency.test.js'], { cwd: path.join(ROOT, 'backend') });
+      const env = {
+        ...process.env,
+        USE_SQLITE: 'false',
+        TEST_USE_POSTGRES: '1',
+        DB_HOST: '127.0.0.1',
+        DB_PORT: '5432',
+        DB_NAME: 'localsampark',
+        DB_USER: 'postgres',
+        DB_PASSWORD: 'password',
+        DATABASE_URL: 'postgresql://postgres:password@127.0.0.1:5432/localsampark',
+        DIRECT_URL: 'postgresql://postgres:password@127.0.0.1:5432/localsampark',
+        NODE_ENV: 'test'
+      };
+      const res = runCmd('npx', ['jest', 'concurrency.test.js', '--forceExit'], { cwd: path.join(ROOT, 'backend'), env });
       const log = writeLog('G6', `=== Concurrency & Idempotency Test ===\n${res.stdout}\n${res.stderr}`);
-      return { passed: res.code === 0, summary: res.code === 0 ? 'Concurrency suite passed' : 'Race condition or non-idempotency detected', log };
+      return { passed: res.code === 0, summary: res.code === 0 ? 'Concurrency & idempotency suite passed on PostgreSQL' : 'Race condition or non-idempotency detected', log };
     }
   },
   {

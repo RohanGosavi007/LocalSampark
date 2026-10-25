@@ -10,8 +10,8 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS pos_sales (
-    id             TEXT PRIMARY KEY,
-    shop_id        TEXT NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shop_id        UUID NOT NULL REFERENCES local_shops(id) ON DELETE CASCADE,
     bill_no        TEXT NOT NULL,
     items_json     TEXT NOT NULL,
     subtotal       NUMERIC(12,2) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS pos_sales (
     gst_amount     NUMERIC(12,2) NOT NULL DEFAULT 0,
     total          NUMERIC(12,2) NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'cash',
-    created_by     TEXT REFERENCES users(id) ON DELETE SET NULL,
+    created_by     UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (shop_id, bill_no)
 );

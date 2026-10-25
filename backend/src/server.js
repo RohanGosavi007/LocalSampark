@@ -307,8 +307,19 @@ async function startServer() {
       await fixSchemaGaps();
     } else {
       logger.info('✅ PostgreSQL connected');
-      // Auto-apply schema migrations if on a fresh database or pending migrations exist
+      // Auto-apply schema migrations with PostgreSQL advisory lock to prevent races between concurrent instances (N8)
+      let advisoryLockAcquired = false;
+      const MIGRATION_LOCK_ID = 7429104;
       try {
+        const lockRes = await query('SELECT pg_try_advisory_lock($1) as locked', [MIGRATION_LOCK_ID]).catch(() => ({ rows: [{ locked: false }] }));
+        advisoryLockAcquired = lockRes.rows?.[0]?.locked === true;
+        if (!advisoryLockAcquired) {
+          logger.info('⏳ Another instance is executing migrations. Waiting for advisory lock...');
+          await query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_ID]);
+          advisoryLockAcquired = true;
+          logger.info('🔒 Acquired PostgreSQL migration advisory lock.');
+        }
+
         const { runMigration } = require('./migrations/run');
         logger.info('🔄 Checking and applying PostgreSQL database migrations...');
         await runMigration();
@@ -319,19 +330,21 @@ async function startServer() {
         const regionCount = parseInt(regionCheck.rows?.[0]?.count || 0, 10);
         if (regionCount === 0) {
           logger.info('🌱 Fresh database detected. Seeding initial pilot data...');
-          // Through the seeder, not by executing seeds/dhanori.sql. That file
-          // inserts the demo accounts — a super_admin among them, on a phone
-          // number published in this repository — and this branch is the one
-          // that runs against a brand-new production database. The seeder
-          // writes only reference data (region, settings, loyalty tiers) when
-          // NODE_ENV is production; an administrator is then created with
-          // scripts/provision-admin.js.
           const { runSeed } = require('./seeds/run');
           const seeded = await runSeed();
           logger.info(`✅ Initial database seed completed (${seeded.created} rows${seeded.demo ? ', including demo accounts' : ''})`);
         }
       } catch (migErr) {
-        logger.warn('⚠️ PostgreSQL migration/seed notice: ' + migErr.message);
+        if (process.env.NODE_ENV === 'production') {
+          logger.error('❌ FATAL: PostgreSQL migration/seed failed in production. Halting process.', { error: migErr.message });
+          process.exit(1);
+        } else {
+          logger.warn('⚠️ PostgreSQL migration/seed notice: ' + migErr.message);
+        }
+      } finally {
+        if (advisoryLockAcquired) {
+          await query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_ID]).catch(() => {});
+        }
       }
     }
 

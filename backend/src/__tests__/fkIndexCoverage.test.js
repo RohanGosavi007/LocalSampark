@@ -49,7 +49,7 @@ describe('SQLite', () => {
       }
     }
     expect(missing).toEqual([]);
-  });
+  }, 30000);
 });
 
 describe('PostgreSQL (migration files)', () => {

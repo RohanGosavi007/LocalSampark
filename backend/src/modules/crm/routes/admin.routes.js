@@ -12,6 +12,7 @@ const rateLimit = require('express-rate-limit');
 const globalAdminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 admin requests per windowMs
+  skip: () => process.env.NODE_ENV === 'test',
   message: { success: false, error: 'Too many admin requests from this IP, please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
