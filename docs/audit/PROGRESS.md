@@ -1,6 +1,6 @@
 # LocalSampark Audit Progress Tracker
 
-**Next action:** Phase 4: Module-by-Module Deep Audit & Repair — Auditing Module 3: Home & Discovery and Module 4: Shops & Catalog.
+**Next action:** Phase 4: Module-by-Module Deep Audit & Repair — Auditing Module 6: Wallet, Rewards & Coins and Module 7: Merchant Tools & KDS.
 
 ---
 
@@ -36,9 +36,9 @@
 | :- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | 1 | Auth & Identity | PASSED | PASSED | PASSED | PASSED | YES | PASSED (55/55 tests; L1, L2, L3, L4, L16 closed) |
 | 2 | Location & Territory | PASSED | PASSED | PASSED | PASSED | YES | PASSED (134/134 tests; GPS/pincode/spoof ladder verified) |
-| 3 | Home & Discovery | PENDING | PENDING | PENDING | PENDING | NO | In queue |
-| 4 | Shops & Catalog | PENDING | PENDING | PENDING | PENDING | NO | In queue |
-| 5 | Cart, Checkout & Orders | PENDING | PENDING | PENDING | PENDING | NO | In queue |
+| 3 | Home & Discovery | PASSED | PASSED | PASSED | PASSED | YES | PASSED (EdgeRanker, predictive search, ML telemetry verified) |
+| 4 | Shops & Catalog | PASSED | PASSED | PASSED | PASSED | YES | PASSED (157 backend + 67 mobile tests; off-thread worker filtering) |
+| 5 | Cart, Checkout & Orders | PASSED | PASSED | PASSED | PASSED | YES | PASSED (130 backend tests; multi-vendor cart isolation, escrow verified) |
 | 6 | Wallet, Rewards & Coins | PENDING | PENDING | PENDING | PENDING | NO | In queue |
 | 7 | Merchant Tools & KDS | PENDING | PENDING | PENDING | PENDING | NO | In queue |
 | 8 | Delivery & Logistics | PENDING | PENDING | PENDING | PENDING | NO | In queue |
