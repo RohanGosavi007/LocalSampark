@@ -158,7 +158,21 @@ module.exports = async function globalSetup() {
   process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-not-used-in-production';
 
-  if (process.env.TEST_USE_POSTGRES) return;
+  // L6 Safety Guard: Ensure test environment NEVER touches remote databases
+  if (process.env.TEST_USE_POSTGRES) {
+    const dbUrl = process.env.DATABASE_URL || '';
+    if (dbUrl) {
+      try {
+        const parsed = new URL(dbUrl);
+        if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+          throw new Error(`CRITICAL TEST SAFETY VIOLATION (L6): Tests attempted to connect to remote Postgres host '${parsed.hostname}'. Tests are strictly forbidden from running against non-local databases.`);
+        }
+      } catch (err) {
+        if (err.message.includes('CRITICAL TEST SAFETY VIOLATION')) throw err;
+      }
+    }
+    return;
+  }
 
   process.env.SQLITE_DB_PATH = TEST_DB_PATH;
 

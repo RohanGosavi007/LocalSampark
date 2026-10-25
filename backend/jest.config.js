@@ -18,4 +18,9 @@ module.exports = {
   // it inside a test only works while that test is the first thing to require
   // the database — true right up until someone adds an import above it.
   setupFiles: ['<rootDir>/jest.setup.js'],
+
+  // Serial execution prevents SQLite write collisions (UNIQUE constraints on pincode/phone)
+  // across parallel worker processes.
+  maxWorkers: 1,
 };
+
