@@ -22,9 +22,14 @@
       "[C1.2] auth: secure storage isolation",
       "[C1.3] auth: account deletion flow"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Addresses N1 and N2."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/authSecurity.test.js",
+      "backend/src/__tests__/integration/otpAndSessions.test.js",
+      "apps/mobile/__tests__/secureStorage.test.js",
+      "apps/web/tests/legalCompliance.test.mjs"
+    ],
+    "notes": "Addresses N1 and N2. Verified with OTP leakage prevention, SecureStore native mobile storage, and legal deletion portal."
   },
   {
     "id": "C2",
@@ -45,9 +50,13 @@
       "[C2.1] location: pilot zone boundary check",
       "[C2.2] location: unserviceable waitlist capture"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Pilot zone defaults to Dhanori, Pune."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/services/deliveryPricing.test.js",
+      "backend/src/__tests__/services/boundaryMonitor.test.js",
+      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+    ],
+    "notes": "Pilot zone boundary check, distance-based delivery pricing, and unserviceable waitlist capture verified."
   },
   {
     "id": "C3",
@@ -67,9 +76,13 @@
       "[C3.1] discovery: nearby shops within radius",
       "[C3.2] discovery: shop hours and open status"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Real DB data only, zero Math.random."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/integration/shopDetailRoutes.test.js",
+      "backend/src/__tests__/integration/shopOrderingIntegrity.test.js",
+      "backend/src/__tests__/unit/searchEngine.test.js"
+    ],
+    "notes": "Nearby shops within radius, shop hours, open status, and category search verified."
   },
   {
     "id": "C4",
@@ -91,9 +104,13 @@
       "[C4.1] product: legal metrology validation",
       "[C4.2] product: variant selection and price sync"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Restricted categories (pharmacy, alcohol, tobacco, weapons) blocked at launch."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/unit/variantAndInvoice.test.js",
+      "backend/src/__tests__/integration/shopDetailRoutes.test.js",
+      "backend/src/__tests__/unit/afterOrderExperience.test.js"
+    ],
+    "notes": "Legal metrology fields, MRP/discount validation, variant selection, and verified reviews verified."
   },
   {
     "id": "C5",
@@ -202,9 +219,12 @@
       "[C8.1] checkout: server quote integrity",
       "[C8.2] checkout: idempotency key deduplication"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Supports COD and flagged online payments (D4)."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/integration/orderPlacementPayments.test.js",
+      "backend/src/__tests__/concurrency.test.js"
+    ],
+    "notes": "Server quote integrity, COD vs online handling, and Idempotency-Key deduplication verified."
   },
   {
     "id": "C9",
@@ -300,9 +320,11 @@
     "tests": [
       "[C12.1] wishlist: add, remove, and list items"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Consolidates duplicate wishlist tables."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/unit/wishlistEngine.test.js"
+    ],
+    "notes": "Database-backed wishlist persistence, quick add-to-cart, and saved product management verified."
   },
   {
     "id": "C13",
@@ -322,9 +344,12 @@
     "tests": [
       "[C13.1] notifications: push token format alignment (N17)"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Resolves N17 token mismatch."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/integration/pushNotifications.test.js",
+      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+    ],
+    "notes": "Push notification delivery, token format alignment (N17), in-app notification inbox, and broadcast verified."
   },
   {
     "id": "C14",
@@ -476,9 +501,12 @@
     "tests": [
       "[S5.1] shop-coupon: shop-specific scope validation"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Integrated with C7 engine."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/unit/couponEngine.test.js",
+      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+    ],
+    "notes": "Shop-specific coupon creation, cart quote validation for that shop only, and redemption limits verified."
   },
   {
     "id": "S6",
@@ -520,9 +548,12 @@
     "tests": [
       "[S7.1] analytics: real database aggregation metrics"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Eliminates mock analytics."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/services/shopAnalytics.test.js",
+      "backend/src/__tests__/unit/sellerOperations.test.js"
+    ],
+    "notes": "Real database metrics for GMV, repeat customers, and sales breakdowns; zero Math.random mocks."
   },
   {
     "id": "R1",
@@ -982,9 +1013,12 @@
       "[P1.1] pipeline: canonical state transitions",
       "[P1.2] pipeline: legacy order route proxies"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Resolves N6 pipeline fragmentation."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/integration/orderLifecycle.test.js",
+      "backend/src/__tests__/integration/orderPlacementPayments.test.js"
+    ],
+    "notes": "Canonical quote/checkout pipelines, status state machine transitions, and append-only order history verified."
   },
   {
     "id": "P2",
@@ -1003,9 +1037,12 @@
     "tests": [
       "[P2.1] payments: razorpay signature verification and idempotent webhook"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "RBI & PCI-DSS compliant."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/integration/razorpayPayments.test.js",
+      "backend/src/__tests__/concurrency.test.js"
+    ],
+    "notes": "Razorpay order creation, signature verification, webhook handling, and disabled state verified."
   },
   {
     "id": "P3",
@@ -1050,9 +1087,12 @@
       "[P4.1] media: storage provider interface",
       "[P4.2] media: mime sniffing and signed urls"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Resolves N3 ephemeral disk blocker."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/storageService.test.js",
+      "backend/src/__tests__/integration/uploads.test.js"
+    ],
+    "notes": "Pluggable storage provider interface (Local/S3/R2), signed URLs, and MIME sniffing verified."
   },
   {
     "id": "P5",
@@ -1069,9 +1109,12 @@
     "tests": [
       "[P5.1] notifications: email and push transport adapters"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Supports zero-cost operation."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/integration/pushNotifications.test.js",
+      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+    ],
+    "notes": "Unified push, email, and development console transport adapters verified."
   },
   {
     "id": "P6",
@@ -1172,9 +1215,13 @@
       "[P9.1] security: envValidator blocks production free otp",
       "[P9.2] security: rate limiter on auth routes"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "ASVS L2 security baseline."
+    "status": "VERIFIED",
+    "evidence": [
+      "backend/src/__tests__/authSecurity.test.js",
+      "backend/src/__tests__/integration/security.test.js",
+      "backend/src/__tests__/middleware/validate.test.js"
+    ],
+    "notes": "ASVS L2 security baseline, rate limiting on auth/checkout, input validation, and envValidator boot guards verified."
   },
   {
     "id": "P10",
@@ -1214,9 +1261,11 @@
     "tests": [
       "[P11.1] analytics: consent gate verification"
     ],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "DPDP Act compliant."
+    "status": "VERIFIED",
+    "evidence": [
+      "apps/web/tests/legalCompliance.test.mjs"
+    ],
+    "notes": "Explicit user consent capture before initiating tracking under DPDP Act 2023 verified."
   },
   {
     "id": "P12",

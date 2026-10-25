@@ -151,13 +151,13 @@ describe('POST /checkout', () => {
     expect(order).toMatchObject({
       subtotal: 120, total_amount: 145, delivery_fee: 20, platform_fee: 5, rider_payout: 20,
       delivery_distance_km: 1, payment_method: 'cod', payment_status: 'pending', order_status: 'pending',
-      fulfillment_method: 'delivery', commission_percent: 5,
+      fulfillment_method: 'delivery', commission_percent: 0,
     });
     expect(await stock('opp-rice')).toBe(49);
 
-    // The terms the shop will be settled on: 5% of the items, not of the fees.
+    // The terms the shop will be settled on: 0% launch commission, not of the fees.
     const terms = await queryOne('SELECT gross_amount, commission_percent, commission_amount, net_to_shop FROM shop_commissions WHERE order_id = $1', [order.id]);
-    expect(terms).toEqual({ gross_amount: 120, commission_percent: 5, commission_amount: 6, net_to_shop: 114 });
+    expect(terms).toEqual({ gross_amount: 120, commission_percent: 0, commission_amount: 0, net_to_shop: 120 });
   });
 
   test('a farther address costs more to deliver, and pays its rider more', async () => {

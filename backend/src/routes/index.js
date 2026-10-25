@@ -94,6 +94,7 @@ router.use('/premium', requireFeature('premium_saas'), require('../modules/ecomm
 router.use('/orders/returns', require('../modules/ecommerce/routes/return.routes'));
 router.use('/orders', require('../modules/ecommerce/routes/order.routes'));
 router.use('/cart', require('../modules/ecommerce/routes/cart.routes'));
+router.use('/wishlist', require('../modules/ecommerce/routes/wishlist.routes'));
 router.use('/checkout', paymentLimiter, require('../modules/ecommerce/routes/checkout.routes'));
 router.use('/addresses', require('../modules/ecommerce/routes/addresses.routes'));
 router.use('/group-buy', require('../modules/ecommerce/routes/group-buying.routes'));

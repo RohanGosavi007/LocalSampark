@@ -15,9 +15,9 @@ const config = (overrides = {}) => ({ ...DEFAULTS, ...overrides });
 const NOON_IST = new Date('2026-10-03T06:30:00Z');
 
 describe('the default rules', () => {
-  it('are a 5% commission, ₹20 for the first 2 km, ₹8 a km after, ₹5 platform fee, cash up to ₹2000', () => {
+  it('are a 0% launch commission, ₹20 for the first 2 km, ₹8 a km after, ₹5 platform fee, cash up to ₹2000', () => {
     expect(DEFAULTS).toMatchObject({
-      default_commission_percent: 5,
+      default_commission_percent: 0,
       delivery_base_fee: 20,
       delivery_base_distance_km: 2,
       delivery_per_km_fee: 8,

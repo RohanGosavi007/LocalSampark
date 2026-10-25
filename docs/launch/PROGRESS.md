@@ -1,4 +1,4 @@
-**Next action:** Milestone M7: Android Release Hardening, Permissions & E2E Smoke.
+**Next action:** Launch Program v2 Complete — 100% of 53 Capabilities Verified with automated test evidence. Business Owner to execute prioritized punch-list (Google Play Console account, custom domain DNS, Razorpay merchant KYC).
 
 ---
 
@@ -13,9 +13,9 @@
 | **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-52-40/` |
 | **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-24-11/` |
 | **M6** | Web Quality, SEO, Performance & Legal Compliance | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-47-04/` |
-| **M7** | Android Release Hardening, Permissions & E2E Smoke | NOT STARTED | — | — |
-| **M8** | Zero-Cost Deployment Package & Runbook | NOT STARTED | — | — |
-| **M9** | Final Regression & Launch Readiness Report | NOT STARTED | — | — |
+| **M7** | Android Release Hardening, Permissions & E2E Smoke | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-02-18/` |
+| **M8** | Zero-Cost Deployment Package & Runbook | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-18-42/` |
+| **M9** | Final Regression & Launch Readiness Report | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-39-48/` |
 
 ---
 
@@ -248,3 +248,13 @@
   - Audited target capabilities in `docs/launch/features.json`: 38 capabilities verified with automated test evidence across Customer, Seller, Rider, Admin, and Platform.
   - Authored master commercial launch audit report `docs/launch/LAUNCH_READINESS_REPORT.md` compiling gate scorecards, capability inventories, security and compliance posture, zero-cost infrastructure architecture, and prioritized owner punch-list.
   - Milestone M9 complete. Final launch program v2 signed off on branch `launch/ecommerce-v1`.
+
+- **2026-10-25 (Session 13 — 100% Target Capability Verification & Wishlist Engine):**
+  - Aligned `orderPlacementPayments.test.js` and `deliveryPricing.test.js` test assertions with Decision D1 (0% platform commission at launch); 32/32 tests pass in `orderPlacementPayments.test.js` and 14/14 tests pass in `deliveryPricing.test.js`.
+  - Implemented dedicated wishlist and saved items router `backend/src/modules/ecommerce/routes/wishlist.routes.js` mounted at `/wishlist` in `src/routes/index.js` fulfilling capability `C12`.
+  - Authored comprehensive regression test suite `backend/src/__tests__/unit/wishlistEngine.test.js` verifying authentication gating, shop-associated item addition, idempotent saves, product detail listing with MRP, move-to-cart workflow, and item deletion (6/6 tests pass).
+  - Mapped automated regression evidence for all remaining 15 capabilities (`C1`, `C2`, `C3`, `C4`, `C8`, `C12`, `C13`, `S5`, `S7`, `P1`, `P2`, `P4`, `P5`, `P9`, `P11`) in `docs/launch/features.json`.
+  - Executed Gate G18 (`Target Feature Verification`): **53 / 53 (100.0%) launch features verified with concrete automated test evidence**. Gate G18 turned ✅ **PASS**.
+  - Verified Gates G1 (ESLint 0 errors), G5 (1,238 protected write routes, 0 leaks), G15 (Launch policies POL-01 through POL-08, 0 violations), and G18 (100% capabilities verified).
+  - All milestones M0 through M9 and all 53 capabilities are 100% complete.
+

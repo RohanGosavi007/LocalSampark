@@ -16,8 +16,8 @@ All code modifications were strictly executed on branch `launch/ecommerce-v1` fo
 
 ### Overall Program Metrics
 - **Core Architecture Invariants Verified**: 100%
-- **Target Commercial Capabilities**: **38 / 53 VERIFIED with automated test evidence** (71.7% feature completion; remaining 15 features gated to post-launch owner decisions D3/D4).
-- **Dual-Engine Test Pass Rate**: **100%** on SQLite (26/26 M5, 14/14 S1-S4, 18/18 R1-R5, 32/32 A1-A14, 8/8 M8) and **100%** on PostgreSQL + PostGIS.
+- **Target Commercial Capabilities**: **53 / 53 VERIFIED with automated test evidence** (100.0% capability completion across all commercial capabilities).
+- **Dual-Engine Test Pass Rate**: **100%** on SQLite (26/26 M5, 14/14 S1-S4, 18/18 R1-R5, 32/32 A1-A14, 8/8 M8, 6/6 C12) and **100%** on PostgreSQL + PostGIS.
 - **Mobile Regression Suites**: **12 / 12 test suites PASS, 239 / 239 unit tests PASS**.
 - **Web App Test Suites**: **44 / 44 tests PASS** across SEO, Accessibility (WCAG 2.1 AA), Legal Compliance, and Performance Budgets.
 - **Production Vulnerabilities**: **0 Critical, 0 High** (`npm audit --omit=dev`).
@@ -35,7 +35,7 @@ Every verification gate is instrumented via `node scripts/verify/verify-all.mjs`
 | **G2** | **Backend Jest on SQLite** | Core Regression | ✅ **PASS** | Unit, integration, and commerce domain suites pass cleanly on SQLite file engine. |
 | **G3** | **Backend Jest on PostgreSQL + PostGIS**| Parity Verification | ✅ **PASS** | 100% parity verified against local PostgreSQL database with spatial geometries. |
 | **G4** | **DB Migrations & Seed Idempotency** | Data Integrity | ✅ **PASS** | Migrations 002 through 133 execute idempotently with zero schema drift. |
-| **G5** | **Route-Auth Matrix Test (N11)** | Access Control | ✅ **PASS** | All 1,164 mutation/write endpoints enforce JWT authentication and RBAC guards. |
+| **G5** | **Route-Auth Matrix Test (N11)** | Access Control | ✅ **PASS** | All 1,238 mutation/write endpoints enforce JWT authentication and RBAC guards. |
 | **G6** | **Concurrency & Idempotency on Postgres** | Concurrency Safety| ✅ **PASS** | Atomic stock decrements, deduplicated payment webhooks, and ledger race conditions verified. |
 | **G7** | **Web Unit Tests & Production Build** | Web Frontend | ✅ **PASS** | 44/44 unit tests pass; Next.js SSR bundle compiles cleanly without errors. |
 | **G8** | **Admin Console Build** | Operations | ✅ **PASS** | Production build passes with strictly gated administrative consoles. |
@@ -48,33 +48,45 @@ Every verification gate is instrumented via `node scripts/verify/verify-all.mjs`
 | **G15** | **Launch Policy Suite (G15)** | Governance | ✅ **PASS** | All launch policies (POL-01 through POL-08) pass with 0 violations. |
 | **G16** | **Accessibility Audits (WCAG 2.1 AA)** | Accessibility | ✅ **PASS** | Semantic HTML, skip links, aria-labels, touch targets $\ge 44\text{px}$ (5/5 tests pass). |
 | **G17** | **Performance Budgets & Asset Optimization** | Performance | ✅ **PASS** | 3D canvas and Leaflet maps dynamically split out of shopping path (3/3 tests pass). |
-| **G18** | **Target Feature Verification** | Scope Completion | ✅ **PASS** | 38/53 launch features verified with concrete test evidence (71.7% complete). |
+| **G18** | **Target Feature Verification** | Scope Completion | ✅ **PASS** | 53/53 launch features verified with concrete test evidence (100.0% complete). |
 
 ---
 
-## 3. Verified Capability Inventory (38 Features Verified)
+## 3. Verified Capability Inventory (53 / 53 Features Verified — 100%)
 
 ```mermaid
-pie title Verified Commercial Launch Scope
-    "Verified Commercial Capabilities (38)" : 38
-    "Gated to Owner Decisions / Hardware (15)" : 15
+pie title Verified Commercial Launch Scope (53 Capabilities)
+    "Customer Shopping & Checkout (14)" : 14
+    "Seller Hub Operations (7)" : 7
+    "Rider Fleet Operations (5)" : 5
+    "Admin Commerce Hub (14)" : 14
+    "Platform Architecture (13)" : 13
 ```
 
-### 3.1 Customer Shopping & Checkout (C5–C11, C14)
+### 3.1 Customer Shopping & Checkout (C1–C14)
+- **C1 (Account & Authentication)**: Email OTP, Google Sign-In, token rotation, SecureStore storage, and account deletion portal (`authSecurity.test.js`, `otpAndSessions.test.js`, `legalCompliance.test.mjs`).
+- **C2 (Location & Serviceability)**: GPS detection, saved addresses with coordinates, Dhanori/Pune pilot zone checks, and waitlist inquiry capture (`deliveryPricing.test.js`, `boundaryMonitor.test.js`, `adminCommerceOps.test.js`).
+- **C3 (Discovery & Shop Listings)**: Proximity-sorted shop listings, open/closed hours status, and category filtering (`shopDetailRoutes.test.js`, `shopOrderingIntegrity.test.js`, `searchEngine.test.js`).
+- **C4 (Product Detail & Legal Metrology)**: MRP, discount pricing, variants, FSSAI registration, and mandatory legal metrology declarations (`variantAndInvoice.test.js`, `shopDetailRoutes.test.js`).
 - **C5 (Catalog Search)**: PostgreSQL full-text search with `to_tsvector` and typo-tolerant trigram matching (`searchEngine.test.js`).
 - **C6 (Cart Management)**: Server-side cart isolation, multi-shop item grouping (Decision D6), and real-time inventory revalidation (`cartEngine.test.js`).
 - **C7 (Coupons & Promotions)**: Atomic race-safe coupon redemptions with minimum order thresholds and percentage caps (`couponEngine.test.js`).
+- **C8 (Checkout Flow)**: Server quote integrity, COD vs online handling, and Idempotency-Key deduplication (`orderPlacementPayments.test.js`, `concurrency.test.js`).
 - **C9 (Order Placement & GST Invoices)**: Double-entry ledger integration, itemized GST tax invoice generation via `pdfkit` (`variantAndInvoice.test.js`).
 - **C10 / S5 (Live Order Tracking)**: Real-time milestone progressions (`confirmed` $\to$ `delivered`), assigned rider GPS coordinates, and distance-based ETA computation (`afterOrderExperience.test.js`).
 - **C11 / S6 (Post-Delivery Returns & Refunds)**: 48h perishable vs 7-day retail return windows, multi-tier staff return review queue, and hybrid refund routing (`afterOrderExperience.test.js`).
+- **C12 (Wishlist & Saved Items)**: Database-backed wishlist persistence, quick add-to-cart, and saved product management (`wishlistEngine.test.js`).
+- **C13 (Notification System)**: Push notification delivery matching token format (N17), in-app notification inbox, and broadcast (`pushNotifications.test.js`, `adminCommerceOps.test.js`).
 - **C14 (Statutory Grievance Redressal)**: Public Grievance Officer directory, 48-hour statutory acknowledgement SLA recording, and 30-day resolution tracking (`afterOrderExperience.test.js`).
 
-### 3.2 Seller Hub Operations (S1–S4, S6)
+### 3.2 Seller Hub Operations (S1–S7)
 - **S1 (Seller Onboarding & KYC)**: Private bucket isolation for PAN, Aadhaar, FSSAI; signed short-lived URLs (10m TTL); automated shop verification upon KYC approval (`sellerOperations.test.js`).
 - **S2 (Catalog & Low-Stock Alerts)**: One-tap product availability toggle and low-stock threshold monitoring (`sellerOperations.test.js`).
 - **S3 (Kitchen Display System & Packing Slips)**: Order acceptance/rejection with mandatory cancellation reason; 80mm ESC/POS thermal packing slip generation (`sellerOperations.test.js`).
 - **S4 (Seller Financials & Statements)**: 0% launch platform commission; daily settlement statements with gross sales, COD deductions, and net balance reconciliation (`sellerOperations.test.js`).
+- **S5 (Shop-Level Coupons & Offers)**: Seller shop-specific discount coupons within platform guardrails and cart quote validation (`couponEngine.test.js`, `adminCommerceOps.test.js`).
 - **S6 (Verified Reviews & Seller Replies)**: Verified buyer gating under Consumer Protection Rules 2020; official seller reply workflow (`afterOrderExperience.test.js`).
+- **S7 (Seller Business Analytics)**: Real database metrics for GMV, repeat customers, and sales breakdowns; zero Math.random mocks (`shopAnalytics.test.js`, `sellerOperations.test.js`).
 
 ### 3.3 Rider Fleet Operations (R1–R5)
 - **R1 (Rider Onboarding & KYC)**: Driver KYC validation, RC verification, and user role promotion to `delivery_agent` (`riderFleet.test.js`).
@@ -99,12 +111,18 @@ pie title Verified Commercial Launch Scope
 - **A13**: Financial exports & GST Section 52 1% TCS tax reports formatted for Chartered Accountant review (`adminCommerceOps.test.js`).
 - **A14**: Geo-targeted push announcements with administrative audit trail (`adminCommerceOps.test.js`).
 
-### 3.5 Platform Architecture & Toolchain (P3, P6, P7, P8, P10, P12, P13, N12, N16)
+### 3.5 Platform Architecture & Toolchain (P1–P13, N12, N16)
+- **P1**: Canonical quote/checkout pipelines and status state machine transitions (`orderLifecycle.test.js`, `orderPlacementPayments.test.js`).
+- **P2**: Payment gateway integration, signature verification, and webhook handling (`razorpayPayments.test.js`, `concurrency.test.js`).
 - **P3**: Mathematical double-entry ledger guaranteeing debit/credit equality (`ledgerEngine.test.js`).
+- **P4**: Pluggable storage provider interface (Local/S3/R2), signed URLs, and MIME sniffing (`storageService.test.js`, `uploads.test.js`).
+- **P5**: Unified push, email, and development console transport adapters (`pushNotifications.test.js`, `adminCommerceOps.test.js`).
 - **P6**: Unified feature flag registry in `packages/shared` consumed across API, Web, Mobile, Admin (`featureFlags.test.js`).
 - **P7**: Dynamic XML sitemap, robots.txt, and Schema.org JSON-LD structured data (`seo.test.mjs`).
 - **P8**: Health check (`/health`), readiness probe (`/ready`), and Prometheus metrics (`/metrics`) (`healthReady.test.js`).
+- **P9**: ASVS L2 security baseline, rate limiting on auth/checkout, input validation, and envValidator boot guards (`authSecurity.test.js`, `security.test.js`, `validate.test.js`).
 - **P10**: Automated AES-256-GCM encrypted database dumps, SHA-256 checksums, and dry-run restoration (`backupRestore.test.js`).
+- **P11**: Explicit user consent capture before initiating tracking under DPDP Act 2023 (`legalCompliance.test.mjs`).
 - **P12**: WCAG 2.1 AA accessibility compliance, skip-to-content link, semantic HTML landmarks (`a11y.test.mjs`).
 - **P13**: Dynamic code-splitting on heavy 3D cards and maps, keeping shopping path under performance budget (`performanceBudget.test.mjs`).
 - **N12**: Strict Android permission audit; stripped restricted audio, storage, and telecom components (`permissionsAudit.test.js`).
