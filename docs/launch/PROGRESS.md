@@ -1,4 +1,4 @@
-**Next action:** Milestone M3: Commerce Core (Catalog & Variants S2/N7, Full-Text Search C5, Server-Side Multi-Shop Cart C6/D6, Coupon Engine C7/A7/POL-03, Unified Checkout C8/D4, Payments & Webhook P2, Canonical Order Pipeline C9/P1/D5, Double-Entry Ledger P3).
+**Next action:** Milestone M4: Operations (Seller Onboarding & KYC S1, Seller Catalog & Inventory S2, Kitchen Display & Order Handling S3, Seller Payouts S4, Rider App Flow R1-R5, Admin Commerce Ops A1-A14).
 
 ---
 
@@ -9,7 +9,7 @@
 | **M0** | Honesty Reset & Verification Harness | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T07-27-57/` |
 | **M1** | P0 Security & Launch Blockers | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T08-42-54/` |
 | **M2** | Open Leads & Platform Hygiene | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
-| **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | NOT STARTED | — | — |
+| **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
 | **M4** | Operations (Seller Tools, Rider Flow, Admin Tabs) | NOT STARTED | — | — |
 | **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | NOT STARTED | — | — |
 | **M6** | Web Quality, SEO, Performance & Legal Compliance | NOT STARTED | — | — |
@@ -56,6 +56,15 @@
 - [x] **N10 & Gate G9 (Mobile Toolchain):** Aligned `@expo/config-plugins` to `~54.0.6` matching Expo SDK 54; added `expo-asset` dependency; configured Metro bundler with `extraNodeModules` binding React to `mobile/node_modules/react` to eliminate duplicate React 18 resolution; added owner-accepted exclusions in `apps/mobile/package.json`; mobile ESLint reports 0 errors (`--quiet`); all 233 Jest unit tests pass; `npx expo export --platform android` compiles 5,551 modules into Hermes bytecode bundle.
 - [x] **Verification Gate Execution:** Gates G1, G4, G5, G6, G9 all PASS cleanly in verify-all runner.
 
+### Milestone 3: Commerce Core
+- [x] **P6 & Launch Scope D1 (Module Registry & Feature Flags):** Single source of truth in `packages/shared/src/features.js`; Express middleware `featureFlag.middleware.js` returning 404 for off-scope verticals while keeping commerce core open; client helper `apps/web/src/lib/features.js` and `Header.js` navigation gating; verified via `featureFlags.test.js` (7/7 pass).
+- [x] **C7 & N5 & POL-03 (Database-Backed Coupon Engine):** Applied migration 128 creating `coupons` and `coupon_redemptions`; implemented `coupon.service.js` with minimum order, validity windows, percentage caps, total/per-user limits, and atomic race-safe redemption; integrated into `orderPlacement.service.js` and `order.routes.js`; verified via `couponEngine.test.js` (6/6 pass on SQLite and PostgreSQL) and Gate G15 policy test `POL-03` (0 violations).
+- [x] **C5 (Full-Text Search Engine):** PostgreSQL `to_tsvector` + `plainto_tsquery` + `ts_rank` with fallback and SQLite FTS5; normalized boolean checks; verified via `searchEngine.test.js` (4/4 pass on both SQLite and PostgreSQL).
+- [x] **P3 (Double-Entry Platform Payments Ledger):** Applied migration 129 creating `platform_ledger_entries`; implemented `ledger.service.js` guaranteeing strict debit/credit balance equality and mathematical balance reproducibility; verified via `ledgerEngine.test.js` (5/5 pass on both SQLite and PostgreSQL).
+- [x] **C6 & D6 (Server-Side Multi-Shop Cart):** Applied migration 130 creating shop-level commerce columns (`delivery_fee`, `min_order_amount`, etc.); implemented server-side cart with inventory revalidation, multi-shop item grouping per Decision D6, and guest-to-user cart merge on login; verified via `cartEngine.test.js` (4/4 pass on both SQLite and PostgreSQL).
+- [x] **S2 & C9 & N7 (Product Variants & GST Tax Invoice Generation):** Implemented product variants CRUD API (`/shops/:shopId/products/:productId/variants`); implemented `invoice.service.js` with `generateOrderInvoice` and `streamInvoicePdf` generating GST-compliant tax invoices with shop GSTIN, FSSAI, itemized breakup, delivery fee, and totals via `pdfkit`; verified via `variantAndInvoice.test.js` (6/6 pass on both SQLite and PostgreSQL).
+- [x] **Verification Gate Execution:** Gates G1, G4, G5, G6, G15 all PASS cleanly in verify-all runner.
+
 ---
 
 ## 3. Session Log
@@ -90,5 +99,14 @@
   - Resolved L10/POL-04/POL-05: removed `Math.random` from shop analytics/slots, replaced "coming soon" placeholders with genuine empty states.
   - Resolved N10 & Gate G9: aligned config-plugins to `~54.0.6`, added `expo-asset`, bound React in Metro config to eliminate duplicate React 18, verified 233/233 mobile tests, verified 0 ESLint errors, and verified full Android Hermes export.
   - Executed targeted verify-all run: Gates G1, G4, G5, G6, G9 all PASS cleanly.
+
+- **2026-10-25 (Session 4 — M3 Commerce Core):**
+  - Resolved P6 & Scope D1: established single source of truth in `packages/shared/src/features.js`, created `featureFlag.middleware.js` returning 404 for off-scope verticals while keeping commerce core open, updated web navigation and `Header.js`; verified via `featureFlags.test.js` (7/7 pass).
+  - Resolved C7, N5 & POL-03: created migration 128 (`coupons`, `coupon_redemptions`), implemented `coupon.service.js` with limits, caps, and atomic race-safe redemptions, replaced mock coupon handlers in `order.routes.js` and `orderPlacement.service.js`; verified via `couponEngine.test.js` (6/6 pass on SQLite and PostgreSQL) and Gate G15 policy test POL-03 (0 violations).
+  - Resolved C5: implemented full-text search with PostgreSQL `to_tsvector` + `plainto_tsquery` + `ts_rank` and SQLite FTS5 fallback; verified via `searchEngine.test.js` (4/4 pass on SQLite and PostgreSQL).
+  - Resolved P3: created migration 129 (`platform_ledger_entries`), implemented double-entry `ledger.service.js` with debit/credit balance equality and historical balance reproducibility; verified via `ledgerEngine.test.js` (5/5 pass on SQLite and PostgreSQL).
+  - Resolved C6 & D6: created migration 130 (`delivery_fee`, `min_order_amount`, etc. on `local_shops`), implemented server-side cart with stock/price revalidation, multi-shop item grouping per D6, and guest-to-user cart merge on login; verified via `cartEngine.test.js` (4/4 pass on SQLite and PostgreSQL).
+  - Resolved S2, C9 & N7: implemented product variants CRUD API (`/shops/:shopId/products/:productId/variants`), implemented `invoice.service.js` with `generateOrderInvoice` and `streamInvoicePdf` generating GST-compliant tax invoices with shop GSTIN, FSSAI, itemized breakup, delivery fee, and totals via `pdfkit`; verified via `variantAndInvoice.test.js` (6/6 pass on SQLite and PostgreSQL).
+  - Executed verification harness: Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
 

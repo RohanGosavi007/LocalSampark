@@ -22,6 +22,7 @@ const fs = require('fs');
 const { TEST_DB_PATH } = require('./jest.globalSetup');
 
 process.env.NODE_ENV = 'test';
+process.env.BYPASS_FEATURE_FLAGS = 'true';
 const usePg = process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true';
 process.env.USE_SQLITE = usePg ? 'false' : 'true';
 

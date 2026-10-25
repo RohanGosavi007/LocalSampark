@@ -6,6 +6,12 @@ const {
   isValidRole
 } = require('./src/roles');
 
+const {
+  FEATURES,
+  isFeatureEnabled,
+  getAllFeatures
+} = require('./src/features');
+
 const ORDER_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
@@ -32,6 +38,9 @@ module.exports = {
   normalizeRole,
   isFullAdmin,
   isValidRole,
+  FEATURES,
+  isFeatureEnabled,
+  getAllFeatures,
   ORDER_STATUS,
   POST_TYPES
 };

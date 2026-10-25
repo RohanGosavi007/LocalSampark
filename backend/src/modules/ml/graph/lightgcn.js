@@ -418,7 +418,7 @@ async function loadEdges(regionId = null) {
   // merchant -- category
   try {
     const params = [];
-    let clause = 'COALESCE(s.is_active, 1) = 1 AND s.category_id IS NOT NULL';
+    let clause = '(s.is_active = true OR s.is_active IS NULL) AND s.category_id IS NOT NULL';
     if (regionId) {
       params.push(regionId);
       clause += ` AND s.region_id = $${params.length}`;

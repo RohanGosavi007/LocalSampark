@@ -142,7 +142,7 @@ async function loadCorpus() {
            COALESCE(c.name, '')        AS category_name
       FROM local_shops s
       LEFT JOIN shop_categories c ON c.id = s.category_id
-     WHERE COALESCE(s.is_active, 1) = 1
+     WHERE (s.is_active = true OR s.is_active IS NULL)
   `);
   return res.rows || res || [];
 }

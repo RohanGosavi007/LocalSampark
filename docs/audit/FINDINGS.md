@@ -419,6 +419,31 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Test:** Gate G15 policy test `POL-08` passes with 0 BOM or mojibake violations.
 - **Status:** VERIFIED
 
+---
 
+### Finding N5: Hardcoded Fake Coupons Replaced with Real DB Engine
+- **ID:** ECOM-N5
+- **Severity:** P1 (Commerce Core)
+- **Platform:** Backend (`backend`), Shared (`packages/shared`)
+- **Module:** Coupons & Checkout Engine (C7, A7)
+- **Location:** `backend/src/modules/ecommerce/routes/order.routes.js`, `backend/src/services/coupon.service.js`
+- **Symptom:** Coupons were hardcoded in mock validation logic (WELCOME50, FREEDELIVERY, SAVE10) with no usage limits, no database persistence, and no first-order enforcement.
+- **Fix:** Applied forward-only migration `128_coupons_engine.sql` / `.sqlite.sql` creating `coupons` and `coupon_redemptions` tables. Implemented `coupon.service.js` validating minimum order, validity windows, max discount caps, total usage caps, and atomic race-safe redemption. Integrated into `orderPlacement.service.js` and `order.routes.js`.
+- **Test:** `couponEngine.test.js` (6/6 pass on SQLite and PostgreSQL), `concurrency.test.js` [G6.4] (coupon usage limit holds under concurrency race), and Gate G15 policy test POL-03 (0 violations).
+- **Status:** FIXED-VERIFIED
 
+---
 
+### Finding N7: Missing Product Variant and Tax Invoice Features
+- **ID:** ECOM-N7
+- **Severity:** P1 (Commerce Operations)
+- **Platform:** Backend (`backend`)
+- **Module:** Seller Catalog (S2) & Order Fulfillment (C9, S3)
+- **Location:** `backend/src/modules/ecommerce/routes/shop.routes.js`, `backend/src/services/invoice.service.js`, `backend/src/modules/ecommerce/routes/order.routes.js`
+- **Symptom:** `product_variants` and `shop_invoices` tables existed in schema but had no CRUD endpoints and no GST tax invoice PDF generation.
+- **Fix:** 
+  1. Implemented product variants CRUD endpoints (`GET`, `POST`, `PUT`, `DELETE` on `/shops/:shopId/products/:productId/variants`) with tenant shop ownership validation.
+  2. Implemented `invoice.service.js` with `generateOrderInvoice` and `streamInvoicePdf` generating GST-compliant tax invoices with shop GSTIN, FSSAI, itemized breakup, delivery fee, and totals.
+  3. Added `GET /orders/:orderId/invoice` and `GET /orders/:orderId/invoice/pdf` streaming endpoints to `order.routes.js`.
+- **Test:** `variantAndInvoice.test.js` (6/6 pass on both SQLite and PostgreSQL).
+- **Status:** FIXED-VERIFIED

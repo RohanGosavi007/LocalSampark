@@ -6,6 +6,12 @@ const { bodyGuard } = require('../middleware/bodyGuard');
 router.use(bodyGuard);
 const apiCache = require('../middleware/cache.middleware');
 const { authLimiter, paymentLimiter, uploadLimiter, adminLimiter } = require('../middleware/rateLimit.middleware');
+const { requireFeature, getAllFeatures } = require('../middleware/featureFlag.middleware');
+
+// Public Feature Flag Discovery Endpoint
+router.get('/features', (req, res) => {
+  res.json({ success: true, features: getAllFeatures() });
+});
 
 // ─── CORE DOMAIN ──────────────────────────────────────────
 router.use('/auth', authLimiter, require('../modules/core/routes/auth.routes'));
@@ -14,7 +20,7 @@ router.use('/users/addresses', require('../modules/ecommerce/routes/addresses.ro
 router.use('/chatbot', require('../modules/core/routes/chatbot.routes'));
 router.use('/loyalty', require('../modules/core/routes/loyalty.routes'));
 router.use('/notifications', require('../modules/core/routes/notification.routes'));
-router.use('/sos', require('../modules/core/routes/sos.routes'));
+router.use('/sos', requireFeature('emergency_sos'), require('../modules/core/routes/sos.routes'));
 router.use('/zones', apiCache(3600), require('../modules/core/routes/zone.routes'));
 router.use('/public', require('../modules/core/routes/public.routes'));
 router.use('/user-zones', require('../modules/core/routes/user_zone.routes'));
@@ -34,35 +40,35 @@ router.use('/webhooks', require('../modules/core/routes/webhooks.routes'));
 router.use('/token-queue', require('../modules/core/routes/token-queue.routes'));
 
 // ─── COMMUNITY DOMAIN ─────────────────────────────────────
-router.use('/feed', apiCache(300), require('../modules/community/routes/feed.routes'));
+router.use('/feed', requireFeature('townsquare'), apiCache(300), require('../modules/community/routes/feed.routes'));
 router.use('/chat', require('../modules/community/routes/chat.routes'));
-router.use('/societies', require('../modules/community/routes/society.routes'));
+router.use('/societies', requireFeature('society_management'), require('../modules/community/routes/society.routes'));
 // The web society page calls /society/notices, so the same router is also
 // reachable in the singular.
-router.use('/society', require('../modules/community/routes/society.routes'));
-router.use('/events', apiCache(3600), require('../modules/community/routes/event.routes'));
-router.use('/pets', require('../modules/community/routes/pet.routes'));
-router.use('/stories', require('../modules/community/routes/story.routes'));
-router.use('/society-admin', require('../modules/community/routes/society-admin.routes'));
-router.use('/townsquare', require('../modules/community/routes/townsquare.routes'));
-router.use('/scrap', require('../modules/community/routes/scrap.routes'));
+router.use('/society', requireFeature('society_management'), require('../modules/community/routes/society.routes'));
+router.use('/events', requireFeature('community_events'), apiCache(3600), require('../modules/community/routes/event.routes'));
+router.use('/pets', requireFeature('pets'), require('../modules/community/routes/pet.routes'));
+router.use('/stories', requireFeature('townsquare'), require('../modules/community/routes/story.routes'));
+router.use('/society-admin', requireFeature('society_management'), require('../modules/community/routes/society-admin.routes'));
+router.use('/townsquare', requireFeature('townsquare'), require('../modules/community/routes/townsquare.routes'));
+router.use('/scrap', requireFeature('scrap'), require('../modules/community/routes/scrap.routes'));
 router.use('/community-hub', apiCache(300), require('../modules/community/routes/community_hub.routes'));
-router.use('/volunteer', require('../modules/community/routes/volunteer.routes'));
-router.use('/donations', require('../modules/community/routes/donations.routes'));
-router.use('/society-management', require('../modules/community/routes/society-visitor.routes'));
+router.use('/volunteer', requireFeature('donations_volunteer'), require('../modules/community/routes/volunteer.routes'));
+router.use('/donations', requireFeature('donations_volunteer'), require('../modules/community/routes/donations.routes'));
+router.use('/society-management', requireFeature('society_management'), require('../modules/community/routes/society-visitor.routes'));
 
 // NEW Phase 2-12 society routes (To be implemented)
-router.use('/society-preapproval', require('../modules/community/routes/visitor-preapproval.routes'));
-router.use('/society-billing', require('../modules/community/routes/billing-engine.routes'));
-router.use('/society-guard', require('../modules/community/routes/guard-operations.routes'));
-router.use('/society-move', require('../modules/community/routes/move-management.routes'));
-router.use('/society-erp', require('../modules/community/routes/society-erp.routes'));
-router.use('/society-forum', require('../modules/community/routes/community-forum.routes'));
-router.use('/society-messaging', require('../modules/community/routes/private-messaging.routes'));
-router.use('/society-shifts', require('../modules/community/routes/guard-shifts.routes'));
-router.use('/society-compliance', require('../modules/community/routes/society-compliance.routes'));
-router.use('/society-analytics', require('../modules/community/routes/society-analytics.routes'));
-router.use('/society-integration', require('../modules/community/routes/integration.routes'));
+router.use('/society-preapproval', requireFeature('society_management'), require('../modules/community/routes/visitor-preapproval.routes'));
+router.use('/society-billing', requireFeature('society_management'), require('../modules/community/routes/billing-engine.routes'));
+router.use('/society-guard', requireFeature('society_management'), require('../modules/community/routes/guard-operations.routes'));
+router.use('/society-move', requireFeature('society_management'), require('../modules/community/routes/move-management.routes'));
+router.use('/society-erp', requireFeature('society_management'), require('../modules/community/routes/society-erp.routes'));
+router.use('/society-forum', requireFeature('society_management'), require('../modules/community/routes/community-forum.routes'));
+router.use('/society-messaging', requireFeature('society_management'), require('../modules/community/routes/private-messaging.routes'));
+router.use('/society-shifts', requireFeature('society_management'), require('../modules/community/routes/guard-shifts.routes'));
+router.use('/society-compliance', requireFeature('society_management'), require('../modules/community/routes/society-compliance.routes'));
+router.use('/society-analytics', requireFeature('society_management'), require('../modules/community/routes/society-analytics.routes'));
+router.use('/society-integration', requireFeature('society_management'), require('../modules/community/routes/integration.routes'));
 
 // ─── UNIFIED SUPER-APP CONTRACTS (Phase 3 & Hyperlocal Optimization) ────────────────
 router.use('/shops/pincode', require('../modules/ecommerce/routes/pincode-directory.routes'));
@@ -80,10 +86,10 @@ router.use('/marketplace', apiCache(600), require('../modules/ecommerce/routes/m
 router.use('/products', apiCache(600), require('../modules/ecommerce/routes/marketplace.routes'));
 router.use('/dashboard', require('../modules/core/routes/dashboard.routes'));
 router.use('/payments', paymentLimiter, require('../modules/ecommerce/routes/payment.routes'));
-router.use('/subscriptions', require('../modules/ecommerce/routes/subscription.routes'));
+router.use('/subscriptions', requireFeature('premium_saas'), require('../modules/ecommerce/routes/subscription.routes'));
 router.use('/bills', require('../modules/ecommerce/routes/bills.routes'));
-router.use('/wallet', paymentLimiter, require('../modules/ecommerce/routes/wallet.routes'));
-router.use('/premium', require('../modules/ecommerce/routes/premium.routes'));
+router.use('/wallet', paymentLimiter, requireFeature('wallet_coins'), require('../modules/ecommerce/routes/wallet.routes'));
+router.use('/premium', requireFeature('premium_saas'), require('../modules/ecommerce/routes/premium.routes'));
 router.use('/orders', require('../modules/ecommerce/routes/order.routes'));
 router.use('/cart', require('../modules/ecommerce/routes/cart.routes'));
 router.use('/checkout', paymentLimiter, require('../modules/ecommerce/routes/checkout.routes'));
@@ -95,35 +101,35 @@ router.use('/universal-catalog', require('./universal-catalog.routes'));
 router.use('/universal-orders', require('./universal-order.routes'));
 
 // ─── SERVICES DOMAIN ──────────────────────────────────────
-router.use('/jobs', require('../modules/services/routes/jobs.routes'));
-router.use('/job-services', require('../modules/services/routes/job.routes'));
-router.use('/properties', require('../modules/services/routes/properties.routes'));
+router.use('/jobs', requireFeature('jobs'), require('../modules/services/routes/jobs.routes'));
+router.use('/job-services', requireFeature('jobs'), require('../modules/services/routes/job.routes'));
+router.use('/properties', requireFeature('properties'), require('../modules/services/routes/properties.routes'));
 router.use('/delivery', require('../modules/services/routes/delivery.routes'));
 router.use('/logistics/riders', require('../modules/logistics/routes/rider.routes'));
 router.use('/logistics/agents', require('../modules/logistics/routes/agents.routes'));
-router.use('/health-services', apiCache(600), require('../modules/services/routes/health.routes'));
-router.use('/rental', require('../modules/services/routes/rental.routes'));
-router.use('/carpool', require('../modules/services/routes/carpool.routes'));
-router.use('/medical', require('../modules/services/routes/medical.routes'));
-router.use('/equipment', require('../modules/services/routes/equipment.routes'));
-router.use('/chef', require('../modules/services/routes/chef.routes'));
+router.use('/health-services', requireFeature('medical'), apiCache(600), require('../modules/services/routes/health.routes'));
+router.use('/rental', requireFeature('equipment_rental'), require('../modules/services/routes/rental.routes'));
+router.use('/carpool', requireFeature('carpool'), require('../modules/services/routes/carpool.routes'));
+router.use('/medical', requireFeature('medical'), require('../modules/services/routes/medical.routes'));
+router.use('/equipment', requireFeature('equipment_rental'), require('../modules/services/routes/equipment.routes'));
+router.use('/chef', requireFeature('chef'), require('../modules/services/routes/chef.routes'));
 router.use('/tracking', require('../modules/services/routes/tracking.routes'));
 router.use('/services', require('../modules/services/routes/services.routes'));
-router.use('/care', require('../modules/services/routes/care.routes'));
-router.use('/job-cards', require('../modules/services/routes/job-cards.routes'));
+router.use('/care', requireFeature('medical'), require('../modules/services/routes/care.routes'));
+router.use('/job-cards', requireFeature('jobs'), require('../modules/services/routes/job-cards.routes'));
 router.use('/home-services', require('../modules/services/routes/home-services.routes'));
 router.use('/community', require('../modules/services/routes/community.routes'));
 router.use('/multilingual', require('../modules/services/routes/multilingual.routes'));
 
 // ─── PHASE A & B: ADVANCED TRI-CATEGORY FEATURES ────────────
-router.use('/carpool', require('../modules/services/routes/advanced.routes'));
+router.use('/carpool', requireFeature('carpool'), require('../modules/services/routes/advanced.routes'));
 router.use('/marketplace', require('../modules/services/routes/advanced.routes'));
-router.use('/jobs', require('../modules/services/routes/advanced.routes'));
+router.use('/jobs', requireFeature('jobs'), require('../modules/services/routes/advanced.routes'));
 router.use('/', require('../modules/services/routes/advanced.routes'));
 
-router.use('/carpool', require('../modules/services/routes/advanced-b.routes'));
+router.use('/carpool', requireFeature('carpool'), require('../modules/services/routes/advanced-b.routes'));
 router.use('/marketplace', require('../modules/services/routes/advanced-b.routes'));
-router.use('/jobs', require('../modules/services/routes/advanced-b.routes'));
+router.use('/jobs', requireFeature('jobs'), require('../modules/services/routes/advanced-b.routes'));
 router.use('/', require('../modules/services/routes/advanced-b.routes'));
 
 // ─── 10x NEW: SHOP ANALYTICS & VENDOR MANAGEMENT ─────────

@@ -37,6 +37,7 @@ const logger = require('../../../config/logger');
 const RRF_K = 60;
 
 const isSqlite = () => process.env.USE_SQLITE === 'true';
+const isPostgres = () => process.env.USE_SQLITE !== 'true';
 
 /**
  * Escapes a user query for FTS5.
@@ -72,25 +73,40 @@ function toFtsQuery(text, { prefix = false } = {}) {
  */
 async function keywordSearch(text, limit, { prefix = false } = {}) {
   if (!isSqlite()) {
-    // No FTS5 on Postgres in this schema. A LIKE scan over ~124 rows is
-    // perfectly adequate at this catalogue size and keeps the endpoint working
-    // identically on both engines rather than silently returning nothing.
     try {
-      // A trailing-wildcard LIKE is already a prefix match, so the Postgres
-      // path needs no separate mode.
       const like = `%${String(text).toLowerCase()}%`;
+      // PostgreSQL Full-Text Search with ranking and substring fallback
       const res = await query(
         `SELECT id FROM local_shops
-          WHERE COALESCE(is_active, 1) = 1
-            AND (LOWER(name) LIKE $1 OR LOWER(COALESCE(description, '')) LIKE $1
-                 OR LOWER(COALESCE(category, '')) LIKE $1)
-          LIMIT $2`,
-        [like, limit]
+          WHERE (is_active = true OR is_active IS NULL)
+            AND (
+              to_tsvector('english', name || ' ' || COALESCE(description, '') || ' ' || COALESCE(category, '')) @@ plainto_tsquery('english', $1)
+              OR LOWER(name) LIKE $2 
+              OR LOWER(COALESCE(description, '')) LIKE $2
+              OR LOWER(COALESCE(category, '')) LIKE $2
+            )
+          ORDER BY 
+            ts_rank(to_tsvector('english', name || ' ' || COALESCE(description, '') || ' ' || COALESCE(category, '')), plainto_tsquery('english', $1)) DESC
+          LIMIT $3`,
+        [text, like, limit]
       );
       return (res.rows || res || []).map((r) => r.id);
     } catch (err) {
-      logger.warn('Keyword search (LIKE) failed: ' + err.message);
-      return [];
+      logger.warn('Keyword search (PostgreSQL FTS) failed, trying LIKE fallback: ' + err.message);
+      try {
+        const like = `%${String(text).toLowerCase()}%`;
+        const res = await query(
+          `SELECT id FROM local_shops
+            WHERE (is_active = true OR is_active IS NULL)
+              AND (LOWER(name) LIKE $1 OR LOWER(COALESCE(description, '')) LIKE $1 OR LOWER(COALESCE(category, '')) LIKE $1)
+            LIMIT $2`,
+          [like, limit]
+        );
+        return (res.rows || res || []).map((r) => r.id);
+      } catch (err2) {
+        logger.warn('Keyword search (LIKE fallback) failed: ' + err2.message);
+        return [];
+      }
     }
   }
 
@@ -207,15 +223,20 @@ async function search(text, { limit = 20, lat = null, lng = null, categorySlug =
   const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
   const params = [...ids];
 
+  const activeCondition = isPostgres() ? '(s.is_active = true OR s.is_active IS NULL)' : 'COALESCE(s.is_active, 1) = 1';
   let sql = `
     SELECT s.*, c.name AS category_name, c.slug AS category_slug
       FROM local_shops s
       LEFT JOIN shop_categories c ON c.id = s.category_id
-     WHERE s.id IN (${placeholders}) AND COALESCE(s.is_active, 1) = 1`;
+     WHERE s.id IN (${placeholders}) AND ${activeCondition}`;
 
   if (categorySlug && categorySlug !== 'all') {
     params.push(categorySlug);
-    sql += ` AND s.category_id = (SELECT id FROM shop_categories WHERE slug = $${params.length} LIMIT 1)`;
+    sql += ` AND (
+      s.category_id = (SELECT id FROM shop_categories WHERE slug = $${params.length} LIMIT 1)
+      OR LOWER(COALESCE(s.category, '')) = LOWER($${params.length})
+      OR c.slug = $${params.length}
+    )`;
   }
 
   const res = await query(sql, params);

@@ -44,7 +44,7 @@ async function retrieveCandidates({ lat, lng, radiusKm, categorySlug, regionId, 
 
   const params = [lat - latDelta, lat + latDelta, lng - lngDelta, lng + lngDelta];
   const conditions = [
-    'COALESCE(s.is_active, 1) = 1',
+    '(s.is_active = true OR s.is_active IS NULL)',
     's.latitude BETWEEN $1 AND $2',
     's.longitude BETWEEN $3 AND $4',
   ];
@@ -358,7 +358,7 @@ router.get('/similar/:id', optionalAuth, async (req, res) => {
               (SELECT COUNT(*) FROM shop_reviews r WHERE r.shop_id = s.id) AS review_count
          FROM local_shops s
          LEFT JOIN shop_categories c ON c.id = s.category_id
-        WHERE COALESCE(s.is_active, 1) = 1 AND s.id <> $1
+        WHERE (s.is_active = true OR s.is_active IS NULL) AND s.id <> $1
         LIMIT 500`,
       [sourceId]
     );

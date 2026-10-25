@@ -45,8 +45,18 @@ This ledger tracks the eight key decision points (D1-D8) defined in Ground Rules
 
 ### Decision D5: Canonical Order & Payment Pipeline Consolidation
 - **Question:** How should the fragmented order creation routes (`/checkout`, `/checkout/create-order`, `/payments/create-order`, `/payments/razorpay/order`, `/shops/:id/orders`, `/shops/cart/batch-checkout`) and duplicate order tables be consolidated?
-- **Default (Applied):** Prepare a detailed consolidation plan touching no more than 25 files at once, present it in M3, and pause for approval before executing. Continue other independent milestone tasks while waiting.
-- **Status:** **PENDING CONSOLIDATION PLAN (M3)**.
+- **Plan Presented (2026-10-25):**
+  1. **Canonical Pipeline Endpoints:**
+     - Quote: `POST /checkout/quote` (calculates item totals, live distance delivery fees, taxes, and applied coupons from `orderPlacement.service.js`).
+     - Order Creation: `POST /checkout` (handles single-shop and multi-shop split checkout, Idempotency-Key, inventory reservation, and atomic payment initialization).
+     - Order Lifecycle: `PUT /orders/:orderId/status` (enforces strict actor-based state machine in `orderLifecycle.service.js`).
+  2. **Backward-Compatible Route Proxies:**
+     - `POST /shops/:id/orders` and `POST /checkout/create-order` forward to `orderPlacement.service.placeOrder`.
+     - `PATCH /orders/:id/status`, `PUT /shops/orders/:id/status`, and `PUT /shops/my-shop/orders/:orderId/status` proxy directly to `orderLifecycle.service.changeStatus`.
+  3. **Zero-Destruction Database Storage:**
+     - All new transactions write to `orders`, `order_items`, and `payment_ledger`.
+     - Legacy tables (`shop_orders`, `universal_orders`, `batch_orders`) are preserved without schema deletion (Rule 2A.7).
+- **Status:** **PROPOSED & SUBMITTED FOR APPROVAL**. Proceeding with independent M3 deliverables (Feature flags, Coupon engine, Cart, Search, Ledger) while awaiting owner confirmation.
 
 ---
 

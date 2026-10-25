@@ -27,6 +27,7 @@ const { pointSql } = require('../utils/sqlPoint');
 const payments = require('./payments.service');
 const pricing = require('./deliveryPricing.service');
 const commission = require('./commission.service');
+const couponService = require('./coupon.service');
 
 const MAX_LINES = 100;
 const MAX_QUANTITY = 999;
@@ -155,6 +156,32 @@ async function quoteOrder({ user = null, shopId, items, body = {} }) {
     // here, so the quote and the order they place agree.
     const member = user && user.id ? await require('./membership.service').isMember(user.id) : false;
     bill = await pricing.quote({ shop, subtotal, pickup, drop: drop.point, member });
+
+    // Database-backed coupon validation
+    const couponCode = body.couponCode ?? body.coupon_code ?? body.coupon;
+    if (couponCode) {
+      try {
+        const valRes = await couponService.validateCoupon({
+          code: couponCode,
+          cartTotal: subtotal,
+          userId: user ? user.id : null,
+          shopId: shop.id
+        });
+        const cpn = valRes.coupon;
+        if (cpn.type === 'free_delivery') {
+          bill.deliveryFee = 0;
+        } else if (cpn.discount > 0) {
+          bill.discount = Math.min(money(cpn.discount), money(bill.subtotal));
+        }
+        bill.total = Math.max(0, money(bill.subtotal + bill.deliveryFee + bill.platformFee + bill.smallOrderFee - (bill.discount || 0)));
+        bill.coupon = cpn;
+      } catch (cErr) {
+        if (cErr instanceof couponService.CouponError) {
+          throw new OrderError(cErr.status, cErr.code, cErr.message);
+        }
+        throw cErr;
+      }
+    }
   } catch (error) {
     throw toOrderError(error);
   }
@@ -273,6 +300,23 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
           [line.quantity, line.productId]
         );
         if (!taken.rowCount) throw new OrderError(409, 'OUT_OF_STOCK', `${line.name} has just gone out of stock.`);
+      }
+    }
+
+    if (bill.coupon && bill.coupon.id) {
+      try {
+        await couponService.redeemCoupon({
+          couponId: bill.coupon.id,
+          userId: user.id,
+          orderId,
+          discountApplied: bill.discount || 0,
+          client: tx
+        });
+      } catch (cErr) {
+        if (cErr instanceof couponService.CouponError) {
+          throw new OrderError(cErr.status, cErr.code, cErr.message);
+        }
+        throw cErr;
       }
     }
   };
