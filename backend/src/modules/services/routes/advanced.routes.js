@@ -3,57 +3,21 @@ const geo = require('../../../utils/geo');
 const router = express.Router();
 const crypto = require('crypto');
 const path = require('path');
-const multer = require('multer');
+const uploads = require('../../core/services/upload.service');
 const { query, queryOne, queryMany } = require('../../../config/database');
+const { sqlTimestamp } = require('../../../utils/sqlTime');
+const escrowService = require('../../../services/escrow.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { parseResumeText, extractTextFromBuffer } = require('../../../utils/resumeParser');
 
 // ═══════════════════════════════════════════════════════════════
 // FILE UPLOAD (multer config)
 // ═══════════════════════════════════════════════════════════════
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../../../public/uploads');
-    const fs = require('fs');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${crypto.randomUUID().substring(0, 8)}${ext}`);
-  }
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpg|jpeg|png|webp|gif|pdf|doc|docx|txt|mp4|webm|mp3/;
-    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
-    cb(null, allowed.test(ext));
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// PHOTO UPLOAD ENDPOINT (M1)
-// ═══════════════════════════════════════════════════════════════
-router.post('/upload', authenticate, upload.array('files', 10), async (req, res, next) => {
-  try {
-    const { module: mod = 'general', entity_id } = req.body;
-    const urls = [];
-    for (const file of (req.files || [])) {
-      const filePath = `/uploads/${file.filename}`;
-      const id = crypto.randomUUID();
-      try {
-        await query(
-          `INSERT INTO file_uploads (id, user_id, module, entity_id, file_name, file_path, file_type, file_size, mime_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [id, req.user.id, mod, entity_id || null, file.originalname, filePath, path.extname(file.originalname), file.size, file.mimetype]
-        );
-      } catch (e) { /* file_uploads table might not exist yet */ }
-      urls.push({ id, url: filePath, name: file.originalname, size: file.size, type: file.mimetype });
-    }
-    res.json({ success: true, files: urls, count: urls.length });
-  } catch (error) { next(error); }
-});
+// File uploads are handled by modules/core/routes/upload.routes.js (POST
+// /upload), through upload.service.js. This router had its own POST /upload,
+// which accepted any file whose name ended in an allowed extension and kept
+// that extension. Because the router is mounted four times (/, /carpool,
+// /marketplace, /jobs) it was also reachable at /carpool/upload and so on.
 
 // ═══════════════════════════════════════════════════════════════
 // CARPOOL ADVANCED (C1-C5)
@@ -107,18 +71,16 @@ router.post('/carpool/rides/:rideId/generate-otp', authenticate, async (req, res
       // someone claim a seat that is not theirs. randomInt is also unbiased,
       // which Math.floor(min + random*range) is not.
       const otp = String(crypto.randomInt(1000, 10000)); // 4-digit OTP
-      try {
-        await query(
-          `INSERT INTO carpool_ride_otps (ride_id, booking_id, otp_code, expires_at) VALUES ($1, $2, $3, datetime('now', '+30 minutes'))
-           ON CONFLICT(ride_id, booking_id) DO UPDATE SET otp_code = $3, verified = 0, expires_at = datetime('now', '+30 minutes')`,
-          [rideId, booking.id, otp]
-        );
-      } catch (e) {
-        await query(
-          `INSERT OR REPLACE INTO carpool_ride_otps (ride_id, booking_id, otp_code, expires_at) VALUES ($1, $2, $3, datetime('now', '+30 minutes'))`,
-          [rideId, booking.id, otp]
-        );
-      }
+      // One statement for both engines. The expiry was datetime('now', '+30
+      // minutes'), which PostgreSQL does not have, and the fallback for when
+      // that failed was INSERT OR REPLACE, which it does not have either — so
+      // in production no OTP was ever stored. The table carries
+      // UNIQUE(ride_id, booking_id) on both, which is all ON CONFLICT needs.
+      await query(
+        `INSERT INTO carpool_ride_otps (ride_id, booking_id, otp_code, expires_at) VALUES ($1, $2, $3, $4)
+         ON CONFLICT(ride_id, booking_id) DO UPDATE SET otp_code = $3, verified = 0, expires_at = $4`,
+        [rideId, booking.id, otp, sqlTimestamp(30 * 60 * 1000)]
+      );
       otps.push({ booking_id: booking.id, passenger_id: booking.passenger_id, otp });
     }
 
@@ -127,14 +89,25 @@ router.post('/carpool/rides/:rideId/generate-otp', authenticate, async (req, res
 });
 
 // C5: Verify ride OTP
+// The driver checks a passenger's boarding code. Only the ride's driver may do
+// it — this accepted the call from anyone — and a code past its expiry is not
+// a code: expires_at was written and never read.
 router.post('/carpool/rides/:rideId/verify-otp', authenticate, async (req, res, next) => {
   try {
     const { rideId } = req.params;
-    const { otp_code, booking_id } = req.body;
+    const { otp_code, booking_id } = req.body || {};
+    if (!otp_code || !booking_id) {
+      return res.status(400).json({ success: false, error: 'otp_code and booking_id are required' });
+    }
+
+    const ride = await queryOne('SELECT id FROM carpool_rides WHERE id = $1 AND driver_id = $2', [rideId, req.user.id]);
+    if (!ride) return res.status(404).json({ success: false, error: 'Ride not found or unauthorized' });
 
     const otpRecord = await queryOne(
-      `SELECT * FROM carpool_ride_otps WHERE ride_id = $1 AND booking_id = $2 AND otp_code = $3 AND verified = 0`,
-      [rideId, booking_id, otp_code]
+      `SELECT * FROM carpool_ride_otps
+        WHERE ride_id = $1 AND booking_id = $2 AND otp_code = $3 AND verified = 0
+          AND (expires_at IS NULL OR expires_at > $4)`,
+      [rideId, booking_id, String(otp_code), sqlTimestamp(0)]
     );
     if (!otpRecord) return res.status(400).json({ success: false, error: 'Invalid or expired OTP' });
 
@@ -274,66 +247,54 @@ router.post('/marketplace/price-suggest', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-// M5: Escrow — Create payment hold
+// M5: Escrow — the buyer's money, held until the item changes hands.
+// services/escrow.service.js does the work and explains what these three
+// routes used to be: status changes described to both parties as payments.
+function sendEscrowError(res, error, next) {
+  if (error instanceof escrowService.EscrowError) {
+    return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+  }
+  return next(error);
+}
+
 router.post('/marketplace/escrow/create', authenticate, async (req, res, next) => {
   try {
-    const { listing_id, amount, payment_method = 'wallet' } = req.body;
-    const listing = await queryOne('SELECT * FROM marketplace_listings WHERE id = $1', [listing_id]);
-    if (!listing) return res.status(404).json({ success: false, error: 'Listing not found' });
-    if (listing.seller_id === req.user.id) return res.status(400).json({ success: false, error: 'Cannot buy your own listing' });
+    const { listing_id, amount } = req.body || {};
+    if (!listing_id) return res.status(400).json({ success: false, error: 'listing_id is required' });
 
-    const id = crypto.randomUUID();
-    const platformFee = Math.round(amount * 0.02); // 2% platform fee
-
-    await query(
-      `INSERT INTO marketplace_escrow (id, listing_id, buyer_id, seller_id, amount, platform_fee, status, payment_method) VALUES ($1,$2,$3,$4,$5,$6,'held',$7)`,
-      [id, listing_id, req.user.id, listing.seller_id, amount, platformFee, payment_method]
-    );
-
+    const escrow = await escrowService.hold({ buyerId: req.user.id, listingId: listing_id, amount });
     res.json({
       success: true,
       escrow: {
-        id, listing_id, amount, platform_fee: platformFee,
-        net_to_seller: amount - platformFee,
-        status: 'held',
-        message: '💰 Payment held safely. Seller will deliver the item. Confirm receipt to release payment.'
+        ...escrow,
+        message: `₹${escrow.amount} has been taken from your wallet and is being held. Confirm receipt to pay the seller.`
       }
     });
-  } catch (error) { next(error); }
+  } catch (error) { sendEscrowError(res, error, next); }
 });
 
 // M5: Escrow — Buyer confirms receipt (releases payment)
 router.post('/marketplace/escrow/:escrowId/release', authenticate, async (req, res, next) => {
   try {
     const { escrowId } = req.params;
-    const escrow = await queryOne('SELECT * FROM marketplace_escrow WHERE id = $1 AND buyer_id = $2', [escrowId, req.user.id]);
-    if (!escrow) return res.status(404).json({ success: false, error: 'Escrow not found' });
-    if (escrow.status !== 'held') return res.status(400).json({ success: false, error: 'Escrow not in held status' });
-
-    await query(`UPDATE marketplace_escrow SET status = 'released', released_at = datetime('now') WHERE id = $1`, [escrowId]);
-    await query(`UPDATE marketplace_listings SET status = 'sold' WHERE id = $1`, [escrow.listing_id]);
+    const escrow = await escrowService.releaseByBuyer({ buyerId: req.user.id, escrowId });
 
     // Emit socket event
     try {
       const io = req.app.get('io');
       if (io) io.to(`mkt_chat_${escrow.listing_id}`).emit('marketplace:escrow_released', { escrow_id: escrowId });
-    } catch (e) {}
+    } catch (e) { /* notification only */ }
 
     res.json({ success: true, message: '✅ Payment released to seller! Transaction complete.' });
-  } catch (error) { next(error); }
+  } catch (error) { sendEscrowError(res, error, next); }
 });
 
 // M5: Escrow — Raise dispute
 router.post('/marketplace/escrow/:escrowId/dispute', authenticate, async (req, res, next) => {
   try {
-    const { escrowId } = req.params;
-    const { reason } = req.body;
-    const escrow = await queryOne('SELECT * FROM marketplace_escrow WHERE id = $1 AND buyer_id = $2', [escrowId, req.user.id]);
-    if (!escrow) return res.status(404).json({ success: false, error: 'Escrow not found' });
-
-    await query(`UPDATE marketplace_escrow SET status = 'disputed', dispute_reason = $1, dispute_at = datetime('now') WHERE id = $2`, [reason, escrowId]);
-    res.json({ success: true, message: 'Dispute raised. Admin will review within 48 hours.' });
-  } catch (error) { next(error); }
+    await escrowService.dispute({ buyerId: req.user.id, escrowId: req.params.escrowId, reason: (req.body || {}).reason });
+    res.json({ success: true, message: 'Dispute raised. Your payment stays held until an administrator has reviewed it.' });
+  } catch (error) { sendEscrowError(res, error, next); }
 });
 
 // M6: Seller Trust Score Calculator
@@ -366,7 +327,7 @@ router.get('/marketplace/seller-score/:sellerId', async (req, res, next) => {
     try {
       await query(
         `INSERT INTO marketplace_seller_scores (seller_id, account_age_days, verified_phone, total_listings, total_sold, dispute_count, trust_score) VALUES ($1,$2,$3,$4,$5,$6,$7)
-         ON CONFLICT(seller_id) DO UPDATE SET account_age_days=$2, verified_phone=$3, total_listings=$4, total_sold=$5, dispute_count=$6, trust_score=$7, last_calculated=datetime('now')`,
+         ON CONFLICT(seller_id) DO UPDATE SET account_age_days=$2, verified_phone=$3, total_listings=$4, total_sold=$5, dispute_count=$6, trust_score=$7, last_calculated=CURRENT_TIMESTAMP`,
         [sellerId, accountAgeDays, user.phone_number ? 1 : 0, listings?.total || 0, listings?.sold || 0, escrows?.disputed || 0, score]
       );
     } catch (e) {}
@@ -384,22 +345,42 @@ router.get('/marketplace/seller-score/:sellerId', async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════
 
 // J1: Resume PDF Upload & Parse
-router.post('/jobs/resume-upload', authenticate, upload.single('resume'), async (req, res, next) => {
+// The résumé is a private document: the applicant, platform staff, and the
+// employers they apply to can open it (upload.service.js canRead). It was
+// stored under public/uploads, readable by anyone with the link, and any file
+// type with an allowed-looking name was accepted.
+const receiveResume = (req, res, next) => {
+  // The form field has always been "resume"; the upload service reads "file".
+  require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: uploads.MAX_FILE_BYTES, files: 1 } })
+    .single('resume')(req, res, (error) => {
+      if (error) return res.status(error.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ success: false, code: error.code, error: error.message });
+      req.uploadedFiles = req.file ? [req.file] : [];
+      return next();
+    });
+};
+
+router.post('/jobs/resume-upload', authenticate, receiveResume, async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
 
-    const fs = require('fs');
-    const buffer = fs.readFileSync(req.file.path);
-    const text = extractTextFromBuffer(buffer, req.file.originalname);
+    let stored;
+    try {
+      [stored] = await uploads.storeFiles(req.uploadedFiles, { userId: req.user.id, purpose: 'document', module: 'resume' });
+    } catch (error) {
+      if (error instanceof uploads.UploadError) return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+      throw error;
+    }
+    const buffer = req.file.buffer;
+    const text = extractTextFromBuffer(buffer, `resume${stored.type === 'application/pdf' ? '.pdf' : stored.type.includes('wordprocessingml') ? '.docx' : '.doc'}`);
     const parsed = parseResumeText(text);
 
     // Save parsed data to resume
-    const filePath = `/uploads/${req.file.filename}`;
+    const filePath = stored.url;
     const existing = await queryOne('SELECT id FROM job_resumes WHERE user_id = $1', [req.user.id]);
 
     if (existing) {
       await query(
-        `UPDATE job_resumes SET pdf_resume_url = $1, parsed_data = $2, headline = COALESCE(headline, $3), summary = COALESCE(summary, $4), experience_years = CASE WHEN experience_years = 0 THEN $5 ELSE experience_years END, updated_at = datetime('now') WHERE user_id = $6`,
+        `UPDATE job_resumes SET pdf_resume_url = $1, parsed_data = $2, headline = COALESCE(headline, $3), summary = COALESCE(summary, $4), experience_years = CASE WHEN experience_years = 0 THEN $5 ELSE experience_years END, updated_at = CURRENT_TIMESTAMP WHERE user_id = $6`,
         [filePath, JSON.stringify(parsed), parsed.name || '', parsed.summary || '', parsed.experience_years, req.user.id]
       );
     } else {
@@ -415,8 +396,12 @@ router.post('/jobs/resume-upload', authenticate, upload.single('resume'), async 
         const resumeRow = await queryOne('SELECT id FROM job_resumes WHERE user_id = $1', [req.user.id]);
         if (resumeRow) {
           await query(
-            `INSERT OR IGNORE INTO job_skills (resume_id, skill_name, proficiency) VALUES ($1, $2, 'intermediate')`,
-            [resumeRow.id, skill]
+            // user_id is NOT NULL and was never supplied, so no parsed skill
+            // was ever saved; the catch below hid the failure.
+            `INSERT INTO job_skills (id, user_id, resume_id, skill_name, proficiency)
+             VALUES ($1, $2, $3, $4, 'intermediate')
+             ON CONFLICT (user_id, skill_name) DO NOTHING`,
+            [crypto.randomUUID(), req.user.id, resumeRow.id, skill]
           );
         }
       } catch (e) {}
@@ -425,17 +410,21 @@ router.post('/jobs/resume-upload', authenticate, upload.single('resume'), async 
     res.json({
       success: true,
       parsed,
-      file: { url: filePath, name: req.file.originalname, size: req.file.size },
+            file: { id: stored.id, url: filePath, name: stored.name, size: stored.size },
       message: `Extracted ${parsed.skills.length} skills, ${parsed.education.length} education entries, ${parsed.experience_years} years experience`
     });
   } catch (error) { next(error); }
 });
 
+// Postings live in local_job_postings (routes/jobs.routes.js writes them). The
+// handlers below read job_postings, a table left by an earlier schema file that
+// no code inserts into, so the skill-gap analyser and referral links answered
+// "Job not found" for every job and the employer dashboard was always empty.
 // J3: Skill Gap Analyzer
 router.post('/jobs/skill-gap', authenticate, async (req, res, next) => {
   try {
     const { job_id } = req.body;
-    const job = await queryOne('SELECT * FROM job_postings WHERE id = $1', [job_id]);
+    const job = await queryOne('SELECT * FROM local_job_postings WHERE id = $1', [job_id]);
     if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
 
     const resume = await queryOne('SELECT id FROM job_resumes WHERE user_id = $1', [req.user.id]);
@@ -494,7 +483,7 @@ router.post('/jobs/skill-gap', authenticate, async (req, res, next) => {
 // J5: Employer Dashboard
 router.get('/jobs/employer/dashboard', authenticate, async (req, res, next) => {
   try {
-    const myJobs = await queryMany('SELECT * FROM job_postings WHERE employer_id = $1 ORDER BY created_at DESC', [req.user.id]);
+    const myJobs = await queryMany('SELECT * FROM local_job_postings WHERE employer_id = $1 ORDER BY created_at DESC', [req.user.id]);
     const stats = [];
 
     for (const job of myJobs) {
@@ -529,37 +518,41 @@ router.get('/jobs/employer/dashboard', authenticate, async (req, res, next) => {
 });
 
 // J5: Employer — Bulk update application stages
+//
+// Only for applications to the caller's own job postings. The ids came from
+// the request and were updated as given, so any signed-in account could
+// reject — or "hire" — any applicant to any job on the platform, and each
+// applicant was then notified of it. Failures were swallowed and counted as
+// updates.
+const STAGE_FOR_ACTION = { shortlist: 'shortlisted', reject: 'rejected', interview: 'interviewing', offer: 'offered', hire: 'hired' };
+
 router.post('/jobs/employer/bulk-action', authenticate, async (req, res, next) => {
   try {
-    const { application_ids, action, interview_date, meeting_link } = req.body;
+    const { application_ids, action, interview_date } = req.body || {};
     if (!application_ids || !Array.isArray(application_ids)) return res.status(400).json({ success: false, error: 'Provide application_ids array' });
+    if (application_ids.length > 200) return res.status(400).json({ success: false, error: 'At most 200 applications at a time' });
+    const stage = STAGE_FOR_ACTION[action];
+    if (!stage) return res.status(400).json({ success: false, error: `action must be one of: ${Object.keys(STAGE_FOR_ACTION).join(', ')}` });
+    if (action === 'interview' && !interview_date) return res.status(400).json({ success: false, error: 'interview_date is required to schedule an interview' });
 
+    const OWN_JOBS = 'job_id IN (SELECT id FROM local_job_postings WHERE employer_id = $';
     let updated = 0;
     for (const appId of application_ids) {
-      try {
-        if (action === 'shortlist') {
-          await query(`UPDATE job_applications SET stage = 'shortlisted' WHERE id = $1`, [appId]);
-        } else if (action === 'reject') {
-          await query(`UPDATE job_applications SET stage = 'rejected' WHERE id = $1`, [appId]);
-        } else if (action === 'interview') {
-          await query(`UPDATE job_applications SET stage = 'interviewing', interview_date = $1 WHERE id = $2`, [interview_date, appId]);
-        } else if (action === 'offer') {
-          await query(`UPDATE job_applications SET stage = 'offered' WHERE id = $1`, [appId]);
-        } else if (action === 'hire') {
-          await query(`UPDATE job_applications SET stage = 'hired' WHERE id = $1`, [appId]);
-        }
-        updated++;
+      const result = action === 'interview'
+        ? await query(`UPDATE job_applications SET stage = $1, interview_date = $2 WHERE id = $3 AND ${OWN_JOBS}4)`, [stage, interview_date, appId, req.user.id])
+        : await query(`UPDATE job_applications SET stage = $1 WHERE id = $2 AND ${OWN_JOBS}3)`, [stage, appId, req.user.id]);
+      if (!result || !result.rowCount) continue;
+      updated += 1;
 
-        // Emit socket notification
-        try {
-          const app = await queryOne('SELECT applicant_id FROM job_applications WHERE id = $1', [appId]);
-          const io = req.app.get('io');
-          if (io && app) io.to(`jobs_user_${app.applicant_id}`).emit('jobs:stage_updated', { application_id: appId, new_stage: action });
-        } catch (e) {}
-      } catch (e) {}
+      // Emit socket notification
+      try {
+        const app = await queryOne('SELECT applicant_id FROM job_applications WHERE id = $1', [appId]);
+        const io = req.app.get('io');
+        if (io && app) io.to(`jobs_user_${app.applicant_id}`).emit('jobs:stage_updated', { application_id: appId, new_stage: action });
+      } catch (e) { /* the notification is best-effort; the update stands */ }
     }
 
-    res.json({ success: true, updated, action });
+    res.json({ success: true, updated, skipped: application_ids.length - updated, action });
   } catch (error) { next(error); }
 });
 
@@ -598,7 +591,7 @@ router.delete('/jobs/alerts/:alertId', authenticate, async (req, res, next) => {
 router.post('/jobs/referral/generate', authenticate, async (req, res, next) => {
   try {
     const { job_id } = req.body;
-    const job = await queryOne('SELECT * FROM job_postings WHERE id = $1', [job_id]);
+    const job = await queryOne('SELECT * FROM local_job_postings WHERE id = $1', [job_id]);
     if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
 
     const code = `REF-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;

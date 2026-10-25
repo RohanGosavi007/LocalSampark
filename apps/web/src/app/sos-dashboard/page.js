@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { apiGet, apiPost } from '@/lib/api';
 
 const SOSMap = dynamic(() => import('./components/SOSMap'), { 
   ssr: false,
@@ -27,21 +28,40 @@ export default function SOSDashboard() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Mock fetch active alerts
-    setTimeout(() => {
-      setAlerts([
-        { id: 'SOS-001', type: 'Medical', full_name: 'Rahul Verma', phone: '+91 9876543210', location: 'Ganga Arcadia, Lohegaon', latitude: 18.5810, longitude: 73.8820, created_at: new Date().toISOString(), status: 'active' },
-        { id: 'SOS-002', type: 'Blood', bloodGroup: 'O+', full_name: 'Priya Sharma', phone: '+91 9123456789', location: 'Dhanori Animal Hospital', latitude: 18.5750, longitude: 73.8780, created_at: new Date(Date.now() - 1800000).toISOString(), status: 'active' }
-      ]);
+  const [error, setError] = useState(null);
+
+  // The live list from /sos/active. This used to be two invented people, and "Resolved" /
+  // "Mark Fake" only removed the card from the screen while the real alert stayed active.
+  const load = React.useCallback(async () => {
+    try {
+      const res = await apiGet('/sos/active');
+      setAlerts(res.data || []);
+      setError(null);
+    } catch (e) {
+      setError(e.status === 401 || e.status === 403
+        ? 'You are not signed in as someone who can monitor SOS alerts.'
+        : (e.message || 'Could not load SOS alerts'));
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   }, []);
 
-  const handleResolve = (id, resolution) => {
-    setAlerts(prev => prev.filter(a => a.id !== id));
-    alert(`Alert ${id} marked as ${resolution}.`);
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const handleResolve = async (id, resolution) => {
+    try {
+      await apiPost(`/sos/${id}/resolve`, { resolution });
+      setAlerts((prev) => prev.filter((a) => a.id !== id));
+    } catch (e) {
+      setError(e.message || 'Could not update the alert');
+    }
   };
+
+  const isBlood = (a) => String(a.type || '').toLowerCase() === 'blood';
 
   return (
     <div className="min-h-screen bg-background text-slate-200 flex flex-col font-sans">
@@ -68,14 +88,14 @@ export default function SOSDashboard() {
                     <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500"><AlertTriangle className="w-6 h-6"/></div>
                     <div>
                         <div className="text-sm text-text-muted font-bold uppercase">Active SOS</div>
-                        <div className="text-2xl font-black text-text">{alerts.filter(a => a.type !== 'Blood').length}</div>
+                        <div className="text-2xl font-black text-text">{alerts.filter(a => !isBlood(a)).length}</div>
                     </div>
                 </div>
                 <div className="bg-background border border-border rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500"><Droplet className="w-6 h-6"/></div>
                     <div>
                         <div className="text-sm text-text-muted font-bold uppercase">Blood Requests</div>
-                        <div className="text-2xl font-black text-text">{alerts.filter(a => a.type === 'Blood').length}</div>
+                        <div className="text-2xl font-black text-text">{alerts.filter(a => isBlood(a)).length}</div>
                     </div>
                 </div>
             </div>
@@ -85,6 +105,7 @@ export default function SOSDashboard() {
             
             {/* Left Side: Alerts List */}
             <div className="col-span-1 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+              {error && <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl p-4 text-sm font-bold">{error}</div>}
               {loading ? (
                 <div className="flex items-center justify-center h-40">
                     <div className="w-8 h-8 border-4 border-border border-t-red-500 rounded-full animate-spin"></div>
@@ -99,12 +120,12 @@ export default function SOSDashboard() {
                 <AnimatePresence>
                     {alerts.map(alert => (
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }} key={alert.id} className="bg-background border border-border rounded-3xl p-6 relative overflow-hidden group hover:border-border transition-colors shadow-lg">
-                            {alert.type !== 'Blood' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />}
-                            {alert.type === 'Blood' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-pink-500" />}
+                            {!isBlood(alert) && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />}
+                            {isBlood(alert) && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-pink-500" />}
                             
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    {alert.type === 'Blood' ? (
+                                    {isBlood(alert) ? (
                                         <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/20 px-3 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"><Droplet className="w-3 h-3"/> Blood Required: {alert.bloodGroup}</Badge>
                                     ) : (
                                         <Badge className="bg-red-500/10 text-red-500 border-red-500/20 px-3 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"><Activity className="w-3 h-3"/> Medical Emergency</Badge>
@@ -119,11 +140,11 @@ export default function SOSDashboard() {
                             <div className="space-y-3 mb-6 bg-background/50 p-4 rounded-2xl border border-border/50">
                                 <div className="flex items-center gap-3 text-sm">
                                     <Phone className="w-4 h-4 text-text-muted" />
-                                    <span className="font-mono text-text-muted">{alert.phone}</span>
+                                    <span className="font-mono text-text-muted">{alert.phone_number || alert.phone || '—'}</span>
                                 </div>
                                 <div className="flex items-start gap-3 text-sm">
                                     <MapPin className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
-                                    <span className="text-text-muted leading-tight">{alert.location}</span>
+                                    <span className="text-text-muted leading-tight">{alert.location || [alert.pincode && `Pincode ${alert.pincode}`, alert.latitude != null && `${Number(alert.latitude).toFixed(4)}, ${Number(alert.longitude).toFixed(4)}`].filter(Boolean).join(' · ') || 'Location unknown'}</span>
                                 </div>
                             </div>
 
@@ -131,7 +152,7 @@ export default function SOSDashboard() {
                                 <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white" onClick={() => handleResolve(alert.id, 'resolved')}>
                                     <CheckCircle className="w-4 h-4 mr-2"/> Resolved
                                 </Button>
-                                <Button size="sm" variant="outline" className="border-border text-text-muted hover:bg-card-bg hover:text-white" onClick={() => handleResolve(alert.id, 'false alarm')}>
+                                <Button size="sm" variant="outline" className="border-border text-text-muted hover:bg-card-bg hover:text-white" onClick={() => handleResolve(alert.id, 'false_alarm')}>
                                     Mark Fake
                                 </Button>
                             </div>

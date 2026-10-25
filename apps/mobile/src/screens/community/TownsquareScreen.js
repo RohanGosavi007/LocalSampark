@@ -15,16 +15,9 @@ export default function NativeTownsquareScreen() {
     async function loadFeed() {
       try {
         const data = await apiGet('/community/posts');
-        if (data && data.posts && data.posts.length > 0) {
-          setPosts(data.posts);
-        } else {
-          throw new Error('Empty feed');
-        }
+        setPosts((data && data.posts) || []);
       } catch (e) {
-        setPosts([
-          { id: 'p1', author_name: 'Rahul Varma', category: 'alert', content: 'Heavy waterlogging near Porwal Road underpass! Use main highway route instead.', created_at: '10 mins ago' },
-          { id: 'p2', author_name: 'Sneha Deshmukh', category: 'general', content: 'Any recommendations for a reliable home electrician near Dhanori Greens?', created_at: '1 hour ago' }
-        ]);
+        setPosts([]);
       } finally {
         setLoading(false);
       }

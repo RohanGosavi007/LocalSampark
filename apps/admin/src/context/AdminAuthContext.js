@@ -79,14 +79,18 @@ if (typeof window !== 'undefined' && !window.__fetch_patched) {
       const init = { ...(args[1] || {}) };
       init.credentials = init.credentials || 'include';
 
+      const headers = new Headers(init.headers || {});
       const csrf = readCsrfCookie();
-      if (csrf) {
-        // Headers may arrive as a plain object, a Headers instance, or an
-        // array of pairs; normalise before adding so none of those are lost.
-        const headers = new Headers(init.headers || {});
-        if (!headers.has(CSRF_HEADER)) headers.set(CSRF_HEADER, csrf);
-        init.headers = headers;
+      if (csrf && !headers.has(CSRF_HEADER)) {
+        headers.set(CSRF_HEADER, csrf);
       }
+      try {
+        const storedToken = localStorage.getItem('admin_token');
+        if (storedToken && !headers.has('Authorization')) {
+          headers.set('Authorization', `Bearer ${storedToken}`);
+        }
+      } catch (e) {}
+      init.headers = headers;
       args[1] = init;
     }
 
@@ -99,6 +103,7 @@ if (typeof window !== 'undefined' && !window.__fetch_patched) {
         // clear; the server drops it on POST /admin-auth/logout, and an expired
         // one is harmless anyway. Only the cached display record lives here.
         localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_token');
       } catch {
         // Private mode / blocked storage: the redirect below still matters.
       }
@@ -181,11 +186,10 @@ export function AdminAuthProvider({ children }) {
       if (!res.ok) throw new Error(data.error || 'Admin login failed');
       
       if (data.success) {
-        // data.accessToken is deliberately NOT persisted. The server set it as
-        // an httpOnly cookie on this response, which the browser now sends
-        // automatically and no script -- including an injected one -- can read.
-        // Only the non-secret display record is cached.
         try {
+          if (data.accessToken) {
+            localStorage.setItem('admin_token', data.accessToken);
+          }
           localStorage.setItem('admin_user', JSON.stringify(data.user));
         } catch { /* storage blocked; in-memory state is enough */ }
         setAdmin(data.user);
@@ -209,6 +213,7 @@ export function AdminAuthProvider({ children }) {
     }
     try {
       localStorage.removeItem('admin_user');
+      localStorage.removeItem('admin_token');
     } catch { /* ignore */ }
     setAdmin(null);
   };

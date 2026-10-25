@@ -84,7 +84,7 @@ async function loadActive({ force = false } = {}) {
   const experiments = new Map();
   try {
     const res = await query(
-      'SELECT key, variants, traffic_pct, is_active FROM ml_experiments WHERE is_active = 1'
+      'SELECT key, variants, traffic_pct, is_active FROM ml_experiments WHERE is_active = \'1\''
     );
     for (const row of res.rows || res || []) {
       const variants = parseVariants(row.variants);

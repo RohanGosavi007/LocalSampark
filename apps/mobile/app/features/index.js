@@ -1,90 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Box, LayoutGrid, Clock, AlertCircle } from 'lucide-react-native';
-import { apiGet } from '../../src/lib/api';
+import { ChevronLeft, ShieldAlert, ShoppingBag, Car, Briefcase, Building, Sparkles } from 'lucide-react-native';
 
-export default function NativefeaturesScreen() {
+const FEATURES = [
+  { icon: ShieldAlert, title: 'Emergency SOS', desc: 'Instant siren broadcast, GPS coordinates to society security & contacts.', color: '#ef4444', route: '/modules/sos' },
+  { icon: ShoppingBag, title: 'Local Marketplace', desc: 'Buy and sell pre-owned items directly within your society & ward.', color: '#f59e0b', route: '/modules/marketplace' },
+  { icon: Car, title: 'Carpool & Rideshare', desc: 'Commute with verified neighbors and split fuel costs transparently.', color: '#06b6d4', route: '/modules/carpool' },
+  { icon: Briefcase, title: 'Local Jobs & Gigs', desc: 'Find part-time, full-time, and domestic service gigs right nearby.', color: '#8b5cf6', route: '/modules/jobs' },
+  { icon: Building, title: 'Society & Gate Operations', desc: 'Pre-approve visitors, view notices, pay maintenance dues.', color: '#10b981', route: '/modules/society' }
+];
+
+export default function FeaturesScreen() {
   const router = useRouter();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setData([
-        { id: 1, title: 'Module Initialized', desc: 'Native architecture activated.' },
-        { id: 2, title: 'API Synced', desc: 'Ready for live data ingestion.' }
-      ]);
-      setLoading(false);
-    }, 800);
-  }, []);
-
   return (
-    <SafeAreaView style={s.container}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ChevronLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>features</Text>
+        <Text style={styles.headerTitle}>Platform Features</Text>
       </View>
-
-      {loading ? (
-        <View style={s.loadingView}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={s.loadingText}>Building Native View</Text>
-        </View>
-      ) : (
-        <ScrollView style={s.scrollView} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-          <View style={s.heroCard}>
-            <LayoutGrid color="#60a5fa" size={32} style={{ marginBottom: 16 }} />
-            <Text style={s.heroTitle}>features</Text>
-            <Text style={s.heroDesc}>This module has been upgraded to a 100% Native React component. WebViews have been eradicated.</Text>
-          </View>
-
-          <Text style={s.sectionLabel}>Module Data</Text>
-
-          {data?.map((item) => (
-            <View key={item.id} style={s.dataCard}>
-              <View style={s.dataIcon}>
-                <Box color="#3b82f6" size={20} />
+      <ScrollView contentContainerStyle={styles.content}>
+        {FEATURES.map((f, i) => {
+          const Icon = f.icon;
+          return (
+            <TouchableOpacity key={i} style={styles.card} onPress={() => router.push(f.route)} activeOpacity={0.7}>
+              <View style={[styles.iconBox, { backgroundColor: f.color + '20' }]}>
+                <Icon color={f.color} size={24} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.dataTitle}>{item.title}</Text>
-                <Text style={s.dataDesc}>{item.desc}</Text>
+                <Text style={styles.cardTitle}>{f.title}</Text>
+                <Text style={styles.cardDesc}>{f.desc}</Text>
               </View>
-            </View>
-          ))}
-
-          <View style={s.statusCard}>
-            <AlertCircle color="#10b981" size={20} style={{ marginRight: 12, marginTop: 4 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.statusTitle}>Production Ready</Text>
-              <Text style={s.statusDesc}>This route is fully App Store compliant and natively rendered via Expo Router.</Text>
-            </View>
-          </View>
-        </ScrollView>
-      )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#020617' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#0f172a', backgroundColor: '#020617', zIndex: 10 },
-  backBtn: { marginRight: 16, padding: 8, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 20 },
-  headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: '900', textTransform: 'capitalize', flex: 1 },
-  loadingView: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: '#64748b', marginTop: 16, fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 },
-  scrollView: { flex: 1 },
-  heroCard: { backgroundColor: '#1e3a5f', padding: 24, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
-  heroTitle: { color: '#ffffff', fontSize: 24, fontWeight: '900', marginBottom: 8 },
-  heroDesc: { color: '#bfdbfe', fontSize: 14 },
-  sectionLabel: { color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, marginBottom: 16 },
-  dataCard: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 20, borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
-  dataIcon: { width: 48, height: 48, backgroundColor: '#020617', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#1e293b' },
-  dataTitle: { color: '#ffffff', fontWeight: '700', fontSize: 16, marginBottom: 4 },
-  dataDesc: { color: '#94a3b8', fontSize: 12, lineHeight: 20 },
-  statusCard: { marginTop: 24, backgroundColor: 'rgba(16,185,129,0.1)', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', flexDirection: 'row', alignItems: 'flex-start' },
-  statusTitle: { color: '#34d399', fontWeight: '700', marginBottom: 4 },
-  statusDesc: { color: 'rgba(16,185,129,0.6)', fontSize: 12 },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0f172a' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#1e293b' },
+  backBtn: { marginRight: 16 },
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  content: { padding: 16 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e293b', padding: 16, borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#334155', gap: 14 },
+  iconBox: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  cardTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  cardDesc: { color: '#94a3b8', fontSize: 13, lineHeight: 18 }
 });

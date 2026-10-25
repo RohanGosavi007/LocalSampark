@@ -1,4 +1,5 @@
 const express = require('express');
+const { validate } = require('../../../middleware/validate');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const { authenticate, optionalAuth } = require('../../../middleware/auth.middleware');
@@ -37,19 +38,36 @@ router.get('/posts', optionalAuth, async (req, res, next) => {
   }
 });
 
-router.post('/posts', authenticate, async (req, res, next) => {
+router.post('/posts', authenticate, validate({
+  content: { type: 'string', required: true, maxLength: 5000 },
+  // Upload paths as well as links: relative paths are what the apps send.
+  mediaUrls: { type: 'array', maxItems: 10, items: { type: 'string', maxLength: 500 } },
+  postType: { type: 'string', maxLength: 30 },
+  regionId: { type: 'string', maxLength: 64 },
+  societyId: { type: 'string', maxLength: 64 },
+  latitude: { type: 'number', min: -90, max: 90 },
+  longitude: { type: 'number', min: -180, max: 180 },
+}), async (req, res, next) => {
   try {
     const { content, mediaUrls, postType, regionId, societyId, latitude, longitude } = req.body;
     
-    let geom = null;
-    if (latitude && longitude) {
-      geom = `ST_GeomFromText('POINT(${longitude} ${latitude})', 4326)`;
-    }
+    // The point is spliced into the SQL text below, so only values that are
+    // provably numbers may reach it. The raw body values went in verbatim,
+    // which made `longitude` an injection point for any signed-in user.
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    const hasPoint = Boolean(latitude) && Boolean(longitude)
+      && Number.isFinite(lat) && Number.isFinite(lng)
+      && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    const geom = hasPoint ? `ST_GeomFromText('POINT(${lng} ${lat})', 4326)` : null;
 
+    // authenticate() sets req.user to the users row, whose column is
+    // region_id. `req.user.regionId` was always undefined, so a post made
+    // without an explicit regionId was saved with no region at all.
     const post = await queryOne(`INSERT INTO posts (user_id, content, media_urls, post_type, region_id, society_id, coordinate)
        VALUES ($1, $2, $3, $4, $5, $6, ${geom ? geom : 'NULL'})
        RETURNING *`,
-      [req.user.id, content, JSON.stringify(mediaUrls || []), postType || 'discussion', regionId || req.user.regionId, societyId || null]
+      [req.user.id, content, JSON.stringify(mediaUrls || []), postType || 'discussion', regionId || req.user.region_id || null, societyId || null]
     );
 
     // Award loyalty points
@@ -67,6 +85,7 @@ router.post('/posts', authenticate, async (req, res, next) => {
 router.post('/posts/:id/vote', authenticate, async (req, res, next) => {
   try {
     const { voteType } = req.body; // 'up' or 'down'
+    if (!['up', 'down'].includes(voteType)) return res.status(400).json({ error: "voteType must be 'up' or 'down'" });
     const postId = req.params.id;
 
     await query(`INSERT INTO votes (post_id, user_id, vote_type)

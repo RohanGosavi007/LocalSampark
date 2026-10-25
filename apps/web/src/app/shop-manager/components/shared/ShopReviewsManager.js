@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { API_BASE } from '@/lib/api';
 import {
   Star, MessageCircle, Flag, ThumbsUp, CheckCircle,
   Filter, Search, Clock, Reply, User
@@ -19,7 +20,7 @@ export default function ShopReviewsManager({ token, shopId }) {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/v1/shops/my-shop/reviews`, {
+      const res = await fetch(`${API_BASE}/shops/my-shop/reviews`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -50,7 +51,7 @@ export default function ShopReviewsManager({ token, shopId }) {
   const handleReplySubmit = async (id) => {
     if (!replyText.trim()) return;
     try {
-      await fetch(`/api/v1/shops/my-shop/reviews/${id}/reply`, {
+      await fetch(`${API_BASE}/shops/my-shop/reviews/${id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reply: replyText })

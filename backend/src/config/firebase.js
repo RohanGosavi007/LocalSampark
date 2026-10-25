@@ -24,22 +24,26 @@ try {
     // Parse the private key (it comes as escaped string from env)
     const parsedKey = privateKey.replace(/\\n/g, '\n');
 
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        privateKey: parsedKey,
-        clientEmail,
-      }),
-    });
+    const existingApps = (typeof admin.getApps === 'function') ? admin.getApps() : (admin.apps || []);
+    if (existingApps.length === 0) {
+      const certFn = (admin.credential && admin.credential.cert) || admin.cert;
+      admin.initializeApp({
+        credential: certFn({
+          projectId,
+          privateKey: parsedKey,
+          clientEmail,
+        }),
+      });
+    }
 
-    messaging = admin.messaging();
+    messaging = admin.messaging ? admin.messaging() : null;
     isInitialized = true;
     console.log('✅ Firebase Admin SDK initialized successfully');
   } else {
     console.warn('⚠️ Firebase credentials not configured — SMS OTP and Push will use fallback mode');
   }
 } catch (error) {
-  console.warn('⚠️ firebase-admin not installed. Run: npm install firebase-admin');
+  console.warn('⚠️ Firebase initialization error:', error.message);
   console.warn('   Continuing without Firebase — SMS OTP and Push will use fallback mode');
 }
 

@@ -1,5 +1,6 @@
 const { query, queryMany, queryOne } = require('../../../config/database');
 const { v4: uuidv4 } = require('uuid');
+const { hasSocietyCapability, CAPABILITIES } = require('../middleware/society-capability');
 
 const createShift = async (req, res, next) => {
     try {
@@ -27,8 +28,12 @@ const getRoster = async (req, res, next) => {
         `;
         const params = [societyId];
         
-        if (dateFrom) { sql += ' AND sgs.shift_date >= ?'; params.push(dateFrom); }
-        if (dateTo) { sql += ' AND sgs.shift_date <= ?'; params.push(dateTo); }
+        // Numbered like the rest of the query. These were written `?`, which
+        // does not belong to the same numbering as the $1 above: SQLite bound
+        // NULL to them, so a date filter returned no shifts at all, and
+        // PostgreSQL rejected the statement outright.
+        if (dateFrom) { params.push(dateFrom); sql += ` AND sgs.shift_date >= $${params.length}`; }
+        if (dateTo) { params.push(dateTo); sql += ` AND sgs.shift_date <= $${params.length}`; }
         
         sql += ' ORDER BY sgs.shift_date ASC, sgs.start_time ASC';
 
@@ -40,8 +45,19 @@ const getRoster = async (req, res, next) => {
 const markShiftAttendance = async (req, res, next) => {
     try {
         const { shiftId, action } = req.body; // action: 'check_in' or 'check_out'
-        const shift = await queryOne('SELECT * FROM society_guard_shifts WHERE id = $1', [shiftId]);
+                const shift = await queryOne('SELECT * FROM society_guard_shifts WHERE id = $1', [shiftId]);
         if (!shift) return res.status(404).json({ error: 'Shift not found' });
+        if (!['check_in', 'check_out'].includes(action)) {
+            return res.status(400).json({ error: 'action must be check_in or check_out' });
+        }
+
+        // The guard the shift belongs to, or the society office correcting the
+        // record. It used to be anyone at all, for any shift.
+        const own = String(shift.guard_id) === String(req.user.id);
+        if (!own && !(await hasSocietyCapability(req, shift.society_id, CAPABILITIES.MANAGE_SOCIETY))) {
+            return res.status(403).json({ error: 'This is not your shift.' });
+        }
+
 
         if (action === 'check_in') {
             await query('UPDATE society_guard_shifts SET actual_start = CURRENT_TIMESTAMP WHERE id = $1', [shiftId]);

@@ -7,6 +7,11 @@ let initialized = false;
 
 function initFirebase() {
   if (initialized) return;
+  const existingApps = (typeof admin.getApps === 'function') ? admin.getApps() : (admin.apps || []);
+  if (existingApps.length > 0) {
+    initialized = true;
+    return;
+  }
   
   try {
     const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -32,7 +37,7 @@ function initFirebase() {
       initialized = true;
       console.log('[Firebase] Admin SDK initialized via individual env vars');
     } else {
-      console.warn('[Firebase] Warning: Valid Firebase credentials not configured. Firebase Auth verification will be mocked (development mode).');
+      console.warn('[Firebase] Warning: Valid Firebase credentials not configured. Firebase sign-in is ' + (process.env.NODE_ENV === 'production' ? 'DISABLED' : 'mocked (development mode)') + '.');
     }
   } catch (error) {
     console.error('[Firebase] Failed to initialize Admin SDK:', error.message);
@@ -46,7 +51,12 @@ function initFirebase() {
  */
 async function verifyFirebaseToken(idToken) {
   if (!initialized) {
-    // Development fallback mock
+    // The mock token is a development convenience. It must never exist in production: with no
+    // Firebase credentials configured the literal string "mock_firebase_token" would otherwise
+    // sign anyone in as +919999999999, an account that can be seeded with elevated rights.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Firebase Admin SDK not initialized');
+    }
     console.warn('[Firebase] Verifying mocked token (DEV ONLY)');
     if (idToken === 'mock_firebase_token') {
       return {

@@ -98,10 +98,11 @@ router.get('/me/data-export', authenticate, async (req, res, next) => {
 
     // Check rate limit: 1 export per 24 hours
     const { queryOne } = require('../../../config/database');
+    const { sqlTimestamp, DAY_MS } = require('../../../utils/sqlTime');
     const recentExport = await queryOne(`SELECT id FROM data_subject_requests
        WHERE user_id = $1 AND request_type = 'access' AND status = 'completed'
-       AND created_at > datetime('now', '-24 hours')`,
-      [userId]
+       AND created_at > $2`,
+      [userId, sqlTimestamp(-DAY_MS)]
     );
 
     if (recentExport) {

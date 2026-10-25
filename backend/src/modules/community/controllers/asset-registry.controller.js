@@ -4,11 +4,17 @@ const { v4: uuidv4 } = require('uuid');
 const registerAsset = async (req, res, next) => {
     try {
         const { societyId, assetName, assetType, location, purchaseCost, amcVendorId, amcEndDate } = req.body;
+        if (!societyId || !assetName || !String(assetName).trim()) {
+            return res.status(400).json({ success: false, error: 'societyId and assetName are required' });
+        }
         const id = uuidv4();
 
-        await query(`INSERT INTO society_assets 
-            (id, society_id, asset_name, asset_type, location, purchase_cost, amc_vendor_id, amc_end_date) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        // `name` is the table's original NOT NULL column and `asset_name` the
+        // one added later for this controller. Only the second was written, so
+        // every registration failed on the constraint. Both now carry the name.
+        await query(`INSERT INTO society_assets
+            (id, society_id, name, asset_name, asset_type, location, purchase_cost, amc_vendor_id, amc_end_date)
+            VALUES ($1, $2, $3, $3, $4, $5, $6, $7, $8)`,
             [id, societyId, assetName, assetType, location, purchaseCost, amcVendorId, amcEndDate]
         );
 

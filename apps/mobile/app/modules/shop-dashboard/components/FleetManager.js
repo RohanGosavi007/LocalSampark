@@ -22,15 +22,9 @@ export default function FleetManager() {
 
       <Text style={styles.subtitle}>Active Agents</Text>
       <ScrollView>
-        {['Ramesh (Agent #101)', 'Suresh (Agent #102)'].map((agent, i) => (
-          <View key={i} style={styles.agentCard}>
-            <Text style={styles.agentName}>{agent}</Text>
-            <Text style={styles.agentStatus}>
-              {i === 0 ? '🟢 On Delivery (ETA 10 min)' : '🟡 Waiting for Order'}
-            </Text>
-            <Text style={styles.agentOrders}>Orders Today: {i === 0 ? 5 : 2}</Text>
-          </View>
-        ))}
+        <View style={styles.agentCard}>
+          <Text style={styles.agentStatus}>No riders are assigned to your shop yet. Riders appear here once they accept your deliveries.</Text>
+        </View>
       </ScrollView>
     </View>
   );

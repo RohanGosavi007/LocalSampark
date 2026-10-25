@@ -11,29 +11,31 @@ export default function NativeHomeServicesScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
+  const [savedAddress, setSavedAddress] = useState('');
+
   useEffect(() => {
     async function loadServices() {
       try {
         const dataCat = await apiGet('/home-services/categories');
         if (dataCat && dataCat.categories && dataCat.categories.length > 0) {
           setCategories(dataCat.categories);
+          if (!selectedCategory) setSelectedCategory(dataCat.categories[0].id);
         }
 
         const dataProv = await apiGet('/home-services/providers');
         if (dataProv && dataProv.providers && dataProv.providers.length > 0) {
           setProviders(dataProv.providers);
         }
+
+        const dataAddr = await apiGet('/users/addresses').catch(() => null);
+        const addrs = Array.isArray(dataAddr?.data) ? dataAddr.data : [];
+        const def = addrs.find(a => a.is_default) || addrs[0];
+        if (def) {
+          setSavedAddress([def.street_address, def.city, def.postal_code].filter(Boolean).join(', '));
+        }
       } catch (e) {
-        // Fallback local dataset
-        setCategories([
-          { id: 'c1', name: 'Plumbing', icon: 'Wrench', base_inspection_fee: 199 },
-          { id: 'c2', name: 'Electrical Repair', icon: 'Zap', base_inspection_fee: 149 },
-          { id: 'c3', name: 'Home Deep Clean', icon: 'Home', base_inspection_fee: 299 }
-        ]);
-        setProviders([
-          { id: 'p1', name: 'Ramesh Plumbers & Sanitation', rating: 4.8, experience_years: 6, phone: '+91 98220 11223' },
-          { id: 'p2', name: 'Baner Electrical Solutions', rating: 4.9, experience_years: 8, phone: '+91 99341 88219' }
-        ]);
+        setCategories([]);
+        setProviders([]);
       } finally {
         setLoading(false);
       }
@@ -42,31 +44,39 @@ export default function NativeHomeServicesScreen() {
   }, []);
 
   const handleBook = (provider) => {
+    const targetCat = selectedCategory || provider.category_id || (categories[0] && categories[0].id) || 'c1';
+    const addr = savedAddress || 'Customer Doorstep Address';
     Alert.alert(
       'Book Inspection Slot',
-      `Book inspection slot with ${provider.name}? Inspection deposit fee will be deducted from your LocalWallet.`,
+      `Book technician inspection with ${provider.name}?\n\n📍 Service Location:\n${addr}\n\nInspection deposit will be processed from your LocalWallet.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Confirm Booking', 
-          onPress: async () => {
-            try {
-              const res = await apiPost('/home-services/bookings', {
-                providerId: provider.id || 'p1',
-                categoryId: selectedCategory || 'c1',
-                bookingDate: new Date().toISOString().split('T')[0],
-                timeSlot: '10:00 AM - 12:00 PM',
-                serviceAddress: 'Customer Saved Address',
-                problemDescription: 'Technician Inspection Request'
-              });
-              Alert.alert('Success 🎉', res.message || 'Technician booked successfully!');
-            } catch (err) {
-              Alert.alert('Booking Notice', err.message || 'Booking placed locally.');
-            }
-          }
+          text: 'Morning Slot (10 AM - 12 PM)', 
+          onPress: () => confirmBooking(provider, targetCat, '10:00 AM - 12:00 PM', addr)
+        },
+        { 
+          text: 'Afternoon Slot (2 PM - 4 PM)', 
+          onPress: () => confirmBooking(provider, targetCat, '02:00 PM - 04:00 PM', addr)
         }
       ]
     );
+  };
+
+  const confirmBooking = async (provider, categoryId, timeSlot, address) => {
+    try {
+      const res = await apiPost('/home-services/bookings', {
+        providerId: provider.id,
+        categoryId: categoryId,
+        bookingDate: new Date().toISOString().split('T')[0],
+        timeSlot: timeSlot,
+        serviceAddress: address,
+        problemDescription: 'Technician Inspection Request'
+      });
+      Alert.alert('Booking Confirmed 🎉', res.message || 'Technician inspection has been scheduled!');
+    } catch (err) {
+      Alert.alert('Booking Notice', err.message || 'Could not complete booking.');
+    }
   };
 
   return (

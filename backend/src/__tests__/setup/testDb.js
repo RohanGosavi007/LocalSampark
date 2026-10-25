@@ -25,6 +25,9 @@ process.env.USE_SQLITE = process.env.TEST_USE_POSTGRES ? 'false' : 'true';
 // definitions, and the divergence they used to introduce (a `users.id` of
 // INTEGER where every migration declares a TEXT uuid) is gone.
 
+// Shared by setup, seed, clean and teardown below.
+let dbModule;
+
 async function setupTestDb() {
   // Import database module after env vars are set
   dbModule = require('../../config/database');

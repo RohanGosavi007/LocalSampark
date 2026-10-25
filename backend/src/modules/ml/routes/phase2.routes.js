@@ -50,7 +50,7 @@ async function audit(req, action, detail) {
     const { query } = require('../../../config/database');
     const crypto = require('crypto');
     await query(
-      `INSERT INTO admin_audit_log (id, admin_id, action, entity_type, entity_id, changes)
+      `INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
        VALUES ($1, $2, $3, 'ml_phase2', $4, $5)`,
       [
         crypto.randomUUID(),

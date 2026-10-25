@@ -3,6 +3,7 @@ const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const payments = require('../../../services/payments.service');
 
 /**
  * Peer-to-peer equipment rental.
@@ -119,13 +120,13 @@ router.get('/rentals/me', authenticate, async (req, res, next) => {
 router.post('/rent/:id', authenticate, async (req, res, next) => {
     try {
         const listingId = Number(req.params.id);
-        const days = Number(req.body.days) || 1;
+                const days = req.body.days === undefined || req.body.days === null || req.body.days === '' ? 1 : Number(req.body.days);
 
         if (!Number.isInteger(listingId)) {
             return res.status(400).json({ success: false, error: 'Invalid listing id' });
         }
-        if (!Number.isFinite(days) || days < 1) {
-            return res.status(400).json({ success: false, error: 'days must be at least 1' });
+                if (!Number.isInteger(days) || days < 1 || days > 90) {
+            return res.status(400).json({ success: false, error: 'days must be a whole number from 1 to 90' });
         }
 
         const outcome = await withTransaction(async (client) => {
@@ -200,55 +201,104 @@ router.post('/rent/:id', authenticate, async (req, res, next) => {
     }
 });
 
+/**
+ * Ending a rental.
+ *
+ * The renter used to mark the item returned and receive the deposit back in
+ * the same call: the owner had no say, so a renter could keep the item and
+ * still get the deposit. And the rent itself was taken from the renter and
+ * never paid to the owner.
+ *
+ * Now the renter asks to return (POST /rentals/:id/return), and the owner —
+ * or an administrator — confirms the item is back (POST /rentals/:id/
+ * confirm-return), keeping some or all of the deposit for damage if need be.
+ * Confirming pays the owner the rent and any deduction, and refunds the rest
+ * of the deposit to the renter, in one transaction.
+ */
 router.post('/rentals/:id/return', authenticate, async (req, res, next) => {
     try {
-        const outcome = await withTransaction(async (client) => {
-            // The status predicate makes the return idempotent: a double tap
-            // returns rowCount 0 the second time instead of refunding twice.
-            const closed = await client.query(
-                `UPDATE equipment_rentals
-                    SET status = 'returned', returned_at = CURRENT_TIMESTAMP
-                  WHERE id = $1 AND renter_id = $2 AND status = 'active'`,
-                [req.params.id, req.user.id]
-            );
-            if (!closed.rowCount) return { notActive: true };
-
-            const found = await client.query(
-                'SELECT listing_id, deposit_held FROM equipment_rentals WHERE id = $1',
-                [req.params.id]
-            );
-            const rental = (found.rows || [])[0];
-            const deposit = Number(rental.deposit_held) || 0;
-
-            if (deposit > 0) {
-                await client.query(
-                    'UPDATE wallets SET balance = balance + $1 WHERE user_id = $2',
-                    [deposit, req.user.id]
-                );
-                await client.query(
-                    `INSERT INTO wallet_transactions (id, wallet_id, amount, type, purpose, status)
-                     VALUES ($1, (SELECT id FROM wallets WHERE user_id = $2), $3, 'credit', 'deposit_refund', 'completed')`,
-                    [crypto.randomUUID(), req.user.id, deposit]
-                );
-            }
-
-            await client.query(
-                `UPDATE equipment_listings SET status = 'available' WHERE id = $1`,
-                [rental.listing_id]
-            );
-
-            return { ok: true, deposit };
-        });
-
-        if (outcome.notActive) {
+        const asked = await query(
+            `UPDATE equipment_rentals SET status = 'return_requested'
+              WHERE id = $1 AND renter_id = $2 AND status = 'active'`,
+            [req.params.id, req.user.id]
+        );
+        if (!asked.rowCount) {
             return res.status(404).json({ success: false, error: 'No active rental found for this id' });
         }
-
         res.json({
             success: true,
-            message: outcome.deposit > 0
-                ? `Item returned. ₹${outcome.deposit} deposit refunded to your wallet.`
-                : 'Item returned.',
+            message: 'Return requested. Your deposit is refunded once the owner confirms the item is back.',
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** Rentals of the caller's items, newest first — what the owner confirms returns from. */
+router.get('/rentals/owner', authenticate, async (req, res, next) => {
+    try {
+        const result = await query(
+            `SELECT r.id, r.listing_id, r.days, r.total_amount, r.deposit_held, r.status, r.rented_at, r.returned_at,
+                    l.item_name, COALESCE(u.full_name, 'Renter') AS renter_name
+               FROM equipment_rentals r
+               JOIN equipment_listings l ON l.id = r.listing_id
+               LEFT JOIN users u ON u.id = r.renter_id
+              WHERE CAST(l.owner_id AS TEXT) = $1
+              ORDER BY r.rented_at DESC`,
+            [String(req.user.id)]
+        );
+        res.json({ success: true, data: result.rows || result || [] });
+    } catch (err) {
+        next(err);
+    }
+});
+
+const STAFF = new Set(['admin', 'super_admin', 'moderator']);
+
+router.post('/rentals/:id/confirm-return', authenticate, async (req, res, next) => {
+    try {
+        const rental = await queryOne(
+            `SELECT r.*, l.owner_id FROM equipment_rentals r JOIN equipment_listings l ON l.id = r.listing_id WHERE r.id = $1`,
+            [req.params.id]
+        );
+        const isStaff = STAFF.has(String(req.user.role || '').toLowerCase());
+        if (!rental || (!isStaff && String(rental.owner_id) !== String(req.user.id))) {
+            return res.status(404).json({ success: false, error: 'Rental not found' });
+        }
+
+        const deposit = Number(rental.deposit_held) || 0;
+        const raw = (req.body || {}).damageDeduction;
+        const deduction = raw === undefined || raw === null || raw === '' ? 0 : Math.round(Number(raw) * 100) / 100;
+        if (!Number.isFinite(deduction) || deduction < 0 || deduction > deposit) {
+            return res.status(400).json({ success: false, error: `damageDeduction must be from 0 to the ₹${deposit} deposit` });
+        }
+
+        const outcome = await withTransaction(async (client) => {
+            const closed = await client.query(
+                `UPDATE equipment_rentals SET status = 'returned', returned_at = CURRENT_TIMESTAMP
+                  WHERE id = $1 AND status IN ('active', 'return_requested')`,
+                [rental.id]
+            );
+            if (!closed.rowCount) return { notOpen: true };
+
+            const toOwner = Math.round(((Number(rental.total_amount) || 0) + deduction) * 100) / 100;
+            const toRenter = Math.round((deposit - deduction) * 100) / 100;
+            if (toOwner > 0) {
+                await payments.creditWallet({ userId: rental.owner_id, amount: toOwner, purpose: 'equipment_rental_income', referenceId: rental.id, client });
+            }
+            if (toRenter > 0) {
+                await payments.creditWallet({ userId: rental.renter_id, amount: toRenter, purpose: 'deposit_refund', referenceId: rental.id, client });
+            }
+            await client.query("UPDATE equipment_listings SET status = 'available' WHERE id = $1", [rental.listing_id]);
+            return { toOwner, toRenter };
+        });
+
+        if (outcome.notOpen) return res.status(409).json({ success: false, error: 'This rental has already been closed' });
+        res.json({
+            success: true,
+            ownerPaid: outcome.toOwner,
+            depositRefunded: outcome.toRenter,
+            message: `Return confirmed. ₹${outcome.toRenter} of the deposit refunded to the renter.`,
         });
     } catch (err) {
         next(err);

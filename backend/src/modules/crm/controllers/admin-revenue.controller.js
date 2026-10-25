@@ -1,4 +1,5 @@
 const { query } = require('../../../config/database');
+const { sqlDate } = require('../../../utils/sqlTime');
 
 /**
  * Calculates the platform and franchise splits for a given order amount
@@ -152,7 +153,7 @@ const getDashboardStats = async (req, res, next) => {
       const { queryOne } = require('../../../config/database');
       try {
         shopsCount = (await queryOne('SELECT COUNT(*) as count FROM local_shops'))?.count || 0;
-        activeRegions = (await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = true'))?.count || 0;
+        activeRegions = (await queryOne('SELECT COUNT(*) as count FROM regions WHERE is_active = \'1\''))?.count || 0;
         totalRegions = (await queryOne('SELECT COUNT(*) as count FROM regions'))?.count || 0;
         totalUsers = (await queryOne('SELECT COUNT(*) as count FROM users'))?.count || 0;
         totalOrders = (await queryOne('SELECT COUNT(*) as count FROM orders'))?.count || 0;
@@ -220,39 +221,39 @@ const getDashboardStats = async (req, res, next) => {
  */
 const getRevenueChart = async (req, res, next) => {
   try {
-    let revenueData = [];
-    try {
-      // Try to fetch last 7 days of revenue
-      const result = await query(`
-        SELECT 
-          strftime('%w', created_at) as day_index,
-          COALESCE(SUM(platform_share), 0) as platform,
-          COALESCE(SUM(franchise_share), 0) as franchise
-        FROM revenue_transactions
-        WHERE created_at >= date('now', '-6 days')
-        GROUP BY day_index
-      `);
-      
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const rawData = result.rows || result;
-      
-      if (rawData.length > 0) {
-        revenueData = rawData.map(row => ({
-          name: days[parseInt(row.day_index)],
-          platform: parseFloat(row.platform),
-          franchise: parseFloat(row.franchise)
-        }));
-      } else {
-        // Fallback to empty structure if no data
-        revenueData = days.map(d => ({ name: d, platform: 0, franchise: 0 }));
-      }
-    } catch (e) {
-      revenueData = [
-        { name: 'Mon', platform: 0, franchise: 0 },
-        { name: 'Tue', platform: 0, franchise: 0 }
-      ];
+    // The last seven days, oldest first, with a row for every day.
+    //
+    // This grouped by strftime('%w', …) over date('now', '-6 days'), both
+    // SQLite-only, inside a try whose catch answered with two hard-coded zero
+    // rows. On PostgreSQL the query always threw, so the admin dashboard showed
+    // "Mon 0, Tue 0" as the platform's revenue and nothing said it had failed.
+    // The rows are fetched with a bound cutoff and summed here instead, and a
+    // failure is now an error rather than a chart of zeros.
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = await query(
+      `SELECT created_at, platform_share, franchise_share
+         FROM revenue_transactions
+        WHERE created_at >= $1`,
+      [sqlDate(-6)]
+    );
+
+    const byDay = new Map();
+    for (let offset = -6; offset <= 0; offset += 1) {
+      const key = sqlDate(offset);
+      byDay.set(key, { name: DAY_NAMES[new Date(`${key}T00:00:00Z`).getUTCDay()], platform: 0, franchise: 0 });
     }
-    
+    for (const row of result.rows || result) {
+      // A Date from PostgreSQL, 'YYYY-MM-DD HH:MM:SS' text from SQLite.
+      const key = row.created_at instanceof Date
+        ? row.created_at.toISOString().slice(0, 10)
+        : String(row.created_at).slice(0, 10);
+      const day = byDay.get(key);
+      if (!day) continue;
+      day.platform += parseFloat(row.platform_share) || 0;
+      day.franchise += parseFloat(row.franchise_share) || 0;
+    }
+    const revenueData = [...byDay.values()];
+
     res.json({
       success: true,
       data: revenueData

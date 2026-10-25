@@ -44,7 +44,7 @@ const { query } = require('../../config/database');
 const REPO = path.resolve(__dirname, '../../../..');
 
 describe('category taxonomy split', () => {
-  const { getAllCategories } = require('../../../prisma/seeders/category-type-map');
+  const { getAllCategories } = require('../../seeds/generators/category-type-map');
 
   /** The kebab-case keys the live routers actually map. */
   function liveRouterKeys() {
@@ -114,7 +114,7 @@ describe('category taxonomy split', () => {
     // SCREAMING_SNAKE keys and fall back silently on a miss, so renaming the
     // slugs without this bridge would have seeded shops with no products and
     // no bookable slots while reporting success.
-    const { generateProductsForCategory } = require('../../../prisma/seeders/product-generator');
+    const { generateProductsForCategory } = require('../../seeds/generators/product-generator');
 
     for (const category of getAllCategories()) {
       const key = category.fixtureKey || category.slug;

@@ -9,6 +9,7 @@
 // ReferenceError at runtime — every referral- and velocity-abuse check failed
 // open rather than flagging anything.
 const { query, queryOne, queryMany, withTransaction } = require('../config/database');
+const { sqlTimestamp, DAY_MS } = require('../utils/sqlTime');
 const logger = require('../config/logger');
 const crypto = require('crypto');
 
@@ -90,8 +91,8 @@ class FraudDetectionService {
         `SELECT COUNT(*) as cnt FROM shop_reviews sr
          JOIN fraud_signals fs ON fs.entity_id = sr.id
          WHERE fs.details LIKE $1
-         AND sr.created_at > datetime('now', '-24 hours')`,
-        [`%${ipAddress}%`]
+         AND sr.created_at > $2`,
+        [`%${ipAddress}%`, sqlTimestamp(-DAY_MS)]
       );
       if (recentFromIP && parseInt(recentFromIP.cnt) >= 5) {
         signals.push({
@@ -270,7 +271,7 @@ class FraudDetectionService {
 
       if (existing) {
         await query(
-          `UPDATE device_fingerprints SET last_seen_at = datetime('now'), ip_address = $1, app_version = $2
+          `UPDATE device_fingerprints SET last_seen_at = CURRENT_TIMESTAMP, ip_address = $1, app_version = $2
            WHERE id = $3`,
           [deviceInfo.ipAddress, deviceInfo.appVersion, existing.id]
         );

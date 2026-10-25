@@ -13,47 +13,11 @@ import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { API_BASE } from '@/lib/api';
 
-const INITIAL_PROPERTIES = [
-  {
-    id: 1,
-    title: 'Premium 3 BHK with 3D Tour',
-    type: 'Rent Flat',
-    price: '₹35,000/mo',
-    location: 'Pride Aashiyana, Dhanori',
-    beds: 3, baths: 3, sqft: 1450,
-    owner: { name: 'Sanjay Joshi', verified: true, role: 'Owner' },
-    description: 'Fully furnished premium 3 BHK apartment with society amenities. Direct from owner, no brokerage.',
-    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80'],
-    has3DTour: true,
-  },
-  {
-    id: 2,
-    title: 'Cozy Private PG Room',
-    type: 'PG',
-    price: '₹12,000/mo',
-    location: 'Ganga Arcadia, Lohegaon',
-    beds: 1, baths: 1, sqft: 300,
-    owner: { name: 'Rahul V.', verified: true, role: 'Owner' },
-    description: 'Single occupancy PG room with attached bath and food included. Prefer IT professionals.',
-    images: ['https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&q=80'],
-    has3DTour: false,
-  },
-  {
-    id: 3,
-    title: 'Luxury Villa for Sale',
-    type: 'Sell',
-    price: '₹1.8 Cr',
-    location: 'Porwal Road, Dhanori',
-    beds: 4, baths: 5, sqft: 3200,
-    owner: { name: 'Priya Builders', verified: true, role: 'Builder' },
-    description: 'Under construction luxury villa. possession by next year. Book now to customize interiors.',
-    images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80'],
-    has3DTour: true,
-  }
-];
-
 export default function PropertiesPage() {
-  const [properties, setProperties] = useState(INITIAL_PROPERTIES);
+  const [properties, setProperties] = useState([]);
+  const [loadError, setLoadError] = useState(null);
+  const [postError, setPostError] = useState(null);
+  const [posting, setPosting] = useState(false);
   const [filterType, setFilterType] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [tourModal, setTourModal] = useState(false);
@@ -68,55 +32,67 @@ export default function PropertiesPage() {
     sqft: 950,
   });
 
-  useEffect(() => {
-    const fetchApiProperties = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/properties`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.properties) && data.properties.length > 0) {
-          const formatted = data.properties.map(p => ({
-            id: p.id,
-            title: p.title,
-            type: p.property_type || (p.listing_type === 'SELL' ? 'Sell' : 'Rent Flat'),
-            price: typeof p.price === 'number' ? `₹${p.price.toLocaleString()}/mo` : p.price,
-            location: p.address || 'Pune Zone',
-            beds: p.beds || 2,
-            baths: p.baths || 2,
-            sqft: p.sqft || 1000,
-            owner: { name: p.owner_name || 'Verified Owner', verified: true, role: 'Owner' },
-            description: p.description || 'Verified local property listing with 0% brokerage.',
-            images: p.images_json ? (typeof p.images_json === 'string' ? JSON.parse(p.images_json) : p.images_json) : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80'],
-            has3DTour: Boolean(p.has_3d_tour || p.has3DTour),
-          }));
-          setProperties(prev => [...formatted, ...prev]);
-        }
-      } catch (err) {
-        // Keep initial demo properties on offline/API error
-      }
-    };
-    fetchApiProperties();
-  }, []);
+  const loadProperties = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/properties`);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Listings could not be loaded.');
+      const imgs = (p) => {
+        try { const v = p.images_json ? (typeof p.images_json === 'string' ? JSON.parse(p.images_json) : p.images_json) : []; return Array.isArray(v) ? v : []; } catch (e) { return []; }
+      };
+      setProperties((data.properties || []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        type: p.property_type || (p.listing_type === 'SELL' ? 'Sell' : 'Rent Flat'),
+        price: typeof p.price === 'number' ? `₹${p.price.toLocaleString('en-IN')}${p.listing_type === 'SELL' ? '' : ' per month'}` : p.price,
+        location: p.address || '',
+        beds: p.beds || null,
+        baths: p.baths || null,
+        sqft: p.sqft || null,
+        owner: { name: p.owner_name || 'Owner', verified: Boolean(Number(p.is_verified)), role: 'Owner' },
+        description: p.description || '',
+        images: imgs(p),
+        has3DTour: Boolean(p.has_3d_tour || p.has3DTour),
+      })));
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err.message || 'Listings could not be loaded.');
+    }
+  };
+  useEffect(() => { loadProperties(); }, []);
 
-  const handlePostListing = (e) => {
+  // Lists the property through POST /properties and reloads. It used to add it to this browser's
+  // list only ("You (Owner)", "Zero brokerage fee"), so nobody else ever saw it.
+  const handlePostListing = async (e) => {
     e.preventDefault();
-    if (!newProp.title || !newProp.price || !newProp.location) return;
-    const added = {
-      id: Date.now(),
-      title: newProp.title,
-      type: newProp.type,
-      price: newProp.price.startsWith('₹') ? newProp.price : `₹${newProp.price}`,
-      location: newProp.location,
-      beds: Number(newProp.beds) || 1,
-      baths: Number(newProp.baths) || 1,
-      sqft: Number(newProp.sqft) || 500,
-      owner: { name: 'You (Owner)', verified: true, role: 'Owner' },
-      description: 'Newly listed property direct from owner. Zero brokerage fee.',
-      images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80'],
-      has3DTour: true,
-    };
-    setProperties([added, ...properties]);
-    setPostModal(false);
-    setNewProp({ title: '', type: 'Rent Flat', price: '', location: '', beds: 2, baths: 2, sqft: 950 });
+    if (!newProp.title || !newProp.price || !newProp.location || posting) return;
+    setPosting(true);
+    setPostError(null);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      if (!token) throw new Error('Please log in to list a property.');
+      const res = await fetch(`${API_BASE}/properties`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: newProp.title,
+          propertyType: newProp.type,
+          listingType: /sell/i.test(newProp.type) ? 'SELL' : 'RENT',
+          price: Number(String(newProp.price).replace(/[^0-9.]/g, '')),
+          address: newProp.location,
+          images: [],
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Your listing could not be saved.');
+      setPostModal(false);
+      setNewProp({ title: '', type: 'Rent Flat', price: '', location: '', beds: 2, baths: 2, sqft: 950 });
+      loadProperties();
+    } catch (err) {
+      setPostError(err.message || 'Your listing could not be saved.');
+    } finally {
+      setPosting(false);
+    }
   };
 
   const filteredProperties = properties.filter(p => {
@@ -191,8 +167,8 @@ export default function PropertiesPage() {
                 {filteredProperties.length === 0 ? (
                     <div className="text-center py-20 glass-card rounded-3xl border border-border bg-background">
                         <Home className="w-16 h-16 text-text-muted/30 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold mb-2">No Properties Found</h3>
-                        <p className="text-text-muted">Try adjusting your filters or search query.</p>
+                        <h3 className="text-xl font-bold mb-2">{loadError ? 'Listings unavailable' : 'No Properties Found'}</h3>
+                        <p className="text-text-muted">{loadError || (properties.length === 0 ? 'Nothing has been listed yet.' : 'Try adjusting your filters or search query.')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -200,7 +176,7 @@ export default function PropertiesPage() {
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} key={p.id} className="glass-card rounded-3xl border border-border bg-background shadow-sm overflow-hidden group hover:shadow-xl hover:border-primary/30 transition-all flex flex-col">
                                 
                                 <div className="relative h-60 overflow-hidden">
-                                    <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                    {p.images[0] ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" /> : <div className="w-full h-full bg-background-alt flex items-center justify-center"><Home className="w-10 h-10 text-text-muted/40" /></div>}
                                     
                                     <div className="absolute top-4 left-4 flex gap-2">
                                         <Badge className="bg-primary text-white border-transparent shadow-lg">{p.type}</Badge>
@@ -225,9 +201,9 @@ export default function PropertiesPage() {
                                     </p>
                                     
                                     <div className="flex gap-4 mb-6 border-y border-border py-4 mt-auto">
-                                        <div className="flex items-center gap-1.5 text-text-muted font-bold text-sm"><BedDouble className="w-4 h-4 text-text"/> {p.beds} Beds</div>
-                                        <div className="flex items-center gap-1.5 text-text-muted font-bold text-sm"><Bath className="w-4 h-4 text-text"/> {p.baths} Baths</div>
-                                        <div className="flex items-center gap-1.5 text-text-muted font-bold text-sm"><Square className="w-4 h-4 text-text"/> {p.sqft} sqft</div>
+                                        <div className="flex items-center gap-1.5 text-text-muted font-bold text-sm"><BedDouble className="w-4 h-4 text-text"/> {p.beds != null ? `${p.beds} Beds` : 'Beds —'}</div>
+                                        <div className="flex items-center gap-1.5 text-text-muted font-bold text-sm"><Bath className="w-4 h-4 text-text"/> {p.baths != null ? `${p.baths} Baths` : 'Baths —'}</div>
+                                        <div className="flex items-center gap-1.5 text-text-muted font-bold text-sm"><Square className="w-4 h-4 text-text"/> {p.sqft != null ? `${p.sqft} sqft` : 'Area —'}</div>
                                     </div>
                                     
                                     <div className="flex gap-3">
@@ -288,6 +264,7 @@ export default function PropertiesPage() {
               </div>
 
               <form onSubmit={handlePostListing} className="space-y-4">
+              {postError && <p role="alert" className="text-red-500 font-bold text-sm">{postError}</p>}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1">Property Title</label>
                   <input

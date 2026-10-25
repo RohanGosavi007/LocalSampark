@@ -5,6 +5,7 @@ import { UserPlus, Package, Car, Users, CheckCircle, XCircle, Languages, WifiOff
 import { useSocket, useSocketEvent } from '@/context/SocketContext';
 import { useLanguage } from '../components/LanguageToggle';
 import { saveToSyncQueue, getSyncQueue, flushSyncQueue } from '../../utils/offlineSync';
+import { API_URL } from '@/lib/api';
 
 export default function GatekeeperPortal() {
   const [activeTab, setActiveTab] = useState('guest');
@@ -87,7 +88,7 @@ export default function GatekeeperPortal() {
     setStatus('waiting');
 
     try {
-      const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const BACKEND_URL = API_URL;
       const endpoint = `${BACKEND_URL}/api/v1/society-management/visitors`;
       
       if (isOffline) {

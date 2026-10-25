@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Skeleton from '../../../src/components/Skeleton';
+import { useAuth } from '../../../src/context/AuthContext';
 
 import { API_V1 } from '../../../src/config/api';
 export default function MobileDonations() {
+  const { user, activeRole } = useAuth();
   const [activeTab, setActiveTab] = useState('nidhi'); // 'nidhi', 'annadaanam', 'ngos'
   const [ngos, setNgos] = useState([]);
   const [crowdfunds, setCrowdfunds] = useState([]);
@@ -19,19 +21,21 @@ export default function MobileDonations() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const role = activeRole || user?.role;
+    const adminCheck = role === 'super_admin' || role === 'society_admin' || role === 'admin';
+    setIsAdmin(adminCheck);
+
     const initData = async () => {
       setLoading(true);
-      await Promise.all([fetchNgos(), fetchCrowdfunds(), fetchRescues(), fetchAdminConfig()]);
+      const promises = [fetchNgos(), fetchCrowdfunds(), fetchRescues()];
+      if (adminCheck) {
+        promises.push(fetchAdminConfig());
+      }
+      await Promise.all(promises);
       setLoading(false);
     };
     initData();
-
-    // Check admin role
-    const userRole = 'super_admin'; // Simulating local auth pull for now
-    if (userRole === 'super_admin' || userRole === 'society_admin') {
-      setIsAdmin(true);
-    }
-  }, []);
+  }, [activeRole, user]);
 
   const fetchNgos = async () => {
     try {

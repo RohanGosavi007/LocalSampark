@@ -13,13 +13,12 @@ const crypto = require('crypto');
 // They now use local_shops, shop_products, orders, order_items, shop_services
 // and shop_appointments, the same tables the merchant, rider and customer
 // screens read.
-const { query, queryOne, queryMany } = require('../../../config/database');
-const Razorpay = require('razorpay');
+const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
+const razorpay = require('../../../services/razorpay.service');
+const payments = require('../../../services/payments.service');
+const orders = require('../../../services/orderPlacement.service');
+const lifecycle = require('../../../services/orderLifecycle.service');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_secret'
-});
 
 /**
  * GET /api/shops/:id — shadowed, and now retired.
@@ -44,160 +43,111 @@ async function getShopById(req, res) {
   });
 }
 
+/** Sends the response for an error from order placement. */
+function sendOrderError(res, error, next) {
+  if (error instanceof orders.OrderError) {
+    return res.status(error.status).json({ success: false, code: error.code, error: error.message, ...error.details });
+  }
+  return next(error);
+}
+
+/** The bill as clients read it. */
+function presentBill(bill) {
+  return {
+    subtotal: bill.subtotal,
+    deliveryFee: bill.deliveryFee,
+    smallOrderFee: bill.smallOrderFee,
+    platformFee: bill.platformFee,
+    total: bill.total,
+    distanceKm: bill.distanceKm,
+    surgeMultiplier: bill.surgeMultiplier,
+    freeDelivery: bill.freeDelivery,
+    etaMinutes: bill.etaMinutes,
+    deliveryBreakdown: bill.deliveryBreakdown,
+  };
+}
+
 /**
- * The customer checkout.
+ * POST /checkout/quote — what this cart will cost, without ordering it.
  *
- * This ran entirely on Prisma: `prisma.shop` (`shops`), `prisma.product`
- * (`products`), `prisma.order` with paise columns, a nested
- * `deliveryRoute.create` (`delivery_routes`) and `prisma.auditLog`
- * (`audit_logs`). Of those, only `orders` exists in the migrations, and even
- * there the column names differ — the schema has total_amount in rupees, not
- * totalAmountPaise.
+ * Every client was working the total out for itself, and no two agreed: the
+ * web cart added a "distance fee", a permanent "high demand surge" and a
+ * "small order fee"; the shop page added ₹40; the mobile app ₹40 and ₹5. The
+ * server charged none of those. Clients now show this — the same calculation
+ * the order itself is charged by (services/orderPlacement.service.js), with
+ * the delivery charge worked out from the distance to the customer.
  *
- * The mobile app POSTs here (app/modules/checkout/index.js -> /checkout), so
- * this is the live customer checkout, and it could not have completed an order
- * against a database built from the migrations.
+ * For a delivery the request carries the customer's location
+ * (deliveryCoordinate: { lat, lng }) or a saved addressId; without one the
+ * answer is 400 LOCATION_REQUIRED, and the client asks for it.
+ */
+async function quoteCheckout(req, res, next) {
+  try {
+    const body = req.body || {};
+    const quote = await orders.quoteOrder({
+      user: req.user || null,
+      shopId: body.shopId ?? body.shop_id,
+      items: body.items,
+      body,
+    });
+
+    res.json({
+      success: true,
+      bill: presentBill(quote.bill),
+      items: quote.lines.map(({ productId, name, price, quantity }) => ({ id: productId, name, price, quantity })),
+      paymentMethods: { cod: quote.bill.cod.available, wallet: true, razorpay: razorpay.isConfigured() },
+      cod: quote.bill.cod,
+    });
+  } catch (error) {
+    sendOrderError(res, error, next);
+  }
+}
+
+/**
+ * POST /checkout — the customer checkout.
  *
- * It now uses local_shops, shop_products, orders and order_items — the same
- * tables the merchant queue, the delivery flow and the customer's own order
- * history read. Stock moves through inventory_count, which is what the cart
- * checks and what shop_products records.
+ * Both spellings of the request are read. The web client sends camelCase; the
+ * mobile checkout sends shop_id, product_id and payment_method. Reading only
+ * the first meant every mobile checkout was answered 400 — and the app, on any
+ * failure, showed "Payment Successful" from a canned response.
+ *
+ * The order is placed for the authenticated caller, full stop: this used to
+ * prefer req.body.userId and, failing that, "whichever CUSTOMER row comes back
+ * first", on a route with no auth middleware.
  */
 async function processCheckout(req, res, next) {
   try {
-    const { shopId, items, deliveryAddress, deliveryCoordinate, paymentMethod = 'cod', specialInstructions } = req.body;
-
-    if (!shopId || !items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, error: 'shopId and items array are required' });
+    const body = req.body || {};
+    const method = payments.paymentMethod(body.paymentMethod ?? body.payment_method);
+    if (!method) {
+      return res.status(400).json({ success: false, error: 'paymentMethod must be cod, razorpay or wallet' });
     }
 
-    // The order is placed for the authenticated caller, full stop.
-    //
-    // This used to prefer req.body.userId and, failing that, fall back to
-    // "whichever CUSTOMER row comes back first". On a route with no auth
-    // middleware, that meant an anonymous request could place an order against
-    // any user id it named — and one that named nobody landed on an arbitrary
-    // real customer.
-    const targetUserId = req.user?.id;
-    if (!targetUserId) {
-      return res.status(401).json({ success: false, error: 'Authentication required to place an order.' });
-    }
-
-    const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [shopId]);
-    if (!shop) {
-      return res.status(404).json({ success: false, error: 'Shop not found' });
-    }
-
-    // Price and stock are read from the database, never from the request.
-    let subtotal = 0;
-    const lines = [];
-
-    for (const item of items) {
-      const quantity = parseInt(item.quantity, 10);
-      if (!Number.isInteger(quantity) || quantity < 1) {
-        return res.status(400).json({ success: false, error: 'Each item needs a quantity of at least 1' });
-      }
-
-      const product = await queryOne(
-        'SELECT * FROM shop_products WHERE id = $1 AND shop_id = $2',
-        [item.productId, shopId]
-      );
-      if (!product) {
-        return res.status(400).json({ success: false, error: `Invalid product ID: ${item.productId}` });
-      }
-
-      const tracked = Number(product.track_inventory) === 1;
-      const onHand = Number(product.inventory_count ?? 0);
-      if (tracked && onHand < quantity) {
-        return res.status(400).json({
-          success: false,
-          error: `Insufficient stock for ${product.name}. Available: ${onHand}`,
-        });
-      }
-
-      const price = Number(product.price) || 0;
-      subtotal += price * quantity;
-      lines.push({ id: product.id, name: product.name, price, quantity, tracked });
-    }
-
-    const deliveryFee = shop.delivery_available === 1 || shop.delivery_available === true ? 30 : 0;
-    const platformFee = 5;
-    const totalAmount = subtotal + deliveryFee + platformFee;
-
-    const orderId = crypto.randomUUID();
-    // The handover code the rider must produce to complete the delivery. It was
-    // never generated on this path, so an order placed through it could not be
-    // completed by a rider at all.
-    const otpCode = String(crypto.randomInt(1000, 10000));
-
-    await query(
-      `INSERT INTO orders
-         (id, user_id, shop_id, total_amount, delivery_fee, platform_fee, payment_method,
-          payment_status, order_status, delivery_address, delivery_coordinate, otp_code,
-          fulfillment_method)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, 'delivery')`,
-      [
-        orderId,
-        targetUserId,
-        shopId,
-        totalAmount,
-        deliveryFee,
-        platformFee,
-        paymentMethod,
-        String(paymentMethod).toLowerCase() === 'cod' ? 'pending' : 'paid',
-        deliveryAddress || '',
-        deliveryCoordinate || '',
-        otpCode,
-      ]
-    );
-
-    for (const line of lines) {
-      await query(
-        'INSERT INTO order_items (id, order_id, product_id, name, price, quantity) VALUES ($1, $2, $3, $4, $5, $6)',
-        [crypto.randomUUID(), orderId, line.id, line.name, line.price, line.quantity]
-      );
-      if (line.tracked) {
-        await query(
-          'UPDATE shop_products SET inventory_count = inventory_count - $1, stock_quantity = stock_quantity - $1 WHERE id = $2',
-          [line.quantity, line.id]
-        );
-      }
-    }
-
-    if (specialInstructions) {
-      // orders.special_instructions is added by migration 093 — the column did
-      // not exist before, so a customer's note ("leave at the gate") was taken
-      // by the form and discarded.
-      await query('UPDATE orders SET special_instructions = $1 WHERE id = $2', [specialInstructions, orderId]);
-    }
-
-    const newOrder = await queryOne('SELECT * FROM orders WHERE id = $1', [orderId]);
-    const orderItems = await queryMany('SELECT * FROM order_items WHERE order_id = $1', [orderId]);
+    const placed = await orders.placeOrder({
+      user: req.user,
+      shopId: body.shopId ?? body.shop_id,
+      items: body.items,
+      body,
+      method,
+    });
 
     const io = req.app?.get ? req.app.get('io') : null;
     if (io) {
-      io.emit(`vendor:orders:${shopId}`, { event: 'ORDER_CREATED', order: newOrder });
-    }
-
-    let paymentData = null;
-    if (String(paymentMethod).toLowerCase() === 'razorpay') {
-      // No mock order id on failure: the old fallback returned
-      // `mock_rzp_<timestamp>`, which the client would then try to pay against.
-      paymentData = await razorpay.orders.create({
-        amount: Math.round(totalAmount * 100),
-        currency: 'INR',
-        receipt: `receipt_order_${orderId}`,
-      });
+      io.emit(`vendor:orders:${placed.shop.id}`, { event: 'ORDER_CREATED', order: placed.order });
     }
 
     return res.status(201).json({
       success: true,
-      message: 'Checkout successful',
-      order: { ...newOrder, items: orderItems },
-      paymentData,
+      message: method === 'razorpay' ? 'Order placed; payment pending' : 'Checkout successful',
+      order: { ...placed.order, items: placed.items },
+      // What the order came to, itemised. Clients were adding their own
+      // delivery and handling fees and showing a total the server never used.
+      bill: presentBill(placed.bill),
+      paymentData: placed.paymentData,
+      ...(placed.paymentError ? { paymentError: placed.paymentError } : {}),
     });
   } catch (error) {
-    next(error);
+    sendOrderError(res, error, next);
   }
 }
 
@@ -321,111 +271,38 @@ async function processBooking(req, res, next) {
 /**
  * Vendor / rider / customer order state transitions.
  *
- * This used prisma.order (paise columns, camelCase timestamps),
- * prisma.deliveryRoute (`delivery_routes`, no such table) and prisma.auditLog
- * (`audit_logs`, no such table). The authorisation logic below was correct and
- * is kept; only the storage moves onto `orders`, where the rider is
- * assigned_agent_id rather than a separate route row.
- *
- * The status vocabulary is the one stored in orders.order_status (lowercase),
- * not the uppercase Prisma enum. The uppercase names are still accepted from
- * clients so the existing callers keep working.
+ * The rules are in services/orderLifecycle.service.js. This endpoint had its
+ * own: any status from any status, and "delivered" also wrote payment_status
+ * = 'paid' — so a shop could have an order that was never paid for recorded
+ * as paid, and a rider could close a delivery without the customer's code.
  */
 async function updateOrderStatus(req, res, next) {
   try {
     const { id } = req.params;
     const { status, cancellationReason } = req.body;
 
-    const VALID = ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'out_for_delivery', 'delivered', 'cancelled', 'refunded'];
-    // ACCEPTED is the old name for what the orders table calls confirmed.
-    const requested = String(status || '').toLowerCase() === 'accepted'
-      ? 'confirmed'
-      : String(status || '').toLowerCase();
-
-    if (!VALID.includes(requested)) {
-      return res.status(400).json({ success: false, error: `Invalid status. Must be one of: ${VALID.join(', ')}` });
+    let outcome;
+    try {
+      outcome = await lifecycle.changeStatus({ orderId: id, to: status, user: req.user, reason: cancellationReason });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+      }
+      throw error;
     }
-
-    const order = await queryOne(
-      `SELECT o.*, s.owner_id AS shop_owner_id
-         FROM orders o
-         LEFT JOIN local_shops s ON s.id = o.shop_id
-        WHERE o.id = $1`,
-      [id]
-    );
-
-    if (!order) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
-    }
-
-    // ── Who may move this order, and where to ───────────────────────────
-    //
-    // authenticate() proves who is calling; it does not say they have any
-    // business touching this order. Without the check below any signed-in user
-    // could set any order to delivered — which also writes payment_status =
-    // 'paid' a few lines down, so it is a way to mark an order paid without
-    // paying.
-    //
-    // Roles, narrowest first:
-    //   customer  — may cancel their own order, and only before it ships
-    //   runner    — the assigned rider, may only move it through delivery
-    //   vendor    — the shop owner, full control of their own orders
-    //   admin     — full control
-    const actorId = req.user?.id;
-    const ADMIN_ROLES = new Set(['admin', 'super_admin', 'territory_admin', 'moderator']);
-    const isAdmin = ADMIN_ROLES.has(String(req.user?.role || '').toLowerCase());
-    const isVendor = order.shop_owner_id && String(order.shop_owner_id) === String(actorId);
-    const isRunner = order.assigned_agent_id && String(order.assigned_agent_id) === String(actorId);
-    const isCustomer = String(order.user_id) === String(actorId);
-
-    const currentStatus = String(order.order_status || 'pending').toLowerCase();
-    const RUNNER_STATUSES = new Set(['out_for_delivery', 'delivered']);
-    const CUSTOMER_STATUSES = new Set(['cancelled']);
-    const CUSTOMER_CANCELLABLE_FROM = new Set(['pending', 'confirmed']);
-
-    let permitted = false;
-    if (isAdmin || isVendor) {
-      permitted = true;
-    } else if (isRunner && RUNNER_STATUSES.has(requested)) {
-      permitted = true;
-    } else if (isCustomer && CUSTOMER_STATUSES.has(requested) && CUSTOMER_CANCELLABLE_FROM.has(currentStatus)) {
-      permitted = true;
-    }
-
-    if (!permitted) {
-      // Deliberately does not distinguish "not yours" from "not allowed from
-      // here" — that difference tells an unrelated caller whether an order id
-      // exists and what state it is in.
-      return res.status(403).json({
-        success: false,
-        error: 'You are not allowed to change this order to that status.',
-      });
-    }
-
-    const sets = ['order_status = $1', 'updated_at = CURRENT_TIMESTAMP'];
-    const params = [requested];
-
-    if (requested === 'delivered') {
-      sets.push('delivered_at = CURRENT_TIMESTAMP');
-      params.push('paid');
-      sets.push(`payment_status = $${params.length}`);
-    }
-    if (requested === 'cancelled' && cancellationReason) {
-      params.push(cancellationReason);
-      sets.push(`special_instructions = $${params.length}`);
-    }
-
-    params.push(id);
-    await query(`UPDATE orders SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
-
-    const updatedOrder = await queryOne('SELECT * FROM orders WHERE id = $1', [id]);
 
     const io = req.app?.get ? req.app.get('io') : null;
-    if (io) {
-      io.emit(`order:${id}:status`, { orderId: id, oldStatus: currentStatus, newStatus: requested });
+    if (io && !outcome.unchanged) {
+      io.emit(`order:${id}:status`, { orderId: id, oldStatus: outcome.from, newStatus: outcome.to });
+      io.to(`order_${id}`).to(`order:${id}`).emit('order_status_update', { orderId: id, status: outcome.to.toUpperCase() });
     }
 
-    return res.json({ success: true, message: `Order status updated to ${requested}`, order: updatedOrder });
+    return res.json({
+      success: true,
+      message: `Order status updated to ${outcome.to}`,
+      order: outcome.order,
+      refund: outcome.refund,
+    });
   } catch (error) {
     next(error);
   }
@@ -434,6 +311,7 @@ async function updateOrderStatus(req, res, next) {
 module.exports = {
   getShopById,
   processCheckout,
+  quoteCheckout,
   processBooking,
   updateOrderStatus,
 };

@@ -29,19 +29,11 @@ export default function ChefPage() {
       if (items.length > 0) {
         setChefs(items);
       } else {
-        setChefs([
-          { id: 1, name: 'Sanjay Kapoor', type: 'Private Chef', specialization: 'North Indian, Continental', rating: 4.8, experience: '12 years', price: 1500, available: true },
-          { id: 2, name: 'Anjali Desai', type: 'Tiffin Service', specialization: 'Gujarati, Maharashtrian', rating: 4.6, experience: '5 years', price: 200, available: true },
-          { id: 3, name: 'Chef Rahul', type: 'Party Chef', specialization: 'Italian, Mexican', rating: 4.9, experience: '8 years', price: 2500, available: false },
-        ]);
+        setChefs([]);
       }
     } catch (e) {
-      console.error('Chef API failed, using mock data:', e);
-      setChefs([
-        { id: 1, name: 'Sanjay Kapoor', type: 'Private Chef', specialization: 'North Indian, Continental', rating: 4.8, experience: '12 years', price: 1500, available: true },
-        { id: 2, name: 'Anjali Desai', type: 'Tiffin Service', specialization: 'Gujarati, Maharashtrian', rating: 4.6, experience: '5 years', price: 200, available: true },
-        { id: 3, name: 'Chef Rahul', type: 'Party Chef', specialization: 'Italian, Mexican', rating: 4.9, experience: '8 years', price: 2500, available: false },
-      ]);
+      console.error('Chef API failed:', e);
+      setChefs([]);
     }
     setLoading(false);
   };

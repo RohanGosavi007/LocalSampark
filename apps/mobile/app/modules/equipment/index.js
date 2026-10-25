@@ -1,12 +1,13 @@
 import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, Modal, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
 
-import { API_V1 } from '../../../src/config/api';
 export default function MobileCommunityGarage() {
   const [tab, setTab] = useState('browse'); // browse, list, rentals
   const [items, setItems] = useState([]);
-  const [myRentals, setMyRentals] = useState([]);
+    const [myRentals, setMyRentals] = useState([]);
+  // Rentals of the items this user lists: the owner confirms their return.
+  const [ownerRentals, setOwnerRentals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Forms
@@ -14,7 +15,7 @@ export default function MobileCommunityGarage() {
 
   // Booking Modal
   const [bookingModal, setBookingModal] = useState(null);
-  const [bookingData, setBookingData] = useState({ days: '1', useCoins: false });
+    const [bookingData, setBookingData] = useState({ days: '1' });
 
   useEffect(() => {
     fetchItems();
@@ -29,10 +30,11 @@ export default function MobileCommunityGarage() {
     setLoading(false);
   };
 
-  const fetchMyRentals = async () => {
+    const fetchMyRentals = async () => {
     try {
-      const data = await apiGet('/equipment/rentals/me');
-      if (data.success) setMyRentals(data.data);
+      const [mine, owned] = await Promise.all([apiGet('/equipment/rentals/me'), apiGet('/equipment/rentals/owner')]);
+      if (mine.success) setMyRentals(mine.data);
+      if (owned.success) setOwnerRentals(owned.data);
     } catch(e) {}
   };
 
@@ -55,29 +57,36 @@ export default function MobileCommunityGarage() {
 
   const handleRentEquipment = async () => {
     try {
-      const payload = { days: Number(bookingData.days), useCoins: bookingData.useCoins };
-      const data = await apiPost(`/equipment/rent/${bookingModal.id}`, payload);
-      if (data.success) {
-        Alert.alert('Success', data.message);
-        setBookingModal(null);
-        fetchItems();
-      } else {
-        Alert.alert('Error', data.error);
-      }
-    } catch (err) {}
+            const data = await apiPost(`/equipment/rent/${bookingModal.id}`, { days: Number(bookingData.days) });
+      Alert.alert('Success', data.message);
+      setBookingModal(null);
+      fetchItems();
+    } catch (err) {
+      Alert.alert('Could not rent', err.message || 'Please try again.');
+    }
   };
 
+    // The renter says the item is back; the deposit waits for the owner.
+  const handleRequestReturn = async (rentalId) => {
+    try {
+      const data = await apiPost(`/equipment/rentals/${rentalId}/return`, {});
+      Alert.alert('Return requested', data.message);
+      fetchMyRentals();
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Please try again.');
+    }
+  };
+
+  // The owner confirms it is back: the rent is paid to them and the deposit refunded.
   const handleConfirmReturn = async (rentalId) => {
     try {
-      const data = await apiPost(`/equipment/rentals/${rentalId}/return`);
-      if (data.success) {
-        Alert.alert('Item Returned', data.message);
-        fetchMyRentals();
-        fetchItems();
-      } else {
-        Alert.alert('Error', data.error);
-      }
-    } catch (err) {}
+      const data = await apiPost(`/equipment/rentals/${rentalId}/confirm-return`, { damageDeduction: 0 });
+      Alert.alert('Return confirmed', data.message);
+      fetchMyRentals();
+      fetchItems();
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Please try again.');
+    }
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#f59e0b" /></View>;
@@ -179,25 +188,42 @@ export default function MobileCommunityGarage() {
 
         {tab === 'rentals' && (
           <View>
-            <Text style={styles.sectionTitle}>Active Escrows</Text>
-            {myRentals.length === 0 && <Text style={styles.emptyText}>No active rentals found.</Text>}
+                        <Text style={styles.sectionTitle}>Items I'm Renting</Text>
+            {myRentals.length === 0 && <Text style={styles.emptyText}>No rentals yet.</Text>}
             {myRentals.map(r => (
               <View key={r.id} style={styles.rentalCard}>
                 <View style={styles.rentalHeader}>
                   <Text style={styles.rentalTitle}>{r.item_name}</Text>
-                  <Text style={styles.rentalStatus}>Active</Text>
+                  <Text style={styles.rentalStatus}>{r.status === 'return_requested' ? 'Returning' : r.status === 'returned' ? 'Returned' : 'Active'}</Text>
                 </View>
                 <Text style={styles.rentalText}>Duration: {r.days} Days</Text>
-                <Text style={styles.rentalText}>Escrow Held: ₹{r.escrow_deposit_fiat}</Text>
-                
-                {r.owner_id === 1 /* Mock check, should be actual userId */ ? (
-                  <TouchableOpacity style={styles.returnBtn} onPress={() => handleConfirmReturn(r.id)}>
-                    <Text style={styles.returnBtnText}>Confirm Return & Release Deposit</Text>
+                <Text style={styles.rentalText}>Deposit held: ₹{r.deposit_held}</Text>
+                {r.status === 'active' && (
+                  <TouchableOpacity style={styles.returnBtn} onPress={() => handleRequestReturn(r.id)}>
+                    <Text style={styles.returnBtnText}>I've Returned It</Text>
                   </TouchableOpacity>
-                ) : (
+                )}
+                {r.status === 'return_requested' && (
                   <View style={styles.waitingBox}>
-                    <Text style={styles.waitingText}>Waiting for owner to confirm return...</Text>
+                    <Text style={styles.waitingText}>Waiting for the owner to confirm the return...</Text>
                   </View>
+                )}
+              </View>
+            ))}
+
+            <Text style={styles.sectionTitle}>Rentals of My Items</Text>
+            {ownerRentals.length === 0 && <Text style={styles.emptyText}>Nobody has rented your items yet.</Text>}
+            {ownerRentals.map(r => (
+              <View key={r.id} style={styles.rentalCard}>
+                <View style={styles.rentalHeader}>
+                  <Text style={styles.rentalTitle}>{r.item_name}</Text>
+                  <Text style={styles.rentalStatus}>{r.status === 'returned' ? 'Returned' : r.status === 'return_requested' ? 'Return requested' : 'Out'}</Text>
+                </View>
+                <Text style={styles.rentalText}>Rented by {r.renter_name} for {r.days} days · rent ₹{r.total_amount}</Text>
+                {r.status !== 'returned' && (
+                  <TouchableOpacity style={styles.returnBtn} onPress={() => handleConfirmReturn(r.id)}>
+                    <Text style={styles.returnBtnText}>Item Is Back — Release Deposit</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             ))}
@@ -222,40 +248,26 @@ export default function MobileCommunityGarage() {
                   onChangeText={t=>setBookingData({...bookingData, days:t})} 
                 />
 
-                <View style={styles.discountBox}>
-                  <Text style={styles.discountText}>Pay Rent via SamparkCoins</Text>
-                  <Switch 
-                    value={bookingData.useCoins} 
-                    onValueChange={v=>setBookingData({...bookingData, useCoins:v})} 
-                    trackColor={{ false: "#334155", true: "#c7d2fe" }}
-                    thumbColor={bookingData.useCoins ? "#6366f1" : "#94a3b8"}
-                  />
-                </View>
+                
 
                 <View style={styles.receiptBox}>
                   <View style={styles.receiptRow}>
                     <Text style={styles.receiptLabel}>Rent:</Text>
-                    <Text style={[styles.receiptValue, bookingData.useCoins && styles.strike]}>₹{bookingModal.daily_price * Number(bookingData.days)}</Text>
+                                        <Text style={styles.receiptValue}>₹{bookingModal.daily_price * Number(bookingData.days)}</Text>
                   </View>
-                  {bookingData.useCoins && (
-                    <View style={styles.receiptRow}>
-                      <Text style={styles.receiptLabel}>Coin Payment:</Text>
-                      <Text style={styles.receiptCoinText}>{bookingModal.daily_price * 10 * Number(bookingData.days)} 🪙</Text>
-                    </View>
-                  )}
                   <View style={styles.receiptRow}>
                     <Text style={styles.receiptLabel}>Refundable Deposit:</Text>
                     <Text style={styles.receiptDeposit}>₹{bookingModal.security_deposit}</Text>
                   </View>
                   <View style={styles.receiptTotalRow}>
-                    <Text style={styles.receiptTotalLabel}>Pay Now (Fiat):</Text>
+                                        <Text style={styles.receiptTotalLabel}>Paid from wallet:</Text>
                     <Text style={styles.receiptTotalValue}>
-                      ₹{bookingModal.security_deposit + (bookingData.useCoins ? 0 : bookingModal.daily_price * Number(bookingData.days))}
+                      ₹{Number(bookingModal.security_deposit) + Number(bookingModal.daily_price) * Number(bookingData.days)}
                     </Text>
                   </View>
                 </View>
 
-                <Text style={styles.escrowNotice}>Deposit is held in Escrow and released immediately upon return.</Text>
+                                <Text style={styles.escrowNotice}>The deposit is held and refunded to your wallet when the owner confirms the item is back.</Text>
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={() => setBookingModal(null)}>

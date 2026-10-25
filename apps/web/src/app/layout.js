@@ -15,22 +15,25 @@ import ConsentBanner from '../components/ConsentBanner';
 import WelcomeTour from '../components/WelcomeTour';
 import PageTransition from '../components/motion/PageTransition';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localsampark.in';
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'LocalSampark',
   alternateName: 'लोकल संपर्क',
-  url: 'https://localsampark.com',
+  url: SITE_URL,
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web, Android',
   description: 'Hyperlocal super-app connecting neighborhoods with local shops, services, carpools, community forums, and delivery.',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
-  aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', ratingCount: '12450' },
-  author: { '@type': 'Organization', name: 'LocalSampark', url: 'https://localsampark.com' },
+  author: { '@type': 'Organization', name: 'LocalSampark', url: SITE_URL },
   areaServed: { '@type': 'City', name: 'Pune', '@id': 'https://www.wikidata.org/wiki/Q1538' },
 };
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: '/' },
   title: 'LocalSampark — Your Neighborhood, Connected',
   description: 'LocalSampark (लोकल संपर्क) brings neighborhood discussions, local shops, gig jobs, properties, and community events directly into your hands. Pilot running in Dhanori, Pune.',
   keywords: 'hyperlocal, pune, dhanori, local delivery, neighborhood, community, society management, carpool',
@@ -39,11 +42,11 @@ export const metadata = {
   openGraph: {
     title: 'LocalSampark — Your Neighborhood, Connected',
     description: 'The ultimate hyperlocal app for your community.',
-    url: 'https://localsampark.com',
+    url: SITE_URL,
     siteName: 'LocalSampark',
     images: [
       {
-        url: 'https://localsampark.com/og-image.jpg',
+        url: `${SITE_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
         alt: 'LocalSampark Banner',

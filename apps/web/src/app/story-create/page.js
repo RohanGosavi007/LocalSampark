@@ -3,31 +3,48 @@ import React, { useState, useRef } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { API_URL, apiPost, getAuthHeaders } from '@/lib/api';
 
 export default function StoryCreatePage() {
   const [imagePreview, setImagePreview] = useState(null);
   const [text, setText] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreview(url);
+      if (file.size > 8 * 1024 * 1024) { setError('Choose a photo under 8 MB.'); return; }
+      setError(null);
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const handlePost = (e) => {
+  // Uploads the photo, then posts it as a story (visible for 24 hours). It used to wait
+  // 1.5 seconds and navigate away, so nothing was ever posted.
+  const handlePost = async (e) => {
     e.preventDefault();
-    if (!imagePreview && !text.trim()) return;
-
+    if (!imageFile || isPosting) return;
     setIsPosting(true);
-    // Simulate API request
-    setTimeout(() => {
-      setIsPosting(false);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append('file', imageFile);
+      body.append('module', 'story');
+      const headers = getAuthHeaders();
+      delete headers['Content-Type']; // the browser sets the multipart boundary
+      const up = await fetch(`${API_URL}/api/v1/upload`, { method: 'POST', headers, body });
+      const uploaded = await up.json().catch(() => ({}));
+      if (!up.ok || !uploaded.url) throw new Error(uploaded.error || 'The photo could not be uploaded.');
+      await apiPost('/stories', { mediaUrl: uploaded.url, mediaType: 'image', caption: text.trim() });
       window.location.href = '/dashboard';
-    }, 1500);
+    } catch (err) {
+      setError(err.message || 'Your story could not be posted.');
+      setIsPosting(false);
+    }
   };
 
   return (
@@ -45,11 +62,12 @@ export default function StoryCreatePage() {
             </div>
 
             <form onSubmit={handlePost} className="space-y-6">
+              {error && <p role="alert" className="text-red-500 font-bold text-sm">{error}</p>}
               
               {!imagePreview ? (
                 <div className="space-y-4">
                   <textarea 
-                    placeholder="What's happening in your neighborhood?" 
+                    placeholder="Add a caption, then choose a photo" 
                     className="w-full bg-transparent text-xl font-medium text-text placeholder:text-text-muted/60 resize-none outline-none min-h-[120px]"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
@@ -83,7 +101,7 @@ export default function StoryCreatePage() {
                   
                   <button 
                     type="button" 
-                    onClick={() => setImagePreview(null)}
+                    onClick={() => { setImagePreview(null); setImageFile(null); }}
                     className="absolute top-4 right-4 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-colors z-10"
                   >
                     <X className="w-5 h-5" />
@@ -105,7 +123,7 @@ export default function StoryCreatePage() {
               <div className="pt-4 border-t border-border">
                 <button 
                   type="submit" 
-                  disabled={(!imagePreview && !text.trim()) || isPosting}
+                  disabled={!imageFile || isPosting}
                   className="w-full bg-primary hover:bg-primary-dark disabled:bg-primary/50 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 transition-all flex items-center justify-center disabled:shadow-none"
                 >
                   {isPosting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Posting...</> : 'Post Story'}

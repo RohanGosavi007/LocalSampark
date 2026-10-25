@@ -4,25 +4,25 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useOrderRinger } from '../../../src/context/OrderRingerContext';
 
 export default function AppointmentConfirmationScreen() {
-  const { total, staff, date, time } = useLocalSearchParams();
+  const { total, staff, date, time, shopName, address, bookingRef } = useLocalSearchParams();
   const { triggerNewOrder } = useOrderRinger();
+
+  const activeBookingId = bookingRef || `APT-${Math.floor(Math.random() * 9000) + 1000}`;
 
   useEffect(() => {
     // Trigger shop owner ringing alert for this new appointment
-    const bookingId = `APT-${Math.floor(Math.random() * 9000) + 1000}`;
-    
     setTimeout(() => {
       triggerNewOrder({
-        id: bookingId,
+        id: activeBookingId,
         customer: 'Local Resident',
         amount: `₹${total || 650}`,
-        items: '2 Services',
-        time: `${date} at ${time}`,
+        items: 'Confirmed Service',
+        time: `${date || 'Today'} at ${time || 'Scheduled Time'}`,
         type: 'Appointment',
-        staff: staff || 'Any Available'
+        staff: staff || 'Verified Specialist'
       });
     }, 1000);
-  }, []);
+  }, [activeBookingId]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,8 +38,8 @@ export default function AppointmentConfirmationScreen() {
 
         <View style={styles.ticketCard}>
           <View style={styles.ticketTop}>
-            <Text style={styles.shopName}>Glow & Glamour Salon</Text>
-            <Text style={styles.address}>Shop 12, Pride Plaza, Dhanori</Text>
+            <Text style={styles.shopName}>{shopName || 'Local Verified Service Provider'}</Text>
+            <Text style={styles.address}>{address || 'Service Location / Clinic Desk'}</Text>
           </View>
           
           <View style={styles.ticketDivider}>

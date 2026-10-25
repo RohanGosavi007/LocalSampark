@@ -19,14 +19,16 @@ const DOCK_ROLES = [
 ];
 
 export default function FloatingDevDock() {
-  const { mockLogin, user } = useAuth();
+    const { demoLogin, user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
 
   if (process.env.NODE_ENV === 'production') return null;
 
-  const handleLogin = (role) => {
-    mockLogin(role);
+    const handleLogin = async (role) => {
+    if (!(await demoLogin(role))) {
+      window.alert('Demo sign-in failed. Seed the demo data: npm run seed:demo --workspace=backend');
+    }
   };
 
   // Calculate magnification scale based on distance from hovered item

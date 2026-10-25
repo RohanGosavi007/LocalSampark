@@ -10,6 +10,8 @@ export default function JobsTab({ API_BASE, authHeaders }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkNote, setBulkNote] = useState(null);
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -29,14 +31,35 @@ export default function JobsTab({ API_BASE, authHeaders }) {
     fetchJobs();
   }, []);
 
+  const toggle = (id) => setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const allSelected = jobs.length > 0 && jobs.every((j) => selected.has(j.id));
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(jobs.map((j) => j.id)));
+
+  // Approve or reject every ticked posting, one request each, and say how many went through.
+  const bulkDecide = async (status) => {
+    let done = 0;
+    let firstFailure = null;
+    for (const id of selected) {
+      try {
+        await fetchJson(`${API_BASE}/admin/approvals/job/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status }) });
+        done += 1;
+      } catch (e) {
+        if (!firstFailure) firstFailure = e.message || 'failed';
+      }
+    }
+    setBulkNote(`${done} posting${done === 1 ? '' : 's'} ${status}${firstFailure ? `; some failed (${firstFailure})` : ''}.`);
+    setSelected(new Set());
+    fetchJobs();
+  };
+
   const handleApproval = async (id, status) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/approvals/job/${id}`, {
+      await fetchJson(`${API_BASE}/admin/approvals/job/${id}`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ status })
       });
-      if (res.ok) {
+      { // fetchJson throws on a failed response, so reaching here means it worked
         setJobs(jobs.map(j => j.id === id ? { ...j, status } : j));
       }
     } catch (e) {
@@ -47,7 +70,7 @@ export default function JobsTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
+      <TabError error={error} onRetry={fetchJobs} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
@@ -57,10 +80,19 @@ export default function JobsTab({ API_BASE, authHeaders }) {
           <button onClick={fetchJobs} style={btnPrimary}>{loading ? 'Loading...' : 'Refresh'}</button>
         </div>
         
+        {bulkNote && <p role="status" style={{ color: 'var(--success)', fontWeight: 600 }}>{bulkNote}</p>}
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
+            <strong style={{ color: 'var(--ink)' }}>{selected.size} selected</strong>
+            <button onClick={() => bulkDecide('approved')} style={{ ...btnPrimary, background: 'var(--success)' }}>Approve selected</button>
+            <button onClick={() => { if (confirm(`Reject ${selected.size} posting(s)?`)) bulkDecide('rejected'); }} style={btnDanger}>Reject selected</button>
+          </div>
+        )}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--line)' }}>
+                <th style={{ padding: '0.75rem 1rem' }}><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all postings" /></th>
                 {['Job Title', 'Category', 'Salary Range', 'Job Type', 'Address', 'Status', 'Actions'].map(h => 
                   <th key={h} style={{ textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600 }}>{h}</th>
                 )}
@@ -68,9 +100,10 @@ export default function JobsTab({ API_BASE, authHeaders }) {
             </thead>
             <tbody>
               {jobs.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--ink-subtle)' }}>No active job postings found.</td></tr>
+                <tr><td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--ink-subtle)' }}>No active job postings found.</td></tr>
               ) : jobs.map((job) => (
                 <tr key={job.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '0.85rem 1rem' }}><input type="checkbox" checked={selected.has(job.id)} onChange={() => toggle(job.id)} aria-label={`Select ${job.title}`} /></td>
                   <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: 'var(--ink)' }}>{job.title}</td>
                   <td style={{ padding: '0.85rem 1rem', color: 'var(--ink-muted)' }}>{job.category}</td>
                   <td style={{ padding: '0.85rem 1rem', color: 'var(--success)', fontWeight: 700 }}>{job.salary_range}</td>

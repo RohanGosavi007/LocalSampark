@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgis/postgis:15-3.4-alpine # PostGIS: the schema uses GEOGRAPHY columns
     container_name: localsampark-db
     environment:
       POSTGRES_USER: localsampark_user
@@ -29,8 +29,8 @@ services:
 
   backend:
     build: 
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: localsampark-api
     environment:
       - NODE_ENV=production
@@ -56,8 +56,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: localsampark-web
     environment:
       - NEXT_PUBLIC_API_URL=https://api.localsampark.in/api/v1
@@ -73,7 +73,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
       # Uncomment and replace with certbot paths when ready for production
       # - /etc/letsencrypt/live/api.localsampark.in/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
       # - /etc/letsencrypt/live/api.localsampark.in/privkey.pem:/etc/nginx/ssl/privkey.pem:ro

@@ -92,17 +92,6 @@ export default function FranchiseShops() {
                     <MapPin className="w-4 h-4 shrink-0" />
                     <span className="truncate">{shop.address}</span>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                    <div>
-                      <p className="text-text-muted text-xs mb-1">Total Sales</p>
-                      <p className="text-text font-bold">₹{Math.floor(Math.random() * 50000).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs mb-1">Commission Generated</p>
-                      <p className="text-emerald-400 font-bold">+₹{Math.floor(Math.random() * 2000).toLocaleString()}</p>
-                    </div>
-                  </div>
                 </div>
               ))
             )}

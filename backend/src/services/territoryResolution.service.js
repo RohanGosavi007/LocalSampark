@@ -83,7 +83,7 @@ async function verifiedBoundaries() {
     const res = await query(`
       SELECT id, name, pincode, boundary_geojson, centroid_lat, centroid_lng
         FROM territories
-       WHERE is_active = true
+       WHERE is_active = '1'
          AND COALESCE(boundary_verified, 0) = 1
          AND boundary_geojson IS NOT NULL
     `);
@@ -911,7 +911,7 @@ async function coverageStats() {
       SELECT COUNT(*) AS total,
              SUM(CASE WHEN COALESCE(boundary_verified, 0) = 1 THEN 1 ELSE 0 END) AS boundaries,
              SUM(CASE WHEN COALESCE(centroid_verified, 0) = 1 THEN 1 ELSE 0 END) AS centroids
-        FROM territories WHERE is_active = true
+        FROM territories WHERE is_active = '1'
     `);
     stats.territories = Number(t?.total) || 0;
     stats.boundaries_verified = Number(t?.boundaries) || 0;

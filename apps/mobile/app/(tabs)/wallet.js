@@ -1,37 +1,52 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/context/AuthContext';
+import { getPaymentConfig, topUpWallet } from '../../src/lib/payments';
+
+const MIN_TOPUP = 10;
+const MAX_TOPUP = 50000;
 
 export default function WalletScreen() {
-  const { walletBalance: balance, walletTransactions: transactions } = useAuth();
+  const { user, walletBalance: balance, walletTransactions: transactions, refreshWallet } = useAuth();
   const [amountInput, setAmountInput] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [onlineAvailable, setOnlineAvailable] = useState(false);
 
-  const handleAddMoney = () => {
-    const amt = parseFloat(amountInput);
-    if (!amt || isNaN(amt) || amt <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0.');
+  useEffect(() => {
+    getPaymentConfig().then(config => setOnlineAvailable(config.enabled));
+  }, []);
+
+  // Adding money is a Razorpay payment: the server opens it, Razorpay collects
+  // it, and the server credits the wallet once it has verified the result.
+  // This used to show "You are being redirected to Razorpay", and on "Pay Now"
+  // reported "Payment Successful" having contacted nobody.
+  const handleAddMoney = async () => {
+    const amt = Number(amountInput);
+    if (!Number.isFinite(amt) || amt < MIN_TOPUP || amt > MAX_TOPUP) {
+      Alert.alert('Enter an amount', `You can add between ₹${MIN_TOPUP} and ₹${MAX_TOPUP}.`);
       return;
     }
-    
-    // Simulate Razorpay flow
-    Alert.alert(
-      'Proceed to Payment',
-      `You are being redirected to Razorpay to add ₹${amt.toFixed(2)}.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Pay Now', 
-          onPress: () => {
-            // Usually this would call backend, but auth context handles state mock for now
-            // We just clear input
-            setAmountInput('');
-            Alert.alert('Payment Successful', `₹${amt.toFixed(2)} has been securely loaded into your wallet.`);
-          }
-        }
-      ]
-    );
+
+    setPaying(true);
+    try {
+      await topUpWallet(amt, {
+        prefill: { contact: user?.phone_number || user?.phone || '', name: user?.full_name || user?.name || '' },
+      });
+      setAmountInput('');
+      await refreshWallet();
+      Alert.alert('Money added', `₹${amt.toFixed(2)} has been added to your wallet.`);
+    } catch (e) {
+      if (e.code !== 'DISMISSED') {
+        Alert.alert(
+          e.code === 'PAYMENTS_UNAVAILABLE' || e.code === 'CHECKOUT_UNAVAILABLE' ? 'Not available' : 'Payment failed',
+          e.message
+        );
+      }
+      refreshWallet();
+    }
+    setPaying(false);
   };
 
   const handleDownloadPassbook = () => {
@@ -79,7 +94,7 @@ export default function WalletScreen() {
 
           {/* Load Funds */}
           <View style={styles.loadFundsCard}>
-            <Text style={styles.sectionTitle}>Load Funds via Razorpay</Text>
+            <Text style={styles.sectionTitle}>Add Money</Text>
             <Text style={styles.inputLabel}>Amount (INR)</Text>
             <View style={styles.inputContainer}>
               <Text style={styles.currencySymbol}>₹</Text>
@@ -101,9 +116,12 @@ export default function WalletScreen() {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.addBtn} onPress={handleAddMoney}>
-              <Text style={styles.addBtnText}>Proceed to Pay</Text>
+            <TouchableOpacity style={[styles.addBtn, (!onlineAvailable || paying) && { opacity: 0.5 }]} onPress={handleAddMoney} disabled={!onlineAvailable || paying}>
+              {paying ? <ActivityIndicator color="#fff" /> : <Text style={styles.addBtnText}>Proceed to Pay</Text>}
             </TouchableOpacity>
+            {!onlineAvailable && (
+              <Text style={{ color: '#64748b', fontSize: 12, marginTop: 10, textAlign: 'center' }}>Adding money online is not available right now.</Text>
+            )}
           </View>
 
           {/* Recent Transactions */}

@@ -25,7 +25,7 @@ const postTask = async (req, res, next) => {
 
         // Escrow deduction
         await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [finalBounty, userId]);
-        await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Volunteer Bounty Escrow')`, [userId, finalBounty]);
+        await client.query(`INSERT INTO loyalty_transactions (user_id, amount, transaction_type, type, source, description) VALUES ($1, $2, 'spent', 'spent', 'Volunteer Bounty Escrow', 'Volunteer Bounty Escrow')`, [userId, finalBounty]);
       }
 
       const newTask = await client.query(`INSERT INTO volunteer_tasks (poster_id, title, description, bounty_coins, type, status) 
@@ -124,7 +124,7 @@ const completeTask = async (req, res, next) => {
       // 1. Award Bounty (Release Escrow)
       if (bounty > 0) {
         await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins + $1 WHERE user_id = $2`, [bounty, volunteerId]);
-        await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Volunteer Bounty Completed')`, [volunteerId, bounty]);
+        await client.query(`INSERT INTO loyalty_transactions (user_id, amount, transaction_type, type, source, description) VALUES ($1, $2, 'earned', 'earned', 'Volunteer Bounty Completed', 'Volunteer Bounty Completed')`, [volunteerId, bounty]);
       }
 
       // 2. Mark complete

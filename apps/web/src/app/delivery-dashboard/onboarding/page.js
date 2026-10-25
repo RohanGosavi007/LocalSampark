@@ -119,7 +119,7 @@ export default function DeliveryOnboarding() {
               <h2 className="text-3xl font-black text-text mb-4">Application Submitted!</h2>
               <p className="text-text-muted mb-8 max-w-md mx-auto">Your documents are under review. Our local franchise partner will verify your application within 24 hours.</p>
 
-              <Link href="/delivery/page.js" className="inline-block px-8 py-4 bg-card-bg text-text font-bold rounded-xl hover:bg-slate-700 transition border border-border">
+              <Link href="/" className="inline-block px-8 py-4 bg-card-bg text-text font-bold rounded-xl hover:bg-slate-700 transition border border-border">
                 Return to Home
               </Link>
             </motion.div>

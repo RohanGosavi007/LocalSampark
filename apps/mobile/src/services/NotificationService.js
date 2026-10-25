@@ -3,18 +3,9 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// Set notification handler to show alerts when app is in foreground
-// NOTE: nothing imports this module today, so this handler never actually
-// installs; app/_layout.js owns the live one. Kept in step with it so adopting
-// this service later does not silently regress foreground notifications.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// The foreground notification handler is installed by app/_layout.js.
+// AuthContext imports registerForPushNotificationsAsync from here.
+
 
 export async function registerForPushNotificationsAsync() {
   let token;
@@ -41,11 +32,17 @@ export async function registerForPushNotificationsAsync() {
     }
     // Learn more about projectId:
     // https://docs.expo.dev/push-notifications/push-notifications-setup/#configure-projectid
+        // The EAS project id identifies the app to Expo's push service. It was
+    // defaulted to the literal "YOUR_PROJECT_ID", which Expo rejects; without
+    // a real one (app.json extra.eas.projectId, set by `eas init`) there is no
+    // token to register.
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
+    if (!projectId) {
+      console.log('Push notifications need extra.eas.projectId in app.json (run eas init).');
+      return;
+    }
     try {
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId || "YOUR_PROJECT_ID",
-      })).data;
-      console.log('Expo Push Token:', token);
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     } catch (e) {
       console.log('Push token error:', e);
     }

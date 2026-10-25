@@ -106,7 +106,15 @@ const enforceAdminPartition = (req, res, next) => {
   }
 
   // Inject SQL helper for downstream route handlers
-  const ids = req.adminTerritoryIds.map(id => `'${id}'`).join(',');
+    // These become SQL text (the two fragments below are concatenated into
+  // queries by the route handlers), so only values that are shaped like an id
+  // are allowed through. They come from the assignments table, not the
+  // request — but "from the database" is not the same as "safe to quote".
+  const ids = req.adminTerritoryIds
+    .map(String)
+    .filter((id) => /^[A-Za-z0-9_-]{1,64}$/.test(id))
+    .map((id) => `'${id}'`)
+    .join(',') || "''";
   req.adminTerritorySQL = ` AND territory_id IN (${ids})`;
   req.adminRegionSQL = ` AND region_id IN (
     SELECT legacy_region_id FROM legacy_region_territory_map WHERE territory_id IN (${ids})

@@ -1,3 +1,12 @@
+/**
+ * NOT USED — superseded. It edited territory_surge_configs, which only surge.engine.js read, and was never mounted on a route.
+ *
+ * Delivery charges, surge and peak-hour pricing are worked out by
+ * services/deliveryPricing.service.js from the settings in
+ * services/platformConfig.service.js, which a super admin edits at
+ * PUT /api/v1/admin/pricing. Nothing requires this file; it is kept only
+ * because files cannot be deleted from this environment. Delete it.
+ */
 const SurgeEngine = require('../services/surge.engine');
 const CacheService = require('../services/cache.service');
 const { query } = require('../config/database');

@@ -1,76 +1,73 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text } from 'react-native';
+import {
+  SM, Card, Row, Badge, Button, Field, Chips, DataState,
+  useSocietyData, runAction, statusTone, titleCase, when, useKitStyles,
+} from '../../../../src/components/society/SocietyKit';
+
+/**
+ * Helpdesk tickets. The form used to submit nothing and the list could never
+ * fill, because no endpoint listed complaints back. Residents now file and
+ * follow their own; the committee works the society's queue.
+ */
+const CATEGORIES = ['plumbing', 'electrical', 'lift', 'cleaning', 'security', 'parking', 'noise', 'other'];
 
 export default function ComplaintsTab({ role }) {
-  // Two complaints were hardcoded, one shown as "In Progress" — so a resident
-  // saw somebody already working on a leak nobody had reported.
-  // /society-admin/complaints accepts a complaint; there is no endpoint that
-  // lists them back, so this stays empty until there is.
-  const [complaints] = useState([]);
+  const s = useKitStyles();
+  const office = role === 'admin';
+  const list = useSocietyData(office ? `${SM}/complaints/all` : `${SM}/my-complaints`);
+  const [form, setForm] = useState({ category: 'plumbing', title: '', description: '', priority: 'medium' });
+  const [filter, setFilter] = useState('open');
+  const [busy, setBusy] = useState(false);
+
+  const file = async () => {
+    setBusy(true);
+    const res = await runAction('post', `${SM}/complaints`, {
+      ...form, title: form.title.trim(), description: form.description.trim(),
+    }, { success: 'Ticket raised. The committee has been notified.' });
+    setBusy(false);
+    if (res) { setForm({ category: 'plumbing', title: '', description: '', priority: 'medium' }); list.reload(); }
+  };
+
+  const move = (c, verb) => runAction('put', `${SM}/complaints/${c.id}/${verb}`, {}, { onDone: () => list.reload() });
+
+  const rows = (list.data || []).filter((c) => !office || filter === 'all'
+    || (filter === 'open' ? ['open', 'in_progress'].includes(c.status) : c.status === filter));
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {(role === 'resident' || role === 'admin') && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Raise a Ticket</Text>
-          <TextInput style={styles.input} placeholder="E.g. Plumbing, Electrical, Lift..." placeholderTextColor="#94a3b8" />
-          <TextInput style={styles.textArea} placeholder="Describe the issue in detail..." placeholderTextColor="#94a3b8" multiline numberOfLines={4} />
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Submit Complaint</Text>
-          </TouchableOpacity>
-        </View>
+    <View>
+      {!office && (
+        <Card title="Raise a ticket">
+          <Chips options={CATEGORIES} value={form.category} onChange={(category) => setForm({ ...form, category })} />
+          <Field label="What's wrong?" placeholder="e.g. Kitchen tap leaking" value={form.title} maxLength={140}
+            onChangeText={(title) => setForm({ ...form, title })} />
+          <Field label="Details" multiline value={form.description} onChangeText={(description) => setForm({ ...form, description })} />
+          <Text style={s.label}>Priority</Text>
+          <Chips options={['low', 'medium', 'high', 'urgent']} value={form.priority} onChange={(priority) => setForm({ ...form, priority })} />
+          <Button label="Submit ticket" onPress={file} busy={busy} disabled={!form.title.trim()} />
+        </Card>
       )}
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{role === 'admin' ? 'All Society Tickets' : 'My Tickets'}</Text>
-        {complaints.length === 0 ? (
-          <View style={styles.stateBox}>
-            <Text style={styles.stateTitle}>No complaints raised</Text>
-            <Text style={styles.stateBody}>
-              Complaints you raise will appear here once the committee can list them back.
-            </Text>
-          </View>
-        ) : complaints.map(comp => (
-          <View key={comp.id} style={styles.compRow}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.icon}>{comp.type === 'Plumbing' ? '🚰' : '⚡'}</Text>
-            </View>
-            <View style={{flex: 1}}>
-              <Text style={styles.compTitle}>{comp.title}</Text>
-              <Text style={styles.compMeta}>{comp.type} • {comp.date}</Text>
-            </View>
-            <View style={[styles.badge, comp.status === 'Resolved' ? styles.badgeSuccess : styles.badgeWarning]}>
-              <Text style={[styles.badgeText, comp.status === 'Resolved' ? styles.badgeSuccessText : styles.badgeWarningText]}>
-                {comp.status}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+      <Card title={office ? 'Society tickets' : 'My tickets'}>
+        {office && <Chips options={['open', 'resolved', 'all']} value={filter} onChange={setFilter} />}
+        <DataState state={{ ...list, data: rows }} empty={office ? 'No tickets here' : 'No tickets yet'}>
+          {rows.map((c, i) => (
+            <Row key={c.id} first={i === 0} title={c.title}
+              meta={[
+                [titleCase(c.category), c.flat_number && `Flat ${c.flat_number}`, office && c.full_name].filter(Boolean).join(' · '),
+                c.description, c.admin_notes && `Committee: ${c.admin_notes}`, when(c.created_at),
+              ]}
+              right={<Badge label={titleCase(c.status)} tone={statusTone(c.status)} />}>
+              {office && c.status !== 'resolved' && c.status !== 'closed' && (
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  {c.status === 'open' && <Button label="Start work" small onPress={() => move(c, 'assign')} />}
+                  <Button label="Mark resolved" tone="success" small onPress={() => move(c, 'resolve')} />
+                </View>
+              )}
+            </Row>
+          ))}
+        </DataState>
+      </Card>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
-  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
-  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
-  input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, color: '#0f172a', padding: 12, marginBottom: 12 },
-  textArea: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, color: '#0f172a', padding: 12, marginBottom: 16, textAlignVertical: 'top' },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  
-  compRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
-  iconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: '#e2e8f0' },
-  icon: { fontSize: 20 },
-  compTitle: { color: '#0f172a', fontSize: 14, fontWeight: 'bold', marginBottom: 4 },
-  compMeta: { color: '#64748b', fontSize: 11 },
-  
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1 },
-  badgeSuccess: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)' },
-  badgeSuccessText: { color: '#10b981', fontSize: 10, fontWeight: 'bold' },
-  badgeWarning: { backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.2)' },
-  badgeWarningText: { color: '#f59e0b', fontSize: 10, fontWeight: 'bold' }
-});

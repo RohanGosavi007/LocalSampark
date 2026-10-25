@@ -3,6 +3,7 @@ const router = express.Router();
 const { query, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const coins = require('../../../services/coins.service');
 
 /**
  * Scrap collection: residents schedule a pickup, dealers claim and complete it.
@@ -106,12 +107,14 @@ router.get('/pings', authenticate, async (req, res, next) => {
 
 router.post('/:id/accept', authenticate, async (req, res, next) => {
     try {
-        // Claim and check in one statement: two dealers accepting the same
-        // ping concurrently must not both win.
+                // Claim and check in one statement: two dealers accepting the same
+        // ping concurrently must not both win. Nor may the resident collect
+        // their own pickup: completing a donation credits them coins, so
+        // accepting and completing it themselves was a coin mint.
         const claimed = await query(
             `UPDATE scrap_pickups
                 SET status = 'accepted', dealer_id = $1, updated_at = CURRENT_TIMESTAMP
-              WHERE id = $2 AND status = 'pending'`,
+              WHERE id = $2 AND status = 'pending' AND CAST(user_id AS TEXT) <> CAST($1 AS TEXT)`,
             [req.user.id, req.params.id]
         );
 
@@ -148,12 +151,18 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
 
             // Residents who donate their proceeds are paid in SamparkCoins
             // instead of cash — the promise the mobile screen makes on submit.
-            if (pickup && pickup.payout_preference === 'donate') {
-                await client.query(
-                    `INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description)
-                     VALUES ($1, $2, $3, 'credit', 'Scrap donation to Old Age Fund')`,
-                    [crypto.randomUUID(), pickup.user_id, DONATION_REWARD_COINS]
+                        if (pickup && pickup.payout_preference === 'donate') {
+                // Once a week per resident. With no register of dealers, a
+                // second account could still play the dealer; this bounds what
+                // that is worth.
+                const recent = await client.query(
+                                        `SELECT 1 AS ok FROM loyalty_transactions
+                      WHERE user_id = $1 AND description = 'Scrap donation to Old Age Fund' AND created_at > $2
+                      LIMIT 1`,
+                    [pickup.user_id, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ')]
                 );
+                if ((recent.rows || []).length) return { ok: true, coinsAwarded: 0 };
+                                await coins.credit({ userId: pickup.user_id, amount: DONATION_REWARD_COINS, reason: 'Scrap donation to Old Age Fund', referenceId: `scrap:${req.params.id}`, client });
                 return { ok: true, coinsAwarded: DONATION_REWARD_COINS };
             }
 

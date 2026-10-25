@@ -7,6 +7,7 @@ export default function MobileRewards() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [spinning, setSpinning] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
 
   const fetchBalance = async () => {
     try {
@@ -23,6 +24,41 @@ export default function MobileRewards() {
     fetchBalance();
   }, []);
 
+  const handleRedeem = (coinsToRedeem = 100) => {
+    const currentBalance = data?.totalCoins || 0;
+    if (currentBalance < 100) {
+      Alert.alert('Insufficient Balance', 'You need a minimum of 100 SamparkCoins to convert to wallet balance (100 coins = ₹10).');
+      return;
+    }
+
+    Alert.alert(
+      'Redeem SamparkCoins',
+      `Convert ${coinsToRedeem} coins to ₹${coinsToRedeem / 10} wallet cash?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Redeem Now',
+          onPress: async () => {
+            setRedeeming(true);
+            try {
+              const res = await apiPost('/loyalty/redeem', { amountToRedeem: coinsToRedeem });
+              if (res && res.error) {
+                Alert.alert('Redemption Failed', res.error);
+              } else {
+                Alert.alert('Redeemed! 🎉', res?.message || `Successfully credited ₹${coinsToRedeem / 10} to your wallet!`);
+                await fetchBalance();
+              }
+            } catch (err) {
+              Alert.alert('Redemption Failed', err?.message || 'Could not complete redemption.');
+            } finally {
+              setRedeeming(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleSpin = async () => {
     setSpinning(true);
     // Simulate wheel spin animation delay
@@ -30,7 +66,7 @@ export default function MobileRewards() {
       try {
         const result = await apiPost('/loyalty/spin');
         setSpinning(false);
-        Alert.alert('Fortune Wheel', result.message);
+        Alert.alert('Fortune Wheel', result.message || 'Wheel spun!');
         fetchBalance(); // Refresh balance
       } catch (err) {
         setSpinning(false);
@@ -57,8 +93,18 @@ export default function MobileRewards() {
         <Text style={styles.balance}>🪙 {data?.totalCoins || 0}</Text>
         <Text style={styles.subBalance}>≈ ₹{data?.equivalentRupees || 0} Wallet Balance</Text>
         
-        <TouchableOpacity style={styles.redeemBtn} onPress={() => Alert.alert('Redeem', 'Convert 100 coins to ₹10?')}>
-          <Text style={styles.redeemText}>Convert to Wallet</Text>
+        <TouchableOpacity 
+          style={[styles.redeemBtn, (redeeming || (data?.totalCoins || 0) < 100) && styles.redeemBtnDisabled]} 
+          onPress={() => handleRedeem(100)}
+          disabled={redeeming || (data?.totalCoins || 0) < 100}
+        >
+          {redeeming ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.redeemText}>
+              {(data?.totalCoins || 0) >= 100 ? 'Convert 100 Coins to ₹10' : 'Min. 100 Coins to Redeem'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -108,6 +154,7 @@ const styles = StyleSheet.create({
   balance: { fontSize: 36, fontWeight: 'bold', color: '#fbbf24', marginBottom: 5 },
   subBalance: { color: '#34d399', fontSize: 14, fontWeight: '600', marginBottom: 20 },
   redeemBtn: { backgroundColor: '#f59e0b', padding: 12, borderRadius: 10, alignItems: 'center' },
+  redeemBtnDisabled: { opacity: 0.5, backgroundColor: '#94a3b8' },
   redeemText: { color: '#f8fafc', fontWeight: 'bold', fontSize: 16 },
   
   wheelCard: { backgroundColor: '#312e81', borderRadius: 15, padding: 20, marginBottom: 20, alignItems: 'center', borderWidth: 1, borderColor: '#4338ca' },

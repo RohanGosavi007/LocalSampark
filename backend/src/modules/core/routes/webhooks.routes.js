@@ -3,7 +3,9 @@ const router = express.Router();
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { query } = require('../../../config/database');
-const { webhookGuard } = require('../../../utils/webhookSignature');
+const { webhookGuard, rawBodyOf } = require('../../../utils/webhookSignature');
+const razorpay = require('../../../services/razorpay.service');
+const payments = require('../../../services/payments.service');
 const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 /**
@@ -37,6 +39,10 @@ async function alreadyProcessed(eventId) {
   }
 }
 
+// express.raw() on each route serves a router mounted without the app's JSON
+// parser. Under server.js that parser has already consumed the stream, and the
+// original bytes are on req.rawBody; rawBodyOf() reads whichever is there.
+
 // Stripe webhook requires raw body
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   if (!stripe) {
@@ -45,19 +51,23 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
 
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const rawBody = rawBodyOf(req);
+  if (rawBody === null) {
+    return res.status(400).send('Webhook Error: raw body unavailable');
+  }
 
   let event;
   try {
     if (endpointSecret) {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    } else if (process.env.NODE_ENV === 'production') {
+      event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
+    } else if (!['development', 'test'].includes(process.env.NODE_ENV)) {
       // Previously fell through to a bare JSON.parse, so a production deploy
       // missing STRIPE_WEBHOOK_SECRET accepted unsigned payment callbacks.
       console.error('[webhook] rejected: STRIPE_WEBHOOK_SECRET not configured');
       return res.status(401).send('Webhook signature verification unavailable');
     } else {
-      console.warn('[webhook] Stripe: no endpoint secret — signature NOT verified (non-production only)');
-      event = JSON.parse(req.body.toString());
+      console.warn('[webhook] Stripe: no endpoint secret — signature NOT verified (development only)');
+      event = JSON.parse(rawBody);
     }
   } catch (err) {
     console.error(`Stripe Webhook Error: ${err.message}`);
@@ -79,24 +89,31 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
 /**
  * Razorpay.
  *
- * Raw body, not express.json(). The previous handler verified against
- * JSON.stringify(req.body), which re-serialises the parsed object — key order,
- * whitespace and unicode escaping need not match the bytes Razorpay actually
- * signed, so valid callbacks could fail and the check could not be trusted.
+ * Verified against the raw body with RAZORPAY_WEBHOOK_SECRET, then handed to
+ * payments.service, which finds the payment by the Razorpay order id in the
+ * event and settles what that row says — the same code path the browser's
+ * verification call ends in, so it does not matter which of the two arrives
+ * first or whether both do.
+ *
+ * This used to read `notes.orderId` (or the receipt) from the event and run
+ * `UPDATE orders SET payment_status = 'PAID' WHERE id = …`. That trusted a
+ * free-text note for which order to settle, covered one of the three order
+ * tables, and never looked at the amount.
+ *
+ * There is no development bypass here, unlike the other providers below:
+ * without the secret the delivery is refused in every environment.
  */
-router.post('/razorpay', express.raw({ type: 'application/json' }), async (req, res) => {
+async function razorpayWebhook(req, res) {
   try {
-    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body || '');
+    if (!razorpay.isWebhookConfigured()) {
+      console.error('[webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured');
+      return res.status(503).json({ error: 'Webhook verification unavailable' });
+    }
 
-    const rejection = webhookGuard({
-      secret: process.env.RAZORPAY_WEBHOOK_SECRET,
-      signature: req.headers['x-razorpay-signature'],
-      payload: rawBody,
-      encoding: 'hex',
-      providerName: 'Razorpay',
-    });
-    if (rejection) {
-      console.error(`[webhook] rejected: ${rejection}`);
+    const rawBody = rawBodyOf(req);
+    const signature = req.headers['x-razorpay-signature'];
+    if (rawBody === null || !razorpay.verifyWebhookSignature(rawBody, signature)) {
+      console.error('[webhook] Razorpay rejected: signature mismatch');
       return res.status(401).json({ error: 'Unauthorized webhook' });
     }
 
@@ -107,21 +124,22 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req, 
       return res.status(400).json({ error: 'Malformed payload' });
     }
 
-    if (event.event === 'payment.captured' || event.event === 'order.paid') {
-      const orderId = event.payload?.payment?.entity?.notes?.orderId || event.payload?.order?.entity?.receipt;
-      const eventId = event.payload?.payment?.entity?.id || event.payload?.order?.entity?.id;
-      if (orderId && !(await alreadyProcessed(eventId))) {
-        // Security: PostgreSQL uses $1, $2. Idempotency enforced.
-        await query('UPDATE orders SET payment_status = $1 WHERE id = $2 AND payment_status != $1', ['PAID', orderId]);
-      }
+    const outcome = await payments.handleWebhookEvent(event);
+    if (outcome && outcome.rejected) {
+      // Acknowledged all the same: a non-2xx makes Razorpay retry a delivery
+      // that will be refused again for the same reason.
+      console.error(`[webhook] Razorpay event not applied: ${outcome.rejected}`);
     }
 
     res.json({ status: 'ok' });
   } catch (err) {
     console.error(`Razorpay Webhook Error: ${err.message}`);
+    // 500, so Razorpay retries: the settlement is idempotent.
     res.status(500).json({ error: 'Webhook Error' });
   }
-});
+}
+
+router.post('/razorpay', express.raw({ type: 'application/json' }), razorpayWebhook);
 
 /**
  * Cashfree.
@@ -138,7 +156,8 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req, 
 router.post('/cashfree', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
     const secret = process.env.CASHFREE_WEBHOOK_SECRET;
-    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body || '');
+    const rawBody = rawBodyOf(req);
+    if (rawBody === null) return res.status(400).json({ error: 'Raw body unavailable' });
     const timestamp = req.headers['x-webhook-timestamp'] || '';
 
     const rejection = webhookGuard({
@@ -185,3 +204,4 @@ router.post('/cashfree', express.raw({ type: 'application/json' }), async (req, 
 });
 
 module.exports = router;
+module.exports.razorpayWebhook = razorpayWebhook;

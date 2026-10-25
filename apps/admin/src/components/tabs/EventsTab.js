@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
+import Pagination from '../Pagination';
 import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
@@ -9,13 +10,16 @@ export default function EventsTab({ API_BASE, authHeaders }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const fetchEvents = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchJson(`${API_BASE}/admin/events`, { headers: authHeaders() });
+      const data = await fetchJson(`${API_BASE}/admin/events?page=${page}&limit=25`, { headers: authHeaders() });
       setEvents(data.events || data.data || []);
+      setTotal(data.total || 0);
     } catch (e) {
       console.error('Failed to fetch events:', e);
       setError(e);
@@ -26,7 +30,7 @@ export default function EventsTab({ API_BASE, authHeaders }) {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [page]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -69,6 +73,7 @@ export default function EventsTab({ API_BASE, authHeaders }) {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} limit={25} total={total} onPage={setPage} disabled={loading} />
         </div>
       </div>
     </div>

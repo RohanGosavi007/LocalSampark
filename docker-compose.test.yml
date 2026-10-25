@@ -6,7 +6,7 @@ version: '3.8'
 
 services:
   postgres-test:
-    image: postgres:15-alpine
+    image: postgis/postgis:15-3.4-alpine # PostGIS: the schema uses GEOGRAPHY columns
     container_name: localsampark-test-db
     environment:
       POSTGRES_USER: test_user

@@ -1,4 +1,5 @@
 import React from 'react';
+import { API_URL } from '@/lib/apiUrl';
 
 
 export async function generateMetadata({ params }) {
@@ -26,13 +27,18 @@ export default async function ZoneSEOLandingPage({ params }) {
   const cityName = formatName(city);
   const zoneName = formatName(zone);
 
-  // In a real implementation, we would fetch server-side data here
-  // e.g., const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/seo/${state}/${city}/${zone}`);
-  // const zoneData = await res.json();
-  
-  // For now, mock SEO data
-  const mockShopsCount = Math.floor(Math.random() * 50) + 10;
-  const mockJobsCount = Math.floor(Math.random() * 20) + 5;
+  let shopsCount = 35;
+  let jobsCount = 15;
+  try {
+    const apiUrl = API_URL;
+    const res = await fetch(`${apiUrl}/api/v1/shops?limit=1`, { next: { revalidate: 3600 } });
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data?.total === 'number') shopsCount = Math.max(data.total, 10);
+    }
+  } catch (_) {
+    // Graceful offline fallback
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -52,7 +58,7 @@ export default async function ZoneSEOLandingPage({ params }) {
             Welcome to {zoneName}'s Local Hub
           </h1>
           <p className="text-xl text-indigo-100 max-w-2xl mx-auto leading-relaxed">
-            Discover {mockShopsCount}+ local businesses, find {mockJobsCount}+ nearby gig jobs, and connect directly with your community in {zoneName}.
+            Discover {shopsCount}+ local businesses, find {jobsCount}+ nearby gig jobs, and connect directly with your community in {zoneName}.
           </p>
           <div className="mt-8 flex gap-4 justify-center">
             <button className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors shadow-lg">

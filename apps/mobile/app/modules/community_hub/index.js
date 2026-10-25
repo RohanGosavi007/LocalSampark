@@ -3,7 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput, Modal } from 'react-native';
 
 import { API_V1 } from '../../../src/config/api';
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
+
 export default function MobileCommunityHub() {
+  // The user's own pincode. This was hardcoded to 400001 (Mumbai, Fort), so
+  // anyone outside south Mumbai saw an empty list here and anything they
+  // posted was filed under a city they do not live in.
+  const pincode = useTerritoryStore((s) => s.pincode);
+  const pinQuery = pincode ? `?pincode=${encodeURIComponent(pincode)}` : '';
   const [activeTab, setActiveTab] = useState('lost'); // 'lost', 'garage', or 'admin'
   
   // Lost & Found State
@@ -25,7 +32,7 @@ export default function MobileCommunityHub() {
 
   const fetchLostItems = async () => {
     try {
-      const data = await apiGet('/community-hub/lost/active?pincode=400001');
+      const data = await apiGet(`/community-hub/lost/active${pinQuery}`);
       if (data.success) setLostItems(data.data);
     } catch(e) {}
   };
@@ -47,7 +54,7 @@ export default function MobileCommunityHub() {
   // --- LOST & FOUND ACTIONS ---
   const handlePostLost = async () => {
     try {
-      const data = await apiPost('/community-hub/lost/post', {...lostForm, pincode: '400001'});
+      const data = await apiPost('/community-hub/lost/post', {...lostForm, pincode: pincode || undefined});
       if (data.success) {
         Alert.alert('Alert Broadcasted!', `Your Coins (${lostForm.bountyCoins}) are in escrow. Ping sent!`);
         setLostForm({ itemName: '', description: '', bountyCoins: '500' });

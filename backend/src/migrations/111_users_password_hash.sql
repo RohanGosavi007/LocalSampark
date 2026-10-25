@@ -1,0 +1,21 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 111: users.password_hash
+--
+-- The column has never existed on a PostgreSQL database built by this runner.
+-- Its only mention in any PostgreSQL migration is a commented-out line in
+-- 002_auth_upgrade.sql, a file run.js baselines without executing; init.sql
+-- declares users without it.
+--
+-- auth.routes.js names it in the INSERT that creates every account
+-- (createUser) and in the UPDATE that completes a password reset, so on such a
+-- database registration fails with `column "password_hash" of relation "users"
+-- does not exist`, for every user, and so does resetting a password.
+--
+-- SQLite declares it in init.sqlite.sql, which is the only reason the suite and
+-- every local run have been unaffected.
+--
+-- NOT EXECUTED: no PostgreSQL instance was available in this environment.
+-- Review before applying to production.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;

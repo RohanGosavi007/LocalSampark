@@ -3,6 +3,10 @@ const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');
 const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const coins = require('../../../services/coins.service');
+
+// The rate coins are worth everywhere else (loyalty.controller.js): 100 coins = ₹10.
+const COINS_PER_RUPEE = 10;
 
 /**
  * Home-chef meal marketplace.
@@ -99,7 +103,8 @@ router.post('/meals/:id/order', authenticate, async (req, res, next) => {
             );
             const meal = (found.rows || [])[0];
             if (!meal) return { notFound: true };
-            if (meal.status !== ACTIVE) return { unavailable: true };
+                        if (meal.status !== ACTIVE) return { unavailable: true };
+            if (String(meal.chef_id) === String(req.user.id)) return { ownMeal: true };
 
             // Decrement and check in one statement so two buyers cannot both
             // take the last plate.
@@ -115,6 +120,15 @@ router.post('/meals/:id/order', authenticate, async (req, res, next) => {
             const finalPrice = discountEnabled
                 ? Math.round(gross * (1 - COIN_DISCOUNT_RATE) * 100) / 100
                 : gross;
+
+                        // The discount is bought with coins. It used to be given without
+            // taking any, while the chef was still paid the full price — so a
+            // chef ordering from a second account made the discount in cash
+            // on every plate.
+            const coinsUsed = discountEnabled ? Math.ceil((gross - finalPrice) * COINS_PER_RUPEE) : 0;
+            if (coinsUsed > 0) {
+                await coins.debit({ userId: req.user.id, amount: coinsUsed, reason: 'Home chef meal discount', referenceId: `chef:${req.params.id}`, client });
+            }
 
             const debit = await client.query(
                 'UPDATE wallets SET balance = balance - $1 WHERE user_id = $2 AND balance >= $1',
@@ -144,17 +158,21 @@ router.post('/meals/:id/order', authenticate, async (req, res, next) => {
                 `INSERT INTO chef_meal_orders
                      (id, meal_id, user_id, plates, total_amount, coins_used, status)
                  VALUES ($1, $2, $3, $4, $5, $6, 'confirmed')`,
-                [orderId, req.params.id, req.user.id, quantity, finalPrice,
-                 discountEnabled ? Math.round(gross * COIN_DISCOUNT_RATE) : 0]
+                                [orderId, req.params.id, req.user.id, quantity, finalPrice, coinsUsed]
             );
 
             return { ok: true, orderId, finalPrice, gross };
-        }).catch((err) => {
+                }).catch((err) => {
             if (err.code === 'INSUFFICIENT_BALANCE') return { insufficient: true };
+            if (err.code === 'INSUFFICIENT_COINS') return { noCoins: true };
             throw err;
         });
 
         if (outcome.notFound) return res.status(404).json({ success: false, error: 'Meal not found' });
+        if (outcome.ownMeal) return res.status(400).json({ success: false, error: 'You cannot order your own meal' });
+        if (outcome.noCoins) {
+            return res.status(402).json({ success: false, code: 'INSUFFICIENT_COINS', error: 'Not enough SamparkCoins for the discount. Order without it, or earn more coins.' });
+        }
         if (outcome.unavailable) return res.status(409).json({ success: false, error: 'This meal is no longer available' });
         if (outcome.soldOut) return res.status(409).json({ success: false, error: 'Not enough plates left' });
         if (outcome.insufficient) {
@@ -217,7 +235,7 @@ router.post('/admin/coin-discount-toggle', authenticate, requireAdmin, async (re
         } else {
             await query(
                 `INSERT INTO admin_config (id, config_key, config_value, config_category, is_active, updated_by)
-                 VALUES ($1, $2, $3, 'chef', 1, $4)`,
+                 VALUES ($1, $2, $3, 'chef', '1', $4)`,
                 [crypto.randomUUID(), COIN_DISCOUNT_KEY, String(enabled), req.user.id]
             );
         }

@@ -148,17 +148,20 @@ export default function PerformanceDashboard() {
 
         <div className="p-6 rounded-3xl border shadow-xl flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="flex justify-between items-center mb-4 relative z-10">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">SQLite Database</h3>
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+              {system?.database?.engine === 'postgresql' ? 'PostgreSQL' : system?.database?.engine === 'sqlite' ? 'SQLite' : ''} Database
+            </h3>
             <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
               <Database className="w-4 h-4 text-emerald-500"/>
             </div>
           </div>
           <div className="relative z-10">
             <div className="text-3xl font-black text-white">
-              {system?.database?.sizeMB} MB
+              {system?.database?.sizeMB ?? '—'} MB
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              {system?.database?.activeConnections} Active Connections
+              {system?.database?.activeConnections ?? '—'} Active Connections
+              {system?.database?.pingMs != null ? ` · ${system.database.pingMs}ms round trip` : ''}
             </div>
             <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
                <div className="bg-emerald-500 h-full rounded-full w-[45%]"></div>
@@ -178,7 +181,9 @@ export default function PerformanceDashboard() {
               {formatUptime(system?.uptime || 0)}
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              Avg API Latency: {system?.api?.avgLatencyMs}ms
+              {system?.api?.avgLatencyMs != null
+                ? `Avg API Latency: ${system.api.avgLatencyMs}ms over the last ${system.api.sampleSize} requests`
+                : 'Avg API Latency: no requests measured yet'}
             </div>
             <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
                <div className="bg-amber-500 h-full rounded-full w-full"></div>

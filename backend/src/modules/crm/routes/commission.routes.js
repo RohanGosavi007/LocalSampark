@@ -1,11 +1,11 @@
 ﻿const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
-const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
+const { authenticate, requireAdmin, requireStaff } = require('../../../middleware/auth.middleware');
 const { requirePermission } = require('../../../middleware/rbac.middleware');
 
 // GET dashboard summary
-router.get('/dashboard', authenticate, requireAdmin, requirePermission('finance', 'read'), async (req, res, next) => {
+router.get('/dashboard', authenticate, requireStaff, requirePermission('finance', 'read'), async (req, res, next) => {
   try {
     const totalCommissions = await queryOne('SELECT SUM(commission_amount) as total FROM shop_commissions WHERE status != $1', ['refunded']);
     const pendingSettlements = await queryOne('SELECT SUM(net_to_shop) as total FROM shop_commissions WHERE status = $1', ['pending']);
@@ -30,7 +30,7 @@ router.get('/dashboard', authenticate, requireAdmin, requirePermission('finance'
 });
 
 // GET list of all commissions
-router.get('/', authenticate, requireAdmin, requirePermission('finance', 'read'), async (req, res, next) => {
+router.get('/', authenticate, requireStaff, requirePermission('finance', 'read'), async (req, res, next) => {
     try {
         const history = await query(`
             SELECT c.*, ls.name as shop_name 
@@ -45,7 +45,7 @@ router.get('/', authenticate, requireAdmin, requirePermission('finance', 'read')
 });
 
 // PUT per-shop override
-router.put('/shops/:shopId/override', authenticate, requireAdmin, requirePermission('finance', 'write'), async (req, res, next) => {
+router.put('/shops/:shopId/override', authenticate, requireStaff, requirePermission('finance', 'write'), async (req, res, next) => {
     try {
         const { commission_override_percent, convenience_fee_override } = req.body;
         await query('UPDATE local_shops SET commission_override_percent = $1, convenience_fee_override = $2 WHERE id = $3',
@@ -58,7 +58,7 @@ router.put('/shops/:shopId/override', authenticate, requireAdmin, requirePermiss
 });
 
 // POST /api/v1/crm/commissions/process-split - Trigger automated commission & franchise split
-router.post('/process-split', authenticate, requireAdmin, requirePermission('finance', 'write'), async (req, res, next) => {
+router.post('/process-split', authenticate, requireStaff, requirePermission('finance', 'write'), async (req, res, next) => {
   try {
     const { order_id, shop_id, order_amount, pincode = '411015' } = req.body;
     if (!order_id || !shop_id || !order_amount) {
@@ -70,9 +70,12 @@ router.post('/process-split', authenticate, requireAdmin, requirePermission('fin
     const netShopPayout = order_amount - platformCommission;
 
     // Insert commission record
-    await query(`INSERT INTO shop_commissions (order_id, shop_id, gross_amount, commission_amount, net_to_shop, status)
-       VALUES ($1, $2, $3, $4, $5, 'settled')`,
-      [order_id, shop_id, order_amount, platformCommission, netShopPayout]
+    // order_type, commission_percent and total_platform_earning are NOT NULL
+    // and were not written. The 5 is the rate applied three lines up.
+    await query(`INSERT INTO shop_commissions
+         (id, order_id, shop_id, order_type, gross_amount, commission_percent, commission_amount, total_platform_earning, net_to_shop, status)
+       VALUES ($6, $1, $2, 'product_order', $3, 5, $4, $4, $5, 'settled')`,
+      [order_id, shop_id, order_amount, platformCommission, netShopPayout, require('crypto').randomUUID()]
     );
 
     // Find and credit franchise partner for pincode

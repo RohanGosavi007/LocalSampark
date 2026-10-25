@@ -1,3 +1,4 @@
+const coins = require('../../../services/coins.service');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
 
@@ -87,15 +88,13 @@ const resolveSOS = async (req, res, next) => {
 
     if (penalize && resolution === 'false_alarm') {
       // Deduct 200 SamparkCoins for a false alarm
-      await query(
-        `UPDATE loyalty_wallets SET total_coins = GREATEST(0, total_coins - 200) WHERE user_id = $1`,
-        [alert.user_id]
-      );
-      // Optional: Log transaction
-      await query(
-        `INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, 200, 'spent', 'False SOS Penalty')`,
-        [alert.user_id]
-      );
+            // Up to 200 coins, never taking the balance below zero. This came out
+      // of loyalty_wallets, a balance nothing else used.
+      const held = await coins.balance(alert.user_id);
+      const penalty = Math.min(200, held);
+      if (penalty > 0) {
+        await coins.debit({ userId: alert.user_id, amount: penalty, reason: 'False SOS Penalty', referenceId: `sos:${alert.id}` });
+      }
     }
 
     res.json({

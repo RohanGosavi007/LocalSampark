@@ -37,8 +37,8 @@ class DPDPComplianceService {
 
     if (existing) {
       await query(
-        `UPDATE user_consents SET granted = 1, granted_at = datetime('now'), revoked_at = NULL,
-         consent_version = $1, ip_address = $2, updated_at = datetime('now')
+        `UPDATE user_consents SET granted = 1, granted_at = CURRENT_TIMESTAMP, revoked_at = NULL,
+         consent_version = $1, ip_address = $2, updated_at = CURRENT_TIMESTAMP
          WHERE id = $3`,
         [metadata.version || '1.0', metadata.ipAddress || null, existing.id]
       );
@@ -47,7 +47,7 @@ class DPDPComplianceService {
 
     await query(
       `INSERT INTO user_consents (id, user_id, consent_type, consent_purpose, granted, granted_at, consent_version, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4, 1, datetime('now'), $5, $6, $7)`,
+       VALUES ($1, $2, $3, $4, 1, CURRENT_TIMESTAMP, $5, $6, $7)`,
       [id, userId, consent.type, consent.purpose, metadata.version || '1.0',
        metadata.ipAddress || null, metadata.userAgent || null]
     );
@@ -67,7 +67,7 @@ class DPDPComplianceService {
     }
 
     await query(
-      `UPDATE user_consents SET granted = 0, revoked_at = datetime('now'), updated_at = datetime('now')
+      `UPDATE user_consents SET granted = 0, revoked_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $1 AND consent_type = $2`,
       [userId, consent.type]
     );
@@ -110,7 +110,7 @@ class DPDPComplianceService {
 
       await query(
         `UPDATE users SET full_name = $1, phone_number = $2, email = $3, avatar_url = NULL,
-         bio = NULL, is_active = false, updated_at = datetime('now')
+         bio = NULL, is_active = false, updated_at = CURRENT_TIMESTAMP
          WHERE id = $4`,
         [anonName, anonPhone, anonEmail, userId]
       );
@@ -142,7 +142,7 @@ class DPDPComplianceService {
 
       // 8. Mark request as completed
       await query(
-        `UPDATE data_subject_requests SET status = 'completed', completed_at = datetime('now')
+        `UPDATE data_subject_requests SET status = 'completed', completed_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
         [requestId]
       );
@@ -220,7 +220,7 @@ class DPDPComplianceService {
 
       // Update request status
       await query(
-        `UPDATE data_subject_requests SET status = 'completed', completed_at = datetime('now'),
+        `UPDATE data_subject_requests SET status = 'completed', completed_at = CURRENT_TIMESTAMP,
          requested_data = $1 WHERE id = $2`,
         [JSON.stringify({ tables: ['users', 'wallets', 'orders', 'reviews', 'consents', 'devices'] }), requestId]
       );

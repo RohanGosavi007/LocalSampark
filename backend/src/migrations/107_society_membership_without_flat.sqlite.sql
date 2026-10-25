@@ -9,6 +9,8 @@
 -- statements individually and a stray ON/OFF would outlive this migration.
 -- The child references are re-created with the table.
 
+PRAGMA foreign_keys = OFF;
+
 CREATE TABLE IF NOT EXISTS society_members_rebuilt (
     id TEXT PRIMARY KEY,
     society_id TEXT REFERENCES societies(id) ON DELETE CASCADE,
@@ -42,3 +44,6 @@ ALTER TABLE society_members_rebuilt RENAME TO society_members;
 
 CREATE INDEX IF NOT EXISTS idx_society_members_role
     ON society_members(society_id, role) WHERE is_active = 1;
+
+PRAGMA foreign_keys = ON;
+

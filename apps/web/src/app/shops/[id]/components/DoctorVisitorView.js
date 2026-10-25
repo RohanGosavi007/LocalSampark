@@ -40,7 +40,7 @@ export default function DoctorVisitorView({ shop, services = [], staff = [], onB
         <h3 className="font-heading font-bold text-text mb-3 flex items-center gap-2">
           <Users className="w-5 h-5 text-cat-booking" /> Live Clinic Queue
         </h3>
-        <TokenTrackerBar shopId={shop?.id} userToken={8} />
+        <TokenTrackerBar shopId={shop?.id} />
       </div>
 
       <div className="flex bg-background-alt p-1 rounded-xl border border-border w-fit mx-auto mb-6">

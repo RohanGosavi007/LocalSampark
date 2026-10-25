@@ -9,7 +9,7 @@ export default function RegisterScreen() {
   const [method, setMethod] = useState('email'); // 'email' or 'phone'
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const { sendOtp, loginWithDevPreset, API_URL } = useAuth();
+  const { sendOtp, verifyOtp, loginEmail, API_URL } = useAuth();
 
   const [form, setForm] = useState({
     name: '',
@@ -21,6 +21,10 @@ export default function RegisterScreen() {
   const [otp, setOtp] = useState('');
 
   const handleEmailRegister = async () => {
+    if (form.password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters.');
+      return;
+    }
     if (form.password !== form.confirm) {
       Alert.alert('Error', 'Passwords do not match.');
       return;
@@ -31,17 +35,21 @@ export default function RegisterScreen() {
     }
     setLoading(true);
     try {
-      // The backend route is /auth/register-email and its validator requires
-      // `fullName`; posting `name` to /auth/register 404'd, so email signup
-      // never worked. Phone signup (send-otp/verify-otp) was unaffected.
       const data = await apiPost('/auth/register-email', {
-        fullName: form.name,
-        email: form.email,
+        fullName: form.name.trim(),
+        email: form.email.trim(),
         password: form.password,
       });
       if (data && (data.success || !data.message || data.message.includes('success'))) {
-        Alert.alert('Success', 'Registration successful! Check your email for verification.');
-        router.replace('/login');
+        try {
+          await loginEmail(form.email.trim(), form.password);
+          Alert.alert('Welcome!', 'Account created successfully.');
+          router.replace('/(tabs)');
+          return;
+        } catch (loginErr) {
+          Alert.alert('Success', 'Account created! Please sign in with your email and password.');
+          router.replace('/login');
+        }
       } else {
         Alert.alert('Error', data.message || 'Registration failed');
       }
@@ -53,26 +61,23 @@ export default function RegisterScreen() {
   };
 
   const handleSendPhoneOtp = async () => {
-    if (!form.name || !form.phone || form.phone.length < 10) {
-      Alert.alert('Error', 'Please enter a valid name and phone number.');
+    const cleanPhone = form.phone.replace(/[^0-9]/g, '');
+    if (!form.name || cleanPhone.length < 10) {
+      Alert.alert('Error', 'Please enter your full name and a valid 10-digit phone number.');
       return;
     }
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
     setLoading(true);
     try {
-      if (sendOtp) {
-        await sendOtp(form.phone, 'phone');
-      }
+      const res = await sendOtp(fullPhone);
       setStep(2);
-      Alert.alert('OTP Sent', 'Check your messages for the verification code.');
+      Alert.alert('OTP Sent', res?.otp ? `Verification Code: ${res.otp}` : 'Check your messages for the verification code.');
     } catch (err) {
       if (__DEV__) {
-        // Fallback for dev environment without an actual backend.
         setStep(2);
         Alert.alert('OTP Sent', 'Check your messages for the verification code.');
         return;
       }
-      // Telling a real user "OTP Sent" when the send failed strands them on a
-      // code-entry screen waiting for an SMS that was never dispatched.
       Alert.alert('Could not send OTP', err?.message || 'Please try again in a moment.');
     } finally {
       setLoading(false);
@@ -84,15 +89,13 @@ export default function RegisterScreen() {
       Alert.alert('Error', 'Please enter a valid OTP.');
       return;
     }
+    const cleanPhone = form.phone.replace(/[^0-9]/g, '');
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
     setLoading(true);
     try {
-      // loginWithDevPreset performs the real /auth/verify-otp exchange; only
-      // its offline mock fallback is dev-gated. In a release build a failed
-      // verification now rejects instead of quietly minting a session, so this
-      // call has to be guarded — unhandled, it would surface as a red-box
-      // rejection with the spinner stuck on.
-      const success = await loginWithDevPreset('user', form.phone, otp);
+      const success = await verifyOtp(fullPhone, otp, form.name.trim());
       if (success) {
+        Alert.alert('Success', 'Account created successfully!');
         router.replace('/(tabs)');
       }
     } catch (err) {

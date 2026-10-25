@@ -1,22 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Platform, ActivityIndicator , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Crown, CheckCircle2, Zap, Star, ShieldCheck, Percent, Truck } from 'lucide-react-native';
-import { apiPost } from '../../src/lib/api';
+import { apiGet } from '../../src/lib/api';
+import { payFor } from '../../src/lib/payments';
 
 export default function NativePremiumScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  // What it costs and what it gives come from the server, which is also what
+  // charges for it. The screen used to carry its own price (₹199) while the web
+  // dashboard said ₹99.
+  const [plan, setPlan] = useState(null);
+  const [member, setMember] = useState(null);
+
+  const load = useCallback(async () => {
+    try { setPlan((await apiGet('/premium/plan')).data); } catch (e) { setPlan(null); }
+    try { setMember(await apiGet('/premium/status')); } catch (e) { setMember(null); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      // In a real flow, this would open Stripe or Razorpay native SDKs
-      // For now, we simulate hitting the backend to initialize checkout
-      const res = await apiPost('/premium/subscribe');
-      alert('Checkout initialized (Integration Pending)');
+      // The server decides the amount, Razorpay takes the payment, and the
+      // membership starts only when that payment is verified.
+      await payFor({ purpose: 'sampark_plus' }, { description: 'SamparkPlus membership' });
+      alert('Welcome to SamparkPlus!');
+      await load();
     } catch (err) {
-      alert('Checkout is currently unavailable.');
+      // Closing the checkout is not an error worth a message.
+      if (err?.code !== 'DISMISSED') alert(err?.message || 'The payment could not be started.');
     } finally {
       setLoading(false);
     }
@@ -47,7 +62,7 @@ export default function NativePremiumScreen() {
           </Text>
           
           <Text style={s.s10}>
-            Elevate your local experience. Zero convenience fees, free deliveries, and exclusive neighborhood deals.
+            Elevate your local experience with free delivery on bigger orders.
           </Text>
         </View>
 
@@ -62,7 +77,7 @@ export default function NativePremiumScreen() {
             </View>
 
             <View style={s.s17}>
-              {['Access all local shops', 'Standard delivery fees (₹30-50)', 'Community forum access', 'Earn base SamparkCoins', 'Basic support'].map((feature, i) => (
+              {['Access all local shops', 'Standard delivery fees', 'Community forum access', 'Earn base SamparkCoins', 'Basic support'].map((feature, i) => (
                 <View key={i} style={s.s18}>
                   <CheckCircle2 size={20} color="#10b981" style={{ marginRight: 12 }} />
                   <Text style={s.s19}>{feature}</Text>
@@ -88,17 +103,13 @@ export default function NativePremiumScreen() {
             </View>
 
             <View style={s.s27}>
-              <Text style={s.s28}>₹199</Text>
+              <Text style={s.s28}>{plan ? `₹${plan.priceMonthly}` : '—'}</Text>
               <Text style={s.s29}>/ month</Text>
             </View>
 
             <View style={s.s30}>
               {[
-                { text: 'Zero convenience fees on bills', icon: Percent },
-                { text: 'Free delivery on orders ₹500+', icon: Truck },
-                { text: 'Premium verified badge', icon: ShieldCheck },
-                { text: 'Exclusive flash deals (Save up to 40%)', icon: Star },
-                { text: '2x SamparkCoins earning rate', icon: Zap }
+                { text: plan && plan.freeDeliveryAbove ? `Free delivery on orders ₹${plan.freeDeliveryAbove}+` : 'Free delivery on bigger orders', icon: Truck }
               ].map((feature, i) => {
                 const Icon = feature.icon;
                 return (

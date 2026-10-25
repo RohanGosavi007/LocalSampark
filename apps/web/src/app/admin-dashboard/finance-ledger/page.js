@@ -33,8 +33,25 @@ export default function FinanceLedgerPage() {
   }, []);
 
   const processPayout = async (id) => {
-    toast.success('Payout processing initiated via RazorpayX.');
-    // Ideally calls a POST /payouts/:id/process endpoint
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`${API_BASE}/admin/payouts/${id}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Payout approved successfully.');
+        fetchPayouts();
+      } else {
+        toast.error(data.error || 'Failed to approve payout');
+      }
+    } catch (err) {
+      toast.error('Network error approving payout');
+    }
   };
 
   return (

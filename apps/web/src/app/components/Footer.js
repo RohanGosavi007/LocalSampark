@@ -154,7 +154,7 @@ export default function Footer() {
                 { label: 'About Us', href: '/about' },
                 { label: 'Privacy Policy', href: '/privacy' },
                 { label: 'Terms of Service', href: '/terms' },
-                { label: 'Security', href: '/security' }
+                { label: 'Refund Policy', href: '/refunds' }
               ].map(l => (
                 <a key={l.label} href={l.href} className="text-sm font-medium text-text-muted hover:text-primary transition-colors inline-flex items-center gap-1 group min-h-[var(--tap-min)]">
                   {l.label} <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -mt-1" />

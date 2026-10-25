@@ -6,7 +6,7 @@
  * Runs daily at 2 AM to calculate payouts for the previous day
  * ═══════════════════════════════════════════════════════════════════════
  */
-const cron = require('node-cron');
+const cron = require('../utils/cron');
 const PayoutService = require('../services/payout.service');
 const logger = require('../config/logger');
 

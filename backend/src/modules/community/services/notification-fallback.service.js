@@ -64,7 +64,7 @@ class NotificationFallbackService {
             const log = await queryOne('SELECT * FROM society_ivr_logs WHERE call_sid = $1', [call_id]);
             if (!log) return res.status(404).send('Log not found');
 
-            await query('UPDATE society_ivr_logs SET dtmf_response = $1, call_status = "completed" WHERE id = $2', [dtmf, log.id]);
+            await query('UPDATE society_ivr_logs SET dtmf_response = $1, call_status = \'completed\' WHERE id = $2', [dtmf, log.id]);
 
             // 1 = Approve, 2 = Deny
             const newStatus = dtmf === '1' ? 'approved' : 'denied';

@@ -2,6 +2,8 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
 import { useAuth } from '../../../src/context/AuthContext';
+import * as Location from 'expo-location';
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
 
 import { API_V1 } from '../../../src/config/api';
 export default function MobileSOS() {
@@ -9,15 +11,37 @@ export default function MobileSOS() {
   const [loading, setLoading] = useState(false);
   const [contactPhone, setContactPhone] = useState('');
   
-  // Dummy pincode/location for testing
-  const pincode = '400001';
-  const latitude = 18.922;
-  const longitude = 72.834;
+  const pincode = useTerritoryStore((s) => s.pincode);
+  /**
+   * Where the person raising the alarm actually is.
+   *
+   * Every SOS used to report 18.922, 72.834 — the Gateway of India — and
+   * pincode 400001, wherever the phone was. Responders would have been sent
+   * to Mumbai. A fresh fix is tried first, then the last known one; with
+   * neither the alert goes out without coordinates rather than with false
+   * ones, and the pincode the user's territory resolved to still routes it.
+   */
+  const currentPosition = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return null;
+      const fix = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy?.High }),
+        new Promise((resolve) => setTimeout(() => resolve(null), 6000)),
+      ]);
+      return fix || (await Location.getLastKnownPositionAsync());
+    } catch (e) {
+      return null;
+    }
+  };
 
   const handleTriggerSOS = async (type) => {
     setLoading(true);
     try {
-      const data = await apiPost('/sos/trigger', { type, latitude, longitude, pincode });
+      const pos = await currentPosition();
+      const latitude = pos?.coords?.latitude ?? null;
+      const longitude = pos?.coords?.longitude ?? null;
+      const data = await apiPost('/sos/trigger', { type, latitude, longitude, pincode: pincode || undefined });
       
       if (data.success) {
         Alert.alert('SOS SENT', 'Broadcasting alert to your pincode and triggering loud alarms for your emergency contacts.');

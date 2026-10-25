@@ -1,4 +1,5 @@
 const { query, queryOne } = require('../config/database');
+const { sqlDate, dayOf } = require('../utils/sqlTime');
 
 /**
  * Calculates Haversine distance in kilometers between two lat/lng coordinates.
@@ -41,15 +42,21 @@ async function getGeoTargetedAds({ lat, lng, pincode, categoryId, radiusKm = 4 }
       FROM ad_campaigns c
       JOIN local_shops s ON c.shop_id = s.id
       WHERE c.status = 'active'
-        AND datetime('now') BETWEEN datetime(c.start_date) AND datetime(c.end_date)
-        AND s.latitude BETWEEN ? AND ?
-        AND s.longitude BETWEEN ? AND ?
+        AND ${dayOf('c.start_date')} <= $1
+        AND ${dayOf('c.end_date')} >= $1
+        AND s.latitude BETWEEN $2 AND $3
+        AND s.longitude BETWEEN $4 AND $5
     `;
-    const params = [minLat, maxLat, minLng, maxLng];
+    // Today is bound and compared with the day each date falls on. This was
+    // `CURRENT_TIMESTAMP BETWEEN datetime(c.start_date) AND datetime(c.end_date)`
+    // with `?` placeholders: datetime() is SQLite's and `?` is not a parameter
+    // in PostgreSQL, so there the query failed, the catch below returned an
+    // empty list, and no promoted shop was ever shown.
+    const params = [sqlDate(0), minLat, maxLat, minLng, maxLng];
 
     if (categoryId) {
-      sql += ` AND s.category_id = ?`;
       params.push(categoryId);
+      sql += ` AND s.category_id = $${params.length}`;
     }
 
     const result = await query(sql, params);

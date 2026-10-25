@@ -1,79 +1,105 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Alert } from 'react-native';
+import {
+  SM, Card, Row, Badge, Button, Field, Chips, DataState,
+  useSocietyData, runAction, confirmAction, statusTone, titleCase, rupees, when,
+} from '../../../../src/components/society/SocietyKit';
+
+/**
+ * Shared facilities and bookings. Nothing used to list what a society had, so
+ * this tab was permanently empty. Booking checks overlap on the server, so two
+ * residents cannot both hold the hall from 10 to 12.
+ */
+const nextDays = (n) => Array.from({ length: n }, (_, i) => {
+  const d = new Date(Date.now() + i * 86400000);
+  return { value: d.toISOString().slice(0, 10), label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) };
+});
+const SLOTS = ['07:00', '09:00', '11:00', '13:00', '15:00', '17:00', '19:00'];
+const plus2h = (t) => `${String(Number(t.slice(0, 2)) + 2).padStart(2, '0')}:00`;
 
 export default function AmenitiesTab({ role }) {
-  // Three amenities were hardcoded, with the pool permanently under
-  // maintenance. A resident could have skipped their swim on the strength of it.
-  // /society-admin/bookings accepts a booking but nothing lists what a society
-  // actually has, so this stays empty until that endpoint exists.
-  const [amenities] = useState([]);
+  const amenities = useSocietyData(`${SM}/amenities`);
+  const bookings = useSocietyData(role === 'guard' ? null : `${SM}/my-bookings`);
+  const [picking, setPicking] = useState(null);
+  const [date, setDate] = useState(nextDays(1)[0].value);
+  const [slot, setSlot] = useState('17:00');
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({ name: '', capacity: '', hourlyRate: '0', rules: '' });
+
+  const book = async (a) => {
+    setBusy(true);
+    const res = await runAction('post', `${SM}/amenities/${a.id}/book`, {
+      bookingDate: date, startTime: slot, endTime: plus2h(slot),
+    });
+    setBusy(false);
+    if (res) {
+      setPicking(null);
+      bookings.reload();
+      const charge = res.data?.total_charge;
+      Alert.alert('Booked', `${a.name}, ${when(date, { time: false })} ${slot}–${plus2h(slot)}${charge ? ` · ${rupees(charge)}` : ''}`);
+    }
+  };
+
+  const cancel = (b) => confirmAction('Cancel this booking?', `${b.amenity_name}, ${when(b.booking_date, { time: false })} ${b.start_time}`,
+    () => runAction('put', `${SM}/bookings/${b.id}/cancel`, null, { onDone: () => bookings.reload() }), 'Cancel booking');
+
+  const add = async () => {
+    setBusy(true);
+    const res = await runAction('post', `${SM}/amenities`, form, { success: 'Amenity added.' });
+    setBusy(false);
+    if (res) { setForm({ name: '', capacity: '', hourlyRate: '0', rules: '' }); amenities.reload(); }
+  };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <View>
       {role === 'admin' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Manage Amenities</Text>
-          <Text style={styles.subtitle}>Add new amenities or change operational status.</Text>
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>+ Add Amenity</Text>
-          </TouchableOpacity>
-        </View>
+        <Card title="Add an amenity">
+          <Field label="Name" placeholder="e.g. Clubhouse" value={form.name} onChangeText={(name) => setForm({ ...form, name })} />
+          <Field label="Capacity" keyboardType="number-pad" value={form.capacity} onChangeText={(capacity) => setForm({ ...form, capacity })} />
+          <Field label="Charge per hour (₹)" keyboardType="decimal-pad" value={form.hourlyRate} onChangeText={(hourlyRate) => setForm({ ...form, hourlyRate })} />
+          <Field label="Rules (optional)" multiline value={form.rules} onChangeText={(rules) => setForm({ ...form, rules })} />
+          <Button label="Add amenity" onPress={add} busy={busy} disabled={!form.name.trim()} />
+        </Card>
       )}
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Society Amenities</Text>
-        {amenities.length === 0 ? (
-          <View style={styles.stateBox}>
-            <Text style={styles.stateTitle}>No amenities listed</Text>
-            <Text style={styles.stateBody}>
-              Your committee has not published the shared facilities yet.
-            </Text>
-          </View>
-        ) : amenities.map(amenity => (
-          <View key={amenity.id} style={styles.amenityRow}>
-            <View style={{flex: 1}}>
-              <Text style={styles.amenityTitle}>{amenity.name}</Text>
-              <Text style={styles.amenityMeta}>Capacity: {amenity.capacity}</Text>
-            </View>
-            <View style={{alignItems: 'flex-end'}}>
-              <View style={[styles.badge, amenity.status === 'Available' ? styles.badgeSuccess : styles.badgeWarning]}>
-                <Text style={[styles.badgeText, amenity.status === 'Available' ? styles.badgeSuccessText : styles.badgeWarningText]}>
-                  {amenity.status}
-                </Text>
-              </View>
-              {amenity.status === 'Available' && (role === 'resident' || role === 'admin') && (
-                <TouchableOpacity style={styles.bookBtn}>
-                  <Text style={styles.bookBtnText}>Book Slot</Text>
-                </TouchableOpacity>
+      <Card title="Amenities">
+        <DataState state={amenities} empty="No amenities listed" emptyBody="Your committee has not published the shared facilities yet.">
+          {(amenities.data || []).map((a, i) => (
+            <Row key={a.id} first={i === 0} title={a.name}
+              meta={[
+                [a.capacity && `Up to ${a.capacity}`, Number(a.hourly_rate) ? `${rupees(a.hourly_rate)}/hr` : 'Free',
+                  a.available_from && `${a.available_from}–${a.available_until}`].filter(Boolean).join(' · '),
+                a.rules,
+              ]}
+              right={role !== 'guard' && picking !== a.id ? <Button label="Book" small onPress={() => setPicking(a.id)} /> : null}>
+              {picking === a.id && (
+                <View style={{ marginTop: 10 }}>
+                  <Chips options={nextDays(5)} value={date} onChange={setDate} />
+                  <Chips options={SLOTS.map((t) => ({ value: t, label: `${t}–${plus2h(t)}` }))} value={slot} onChange={setSlot} />
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Button label="Confirm" onPress={() => book(a)} busy={busy} style={{ flex: 1 }} />
+                    <Button label="Close" tone="secondary" onPress={() => setPicking(null)} style={{ flex: 1 }} />
+                  </View>
+                </View>
               )}
-            </View>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+            </Row>
+          ))}
+        </DataState>
+      </Card>
+
+      {role !== 'guard' && (
+        <Card title="My bookings">
+          <DataState state={bookings} empty="No bookings yet">
+            {(bookings.data || []).map((b, i) => (
+              <Row key={b.id} first={i === 0} title={b.amenity_name || 'Amenity'}
+                meta={[`${when(b.booking_date, { time: false })} · ${b.start_time}–${b.end_time}`, Number(b.total_charge) ? rupees(b.total_charge) : null]}
+                right={b.status === 'confirmed' && b.booking_date >= new Date().toISOString().slice(0, 10)
+                  ? <Button label="Cancel" tone="secondary" small onPress={() => cancel(b)} />
+                  : <Badge label={titleCase(b.status)} tone={statusTone(b.status)} />} />
+            ))}
+          </DataState>
+        </Card>
+      )}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
-  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
-  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  
-  amenityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 16, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 12 },
-  amenityTitle: { color: '#0f172a', fontSize: 14, fontWeight: 'bold', marginBottom: 4 },
-  amenityMeta: { color: '#64748b', fontSize: 12 },
-  
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1, marginBottom: 8 },
-  badgeSuccess: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)' },
-  badgeSuccessText: { color: '#10b981', fontSize: 10, fontWeight: 'bold' },
-  badgeWarning: { backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.2)' },
-  badgeWarningText: { color: '#f59e0b', fontSize: 10, fontWeight: 'bold' },
-  
-  bookBtn: { backgroundColor: '#e0e7ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
-  bookBtnText: { color: '#4f46e5', fontWeight: 'bold', fontSize: 12 }
-});

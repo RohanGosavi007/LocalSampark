@@ -83,7 +83,7 @@ const verifyPasscode = async (req, res, next) => {
         }
 
         if (now > validUntil || preApproval.used_count >= preApproval.max_uses) {
-            await query('UPDATE society_visitor_preapprovals SET status = "expired" WHERE id = $1', [preApproval.id]);
+            await query('UPDATE society_visitor_preapprovals SET status = \'expired\' WHERE id = $1', [preApproval.id]);
             return res.status(400).json({ error: 'Passcode expired or maximum uses reached' });
         }
 
@@ -128,7 +128,7 @@ const revokePreApproval = async (req, res, next) => {
     try {
         const residentId = req.user.id;
         const { id } = req.params;
-        await query('UPDATE society_visitor_preapprovals SET status = "revoked" WHERE id = $1 AND resident_id = $2', [id, residentId]);
+        await query('UPDATE society_visitor_preapprovals SET status = \'revoked\' WHERE id = $1 AND resident_id = $2', [id, residentId]);
         res.json({ success: true, message: 'Pre-approval revoked' });
     } catch (error) { next(error); }
 };
@@ -163,7 +163,7 @@ const blacklistVisitor = async (req, res, next) => {
 
 const getBlacklist = async (req, res, next) => {
     try {
-        const { societyId } = req.query;
+        const { societyId } = { ...req.query, societyId: req.societyId || req.query.societyId };
         if (!societyId) return res.status(400).json({ error: 'Society ID required' });
         
         const list = await query('SELECT * FROM society_visitor_blacklist WHERE society_id = $1', [societyId]);
@@ -201,7 +201,7 @@ const verifyCabPass = async (req, res, next) => {
             return res.status(404).json({ error: 'Invalid or used cab pass' });
         }
 
-        await query('UPDATE society_cab_preapprovals SET status = "used", used_at = CURRENT_TIMESTAMP WHERE id = $1', [cabPass.id]);
+        await query('UPDATE society_cab_preapprovals SET status = \'used\', used_at = CURRENT_TIMESTAMP WHERE id = $1', [cabPass.id]);
 
         res.json({
             success: true,

@@ -11,21 +11,17 @@
     "seed": "node src/seeds/run.js",
     "seed:demo": "node src/seeds/seed-investor-demo.js",
     "seed:demo:verify": "node src/seeds/seed-investor-demo.js --verify",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node prisma/seed.js",
     "test": "jest --coverage",
     "test:load": "artillery run load-tests/critical-flow.yml",
-    "postinstall": "prisma generate",
     "lint": "eslint src --ext .js",
     "lint:fix": "eslint src --ext .js --fix"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2",
     "@sentry/node": "^8.20.0",
     "@sentry/profiling-node": "^8.55.2",
     "@supabase/supabase-js": "^2.39.3",
     "@turf/turf": "^7.4.0",
+    "axios": "^1.20.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.0.0",
     "cashfree-pg": "^6.0.4",
@@ -55,18 +51,23 @@
     "socket.io": "^4.8.3",
     "sqlite3": "^6.0.1",
     "stripe": "^22.3.2",
-    "swagger-jsdoc": "^6.3.0",
-    "swagger-ui-express": "^5.0.1",
     "typesense": "^3.0.6",
     "uuid": "^11.1.1",
     "winston": "^3.19.0",
     "ws": "^8.17.1"
   },
+  "optionalDependencies": {
+    "sharp": "^0.35.4"
+  },
   "devDependencies": {
+    "@localsampark/shared": "*",
     "artillery": "^2.0.12",
     "jest": "^30.0.0",
     "nodemon": "^3.1.9",
-    "prisma": "^5.10.2",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

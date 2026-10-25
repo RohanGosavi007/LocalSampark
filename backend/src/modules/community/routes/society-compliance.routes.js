@@ -5,15 +5,15 @@ const budgetController = require('../controllers/society-budget.controller');
 const auditController = require('../controllers/facility-audit.controller');
 const docController = require('../controllers/document-template.controller');
 const { authenticate } = require('../../../middleware/auth.middleware');
-const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');
+const { requireCapability, requireMembership, societyOfRow, CAPABILITIES } = require('../middleware/society-capability');
 
 router.use(authenticate);
 
 // AGM
 router.post('/agm', requireCapability(CAPABILITIES.MANAGE_SOCIETY), agmController.createAGM);
-router.get('/agm', agmController.getAGMs);
+router.get('/agm', requireMembership(), agmController.getAGMs);
 router.post('/agm/resolution', requireCapability(CAPABILITIES.MANAGE_SOCIETY), agmController.addAGMResolution);
-router.get('/agm/:agmId/resolutions', agmController.getAGMResolutions);
+router.get('/agm/:agmId/resolutions', requireMembership(societyOfRow('society_agm', (req) => req.params.agmId)), agmController.getAGMResolutions);
 
 // Budget
 router.post('/budget', requireCapability(CAPABILITIES.MANAGE_SOCIETY), budgetController.createBudget);

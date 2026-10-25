@@ -2,23 +2,42 @@
 import React, { useState } from 'react';
 import Header from '../../components/Header';
 import { AlertTriangle, Radio, Send, CheckCircle } from 'lucide-react';
+import { apiGet, apiPost } from '@/lib/api';
 
 export default function EmergencyBroadcast() {
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
   const [form, setForm] = useState({
     title: '',
     message: '',
     priority: 'high'
   });
 
-  const handleBroadcast = (e) => {
+  // Posts a notice to the sender's own society (the server checks they may run it) and
+  // tells open apps over the socket. It used to show "dispatched to 482 residents" after
+  // doing nothing at all.
+  const LEVELS = { critical: 'urgent', high: 'high', info: 'normal' };
+  const handleBroadcast = async (e) => {
     e.preventDefault();
-    // Simulate sending push notifications to all residents
-    setSent(true);
-    setTimeout(() => {
-      setSent(false);
-      setForm({ title: '', message: '', priority: 'high' });
-    }, 3000);
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const mine = await apiGet('/society/my-society');
+      const societyId = mine.society && mine.society.id;
+      if (!societyId) throw new Error('You are not a member of a society.');
+      await apiPost('/society/notices', { societyId, title: form.title.trim(), content: form.message.trim(), priority: LEVELS[form.priority] || 'normal' });
+      setSent(true);
+      setTimeout(() => {
+        setSent(false);
+        setForm({ title: '', message: '', priority: 'high' });
+      }, 4000);
+    } catch (err) {
+      setError(err.status === 403 ? 'Only a society administrator can send notices.' : (err.message || 'The notice could not be sent.'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -31,7 +50,7 @@ export default function EmergencyBroadcast() {
           <Radio className="text-red-500" size={32} />
           <div>
             <h1 className="text-3xl font-black text-white">Emergency Broadcast</h1>
-            <p className="text-slate-400 mt-1 font-medium">Send high-priority Push Notifications to all residents instantly.</p>
+            <p className="text-slate-400 mt-1 font-medium">Post an urgent notice to your society's notice board.</p>
           </div>
         </div>
 
@@ -42,11 +61,12 @@ export default function EmergencyBroadcast() {
           {sent ? (
             <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
               <CheckCircle size={64} className="text-green-500 mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Broadcast Sent Successfully</h2>
-              <p className="text-slate-400">Push notifications were dispatched to 482 residents.</p>
+              <h2 className="text-2xl font-bold text-white mb-2">Notice posted</h2>
+              <p className="text-slate-400">It is on the society notice board now, and residents with the app open see it immediately.</p>
             </div>
           ) : (
             <form onSubmit={handleBroadcast} className="space-y-6 animate-fade-in">
+              {error && <p role="alert" className="text-red-400 font-bold">{error}</p>}
               
               <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-start gap-3 mb-6">
                 <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
@@ -103,10 +123,11 @@ export default function EmergencyBroadcast() {
 
               <button 
                 type="submit" 
+                disabled={busy}
                 className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl mt-8 shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-2"
               >
                 <Send size={20} />
-                Trigger Broadcast Notification
+                {busy ? 'Posting…' : 'Post Notice'}
               </button>
             </form>
           )}

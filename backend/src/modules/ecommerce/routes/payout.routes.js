@@ -8,11 +8,13 @@ const express = require('express');
 const router = express.Router();
 const PayoutService = require('../../../services/payout.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const { requireShopParam, isPlatformAdmin } = require('../../../middleware/shop-owner.middleware');
 const logger = require('../../../config/logger');
 
+// Compared against 'ADMIN' / 'SUPER_ADMIN'; roles are stored lower case, so no
+// administrator could calculate or approve a payout.
 const requireAdmin = (req, res, next) => {
-  const role = req.user?.role;
-  if (!role || !['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+  if (!isPlatformAdmin(req)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
@@ -22,7 +24,7 @@ const requireAdmin = (req, res, next) => {
  * GET /api/v1/shops/:shopId/payouts
  * Get payout history for a shop (vendor or admin)
  */
-router.get('/:shopId/payouts', authenticate, async (req, res, next) => {
+router.get('/:shopId/payouts', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { page = 1, limit = 20 } = req.query;
@@ -35,10 +37,14 @@ router.get('/:shopId/payouts', authenticate, async (req, res, next) => {
  * GET /api/v1/shops/:shopId/payouts/:payoutId
  * Get detailed payout with line items
  */
-router.get('/:shopId/payouts/:payoutId', authenticate, async (req, res, next) => {
+router.get('/:shopId/payouts/:payoutId', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const data = await PayoutService.getPayoutDetails(req.params.payoutId);
-    if (!data) return res.status(404).json({ error: 'Payout not found' });
+    // The payout must be this shop's: owning one shop is not a pass to read
+    // another's payout by its id.
+    if (!data || (data.shop_id && String(data.shop_id) !== String(req.shop.id))) {
+      return res.status(404).json({ error: 'Payout not found' });
+    }
     res.json({ success: true, payout: data });
   } catch (error) { next(error); }
 });

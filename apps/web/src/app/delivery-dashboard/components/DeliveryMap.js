@@ -31,14 +31,18 @@ const runnerIcon = new L.Icon({
 });
 
 export default function DeliveryMap({ coords }) {
-  const [runnerPos, setRunnerPos] = useState([18.5800, 73.8800]);
+  // The rider's own position from the device. This used to be a made-up point nudged
+  // 0.0001 degrees every two seconds, so the map showed a runner who was not there.
+  const [runnerPos, setRunnerPos] = useState(null);
 
   useEffect(() => {
-    // Simulate runner moving
-    const interval = setInterval(() => {
-        setRunnerPos(prev => [prev[0] + 0.0001, prev[1] + 0.0001]);
-    }, 2000);
-    return () => clearInterval(interval);
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
+    const id = navigator.geolocation.watchPosition(
+      (p) => setRunnerPos([p.coords.latitude, p.coords.longitude]),
+      () => setRunnerPos(null),
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
   }, []);
 
   if (!coords || !coords.pickup || !coords.dropoff) {
@@ -52,7 +56,8 @@ export default function DeliveryMap({ coords }) {
       );
   }
 
-  const center = runnerPos;
+  // Centre on the rider when their position is known, otherwise between pickup and dropoff.
+  const center = runnerPos || [(coords.pickup[0] + coords.dropoff[0]) / 2, (coords.pickup[1] + coords.dropoff[1]) / 2];
   
   // Create a polyline path from Pickup -> Dropoff
   const path = [coords.pickup, coords.dropoff];
@@ -72,9 +77,11 @@ export default function DeliveryMap({ coords }) {
         <Popup><strong>Dropoff</strong></Popup>
       </Marker>
       
-      <Marker position={runnerPos} icon={runnerIcon}>
-        <Popup><strong>You are here</strong></Popup>
-      </Marker>
+      {runnerPos && (
+        <Marker position={runnerPos} icon={runnerIcon}>
+          <Popup><strong>You are here</strong></Popup>
+        </Marker>
+      )}
 
       <Polyline positions={path} color="#3b82f6" weight={5} dashArray="5, 10" />
     </MapContainer>

@@ -13,8 +13,7 @@ permissions:
   contents: read
 
 # Two pushes to main previously produced two overlapping deploys, each running
-# `prisma migrate deploy` and the raw-SQL migration runner against the same
-# production database at the same time. cancel-in-progress is deliberately
+# `npm run migrate` against the same production database at the same time. cancel-in-progress is deliberately
 # false: cancelling a run midway through applying migrations is worse than
 # queueing behind it.
 concurrency:
@@ -62,13 +61,7 @@ jobs:
           DATABASE_URL: postgresql://localsampark_admin:testpassword@localhost:5432/localsampark
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret
-        run: |
-          npm exec --workspace=backend -- prisma generate
-          # `migrate dev` is the interactive authoring command: it wants to
-          # create a new migration and prompts/errors on drift. CI applies the
-          # committed migrations instead.
-          npm exec --workspace=backend -- prisma migrate deploy
-          npm run test --workspace=backend
+        run: npm run test --workspace=backend
 
   deploy-to-render:
     needs: test-and-lint
@@ -91,11 +84,8 @@ jobs:
         # run migrations. Without this step, schema changes merged to main
         # never reach the production database until someone runs it by hand.
         #
-        # Two separate migration systems exist and both must run: Prisma
-        # (prisma/schema.prisma, ~12 models) and the raw-SQL runner
-        # (src/migrations/*.sql, ~300 tables — everything from `posts` to
-        # `local_shops` to `carpool_rides`). Running only `prisma migrate
-        # deploy` silently skips the second, larger schema entirely.
+        # The raw-SQL runner (src/migrations/*.sql, ~300 tables) is the only
+        # migration system; Prisma was removed.
         #
         # `cd backend && npm ci` could never work: backend is a workspace and
         # has no lockfile of its own, and `npm ci` refuses to run without one.
@@ -106,8 +96,6 @@ jobs:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
         run: |
           npm ci
-          npm exec --workspace=backend -- prisma generate
-          npm exec --workspace=backend -- prisma migrate deploy
           npm run migrate --workspace=backend
 
       - name: Trigger Render Deploy Hook

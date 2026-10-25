@@ -97,7 +97,7 @@ test.describe('API Contract Tests', () => {
 
   // ─── Payment Webhook Routes ────────────────────────────────
   test.describe('Payment Webhooks', () => {
-    test('POST /payments/webhook/razorpay with invalid signature should return 400', async ({ request }) => {
+    test('POST /payments/webhook/razorpay with an invalid signature is refused (never accepted)', async ({ request }) => {
       const res = await request.post(`${API_BASE}/payments/webhook/razorpay`, {
         data: JSON.stringify({ event: 'order.paid' }),
         headers: {
@@ -105,7 +105,9 @@ test.describe('API Contract Tests', () => {
           'x-razorpay-signature': 'invalid-signature',
         },
       });
-      expect([400, 500]).toContain(res.status());
+      // 400/401 when a webhook secret is configured and the signature is wrong; 503 when no
+      // secret is configured (the route fails closed rather than trusting an unverified body).
+      expect([400, 401, 503]).toContain(res.status());
     });
 
     test('POST /payments/webhook/unknown-provider should handle gracefully', async ({ request }) => {

@@ -1,3 +1,12 @@
+/**
+ * NOT USED — superseded. It priced delivery per pincode from an order count and a driver count supplied by the caller, and its surge condition was inverted.
+ *
+ * Delivery charges, surge and peak-hour pricing are worked out by
+ * services/deliveryPricing.service.js from the settings in
+ * services/platformConfig.service.js, which a super admin edits at
+ * PUT /api/v1/admin/pricing. Nothing requires this file; it is kept only
+ * because files cannot be deleted from this environment. Delete it.
+ */
 const CacheService = require('./cache.service');
 const { query } = require('../config/database');
 

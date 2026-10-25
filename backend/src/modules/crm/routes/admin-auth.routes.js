@@ -28,13 +28,18 @@ const ADMIN_TOKEN_COOKIE = 'admin_token';
  * http://localhost that combination is rejected by the browser, so development
  * falls back to 'lax' + insecure, which works because both ends are localhost.
  */
+// Admin sessions cannot refresh (no refresh token is issued), so they get their own,
+// longer lifetime rather than the 1-hour default the apps renew automatically.
+const ADMIN_ACCESS_EXPIRES_IN = process.env.ADMIN_JWT_EXPIRES_IN || '12h';
+const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
+
 function sessionCookieOptions(isProduction) {
   return {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax',
     path: '/',
-    maxAge: 24 * 60 * 60 * 1000, // 24h, matching the access token's lifetime
+    maxAge: ADMIN_SESSION_MS, // matches the admin access token's lifetime below
   };
 }
 
@@ -71,8 +76,28 @@ router.post('/login', authLimiter, async (req, res, next) => {
     }
 
     // ── Dev / Bypass handling ──────────────────────────────────────────
-    const isDevBypass = (phoneNumber === '+919999999991' && pin === '123456') ||
-                        (process.env.NODE_ENV !== 'production' && otp === '123456' && (phoneNumber === '+919999999991' || phoneNumber.startsWith('+919000')));
+    //
+    // Only where NODE_ENV says, in so many words, that this is a development
+    // or test process.
+    //
+    // The first clause used to stand alone, with no environment check at all:
+    // `phoneNumber === '+919999999991' && pin === '123456'` set isDevBypass in
+    // production too. Everything below then follows from that one flag — the
+    // OTP is not checked, the account is created as super_admin if it does not
+    // exist and promoted to it if it does, the IP allowlist is waived, and the
+    // PIN is accepted without a stored hash. So a single request carrying a
+    // phone number and PIN that are written in this file, and in the admin
+    // app's login page, returned a super-admin session on the live system.
+    //
+    // It is also an allow-list rather than "not production": a deployment that
+    // forgets to set NODE_ENV, or calls itself staging, must not inherit a
+    // master key by default.
+    const devEnvironment = ['development', 'test'].includes(process.env.NODE_ENV);
+    const phone = String(phoneNumber);
+    const isDevBypass = devEnvironment && (
+      (phone === '+919999999991' && pin === '123456') ||
+      (otp === '123456' && (phone === '+919999999991' || phone.startsWith('+919000')))
+    );
 
     if (!isDevBypass) {
       const otpUnavailable = otpStore.unavailableReason();
@@ -90,7 +115,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
     // Check user and role
     let user = await queryOne('SELECT * FROM users WHERE phone_number = $1', [phoneNumber]);
     if (!user) {
-      if (isDevBypass || (phoneNumber === '+919999999991' && pin === '123456')) {
+      if (isDevBypass) {
         try {
           await query('INSERT INTO users (phone_number, full_name, role) VALUES ($1, $2, $3)', [phoneNumber, 'God Developer', 'super_admin']);
         } catch (e) {
@@ -138,7 +163,9 @@ router.post('/login', authLimiter, async (req, res, next) => {
       return res.status(403).json({ error: 'Account locked due to multiple failed PIN attempts. Try again later.' });
     }
 
-    const allowDevPinShortcuts = process.env.NODE_ENV !== 'production' || isDevBypass;
+    // The same allow-list as the bypass above, for the same reason. isDevBypass
+    // implies it, so it no longer needs naming here.
+    const allowDevPinShortcuts = devEnvironment;
 
     // Secure PIN verification with bcrypt. Two shortcuts below are development-only.
     let pinValid = false;
@@ -218,7 +245,8 @@ router.post('/login', authLimiter, async (req, res, next) => {
       user.id, 
       roleString, 
       user.token_version || 0,
-      { regionId, isAdminSession: true }
+      { regionId, isAdminSession: true },
+      { accessExpiresIn: ADMIN_ACCESS_EXPIRES_IN }
     );
 
     // Session log

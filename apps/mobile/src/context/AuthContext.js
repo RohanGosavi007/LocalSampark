@@ -1,5 +1,6 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Alert } from 'react-native';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import { Alert, Platform } from 'react-native';
+import { registerForPushNotificationsAsync } from '../services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SecureTokenStorage } from '../lib/secureStorage';
 import { API_URL, apiPost } from '../lib/api';
@@ -27,7 +28,33 @@ export function AuthProvider({ children }) {
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [pendingShops, setPendingShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [supabaseRealtime, setSupabaseRealtime] = useState(null);
+    const [supabaseRealtime, setSupabaseRealtime] = useState(null);
+  // This phone's push token, so sign-out can unregister it.
+  const pushTokenRef = useRef(null);
+
+  // Once signed in, register this phone to receive the user's notifications
+  // (order updates, chat, delivery). Nothing registered a token before, so no
+  // notification ever reached a phone with the app closed.
+  useEffect(() => {
+    if (!authToken) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await registerForPushNotificationsAsync();
+        if (!token || cancelled) return;
+        const notifBase = API_URL.replace(/\/api\/v\d+$/, '');
+        await fetch(`${notifBase}/api/v1/notifications/register-token`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, platform: Platform.OS }),
+        });
+      } catch (e) {
+        console.warn('Push registration skipped:', e.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authToken]);
+
 
   // API_URL is imported from src/lib/api rather than re-derived here.
   //
@@ -319,7 +346,19 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-  const logout = async () => {
+    const logout = async () => {
+    // Stop pushing this user's notifications to this phone. Best effort: a
+    // sign-out offline still signs out.
+    if (pushTokenRef.current && authToken) {
+      const token = pushTokenRef.current;
+      pushTokenRef.current = null;
+      const notifBase = API_URL.replace(/\/api\/v\d+$/, '');
+      fetch(`${notifBase}/api/v1/notifications/register-token`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      }).catch(() => {});
+    }
     setUser(null);
     setAuthToken(null);
     setActiveRole(null);
@@ -374,21 +413,18 @@ export function AuthProvider({ children }) {
     setWalletTransactions(prev => [{ id: Date.now(), amount: amount.toFixed(2), type: 'debit', purpose, time: 'Just now' }, ...prev]);
   };
 
-  const sendOtp = async (phone) => {
+  const sendOtp = async (phone, method = 'phone') => {
     try {
-      const res = await fetch(`${API_URL}/auth/send-otp`, {
+      const endpoint = method === 'whatsapp' ? '/auth/send-whatsapp-otp' : '/auth/send-otp';
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: phone })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to send OTP');
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to send OTP');
       return data;
     } catch (err) {
-      // Returning a fixed OTP on failure told the user "Test OTP sent: 123456"
-      // in production (app/login.js reads data.mock) and paired with the
-      // bypass in loginWithDevPreset to complete a login that never touched
-      // the server. Surface the failure instead.
       if (!__DEV__) {
         console.warn('sendOtp failed:', err?.message);
         throw err;
@@ -415,23 +451,18 @@ export function AuthProvider({ children }) {
         });
       setSupabaseRealtime(channel);
     } catch (e) {
-      console.warn('Supabase realtime init failed (non-fatal):', e.message);
-    }
-  };
-
-  const verifyOtp = async (phone, otp) => {
+       const verifyOtp = async (phone, otp, fullName = '') => {
     try {
       const res = await fetch(`${API_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone, otp })
+        body: JSON.stringify({ phoneNumber: phone, otp, fullName })
       });
       const data = await res.json();
       
       if (res.ok && data.registered) {
         const token = data.accessToken;
         setAuthToken(token);
-        // See above - required for silent refresh on 401.
         if (data.refreshToken) {
           await SecureTokenStorage.setToken('refreshToken', data.refreshToken);
         }
@@ -462,13 +493,52 @@ export function AuthProvider({ children }) {
         return true;
       } else {
         if (data.registered === false) {
-           Alert.alert('Register Required', 'Profile registration is needed on the website first.');
-           return false;
+           throw new Error(data.message || 'Profile registration required.');
         }
-        throw new Error(data.message || 'OTP verification failed');
+        throw new Error(data.error || data.message || 'OTP verification failed');
       }
     } catch (err) {
       console.warn('verifyOtp error', err.message);
+      throw err;
+    }
+  };
+
+  const loginEmail = async (email, password) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/login-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid email or password');
+
+      if (data.accessToken) {
+        const token = data.accessToken;
+        setAuthToken(token);
+        if (data.refreshToken) {
+          await SecureTokenStorage.setToken('refreshToken', data.refreshToken);
+        }
+        const userData = data.user;
+        setUser(userData);
+        const roles = userData.roles || [userData.role || 'user'];
+        setAssignedRoles(roles);
+        const finalActiveRole = roles[0];
+        setActiveRole(finalActiveRole);
+        setPermissionOverrides(userData.permission_overrides || {});
+
+        await SecureTokenStorage.setToken('authToken', token);
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        await AsyncStorage.setItem('activeRole', finalActiveRole);
+        await AsyncStorage.setItem('assignedRoles', JSON.stringify(roles));
+
+        fetchWallet(token);
+        initSupabaseRealtime(userData.id);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('loginEmail error:', err.message);
       throw err;
     }
   };
@@ -487,12 +557,16 @@ export function AuthProvider({ children }) {
       logout, 
       walletBalance, 
       walletTransactions, 
+      // Re-reads the wallet from the server: after a top-up, or an order paid
+      // from the wallet. The balance is the server's, never adjusted locally.
+      refreshWallet: () => (authToken ? fetchWallet(authToken) : Promise.resolve()),
       chargeWallet,
-      pendingShops, 
+      pendingShops,
       fetchPendingApprovals,
       isLoading,
       sendOtp,
       verifyOtp,
+      loginEmail,
       supabaseRealtime,
       supabase
     }}>

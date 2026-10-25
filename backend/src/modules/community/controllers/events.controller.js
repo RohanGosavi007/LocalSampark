@@ -157,7 +157,7 @@ const bookTicket = async (req, res, next) => {
 
         // Deduct from wallet
         await query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [coinsDeducted, userId]);
-        await query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Event Ticket Discount')`,
+        await query(`INSERT INTO loyalty_transactions (user_id, amount, transaction_type, type, source, description) VALUES ($1, $2, 'spent', 'spent', 'Event Ticket Discount', 'Event Ticket Discount')`,
           [userId, coinsDeducted]
         );
       }

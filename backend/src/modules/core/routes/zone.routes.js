@@ -4,6 +4,7 @@ const { query, queryOne } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
 const spatialRepo = require('../../../repositories/spatial.repository');
+const geo = require('../../../utils/geo');
 const territoryValidator = require('../../../validators/territory.validator');
 
 // GET /api/v1/zones/resolve?lat=X&lng=Y â€” PiP territory resolution
@@ -86,7 +87,7 @@ router.get('/', async (req, res, next) => {
     const zones = await query(`
       SELECT r.*, 
              (SELECT config_value FROM admin_config WHERE config_key = 'territory_features_' || r.id) as features_json
-      FROM regions r WHERE r.is_active = true ORDER BY r.name ASC LIMIT $1 OFFSET $2
+      FROM regions r WHERE r.is_active = '1' ORDER BY r.name ASC LIMIT $1 OFFSET $2
     `, [parseInt(limit), parseInt(offset)]);
     
     const rows = zones.rows || zones;
@@ -107,7 +108,7 @@ router.get('/hierarchy', async (req, res, next) => {
       SELECT r.*, 
              (SELECT config_value FROM admin_config WHERE config_key = 'territory_features_' || r.id) as features_json
       FROM regions r
-      WHERE r.is_active = true 
+      WHERE r.is_active = '1' 
       ORDER BY r.name ASC
     `);
     
@@ -157,7 +158,7 @@ router.get('/search', async (req, res, next) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query parameter q is required' });
     const searchTerm = `%${q}%`;
-    const zones = await query(`SELECT * FROM regions WHERE (name LIKE $1 OR pincode LIKE $1) AND is_active = true ORDER BY name ASC LIMIT 20`, [searchTerm]);
+    const zones = await query(`SELECT * FROM regions WHERE (name LIKE $1 OR pincode LIKE $1) AND is_active = '1' ORDER BY name ASC LIMIT 20`, [searchTerm]);
     res.json({ success: true, data: zones.rows || zones });
   } catch (error) { next(error); }
 });
@@ -165,44 +166,46 @@ router.get('/search', async (req, res, next) => {
 // GET /api/v1/zones/nearby?lat=&lng=
 router.get('/nearby', async (req, res, next) => {
   try {
-    const { lat, lng, limit = 5 } = req.query;
+    const { lat, lng } = req.query;
     if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' });
-    
-    // SQLite doesn't natively support acos/cos/sin/radians without math functions loaded.
-    // However, our backend implementation handles Haversine formula logic or it's handled via the custom database wrapper.
-    // If not, this is a simplified fallback that just sorts by absolute lat/lng differences for SQLite.
-    let sql = '';
-    if (process.env.USE_SQLITE === 'true') {
-        // Pseudo distance for SQLite without math functions
-        sql = `
-            SELECT *, 
-            ((latitude - $1)*(latitude - $1) + (longitude - $2)*(longitude - $2)) AS distance_approx
-            FROM regions 
-            WHERE is_active = true
-            ORDER BY distance_approx ASC
-            LIMIT $3
-        `;
-    } else {
-        // Optimized PostgreSQL Geospatial Search (GiST Index)
-        sql = `
-            SELECT *,
-            earth_distance(ll_to_earth($1, $2), ll_to_earth(latitude, longitude)) / 1000 AS distance_km
-            FROM regions 
-            WHERE is_active = true
-            ORDER BY ll_to_earth(latitude, longitude) <-> ll_to_earth($1, $2) ASC
-            LIMIT $3
-        `;
+
+    const here = { lat: Number(lat), lng: Number(lng) };
+    if (!Number.isFinite(here.lat) || !Number.isFinite(here.lng) || Math.abs(here.lat) > 90 || Math.abs(here.lng) > 180) {
+      return res.status(400).json({ error: 'lat and lng must be valid coordinates' });
     }
-    
-    const zones = await query(sql, [parseFloat(lat), parseFloat(lng), parseInt(limit)]);
-    res.json({ success: true, data: zones.rows || zones });
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 5, 1), 50);
+
+    // One implementation for both engines: read the active regions and measure
+    // from here in JavaScript.
+    //
+    // There were two. SQLite ordered by squared difference in degrees, which is
+    // not a distance (a degree of longitude at Pune's latitude is about 5%
+    // shorter than one of latitude) and returned no distance at all. PostgreSQL
+    // called earth_distance() and ll_to_earth(), which belong to the
+    // earthdistance extension — and no migration installs it, so in production
+    // this route answered 500 for everyone. It is the lookup that tells a new
+    // user which zone they are in. Regions number in the hundreds at most, so
+    // measuring them here costs nothing an index would save.
+    const result = await query(
+      `SELECT * FROM regions WHERE is_active = '1' AND latitude IS NOT NULL AND longitude IS NOT NULL`
+    );
+    const zones = (result.rows || result)
+      .map((zone) => {
+        const km = geo.distanceKm(here.lat, here.lng, Number(zone.latitude), Number(zone.longitude));
+        return { ...zone, distance_km: Number.isFinite(km) ? Math.round(km * 100) / 100 : null };
+      })
+      .filter((zone) => zone.distance_km !== null)
+      .sort((a, b) => a.distance_km - b.distance_km)
+      .slice(0, limit);
+
+    res.json({ success: true, data: zones });
   } catch (error) { next(error); }
 });
 
 // GET /api/v1/zones/by-district/:district
 router.get('/by-district/:district', async (req, res, next) => {
   try {
-    const zones = await query(`SELECT * FROM regions WHERE district = $1 AND is_active = true ORDER BY name ASC`, [req.params.district]);
+    const zones = await query(`SELECT * FROM regions WHERE district = $1 AND is_active = '1' ORDER BY name ASC`, [req.params.district]);
     res.json({ success: true, data: zones.rows || zones });
   } catch (error) { next(error); }
 });
@@ -210,7 +213,7 @@ router.get('/by-district/:district', async (req, res, next) => {
 // GET /api/v1/zones/by-state/:state
 router.get('/by-state/:state', async (req, res, next) => {
   try {
-    const zones = await query(`SELECT * FROM regions WHERE state = $1 AND is_active = true ORDER BY name ASC`, [req.params.state]);
+    const zones = await query(`SELECT * FROM regions WHERE state = $1 AND is_active = '1' ORDER BY name ASC`, [req.params.state]);
     res.json({ success: true, data: zones.rows || zones });
   } catch (error) { next(error); }
 });

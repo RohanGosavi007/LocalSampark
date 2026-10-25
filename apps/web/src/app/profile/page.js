@@ -4,89 +4,81 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { User, MapPin, Package, Star, Heart, Settings, Shield, Award, Clock } from 'lucide-react';
+import { MapPin, Package, Star, Heart, Settings, Shield, Award, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../context/AuthContext';
+import { apiGet } from '../../lib/api';
 
+/**
+ * The signed-in user's profile.
+ *
+ * Every request here used a relative URL (/api/v1/…), which goes to the
+ * website rather than the API, so all four failed — and each failure was
+ * covered by invented data: a profile for "Siddharth R.", two Pune
+ * addresses, two orders that never happened and 1,250 points. Every visitor
+ * saw that as their own account.
+ *
+ * Now: the account (/users/me), the coin balance (/loyalty/balance), saved
+ * addresses (/addresses) and order history (/orders/my-orders), with empty
+ * states where there is nothing yet. Signed out, it sends you to sign in.
+ */
 export default function VisitorDashboard() {
+  const router = useRouter();
+  const { user: session, loading: sessionLoading } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
+    if (sessionLoading) return;
+    if (!session) {
+      router.replace('/login?next=/profile');
+      return;
+    }
     async function loadUserData() {
-      try {
-        const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('auth_token')) : null;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-        const [profileRes, pointsRes, addressRes, ordersRes] = await Promise.allSettled([
-          fetch('/api/v1/users/me', { headers }),
-          fetch('/api/v1/users/me/points', { headers }),
-          fetch('/api/v1/addresses', { headers }),
-          fetch('/api/v1/orders', { headers })
-        ]);
-
-        let profileData = profileRes.status === 'fulfilled' && profileRes.value.ok ? await profileRes.value.json() : null;
-        let pointsData = pointsRes.status === 'fulfilled' && pointsRes.value.ok ? await pointsRes.value.json() : null;
-        let addressData = addressRes.status === 'fulfilled' && addressRes.value.ok ? await addressRes.value.json() : null;
-        let ordersData = ordersRes.status === 'fulfilled' && ordersRes.value.ok ? await ordersRes.value.json() : null;
-
-        const userName = profileData?.name || profileData?.fullName || 'Local Resident';
-        const userEmail = profileData?.email || 'resident@localsampark.com';
-        const userPhone = profileData?.phone || '+91 98765 43210';
-        const points = pointsData?.balance || 1250;
-        const addresses = Array.isArray(addressData) && addressData.length > 0 ? addressData.map(a => ({
-          id: a.id,
-          type: a.tag || 'Home',
-          address: `${a.line1 || ''}, ${a.locality || ''}, ${a.city || 'Pune'}`
-        })) : [
-          { id: '1', type: 'Home', address: 'A-402, Galaxy Apartments, Dhanori, Pune' },
-          { id: '2', type: 'Work', address: 'Tech Park, Viman Nagar, Pune' }
-        ];
-
-        const rawOrders = ordersData?.orders || ordersData?.data || (Array.isArray(ordersData) ? ordersData : []);
-        const recentOrders = rawOrders.length > 0 ? rawOrders.slice(0, 5).map(o => ({
-          id: o.orderNumber || o.id,
-          shop: o.shop?.name || 'Local Store',
-          date: new Date(o.createdAt).toLocaleDateString(),
-          total: `₹${((o.totalAmountPaise || 0) / 100).toFixed(2)}`,
-          status: o.status
-        })) : [
-          { id: 'ORD-9912', shop: 'Sharma Grocery', date: 'July 5, 2026', total: '₹540', status: 'Delivered' },
-          { id: 'ORD-9884', shop: 'QuickFix Garage', date: 'July 2, 2026', total: '₹1200', status: 'Delivered' }
-        ];
-
-        setUser({
-          name: userName,
-          phone: userPhone,
-          email: userEmail,
-          avatar: profileData?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=4f46e5&color=fff`,
-          loyaltyPoints: points,
-          loyaltyTier: points > 2000 ? 'Community Legend' : (points > 1000 ? 'Community Champion' : 'Local Explorer'),
-          savedAddresses: addresses,
-          recentOrders: recentOrders
-        });
-      } catch (err) {
-        console.error('Failed to load live profile, using graceful fallback', err);
-        setUser({
-          name: 'Siddharth R.',
-          phone: '+91 98765 43210',
-          email: 'siddharth@example.com',
-          avatar: 'https://ui-avatars.com/api/?name=Siddharth+R&background=4f46e5&color=fff',
-          loyaltyPoints: 1250,
-          loyaltyTier: 'Community Champion',
-          savedAddresses: [
-            { id: '1', type: 'Home', address: 'A-402, Galaxy Apartments, Dhanori, Pune' },
-            { id: '2', type: 'Work', address: 'Tech Park, Viman Nagar, Pune' }
-          ],
-          recentOrders: [
-            { id: 'ORD-9912', shop: 'Sharma Grocery', date: 'July 5, 2026', total: '₹540', status: 'Delivered' },
-            { id: 'ORD-9884', shop: 'QuickFix Garage', date: 'July 2, 2026', total: '₹1200', status: 'Delivered' }
-          ]
-        });
-      } finally {
+      const [profileRes, coinsRes, addressRes, ordersRes] = await Promise.allSettled([
+        apiGet('/users/me'),
+        apiGet('/loyalty/balance'),
+        apiGet('/addresses'),
+        apiGet('/orders/my-orders'),
+      ]);
+      const value = (r) => (r.status === 'fulfilled' ? r.value : null);
+      const profile = value(profileRes);
+      if (!profile) {
+        setLoadError('Your profile could not be loaded. Please try again.');
         setLoading(false);
+        return;
       }
+
+      const coins = Number(value(coinsRes)?.data?.totalCoins) || 0;
+      const addresses = (value(addressRes)?.data || []).map((a) => ({
+        id: a.id,
+        type: a.address_type ? a.address_type[0].toUpperCase() + a.address_type.slice(1) : 'Address',
+        address: [a.apartment_suite, a.street_address, a.city, a.postal_code].filter(Boolean).join(', '),
+      }));
+      const orders = (value(ordersRes)?.data || []).slice(0, 5).map((o) => ({
+        id: o.id,
+        shop: o.shop_name || 'LocalSampark',
+        date: o.created_at ? new Date(String(o.created_at).replace(' ', 'T')).toLocaleDateString('en-IN') : '',
+        total: `₹${Number(o.total_amount || 0).toFixed(2)}`,
+        status: String(o.status || 'pending').replace(/_/g, ' '),
+      }));
+
+      const name = profile.fullName || profile.name || 'Your account';
+      setUser({
+        name,
+        phone: profile.phone || profile.phone_number || '',
+        email: profile.email || '',
+        avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=fff`,
+        loyaltyPoints: coins,
+        loyaltyTier: coins > 2000 ? 'Community Legend' : (coins > 1000 ? 'Community Champion' : 'Local Explorer'),
+        savedAddresses: addresses,
+        recentOrders: orders,
+      });
+      setLoading(false);
     }
     loadUserData();
-  }, []);
+  }, [session, sessionLoading, router]);
 
   if (loading) {
     return (
@@ -99,10 +91,20 @@ export default function VisitorDashboard() {
     );
   }
 
+  if (loadError || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header />
+        <div className="flex-1 flex justify-center items-center text-gray-600 p-8" role="alert">{loadError || 'Loading…'}</div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      
+
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Profile Header */}
@@ -130,7 +132,7 @@ export default function VisitorDashboard() {
             </div>
           </div>
           
-          <Button variant="outline" icon={Settings} className="hidden sm:flex z-10 bg-white">Edit Profile</Button>
+          <a href="/profile/security" className="hidden sm:flex z-10"><Button variant="outline" icon={Settings} className="bg-white">Account Settings</Button></a>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -144,6 +146,9 @@ export default function VisitorDashboard() {
                 Recent Orders & Bookings
               </h2>
               <div className="space-y-4">
+                                {user.recentOrders.length === 0 && (
+                  <Card className="p-6 text-gray-500 text-center">No orders yet. <a href="/shops" className="text-primary font-bold">Browse shops →</a></Card>
+                )}
                 {user.recentOrders.map(order => (
                   <Card key={order.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors cursor-pointer group">
                     <div className="flex items-start gap-4">
@@ -158,12 +163,12 @@ export default function VisitorDashboard() {
                     </div>
                     <div className="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-6 w-full sm:w-auto justify-between sm:justify-start">
                       <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">{order.status}</span>
-                      <Button variant="outline" size="sm" className="bg-white">Reorder</Button>
+                      <a href={`/order-tracking?id=${order.id}`}><Button variant="outline" size="sm" className="bg-white">Track</Button></a>
                     </div>
                   </Card>
                 ))}
               </div>
-              <Button variant="ghost" className="w-full mt-4 text-primary font-bold">View All History →</Button>
+              <a href="/resident/orders"><Button variant="ghost" className="w-full mt-4 text-primary font-bold">View All History →</Button></a>
             </section>
           </div>
 
@@ -176,9 +181,12 @@ export default function VisitorDashboard() {
                   <MapPin className="w-6 h-6 text-primary" />
                   Saved Addresses
                 </h2>
-                <button className="text-primary font-bold text-sm hover:underline">+ Add</button>
+                
               </div>
               <div className="space-y-3">
+                                {user.savedAddresses.length === 0 && (
+                  <p className="text-gray-500 text-sm">No saved addresses yet. Addresses you deliver to are saved here.</p>
+                )}
                 {user.savedAddresses.map(addr => (
                   <div key={addr.id} className="p-4 border border-gray-200 rounded-xl bg-white shadow-sm flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" />
@@ -198,18 +206,18 @@ export default function VisitorDashboard() {
                 Account Settings
               </h2>
               <Card className="divide-y divide-gray-100 overflow-hidden">
-                <button className="w-full p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
-                  <span className="font-semibold text-gray-700 flex items-center gap-3"><Heart className="w-5 h-5 text-gray-400"/> Saved Shops & Services</span>
+                                <a href="/rewards" className="w-full p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                  <span className="font-semibold text-gray-700 flex items-center gap-3"><Heart className="w-5 h-5 text-gray-400"/> Coins &amp; Rewards</span>
                   <span className="text-gray-300">→</span>
-                </button>
-                <button className="w-full p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
-                  <span className="font-semibold text-gray-700 flex items-center gap-3"><Shield className="w-5 h-5 text-gray-400"/> Privacy & Security</span>
+                </a>
+                <a href="/profile/security" className="w-full p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                  <span className="font-semibold text-gray-700 flex items-center gap-3"><Shield className="w-5 h-5 text-gray-400"/> Privacy &amp; Security</span>
                   <span className="text-gray-300">→</span>
-                </button>
-                <button className="w-full p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
-                  <span className="font-semibold text-gray-700 flex items-center gap-3"><Settings className="w-5 h-5 text-gray-400"/> Notification Preferences</span>
+                </a>
+                <a href="/wallet" className="w-full p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                  <span className="font-semibold text-gray-700 flex items-center gap-3"><Settings className="w-5 h-5 text-gray-400"/> Wallet</span>
                   <span className="text-gray-300">→</span>
-                </button>
+                </a>
               </Card>
             </section>
           </div>

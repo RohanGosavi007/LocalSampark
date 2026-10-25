@@ -61,7 +61,7 @@ function normalize(value) {
   // Strip every kind of whitespace and the separators people type: "411 001",
   // "411-001". Unicode-aware, because a form autofilled from a PDF can carry a
   // non-breaking space that looks identical to a normal one and is not.
-  text = text.replace(/[\s  -​\-–—]/g, '');
+  text = text.replace(/[\s\u00A0\u2000-\u200B\-\u2013\u2014]/g, '');
 
   // Some imports arrive as "PIN: 411001" or "411001," from a stray CSV column.
   text = text.replace(/^(?:pin|pincode|postal(?:code)?)[:.]?/i, '');

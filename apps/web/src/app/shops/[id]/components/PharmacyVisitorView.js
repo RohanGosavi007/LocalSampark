@@ -99,7 +99,7 @@ export default function PharmacyVisitorView({ shop, products = [], onAddToCart }
               <div className="p-3 flex-1 flex flex-col">
                 <div className="flex items-start justify-between mb-1">
                   <p className="font-bold text-xs text-text line-clamp-2 leading-tight">{product.name}</p>
-                  <StockBadge stock={product.stock !== undefined ? product.stock : Math.floor(Math.random() * 20)} />
+                  {product.stock !== undefined && product.stock !== null && <StockBadge stock={product.stock} />}
                 </div>
                 {product.requires_prescription && (
                   <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold mt-1 inline-block w-fit">Rx Required</span>

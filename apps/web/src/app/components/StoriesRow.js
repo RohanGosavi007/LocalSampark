@@ -1,21 +1,37 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import StoryViewer from './StoryViewer';
 import Link from 'next/link';
+import { API_URL, apiGet } from '@/lib/api';
 
-const MOCK_STORIES = [
-  { id: 1, user: 'Your Story', avatar: 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff', hasStory: false, isUser: true },
-  { id: 2, user: 'Society Admin', avatar: 'https://ui-avatars.com/api/?name=Admin&background=f59e0b&color=fff', hasStory: true, isUser: false, items: [{ id: 101, image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800', userName: 'Society Admin', userAvatar: 'https://ui-avatars.com/api/?name=Admin&background=f59e0b&color=fff', time: '2h ago', text: 'Important Society Meeting Tomorrow at 10 AM in the Clubhouse.' }] },
-  { id: 3, user: 'Glow Salon', avatar: 'https://ui-avatars.com/api/?name=Salon&background=ec4899&color=fff', hasStory: true, isUser: false, items: [{ id: 102, image: 'https://images.unsplash.com/photo-1521590832167-7bfcfaa6362f?w=800', userName: 'Glow Salon', userAvatar: 'https://ui-avatars.com/api/?name=Salon&background=ec4899&color=fff', time: '3h ago', text: 'Flat 20% OFF on all Spa Services this weekend!' }] },
-  { id: 4, user: 'Pharmacy', avatar: 'https://ui-avatars.com/api/?name=Pharma&background=10b981&color=fff', hasStory: true, isUser: false, items: [{ id: 103, image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800', userName: 'Pharmacy', userAvatar: 'https://ui-avatars.com/api/?name=Pharma&background=10b981&color=fff', time: '5h ago', text: 'New stock of Vitamin C supplements arrived.' }] },
-  { id: 5, user: 'Neha P.', avatar: 'https://ui-avatars.com/api/?name=Neha&background=8b5cf6&color=fff', hasStory: false, isUser: false }
-];
+const avatarFor = (name, url) => (url ? (url.startsWith('http') ? url : `${API_URL}${url}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=0D8ABC&color=fff`);
+const absolute = (url) => (/^https?:/.test(url) ? url : `${API_URL}${url}`);
+const ago = (iso) => {
+  const mins = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  return mins < 60 ? `${mins}m ago` : `${Math.round(mins / 60)}h ago`;
+};
 
 export default function StoriesRow() {
   const [viewerVisible, setViewerVisible] = useState(false);
   const [currentStories, setCurrentStories] = useState([]);
+  const [people, setPeople] = useState([{ id: 'me', user: 'Your Story', avatar: avatarFor('You'), hasStory: false, isUser: true }]);
+
+  // Live stories (the last 24 hours), grouped by who posted them.
+  useEffect(() => {
+    let alive = true;
+    apiGet('/stories').then((res) => {
+      if (!alive) return;
+      const byUser = new Map();
+      for (const s of res.data || []) {
+        if (!byUser.has(s.user_id)) byUser.set(s.user_id, { id: s.user_id, user: s.full_name || 'Neighbour', avatar: avatarFor(s.full_name, s.avatar_url), hasStory: true, isUser: false, items: [] });
+        byUser.get(s.user_id).items.push({ image: absolute(s.media_url), text: s.caption, userName: s.full_name, userAvatar: avatarFor(s.full_name, s.avatar_url), time: ago(s.created_at) });
+      }
+      setPeople((prev) => [prev[0], ...byUser.values()]);
+    }).catch(() => { /* not signed in or offline: just the "Your Story" tile */ });
+    return () => { alive = false; };
+  }, []);
 
   const handleStoryPress = (story) => {
     if (story.isUser && !story.hasStory) {
@@ -31,7 +47,7 @@ export default function StoriesRow() {
   return (
     <div className="mb-8 overflow-hidden">
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none px-1">
-        {MOCK_STORIES.map((story) => (
+        {people.map((story) => (
           <div 
             key={story.id} 
             className="flex flex-col items-center gap-1.5 cursor-pointer shrink-0 w-20 group"

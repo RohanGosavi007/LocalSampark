@@ -8,13 +8,17 @@ const express = require('express');
 const router = express.Router();
 const ShopAnalyticsService = require('../../../services/shopAnalytics.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
+// A shop's revenue, order counts, customers and stock are its own. Every route
+// here took the shop from the URL with `authenticate` alone, so any signed-in
+// account — a competitor included — could read them.
+const { requireShopParam } = require('../../../middleware/shop-owner.middleware');
 const logger = require('../../../config/logger');
 
 /**
  * GET /api/v1/shops/:shopId/analytics/overview
  * Full dashboard summary — combines all analytics
  */
-router.get('/:shopId/analytics/overview', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/overview', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { query: dbQuery, queryOne } = require('../../../config/database');
@@ -31,7 +35,7 @@ router.get('/:shopId/analytics/overview', authenticate, async (req, res, next) =
  * GET /api/v1/shops/:shopId/analytics/revenue
  * Revenue trend (daily/weekly/monthly)
  */
-router.get('/:shopId/analytics/revenue', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/revenue', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { period = 'daily', days = 30 } = req.query;
@@ -44,7 +48,7 @@ router.get('/:shopId/analytics/revenue', authenticate, async (req, res, next) =>
  * GET /api/v1/shops/:shopId/analytics/orders
  * Order volume + status breakdown + hourly distribution
  */
-router.get('/:shopId/analytics/orders', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/orders', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { days = 30 } = req.query;
@@ -57,7 +61,7 @@ router.get('/:shopId/analytics/orders', authenticate, async (req, res, next) => 
  * GET /api/v1/shops/:shopId/analytics/customers
  * New vs returning, top customers, retention rate
  */
-router.get('/:shopId/analytics/customers', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/customers', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { days = 30 } = req.query;
@@ -70,7 +74,7 @@ router.get('/:shopId/analytics/customers', authenticate, async (req, res, next) 
  * GET /api/v1/shops/:shopId/analytics/competitors
  * Zone competitor benchmarking
  */
-router.get('/:shopId/analytics/competitors', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/competitors', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { queryOne } = require('../../../config/database');
@@ -86,7 +90,7 @@ router.get('/:shopId/analytics/competitors', authenticate, async (req, res, next
  * GET /api/v1/shops/:shopId/analytics/peak-hours
  * Heatmap data (7 days × 24 hours)
  */
-router.get('/:shopId/analytics/peak-hours', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/peak-hours', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const { days = 30 } = req.query;
@@ -99,7 +103,7 @@ router.get('/:shopId/analytics/peak-hours', authenticate, async (req, res, next)
  * GET /api/v1/shops/:shopId/analytics/inventory
  * Stock levels, low-stock alerts
  */
-router.get('/:shopId/analytics/inventory', authenticate, async (req, res, next) => {
+router.get('/:shopId/analytics/inventory', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
     const data = await ShopAnalyticsService.getInventoryStatus(shopId);

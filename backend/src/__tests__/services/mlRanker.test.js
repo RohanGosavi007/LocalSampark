@@ -233,15 +233,25 @@ describe('degradation', () => {
 
   test('ranks when enabled, and reports which strategy ran', async () => {
     await mlconfig.set('ml_enabled', true, { updatedBy: 'test' });
-    const out = await ranker.rank(candidates, {
-      lat: 18.58, lng: 73.89, surface: 'shops_home', limit: 2, localHour: 10,
-    });
-    expect(out.strategy).toBe('ml');
-    expect(out.items).toHaveLength(2);
-    // Every returned item carries its per-term breakdown so an admin can answer
-    // a merchant asking why they rank where they do.
-    expect(out.items[0]._terms).toBeDefined();
-    await mlconfig.set('ml_enabled', false, { updatedBy: 'test' });
+    // The widest budget the config allows. At the 150ms default this asserted
+    // on the machine rather than on the ranker: a full parallel run under
+    // coverage instrumentation overruns it, the ranker degrades to the baseline
+    // exactly as designed, and the suite fails there while passing every time
+    // it is run alone.
+    await mlconfig.set('ml_timeout_ms', 2000, { updatedBy: 'test' });
+    try {
+      const out = await ranker.rank(candidates, {
+        lat: 18.58, lng: 73.89, surface: 'shops_home', limit: 2, localHour: 10,
+      });
+      expect(out.strategy).toBe('ml');
+      expect(out.items).toHaveLength(2);
+      // Every returned item carries its per-term breakdown so an admin can answer
+      // a merchant asking why they rank where they do.
+      expect(out.items[0]._terms).toBeDefined();
+    } finally {
+      await mlconfig.set('ml_timeout_ms', mlconfig.DEFAULTS.ml_timeout_ms, { updatedBy: 'test' });
+      await mlconfig.set('ml_enabled', false, { updatedBy: 'test' });
+    }
   });
 
   test('publicShape strips internals and rounds the distance', () => {

@@ -87,7 +87,7 @@ router.post('/crowdfund', authenticate, async (req, res, next) => {
             `INSERT INTO charity_campaigns
                  (id, ngo_name, title, description, goal_amount, raised_amount,
                   campaign_type, status, verified_ngo, created_by)
-             VALUES ($1, $2, $3, $4, $5, 0, $6, 'active', 0, $7)`,
+             VALUES ($1, $2, $3, $4, $5, 0, $6, 'active', '0', $7)`,
             [id, req.user.name || 'Community', title, description || '',
              goalAmount, type || 'Community', req.user.id]
         );
@@ -264,7 +264,7 @@ router.post('/admin/config', authenticate, requireAdmin, async (req, res, next) 
                 await query(
                     `INSERT INTO admin_config
                          (id, config_key, config_value, config_category, is_active, updated_by)
-                     VALUES ($1, $2, $3, 'donations', 1, $4)`,
+                     VALUES ($1, $2, $3, 'donations', '1', $4)`,
                     [crypto.randomUUID(), key, String(value), req.user.id]
                 );
             }

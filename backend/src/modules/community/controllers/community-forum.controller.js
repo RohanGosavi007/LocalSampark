@@ -19,13 +19,14 @@ const createTopic = async (req, res, next) => {
 
 const getTopics = async (req, res, next) => {
     try {
-        const { societyId, category } = req.query;
+        const { societyId, category } = { ...req.query, societyId: req.societyId || req.query.societyId };
         let sql = 'SELECT * FROM society_forum_topics WHERE society_id = $1';
         const params = [societyId];
         
         if (category) {
-            sql += ' AND category = ?';
+            // $2, not ?: see guard-shift.controller.js for what the ? did.
             params.push(category);
+            sql += ` AND category = $${params.length}`;
         }
         
         sql += ' ORDER BY is_pinned DESC, created_at DESC LIMIT 50';

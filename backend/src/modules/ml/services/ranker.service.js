@@ -156,7 +156,7 @@ async function loadOverrides(surface) {
     const res = await query(
       `SELECT item_id, override_type, boost_factor, pinned_position
          FROM ml_item_overrides
-        WHERE surface = $1 AND is_active = 1`,
+        WHERE surface = $1 AND is_active = '1'`,
       [surface]
     );
     const map = new Map();

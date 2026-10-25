@@ -70,10 +70,14 @@ describe('demo personas', () => {
     expect(authSource).toContain('has no seeded user row');
   });
 
-  test('the demo short-circuit stays out of production', () => {
+  test('the demo short-circuit runs only where NODE_ENV says development or test', () => {
     // An ungated fixed OTP on +919000000012 is an unauthenticated path to a
-    // super_admin token.
-    expect(authSource).toMatch(/process\.env\.NODE_ENV !== 'production' && phoneNumber\.startsWith\('\+919000'\)/);
+    // super_admin token. "Not production" was the gate, which let it through
+    // on staging, on preview deploys and on any process started without
+    // NODE_ENV at all; it is an allow-list now.
+    expect(authSource).toMatch(/DEMO_LOGIN_ALLOWED\(\) && phoneNumber\.startsWith\('\+919000'\)/);
+    expect(authSource).toMatch(/const DEMO_LOGIN_ALLOWED = \(\) => \['development', 'test'\]\.includes\(process\.env\.NODE_ENV\)/);
+    expect(authSource).not.toMatch(/NODE_ENV !== 'production'/);
   });
 });
 
@@ -98,7 +102,7 @@ describe('API base resolution', () => {
   });
 
   test('both web apps ship the normaliser', () => {
-    for (const rel of ['../../../apps/web/src/lib/api.js', '../../../apps/admin/src/lib/api.js']) {
+    for (const rel of ['../../../apps/web/src/lib/apiUrl.js', '../../../apps/admin/src/lib/api.js']) {
       const src = fs.readFileSync(path.join(__dirname, rel), 'utf8');
       expect(src).toContain('function toOrigin');
       expect(src).toMatch(/replace\(\/\\\/api\\\/v\\d\+\$\/, ''\)/);

@@ -13,13 +13,25 @@ const POPULAR_ROUTES = [
   { from: 'Dhanori', to: 'Magarpatta', riders: 19, icon: 'storefront-outline', color: '#10b981' },
 ];
 
-// FALLBACK_RIDES lived here: four named neighbours offering lifts — "Ramesh
-// Patil, Dhanori Chowk to Hinjewadi Phase 1, ₹50, Tata Nexon EV, 4.9, verified",
-// "Sunita Joshi", "Vikram Singh", and a women-only ride from "Priya Kulkarni".
-// Each was marked verified with a rating, and the list was substituted both when
-// the API failed and when it legitimately returned no rides — which is the
-// normal state at most hours. A commuter could have planned their morning around
-// a lift from someone who does not exist.
+function parseTimeToHHMM(timeStr) {
+  if (!timeStr) return '09:00';
+  const clean = timeStr.trim();
+  const match24 = clean.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    const h = match24[1].padStart(2, '0');
+    return `${h}:${match24[2]}`;
+  }
+  const match12 = clean.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/i);
+  if (match12) {
+    let h = parseInt(match12[1], 10);
+    const m = match12[2];
+    const ampm = (match12[3] || '').toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  }
+  return '09:00';
+}
 
 export default function CarpoolScreen() {
   const [rides, setRides] = useState([]);
@@ -29,28 +41,122 @@ export default function CarpoolScreen() {
   const [filterTo, setFilterTo] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [form, setForm] = useState({ from: '', to: '', time: '', price: '', vehicle: '', seats: '3', gender: 'Any' });
+  
+  // Vehicles state
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [vehicleForm, setVehicleForm] = useState({ make: '', model: '', plate_number: '', total_seats: '4', vehicle_type: 'car' });
+  const [selectedVehicleId, setSelectedVehicleId] = useState(null);
 
-  useEffect(() => { fetchRides(); }, []);
+  // OTP Verification state
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpRideId, setOtpRideId] = useState('');
+  const [otpBookingId, setOtpBookingId] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  useEffect(() => { 
+    fetchRides();
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+      const res = await apiGet('/carpool/vehicles', token);
+      if (res && Array.isArray(res.vehicles)) {
+        setVehicles(res.vehicles);
+        if (res.vehicles.length > 0 && !selectedVehicleId) {
+          setSelectedVehicleId(res.vehicles[0].id);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const handleAddVehicle = async () => {
+    if (!vehicleForm.model || !vehicleForm.plate_number) {
+      Alert.alert('Required Fields', 'Please enter Vehicle Model and Registration Number.');
+      return;
+    }
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Login Required', 'Please login to manage your vehicles.');
+        return;
+      }
+      const res = await apiPost('/carpool/vehicles', {
+        vehicle_type: vehicleForm.vehicle_type,
+        make: vehicleForm.make || null,
+        model: vehicleForm.model.trim(),
+        plate_number: vehicleForm.plate_number.trim().toUpperCase(),
+        total_seats: parseInt(vehicleForm.total_seats, 10) || 4,
+        fuel_type: 'petrol'
+      }, token);
+
+      if (res && res.error) {
+        Alert.alert('Error', res.error);
+        return;
+      }
+      Alert.alert('Vehicle Added! 🚗', 'Your vehicle has been registered for carpooling.');
+      setVehicleForm({ make: '', model: '', plate_number: '', total_seats: '4', vehicle_type: 'car' });
+      await fetchVehicles();
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'Could not register vehicle.');
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpRideId.trim() || !otpBookingId.trim() || !otpCode.trim()) {
+      Alert.alert('Missing Details', 'Please provide Ride ID, Booking ID, and the 4-digit OTP.');
+      return;
+    }
+    setVerifyingOtp(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Login Required', 'Please login to verify ride OTPs.');
+        return;
+      }
+      const res = await apiPost(`/carpool/rides/${otpRideId.trim()}/verify-otp`, {
+        otp_code: otpCode.trim(),
+        booking_id: otpBookingId.trim()
+      }, token);
+
+      if (res && res.error) {
+        Alert.alert('Verification Failed', res.error);
+      } else {
+        Alert.alert('Verified! ✅', res?.message || 'Passenger verified successfully. You may begin the journey.');
+        setShowOtpModal(false);
+        setOtpCode('');
+      }
+    } catch (e) {
+      Alert.alert('Verification Failed', e?.message || 'Could not verify passenger code.');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   const fetchRides = async () => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
       const result = await apiGet('/carpool/rides', token);
-      if (result.success && Array.isArray(result.data)) {
-        setRides(result.data.map(r => ({
+      const list = Array.isArray(result?.rides) ? result.rides : (Array.isArray(result?.data) ? result.data : []);
+      if (list.length > 0) {
+        setRides(list.map(r => ({
           id: r.id,
-          driver: r.driver_name || 'Neighbour',
-          from: r.origin,
-          to: r.destination,
+          driver: r.driver?.full_name || r.driver_name || 'Neighbour',
+          from: r.from_location || r.origin,
+          to: r.to_location || r.destination,
           time: r.departure_time,
           price: r.price_per_seat,
-          vehicle: r.vehicle || null,
-          seats: r.seats_available,
-          // Rating and verification were asserted for every ride — "4.8" and a
-          // verified badge — whether or not the record carried either.
-          rating: r.rating != null ? Number(r.rating) : null,
-          gender: r.gender || 'Any',
+          vehicle: r.vehicle ? `${r.vehicle.make ? r.vehicle.make + ' ' : ''}${r.vehicle.model}` : (r.vehicle_name || null),
+          seats: r.remaining_seats ?? r.available_seats ?? r.seats_available,
+          rating: r.driver_rating?.avg ? Number(r.driver_rating.avg) : (r.rating != null ? Number(r.rating) : null),
+          gender: r.gender_preference || r.gender || 'Any',
           verified: r.is_verified === true || r.is_verified === 1,
           isEV: r.is_ev === true || r.is_ev === 1,
         })));
@@ -59,8 +165,6 @@ export default function CarpoolScreen() {
         setRides([]);
       }
     } catch (e) {
-      // An empty list is the honest answer when there are no rides, and an
-      // error message is the honest answer when the request failed.
       setRides([]);
       setError(e?.message || 'Could not load rides.');
     } finally { setLoading(false); }
@@ -74,21 +178,54 @@ export default function CarpoolScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) { Alert.alert('Error', 'Please login to offer a ride'); return; }
-      await apiPost('/carpool/rides', {
-        origin: form.from, destination: form.to, departure_time: form.time,
-        price_per_seat: parseFloat(form.price), seats_available: parseInt(form.seats, 10)
+
+      const departure_time = parseTimeToHHMM(form.time);
+      const ride_date = new Date().toISOString().split('T')[0];
+
+      const res = await apiPost('/carpool/rides', {
+        from_location: form.from.trim(),
+        to_location: form.to.trim(),
+        departure_time,
+        ride_date,
+        price_per_seat: parseFloat(form.price) || 50,
+        seats_available: parseInt(form.seats, 10) || 3,
+        vehicle_id: selectedVehicleId || undefined,
+        gender_preference: form.gender === 'Women only' ? 'female' : 'any'
       }, token);
-    } catch (e) { /* Fallback */ }
-    Alert.alert('Success', 'Ride offered! Neighbors can now join your commute.');
-    setForm({ from: '', to: '', time: '', price: '', vehicle: '', seats: '3', gender: 'Any' });
-    setShowOfferModal(false);
-    fetchRides();
+
+      if (res && res.error) {
+        Alert.alert('Failed to Post Ride', res.error);
+        return;
+      }
+
+      Alert.alert('Success 🎉', 'Ride offered! Neighbors can now join your commute.');
+      setForm({ from: '', to: '', time: '', price: '', vehicle: '', seats: '3', gender: 'Any' });
+      setShowOfferModal(false);
+      fetchRides();
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'Failed to post ride offer.');
+    }
   };
 
-  const joinRide = (id) => {
+  const joinRide = async (id) => {
     if (joinedIds.includes(id)) return;
-    setJoinedIds([...joinedIds, id]);
-    Alert.alert('Success', 'Request sent to driver!');
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Login Required', 'Please login to join a carpool ride.');
+        return;
+      }
+      const res = await apiPost(`/carpool/rides/${id}/book`, { seats_booked: 1 }, token);
+      if (res && res.error) {
+        Alert.alert('Booking Error', res.error);
+        return;
+      }
+      setJoinedIds(prev => [...prev, id]);
+      Alert.alert('Seat Reserved! 🎉', 'You have joined this ride. You will receive an OTP code to verify upon pickup.');
+      fetchRides();
+    } catch (e) {
+      Alert.alert('Booking Failed', e?.message || 'Could not reserve a seat.');
+    }
   };
 
   const filtered = filterTo
@@ -105,7 +242,22 @@ export default function CarpoolScreen() {
           <Ionicons name="arrow-back" size={22} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Carpool</Text>
-        <View style={styles.badge}><Text style={styles.badgeText}>Verified Only</Text></View>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <TouchableOpacity 
+            onPress={() => setShowVehicleModal(true)} 
+            style={[styles.backBtn, { backgroundColor: '#f1f5f9' }]}
+            accessibilityLabel="My Vehicles"
+          >
+            <Ionicons name="car" size={18} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => setShowOtpModal(true)} 
+            style={[styles.backBtn, { backgroundColor: '#f1f5f9' }]}
+            accessibilityLabel="Verify Boarding OTP"
+          >
+            <Ionicons name="shield-checkmark" size={18} color="#166534" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -257,8 +409,8 @@ export default function CarpoolScreen() {
               <TextInput style={styles.input} placeholder="e.g. Dhanori Chowk" placeholderTextColor={COLORS.textLight} value={form.from} onChangeText={t => setForm({ ...form, from: t })} />
               <Text style={styles.label}>To (Destination) *</Text>
               <TextInput style={styles.input} placeholder="e.g. Hinjewadi Phase 1" placeholderTextColor={COLORS.textLight} value={form.to} onChangeText={t => setForm({ ...form, to: t })} />
-              <Text style={styles.label}>Departure Date & Time *</Text>
-              <TextInput style={styles.input} placeholder="e.g. Tomorrow 9:00 AM" placeholderTextColor={COLORS.textLight} value={form.time} onChangeText={t => setForm({ ...form, time: t })} />
+              <Text style={styles.label}>Departure Time * (HH:MM or 9:00 AM)</Text>
+              <TextInput style={styles.input} placeholder="e.g. 09:00 AM" placeholderTextColor={COLORS.textLight} value={form.time} onChangeText={t => setForm({ ...form, time: t })} />
               <View style={{ flexDirection: 'row', gap: SPACING.md }}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.label}>₹ per Seat *</Text>
@@ -269,11 +421,168 @@ export default function CarpoolScreen() {
                   <TextInput style={styles.input} placeholder="3" placeholderTextColor={COLORS.textLight} keyboardType="numeric" value={form.seats} onChangeText={t => setForm({ ...form, seats: t })} />
                 </View>
               </View>
-              <Text style={styles.label}>Vehicle (optional)</Text>
-              <TextInput style={styles.input} placeholder="e.g. Maruti Swift" placeholderTextColor={COLORS.textLight} value={form.vehicle} onChangeText={t => setForm({ ...form, vehicle: t })} />
+
+              {vehicles.length > 0 ? (
+                <View style={{ marginBottom: SPACING.md }}>
+                  <Text style={styles.label}>Select Registered Vehicle</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {vehicles.map(v => (
+                      <TouchableOpacity
+                        key={v.id}
+                        onPress={() => setSelectedVehicleId(v.id)}
+                        style={[
+                          styles.metaTag,
+                          { borderWidth: 1, borderColor: selectedVehicleId === v.id ? COLORS.primary : COLORS.border },
+                          selectedVehicleId === v.id && { backgroundColor: COLORS.primaryLight }
+                        ]}
+                      >
+                        <Ionicons name="car" size={14} color={selectedVehicleId === v.id ? COLORS.primary : COLORS.textMuted} />
+                        <Text style={[styles.metaText, selectedVehicleId === v.id && { color: COLORS.primary, fontWeight: '700' }]}>
+                          {' '}{v.make ? v.make + ' ' : ''}{v.model} ({v.plate_number})
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : null}
+
               <TouchableOpacity style={styles.submitBtn} onPress={handleOffer} activeOpacity={0.7}>
                 <Ionicons name="car-sport-outline" size={18} color="#fff" />
                 <Text style={styles.submitBtnText}> Post Carpool Offer</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Vehicle Management Modal */}
+      <Modal visible={showVehicleModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.dragHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Manage Vehicles</Text>
+              <TouchableOpacity onPress={() => setShowVehicleModal(false)} style={styles.closeBtnCircle}>
+                <Ionicons name="close" size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>My Registered Vehicles</Text>
+              {vehicles.length === 0 ? (
+                <Text style={{ fontSize: FONT_SIZES.sm, color: COLORS.textMuted, marginBottom: 16 }}>
+                  No vehicles registered yet. Add your vehicle below.
+                </Text>
+              ) : (
+                vehicles.map(v => (
+                  <View key={v.id} style={[styles.metaTag, { justifyContent: 'space-between', padding: 12, marginBottom: 8 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="car-outline" size={20} color={COLORS.primary} />
+                      <View>
+                        <Text style={{ fontWeight: '700', color: COLORS.text }}>{v.make ? v.make + ' ' : ''}{v.model}</Text>
+                        <Text style={{ fontSize: 12, color: COLORS.textMuted }}>{v.plate_number} • {v.total_seats} Seats</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
+
+              <Text style={[styles.label, { marginTop: 16 }]}>Add New Vehicle</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Make (e.g. Maruti, Hyundai, Tata)"
+                placeholderTextColor={COLORS.textLight}
+                value={vehicleForm.make}
+                onChangeText={t => setVehicleForm({ ...vehicleForm, make: t })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Model (e.g. Swift, Nexon, i20) *"
+                placeholderTextColor={COLORS.textLight}
+                value={vehicleForm.model}
+                onChangeText={t => setVehicleForm({ ...vehicleForm, model: t })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="License Plate (e.g. MH 12 AB 1234) *"
+                placeholderTextColor={COLORS.textLight}
+                autoCapitalize="characters"
+                value={vehicleForm.plate_number}
+                onChangeText={t => setVehicleForm({ ...vehicleForm, plate_number: t })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Total Passenger Seats (e.g. 4)"
+                placeholderTextColor={COLORS.textLight}
+                keyboardType="numeric"
+                value={vehicleForm.total_seats}
+                onChangeText={t => setVehicleForm({ ...vehicleForm, total_seats: t })}
+              />
+
+              <TouchableOpacity style={styles.submitBtn} onPress={handleAddVehicle} activeOpacity={0.7}>
+                <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                <Text style={styles.submitBtnText}> Register Vehicle</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* OTP Boarding Verification Modal */}
+      <Modal visible={showOtpModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.dragHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Verify Passenger Boarding</Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)} style={styles.closeBtnCircle}>
+                <Ionicons name="close" size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: FONT_SIZES.sm, color: COLORS.textMuted, marginBottom: 16 }}>
+                Before starting the ride, verify the 4-digit boarding code presented by your passenger.
+              </Text>
+              <Text style={styles.label}>Ride ID *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Ride ID"
+                placeholderTextColor={COLORS.textLight}
+                value={otpRideId}
+                onChangeText={setOtpRideId}
+              />
+              <Text style={styles.label}>Booking ID *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Booking ID"
+                placeholderTextColor={COLORS.textLight}
+                value={otpBookingId}
+                onChangeText={setOtpBookingId}
+              />
+              <Text style={styles.label}>4-Digit Boarding OTP *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 5432"
+                placeholderTextColor={COLORS.textLight}
+                keyboardType="numeric"
+                maxLength={4}
+                value={otpCode}
+                onChangeText={setOtpCode}
+              />
+
+              <TouchableOpacity 
+                style={[styles.submitBtn, verifyingOtp && { opacity: 0.6 }]} 
+                onPress={handleVerifyOtp} 
+                disabled={verifyingOtp}
+                activeOpacity={0.7}
+              >
+                {verifyingOtp ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-done" size={18} color="#fff" />
+                    <Text style={styles.submitBtnText}> Verify & Authorize Start</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </ScrollView>
           </View>

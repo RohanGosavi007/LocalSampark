@@ -7,7 +7,7 @@ class PoliceVerificationService {
         console.log(`[Police API] Submitting verification ${verificationId} for ${data.personName}`);
         
         // Mock successful submission
-        await query('UPDATE society_police_verification SET status = "submitted", submitted_to_police_at = CURRENT_TIMESTAMP WHERE id = $1',
+        await query('UPDATE society_police_verification SET status = \'submitted\', submitted_to_police_at = CURRENT_TIMESTAMP WHERE id = $1',
             [verificationId]
         );
 
@@ -18,7 +18,7 @@ class PoliceVerificationService {
         // Mock checking status
         const isApproved = Math.random() > 0.5;
         if (isApproved) {
-            await query('UPDATE society_police_verification SET status = "verified", verified_at = CURRENT_TIMESTAMP, access_status = "approved" WHERE id = $1',
+            await query('UPDATE society_police_verification SET status = \'verified\', verified_at = CURRENT_TIMESTAMP, access_status = \'approved\' WHERE id = $1',
                 [verificationId]
             );
             return { success: true, status: 'verified' };

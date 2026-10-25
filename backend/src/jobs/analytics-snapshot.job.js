@@ -1,4 +1,13 @@
 /**
+ * NOT STARTED — server.js does not require this job, deliberately.
+ *
+ * It writes shop_analytics_daily, which nothing reads: the merchant analytics
+ * screens compute their figures live from orders. It is also written in
+ * SQLite's dialect (INSERT OR REPLACE, date()), which PostgreSQL rejects.
+ * Before scheduling it, give it a reader and port it the way
+ * jobs/fraud-analysis.job.js was ported.
+ */
+/**
  * ═══════════════════════════════════════════════════════════════════════
  * Shop Analytics Snapshot — Daily Cron Job
  * 10x Plan: Section 20.3 — Pre-computed Dashboard Data
@@ -6,7 +15,7 @@
  * Runs daily at 1 AM to compute analytics snapshots for all active shops
  * ═══════════════════════════════════════════════════════════════════════
  */
-const cron = require('node-cron');
+const cron = require('../utils/cron');
 const { query, queryOne, queryMany } = require('../config/database');
 const logger = require('../config/logger');
 const crypto = require('crypto');

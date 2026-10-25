@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, MapPin, Navigation, Clock, Users, Star, Shield, Car, Plus, Send, AlertTriangle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiGet, apiPost } from '../../src/lib/api';
+import { socketService } from '../../src/services/socket';
+import { useSocket } from '../../src/context/SocketContext';
 
 const TABS = [{ key: 'find', label: '🔍 Find' }, { key: 'offer', label: '🚗 Offer' }, { key: 'my', label: '📋 My Rides' }];
 
@@ -38,6 +40,18 @@ export default function CarpoolScreen() {
   }, [rideType]);
 
   useEffect(() => { fetchRides(); }, [fetchRides]);
+
+  // Seats change as other commuters book. Patch the one ride in place rather
+  // than refetching the list, so the screen does not flash under the user.
+  const { isConnected } = useSocket();
+  useEffect(() => {
+    if (!isConnected) return undefined;
+    const onUpdate = ({ rideId, remaining_seats: left } = {}) => {
+      setRides((prev) => prev.map((r) => (r.id === rideId ? { ...r, remaining_seats: left } : r)));
+    };
+    socketService.on('carpool:ride_updated', onUpdate);
+    return () => socketService.off('carpool:ride_updated', onUpdate);
+  }, [isConnected]);
 
   useEffect(() => {
     if (tab === 'my') {

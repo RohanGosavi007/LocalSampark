@@ -1,108 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { apiGet } from '../../../../src/lib/api';
+import React, { useState } from 'react';
+import { View } from 'react-native';
+import {
+  SM, Card, Row, Badge, Button, Field, DataState,
+  useSocietyData, useSocietyContext, useSocietyLive, runAction, statusTone, titleCase, when,
+} from '../../../../src/components/society/SocietyKit';
 
 /**
- * Two parcels were hardcoded — an Amazon delivery "At Gate" since 2:30 PM and a
- * collected BlueDart. A resident could have walked down to the gate for a parcel
- * that was not there.
+ * Parcels held at the gate.
+ *
+ * Residents were sent to the guard-only queue (/packages/pending) and refused,
+ * and the guard's queue filtered on a status the seeded parcels did not have,
+ * so both sides saw nothing. "+ Log New Package" had no handler. Now the guard
+ * logs a parcel and the flat hears about it live; either side marks it
+ * collected.
  */
 export default function PackagesTab({ role }) {
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { context } = useSocietyContext();
+  const desk = role === 'guard' || role === 'admin';
+  const list = useSocietyData(desk ? `${SM}/packages/pending` : `${SM}/my-packages`);
+  const [form, setForm] = useState({ flatNumber: '', courierName: '', packageDescription: '' });
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await apiGet('/society-management/packages/pending');
-        const rows = res?.packages ?? res?.data ?? (Array.isArray(res) ? res : []);
-        setPackages(
-          rows.map((p) => ({
-            id: String(p.id),
-            courier: p.courier_name || p.courier || 'Parcel',
-            status: String(p.status || 'pending').toLowerCase() === 'collected' ? 'Collected' : 'At Gate',
-            code: p.tracking_code || p.code || '',
-            date: p.created_at ? new Date(p.created_at).toLocaleString() : '',
-          }))
-        );
-      } catch (err) {
-        setPackages([]);
-        setError(err?.message || 'Could not load packages.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  useSocietyLive(context, { flat: !desk }, { PACKAGE_ARRIVED: () => list.reload() });
+
+  const log = async () => {
+    setBusy(true);
+    const res = await runAction('post', `${SM}/packages`, {
+      ...form, flatNumber: form.flatNumber.trim().toUpperCase(),
+    }, { success: 'Logged. The flat has been told.' });
+    setBusy(false);
+    if (res) { setForm({ flatNumber: '', courierName: '', packageDescription: '' }); list.reload(); }
+  };
+
+  const collect = (p) => runAction('put', `${SM}/packages/${p.id}/collect`, null, { onDone: () => list.reload() });
+  const waiting = (p) => p.status !== 'collected';
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {role === 'guard' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Receive Delivery Package</Text>
-          <Text style={styles.subtitle}>Log incoming courier packages for residents.</Text>
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>+ Log New Package</Text>
-          </TouchableOpacity>
-        </View>
+    <View>
+      {desk && (
+        <Card title="Log a parcel">
+          <Field label="Flat" placeholder="e.g. C-203" autoCapitalize="characters" value={form.flatNumber}
+            onChangeText={(flatNumber) => setForm({ ...form, flatNumber })} />
+          <Field label="Courier" placeholder="e.g. Blue Dart" value={form.courierName} onChangeText={(courierName) => setForm({ ...form, courierName })} />
+          <Field label="Description (optional)" value={form.packageDescription}
+            onChangeText={(packageDescription) => setForm({ ...form, packageDescription })} />
+          <Button label="Log parcel" onPress={log} busy={busy} disabled={!form.flatNumber.trim()} />
+        </Card>
       )}
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{role === 'guard' ? 'Recent Deliveries' : 'My Packages'}</Text>
-        {loading ? (
-          <View style={styles.stateBox}><ActivityIndicator color="#3b82f6" /></View>
-        ) : packages.length === 0 ? (
-          <View style={styles.stateBox}>
-            <Text style={styles.stateTitle}>
-              {error ? 'Could not load packages' : 'Nothing at the gate'}
-            </Text>
-            <Text style={styles.stateBody}>
-              {error || 'Parcels logged by the guard will appear here.'}
-            </Text>
-          </View>
-        ) : packages.map(pkg => (
-          <View key={pkg.id} style={styles.pkgRow}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📦</Text>
-            </View>
-            <View style={{flex: 1}}>
-              <Text style={styles.pkgTitle}>{pkg.courier}</Text>
-              <Text style={styles.pkgMeta}>{pkg.code} • {pkg.date}</Text>
-            </View>
-            <View style={{alignItems: 'flex-end'}}>
-              <View style={[styles.badge, pkg.status === 'Collected' ? styles.badgeSuccess : styles.badgeWarning]}>
-                <Text style={[styles.badgeText, pkg.status === 'Collected' ? styles.badgeSuccessText : styles.badgeWarningText]}>
-                  {pkg.status}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+      <Card title={desk ? 'Waiting at the gate' : 'My parcels'}>
+        <DataState state={list} empty="Nothing at the gate" emptyBody={desk ? null : 'The guard logs parcels for your flat here.'}>
+          {(list.data || []).map((p, i) => (
+            <Row key={p.id} first={i === 0} title={`${desk ? `${p.flat_number} · ` : ''}${p.courier_name || 'Parcel'}`}
+              meta={[p.package_description, `Arrived ${when(p.created_at)}`, p.collected_at && `Collected ${when(p.collected_at)}`]}
+              right={waiting(p)
+                ? <Button label={desk ? 'Handed over' : 'Collected'} small onPress={() => collect(p)} />
+                : <Badge label={titleCase(p.status)} tone={statusTone(p.status)} />} />
+          ))}
+        </DataState>
+      </Card>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
-  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
-  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  
-  pkgRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
-  iconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: '#e2e8f0' },
-  icon: { fontSize: 20 },
-  pkgTitle: { color: '#0f172a', fontSize: 14, fontWeight: 'bold', marginBottom: 2 },
-  pkgMeta: { color: '#64748b', fontSize: 11 },
-  
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1 },
-  badgeSuccess: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)' },
-  badgeSuccessText: { color: '#10b981', fontSize: 10, fontWeight: 'bold' },
-  badgeWarning: { backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.2)' },
-  badgeWarningText: { color: '#f59e0b', fontSize: 10, fontWeight: 'bold' }
-});

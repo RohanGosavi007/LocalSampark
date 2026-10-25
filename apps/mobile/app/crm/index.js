@@ -19,18 +19,8 @@ export default function NativeCRMScreen() {
       if (data && data.success && data.dashboard) {
         setDashboard(data.dashboard);
       } else {
-        // Mock data for B2B UI visualization
-        setDashboard({
-          total_leads: 142,
-          converted: 89,
-          pipeline_value: 450000,
-          win_rate: '62%',
-          recent_leads: [
-            { id: 1, name: 'Rahul Enterprise', contact: 'Rahul Verma', status: 'HOT', amount: 25000, updated: '2h ago' },
-            { id: 2, name: 'Tech Solutions Ltd', contact: 'Priya Singh', status: 'IN_PROGRESS', amount: 80000, updated: '1d ago' },
-            { id: 3, name: 'Sunrise Retail', contact: 'Amit Shah', status: 'NEW', amount: 15000, updated: '2d ago' },
-          ]
-        });
+        // No invented pipeline (142 leads, ₹4.5 lakh): an empty answer is shown as empty.
+        setDashboard(null);
       }
     } catch (err) {
       console.warn('Failed to fetch crm dashboard:', err);

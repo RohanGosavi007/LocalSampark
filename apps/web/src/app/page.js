@@ -17,14 +17,9 @@ import { cn } from './components/ui/Button';
 import { StoreIcon, CommunityIcon, DeliveryIcon, ProduceIcon } from './components/ui/RichIcons';
 import { useLanguage } from './components/LanguageToggle';
 import PlatformMap, { PlatformRail } from './components/PlatformMap';
+import { API_BASE } from '@/lib/api';
 
 // ── Data ──────────────────────────────────────────────────────
-
-const TESTIMONIALS = [
-  { name: 'Sunita Bhosale', role: 'Housewife', text: 'I ordered vegetables from Sharma Grocery at 8 AM and they arrived by 9:15 AM — fresher than any big app!', zone: 'Dhanori', rating: 5 },
-  { name: 'Rohan Patil', role: 'Delivery Runner', text: 'I make ₹14,000 extra every month just working 3 hours after my main job.', zone: 'Viman Nagar', rating: 5 },
-  { name: 'Sunil Deshmukh', role: 'Franchise Partner', text: 'As a franchise partner managing 34 shops, I earned ₹42,600 in April alone.', zone: 'Dhanori', rating: 5 },
-];
 
 const PILLARS = [
   { 
@@ -32,7 +27,7 @@ const PILLARS = [
     iconComp: <CommunityIcon size={48} />, 
     link: '/community', 
     desc: 'pillar_community_desc',
-    badge: '💬 12k+ Posts',
+    badge: '💬 Community',
     gradient: 'from-rose-500/20 via-pink-500/10 to-transparent',
     borderHover: 'hover:border-rose-500/40',
     span: 'col-span-2 row-span-2',
@@ -42,7 +37,7 @@ const PILLARS = [
     iconComp: <StoreIcon size={48} />, 
     link: '/shops', 
     desc: 'pillar_shops_desc',
-    badge: '⭐ Top Rated',
+    badge: '🏪 Local shops',
     gradient: 'from-orange-500/20 via-amber-500/10 to-transparent',
     borderHover: 'hover:border-orange-500/40',
     span: 'col-span-2',
@@ -52,7 +47,7 @@ const PILLARS = [
     iconComp: <DeliveryIcon size={48} />, 
     link: '/download', 
     desc: 'pillar_hyperlocal_desc',
-    badge: '⚡ 10-Min',
+    badge: '🚚 Local delivery',
     gradient: 'from-violet-500/20 via-purple-500/10 to-transparent',
     borderHover: 'hover:border-violet-500/40',
     span: '',
@@ -62,7 +57,7 @@ const PILLARS = [
     iconComp: <ProduceIcon size={48} />, 
     link: '/shops?category=fresh', 
     desc: 'pillar_fresh_desc',
-    badge: '🌿 Organic',
+    badge: '🌿 Fresh produce',
     gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent',
     borderHover: 'hover:border-emerald-500/40',
     span: '',
@@ -72,7 +67,7 @@ const PILLARS = [
     icon: Home, 
     link: '/society', 
     desc: 'pillar_society_desc',
-    badge: '🏘️ Smart',
+    badge: '🏘️ Societies',
     gradient: 'from-indigo-500/20 via-blue-500/10 to-transparent',
     borderHover: 'hover:border-indigo-500/40',
     span: '',
@@ -82,7 +77,7 @@ const PILLARS = [
     icon: Building2, 
     link: '/properties', 
     desc: 'pillar_real_estate_desc',
-    badge: '🏢 0% Brokerage',
+    badge: '🏢 Real estate',
     gradient: 'from-amber-500/20 via-orange-500/10 to-transparent',
     borderHover: 'hover:border-amber-500/40',
     span: '',
@@ -92,31 +87,11 @@ const PILLARS = [
     icon: HandCoins, 
     link: '/earn', 
     desc: 'pillar_earn_desc',
-    badge: '💰 ₹42k/mo',
+    badge: '💼 Earn',
     gradient: 'from-green-500/20 via-emerald-500/10 to-transparent',
     borderHover: 'hover:border-green-500/40',
     span: 'col-span-2',
   },
-];
-
-const LIVE_ITEMS = [
-  { icon: ShoppingBag, text: 'Sunita ordered Fresh Paneer from Sharma Grocery', time: '2 min ago', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  { icon: Car, text: 'Rohan shared a ride to Hinjewadi — 2 seats filled', time: '5 min ago', color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  { icon: Truck, text: 'Delivery completed: Golden Crumb Bakery → Ganga Aria', time: '8 min ago', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-  { icon: Users, text: 'Pooja registered for Neighborhood Clean-Up Drive', time: '12 min ago', color: 'text-purple-400', bg: 'bg-purple-500/10' },
-  { icon: Star, text: 'Priya rated Dhanori Auto Washers ★★★★★', time: '15 min ago', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  { icon: CheckCircle, text: 'Plumber dispatched to Pride Aashiyana B-wing', time: '18 min ago', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-  { icon: TrendingUp, text: 'Franchise Partner Sunil earned ₹2,400 today', time: '22 min ago', color: 'text-green-400', bg: 'bg-green-500/10' },
-  { icon: Activity, text: '12 new neighbors joined from Tingre Nagar', time: '30 min ago', color: 'text-pink-400', bg: 'bg-pink-500/10' },
-];
-
-const ZONES = [
-  { zone: 'Dhanori', neighbors: '5,200+', shops: 142, status: 'Live', color: 'from-emerald-500 to-teal-500', statusColor: 'bg-green-500' },
-  { zone: 'Viman Nagar', neighbors: '3,100+', shops: 98, status: 'Live', color: 'from-orange-500 to-amber-500', statusColor: 'bg-green-500' },
-  { zone: 'Tingre Nagar', neighbors: '1,800+', shops: 56, status: 'Live', color: 'from-purple-500 to-pink-500', statusColor: 'bg-green-500' },
-  { zone: 'Kharadi', neighbors: '1,200+', shops: 34, status: 'Launching', color: 'from-blue-500 to-cyan-500', statusColor: 'bg-amber-500' },
-  { zone: 'Bhairav Nagar', neighbors: '900+', shops: 28, status: 'Live', color: 'from-emerald-500 to-teal-500', statusColor: 'bg-green-500' },
-  { zone: 'Lohegaon', neighbors: '450+', shops: 12, status: 'Coming Soon', color: 'from-rose-500 to-red-500', statusColor: 'bg-gray-400' },
 ];
 
 // ── 3D Tilt Card Component ──────────────────────────────────
@@ -201,22 +176,21 @@ function BentoCard({ pillar, index }) {
 
 export default function HomePage() {
   const { t } = useLanguage();
-  const [stats, setStats] = useState({ neighbors: 1000, shops: 50, gigs: 10, commission: 5000 });
+  // Real counts from GET /public/stats. This was an animation counting up to 12,450 neighbours,
+  // 347 shops and "₹120k commission saved" whatever the real numbers were.
+  const [stats, setStats] = useState({ neighbors: 0, shops: 0, zones: [] });
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        neighbors: prev.neighbors < 12450 ? prev.neighbors + 230 : 12450,
-        shops: prev.shops < 347 ? prev.shops + 7 : 347,
-        gigs: prev.gigs < 78 ? prev.gigs + 2 : 78,
-        commission: prev.commission < 120000 ? prev.commission + 2500 : 120000,
-      }));
-    }, 50);
-    return () => clearInterval(interval);
+    let alive = true;
+    fetch(`${API_BASE}/public/stats`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setStats({ neighbors: d.neighbors || 0, shops: d.shops || 0, zones: d.zones || [] }); })
+      .catch(() => { /* leave the counters hidden */ });
+    return () => { alive = false; };
   }, []);
 
   return (
@@ -333,7 +307,7 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center"><ShieldCheck className="w-5 h-5"/></div>
                   <div>
                     <p className="text-xs font-bold text-text">Verified Neighbor</p>
-                    <p className="text-[10px] text-text-muted">Aadhaar + OTP</p>
+                    <p className="text-[10px] text-text-muted">Phone OTP sign-in</p>
                   </div>
                 </motion.div>
 
@@ -344,25 +318,28 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center"><Zap className="w-5 h-5"/></div>
                   <div>
                     <p className="text-xs font-bold text-text">Fast Delivery</p>
-                    <p className="text-[10px] text-text-muted">Under 45 mins</p>
+                    <p className="text-[10px] text-text-muted">From shops nearby</p>
                   </div>
                 </motion.div>
 
-                <motion.div 
-                  animate={{ x: [-8, 8, -8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-[50%] right-6 glass-card-v2-light p-3 flex items-center gap-3 rounded-2xl shadow-2xl"
-                >
-                  <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center"><Star className="w-5 h-5"/></div>
-                  <div>
-                    <p className="text-xs font-bold text-text">4.8★ Rating</p>
-                    <p className="text-[10px] text-text-muted">12,450 users</p>
-                  </div>
-                </motion.div>
               </motion.div>
 
             </div>
           </div>
         </section>
+
+        {stats.zones.length > 0 && (
+          <section className="py-16 bg-background overflow-hidden">
+            <div className="container text-center">
+              <h2 className="text-3xl font-heading font-black mb-6">Active <span className="gradient-text-v2">Zones</span></h2>
+              <div className="flex flex-wrap justify-center gap-3">
+                {stats.zones.map((z) => (
+                  <span key={z} className="px-4 py-2 rounded-full border border-border bg-background-alt font-semibold">{z}</span>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ══════════════════════════════════════════════════════════
             PLATFORM MAP — what this app actually is
@@ -381,11 +358,10 @@ export default function HomePage() {
           <div className="container">
             <div className="flex flex-wrap justify-center lg:justify-between items-center gap-8 text-center">
               {[
-                { val: `${stats.neighbors.toLocaleString()}+`, label: 'Active Neighbors' },
-                { val: `${stats.shops}+`, label: 'Verified Local Shops' },
-                { val: `${stats.gigs}+`, label: 'On-Demand Gigs' },
-                { val: `₹${(stats.commission / 1000).toFixed(0)}k+`, label: 'Commission Saved' },
-              ].map((s, i) => (
+                stats.neighbors > 0 && { val: stats.neighbors.toLocaleString('en-IN'), label: 'Neighbors joined' },
+                stats.shops > 0 && { val: stats.shops.toLocaleString('en-IN'), label: 'Local Shops' },
+                stats.zones.length > 0 && { val: String(stats.zones.length), label: stats.zones.length === 1 ? 'Active Zone' : 'Active Zones' },
+              ].filter(Boolean).map((s, i) => (
                 <motion.div 
                   key={s.label}
                   initial={{ opacity: 0, y: 20 }}
@@ -418,60 +394,6 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1200px' }}>
               {PILLARS.map((pillar, i) => (
                 <BentoCard key={i} pillar={pillar} index={i} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            TESTIMONIALS — "What Pune Says" with Levitate Effect
-           ══════════════════════════════════════════════════════════ */}
-        <section className="py-24 bg-background-alt border-y border-border overflow-hidden">
-          <div className="container relative">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <Badge variant="secondary" className="mb-4">Real Voices</Badge>
-              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">
-                What Pune <span className="gradient-text-warm">Says</span>
-              </h2>
-              <p className="text-lg text-text-muted">Real residents, shop owners, and earners from Dhanori and beyond.</p>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className={`glass-card-v2-light p-8 relative group hover:-translate-y-3 transition-all duration-500 levitate levitate-delay-${i + 1}`}
-                >
-                  {/* Quote watermark */}
-                  <div className="absolute top-3 right-5 text-7xl font-serif text-primary/8 group-hover:text-primary/15 transition-colors select-none pointer-events-none">"</div>
-                  
-                  {/* Stars */}
-                  <div className="flex gap-0.5 mb-4">
-                    {[...Array(t.rating)].map((_, si) => (
-                      <Star key={si} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    ))}
-                  </div>
-
-                  <p className="text-lg font-medium italic text-text mb-6 relative z-10 leading-relaxed">"{t.text}"</p>
-                  
-                  <div className="flex items-center gap-4 mt-auto">
-                    {/* 3D Avatar ring with status */}
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/50">
-                        {t.name.charAt(0)}
-                      </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-text">{t.name}</p>
-                      <p className="text-xs text-text-muted">{t.role} · {t.zone}</p>
-                    </div>
-                  </div>
-                </motion.div>
               ))}
             </div>
           </div>
@@ -516,106 +438,6 @@ export default function HomePage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            LIVE ACTIVITY MARQUEE — Infinite Ticker with Glass Pills
-           ══════════════════════════════════════════════════════════ */}
-        <section className="py-12 bg-background-alt border-y border-border overflow-hidden">
-          <div className="container mb-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="status-dot-live" />
-              <span className="text-xs font-bold font-heading text-primary uppercase tracking-widest">Live Activity</span>
-            </div>
-            <p className="text-sm text-text-muted">Real-time activity across the LocalSampark network</p>
-          </div>
-          
-          {/* Infinite Marquee */}
-          <div className="marquee-container">
-            <div className="marquee-content">
-              {/* Duplicate items for seamless loop */}
-              {[...LIVE_ITEMS, ...LIVE_ITEMS].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 glass-card-v2-light px-5 py-3 rounded-2xl min-w-[300px] border border-border/50">
-                  <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center ${item.color} shrink-0`}>
-                    <item.icon className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-text truncate">{item.text}</p>
-                    <p className="text-[10px] text-text-muted flex items-center gap-1">
-                      <span className="status-dot-live" style={{ width: 4, height: 4 }} />
-                      {item.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            ACTIVE ZONES — 3D Interactive Zone Cards
-           ══════════════════════════════════════════════════════════ */}
-        <section className="py-24 bg-background overflow-hidden">
-          <div className="container">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <Badge variant="secondary" className="mb-4">Growing Network</Badge>
-              <h2 className="text-4xl lg:text-5xl font-heading font-black tracking-tight mb-4">
-                Active <span className="gradient-text-v2">Zones</span>
-              </h2>
-              <p className="text-lg text-text-muted">LocalSampark is expanding across Pune — one neighborhood at a time.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {ZONES.map((z, i) => (
-                <motion.div key={z.zone} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                  className="glass-card-v2-light rounded-2xl border border-border p-6 group hover:-translate-y-3 hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${z.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform glow-ring`}>
-                      <MapPin className="w-6 h-6" />
-                    </div>
-                    <span className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${z.statusColor === 'bg-green-500' ? 'bg-green-500/10 text-green-600' : z.statusColor === 'bg-amber-500' ? 'bg-amber-500/10 text-amber-600' : 'bg-gray-400/10 text-gray-500'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${z.statusColor} ${z.statusColor === 'bg-green-500' ? 'animate-pulse' : ''}`} />
-                      {z.status}
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-heading font-black text-text mb-3">{z.zone}</h3>
-                  
-                  {/* Activity bar */}
-                  <div className="w-full h-1.5 bg-border/50 rounded-full mb-4 overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${Math.min(parseInt(z.neighbors) / 60, 100)}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1, delay: i * 0.1 }}
-                      className={`h-full rounded-full bg-gradient-to-r ${z.color}`}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <p className="text-lg font-heading font-black text-primary">{z.neighbors}</p>
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider">Neighbors</p>
-                    </div>
-                    <div className="w-px h-8 bg-border" />
-                    <div>
-                      <p className="text-lg font-heading font-black text-secondary">{z.shops}</p>
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider">Shops</p>
-                    </div>
-                  </div>
-
-                  {/* Was opacity-0 until hover, so on any touch device this control was
-                      invisible and unreachable — and to a keyboard user it was a
-                      focusable target with nothing rendered. */}
-                  <Button variant="ghost" size="sm" className="mt-4 w-full" asChild>
-                    <a href={`/shops?zone=${z.zone.toLowerCase().replace(' ', '-')}`}>
-                      <Eye className="w-4 h-4 mr-1" /> Explore Zone
-                    </a>
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
             CTA BANNER — 3D Glass with Shimmer Download Button
            ══════════════════════════════════════════════════════════ */}
         <section className="py-32 relative overflow-hidden isolate">
@@ -639,7 +461,7 @@ export default function HomePage() {
                 Join the Dhanori Movement
               </h2>
               <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                Over 12,450 neighbors already connected. Download LocalSampark and transform how your community shops, talks, and earns together.
+                Download LocalSampark and transform how your community shops, talks, and earns together.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

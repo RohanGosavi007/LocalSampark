@@ -55,11 +55,14 @@ function verifyHmacSha256(payload, signature, secret, encoding = 'hex') {
  */
 function webhookGuard({ secret, signature, payload, encoding = 'hex', providerName }) {
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
+    // Only a process that says it is development or test may skip the check.
+    // The condition was `=== 'production'`, so staging — or any deployment
+    // that never set NODE_ENV — accepted unsigned callbacks that mark orders
+    // paid. An unknown environment is treated as one that matters.
+    if (!['development', 'test'].includes(process.env.NODE_ENV)) {
       return `${providerName} webhook secret is not configured; refusing unverified callback`;
     }
-    // Non-production keeps local testing workable, but says so loudly.
-    console.warn(`[webhook] ${providerName}: no secret configured — signature NOT verified (non-production only)`);
+    console.warn(`[webhook] ${providerName}: no secret configured — signature NOT verified (development only)`);
     return null;
   }
   if (!signature) return `${providerName} webhook missing signature header`;
@@ -69,4 +72,24 @@ function webhookGuard({ secret, signature, payload, encoding = 'hex', providerNa
   return null;
 }
 
-module.exports = { safeCompare, verifyHmacSha256, webhookGuard };
+/**
+ * The request body exactly as the provider sent it, as a string.
+ *
+ * The app-level JSON parser runs before any route and consumes the stream, so
+ * a route's own express.raw() never sees a Buffer; server.js keeps the
+ * original bytes on req.rawBody for webhook paths instead. A Buffer in
+ * req.body is still honoured, for a router mounted without that parser (the
+ * tests do this). What must never be signed-over is a parsed object: it turns
+ * into "[object Object]", or into re-serialised JSON whose bytes are not the
+ * ones that were signed.
+ *
+ * Returns null when no faithful copy of the body is available.
+ */
+function rawBodyOf(req) {
+  if (Buffer.isBuffer(req.rawBody)) return req.rawBody.toString('utf8');
+  if (Buffer.isBuffer(req.body)) return req.body.toString('utf8');
+  if (typeof req.body === 'string') return req.body;
+  return null;
+}
+
+module.exports = { safeCompare, verifyHmacSha256, webhookGuard, rawBodyOf };

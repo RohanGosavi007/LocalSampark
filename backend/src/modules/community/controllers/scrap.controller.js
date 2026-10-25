@@ -93,7 +93,7 @@ const completePickup = async (req, res, next) => {
       // Resident chose to Donate to Old Age Fund
       // Reward Resident with Gamification Coins
       await query(`UPDATE loyalty_wallets SET total_coins = total_coins + $1 WHERE user_id = $2`, [reqData.coin_reward, reqData.resident_id]);
-      await query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Scrap Donation - Old Age Fund')`,
+      await query(`INSERT INTO loyalty_transactions (user_id, amount, transaction_type, type, source, description) VALUES ($1, $2, 'earned', 'earned', 'Scrap Donation - Old Age Fund', 'Scrap Donation - Old Age Fund')`,
         [reqData.resident_id, reqData.coin_reward]
       );
     } else {

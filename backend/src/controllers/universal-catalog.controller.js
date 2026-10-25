@@ -1,4 +1,5 @@
-const { query, queryOne, queryMany } = require('../config/database');
+const { query, queryOne, queryMany, withTransaction } = require('../config/database');
+const { isPlatformAdmin } = require('../middleware/shop-owner.middleware');
 const { getIo } = require('../sockets/index');
 
 exports.getCatalogItems = async (req, res) => {
@@ -12,19 +13,88 @@ exports.getCatalogItems = async (req, res) => {
   }
 };
 
+const ITEM_TYPES = ['physical_good', 'service', 'subscription', 'job_card'];
+const MAX_BULK_ITEMS = 500;
+
+/**
+ * Checks one catalogue item as sent by a client. Returns { error } or the
+ * values to store. A price is a finite number that is not negative: the
+ * column is what an order is charged from, and it used to take whatever
+ * arrived — a missing price in a bulk upload was stored as 0, a free item.
+ */
+function readItem(item) {
+  const source = item || {};
+  const title = typeof source.title === 'string' ? source.title.trim() : '';
+  if (!title) return { error: 'Each item needs a title' };
+  if (title.length > 200) return { error: 'A title can be at most 200 characters' };
+
+  const price = Number(source.price);
+  if (source.price === undefined || source.price === null || source.price === '' || !Number.isFinite(price) || price < 0) {
+    return { error: `"${title}" needs a price of 0 or more` };
+  }
+  const compare = source.compare_at_price === undefined || source.compare_at_price === null || source.compare_at_price === ''
+    ? null : Number(source.compare_at_price);
+  if (compare !== null && (!Number.isFinite(compare) || compare < 0)) {
+    return { error: `"${title}" has an invalid compare-at price` };
+  }
+  const inventory = source.inventory_count === undefined || source.inventory_count === null || source.inventory_count === ''
+    ? 0 : Number(source.inventory_count);
+  if (!Number.isInteger(inventory) || inventory < 0) {
+    return { error: `"${title}" needs a whole, non-negative stock count` };
+  }
+  const itemType = source.item_type || 'physical_good';
+  if (!ITEM_TYPES.includes(itemType)) return { error: `"${title}" has an unknown item_type` };
+
+  return {
+    values: [
+      itemType,
+      title,
+      source.description || null,
+      source.pricing_model || 'fixed',
+      price,
+      compare,
+      inventory,
+      source.availability_matrix ? JSON.stringify(source.availability_matrix) : null,
+      source.image_url || null,
+      source.metadata ? JSON.stringify(source.metadata) : null,
+    ],
+  };
+}
+
+const INSERT_ITEM = `INSERT INTO universal_catalog_items (shop_id, item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
+
+/**
+ * Guard for /item/:itemId — the caller owns the shop the item belongs to.
+ * The item id is all the request carries, so the shop is looked up from it.
+ */
+exports.requireItemOwner = async (req, res, next) => {
+  try {
+    const item = await queryOne(
+      `SELECT i.id, i.shop_id, s.owner_id
+         FROM universal_catalog_items i
+         LEFT JOIN local_shops s ON CAST(s.id AS TEXT) = CAST(i.shop_id AS TEXT)
+        WHERE CAST(i.id AS TEXT) = $1`,
+      [String(req.params.itemId)]
+    );
+    if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+    if (!isPlatformAdmin(req) && String(item.owner_id) !== String(req.user.id)) {
+      return res.status(403).json({ success: false, message: 'You do not manage the shop this item belongs to.' });
+    }
+    req.catalogItem = item;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
 exports.addCatalogItem = async (req, res) => {
   try {
     const { shopId } = req.params;
-    const { item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata } = req.body;
+    const item = readItem(req.body);
+    if (item.error) return res.status(400).json({ success: false, message: item.error });
 
-    // Optional validation logic here
-
-    const result = await query(
-      `INSERT INTO universal_catalog_items (shop_id, item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING id`,
-      [shopId, item_type || 'physical_good', title, description, pricing_model || 'fixed', price, compare_at_price || null, inventory_count || 0, availability_matrix ? JSON.stringify(availability_matrix) : null, image_url || null, metadata ? JSON.stringify(metadata) : null]
-    );
+    const result = await query(`${INSERT_ITEM} RETURNING id`, [shopId, ...item.values]);
 
     const itemId = (result.rows && result.rows[0] && result.rows[0].id) ?? result.lastID;
     res.json({ success: true, message: 'Item added successfully', itemId });
@@ -37,27 +107,34 @@ exports.addCatalogItem = async (req, res) => {
 exports.bulkAddCatalogItems = async (req, res) => {
   try {
     const { shopId } = req.params;
-    const { items } = req.body; // Array of item objects
+    const { items } = req.body || {}; // Array of item objects
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid or empty items array' });
     }
-
-    // SQLite doesn't natively support easy bulk insert with query builder without building a huge string.
-    // We'll iterate and insert. (In production with Postgres, we'd use unnest or prisma.createMany)
-    let addedCount = 0;
-    for (const item of items) {
-      const { item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata } = item;
-      
-      await query(
-        `INSERT INTO universal_catalog_items (shop_id, item_type, title, description, pricing_model, price, compare_at_price, inventory_count, availability_matrix, image_url, metadata) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [shopId, item_type || 'physical_good', title, description || null, pricing_model || 'fixed', price || 0, compare_at_price || null, inventory_count || 0, availability_matrix ? JSON.stringify(availability_matrix) : null, image_url || null, metadata ? JSON.stringify(metadata) : null]
-      );
-      addedCount++;
+    if (items.length > MAX_BULK_ITEMS) {
+      return res.status(400).json({ success: false, message: `At most ${MAX_BULK_ITEMS} items can be added at once` });
     }
 
-    res.json({ success: true, message: `Successfully bulk added ${addedCount} items.`, addedCount });
+    // Every row is checked before any is written, and they are written
+    // together: a sheet with one bad row used to import the rows above it and
+    // stop, leaving a catalogue nobody could tell the state of.
+    const rows = [];
+    for (let index = 0; index < items.length; index += 1) {
+      const item = readItem(items[index]);
+      if (item.error) {
+        return res.status(400).json({ success: false, message: `Row ${index + 1}: ${item.error}` });
+      }
+      rows.push(item.values);
+    }
+
+    await withTransaction(async (client) => {
+      for (const values of rows) {
+        await client.query(INSERT_ITEM, [shopId, ...values]);
+      }
+    });
+
+    res.json({ success: true, message: `Successfully bulk added ${rows.length} items.`, addedCount: rows.length });
   } catch (error) {
     console.error('Error bulk adding catalog items:', error);
     res.status(500).json({ success: false, message: 'Server error bulk adding catalog items' });
@@ -69,6 +146,10 @@ exports.trackLead = async (req, res) => {
     const { shopId } = req.params;
     const { leadType, content } = req.body; // 'FAVORITE', 'ABANDONED_CART'
     const userId = req.user.id;
+
+    if (typeof leadType !== 'string' || !leadType.trim()) {
+      return res.status(400).json({ success: false, message: 'leadType is required' });
+    }
 
     await query(
       `INSERT INTO universal_leads (shop_id, user_id, lead_type, content) VALUES ($1, $2, $3, $4)`,
@@ -93,11 +174,16 @@ exports.generateDescriptionWithAI = async (req, res) => {
     prompt += `Keep it between 2 to 4 sentences, focusing on benefits and value. Do not use quotes around the response.`;
 
     const apiKey = process.env.GEMINI_API_KEY;
-    
-    // Fallback if no API key is provided
+
+    // Without a key there is no model to ask. This used to return a fixed
+    // sentence with the title pasted in, presented as the generated result —
+    // which a shop owner would then publish as their product description.
     if (!apiKey) {
-      const mockDescription = `Discover the exceptional quality of our ${title}. This ${itemType || 'product'} is designed to deliver outstanding performance and unmatched value for your everyday needs.`;
-      return res.json({ success: true, description: mockDescription });
+      return res.status(503).json({
+        success: false,
+        code: 'AI_UNAVAILABLE',
+        message: 'Description suggestions are not available right now. Please write the description yourself.',
+      });
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -124,12 +210,58 @@ exports.generateDescriptionWithAI = async (req, res) => {
 exports.updateCatalogItem = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const { title, description, price, compare_at_price, inventory_count, is_active, metadata } = req.body;
-    
+    const body = req.body || {};
+
+    // Only the fields that were sent are changed. The statement used to set
+    // all seven columns from the request, so updating the stock alone wrote
+    // NULL into title and price — and price is what an order is charged.
+    const sets = [];
+    const params = [];
+    const set = (column, value) => { params.push(value); sets.push(`${column} = $${params.length}`); };
+
+    if (body.title !== undefined) {
+      const title = typeof body.title === 'string' ? body.title.trim() : '';
+      if (!title || title.length > 200) return res.status(400).json({ success: false, message: 'title must be 1 to 200 characters' });
+      set('title', title);
+    }
+    if (body.description !== undefined) set('description', body.description || null);
+    if (body.price !== undefined) {
+      const price = Number(body.price);
+      if (body.price === null || body.price === '' || !Number.isFinite(price) || price < 0) {
+        return res.status(400).json({ success: false, message: 'price must be 0 or more' });
+      }
+      set('price', price);
+    }
+    if (body.compare_at_price !== undefined) {
+      const compare = body.compare_at_price === null || body.compare_at_price === '' ? null : Number(body.compare_at_price);
+      if (compare !== null && (!Number.isFinite(compare) || compare < 0)) {
+        return res.status(400).json({ success: false, message: 'compare_at_price must be 0 or more' });
+      }
+      set('compare_at_price', compare);
+    }
+    if (body.inventory_count !== undefined) {
+      const inventory = Number(body.inventory_count);
+      if (!Number.isInteger(inventory) || inventory < 0) {
+        return res.status(400).json({ success: false, message: 'inventory_count must be a whole number of 0 or more' });
+      }
+      set('inventory_count', inventory);
+    }
+    if (body.is_active !== undefined) {
+      const active = body.is_active === true || body.is_active === 1 || body.is_active === '1' || body.is_active === 'true';
+      set('is_active', active ? '1' : '0');
+    }
+    if (body.metadata !== undefined) set('metadata', body.metadata ? JSON.stringify(body.metadata) : null);
+
+    if (sets.length === 0) {
+      return res.status(400).json({ success: false, message: 'Nothing to update' });
+    }
+
+    params.push(String(itemId));
     await query(
-      `UPDATE universal_catalog_items SET title = $1, description = $2, price = $3, compare_at_price = $4, inventory_count = $5, is_active = $6, metadata = $7 WHERE id = $8`,
-      [title, description, price, compare_at_price, inventory_count, is_active, metadata ? JSON.stringify(metadata) : null, itemId]
+      `UPDATE universal_catalog_items SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE CAST(id AS TEXT) = $${params.length}`,
+      params
     );
+    const { inventory_count, is_active } = body;
 
     // Fetch the shopId for broadcasting
     const item = await queryOne('SELECT shop_id FROM universal_catalog_items WHERE id = $1', [itemId]);
@@ -155,7 +287,7 @@ exports.updateCatalogItem = async (req, res) => {
 exports.deleteCatalogItem = async (req, res) => {
   try {
     const { itemId } = req.params;
-    await query(`DELETE FROM universal_catalog_items WHERE id = $1`, [itemId]);
+    await query(`DELETE FROM universal_catalog_items WHERE CAST(id AS TEXT) = $1`, [String(itemId)]);
     res.json({ success: true, message: 'Item deleted successfully' });
   } catch (error) {
     console.error('Error deleting catalog item:', error);

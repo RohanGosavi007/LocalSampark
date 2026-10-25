@@ -1,108 +1,117 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { apiGet } from '../../../../src/lib/api';
+import React, { useState } from 'react';
+import { View, Text, Alert } from 'react-native';
+import {
+  SM, Card, Row, Badge, Button, Field, Stats, DataState,
+  useSocietyData, runAction, confirmAction, statusTone, titleCase, rupees, when, useKitStyles,
+} from '../../../../src/components/society/SocietyKit';
 
 /**
- * Two maintenance bills were hardcoded — ₹2,500 marked paid and ₹3,200 due on
- * 15 July. A resident could have paid a bill they did not owe, or seen "Paid"
- * against one they did. /society-billing/my-bills is the real ledger.
+ * Maintenance bills.
+ *
+ * This tab read `amount` and `status`, fields the ledger does not have — it
+ * stores total_amount and payment_status — so every real bill showed as ₹0 and
+ * "Unpaid", including the ones already paid. A resident now sees their flat's
+ * bills with the breakdown and records a payment; the committee sees the whole
+ * ledger and raises the month's bills in one step.
  */
-export default function BillsTab({ role }) {
-  const [bills, setBills] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const thisMonth = () => new Date().toISOString().slice(0, 7);
+const dueOn = (day = 10) => { const d = new Date(); d.setDate(day); if (d < new Date()) d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); };
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await apiGet('/society-billing/my-bills');
-        const rows = res?.bills ?? res?.data ?? (Array.isArray(res) ? res : []);
-        setBills(
-          rows.map((b) => ({
-            id: String(b.id),
-            month: b.billing_period || b.month || '',
-            type: b.bill_type || b.type || 'Maintenance',
-            amount: `₹${(Number(b.amount) || 0).toLocaleString('en-IN')}`,
-            dueDate: b.due_date
-              ? new Date(b.due_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-              : '',
-            status: String(b.status || 'unpaid').toLowerCase() === 'paid' ? 'Paid' : 'Unpaid',
-          }))
-        );
-      } catch (err) {
-        setBills([]);
-        setError(err?.message || 'Could not load your bills.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
+function BillRow({ b, first, onPay, showFlat }) {
+  const s = useKitStyles();
+  const paid = b.payment_status === 'paid';
+  const parts = [
+    ['Maintenance', b.base_amount], ['Water', b.water_charges], ['Parking', b.parking_charges],
+    ['Other', b.other_charges], ['Late fee', b.late_fee],
+  ].filter(([, v]) => Number(v) > 0);
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {role === 'admin' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Generate Society Bills</Text>
-          <Text style={styles.subtitle}>Select block and auto-generate maintenance invoices for all residents.</Text>
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Generate July Bills</Text>
-          </TouchableOpacity>
+    <Row first={first} title={`${showFlat ? `${b.flat_number} · ` : ''}${b.month}`}
+      meta={[paid ? `Paid ${when(b.paid_at, { time: false })}${b.payment_reference ? ` · ${b.payment_reference}` : ''}` : `Due ${when(b.due_date, { time: false })}`,
+        showFlat && b.full_name]}
+      right={(
+        <View style={{ alignItems: 'flex-end', gap: 6 }}>
+          <Text style={s.rowTitle}>{rupees(b.total_amount)}</Text>
+          <Badge label={titleCase(b.payment_status)} tone={statusTone(b.payment_status)} />
+        </View>
+      )}>
+      {!showFlat && parts.length > 1 && (
+        <Text style={[s.rowMeta, { marginTop: 4 }]}>{parts.map(([k, v]) => `${k} ${rupees(v)}`).join(' · ')}</Text>
+      )}
+      {onPay && !paid && (
+        <View style={{ flexDirection: 'row', marginTop: 8 }}>
+          <Button label={`Pay ${rupees(b.total_amount)}`} small onPress={() => onPay(b)} />
         </View>
       )}
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>My Dues & Invoices</Text>
-        {loading ? (
-          <View style={styles.stateBox}><ActivityIndicator color="#3b82f6" /></View>
-        ) : bills.length === 0 ? (
-          <View style={styles.stateBox}>
-            <Text style={styles.stateTitle}>
-              {error ? 'Could not load your bills' : 'Nothing due'}
-            </Text>
-            <Text style={styles.stateBody}>
-              {error || 'Maintenance invoices raised for your flat will appear here.'}
-            </Text>
-          </View>
-        ) : bills.map(bill => (
-          <View key={bill.id} style={styles.billRow}>
-            <View style={{flex: 1}}>
-              <Text style={styles.billTitle}>{bill.month} - {bill.type}</Text>
-              <Text style={styles.billMeta}>Due: {bill.dueDate}</Text>
-            </View>
-            <View style={{alignItems: 'flex-end'}}>
-              <Text style={styles.billAmount}>{bill.amount}</Text>
-              <View style={[styles.badge, bill.status === 'Paid' ? styles.badgeSuccess : styles.badgeDanger]}>
-                <Text style={[styles.badgeText, bill.status === 'Paid' ? styles.badgeSuccessText : styles.badgeDangerText]}>
-                  {bill.status}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    </Row>
   );
 }
 
-const styles = StyleSheet.create({
-  stateBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
-  stateTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
-  stateBody: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  
-  billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 16, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 12 },
-  billTitle: { color: '#0f172a', fontSize: 14, fontWeight: 'bold', marginBottom: 4 },
-  billMeta: { color: '#64748b', fontSize: 12 },
-  billAmount: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1 },
-  badgeSuccess: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)' },
-  badgeSuccessText: { color: '#10b981', fontSize: 10, fontWeight: 'bold' },
-  badgeDanger: { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)' },
-  badgeDangerText: { color: '#ef4444', fontSize: 10, fontWeight: 'bold' }
-});
+function ResidentBills() {
+  const bills = useSocietyData(`${SM}/my-bills`);
+  const due = (bills.data || []).filter((b) => b.payment_status !== 'paid');
+  const pay = (b) => confirmAction(`Pay ${rupees(b.total_amount)}?`, `Maintenance for ${b.month}, flat ${b.flat_number}.`,
+    () => runAction('put', `${SM}/bills/${b.id}/pay`, { paymentReference: `APP-${Date.now()}` },
+      { success: 'Payment recorded. Your receipt is in the bill.', onDone: () => bills.reload() }), 'Pay');
+  return (
+    <View>
+      <Stats items={[
+        { label: 'Outstanding', value: rupees(due.reduce((s, b) => s + Number(b.total_amount || 0), 0)) },
+        { label: 'Bills due', value: due.length },
+      ]} />
+      <Card title="My bills">
+        <DataState state={bills} empty="No bills yet" emptyBody="Bills your society raises for your flat appear here.">
+          {(bills.data || []).map((b, i) => <BillRow key={b.id} b={b} first={i === 0} onPay={pay} />)}
+        </DataState>
+      </Card>
+    </View>
+  );
+}
+
+function OfficeBills() {
+  const bills = useSocietyData(`${SM}/bills`);
+  const summary = useSocietyData(`${SM}/bills/summary`, { initial: null });
+  const [form, setForm] = useState({ month: thisMonth(), baseAmount: '', waterCharges: '0', parkingCharges: '0', dueDate: dueOn() });
+  const [busy, setBusy] = useState(false);
+  const sm = summary.data || {};
+
+  const generate = async () => {
+    setBusy(true);
+    const res = await runAction('post', `${SM}/bills/generate`, form);
+    setBusy(false);
+    if (res) {
+      Alert.alert('Bills raised', `${res.data?.created ?? 0} new bills for ${form.month}. Flats already billed were skipped.`);
+      bills.reload(); summary.reload();
+    }
+  };
+
+  const markPaid = (b) => confirmAction(`Mark ${b.flat_number} paid?`, `Records ${rupees(b.total_amount)} received for ${b.month}.`,
+    () => runAction('put', `${SM}/bills/${b.id}/pay`, { paymentReference: `OFFICE-${Date.now()}` },
+      { onDone: () => { bills.reload(); summary.reload(); } }), 'Mark paid');
+
+  return (
+    <View>
+      <Stats items={[
+        { label: 'Collected', value: rupees(sm.collectedAmount) },
+        { label: 'Pending', value: sm.pendingCount ?? '—' },
+        { label: 'Overdue', value: sm.overdueCount ?? '—' },
+      ]} />
+      <Card title="Raise the month's bills" subtitle="One bill per occupied flat. Running it again only bills flats it missed.">
+        <Field label="Month (YYYY-MM)" value={form.month} onChangeText={(month) => setForm({ ...form, month })} />
+        <Field label="Maintenance (₹)" keyboardType="decimal-pad" value={form.baseAmount} onChangeText={(baseAmount) => setForm({ ...form, baseAmount })} />
+        <Field label="Water (₹)" keyboardType="decimal-pad" value={form.waterCharges} onChangeText={(waterCharges) => setForm({ ...form, waterCharges })} />
+        <Field label="Parking (₹)" keyboardType="decimal-pad" value={form.parkingCharges} onChangeText={(parkingCharges) => setForm({ ...form, parkingCharges })} />
+        <Field label="Due date (YYYY-MM-DD)" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
+        <Button label="Generate bills" onPress={generate} busy={busy} disabled={!(Number(form.baseAmount) > 0)} />
+      </Card>
+      <Card title="Ledger">
+        <DataState state={bills} empty="No bills raised yet">
+          {(bills.data || []).map((b, i) => <BillRow key={b.id} b={b} first={i === 0} showFlat onPay={markPaid} />)}
+        </DataState>
+      </Card>
+    </View>
+  );
+}
+
+export default function BillsTab({ role }) {
+  return role === 'admin' ? <OfficeBills /> : <ResidentBills />;
+}

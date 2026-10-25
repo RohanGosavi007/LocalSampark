@@ -37,19 +37,11 @@ export default function CommunityHubPage() {
       if (combined.length > 0) {
         setPosts(combined);
       } else {
-        setPosts([
-          { id: 1, author: 'Priya Sharma', time: '2 hours ago', content: 'Does anyone know a good reliable maid in Viman Nagar area? Our previous one moved back to her village.', likes: 12, comments: 8, tag: 'Help Wanted' },
-          { id: 2, author: 'Rahul Verma', time: '5 hours ago', content: 'Just tried the new bakery on 4th cross street. Their sourdough bread is amazing! Highly recommend supporting this new local business.', likes: 45, comments: 12, tag: 'Recommendation' },
-          { id: 3, author: 'Kalyani Nagar Residents', time: '1 day ago', content: 'Reminder: The weekly farmers market is happening tomorrow at the community park from 7 AM to 11 AM.', likes: 89, comments: 4, tag: 'Event Update' },
-        ]);
+        setPosts([]);
       }
     } catch (e) {
-      console.error('Community Hub API failed, using mock data:', e);
-      setPosts([
-        { id: 1, author: 'Priya Sharma', time: '2 hours ago', content: 'Does anyone know a good reliable maid in Viman Nagar area?', likes: 12, comments: 8, tag: 'Help Wanted' },
-        { id: 2, author: 'Rahul Verma', time: '5 hours ago', content: 'Just tried the new bakery on 4th cross street. Amazing sourdough!', likes: 45, comments: 12, tag: 'Recommendation' },
-        { id: 3, author: 'Kalyani Nagar Residents', time: '1 day ago', content: 'Reminder: Weekly farmers market tomorrow at community park 7-11 AM.', likes: 89, comments: 4, tag: 'Event Update' },
-      ]);
+      console.error('Community Hub API failed:', e);
+      setPosts([]);
     }
     setLoading(false);
   };

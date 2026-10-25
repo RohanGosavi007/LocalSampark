@@ -8,13 +8,17 @@ const express = require('express');
 const router = express.Router();
 const FraudDetectionService = require('../../../services/fraudDetection.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const { isPlatformAdmin } = require('../../../middleware/shop-owner.middleware');
 const { query, queryOne, queryMany } = require('../../../config/database');
+const { sqlTimestamp, DAY_MS } = require('../../../utils/sqlTime');
 const logger = require('../../../config/logger');
 
-// Simple admin check middleware
+// Roles are stored lower case ('admin', 'super_admin'); this compared the raw value
+// against 'ADMIN' / 'SUPER_ADMIN', so it refused every administrator and the fraud
+// dashboard could not be opened. (payout.routes and vendor-kyc.routes had the same
+// bug and already use isPlatformAdmin.)
 const requireAdmin = (req, res, next) => {
-  const role = req.user?.role;
-  if (!role || !['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+  if (!isPlatformAdmin(req)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
@@ -108,7 +112,7 @@ router.put('/signals/:signalId/review', authenticate, requireAdmin, async (req, 
       return res.status(400).json({ error: 'action must be: confirmed, false_positive, or resolved' });
     }
 
-    await query(`UPDATE fraud_signals SET status = $1, reviewed_by = $2, reviewed_at = datetime('now'), review_notes = $3
+    await query(`UPDATE fraud_signals SET status = $1, reviewed_by = $2, reviewed_at = CURRENT_TIMESTAMP, review_notes = $3
        WHERE id = $4`,
       [action, adminId, notes || null, signalId]
     );
@@ -140,16 +144,17 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
 
     stats.pending = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'pending'`);
     stats.critical = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE severity = 'critical' AND status = 'pending'`);
-    stats.today = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE created_at >= date('now')`);
+    stats.today = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE created_at >= CURRENT_DATE`);
     stats.confirmed = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'confirmed'`);
     stats.falsePositive = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'false_positive'`);
 
     const byType = await queryMany(`SELECT signal_type, COUNT(*) as count FROM fraud_signals
-       WHERE created_at >= datetime('now', '-30 days')
-       GROUP BY signal_type ORDER BY count DESC`
+       WHERE created_at >= $1
+       GROUP BY signal_type ORDER BY count DESC`,
+      [sqlTimestamp(-30 * DAY_MS)]
     );
 
-    const blockedEntities = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_blocklist WHERE is_active = true`
+    const blockedEntities = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_blocklist WHERE is_active = '1'`
     );
 
     res.json({
@@ -183,8 +188,13 @@ router.post('/blocklist', authenticate, requireAdmin, async (req, res, next) => 
     const crypto = require('crypto');
     const id = crypto.randomUUID();
 
-    await query(`INSERT OR REPLACE INTO fraud_blocklist (id, entity_type, entity_value, reason, blocked_by, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+    // An upsert on the pair the table is unique on. INSERT OR REPLACE is
+    // SQLite-only; it also deleted the existing row and inserted a new one,
+    // which reset is_active and created_at on a re-block.
+    await query(`INSERT INTO fraud_blocklist (id, entity_type, entity_value, reason, blocked_by, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (entity_type, entity_value)
+       DO UPDATE SET reason = $4, blocked_by = $5, expires_at = $6, is_active = 1`,
       [id, entity_type, entity_value, reason, adminId, expires_at || null]
     );
 

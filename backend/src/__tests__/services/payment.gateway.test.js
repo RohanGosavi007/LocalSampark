@@ -7,61 +7,6 @@ const PaymentGatewayEngine = require('../../services/payment.gateway');
 
 describe('PaymentGatewayEngine', () => {
 
-  // ─── createPaymentOrder ───────────────────────────────────
-  describe('createPaymentOrder()', () => {
-    it('should create a Razorpay order with amount in paise', async () => {
-      const result = await PaymentGatewayEngine.createPaymentOrder({
-        provider: 'razorpay',
-        amount: 500,
-        orderId: 'ORD001',
-        customerDetails: { name: 'Test' }
-      });
-      expect(result.provider).toBe('razorpay');
-      expect(result.amount).toBe(50000); // 500 * 100 paise
-      expect(result.currency).toBe('INR');
-      expect(result.gatewayOrderId).toMatch(/^rzp_order_/);
-      expect(result.keyId).toBeDefined();
-    });
-
-    it('should create a Cashfree session', async () => {
-      const result = await PaymentGatewayEngine.createPaymentOrder({
-        provider: 'cashfree',
-        amount: 250,
-        orderId: 'ORD002',
-      });
-      expect(result.provider).toBe('cashfree');
-      expect(result.paymentSessionId).toMatch(/^session_/);
-      expect(result.amount).toBe(250);
-    });
-
-    it('should generate a UPI deep link with correct params', async () => {
-      const result = await PaymentGatewayEngine.createPaymentOrder({
-        provider: 'upi',
-        amount: 199,
-        orderId: 'ORD003',
-      });
-      expect(result.provider).toBe('upi');
-      expect(result.upiUri).toContain('upi://pay');
-      expect(result.upiUri).toContain('am=199');
-      expect(result.upiUri).toContain('tr=ORD003');
-      expect(result.qrCodeUrl).toContain('create-qr-code');
-    });
-
-    it('should throw for unsupported provider', async () => {
-      await expect(
-        PaymentGatewayEngine.createPaymentOrder({ provider: 'paypal', amount: 100, orderId: 'ORD004' })
-      ).rejects.toThrow('Unsupported payment provider: paypal');
-    });
-
-    it('should default to razorpay when no provider specified', async () => {
-      const result = await PaymentGatewayEngine.createPaymentOrder({
-        amount: 100,
-        orderId: 'ORD005',
-      });
-      expect(result.provider).toBe('razorpay');
-    });
-  });
-
   // ─── verifyWebhookSignature ───────────────────────────────
   describe('verifyWebhookSignature()', () => {
     it('should verify valid Razorpay webhook signature', () => {

@@ -1,114 +1,91 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
-import { DollarSign, ArrowUpRight, ArrowDownRight, Clock, CheckCircle } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
+const rupees = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+// The signed-in person's own wallet ledger. This page used to show a fixed table of
+// invented transactions and hard-coded totals for "franchise / shop / rider" views.
 export default function PayoutsDashboard() {
-  const [activeTab, setActiveTab] = useState('franchise');
+  const [state, setState] = useState({ loading: true, error: null, balance: 0, transactions: [] });
 
-  const stats = {
-    franchise: [
-      { label: 'Total Platform Volume', value: '₹14,50,000', icon: DollarSign, color: '#3b82f6' },
-      { label: 'Franchise Commission (2%)', value: '₹29,000', icon: ArrowUpRight, color: '#22c55e' },
-      { label: 'Pending Settlement', value: '₹4,500', icon: Clock, color: '#f59e0b' },
-    ],
-    shop: [
-      { label: 'Total Sales', value: '₹45,000', icon: DollarSign, color: '#3b82f6' },
-      { label: 'Net Payout (After 2% fee)', value: '₹44,100', icon: ArrowDownRight, color: '#a855f7' },
-      { label: 'Cleared to Bank', value: '₹40,000', icon: CheckCircle, color: '#22c55e' },
-    ],
-    rider: [
-      { label: 'Delivery Earnings', value: '₹3,200', icon: DollarSign, color: '#3b82f6' },
-      { label: 'Tips', value: '₹450', icon: ArrowUpRight, color: '#22c55e' },
-      { label: 'Pending Transfer', value: '₹800', icon: Clock, color: '#f59e0b' },
-    ]
-  };
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await apiFetch('/wallet/history');
+        if (alive) setState({ loading: false, error: null, balance: data.balance || 0, transactions: data.transactions || [] });
+      } catch (e) {
+        if (alive) setState((s) => ({ ...s, loading: false, error: e.message || 'Could not load your transactions' }));
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const credits = state.transactions.filter((t) => t.type === 'credit').reduce((a, t) => a + Math.abs(Number(t.amount) || 0), 0);
+  const debits = state.transactions.filter((t) => t.type !== 'credit').reduce((a, t) => a + Math.abs(Number(t.amount) || 0), 0);
+  const stats = [
+    { label: 'Wallet balance', value: rupees(state.balance), icon: DollarSign, color: '#3b82f6' },
+    { label: 'Received (last 200)', value: rupees(credits), icon: ArrowUpRight, color: '#22c55e' },
+    { label: 'Spent / paid out (last 200)', value: rupees(debits), icon: ArrowDownRight, color: '#a855f7' },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-7xl mx-auto p-6 pt-24">
-        
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text">Financial Ledger</h1>
-          <p className="text-text-muted mt-1">Real-time Razorpay split settlements</p>
+          <p className="text-text-muted mt-1">Your wallet transactions</p>
         </div>
 
-        {/* Mock Role Selector for Demo Purposes */}
-        <div className="flex gap-2 mb-8 bg-card-bg p-1 rounded-xl w-fit border border-border">
-          {['franchise', 'shop', 'rider'].map(role => (
-            <button
-              key={role}
-              onClick={() => setActiveTab(role)}
-              className={`px-6 py-2 rounded-lg font-bold capitalize transition-colors ${
-                activeTab === role 
-                  ? 'bg-blue-600 text-white' 
-                   : "text-text-muted hover:text-text hover:bg-background-alt"
-              }`}
-            >
-              {role} View
-            </button>
-          ))}
-        </div>
-
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {stats[activeTab].map(stat => (
-            <div key={stat.label} className="bg-card-bg border border-border rounded-2xl p-6 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-current to-transparent opacity-5 group-hover:opacity-10 rounded-bl-full transition-opacity" style={{ color: stat.color }}></div>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
-                <stat.icon size={24} />
-              </div>
-              <h3 className="text-3xl font-black text-text">{stat.value}</h3>
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-card-bg border border-border rounded-2xl p-6">
+              <div className="mb-3" style={{ color: stat.color }}><stat.icon size={24} /></div>
+              <h3 className="text-3xl font-black text-text">{state.loading ? '…' : stat.value}</h3>
               <p className="text-text-muted font-bold mt-1 text-sm">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Ledger Table */}
         <div className="bg-card-bg border border-border rounded-2xl p-6">
           <h2 className="text-xl font-bold text-text mb-6">Recent Transactions</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-background-alt/50 text-text-muted text-xs uppercase font-bold tracking-wider">
-                <tr>
-                  <th className="px-6 py-4 rounded-tl-xl">Transaction ID</th>
-                  <th className="px-6 py-4">Date & Time</th>
-                  <th className="px-6 py-4">Gross Amount</th>
-                  <th className="px-6 py-4">Platform Fee (2%)</th>
-                  <th className="px-6 py-4">Net Payout</th>
-                  <th className="px-6 py-4 rounded-tr-xl">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-text-muted">
-                {[1, 2, 3, 4, 5].map(i => {
-                  const amt = Math.floor(Math.random() * 2000) + 500;
-                  const fee = Math.floor(amt * 0.02);
-                  const net = amt - fee;
-                  return (
-                    <tr key={i} className="hover:bg-background-alt/20 transition-colors">
-                      <td className="px-6 py-4 font-mono text-blue-400">TXN-882{i}9A</td>
-                      <td className="px-6 py-4">Aug 11, 2026 • 14:30</td>
-                      <td className="px-6 py-4 font-bold text-text">₹{amt}</td>
-                      <td className="px-6 py-4 text-red-400">-₹{fee}</td>
-                      <td className="px-6 py-4 font-bold text-green-400">₹{net}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          i % 3 === 0 
-                            ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' 
-                            : 'bg-green-500/10 text-green-500 border border-green-500/20'
-                        }`}>
-                          {i % 3 === 0 ? 'Processing' : 'Settled'}
-                        </span>
+          {state.error ? (
+            <p className="text-red-400" role="alert">{state.error}</p>
+          ) : state.loading ? (
+            <p className="text-text-muted">Loading…</p>
+          ) : state.transactions.length === 0 ? (
+            <p className="text-text-muted">No transactions yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-background-alt/50 text-text-muted text-xs uppercase font-bold tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Date &amp; Time</th>
+                    <th className="px-6 py-4">Purpose</th>
+                    <th className="px-6 py-4">Amount</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-text-muted">
+                  {state.transactions.map((t) => (
+                    <tr key={t.id}>
+                      <td className="px-6 py-4">{t.created_at ? new Date(t.created_at).toLocaleString('en-IN') : '—'}</td>
+                      <td className="px-6 py-4">{t.purpose || t.type}</td>
+                      <td className={`px-6 py-4 font-bold ${t.type === 'credit' ? 'text-green-400' : 'text-red-400'}`}>
+                        {t.type === 'credit' ? '+' : '-'}{rupees(Math.abs(Number(t.amount) || 0))}
                       </td>
+                      <td className="px-6 py-4">{t.status || '—'}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-
       </div>
     </div>
   );

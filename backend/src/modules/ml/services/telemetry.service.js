@@ -223,8 +223,8 @@ async function getMetrics({ surface = null, sinceHours = 24, regionId = null } =
         SUM(CASE WHEN event_type = 'DETAIL_VIEW' THEN 1 ELSE 0 END) AS detail_views,
         SUM(CASE WHEN event_type = 'CALL_VENDOR' THEN 1 ELSE 0 END) AS calls,
         SUM(CASE WHEN event_type = 'PURCHASE_INTENT' THEN 1 ELSE 0 END) AS purchase_intents,
-        SUM(CASE WHEN is_exploration = 1 AND event_type = 'IMPRESSION' THEN 1 ELSE 0 END) AS explore_impressions,
-        SUM(CASE WHEN is_exploration = 1 AND event_type = 'CARD_CLICK' THEN 1 ELSE 0 END) AS explore_clicks,
+        SUM(CASE WHEN is_exploration = '1' AND event_type = 'IMPRESSION' THEN 1 ELSE 0 END) AS explore_impressions,
+        SUM(CASE WHEN is_exploration = '1' AND event_type = 'CARD_CLICK' THEN 1 ELSE 0 END) AS explore_clicks,
         COUNT(DISTINCT user_id) AS distinct_users,
         COUNT(DISTINCT item_id) AS distinct_items_shown
        FROM ml_interaction_events ${where}`,

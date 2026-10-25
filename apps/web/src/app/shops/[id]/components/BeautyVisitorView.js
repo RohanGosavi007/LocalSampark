@@ -60,7 +60,7 @@ export default React.memo(function EnhancedSalonVisitorView({ shop, services = [
         <h3 className="font-heading font-bold text-text mb-3 flex items-center gap-2">
           <Users className="w-5 h-5 text-cat-beauty" /> Current Wait Time
         </h3>
-        <TokenTrackerBar shopId={shop?.id} userToken={5} />
+        <TokenTrackerBar shopId={shop?.id} />
       </div>
 
       {/* Service Catalog */}
@@ -169,7 +169,7 @@ export default React.memo(function EnhancedSalonVisitorView({ shop, services = [
                 <p className="text-xs text-text-muted">{s.specialization || 'Stylist'}</p>
                 <div className="flex items-center justify-center gap-1 mt-1">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  <span className="text-xs font-bold text-amber-600">{s.avg_rating || '4.5'}</span>
+                  <span className="text-xs font-bold text-amber-600">{s.avg_rating || 'New'}</span>
                 </div>
               </div>
             ))}

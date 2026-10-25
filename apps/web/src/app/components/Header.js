@@ -12,17 +12,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import VoiceSearch from '../../components/VoiceSearch';
 import { ThemeToggle } from './ui/ThemeToggle';
+import { apiGet, apiPut } from '@/lib/api';
 
 const AccountDropdown = dynamic(() => import('./AccountDropdown'), { ssr: false });
 
 export default function Header() {
-  const { user, activeRole, assignedRoles, switchRole, logout, mockLogin } = useAuth();
+    const { user, activeRole, assignedRoles, switchRole, logout, demoLogin } = useAuth();
   const { t } = useLanguage();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  // The signed-in person's own notifications. The dropdown used to show one fixed line, "Sharma
+  // Grocery accepted your order", to everyone, and the bell always carried a pulsing red dot.
+  const [notifications, setNotifications] = useState([]);
   const [scrolled, setScrolled] = useState(false);
+  const unread = notifications.filter((n) => !n.isRead).length;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showVoiceSearch, setShowVoiceSearch] = useState(false);
+
+  const userId = user && user.id;
+  const loadNotifications = React.useCallback(() => {
+    if (!userId) return;
+    apiGet('/notifications').then((r) => setNotifications((r && r.data) || [])).catch(() => {});
+  }, [userId]);
+  useEffect(() => { loadNotifications(); }, [loadNotifications]);
+  useEffect(() => { if (activeDropdown === 'notifications') loadNotifications(); }, [activeDropdown, loadNotifications]);
+  const markAllRead = () => {
+    apiPut('/notifications/read-all', {}).then(() => setNotifications((list) => list.map((n) => ({ ...n, isRead: true })))).catch(() => {});
+  };
   
   const [locState, setLocState] = useState('');
   const [locDistrict, setLocDistrict] = useState('');
@@ -78,14 +94,14 @@ export default function Header() {
     const isStaffRole = ['society_admin', 'security_guard', 'moderator', 'super_admin', 'admin', 'territory_admin', 'area_agent', 'field_agent', 'delivery_agent', 'service_provider', 'shop_owner'].includes(activeRole);
 
     return (
-      <div className="hidden xl:flex items-center gap-5 relative">
-          <a href="/properties" className="text-text font-bold text-sm hover:text-primary transition-colors flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+      <div className="hidden 2xl:flex items-center gap-5 relative">
+          <a href="/properties" className="text-text font-bold text-sm hover:text-primary transition-colors flex min-h-[44px] items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <Building className="w-4 h-4 text-emerald-500" />
             <span>{t('nav_properties')}</span>
           </a>
-          <a href="/features" className="text-text font-medium text-sm hover:text-primary transition-colors">Features</a>
-          <a href="/jobs" className="text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_jobs')}</a>
-          <a href="/franchise" className="text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_franchise_header')}</a>
+          <a href="/features" className="inline-flex min-h-[44px] items-center text-text font-medium text-sm hover:text-primary transition-colors">Features</a>
+          <a href="/jobs" className="inline-flex min-h-[44px] items-center text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_jobs')}</a>
+          <a href="/franchise" className="inline-flex min-h-[44px] items-center text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_franchise_header')}</a>
           
           {!isStaffRole && (
             <React.Fragment>
@@ -94,7 +110,7 @@ export default function Header() {
                 onMouseEnter={() => setActiveDropdown('services')} 
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-            <button className="flex items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
+            <button className="flex min-h-[44px] items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
               {t('nav_services_dropdown')} <ChevronDown className="w-4 h-4" />
             </button>
             <AnimatePresence>
@@ -155,7 +171,7 @@ export default function Header() {
             onMouseEnter={() => setActiveDropdown('community')} 
             onMouseLeave={() => setActiveDropdown(null)}
           >
-            <button className="flex items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
+            <button className="flex min-h-[44px] items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
               {t('nav_community')} <ChevronDown className="w-4 h-4" />
             </button>
             <AnimatePresence>
@@ -196,7 +212,7 @@ export default function Header() {
             onMouseEnter={() => setActiveDropdown('utilities')} 
             onMouseLeave={() => setActiveDropdown(null)}
           >
-            <button className="flex items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
+            <button className="flex min-h-[44px] items-center gap-1 text-text font-medium text-sm hover:text-primary transition-colors">
               {t('nav_utilities')} <ChevronDown className="w-4 h-4" />
             </button>
             <AnimatePresence>
@@ -232,10 +248,15 @@ export default function Header() {
             </>
           )}
 
-          <div className="w-px h-5 bg-border mx-1"></div>
-          <a href="/investor-demo" className="text-emerald-500 font-bold text-sm hover:underline transition-colors flex items-center gap-1">
-            Investor Demo
-          </a>
+          {/* The investor walkthrough is not for customers: shown in development only. */}
+          {process.env.NODE_ENV !== 'production' && (
+            <>
+            <div className="w-px h-5 bg-border mx-1"></div>
+            <a href="/investor-demo" className="text-emerald-500 font-bold text-sm hover:underline transition-colors flex items-center gap-1">
+              Investor Demo
+            </a>
+            </>
+          )}
         </div>
       );
   };
@@ -323,7 +344,8 @@ export default function Header() {
 
           {renderNavigation()}
 
-          <LanguageToggle />
+          {/* On a phone the three language buttons alone were 152px and pushed the header 53px past the screen; they live in the menu there. */}
+          <div className="hidden sm:block"><LanguageToggle /></div>
 
           {/* Dev Quick Login moved to FloatingDevDock component */}
 
@@ -355,7 +377,7 @@ export default function Header() {
                 className="p-2 rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background animate-pulse"></span>
+                {unread > 0 && <span className="absolute top-0 right-0 min-w-[10px] h-2.5 bg-red-500 rounded-full border-2 border-background animate-pulse"></span>}
               </button>
               
               <AnimatePresence>
@@ -366,16 +388,19 @@ export default function Header() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="font-heading font-semibold text-lg">Notifications</h4>
-                      <button className="text-xs text-primary font-medium hover:underline">Mark all read</button>
+                      <button onClick={markAllRead} className="text-xs text-primary font-medium hover:underline">Mark all read</button>
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex gap-3 items-start p-2 rounded-lg hover:bg-border/30 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Store className="w-4 h-4"/></div>
-                        <div>
-                          <p className="text-sm font-medium">Order Confirmed</p>
-                          <p className="text-xs text-text-muted">Sharma Grocery accepted your order</p>
-                        </div>
-                      </div>
+                    <div className="flex flex-col gap-3 max-h-80 overflow-y-auto">
+                      {notifications.length === 0 && <p className="text-sm text-text-muted p-2">You have no notifications.</p>}
+                      {notifications.slice(0, 10).map((n) => (
+                        <a key={n.id} href={n.actionUrl || '#'} className={`flex gap-3 items-start p-2 rounded-lg hover:bg-border/30 transition-colors ${n.isRead ? 'opacity-70' : ''}`}>
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Bell className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-sm font-medium">{n.title}</p>
+                            {n.message && <p className="text-xs text-text-muted">{n.message}</p>}
+                          </div>
+                        </a>
+                      ))}
                     </div>
                   </motion.div>
                 )}
@@ -394,7 +419,7 @@ export default function Header() {
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none"
+            className="2xl:hidden p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center text-text-muted hover:text-text focus:outline-none"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -409,9 +434,10 @@ export default function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: '100vh' }}
             exit={{ opacity: 0, height: 0 }}
-            className="xl:hidden fixed inset-0 top-[72px] bg-background z-40 overflow-y-auto"
+            className="2xl:hidden fixed inset-0 top-[72px] bg-background z-40 overflow-y-auto"
           >
             <div className="p-4 flex flex-col gap-6">
+              <div className="sm:hidden self-start"><LanguageToggle /></div>
               {/* Mobile Search & Location */}
               <div className="flex flex-col gap-3">
                 <button onClick={() => { setShowLocationModal(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 p-3 rounded-xl bg-background-alt border border-border">
@@ -439,7 +465,7 @@ export default function Header() {
                   <a href="/jobs" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_jobs')}</a>
                   <a href="/franchise" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_franchise_header')}</a>
                   <a href="/services" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_services_dropdown')}</a>
-                  <a href="/investor-demo" className="p-3 font-semibold text-emerald-500 hover:bg-border/40 rounded-xl">Investor Demo</a>
+                  {process.env.NODE_ENV !== 'production' && <a href="/investor-demo" className="p-3 font-semibold text-emerald-500 hover:bg-border/40 rounded-xl">Investor Demo</a>}
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -468,7 +494,7 @@ export default function Header() {
                 <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Quick Role Login</p>
                 <div className="grid grid-cols-2 gap-2">
                   {['super_admin', 'territory_admin', 'shop_owner', 'delivery_agent', 'user', 'service_provider'].map((role) => (
-                    <button key={role} onClick={() => { mockLogin(role); window.location.href = getRoleRoute(role); }} className="p-2 border border-border rounded-lg text-xs font-semibold text-left truncate hover:bg-primary/10">
+                    <button key={role} onClick={async () => { if (await demoLogin(role)) window.location.href = getRoleRoute(role); }} className="p-2 border border-border rounded-lg text-xs font-semibold text-left truncate hover:bg-primary/10">
                       {formatRole(role)}
                     </button>
                   ))}

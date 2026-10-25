@@ -1,33 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import ManagerLayout from './components/ManagerLayout';
+import { apiGet } from '../../../src/lib/api';
 
 const AppointmentCalendarTab = () => {
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState(null);
+
+  // The shop's own appointments (GET /shops/my-shop). This tab listed two invented patients
+  // ("Amit Sharma — General Checkup", "Sunita Verma — Fever & Cold").
+  useEffect(() => {
+    apiGet('/shops/my-shop')
+      .then((r) => setRows(r.appointments || []))
+      .catch((e) => setError(e.message || 'Appointments could not be loaded.'));
+  }, []);
+
   return (
     <ScrollView style={styles.tabContainer}>
-      <Text style={styles.sectionTitle}>Today's Appointments</Text>
-      
-      <View style={styles.appointmentCard}>
-        <View style={styles.timeColumn}>
-          <Text style={styles.timeText}>10:00 AM</Text>
+      <Text style={styles.sectionTitle}>Appointments</Text>
+      {error && <Text style={styles.patientIssue}>{error}</Text>}
+      {rows && rows.length === 0 && <Text style={styles.patientIssue}>No appointments booked.</Text>}
+      {(rows || []).map((a) => (
+        <View key={a.id} style={styles.appointmentCard}>
+          <View style={styles.timeColumn}>
+            <Text style={styles.timeText}>{a.slot_time || a.appointment_time || (a.scheduled_time ? new Date(a.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}</Text>
+          </View>
+          <View style={styles.detailColumn}>
+            <Text style={styles.patientName}>{a.customer_name || a.patient_name || 'Patient'}</Text>
+            <Text style={styles.patientIssue}>{a.service_name || a.notes || a.status || ''}</Text>
+          </View>
         </View>
-        <View style={styles.detailColumn}>
-          <Text style={styles.patientName}>Amit Sharma</Text>
-          <Text style={styles.patientIssue}>General Checkup</Text>
-        </View>
-        <TouchableOpacity style={styles.statusBtn}><Text style={styles.statusBtnText}>Check-In</Text></TouchableOpacity>
-      </View>
-
-      <View style={styles.appointmentCard}>
-        <View style={styles.timeColumn}>
-          <Text style={styles.timeText}>10:30 AM</Text>
-        </View>
-        <View style={styles.detailColumn}>
-          <Text style={styles.patientName}>Sunita Verma</Text>
-          <Text style={styles.patientIssue}>Fever & Cold</Text>
-        </View>
-        <TouchableOpacity style={[styles.statusBtn, styles.statusBtnDone]}><Text style={styles.statusBtnTextDone}>Completed</Text></TouchableOpacity>
-      </View>
+      ))}
     </ScrollView>
   );
 };

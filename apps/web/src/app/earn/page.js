@@ -12,7 +12,7 @@ const STREAMS = [
     badgeColor: '#10b981',
     rate: '₹35 – ₹65',
     period: 'per delivery',
-    monthly: '~₹12,000 – ₹25,000/mo',
+    monthly: 'Paid per delivery',
     desc: 'Work on your own schedule. Accept delivery gigs from nearby shops. Walk, cycle, or use a 2-wheeler. No target pressure.',
     steps: ['Download the LocalSampark Partner app', 'Complete OTP verification', 'Start accepting local delivery gigs instantly'],
     perks: ['Flexible timing', 'Instant wallet payout', 'Zero deductions', 'Insurance support'],
@@ -26,7 +26,7 @@ const STREAMS = [
     badgeColor: '#f97316',
     rate: '30%',
     period: 'of platform commission',
-    monthly: '~₹40,000 – ₹1,20,000/mo',
+    monthly: 'Commission on territory activity',
     desc: 'Operate a full LocalSampark franchise in your pincode zone. Onboard shops, manage runners, and earn on every transaction.',
     steps: ['Apply with pincode territory', 'Attend 2-day onboarding training in Pune', 'Launch your zone — start earning from Day 1'],
     perks: ['Territory exclusivity', 'Revenue sharing dashboard', 'Branding & app support', 'Direct admin access'],
@@ -54,7 +54,7 @@ const STREAMS = [
     badgeColor: '#8b5cf6',
     rate: '₹50',
     period: 'per verified referral',
-    monthly: 'Unlimited earning potential',
+    monthly: 'Credit per verified sign-up',
     desc: 'Refer neighbors, shops, or service providers to LocalSampark. Every verified signup earns you wallet credits.',
     steps: ['Get your unique referral link from the app', 'Share with neighbors, shops, and friends', 'Earn ₹50 per verified account'],
     perks: ['No time limit', 'Stackable credits', 'Tier bonuses for 10+, 25+ referrals', 'Leaderboard prizes'],
@@ -89,19 +89,6 @@ export default function EarnPage() {
               4 different earning streams for Pune residents — from daily delivery gigs to full franchise territories. 
               Transparent, instant payouts via your LocalSampark Wallet.
             </p>
-            {/* Global Stats */}
-            <div style={{ display: 'inline-flex', gap: '3rem', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '1.5rem', padding: '2rem 3rem', backdropFilter: 'blur(16px)' }}>
-              {[
-                { v: '₹1.2 Cr+', l: 'Paid Out to Earners' },
-                { v: '2,400+', l: 'Active Earners in Pune' },
-                { v: '₹25,000', l: 'Top Monthly Earner' },
-              ].map((s, i) => (
-                <div key={i} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary)' }}>{s.v}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{s.l}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 

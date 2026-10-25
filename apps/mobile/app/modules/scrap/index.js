@@ -3,7 +3,14 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput 
 
 import { apiGet, apiPost } from '../../../src/lib/api';
 
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
+
 export default function MobileScrapNetwork() {
+  // The user's own pincode. This was hardcoded to 400001 (Mumbai, Fort), so
+  // anyone outside south Mumbai saw an empty list here and anything they
+  // posted was filed under a city they do not live in.
+  const pincode = useTerritoryStore((s) => s.pincode);
+  const pinQuery = pincode ? `?pincode=${encodeURIComponent(pincode)}` : '';
   const [viewMode, setViewMode] = useState('resident'); // 'resident' or 'dealer'
   
   // Resident State
@@ -12,7 +19,7 @@ export default function MobileScrapNetwork() {
     approxWeight: '',
     address: '',
     payoutPreference: 'donate', 
-    pincode: '400001'
+    pincode: ''
   });
 
   // Dealer State
@@ -26,7 +33,7 @@ export default function MobileScrapNetwork() {
 
   const fetchPings = async () => {
     try {
-      const data = await apiGet('/scrap/pings?pincode=400001');
+      const data = await apiGet(`/scrap/pings${pinQuery}`);
       if (data.success) setActivePings(data.data);
     } catch(e) {
       console.warn('Failed to load scrap pings:', e);
@@ -64,7 +71,7 @@ export default function MobileScrapNetwork() {
         approx_weight: formData.approxWeight,
         address: formData.address,
         payout_preference: formData.payoutPreference,
-        pincode: formData.pincode
+        pincode: formData.pincode || pincode || undefined
       };
       
       const data = await apiPost('/scrap/schedule', payload);
@@ -163,7 +170,7 @@ export default function MobileScrapNetwork() {
           </View>
         ) : (
           <View>
-            <Text style={{color: '#0f172a', fontSize: 18, fontWeight: 'bold', mb: 10}}>📡 Live Pings (400001)</Text>
+            <Text style={{color: '#0f172a', fontSize: 18, fontWeight: 'bold', mb: 10}}>📡 Live Pings ({pincode || 'your area'})</Text>
             {activePings.length === 0 && <Text style={{color: '#64748b', mt: 10}}>No active requests right now.</Text>}
             {activePings.map(ping => (
               <View key={ping.id} style={{backgroundColor: '#ffffff', p: 15, borderRadius: 10, mb: 15, borderWidth: 1, borderColor: '#e2e8f0'}}>

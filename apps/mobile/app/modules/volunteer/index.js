@@ -2,7 +2,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/lib/api';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 
-import { API_V1 } from '../../../src/config/api';
+
 export default function MobileShramdaan() {
   const [activeTab, setActiveTab] = useState('feed'); // 'feed' or 'post'
   const [tasks, setTasks] = useState([]);
@@ -27,44 +27,37 @@ export default function MobileShramdaan() {
         setPostForm({ title: '', description: '', bountyCoins: '0', type: 'civic_issue' });
         fetchTasks();
         setActiveTab('feed');
-      } else {
-        Alert.alert('Error', data.error);
       }
-    } catch(e) {}
+    } catch (e) {
+      // A bounty is taken from your coins when you post; not having them is a 402.
+      Alert.alert('Error', e.message || 'Could not post the task.');
+    }
   };
 
+  // apiPost sends the session token. These two used a bare fetch without it,
+  // so every claim and completion was refused as unauthenticated.
   const handleVolunteer = async (taskId) => {
     try {
-      const res = await fetch(`${API_V1}/volunteer/${taskId}/volunteer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await res.json();
-      if (data.success) {
-        Alert.alert('Success', data.message);
-        fetchTasks();
-      } else {
-        Alert.alert('Error', data.error);
-      }
-    } catch(e) {}
+      const data = await apiPost(`/volunteer/${taskId}/volunteer`, {});
+      Alert.alert('Success', data.message);
+      fetchTasks();
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not volunteer for this task.');
+    }
   };
 
+  // Only the person who posted the task (or an admin) can confirm it is done;
+  // that pays the bounty to the volunteer.
   const handleComplete = async (taskId) => {
     try {
-      const res = await fetch(`${API_V1}/volunteer/${taskId}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await res.json();
-      if (data.success) {
-        let msg = data.message;
-        if (data.badgeEarned) msg += '\n\n🏅 INCREDIBLE! You earned the "Community Hero" Badge!';
-        Alert.alert('Task Completed!', msg);
-        fetchTasks();
-      } else {
-        Alert.alert('Error', data.error);
-      }
-    } catch(e) {}
+      const data = await apiPost(`/volunteer/${taskId}/complete`, {});
+      let msg = data.message;
+      if (data.badgeEarned) msg += '\n\n🏅 The volunteer earned the "Community Hero" Badge!';
+      Alert.alert('Task Completed!', msg);
+      fetchTasks();
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not complete this task.');
+    }
   };
 
   return (
@@ -116,7 +109,7 @@ export default function MobileShramdaan() {
                   </TouchableOpacity>
                 )}
                 
-                {task.status === 'in_progress' && (
+                {task.status === 'claimed' && (
                   <View style={styles.inProgressBox}>
                     <Text style={styles.inProgressText}>Someone is working on this!</Text>
                     <TouchableOpacity style={styles.btnComplete} onPress={() => handleComplete(task.id)}>

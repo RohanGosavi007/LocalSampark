@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');
+const push = require('../../../services/push.service');
 
 /**
  * Notification Service
@@ -59,8 +60,22 @@ async function sendToUser(recipientId, notification) {
 /**
  * Actual heavy processing logic
  */
+/**
+ * The types shop_notifications' CHECK constraint accepts. Anything else — the
+ * gate's visitor_alert, for one — used to fail the insert, so a resident whose
+ * phone had no push token (every phone, while Firebase is unconfigured) never
+ * saw the visitor in their inbox either. Such types are stored as 'system',
+ * with the real type kept in data.type for the client to route on.
+ */
+const STORED_TYPES = new Set([
+  'order_update', 'appointment_reminder', 'appointment_update', 'dispute_update', 'payout_settled',
+  'new_review', 'chat_message', 'flash_sale', 'return_update', 'system', 'promotion',
+]);
+
 async function processNotification(recipientId, notification) {
   const { id, type, title, body, data, actionUrl, icon } = notification;
+  const storedType = STORED_TYPES.has(type) ? type : 'system';
+  const storedData = storedType === type ? (data || {}) : { ...(data || {}), type: type || 'system' };
 
   // 1. Persist to database
   try {
@@ -68,19 +83,28 @@ async function processNotification(recipientId, notification) {
       `INSERT INTO shop_notifications (id, recipient_id, type, title, body, data, action_url, icon)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [id, recipientId, type, title, body || '', JSON.stringify(data || {}), actionUrl || '', icon || '']
+      [id, recipientId, storedType, title, body || '', JSON.stringify(storedData), actionUrl || '', icon || '']
     );
   } catch (err) {
     console.error('[NOTIFICATION] DB persist failed:', err.message);
   }
 
-  // 2. Push via Supabase Realtime if user is connected
+    // 2. Push via Supabase Realtime if user is connected
   if (supabaseInstance) {
     supabaseInstance.broadcast(`user:${recipientId}`, 'notification', {
       id, type, title, body, data, actionUrl, icon,
       createdAt: new Date().toISOString(),
     });
   }
+
+  // 3. To the user's phones, for when the app is closed. Nothing was pushed
+  // before: notifications reached a user only if they happened to have the
+  // app open. push.sendToUser never throws.
+  await push.sendToUser(recipientId, {
+    title: title || 'LocalSampark',
+    body: body || '',
+    data: { ...(data || {}), notificationId: id, type: type || 'system', ...(actionUrl ? { actionUrl } : {}) },
+  });
 }
 
 /**
@@ -125,7 +149,7 @@ async function sendToRegion(regionId, notification) {
  */
 async function getUnread(userId, limit = 50) {
   const notifications = await query(
-    'SELECT * FROM shop_notifications WHERE recipient_id = $1 AND (is_read = 0 OR is_read = false) ORDER BY created_at DESC LIMIT $2',
+    'SELECT * FROM shop_notifications WHERE recipient_id = $1 AND (is_read = 0 OR is_read = \'0\') ORDER BY created_at DESC LIMIT $2',
     [userId, limit]
   );
   return notifications.rows || notifications;

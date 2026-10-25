@@ -28,7 +28,7 @@ class OfflineSyncService {
       territoryScoped: true,
     },
     categories: {
-      query: `SELECT * FROM shop_categories WHERE is_active = true`,
+      query: `SELECT * FROM shop_categories WHERE is_active = '1'`,
       territoryScoped: false,
     },
   };
@@ -117,7 +117,7 @@ class OfflineSyncService {
 
         // Mark as applied
         await query(
-          `UPDATE offline_mutations SET status = 'applied', applied_at = datetime('now') WHERE id = $1`,
+          `UPDATE offline_mutations SET status = 'applied', applied_at = CURRENT_TIMESTAMP WHERE id = $1`,
           [id]
         );
 
@@ -192,7 +192,7 @@ class OfflineSyncService {
 
     values.push(userId);
     await query(
-      `UPDATE users SET ${updates.join(', ')}, updated_at = datetime('now') WHERE id = $${paramIdx}`,
+      `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${paramIdx}`,
       values
     );
 

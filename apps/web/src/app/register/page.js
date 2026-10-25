@@ -5,8 +5,9 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 export default function RegisterPage() {
-  const { registerEmail, sendOtp, error: authError } = useAuth();
+  const { registerEmail, sendOtp, verifyOtp } = useAuth();
   const [method, setMethod] = useState('email');
+  const [activeOtpChannel, setActiveOtpChannel] = useState('firebase'); // 'firebase' | 'phone'
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -17,6 +18,10 @@ export default function RegisterPage() {
 
   const handleEmailRegister = async (e) => {
     e.preventDefault();
+    if (form.password.length < 8) {
+      setMessage('❌ Password must be at least 8 characters.');
+      return;
+    }
     if (form.password !== form.confirm) {
       setMessage('❌ Passwords do not match.');
       return;
@@ -24,8 +29,13 @@ export default function RegisterPage() {
     setLoading(true);
     setMessage('');
     try {
-      await registerEmail(form.email, form.password, form.name, '');
-      setMessage('✅ Registration successful! Check the server console for your email verification link.');
+      const data = await registerEmail(form.email, form.password, form.name, '');
+      if (data && data.accessToken) {
+        window.location.href = '/';
+      } else {
+        setMessage('✅ Account created successfully! Logging you in...');
+        setTimeout(() => { window.location.href = '/'; }, 1000);
+      }
     } catch (err) {
       setMessage(`❌ ${err.message}`);
     } finally {
@@ -37,10 +47,65 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+
+    const clean = form.phone.replace(/[^0-9]/g, '');
+    if (!clean || clean.length < 10) {
+      setMessage('❌ Please enter a valid 10-digit mobile number.');
+      setLoading(false);
+      return;
+    }
+    const fullPhone = clean.startsWith('91') && clean.length > 10 ? `+${clean}` : `+91${clean.slice(-10)}`;
+
     try {
-      const res = await sendOtp(form.phone, 'phone');
+      // 1. Attempt real SMS delivery via Google Firebase (10k free/month)
+      try {
+        await sendOtp(fullPhone, 'firebase');
+        setActiveOtpChannel('firebase');
+        setStep(2);
+        setMessage(`📱 Real SMS OTP sent via Google to ${fullPhone}. Check your phone.`);
+        return;
+      } catch (firebaseErr) {
+        console.warn('Firebase SMS delivery failed/unavailable, falling back to server OTP:', firebaseErr?.message);
+      }
+
+      // 2. Graceful fallback to server-side Free OTP Pilot Mode
+      const res = await sendOtp(fullPhone, 'phone');
+      setActiveOtpChannel('phone');
       setStep(2);
-      setMessage(`📱 OTP sent! ${res.otp ? `[DEV: ${res.otp}]` : ''}`);
+      setMessage(`📱 OTP generated for ${fullPhone}.${res && res.otp ? ` [Verification Code: ${res.otp}]` : ''}`);
+    } catch (err) {
+      setMessage(`❌ ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    const clean = form.phone.replace(/[^0-9]/g, '');
+    const fullPhone = clean.startsWith('91') && clean.length > 10 ? `+${clean}` : `+91${clean.slice(-10)}`;
+
+    try {
+      let data;
+      if (activeOtpChannel === 'firebase') {
+        try {
+          data = await verifyOtp(fullPhone, otp, form.name, '', 'firebase');
+        } catch (fbErr) {
+          console.warn('Firebase verify failed, attempting direct verify fallback:', fbErr?.message);
+          data = await verifyOtp(fullPhone, otp, form.name, '', 'phone');
+        }
+      } else {
+        data = await verifyOtp(fullPhone, otp, form.name, '', 'phone');
+      }
+
+      if (data && data.registered && data.accessToken) {
+        window.location.href = '/';
+      } else {
+        setMessage('❌ We could not finish creating your account. Please try again.');
+      }
     } catch (err) {
       setMessage(`❌ ${err.message}`);
     } finally {
@@ -70,6 +135,9 @@ export default function RegisterPage() {
             ))}
           </div>
 
+          {/* Invisible Google reCAPTCHA container for Firebase Phone Auth */}
+          <div id="recaptcha-container"></div>
+
           {message && (
             <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--primary-light)', color: 'var(--primary)', marginBottom: '1.5rem', fontSize: '0.88rem', fontWeight: 600 }}>
               {message}
@@ -89,7 +157,7 @@ export default function RegisterPage() {
               </div>
               <div className="form-group">
                 <label className="form-label">Password *</label>
-                <input type="password" className="form-input" placeholder="Minimum 8 characters" value={form.password} onChange={update('password')} required minLength={8} />
+                <input type="password" className="form-input" placeholder="Minimum 8 characters" value={form.password} onChange={update('password')} required minLength={8} autoComplete="new-password" minLength={8} />
               </div>
               <div className="form-group">
                 <label className="form-label">Confirm Password *</label>
@@ -119,12 +187,12 @@ export default function RegisterPage() {
           )}
 
           {method === 'phone' && step === 2 && (
-            <form onSubmit={(e) => { e.preventDefault(); window.location.href = '/login'; }}>
+            <form onSubmit={handleVerifyPhoneOtp}>
               <div className="form-group">
                 <label className="form-label">Enter 6-Digit OTP</label>
                 <input type="text" className="form-input" placeholder="XXXXXX" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength={6} />
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Continue to Login</button>
+              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%' }}>{loading ? 'Verifying...' : 'Verify & Create Account'}</button>
               <button type="button" onClick={() => setStep(1)} className="btn btn-secondary" style={{ width: '100%', marginTop: '0.75rem' }}>Back</button>
             </form>
           )}

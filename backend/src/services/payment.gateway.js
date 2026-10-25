@@ -1,52 +1,17 @@
 const crypto = require('crypto');
 
 /**
- * Unified Abstract Payment Gateway Engine
- * Supports Razorpay, Cashfree, and direct UPI Intent deep-linking with fallback logic.
+ * Webhook signature verification for the billing webhook (saas.routes.js).
+ *
+ * This class also had createPaymentOrder(), described as a "unified payment
+ * gateway engine" for Razorpay, Cashfree and UPI. It contacted none of them:
+ * the Razorpay branch returned an order id made from random bytes, the
+ * Cashfree branch a made-up session id, and the UPI branch a link paying a
+ * hard-coded VPA. Nothing called it. Taking a payment is
+ * services/payments.service.js; talking to Razorpay is
+ * services/razorpay.service.js.
  */
 class PaymentGatewayEngine {
-  /**
-   * Create payment order with requested provider
-   */
-  static async createPaymentOrder({ provider = 'razorpay', amount, currency = 'INR', orderId, customerDetails }) {
-    console.log(`[PaymentGateway] Creating ${provider.toUpperCase()} payment for Order ${orderId}: ₹${amount}`);
-
-    switch (provider.toLowerCase()) {
-      case 'razorpay':
-        return {
-          provider: 'razorpay',
-          gatewayOrderId: `rzp_order_${crypto.randomBytes(6).toString('hex')}`,
-          amount: amount * 100, // in paise
-          currency,
-          keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_mockkey'
-        };
-
-      case 'cashfree':
-        return {
-          provider: 'cashfree',
-          paymentSessionId: `session_${crypto.randomBytes(8).toString('hex')}`,
-          amount,
-          currency
-        };
-
-      // Braced so `upiUri` is scoped to this case. A bare `const` in a case
-      // clause is visible to every other case in the switch but only
-      // initialised if this branch runs, so an earlier case referencing it
-      // would hit the temporal dead zone.
-      case 'upi': {
-        const upiUri = `upi://pay?pa=localsampark@upi&pn=LocalSampark&am=${amount}&tr=${orderId}&cu=INR`;
-        return {
-          provider: 'upi',
-          upiUri,
-          qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUri)}`
-        };
-      }
-
-      default:
-        throw new Error(`Unsupported payment provider: ${provider}`);
-    }
-  }
-
   /**
    * Webhook signature validator.
    *

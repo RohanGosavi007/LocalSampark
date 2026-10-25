@@ -92,14 +92,16 @@ export const SocketProvider = ({ children }) => {
         if (!res.ok) throw new Error('Backend not healthy');
         if (cancelled) return;
 
-        const token = readToken();
         const newSocket = io(origin, {
           withCredentials: true,
           // Both transports: a websocket upgrade is the first thing a captive
           // portal or corporate proxy blocks, and with only one the client
           // never connects at all.
           transports: ['websocket', 'polling'],
-          auth: token ? { token } : undefined,
+          // A function, not a value: socket.io calls it on every (re)connect, so a
+          // reconnect after the hourly token rotation authenticates with the CURRENT
+          // token instead of silently becoming a guest.
+          auth: (cb) => { const current = readToken(); cb(current ? { token: current } : {}); },
           reconnectionAttempts: 10,
           reconnectionDelay: 2000,
           reconnectionDelayMax: 15000,
@@ -210,11 +212,11 @@ export function getSharedSocket() {
   const origin = socketOrigin();
   if (!origin) return null;
 
-  const token = readToken();
   standalone = io(origin, {
     withCredentials: true,
     transports: ['websocket', 'polling'],
-    auth: token ? { token } : undefined,
+    // See the provider above: read at every (re)connect.
+    auth: (cb) => { const current = readToken(); cb(current ? { token: current } : {}); },
     reconnectionAttempts: 10,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 15000,

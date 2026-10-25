@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, Alert, Platform, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useAppStore } from '../store/useAppStore';
+import * as Location from 'expo-location';
 import { apiGet, apiPost } from '../lib/api';
 import { TrendingUp, ShoppingBag, Plus, RefreshCw, Users, AlertTriangle, ArrowRight, Database } from 'lucide-react-native';
 
@@ -13,36 +14,72 @@ export default function DashboardNativeTemplate() {
   const [refreshing, setRefreshing] = useState(false);
   const [newShopName, setNewShopName] = useState('');
   const [newShopCategory, setNewShopCategory] = useState('');
+  const [newShopAddress, setNewShopAddress] = useState('');
+  const [shopCoords, setShopCoords] = useState(null);
+  const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const metricsData = await apiGet('/dashboard/metrics').catch(() => ({ totalUsers: 1420, activeShops: 38, revenueToday: '4,850.00', pendingApprovals: 3 }));
+      const metricsData = await apiGet('/dashboard/metrics');
       setMetrics(metricsData);
-      const shopsData = await apiGet('/shops').catch(() => [
-        { id: 1, name: 'Sharma Kirana Store', category: 'Grocery', status: 'Approved' },
-        { id: 2, name: 'Metro Electronics', category: 'Retail', status: 'Approved' },
-        { id: 3, name: 'Quick Fix Plumbers', category: 'Service', status: 'Pending' }
-      ]);
+      const shopsData = await apiGet('/shops');
       setShops(shopsData);
     } catch (error) {
       console.error('[Dashboard fetch error]', error);
-      Alert.alert('Data Sync Error', 'Could not sync with live database.');
+      setMetrics({ totalUsers: 0, activeShops: 0, revenueToday: '0.00', pendingApprovals: 0 });
+      Alert.alert('Data Sync Error', 'Could not load live figures. The numbers shown are not current.');
     } finally { setLoading(false); setRefreshing(false); }
   }, [setShops]);
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
   const onRefresh = () => { setRefreshing(true); fetchDashboardData(); };
 
+  // The shop's position, taken from the device. A shop with no coordinates is
+  // stored and then appears in no nearby search, so the server refuses one, and
+  // this form used to send only a name and a category — every submission
+  // failed. The owner is expected to be standing in the shop when they add it.
+  const captureLocation = async () => {
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location needed', 'Allow location access so customers nearby can find this shop.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({});
+      setShopCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } catch {
+      Alert.alert('Location unavailable', 'Could not read your position. Check that location is switched on and try again.');
+    } finally { setLocating(false); }
+  };
+
   const handleCreateShop = async () => {
     if (!newShopName.trim() || !newShopCategory.trim()) { Alert.alert('Validation Error', 'Please enter shop name and category.'); return; }
+    if (!newShopAddress.trim()) { Alert.alert('Validation Error', 'Please enter the shop address.'); return; }
+    if (!shopCoords) { Alert.alert('Validation Error', 'Please set the shop location.'); return; }
     setSubmitting(true);
     try {
-      const result = await apiPost('/shops', { name: newShopName, category: newShopCategory, ownerId: user?.id, status: 'pending' });
-      Alert.alert('Submission Successful', `Your shop "${result.name || newShopName}" was created.`);
-      setNewShopName(''); setNewShopCategory(''); fetchDashboardData();
-    } catch (error) { Alert.alert('Database Sync Failure', error.message || 'Failed to submit.'); }
+      // The owner is whoever is signed in and the status is always pending
+      // review; the server decides both, so neither is sent.
+      const result = await apiPost('/shops', {
+        name: newShopName.trim(),
+        category: newShopCategory.trim(),
+        address: newShopAddress.trim(),
+        latitude: shopCoords.latitude,
+        longitude: shopCoords.longitude,
+      });
+      Alert.alert('Submitted for review', `"${result.name || newShopName}" will appear once it has been approved.`);
+      setNewShopName(''); setNewShopCategory(''); setNewShopAddress(''); setShopCoords(null); fetchDashboardData();
+    } catch (error) {
+      // The server names each field it could not accept.
+      const problems = error?.data?.problems;
+      const detail = Array.isArray(problems) && problems.length
+        ? problems.map((p) => p.message).join('\n')
+        : (error.message || 'Failed to submit.');
+      Alert.alert('Could not add the shop', detail);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -106,6 +143,18 @@ export default function DashboardNativeTemplate() {
           <TextInput style={s.input} placeholder="e.g. New Deluxe Sweets" placeholderTextColor="#475569" value={newShopName} onChangeText={setNewShopName} />
           <Text style={s.fieldLabel}>Business Category</Text>
           <TextInput style={s.input} placeholder="e.g. Bakery / Grocery / Services" placeholderTextColor="#475569" value={newShopCategory} onChangeText={setNewShopCategory} />
+          <Text style={s.fieldLabel}>Address</Text>
+          <TextInput style={s.input} placeholder="Shop number, street, area" placeholderTextColor="#475569" value={newShopAddress} onChangeText={setNewShopAddress} />
+          <Text style={s.fieldLabel}>Location</Text>
+          <TouchableOpacity onPress={captureLocation} disabled={locating} style={s.locationBtn}>
+            {locating
+              ? <ActivityIndicator size="small" color="#3b82f6" />
+              : <Text style={s.locationText}>
+                  {shopCoords
+                    ? `Set: ${shopCoords.latitude.toFixed(5)}, ${shopCoords.longitude.toFixed(5)} (tap to update)`
+                    : 'Use my current location'}
+                </Text>}
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateShop} disabled={submitting} style={[s.submitBtn, submitting && { backgroundColor: '#1e40af' }]}>
             {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Plus size={16} color="#fff" /><Text style={s.submitText}>Submit to Shared Database</Text></>}
           </TouchableOpacity>
@@ -159,6 +208,8 @@ const s = StyleSheet.create({
   formSubtitle: { color: '#94a3b8', fontSize: 12, marginBottom: 16 },
   fieldLabel: { color: '#cbd5e1', fontSize: 12, fontWeight: '600', marginBottom: 8 },
   input: { backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, color: '#ffffff', marginBottom: 12, fontSize: 14 },
+  locationBtn: { backgroundColor: '#020617', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, alignItems: 'flex-start' },
+  locationText: { color: '#3b82f6', fontSize: 14, fontWeight: '600' },
   submitBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#2563eb', gap: 8 },
   submitText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
   countText: { color: '#64748b', fontSize: 12 },

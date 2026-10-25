@@ -1,4 +1,5 @@
 'use client';
+import { apiGet } from '@/lib/api';
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 
@@ -16,7 +17,18 @@ export default function FieldDashboard() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
   
-  const stats = [{"label":"Shops Onboarded","value":"14"},{"label":"Pending Approval","value":"3"},{"label":"Commission","value":"₹14,000"},{"label":"Target","value":"82%"}];
+  // The agent's own numbers from /dashboards/territory/field-dashboard. These were a fixed list:
+  // 14 shops onboarded, 3 pending, ₹14,000 commission.
+  const [live, setLive] = useState(null);
+  useEffect(() => {
+    apiGet('/dashboards/territory/field-dashboard').then((r) => setLive(r.stats || null)).catch(() => setLive(null));
+  }, []);
+  const stats = [
+    { label: 'Shops Onboarded', value: live ? String(live.shopsOnboarded) : '—' },
+    { label: 'Pending Leads', value: live ? String(live.pendingLeads) : '—' },
+    { label: 'Conversion', value: live ? String(live.conversionRate) : '—' },
+    { label: 'Commission', value: live ? `₹${live.earnings}` : '—' },
+  ];
   const navItems = [{"id":"dashboard","label":"Territory Stats","icon":"📊"},{"id":"onboard","label":"Onboard Shop","icon":"🏪"},{"id":"leads","label":"Leads","icon":"🎯"},{"id":"earnings","label":"Commission","icon":"💰"}];
 
   return (

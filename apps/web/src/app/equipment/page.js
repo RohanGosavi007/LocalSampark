@@ -28,21 +28,11 @@ export default function EquipmentPage() {
         setEquipment(items);
       } else {
         // Seed display with examples when DB is empty
-        setEquipment([
-          { id: 1, item_name: 'Heavy Duty Drill Machine', title: 'Heavy Duty Drill Machine', category: 'Tools', daily_rate: 400, price_per_day: 400, deposit: 1000, provider: 'Raju Hardware', location: 'Kalyani Nagar', status: 'available', available: true },
-          { id: 2, item_name: 'Concrete Mixer', title: 'Concrete Mixer', category: 'Construction', daily_rate: 1200, price_per_day: 1200, deposit: 5000, provider: 'BuildWell Equipments', location: 'Viman Nagar', status: 'available', available: true },
-          { id: 3, item_name: 'Lawn Mower', title: 'Lawn Mower', category: 'Gardening', daily_rate: 500, price_per_day: 500, deposit: 1500, provider: 'Green Thumb', location: 'Koregaon Park', status: 'rented', available: false },
-          { id: 4, item_name: 'Professional DSLR Camera', title: 'Professional DSLR Camera', category: 'Electronics', daily_rate: 1500, price_per_day: 1500, deposit: 10000, provider: 'PhotoRent', location: 'Camp', status: 'available', available: true },
-        ]);
+        setEquipment([]);
       }
     } catch (e) {
-      console.error('Equipment API failed, using mock data:', e);
-      setEquipment([
-        { id: 1, title: 'Heavy Duty Drill Machine', category: 'Tools', price_per_day: 400, deposit: 1000, provider: 'Raju Hardware', location: 'Kalyani Nagar', available: true },
-        { id: 2, title: 'Concrete Mixer', category: 'Construction', price_per_day: 1200, deposit: 5000, provider: 'BuildWell Equipments', location: 'Viman Nagar', available: true },
-        { id: 3, title: 'Lawn Mower', category: 'Gardening', price_per_day: 500, deposit: 1500, provider: 'Green Thumb', location: 'Koregaon Park', available: false },
-        { id: 4, title: 'Professional DSLR Camera', category: 'Electronics', price_per_day: 1500, deposit: 10000, provider: 'PhotoRent', location: 'Camp', available: true },
-      ]);
+      console.error('Equipment API failed:', e);
+      setEquipment([]);
     }
     setLoading(false);
   };

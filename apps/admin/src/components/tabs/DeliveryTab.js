@@ -32,7 +32,7 @@ export default function DeliveryTab({ API_BASE, authHeaders }) {
 
   const handleStatusChange = async (id, status) => {
     try {
-      await fetch(`${API_BASE}/admin/delivery/agents/${id}/status`, { 
+      await fetchJson(`${API_BASE}/admin/delivery/agents/${id}/status`, { 
         method: 'PUT', 
         headers: authHeaders(),
         body: JSON.stringify({ status })

@@ -78,7 +78,12 @@ function hasIntegerPrimaryKey(tableName) {
     // Synchronous read against the cached schema snapshot; falls back to false
     // (previous behaviour) if it cannot be determined.
     const row = schemaSnapshot.get(tableName);
-    if (row) result = /\bid\s+INTEGER\s+PRIMARY\s+KEY/i.test(row);
+    // The name may be quoted: a table that has been rebuilt (see
+    // migrations/lib/sqliteRebuild.js) is stored as `"id" INTEGER PRIMARY KEY`.
+    // Matching only the bare form took those tables for UUID-keyed ones, and
+    // every INSERT into them was handed a UUID for an integer rowid —
+    // SQLITE_MISMATCH on adding a catalogue item, among others.
+    if (row) result = /(^|[(,\s])["`[]?id["`\]]?\s+INTEGER\s+PRIMARY\s+KEY/i.test(row);
   } catch (_e) { /* keep false */ }
 
   integerPkCache.set(tableName, result);
@@ -86,32 +91,81 @@ function hasIntegerPrimaryKey(tableName) {
 }
 
 /**
- * table -> CREATE TABLE text, loaded once at startup. prepareInsert runs
- * synchronously inside query(), so it cannot await an introspection call.
+ * Does this table have a column called `id` at all?
+ *
+ * prepareInsert used to add one to every INSERT that did not name it, whatever
+ * the table. Eight tables in live use are keyed on something else — a user_id,
+ * a config key, a pair of ids — and have no `id` column, so each of those
+ * statements failed with "table loyalty_accounts has no column named id":
+ * opening a loyalty account, adding an emergency contact, saving a platform
+ * setting, taking a queue token.
+ *
+ * Answered from PRAGMA table_info where that loaded, and from the CREATE TABLE
+ * text otherwise. A table the snapshot has never heard of answers true, which
+ * is the behaviour the shim had before it could tell the difference.
+ */
+function hasIdColumn(tableName) {
+  if (idColumnTables !== null) {
+    if (idColumnTables.has(tableName)) return true;
+    if (schemaSnapshot.has(tableName)) return false;
+    return true;
+  }
+  const ddl = schemaSnapshot.get(tableName);
+  if (!ddl) return true;
+  return /[(,]\s*["`[]?id["`\]]?\s+[A-Za-z]/i.test(ddl) || /[(,]\s*["`[]?id["`\]]?\s*[,)]/i.test(ddl);
+}
+
+/**
+ * table -> CREATE TABLE text, loaded at startup and reloaded when query() meets
+ * a table it does not know. prepareInsert runs synchronously inside query(), so
+ * it cannot await an introspection call of its own.
  */
 const schemaSnapshot = new Map();
+/** Tables that have an `id` column, or null when table_info could not be read. */
+let idColumnTables = null;
 let schemaReady = null;
 
-function loadSchemaSnapshot() {
+function loadSchemaSnapshot(force = false) {
   // Kicked off at module load and awaited by query(), so it is populated before
   // the first INSERT regardless of entry point. Tying it to connectDB() alone
   // was not enough: the test suite and the CLI scripts call query() directly,
   // and with an empty snapshot every table looked like a UUID table again.
-  if (schemaReady) return schemaReady;
+  if (schemaReady && !force) return schemaReady;
   schemaReady = new Promise((resolve) => {
     try {
       db.all("SELECT name, sql FROM sqlite_master WHERE type='table'", (err, rows) => {
-        if (!err && rows) {
-          for (const r of rows) schemaSnapshot.set(String(r.name).toLowerCase(), r.sql || '');
-          integerPkCache.clear();
-        }
-        resolve();
+        if (err || !rows) return resolve();
+
+        schemaSnapshot.clear();
+        for (const r of rows) schemaSnapshot.set(String(r.name).toLowerCase(), r.sql || '');
+        integerPkCache.clear();
+
+        // The table-valued pragma joins once across every table. If this build
+        // of SQLite lacks it, hasIdColumn falls back to reading the DDL text.
+        db.all(
+          `SELECT m.name AS tbl
+             FROM sqlite_master m
+             JOIN pragma_table_info(m.name) p
+            WHERE m.type = 'table' AND lower(p.name) = 'id'`,
+          (infoErr, infoRows) => {
+            idColumnTables = infoErr || !infoRows
+              ? null
+              : new Set(infoRows.map((r) => String(r.tbl).toLowerCase()));
+            resolve();
+          }
+        );
       });
     } catch (_e) {
       resolve(); // fall back to previous behaviour rather than blocking queries
     }
   });
   return schemaReady;
+}
+
+/** The table an INSERT writes to, lower-cased, or null for any other statement. */
+function insertTarget(sql) {
+  const m = typeof sql === 'string' && sql.match(/^\s*INSERT\s+(?:OR\s+\w+\s+)?INTO\s+["`]?(\w+)/i);
+  return m ? m[1].toLowerCase() : null;
 }
 
 // Start immediately; query() awaits it.
@@ -136,34 +190,88 @@ db.run('PRAGMA foreign_keys = ON', (err) => {
   if (err) console.error('[db] could not enable foreign key enforcement:', err.message);
 });
 
-function prepareInsert(sql, params) {
-  const insertMatch = sql.match(/INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)/i);
-  if (insertMatch && params) {
-    const tableName = insertMatch[1].toLowerCase();
-    const columns = insertMatch[2].split(',').map(c => c.trim().toLowerCase());
-    
-    // If the table has an id primary key, and 'id' is not in the columns being inserted,
-    // we can prepend a generated UUID to the params and insert it.
-    //
-    // Only for tables whose id is actually a text/UUID key. This used to be
-    // decided by a hardcoded list of three exceptions, so every other table
-    // with `id INTEGER PRIMARY KEY` — local_shops among them — received a UUID
-    // string into an integer column and every such INSERT failed with
-    // SQLITE_MISMATCH. The schema is the authority on this, not a literal list.
-    if (!columns.includes('id') && !hasIntegerPrimaryKey(tableName)) {
-      const id = uuidv4();
-      const newSql = sql
-        .replace(/(INSERT\s+INTO\s+\w+\s*\()([^)]+\))/i, `$1id, $2`)
-        .replace(/VALUES\s*\(([^)]+)\)/i, (m, valGroup) => {
-          // Re-index all existing $1, $2 to $2, $3...
-          const newValGroup = valGroup.replace(/\$([0-9]+)/g, (m, n) => `$${parseInt(n, 10) + 1}`);
-          return `VALUES ($1, ${newValGroup})`;
-        });
-
-      return { sql: newSql, params: [id, ...params] };
+/**
+ * Index just past the parenthesis that closes the group opened before `from`,
+ * or -1 if it never closes. Parentheses inside single-quoted strings are text.
+ */
+function closingParen(sql, from) {
+  let depth = 1;
+  let inString = false;
+  for (let i = from; i < sql.length; i += 1) {
+    const ch = sql[i];
+    if (inString) {
+      if (ch === "'") {
+        if (sql[i + 1] === "'") i += 1; // '' is an escaped quote, not the end
+        else inString = false;
+      }
+      continue;
+    }
+    if (ch === "'") inString = true;
+    else if (ch === '(') depth += 1;
+    else if (ch === ')') {
+      depth -= 1;
+      if (depth === 0) return i + 1;
     }
   }
-  return { sql, params };
+  return -1;
+}
+
+/**
+ * Gives an INSERT a generated id when it names none, as a PostgreSQL column
+ * default of uuid_generate_v4() would.
+ *
+ * Only for tables whose id is actually a text/UUID key. This used to be decided
+ * by a hardcoded list of three exceptions, so every other table with
+ * `id INTEGER PRIMARY KEY` — local_shops among them — received a UUID string
+ * into an integer column and every such INSERT failed with SQLITE_MISMATCH. The
+ * schema is the authority on this, not a literal list.
+ *
+ * The rewrite itself was two regular expressions, which is correct for
+ * `INSERT INTO t (a, b) VALUES ($1, $2)` and for nothing more involved:
+ *
+ *   - It renumbered $n only inside the first run of text up to a ')'. A
+ *     placeholder anywhere after that kept its old number while the parameter
+ *     list had grown by one, so it bound the value before the one intended.
+ *     `... ON CONFLICT (config_key) DO UPDATE SET config_value = $1` wrote the
+ *     generated UUID as the setting — toggling maintenance mode a second time
+ *     stored a random id in place of true/false — and
+ *     `VALUES ((SELECT id FROM wallets WHERE user_id = $1), $2, ...)` recorded
+ *     the user's id as the transaction amount.
+ *   - It added the column to INSERT ... SELECT, which has no VALUES list to add
+ *     a value to, and to tables that have no id column.
+ *
+ * Every placeholder in the statement is now renumbered, the VALUES group is
+ * found by matching parentheses, and the shapes that cannot be given an id
+ * this way — INSERT ... SELECT, several rows at once — are left exactly as
+ * written rather than half-rewritten.
+ */
+function prepareInsert(sql, params) {
+  if (!params || typeof sql !== 'string') return { sql, params };
+
+  const head = sql.match(/INSERT\s+(?:OR\s+\w+\s+)?INTO\s+["`]?(\w+)["`]?\s*\(([^)]+)\)\s*VALUES\s*\(/i);
+  if (!head) return { sql, params };
+
+  const tableName = head[1].toLowerCase();
+  const columns = head[2].split(',').map((c) => c.trim().replace(/["`]/g, '').toLowerCase());
+  if (columns.includes('id')) return { sql, params };
+  if (hasIntegerPrimaryKey(tableName) || !hasIdColumn(tableName)) return { sql, params };
+
+  const valuesStart = head.index + head[0].length; // just inside "VALUES ("
+  const valuesEnd = closingParen(sql, valuesStart);
+  if (valuesEnd === -1) return { sql, params };
+  if (/^\s*,\s*\(/.test(sql.slice(valuesEnd))) return { sql, params }; // several rows
+
+  const columnsStart = head.index + head[0].indexOf('(') + 1;
+  const shift = (text) => text.replace(/\$([0-9]+)/g, (_m, n) => `$${parseInt(n, 10) + 1}`);
+
+  const newSql =
+    shift(sql.slice(0, columnsStart)) +
+    'id, ' +
+    shift(sql.slice(columnsStart, valuesStart)) +
+    '$1, ' +
+    shift(sql.slice(valuesStart));
+
+  return { sql: newSql, params: [uuidv4(), ...params] };
 }
 
 async function connectDB() {
@@ -198,10 +306,26 @@ async function query(text, params = []) {
   // table's primary-key type. Awaiting here makes that decision correct from
   // the very first query instead of only after connectDB() has run.
   await loadSchemaSnapshot();
+  // The snapshot is taken when this module loads, which for a migration run is
+  // before any table exists: the runner applies DDL through pool.exec, not
+  // through here. An INSERT into a table the snapshot has not seen means it is
+  // out of date, so it is retaken once before deciding how to rewrite.
+  const target = insertTarget(text);
+  if (target && !schemaSnapshot.has(target)) await loadSchemaSnapshot(true);
   let { sql, params: processedParams } = prepareInsert(text, params);
   const translated = translateQuery(sql, processedParams);
-  
-  return new Promise((resolve, reject) => {
+
+  // DDL issued through query() changes what the snapshot should say, so it is
+  // discarded once the statement has run and retaken by the next query.
+  const changesSchema = /^\s*(CREATE|ALTER|DROP)\s+(TABLE|VIRTUAL)/i.test(text);
+  const settle = (fn) => (value) => {
+    if (changesSchema) schemaReady = null;
+    fn(value);
+  };
+
+  return new Promise((resolvePromise, rejectPromise) => {
+    const resolve = settle(resolvePromise);
+    const reject = settle(rejectPromise);
     // Row-returning statements must go through db.all(); db.run() executes them
     // but discards the result set. This previously only recognised SELECT and
     // RETURNING, so PRAGMA table_info(...) silently resolved to zero rows —
@@ -252,42 +376,64 @@ async function queryMany(text, params = []) {
 }
 
 // Transaction helper
-async function withTransaction(callback) {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION', async (err) => {
-        if (err) return reject(err);
-        
-        const client = {
-          query: async (text, params = []) => {
-            const res = await query(text, params);
-            return res;
-          },
-          queryOne: async (text, params = []) => {
-            const res = await query(text, params);
-            return res.rows[0] || null;
-          },
-          queryMany: async (text, params = []) => {
-            const res = await query(text, params);
-            return res.rows;
-          }
-        };
+/**
+ * Transactions, one at a time.
+ *
+ * This driver has a single connection, and SQLite has one transaction per
+ * connection. withTransaction used to issue BEGIN straight away, so a second
+ * request arriving while the first was mid-transaction failed with "cannot
+ * start a transaction within a transaction" — any two users checking out at
+ * the same moment, in development or in CI, and one of them got a 500.
+ *
+ * They now queue: each transaction starts when the one before it has
+ * committed or rolled back. A withTransaction called from inside a
+ * transaction's own callback joins that transaction rather than waiting for
+ * it, which would never end.
+ *
+ * What this cannot give is isolation from statements issued outside any
+ * transaction: those share the connection and run inside whichever
+ * transaction is open. PostgreSQL, where each transaction has its own
+ * connection, has no such limit; this engine is for development and tests.
+ */
+const { AsyncLocalStorage } = require('async_hooks');
+const transactionScope = new AsyncLocalStorage();
+let transactionQueue = Promise.resolve();
 
-        try {
-          const result = await callback(client);
-          db.run('COMMIT', (commitErr) => {
-            if (commitErr) reject(commitErr);
-            else resolve(result);
-          });
-        } catch (error) {
-          db.run('ROLLBACK', () => {
-            reject(error);
-          });
-        }
-      });
-    });
+const runStatement = (sql) => new Promise((resolve, reject) => {
+  db.run(sql, (err) => (err ? reject(err) : resolve()));
+});
+
+const transactionClient = {
+  query: (text, params = []) => query(text, params),
+  queryOne: async (text, params = []) => (await query(text, params)).rows[0] || null,
+  queryMany: async (text, params = []) => (await query(text, params)).rows,
+};
+
+async function withTransaction(callback) {
+  if (transactionScope.getStore()) return callback(transactionClient);
+
+  const run = () => transactionScope.run({ open: true }, async () => {
+    await runStatement('BEGIN TRANSACTION');
+    try {
+      const result = await callback(transactionClient);
+      await runStatement('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await runStatement('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('[db] ROLLBACK failed after transaction error:', rollbackError.message);
+      }
+      throw error;
+    }
   });
+
+  // Runs after the previous transaction settles, whichever way it went.
+  const mine = transactionQueue.then(run, run);
+  transactionQueue = mine.catch(() => {});
+  return mine;
 }
+
 
 // Transaction compatibility function matching Postgres transaction signature
 async function transaction(callback) {

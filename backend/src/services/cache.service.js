@@ -183,6 +183,43 @@ class CacheService {
   }
 
   /**
+   * Drop everything that is a cached copy of something else.
+   *
+   * By prefix, not by flushing the store. Redis here also holds things that
+   * are not caches — one-time passwords, rate-limit counters, queue state,
+   * stock counters, the kill switches — and FLUSHALL would sign every user
+   * out mid-login and reset every limiter. The prefixes below are the ones
+   * written by the response cache, analytics and the directory lookups, all of
+   * which are recomputed on the next request.
+   *
+   * Returns what was done, so the caller can report it instead of asserting it.
+   */
+  static async clearAll() {
+    const prefixes = ['cache:*', 'analytics:*', 'pincode:*', 'shop:*', 'surge:*'];
+    const memoryEntries = lruInstance.size;
+    lruInstance.clear();
+
+    const failed = [];
+    if (useRedis) {
+      for (const pattern of prefixes) {
+        try {
+          await cacheInvalidate(pattern);
+        } catch (err) {
+          failed.push(pattern);
+          console.error(`[CacheService] Purge failed for ${pattern}:`, err.message);
+        }
+      }
+    }
+
+    return {
+      backend: useRedis ? 'redis' : 'lru-memory',
+      memoryEntriesCleared: memoryEntries,
+      redisPatternsCleared: useRedis ? prefixes.filter((p) => !failed.includes(p)) : [],
+      failed,
+    };
+  }
+
+  /**
    * Get cache stats (development debugging).
    */
   static getStats() {

@@ -1,8 +1,9 @@
 ﻿const express = require('express');
 const router = express.Router();
-const { query } = require('../../../config/database');
+const { query, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { v4: uuidv4 } = require('uuid');
+const coins = require('../../../services/coins.service');
 
 // Configure Coin Value (100 coins = 10 rupees)
 const COINS_PER_RUPEE = 10; 
@@ -12,7 +13,7 @@ const COINS_PER_RUPEE = 10;
  */
 router.post('/referral/claim', authenticate, async (req, res) => {
     try {
-        const { referralCode } = req.body;
+        const referralCode = String((req.body || {}).referralCode || '').trim();
         const refereeId = req.user.id;
 
         if (!referralCode) return res.status(400).json({ error: 'Referral code is required' });
@@ -22,31 +23,42 @@ router.post('/referral/claim', authenticate, async (req, res) => {
         if (referrerResult.rows.length === 0) return res.status(404).json({ error: 'Invalid referral code' });
 
         const referrerId = referrerResult.rows[0].id;
-        if (referrerId === refereeId) return res.status(400).json({ error: 'Cannot refer yourself' });
+        if (String(referrerId) === String(refereeId)) return res.status(400).json({ error: 'Cannot refer yourself' });
 
-        // Check if referee already claimed a code
-        const existingClaim = await query(`SELECT id FROM referrals WHERE referee_id = $1`, [refereeId]);
-        if (existingClaim.rows.length > 0) return res.status(400).json({ error: 'You have already used a referral code' });
-
-        // 500 Coins for Referrer (â‚¹50), 200 Coins for Referee (â‚¹20)
-        const referrerCoins = 50 * COINS_PER_RUPEE; 
+        // 500 Coins for Referrer (₹50), 200 Coins for Referee (₹20)
+        const referrerCoins = 50 * COINS_PER_RUPEE;
         const refereeCoins = 20 * COINS_PER_RUPEE;
 
-        // Start transaction (mocking transaction in SQLite via sequential logic)
-        const referralId = uuidv4();
-        await query(`INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ($1, $2, $3, $4, 'completed', 1)`,
-            [referralId, referrerId, refereeId, referralCode]
-        );
+        // The claim and both rewards are one transaction, and the claim row is
+        // what decides who gets through: referrals has one row per referee
+        // (migration 121), so of two requests sent together only one inserts.
+        // This used to SELECT for an earlier claim and then insert and pay as
+        // five separate statements — "mocking transaction in SQLite via
+        // sequential logic" — which both paid a double-tap twice and could
+        // stop half-way, leaving one party rewarded and the other not.
+        const ALREADY = 'ALREADY_CLAIMED';
+        try {
+            await withTransaction(async (client) => {
+                const existing = await client.query(`SELECT id FROM referrals WHERE referee_id = $1`, [refereeId]);
+                if (existing.rows.length > 0) throw Object.assign(new Error(ALREADY), { code: ALREADY });
 
-        // Update balances
-        await query(`UPDATE users SET total_coins = total_coins + $1 WHERE id = $2`, [referrerCoins, referrerId]);
-        await query(`UPDATE users SET total_coins = total_coins + $1 WHERE id = $2`, [refereeCoins, refereeId]);
+                await client.query(
+                    `INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ($1, $2, $3, $4, 'completed', 1)`,
+                    [uuidv4(), referrerId, refereeId, referralCode]
+                );
 
-        // Ledger entries
-        await query(`INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, 'earned_referral', 'Referred a friend')`,
-            [uuidv4(), referrerId, referrerCoins]);
-        await query(`INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description) VALUES ($1, $2, $3, 'earned_referral', 'Joined via referral')`,
-            [uuidv4(), refereeId, refereeCoins]);
+                                // On the one coin balance the apps show (services/coins.service.js).
+                // These went to users.total_coins and reward_coins_ledger, which
+                // no balance screen read and nothing could spend.
+                await coins.credit({ userId: referrerId, amount: referrerCoins, reason: 'Referred a friend', referenceId: `referral:${refereeId}`, client });
+                await coins.credit({ userId: refereeId, amount: refereeCoins, reason: 'Joined via referral', referenceId: `referral:${refereeId}`, client });
+            });
+        } catch (error) {
+            // Either our own check, or the unique index catching a simultaneous claim.
+            const duplicate = error.code === ALREADY || error.code === '23505' || /UNIQUE constraint failed/i.test(String(error.message));
+            if (duplicate) return res.status(400).json({ error: 'You have already used a referral code' });
+            throw error;
+        }
 
         res.json({ message: 'Referral claimed successfully', coinsEarned: refereeCoins });
     } catch (error) {
@@ -69,11 +81,16 @@ router.get('/rewards/balance', authenticate, async (req, res) => {
             await query(`UPDATE users SET my_referral_code = $1 WHERE id = $2`, [refCode, req.user.id]);
         }
 
-        const ledgerResult = await query(`SELECT * FROM reward_coins_ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`, [req.user.id]);
+                const ledgerResult = await query(
+            `SELECT id, amount, transaction_type, description, reference_id, created_at
+               FROM loyalty_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`,
+            [req.user.id]
+        );
+        const balance = await coins.balance(req.user.id);
 
         res.json({
-            coins: userResult.rows[0].total_coins || 0,
-            rupeeValue: (userResult.rows[0].total_coins || 0) / COINS_PER_RUPEE,
+            coins: balance,
+            rupeeValue: balance / COINS_PER_RUPEE,
             referralCode: refCode,
             history: ledgerResult.rows
         });
@@ -106,8 +123,9 @@ router.post('/reviews/submit', authenticate, async (req, res) => {
             const avgResult = await query(`SELECT AVG(rating) as avg_rating, COUNT(*) as review_count FROM reviews WHERE target_id = $1`, [targetId]);
             const avgRating = parseFloat(avgResult.rows[0].avg_rating).toFixed(1);
             const reviewCount = parseInt(avgResult.rows[0].review_count);
-            // Assuming local_shops has these columns, update them
-            // await query(`UPDATE local_shops SET rating = $1, total_ratings = $2 WHERE id = $3`, [avgRating, reviewCount, targetId]);
+            // local_shops carries the average only (there is no total_ratings column).
+            // This was commented out, so a submitted review never moved the shop's rating.
+            await query('UPDATE local_shops SET rating = $1 WHERE id = $2', [Number(avgRating), targetId]);
         }
 
         res.json({ message: 'Review submitted successfully', reviewId });

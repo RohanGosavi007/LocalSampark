@@ -62,9 +62,19 @@ async function getRiderProfile(req, res, next) {
     // value from a different id space than users.id, so preferring the user
     // id (as this did) would match zero rows and still report success once
     // the route required authentication.
+        //
+    // The row carries the rider's phone number. It was readable by any signed-in
+    // account; it is now the rider's own, their shop's, or staff's.
     const riderId = req.params.id;
     const rider = await queryOne('SELECT * FROM delivery_riders WHERE id = $1', [riderId]);
-    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+    const own = rider && rider.user_id && String(rider.user_id) === String(req.user?.id);
+    const shop = rider && rider.shop_id
+      ? await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [rider.shop_id])
+      : null;
+    const theirShop = shop && String(shop.owner_id) === String(req.user?.id);
+    if (!rider || !(own || theirShop || isAdmin(req.user))) {
+      return res.status(404).json({ success: false, message: 'Rider not found' });
+    }
     res.json({ success: true, rider });
   } catch (error) { next(error); }
 }
@@ -103,8 +113,21 @@ async function updateLocation(req, res, next) {
       return res.status(400).json({ success: false, message: 'Valid latitude and longitude are required' });
     }
 
-    const rider = await loadOwnedRider(req, res);
+        const rider = await loadOwnedRider(req, res);
     if (!rider) return;
+
+    // A rider's position goes to the tracking screen of an order they are
+    // carrying, not to any order id they name.
+    if (order_id) {
+      const carrying = await queryOne(
+        `SELECT 1 AS ok FROM universal_orders WHERE CAST(id AS TEXT) = $1 AND rider_id = $2
+         UNION ALL
+         SELECT 1 AS ok FROM orders WHERE CAST(id AS TEXT) = $1 AND CAST(assigned_agent_id AS TEXT) = $3
+         LIMIT 1`,
+        [String(order_id), rider.id, String(rider.user_id || '')]
+      );
+      if (!carrying) return res.status(403).json({ success: false, message: 'You are not carrying this order.' });
+    }
 
     // Same id-space bug as updateRiderStatus: rows were written against the
     // caller's user id, so live_tracking accumulated points for a rider_id that

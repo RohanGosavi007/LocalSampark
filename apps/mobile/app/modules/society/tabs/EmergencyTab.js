@@ -1,134 +1,101 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Vibration } from 'react-native';
+import {
+  SM, Card, Row, Button, Field, Chips, DataState,
+  useSocietyData, useSocietyContext, useSocietyLive, runAction, titleCase, when, useKitStyles,
+} from '../../../../src/components/society/SocietyKit';
+import { useThemeColors } from '../../../../src/context/ThemeContext';
+
+/**
+ * SOS.
+ *
+ * The button used to show "Security is on the way to your location" and send
+ * nothing — a resident in a real emergency would have waited for help nobody
+ * had been asked for. It now raises an alert the gate and the committee see
+ * immediately (socket) and on their active list, and only the gate can stand
+ * it down.
+ */
+const TYPES = ['medical', 'fire', 'security', 'other'];
 
 export default function EmergencyTab({ role }) {
-  const [activeEmergency, setActiveEmergency] = useState(false);
+  const s = useKitStyles();
+  const c = useThemeColors();
+  const { context } = useSocietyContext();
+  const active = useSocietyData(`${SM}/emergency/active`);
+  const [type, setType] = useState('medical');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const canResolve = role === 'guard' || role === 'admin';
 
-  const triggerSOS = () => {
-    setActiveEmergency(true);
-    Alert.alert(
-      "SOS Triggered",
-      "Emergency alert sent to Security Guards and Society Admins!",
-      [{ text: "OK" }]
-    );
-  };
+  useSocietyLive(context, { society: true }, {
+    SOCIETY_EMERGENCY: (e) => {
+      active.reload();
+      if (canResolve) {
+        Vibration.vibrate([0, 400, 200, 400]);
+        Alert.alert(`🚨 ${titleCase(e?.type)} emergency`, `${e?.flat ? `Flat ${e.flat}. ` : ''}${e?.description || ''}`);
+      }
+    },
+    SOCIETY_EMERGENCY_RESOLVED: () => active.reload(),
+  });
 
-  const cancelSOS = () => {
-    setActiveEmergency(false);
-  };
+  const raise = () => Alert.alert(
+    `Raise a ${type} alert?`,
+    'The gate and the society committee are alerted immediately.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Send SOS', style: 'destructive',
+        onPress: async () => {
+          setBusy(true);
+          const res = await runAction('post', `${SM}/emergency`, { alertType: type, description: note.trim() || undefined });
+          setBusy(false);
+          if (res) {
+            setNote('');
+            active.reload();
+            Alert.alert('Alert sent', 'The gate has your alert. Stay where you are if it is safe to.');
+          }
+        },
+      },
+    ],
+  );
+
+  const resolve = (e) => runAction('put', `${SM}/emergency/${e.id}/resolve`, null, { onDone: () => active.reload() });
 
   return (
-    <View style={styles.container}>
-      {!activeEmergency ? (
-        <View style={styles.idleState}>
-          <Text style={styles.title}>🚨 Emergency / SOS</Text>
-          <Text style={styles.subtitle}>
-            Press the button below only in case of a severe emergency. 
-            This will immediately alert all guards and admins.
-          </Text>
-          
-          <TouchableOpacity style={styles.sosButton} onPress={triggerSOS}>
-            <Text style={styles.sosText}>SOS</Text>
+    <View>
+      <Card title="Emergency SOS" subtitle="Only for a real emergency. The gate and committee are alerted at once.">
+        <Chips options={TYPES} value={type} onChange={setType} />
+        <Field label="What's happening? (optional)" placeholder="e.g. Elderly resident fainted, 4th floor"
+          value={note} onChangeText={setNote} maxLength={200} />
+        <View style={{ alignItems: 'center', marginVertical: 8 }}>
+          <TouchableOpacity
+            onPress={raise} disabled={busy}
+            accessibilityRole="button" accessibilityLabel={`Send ${type} SOS`}
+            style={{
+              width: 140, height: 140, borderRadius: 70, backgroundColor: c.danger, opacity: busy ? 0.6 : 1,
+              alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: c.dangerQuiet,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 38, fontWeight: '900' }}>SOS</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <View style={styles.activeState}>
-          <Text style={styles.activeIcon}>🚨</Text>
-          <Text style={styles.activeTitle}>EMERGENCY TRIGGERED</Text>
-          <Text style={styles.activeSubtitle}>Security is on the way to your location.</Text>
-          
-          <TouchableOpacity style={styles.cancelButton} onPress={cancelSOS}>
-            <Text style={styles.cancelText}>Mark as Resolved</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      </Card>
+
+      <Card title="Active alerts">
+        <DataState state={active} empty="No active alerts" emptyBody="All clear.">
+          {(active.data || []).map((e, i) => (
+            <Row key={e.id} first={i === 0} title={`🚨 ${titleCase(e.alert_type)}`}
+              meta={[
+                [e.flat_number && `Flat ${e.flat_number}`, e.triggered_by_name].filter(Boolean).join(' · '),
+                e.description, when(e.created_at),
+              ]}
+              right={canResolve ? <Button label="Resolve" tone="success" small onPress={() => resolve(e)} /> : null} />
+          ))}
+        </DataState>
+        {!canResolve && (active.data || []).length > 0 && (
+          <Text style={[s.rowMeta, { marginTop: 8 }]}>The gate marks an alert resolved once it is handled.</Text>
+        )}
+      </Card>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 16,
-    minHeight: 300,
-    justifyContent: 'center'
-  },
-  idleState: {
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 20,
-    lineHeight: 20,
-  },
-  sosButton: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-    borderWidth: 6,
-    borderColor: '#fee2e2'
-  },
-  sosText: {
-    color: '#ffffff',
-    fontSize: 42,
-    fontWeight: '900',
-  },
-
-  activeState: {
-    alignItems: 'center',
-    backgroundColor: '#fee2e2',
-    padding: 24,
-    borderRadius: 16,
-  },
-  activeIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  activeTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#dc2626',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  activeSubtitle: {
-    fontSize: 16,
-    color: '#991b1b',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  cancelButton: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#dc2626'
-  },
-  cancelText: {
-    color: '#dc2626',
-    fontWeight: 'bold',
-    fontSize: 16,
-  }
-});

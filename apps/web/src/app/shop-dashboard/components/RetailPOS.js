@@ -1,29 +1,28 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ShoppingCart, Package, ScanLine, Plus, Minus, X, IndianRupee,
   Tag, Percent, CreditCard, Smartphone, Banknote, Receipt, Search,
   ChevronDown, Check, AlertCircle, Printer
 } from 'lucide-react';
 
-// Sample product catalog — in production this would come from ShopProductsManager state/API
-const DEMO_PRODUCTS = [
-  { id: 'p1', name: 'Aashirvaad Atta 5kg', price: 250, category: 'Grains', emoji: '🌾', stock: 45, unit: 'bag' },
-  { id: 'p2', name: 'Amul Milk 1L', price: 68, category: 'Dairy', emoji: '🥛', stock: 120, unit: 'pkt' },
-  { id: 'p3', name: 'Tata Salt 1kg', price: 22, category: 'Spices', emoji: '🧂', stock: 80, unit: 'pkt' },
-  { id: 'p4', name: 'Sunflower Oil 1L', price: 140, category: 'Oil', emoji: '🫙', stock: 30, unit: 'btl' },
-  { id: 'p5', name: 'Britannia Bread', price: 45, category: 'Bakery', emoji: '🍞', stock: 20, unit: 'pkt' },
-  { id: 'p6', name: 'Parle-G Biscuits', price: 20, category: 'Snacks', emoji: '🍪', stock: 200, unit: 'pkt' },
-  { id: 'p7', name: 'Maggi Noodles 4pk', price: 72, category: 'Instant', emoji: '🍜', stock: 60, unit: 'pkt' },
-  { id: 'p8', name: 'Dettol Soap 75g', price: 38, category: 'Care', emoji: '🧼', stock: 90, unit: 'bar' },
-  { id: 'p9', name: 'Colgate Toothpaste', price: 95, category: 'Care', emoji: '🦷', stock: 55, unit: 'tube' },
-  { id: 'p10', name: 'Surf Excel 1kg', price: 185, category: 'Cleaning', emoji: '🧺', stock: 40, unit: 'box' },
-  { id: 'p11', name: 'Haldirams Namkeen', price: 30, category: 'Snacks', emoji: '🥜', stock: 100, unit: 'pkt' },
-  { id: 'p12', name: 'Basmati Rice 5kg', price: 380, category: 'Grains', emoji: '🍚', stock: 25, unit: 'bag' },
-];
+import { apiGet, apiPost } from '@/lib/api';
+
+// Products come from the shop's own catalogue (GET /shops/my-shop). Sales are rung through
+// POST /shops/my-shop/pos-sales, which prices them from the same table, takes the stock off and
+// records the bill. This screen used to sell a built-in list of branded groceries at made-up prices
+// and stock, and "Payment Successful!" recorded nothing.
+const toProduct = (p) => ({
+  id: String(p.id),
+  name: p.name,
+  price: Number(p.price) || 0,
+  category: p.category || 'General',
+  emoji: '📦',
+  stock: Number(p.track_inventory) ? Number(p.inventory_count ?? p.stock_quantity ?? 0) : 9999,
+  unit: p.unit || 'pc',
+});
 
 const GST_RATES = [0, 5, 12, 18];
-const CATEGORIES = ['All', ...new Set(DEMO_PRODUCTS.map(p => p.category))];
 
 export default function RetailPOS() {
   const [cart, setCart] = useState([]);
@@ -34,6 +33,19 @@ export default function RetailPOS() {
   const [paymentMethod, setPaymentMethod] = useState('cash'); // cash|upi|card
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [lastBillNo, setLastBillNo] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loadError, setLoadError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [lastTotal, setLastTotal] = useState(null);
+
+  const loadProducts = useCallback(() => {
+    apiGet('/shops/my-shop')
+      .then((r) => { setProducts((r.products || r.shop?.products || []).filter((p) => p.is_available !== 0 && p.is_available !== false).map(toProduct)); setLoadError(null); })
+      .catch((e) => setLoadError(e.status === 404 ? 'Register your shop to use the point of sale.' : (e.message || 'Your products could not be loaded.')));
+  }, []);
+  useEffect(() => { loadProducts(); }, [loadProducts]);
+  const CATEGORIES = useMemo(() => ['All', ...new Set(products.map((p) => p.category))], [products]);
 
   // ── Cart Logic ───────────────────────────────────────────────────────────
   const addToCart = useCallback((product) => {
@@ -89,11 +101,26 @@ export default function RetailPOS() {
   const grandTotal = taxable + gstAmount;
 
   // ── Checkout ─────────────────────────────────────────────────────────────
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
-    const billNo = `LS-${Date.now().toString().slice(-6)}`;
-    setLastBillNo(billNo);
-    setCheckoutDone(true);
+  const handleCheckout = async () => {
+    if (cart.length === 0 || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const r = await apiPost('/shops/my-shop/pos-sales', {
+        items: cart.map((i) => ({ productId: i.id, quantity: i.qty, ...(i.itemDiscount ? { discountPercent: i.itemDiscount } : {}) })),
+        discount: discount.value ? { type: discount.type, value: Number(discount.value) } : undefined,
+        gstRate,
+        paymentMethod,
+      });
+      setLastBillNo(r.sale.billNo);
+      setLastTotal(r.sale.total);
+      setCheckoutDone(true);
+      loadProducts();
+    } catch (e) {
+      setSaveError(e.message || 'The sale was not recorded. Nothing was charged.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const resetPOS = () => {
@@ -106,7 +133,7 @@ export default function RetailPOS() {
   };
 
   // ── Filtered products ────────────────────────────────────────────────────
-  const filtered = DEMO_PRODUCTS.filter(p => {
+  const filtered = products.filter(p => {
     const matchCat = activeCategory === 'All' || p.category === activeCategory;
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
@@ -122,8 +149,8 @@ export default function RetailPOS() {
           <Check size={40} color="white" />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>Payment Successful!</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Bill No: <strong>{lastBillNo}</strong></p>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>Sale recorded</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Bill No: <strong>{lastBillNo}</strong>{lastTotal !== null && <> · Total <strong>₹{Number(lastTotal).toFixed(2)}</strong></>}</p>
           <p style={{ color: 'var(--text-muted)' }}>Amount Charged: <strong style={{ color: 'var(--primary)', fontSize: '1.25rem' }}>₹{grandTotal.toFixed(2)}</strong></p>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>via {paymentMethod.toUpperCase()}</p>
         </div>
@@ -191,6 +218,8 @@ export default function RetailPOS() {
 
         {/* Product Grid */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.875rem', alignContent: 'start' }}>
+          {loadError && <p role="alert" style={{ color: '#ef4444', fontWeight: 700, gridColumn: '1 / -1' }}>{loadError}</p>}
+          {!loadError && products.length === 0 && <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1' }}>Add products to your catalogue to start selling here.</p>}
           {filtered.map(p => {
             const inCart = cart.find(i => i.id === p.id);
             return (
@@ -393,6 +422,7 @@ export default function RetailPOS() {
             {/* Charge Button */}
             <button
               onClick={handleCheckout}
+              disabled={saving}
               style={{
                 width: '100%', padding: '0.875rem', borderRadius: '0.875rem',
                 background: 'linear-gradient(135deg, var(--primary), #7c3aed)',
@@ -402,8 +432,9 @@ export default function RetailPOS() {
               }}
             >
               <Receipt size={18} />
-              Charge ₹{grandTotal.toFixed(2)} · {paymentMethod.toUpperCase()}
+              {saving ? 'Recording sale…' : `Charge ₹${grandTotal.toFixed(2)} · ${paymentMethod.toUpperCase()}`}
             </button>
+            {saveError && <p role="alert" style={{ color: '#ef4444', fontWeight: 700, fontSize: '0.85rem', marginTop: '0.5rem' }}>{saveError}</p>}
           </div>
         )}
       </div>

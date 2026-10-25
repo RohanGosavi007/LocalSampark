@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+const cron = require('../utils/cron');
 const { query } = require('../config/database');
 const { sendTopicPush, sendPushNotification } = require('../config/firebase');
 
@@ -9,7 +9,7 @@ cron.schedule('*/5 * * * *', async () => {
             SELECT id, society_id, flat_number, visitor_name, checked_in_at, max_stay_minutes 
             FROM society_visitors 
             WHERE status = 'checked_in' 
-            AND (overstay_alert_sent = 0 OR overstay_alert_sent = false OR overstay_alert_sent IS NULL)
+            AND (overstay_alert_sent = 0 OR overstay_alert_sent = '0' OR overstay_alert_sent IS NULL)
         `;
         
         let result;
@@ -34,7 +34,7 @@ cron.schedule('*/5 * * * *', async () => {
                     console.log(`[Alert] Visitor ${visitor.visitor_name} (Flat ${visitor.flat_number}) has overstayed!`);
                     
                     // Mark as alert sent
-                    await query('UPDATE society_visitors SET overstay_alert_sent = true WHERE id = $1', [visitor.id]);
+                    await query('UPDATE society_visitors SET overstay_alert_sent = \'1\' WHERE id = $1', [visitor.id]);
 
                     // Notify Guard Channel
                     await sendTopicPush('guard_channel_' + visitor.society_id, 'Visitor Overstay Alert', `${visitor.visitor_name} at Flat ${visitor.flat_number} has exceeded their ${maxMinutes} min limit.`);

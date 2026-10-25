@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
+import Pagination from '../Pagination';
 import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
@@ -11,13 +12,16 @@ export default function CRMTab({ API_BASE, authHeaders }) {
   const [dataList, setDataList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchJson(`${API_BASE}/admin/crm/leads`, { headers: authHeaders() });
+      const data = await fetchJson(`${API_BASE}/admin/crm/leads?page=${page}&limit=25`, { headers: authHeaders() });
       setDataList(data.data || data.items || data.records || (Array.isArray(data) ? data : []));
+      setTotal(data.total || 0);
     } catch (e) {
       console.error(e);
       setError(e);
@@ -28,7 +32,7 @@ export default function CRMTab({ API_BASE, authHeaders }) {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -79,6 +83,7 @@ export default function CRMTab({ API_BASE, authHeaders }) {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} limit={25} total={total} onPage={setPage} disabled={loading} />
         </div>
       </div>
     </div>

@@ -2,41 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert , StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Calendar, MapPin, Ticket, Sparkles, Users } from 'lucide-react-native';
-import { apiGet } from '../../lib/api';
+import { apiGet, apiPost } from '../../lib/api';
 
 export default function NativeEventsScreen() {
   const router = useRouter();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadEvents() {
-      try {
-        const data = await apiGet('/events');
-        if (data && data.events && data.events.length > 0) {
-          setEvents(data.events);
-        } else {
-          throw new Error('Empty event list');
-        }
-      } catch (e) {
-        setEvents([
-          { id: 'e1', title: 'Dhanori Society Cultural Fest & Food Stalls', category: 'Cultural', event_date: '2026-08-15', event_time: '18:00', venue: 'Dhanori Ground, Pune', ticket_price: 150, available_tickets: 45 },
-          { id: 'e2', title: 'Weekend Organic Farmers Market', category: 'Community', event_date: '2026-08-18', event_time: '08:00', venue: 'Baner Club House', ticket_price: 0, available_tickets: 100 }
-        ]);
-      } finally {
-        setLoading(false);
-      }
+  const loadEvents = async () => {
+    try {
+      const data = await apiGet('/events');
+      const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data?.events) ? data.events : (Array.isArray(data) ? data : []));
+      setEvents(list);
+    } catch (e) {
+      setEvents([]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadEvents();
   }, []);
 
   const handleRSVP = (evt) => {
+    const isPaid = Number(evt.ticket_price || evt.price || 0) > 0;
     Alert.alert(
-      'Book Ticket',
-      `Confirm 1 ticket for "${evt.title}"? ${evt.ticket_price > 0 ? `₹${evt.ticket_price} will be deducted from your LocalWallet.` : 'This is a free event.'}`,
+      'Book Ticket / RSVP',
+      `Confirm 1 ticket for "${evt.title}"? ${isPaid ? `₹${evt.ticket_price || evt.price} will be deducted from your wallet.` : 'This is a free event.'}`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Book Now', onPress: () => Alert.alert('Ticket Booked!', `Your ticket reference: TKT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`) }
+        {
+          text: 'Confirm RSVP',
+          onPress: async () => {
+            try {
+              const res = await apiPost(`/events/${evt.id}/rsvp`, { numTickets: 1, ticket_count: 1 });
+              const ref = res?.data?.bookingRef || res?.bookingRef || res?.data?.ticketId || res?.ticketId || 'CONFIRMED';
+              Alert.alert('Tickets Booked 🎉', res?.message || `Your booking is confirmed! Reference: ${ref}`);
+              loadEvents();
+            } catch (err) {
+              Alert.alert('Booking Notice', err?.message || 'Could not complete ticket booking.');
+            }
+          }
+        }
       ]
     );
   };
@@ -56,6 +64,11 @@ export default function NativeEventsScreen() {
 
         {loading ? (
           <ActivityIndicator color="#6366f1" />
+        ) : events.length === 0 ? (
+          <View style={s.emptyBox}>
+            <Text style={s.emptyTitle}>No Upcoming Events</Text>
+            <Text style={s.emptyBody}>There are no community events scheduled in your neighborhood right now. Check back soon!</Text>
+          </View>
         ) : (
           events.map(e => (
             <View key={e.id} style={s.s7}>
@@ -92,6 +105,9 @@ export default function NativeEventsScreen() {
 }
 
 const s = StyleSheet.create({
+  emptyBox: { backgroundColor: '#0f172a', borderRadius: 20, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#1e293b', marginTop: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: '#ffffff', marginBottom: 8, textAlign: 'center' },
+  emptyBody: { fontSize: 13, color: '#94a3b8', textAlign: 'center', lineHeight: 20 },
   s0: { flex: 1, backgroundColor: '#020617' },
   s1: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderColor: '#1e293b' },
   s2: { width: 40, height: 40, backgroundColor: '#0f172a', borderRadius: 9999, alignItems: 'center', justifyContent: 'center' },

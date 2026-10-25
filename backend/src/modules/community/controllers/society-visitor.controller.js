@@ -7,6 +7,9 @@ const logger = require('../../../config/logger');
 // Resolve the society this guard is on duty for. Guards are scoped to one
 // society, so every read and write below is filtered by it.
 async function societyIdFor(req) {
+  // Set by the capability guard on the route, which has verified the caller's
+  // role in exactly this society.
+  if (req.societyId) return req.societyId;
   if (req.user?.society_id) return req.user.society_id;
   const row = await queryOne(
     'SELECT society_id FROM society_members WHERE user_id = $1 LIMIT 1',
@@ -99,7 +102,15 @@ async function logVisitor(req, res, next) {
     const societyId = await societyIdFor(req);
     if (!requireSociety(societyId, res)) return;
 
-    const { name, phone, purpose, flat, photo, vehicleNumber, clientId, recordedAt } = req.body;
+    // The gate console sends name/phone/flat; the web society page sends
+    // visitorName/visitorPhone/flatNumber and was refused with a 400 on every
+    // entry. Both spellings are the same visitor.
+    const b = req.body || {};
+    const name = b.name || b.visitorName;
+    const phone = b.phone || b.visitorPhone;
+    const flat = b.flat || b.flatNumber;
+    const photo = b.photo || b.visitorPhoto;
+    const { purpose, vehicleNumber, clientId, recordedAt } = b;
     if (!name || !flat) {
       return res.status(400).json({ success: false, message: 'Visitor name and flat number are required' });
     }
@@ -246,8 +257,32 @@ async function updateVisitorStatus(req, res, next) {
   try {
     const societyId = await societyIdFor(req);
     if (!requireSociety(societyId, res)) return;
-
     const { visitorId, status } = req.body;
+    return await transitionVisitor(req, res, societyId, visitorId, status);
+  } catch (error) { next(error); }
+}
+
+// Path-style actions the web society page and the mobile tabs call. Each is
+// the same guarded transition as PUT /visitors/status.
+function visitorAction(status) {
+  return async (req, res, next) => {
+    try {
+      const societyId = await societyIdFor(req);
+      if (!requireSociety(societyId, res)) return;
+      return await transitionVisitor(req, res, societyId, req.params.id, status);
+    } catch (error) { next(error); }
+  };
+}
+
+const STATUS_TIMESTAMP = Object.freeze({
+  approved: 'approved_at',
+  checked_in: 'checked_in_at',
+  checked_out: 'checked_out_at',
+});
+
+async function transitionVisitor(req, res, societyId, visitorId, status) {
+  {
+    if (status === 'declined') status = 'denied';
     if (!VISITOR_STATUSES.includes(status)) {
       return res.status(400).json({ success: false, message: `Status must be one of: ${VISITOR_STATUSES.join(', ')}` });
     }
@@ -260,7 +295,10 @@ async function updateVisitorStatus(req, res, next) {
       return res.status(404).json({ success: false, message: 'Visitor not found for this society' });
     }
 
-    const current = visitor.status || 'pending';
+    // Older register rows say 'expected' for a visitor the guard announced and
+    // the resident has not yet answered.
+    const stored = visitor.status || 'pending';
+    const current = stored === 'expected' ? 'pending' : stored;
     if (current !== status && !(VISITOR_FLOW[current] || []).includes(status)) {
       return res.status(409).json({
         success: false,
@@ -286,9 +324,11 @@ async function updateVisitorStatus(req, res, next) {
 
     // Guarded by the status we just read, so a concurrent change loses rather
     // than being silently overwritten.
+    const stampColumn = STATUS_TIMESTAMP[status];
     const result = await query(
-      'UPDATE society_visitors SET status = $1 WHERE id = $2 AND society_id = $3 AND status = $4',
-      [status, visitorId, societyId, current]
+      `UPDATE society_visitors SET status = $1${stampColumn ? `, ${stampColumn} = CURRENT_TIMESTAMP` : ''}
+        WHERE id = $2 AND society_id = $3 AND status = $4`,
+      [status, visitorId, societyId, stored]
     );
     if (result.rowCount === 0) {
       return res.status(409).json({
@@ -298,8 +338,18 @@ async function updateVisitorStatus(req, res, next) {
       });
     }
 
+    // The guard waiting at the gate learns the answer without refreshing.
+    if (status === 'approved' || status === 'denied') {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`gatekeeper_${societyId}`).emit('VISITOR_RESPONSE', {
+          visitorId, status, flat: visitor.flat_number, respondedBy: req.user.id, at: new Date().toISOString(),
+        });
+      }
+    }
+
     res.json({ success: true, message: `Visitor ${status}`, previous_status: current });
-  } catch (error) { next(error); }
+  }
 }
 
 // ─── PACKAGES ────────────────────────────────────────────────────────────────
@@ -341,7 +391,7 @@ async function getPendingPackages(req, res, next) {
     const data = await queryMany(
       `SELECT id, flat_number, courier_name, package_description, status, created_at
          FROM society_packages
-        WHERE society_id = $1 AND status = 'received'
+        WHERE society_id = $1 AND status IN ('received', 'pending')
         ORDER BY created_at DESC`,
       [societyId]
     );
@@ -384,15 +434,19 @@ async function raiseEmergency(req, res, next) {
     const societyId = await societyIdFor(req);
     if (!requireSociety(societyId, res)) return;
 
-    const { type } = req.body;
+    // The web page sends alertType + description; older clients send type.
+    const { type, alertType: requested, description } = req.body || {};
     const VALID = ['fire', 'medical', 'security', 'other'];
-    const alertType = VALID.includes(type) ? type : 'other';
+    const alertType = VALID.includes(requested || type) ? (requested || type) : 'other';
+    const flatNumber = req.societyMembership?.flat_number || null;
 
     // Broadcast first: reaching residents matters more than the audit row.
     const io = req.app.get('io');
     if (io) {
       io.to(`society_${societyId}`).emit('SOCIETY_EMERGENCY', {
         type: alertType,
+        description: description || null,
+        flat: flatNumber,
         raisedBy: req.user.id,
         timestamp: new Date().toISOString(),
       });
@@ -401,9 +455,9 @@ async function raiseEmergency(req, res, next) {
     try {
       await query(
         `INSERT INTO society_emergency_alerts
-           (id, society_id, triggered_by, alert_type, status, created_at)
-         VALUES ($1, $2, $3, $4, 'active', CURRENT_TIMESTAMP)`,
-        [crypto.randomUUID(), societyId, req.user.id, alertType]
+           (id, society_id, triggered_by, alert_type, description, flat_number, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', CURRENT_TIMESTAMP)`,
+        [crypto.randomUUID(), societyId, req.user.id, alertType, description || null, flatNumber]
       );
     } catch (e) {
       console.error('[SOS] Alert broadcast succeeded but could not be recorded:', e.message);
@@ -418,6 +472,10 @@ module.exports = {
   getTodayVisitors,
   checkOutVisitor,
   updateVisitorStatus,
+  approveVisitor: visitorAction('approved'),
+  declineVisitor: visitorAction('denied'),
+  checkInVisitor: visitorAction('checked_in'),
+  societyIdFor,
   logPackage,
   getPendingPackages,
   getTodayStaffAttendance,

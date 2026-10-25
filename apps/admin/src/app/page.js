@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAdminAuth } from '../context/AdminAuthContext';
-import { API_BASE, getAuthHeaders } from '../lib/api';
+import { API_BASE, getAuthHeaders, fetchJson } from '../lib/api';
 import { ThemeToggle } from '../context/ThemeContext';
 
 import DashboardTab from '../components/tabs/DashboardTab';
@@ -116,11 +116,19 @@ export default function AdminDashboardPage() {
 
   const totalShare = +platformShare + +franchiseShare + +agentShare + +miscShare;
 
+  // Every console action used to be `await fetch(...)` with the response thrown away and any
+  // error sent to the browser console, so a refused ban, a failed approval or an expired
+  // permission looked like it had worked (the table simply refreshed to the old state).
+  const [actionError, setActionError] = useState(null);
+  const failed = (what) => (e) => {
+    console.error(what, e);
+    setActionError(`${what}: ${(e && e.message) || 'request failed'}`);
+  };
+
   // Fetch territories from API
   const fetchTerritories = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/regions`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/regions`, { headers: authHeaders() });
       if (Array.isArray(data)) {
         setTerritories((Array.isArray(data) ? data : []).map(d => ({
           id: d.id, zone: d.name, pincode: d.pincode || '', district: d.district || '',
@@ -129,43 +137,39 @@ export default function AdminDashboardPage() {
           radius_km: d.radius_km, city: d.city, features: d.features_json ? JSON.parse(d.features_json) : { delivery: true, jobs: true, rentals: true, events: true, services: true }
         })));
       }
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   }, []);
 
   // Fetch franchise partners
   const fetchFranchisePartners = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/franchises`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/franchises`, { headers: authHeaders() });
       if (data.success) setFranchisePartners(data.data);
       else if (Array.isArray(data)) setFranchisePartners(data);
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   }, []);
 
   // Fetch summary stats
   const fetchSummary = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/dashboard`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/dashboard`, { headers: authHeaders() });
       if (data.success) setSummaryStats(data.data);
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   }, []);
 
   const [revenueChart, setRevenueChart] = useState([]);
   
   const fetchRevenueChart = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/revenue/chart`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/revenue/chart`, { headers: authHeaders() });
       if (data) setRevenueChart(data);
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   }, []);
 
   // Fetch real users from backend
   const fetchUsers = useCallback(async (page = 1, search = '') => {
     try {
-      const res = await fetch(`${API_BASE}/admin/users?page=${page}&limit=50&search=${encodeURIComponent(search)}`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/users?page=${page}&limit=50&search=${encodeURIComponent(search)}`, { headers: authHeaders() });
       if (data.users) {
         setUsers((Array.isArray(data.users) ? data.users : []).map(u => ({
           ...u,
@@ -188,14 +192,13 @@ export default function AdminDashboardPage() {
           joined: u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
         })));
       }
-    } catch(e) { console.error('Failed to fetch users:', e); }
+    } catch(e) { failed('Could not load users')(e); }
   }, []);
 
   // Fetch real shops from backend
   const fetchShops = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/shops?limit=100`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/shops?limit=100`, { headers: authHeaders() });
       const shopList = data.data || data.shops || (Array.isArray(data) ? data : []);
       const mapped = (Array.isArray(shopList) ? shopList : []).map(s => ({
         ...s,
@@ -210,14 +213,13 @@ export default function AdminDashboardPage() {
       }));
       setShops(mapped);
       setPendingShops(mapped.filter(s => s.status === 'Pending' || s.approval_status === 'pending'));
-    } catch(e) { console.error('Failed to fetch shops:', e); }
+    } catch(e) { failed('Could not load shops')(e); }
   }, []);
 
   // Fetch real properties from backend
   const fetchProperties = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/properties?limit=100`, { headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/properties?limit=100`, { headers: authHeaders() });
       const propList = data.data || data.properties || (Array.isArray(data) ? data : []);
       setProperties((Array.isArray(propList) ? propList : []).map(p => ({
         ...p,
@@ -228,7 +230,7 @@ export default function AdminDashboardPage() {
         zone: p.region_name || p.zone || '—',
         status: p.is_active ? 'Active' : 'Audit Pending'
       })));
-    } catch(e) { console.error('Failed to fetch properties:', e); }
+    } catch(e) { failed('Could not load properties')(e); }
   }, []);
 
   useEffect(() => {
@@ -246,13 +248,12 @@ export default function AdminDashboardPage() {
   const toggleTerritory = async (id) => {
     setTerritoryTogglingId(id);
     try {
-      const res = await fetch(`${API_BASE}/admin/regions/${id}/toggle`, { method: 'PUT', headers: authHeaders() });
-      const data = await res.json();
+      const data = await fetchJson(`${API_BASE}/admin/regions/${id}/toggle`, { method: 'PUT', headers: authHeaders() });
       if (data.success) {
         setTerritories(prev => prev.map(t => t.id === id ? { ...t, is_active: data.is_active, status: data.is_active ? 'Active' : 'Inactive' } : t));
         fetchSummary();
       }
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
     setTerritoryTogglingId(null);
   };
 
@@ -260,140 +261,130 @@ export default function AdminDashboardPage() {
   const saveTerritory = async () => {
     if (!editTerritory) return;
     try {
-      const res = await fetch(`${API_BASE}/admin/regions/${editTerritory.id}`, {
+      const data = await fetchJson(`${API_BASE}/admin/regions/${editTerritory.id}`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ name: editTerritory.zone, pincode: editTerritory.pincode, district: editTerritory.district, state: editTerritory.state, is_active: editTerritory.is_active })
       });
-      const data = await res.json();
       
       if (editTerritory.features) {
-        await fetch(`${API_BASE}/admin/regions/${editTerritory.id}/features`, {
+        await fetchJson(`${API_BASE}/admin/regions/${editTerritory.id}/features`, {
           method: 'PUT', headers: authHeaders(),
           body: JSON.stringify({ features: editTerritory.features })
         });
       }
       
       if (data.success) { fetchTerritories(); setEditTerritory(null); }
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   // Assign franchise to territory
   const assignFranchise = async (territoryId, franchiseId) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/regions/${territoryId}/assign-franchise`, {
+      const data = await fetchJson(`${API_BASE}/admin/regions/${territoryId}/assign-franchise`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ franchise_id: franchiseId })
       });
-      const data = await res.json();
       if (data.success) { fetchTerritories(); fetchFranchisePartners(); setAssignFranchiseModal(null); alert('Franchise assigned successfully!'); }
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   // Bulk toggle
   const bulkToggle = async (activate) => {
-    for (const id of selectedBulk) {
-      const t = territories.find(x => x.id === id);
-      if (t && ((activate && !t.is_active) || (!activate && t.is_active))) {
-        await fetch(`${API_BASE}/admin/regions/${id}/toggle`, { method: 'PUT', headers: authHeaders() });
+    try {
+      for (const id of selectedBulk) {
+        const t = territories.find(x => x.id === id);
+        if (t && ((activate && !t.is_active) || (!activate && t.is_active))) {
+          await fetchJson(`${API_BASE}/admin/regions/${id}/toggle`, { method: 'PUT', headers: authHeaders() });
+        }
       }
-    }
+    } catch (e) { failed('Bulk update stopped')(e); }
     fetchTerritories(); setSelectedBulk([]); fetchSummary();
   };
 
   const approveShop = async (id) => {
     try {
-      await fetch(`${API_BASE}/admin/approvals/shop/${id}`, {
+      await fetchJson(`${API_BASE}/admin/approvals/shop/${id}`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ status: 'approved' })
       });
       fetchShops();
       fetchSummary();
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   const rejectShop = async (id) => {
     try {
-      await fetch(`${API_BASE}/admin/approvals/shop/${id}`, {
+      await fetchJson(`${API_BASE}/admin/approvals/shop/${id}`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ status: 'rejected' })
       });
       fetchShops();
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   const toggleUserStatus = async (id) => {
     const user = users.find(u => u.id === id);
     const isBanned = user?.status === 'Active' ? true : false;
     try {
-      await fetch(`${API_BASE}/admin/users/${id}/ban`, {
+      await fetchJson(`${API_BASE}/admin/users/${id}/ban`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ is_banned: isBanned })
       });
       fetchUsers(usersPage, userSearch);
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   const changeUserRole = async (id, role) => {
     try {
-      await fetch(`${API_BASE}/admin/users/${id}/role`, {
+      await fetchJson(`${API_BASE}/admin/users/${id}/role`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ role })
       });
       fetchUsers(usersPage, userSearch);
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   const addTerritory = (e) => {
     e.preventDefault();
-    fetch(`${API_BASE}/admin/regions`, {
+    fetchJson(`${API_BASE}/admin/regions`, {
       method: 'POST', headers: authHeaders(),
       body: JSON.stringify({ name: newZone.zone, pincode: newZone.pincode, district: newZone.district, state: newZone.state || 'Maharashtra', radiusKm: 5.0, is_active: newZone.is_active ? 1 : 0 })
     })
-    .then(res => res.json())
-    .then(data => {
-      if(data && !data.error) {
-        fetchTerritories(); fetchSummary();
-        setNewZone({ zone: '', pincode: '', district: '', state: 'Maharashtra', partner: '', is_active: true });
-        setZoneAdded(true);
-        setTimeout(() => setZoneAdded(false), 3000);
-      } else { alert(data.error || 'Failed to add zone'); }
+    .then(() => {
+      fetchTerritories(); fetchSummary();
+      setNewZone({ zone: '', pincode: '', district: '', state: 'Maharashtra', partner: '', is_active: true });
+      setZoneAdded(true);
+      setTimeout(() => setZoneAdded(false), 3000);
     })
-    .catch(console.error);
+    .catch(failed('Could not add the zone'));
   };
 
   const approveProperty = async (id) => {
     try {
-      await fetch(`${API_BASE}/admin/approvals/property/${id}`, {
+      await fetchJson(`${API_BASE}/admin/approvals/property/${id}`, {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ status: 'approved' })
       });
       setProperties(properties.map(p => p.id === id ? { ...p, status: 'Active' } : p));
-    } catch(e) { console.error(e); }
+    } catch(e) { failed('Request failed')(e); }
   };
 
   // --- State for new admin tabs ---
   const [adminJobs, setAdminJobs] = useState([]);
   const [adminDelivery, setAdminDelivery] = useState({});
   const [adminWalletStats, setAdminWalletStats] = useState(null);
-  const [adminAuditLogs, setAdminAuditLogs] = useState([]);
   const [adminSkilledBookings, setAdminSkilledBookings] = useState([]);
 
-  useEffect(() => {
-    if (activeTab === 'audit' && adminAuditLogs.length === 0) {
-      fetch(`${API_BASE}/admin/audit`, { headers: authHeaders() })
-        .then(r => r.json())
-        .then(data => setAdminAuditLogs(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : [])))
-        .catch(console.error);
-    }
-  }, [activeTab]);
 
+  const { admin, loading } = useAdminAuth();
+  const isSuper = String((admin && admin.role) || '').toUpperCase() === 'SUPER_ADMIN';
   const navItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: '📊' },
     { id: 'users', label: 'Users Management', icon: '👤' },
     { id: 'shops', label: 'Shop Approvals', icon: '🏪' },
     { id: 'franchise', label: 'Franchise Partners', icon: '🤝' },
     { id: 'territory', label: 'Territory Control', icon: '🗺️' },
-    { id: 'revenue', label: 'Revenue & Commission', icon: '💰' },
+    { id: 'revenue', label: 'Revenue & Commission', icon: '💰', superOnly: true },
     { id: 'jobs', label: 'Jobs & Services', icon: '💼' },
     { id: 'delivery', label: 'Delivery Fleet', icon: '🚴' },
     { id: 'wallet', label: 'Wallet & Transactions', icon: '💳' },
@@ -406,10 +397,10 @@ export default function AdminDashboardPage() {
     { id: 'premium', label: 'Premium Members', icon: '👑' },
     { id: 'sos', label: 'SOS & Emergency', icon: '🚨' },
     { id: 'properties', label: 'Real Estate & Properties', icon: '🏢' },
-    { id: 'rbac', label: 'RBAC & Roles', icon: '🔐' },
+    { id: 'rbac', label: 'RBAC & Roles', icon: '🔐', superOnly: true },
     { id: 'audit', label: 'Audit Logs', icon: '📋' },
     { id: 'crm', label: 'CRM & Engagement', icon: '📈' },
-    { id: 'settings', label: 'Platform Settings', icon: '⚙️' },
+    { id: 'settings', label: 'Platform Settings', icon: '⚙️', superOnly: true },
   
     { id: 'shop-categories', label: 'Shop Categories', icon: '🏪' },
     { id: 'chef', label: 'Home Chef & Tiffin', icon: '👨‍🍳' },
@@ -432,6 +423,12 @@ export default function AdminDashboardPage() {
     { id: 'home-services', label: 'Home Services', icon: '🔧' },
     { id: 'leads-crm', label: 'Lead Pipeline', icon: '📇' }
   ];
+  const visibleNav = navItems.filter(n => !n.superOnly || isSuper);
+  const activeItem = navItems.find(n => n.id === activeTab);
+  const blocked = Boolean(activeItem && activeItem.superOnly && !isSuper);
+  React.useEffect(() => {
+    if (blocked) { setActiveTab('dashboard'); setActionError('That section is for super administrators.'); }
+  }, [blocked]);
 
   const tabStyle = (id) => ({
     display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -454,7 +451,6 @@ export default function AdminDashboardPage() {
   const btnDanger = { ...btnPrimary, background: 'var(--danger)' };
   const btnWarning = { ...btnPrimary, background: 'var(--warning)' };
 
-  const { admin, loading } = useAdminAuth();
 
   React.useEffect(() => {
     if (!loading && !admin) {
@@ -478,7 +474,7 @@ export default function AdminDashboardPage() {
     selectedBulk, territories, properties, revenueChart, newZone, editTerritory,
     approveShop, rejectShop, fetchUsers, setUserSearch, changeUserRole, toggleUserStatus,
     setUsersPage, bulkToggle, setSelectedBulk,
-    adminJobs, adminDelivery, adminWalletStats, adminAuditLogs, adminSkilledBookings,
+    adminJobs, adminDelivery, adminWalletStats, adminSkilledBookings,
     activeTab, setActiveTab,
     setTerritorySearch, setTerritoryFilter, toggleTerritory, territoryTogglingId,
     saveTerritory, assignFranchiseModal, setAssignFranchiseModal, assignFranchise,
@@ -508,7 +504,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, overflowY: 'auto' }}>
-          {navItems.map(item => (
+          {visibleNav.map(item => (
             <button key={item.id} onClick={() => { if (item.isExternal) window.open(item.href, '_blank'); else setActiveTab(item.id); }} style={tabStyle(item.id)}>
               <span style={{ fontSize: '1rem' }}>{item.icon}</span>
               <span>{item.label}</span>
@@ -520,8 +516,8 @@ export default function AdminDashboardPage() {
         <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--surface-1)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--warning))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>A</div>
           <div>
-            <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>Super Admin</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>Full Access</p>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{(admin && (admin.full_name || admin.name)) || 'Admin'}</p>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>{admin && admin.role ? String(admin.role).replace(/_/g, ' ') : ''}</p>
           </div>
         </div>
       </aside>
@@ -545,6 +541,13 @@ export default function AdminDashboardPage() {
             <span style={{ background: 'var(--surface-1)', border: '1px solid var(--line)', color: 'var(--ink-muted)', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.8rem' }}>v2.0.1</span>
           </div>
         </div>
+
+        {actionError && (
+          <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', padding: '0.85rem 1.1rem', borderRadius: '0.75rem', border: '1px solid var(--danger)', background: 'var(--surface-1)', color: 'var(--danger)', fontWeight: 600 }}>
+            <span>{actionError}</span>
+            <button onClick={() => setActionError(null)} aria-label="Dismiss" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+          </div>
+        )}
 
         {/* ─── DASHBOARD TAB ──────────────────────────────── */}
         {activeTab === 'dashboard' && <DashboardTab {...props} />}

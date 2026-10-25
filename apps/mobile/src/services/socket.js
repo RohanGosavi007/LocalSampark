@@ -3,6 +3,7 @@
  * Handles: live order updates, new order alerts, delivery tracking, chat
  */
 import { API_URL } from '../lib/api';
+import { SecureTokenStorage } from '../lib/secureStorage';
 
 let io = null;
 try {
@@ -52,7 +53,14 @@ class SocketService {
         // first thing a captive portal or corporate proxy blocks, and with a
         // single transport the client then never connects at all.
         transports: ['websocket', 'polling'],
-        auth: this.token ? { token: this.token } : undefined,
+        // A function: socket.io calls it on every (re)connect, so a reconnect after
+        // the hourly token rotation uses the CURRENT token (api.js refreshes it into
+        // secure storage) rather than the one captured at first connect.
+        auth: (cb) => {
+          SecureTokenStorage.getToken('authToken')
+            .then((t) => cb(t || this.token ? { token: t || this.token } : {}))
+            .catch(() => cb(this.token ? { token: this.token } : {}));
+        },
         extraHeaders: this.token ? { Authorization: `Bearer ${this.token}` } : undefined,
         autoConnect: true,
         reconnection: true,

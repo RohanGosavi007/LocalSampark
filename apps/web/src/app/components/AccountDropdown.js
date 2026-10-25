@@ -57,7 +57,7 @@ export default function AccountDropdown() {
             {assignedRoles.map((role, index) => (
               <button 
                 key={`${role}-${index}`}
-                onClick={() => { switchRole(role); setIsOpen(false); window.location.href = getRoleRoute(role); }}
+                onClick={async () => { setIsOpen(false); if (await switchRole(role)) window.location.href = getRoleRoute(role); }}
                 className={`w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${activeRole === role ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-border/40'}`}
               >
                 {activeRole === role && <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>}

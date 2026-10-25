@@ -549,7 +549,7 @@ async function set(key, value, { regionId = null, updatedBy } = {}) {
   } else {
     await query(
       `INSERT INTO admin_config (id, config_key, config_value, config_category, description, region_id, is_active, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, 1, $7)`,
+       VALUES ($1, $2, $3, $4, $5, $6, '1', $7)`,
       [crypto.randomUUID(), rowKey, stored, CATEGORY,
        `ML runtime configuration: ${key}`, regionId, actorId]
     );

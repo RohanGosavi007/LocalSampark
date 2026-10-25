@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import * as LucideIcons from 'lucide-react-native';
 import * as PhosphorIcons from 'phosphor-react-native';
+import { API_URL } from '../lib/api';
 
 // ═══════════════════════════════════════════════════════════════════════
 // 55-CATEGORY ICON REGISTRY — Lucide + Phosphor dual mapping (Mobile)
@@ -82,7 +83,8 @@ export default function DynamicIcon({ name, categorySlug, size = 24, color = '#0
     useEffect(() => {
         const fetchTheme = async () => {
             try {
-                const url = 'http://10.0.2.2:5000/api/v1/settings/theme'; 
+                // the shared API base: a literal emulator address never reaches a real server on a device
+                const url = `${API_URL}/settings/theme`;
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success && data.theme) {

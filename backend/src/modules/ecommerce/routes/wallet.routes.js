@@ -3,6 +3,8 @@ const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { getJwtSecret } = require('../../../config/secrets');
+const payments = require('../../../services/payments.service');
+const { sendPaymentError } = require('../../payments/routes/razorpay.routes');
 const crypto = require('crypto');
 
 // GET wallet history and balance
@@ -49,172 +51,106 @@ router.get('/history', authenticate, async (req, res, next) => {
     }
 });
 
-// POST create topup order token (Tokenized Flow)
+/**
+ * Wallet top-up.
+ *
+ * Crediting a wallet is minting money, and for a while this file minted it for
+ * anyone who asked. /create-topup-order returned an HMAC over
+ * (user, amount, orderId) signed with the server's own secret, and
+ * /verify-topup and /topup credited the wallet when that HMAC was presented
+ * back. The "token" was proof that the server had been asked, not that anyone
+ * had paid: two requests, no gateway, any amount.
+ *
+ * A top-up is now a Razorpay payment like any other. The amount is fixed in a
+ * `payments` row when the gateway order is created, and the wallet is credited
+ * by payments.service — once — when Razorpay's signature for that order is
+ * verified here, or its webhook arrives, whichever is first.
+ *
+ *   POST /create-topup-order { amount }   -> { keyId, razorpayOrderId, amount, … }
+ *   POST /verify-topup { razorpay_order_id, razorpay_payment_id, razorpay_signature }
+ *   POST /topup                            same as verify when given those three
+ *
+ * Without Razorpay keys the first of these answers 503 and nothing is credited.
+ */
 router.post('/create-topup-order', authenticate, async (req, res, next) => {
     try {
-        const { amount } = req.body;
-        if (!amount || amount <= 0) {
-            return res.status(400).json({ error: 'Valid amount is required' });
-        }
-
-        const orderId = 'W_ORD_' + crypto.randomBytes(8).toString('hex');
-        const secret = getJwtSecret();
-        const token = crypto.createHmac('sha256', secret)
-                            .update(`${req.user.id}:${amount}:${orderId}`)
-                            .digest('hex');
-
-        res.status(200).json({
-            success: true,
-            orderId,
-            amount,
-            currency: 'INR',
-            token,
-            message: 'Payment order tokenized successfully. Proceed to gateway.'
+        const payment = await payments.createPayment({
+            user: req.user,
+            purpose: 'wallet_topup',
+            amount: req.body && req.body.amount,
         });
+        res.status(201).json({ success: true, ...payment });
     } catch (err) {
-        next(err);
+        sendPaymentError(res, err, next);
     }
 });
 
+async function verifyTopup(req, res, next) {
+    try {
+        const body = req.body || {};
+        const outcome = await payments.confirmPayment({
+            user: req.user,
+            razorpayOrderId: body.razorpay_order_id || body.razorpayOrderId,
+            razorpayPaymentId: body.razorpay_payment_id || body.razorpayPaymentId,
+            signature: body.razorpay_signature || body.razorpaySignature,
+        });
+        const wallet = await queryOne('SELECT balance FROM wallets WHERE user_id = $1', [req.user.id]);
+        res.json({
+            success: true,
+            message: outcome.alreadyPaid ? 'This payment has already been credited' : 'Wallet credited',
+            data: { balance: wallet ? Number(wallet.balance) || 0 : 0 },
+        });
+    } catch (err) {
+        sendPaymentError(res, err, next);
+    }
+}
+
+router.post('/verify-topup', authenticate, verifyTopup);
+
 /**
- * POST /topup — what apps/mobile/app/modules/wallet/index.js actually calls.
+ * POST /topup — what apps/mobile/app/modules/wallet/index.js calls.
  *
- * The mobile "Add Money" button has always posted here; only
- * /create-topup-order and /verify-topup existed, so the button 404'd and the
- * screen reported a generic failure.
- *
- * Crediting a wallet is minting money, so this deliberately does NOT credit on
- * an unauthenticated amount. Two modes:
- *
- *   - With `orderId` + `token`: verifies the HMAC issued by
- *     /create-topup-order, exactly as /verify-topup does, and credits.
- *   - Without them: only outside production, so the flow is testable on a dev
- *     build. In production this returns 400 and points at the gateway flow,
- *     rather than handing out free balance.
+ * With the three Razorpay fields it is /verify-topup. Without them it credits
+ * directly, and only in a process whose NODE_ENV is development or test: that
+ * is a convenience for working on screens that need a balance, and it is free
+ * money, so it is an allow-list rather than "anything but production".
  */
 router.post('/topup', authenticate, async (req, res, next) => {
     try {
-        const { orderId, token } = req.body;
-        const amount = Number(req.body.amount);
-
-        if (!Number.isFinite(amount) || amount <= 0) {
-            return res.status(400).json({ success: false, error: 'A positive amount is required' });
+        const body = req.body || {};
+        if (body.razorpay_order_id || body.razorpayOrderId) {
+            return verifyTopup(req, res, next);
         }
 
-        if (orderId && token) {
-            const expected = crypto
-                .createHmac('sha256', getJwtSecret())
-                .update(`${req.user.id}:${amount}:${orderId}`)
-                .digest('hex');
-
-            // timingSafeEqual needs equal-length buffers; the length check
-            // guards against it throwing on a malformed token.
-            const provided = Buffer.from(String(token));
-            const expectedBuf = Buffer.from(expected);
-            const valid =
-                provided.length === expectedBuf.length &&
-                crypto.timingSafeEqual(provided, expectedBuf);
-
-            if (!valid) {
-                return res.status(401).json({ success: false, error: 'Invalid or tampered payment token' });
-            }
-        } else if (process.env.NODE_ENV === 'production') {
+        if (!['development', 'test'].includes(process.env.NODE_ENV)) {
             return res.status(400).json({
                 success: false,
-                error: 'Direct top-up is not permitted. Call /wallet/create-topup-order, complete payment, then retry with orderId and token.',
+                error: 'Start a top-up with POST /wallet/create-topup-order, complete the payment, then send the Razorpay result here.',
             });
         }
 
-        const reference = orderId || `DEV_${crypto.randomBytes(6).toString('hex')}`;
+        const amount = Number(body.amount);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > payments.TOPUP_MAX_RUPEES) {
+            return res.status(400).json({ success: false, error: 'A positive amount is required' });
+        }
 
-        const outcome = await withTransaction(async (client) => {
-            // Idempotency: the same gateway order must never credit twice, even
-            // if the client retries after a timeout.
-            const seen = await client.query(
-                `SELECT id FROM wallet_transactions
-                  WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1)
-                    AND purpose = $2`,
-                [req.user.id, `Wallet Top-up (${reference})`]
-            );
-            if ((seen.rows || []).length) return { duplicate: true };
-
-            const credited = await client.query(
-                'UPDATE wallets SET balance = balance + $1 WHERE user_id = $2',
-                [amount, req.user.id]
-            );
-            if (!credited.rowCount) return { noWallet: true };
-
+        const balance = await withTransaction(async (client) => {
+            let wallet = (await client.query('SELECT id FROM wallets WHERE user_id = $1', [req.user.id])).rows[0];
+            if (!wallet) {
+                wallet = { id: crypto.randomUUID() };
+                await client.query('INSERT INTO wallets (id, user_id, balance) VALUES ($1, $2, 0)', [wallet.id, req.user.id]);
+            }
+            await client.query('UPDATE wallets SET balance = balance + $1 WHERE id = $2', [amount, wallet.id]);
             await client.query(
                 `INSERT INTO wallet_transactions (id, wallet_id, amount, type, purpose, status)
-                 VALUES ($1, (SELECT id FROM wallets WHERE user_id = $2), $3, 'credit', $4, 'completed')`,
-                [crypto.randomUUID(), req.user.id, amount, `Wallet Top-up (${reference})`]
+                 VALUES ($1, $2, $3, 'credit', 'dev_topup', 'completed')`,
+                [crypto.randomUUID(), wallet.id, amount]
             );
-
-            const updated = await client.query(
-                'SELECT balance FROM wallets WHERE user_id = $1',
-                [req.user.id]
-            );
-            return { ok: true, balance: Number((updated.rows || [])[0]?.balance) || 0 };
+            const updated = await client.query('SELECT balance FROM wallets WHERE id = $1', [wallet.id]);
+            return Number(updated.rows[0].balance) || 0;
         });
 
-        if (outcome.duplicate) {
-            return res.status(409).json({ success: false, error: 'This payment has already been credited' });
-        }
-        if (outcome.noWallet) {
-            return res.status(404).json({ success: false, error: 'No wallet found for this user' });
-        }
-
-        res.json({
-            success: true,
-            data: { balance: outcome.balance },
-            message: `₹${amount} added to your wallet`,
-        });
-    } catch (err) {
-        next(err);
-    }
-});
-
-// POST verify and credit wallet
-router.post('/verify-topup', authenticate, async (req, res, next) => {
-    try {
-        const { amount, orderId, token } = req.body;
-        if (!amount || !orderId || !token) {
-            return res.status(400).json({ error: 'Missing payment parameters' });
-        }
-
-        // Verify token signature
-        const secret = getJwtSecret();
-        const expectedToken = crypto.createHmac('sha256', secret)
-                                    .update(`${req.user.id}:${amount}:${orderId}`)
-                                    .digest('hex');
-
-        if (token !== expectedToken) {
-            return res.status(401).json({ error: 'Invalid or tampered payment token signature' });
-        }
-
-        // Check if transaction order was already processed (Idempotency)
-        const existingTx = await query('SELECT id FROM wallet_transactions WHERE purpose LIKE $1', [`%${orderId}%`]);
-        if (existingTx.rows && existingTx.rows.length > 0) {
-            return res.status(400).json({ error: 'Payment order already processed' });
-        }
-
-        // The ledger row alone is not a credit: wallets.balance is the column
-        // every spend path reads and decrements. Writing only the transaction
-        // left the money invisible — the user's balance never moved, so a
-        // verified top-up could not be spent.
-        await withTransaction(async (client) => {
-            await client.query(
-                'UPDATE wallets SET balance = balance + $1 WHERE user_id = $2',
-                [amount, req.user.id]
-            );
-            await client.query(
-                `INSERT INTO wallet_transactions (id, wallet_id, amount, type, purpose, status)
-                 VALUES ($1, (SELECT id FROM wallets WHERE user_id = $2), $3, 'credit', $4, 'completed')`,
-                [crypto.randomUUID(), req.user.id, amount, `Wallet Top-up (${orderId})`]
-            );
-        });
-
-        res.status(200).json({ success: true, message: 'Wallet credited successfully after verification' });
+        res.json({ success: true, data: { balance }, message: `₹${amount} added to your wallet (development only)` });
     } catch (err) {
         next(err);
     }

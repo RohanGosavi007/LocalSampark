@@ -57,6 +57,8 @@ test.describe('touch targets', () => {
    * build queue.
    */
   test.beforeAll(async ({ browser }) => {
+    // Warming the dev server can take minutes; the hook's default 30 s limit ended it mid-warm-up.
+    test.setTimeout(300000);
     const page = await browser.newPage();
     for (const { url } of BUDGETS) {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 240000 }).catch(() => {});

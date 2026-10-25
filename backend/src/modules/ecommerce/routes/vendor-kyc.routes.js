@@ -8,13 +8,16 @@ const express = require('express');
 const router = express.Router();
 const GSTVerificationService = require('../../../services/gstVerification.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const { requireShopParam, isPlatformAdmin } = require('../../../middleware/shop-owner.middleware');
 const { query, queryOne, queryMany } = require('../../../config/database');
 const crypto = require('crypto');
 const logger = require('../../../config/logger');
 
+// Roles are stored lower case ('admin', 'super_admin'). This compared the raw
+// value against 'ADMIN' / 'SUPER_ADMIN', so it refused every administrator and
+// no KYC submission could ever be reviewed.
 const requireAdmin = (req, res, next) => {
-  const role = req.user?.role;
-  if (!role || !['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+  if (!isPlatformAdmin(req)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
@@ -79,8 +82,8 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
           bank_name = COALESCE($13, bank_name),
           bank_branch = COALESCE($14, bank_branch),
           kyc_status = 'submitted',
-          submitted_at = datetime('now'),
-          updated_at = datetime('now')
+          submitted_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
          WHERE id = $15`,
         [aadhaar_front_url, aadhaar_back_url, pan_number, pan_url,
          gst_number, fssai_number, fssai_expiry, fssai_url,
@@ -94,7 +97,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
           drug_license_number, drug_license_url,
           bank_account_number_encrypted, bank_ifsc, bank_name, bank_branch,
           kyc_status, submitted_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'submitted', datetime('now'))`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'submitted', CURRENT_TIMESTAMP)`,
         [id, shopId, userId,
          aadhaar_front_url, aadhaar_back_url, pan_number, pan_url,
          gst_number, fssai_number, fssai_expiry, fssai_url,
@@ -111,7 +114,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
  * GET /api/v1/shops/:shopId/kyc
  * Get KYC status for a shop
  */
-router.get('/:shopId/kyc', authenticate, async (req, res, next) => {
+router.get('/:shopId/kyc', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const kyc = await queryOne(`SELECT id, kyc_status, gst_number, gst_status, gst_type,
               fssai_number, fssai_expiry,
@@ -129,7 +132,9 @@ router.get('/:shopId/kyc', authenticate, async (req, res, next) => {
  * POST /api/v1/shops/:shopId/kyc/verify-gst
  * Verify GST number via public API
  */
-router.post('/:shopId/kyc/verify-gst', authenticate, async (req, res, next) => {
+// Was open to any signed-in account: verifying some valid GST number against
+// another shop's id marked that shop "GST verified" under a name it does not hold.
+router.post('/:shopId/kyc/verify-gst', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { gst_number } = req.body;
     if (!gst_number) return res.status(400).json({ error: 'gst_number is required' });
@@ -138,7 +143,7 @@ router.post('/:shopId/kyc/verify-gst', authenticate, async (req, res, next) => {
 
     // Update KYC record
     if (result.isValid) {
-      await query(`UPDATE vendor_kyc SET gst_status = 'verified', gst_verified_at = datetime('now'),
+      await query(`UPDATE vendor_kyc SET gst_status = 'verified', gst_verified_at = CURRENT_TIMESTAMP,
          gst_type = $1, gst_legal_name = $2, gst_trade_name = $3
          WHERE shop_id = $4`,
         [result.type, result.legalName, result.tradeName, req.params.shopId]
@@ -163,8 +168,8 @@ router.put('/admin/:kycId/review', authenticate, requireAdmin, async (req, res, 
       return res.status(400).json({ error: 'action must be: verified or rejected' });
     }
 
-    await query(`UPDATE vendor_kyc SET kyc_status = $1, verified_by = $2, verified_at = datetime('now'),
-       rejection_reason = $3, updated_at = datetime('now')
+    await query(`UPDATE vendor_kyc SET kyc_status = $1, verified_by = $2, verified_at = CURRENT_TIMESTAMP,
+       rejection_reason = $3, updated_at = CURRENT_TIMESTAMP
        WHERE id = $4`,
       [action, adminId, action === 'rejected' ? rejection_reason : null, kycId]
     );

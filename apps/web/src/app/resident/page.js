@@ -4,9 +4,11 @@ import Header from '../components/Header';
 import { Store, MessageSquare, Briefcase, FileText, Wallet, PhoneCall, Check, X, Car } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSocket, useSocketEvent } from '@/context/SocketContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ResidentSuperApp() {
   const router = useRouter();
+  const { user } = useAuth();
   
   const [intercomCall, setIntercomCall] = useState(null);
   const [society, setSociety] = useState(null);
@@ -36,7 +38,7 @@ export default function ResidentSuperApp() {
         const body = await res.json();
         const data = body?.data || body;
         if (!cancelled && data?.society_id && data?.flat_number) {
-          setSociety({ societyId: data.society_id, flatNo: data.flat_number });
+          setSociety({ societyId: data.society_id, flatNo: data.flat_number, name: data.society_name || data.name || null });
         }
       } catch {
         // Not a society member, or the service is down. No room to join.
@@ -83,11 +85,11 @@ export default function ResidentSuperApp() {
         {/* App Bar */}
         <div className="bg-background-alt p-6 border-b border-border z-10 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-text">Green Valley</h1>
-            <p className="text-text-muted text-sm">Flat A-402 • Rahul Sharma</p>
+            <h1 className="text-xl font-bold text-text">{(society && society.name) || 'My society'}</h1>
+            <p className="text-text-muted text-sm">{[society && society.flatNo && `Flat ${society.flatNo}`, user && user.name].filter(Boolean).join(' • ') || 'Not linked to a society yet'}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-            R
+            {((user && user.name) || '?').charAt(0).toUpperCase()}
           </div>
         </div>
 

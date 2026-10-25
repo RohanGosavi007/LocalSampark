@@ -4,6 +4,7 @@ import {
   Store, ShoppingCart, Calendar as CalendarIcon, Clock, CheckCircle2, 
   MapPin, Star, Plus, Minus, CreditCard, ChevronRight, Package, User, ArrowRight, X
 } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 
 export default function DynamicSuperAppShopView({ shopId }) {
   const [data, setData] = useState(null);
@@ -33,7 +34,7 @@ export default function DynamicSuperAppShopView({ shopId }) {
   async function fetchShopData() {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:5000/api/v1/shops/${shopId}`);
+      const res = await fetch(`${API_BASE}/shops/${shopId}`);
       if (!res.ok) throw new Error('Failed to load shop details');
       const json = await res.json();
       setData(json);
@@ -90,7 +91,7 @@ export default function DynamicSuperAppShopView({ shopId }) {
         paymentMethod,
       };
 
-      const res = await fetch('http://localhost:5000/api/v1/checkout', {
+      const res = await fetch(`${API_BASE}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -124,7 +125,7 @@ export default function DynamicSuperAppShopView({ shopId }) {
         paymentMethod: 'COD',
       };
 
-      const res = await fetch('http://localhost:5000/api/v1/book', {
+      const res = await fetch(`${API_BASE}/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

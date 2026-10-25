@@ -47,26 +47,29 @@ export default function DeliveryPage() {
         body: JSON.stringify({
           pickupLocation,
           dropoffLocation,
-          itemDetails,
+          pickupAddress: pickupLocation.trim(),
+          deliveryAddress: dropoffLocation.trim(),
+          packageDetails: itemDetails.trim(),
           deliveryType,
-          paymentPref,
-          priceFiat,
+          paymentMethod: paymentPref === 'wallet' ? 'wallet' : 'cod',
+          pickupLat: 18.59,
+          pickupLng: 73.90,
+          dropLat: 18.58,
+          dropLng: 73.89,
           pincode
         })
       });
 
       const data = await res.json();
-      if (res.ok || data.success) {
+      if (res.ok && (data.success || data.orderId || data.orderNumber)) {
         setRequested(true);
-        setJobId(data.data?.id || 'JOB-1234');
+        setJobId(data.orderNumber || data.orderId || data.data?.id || 'LS-DELIVERY');
       } else {
-        alert(data.error || 'Failed to request delivery');
+        alert(data.error || 'Failed to request delivery. Please check addresses.');
       }
     } catch (e) {
       console.error(e);
-      // Fallback for demo if API fails
-      setRequested(true);
-      setJobId(`JOB-${Math.floor(Math.random() * 10000)}`);
+      alert('Network error connecting to delivery service. Please check your connection.');
     }
     setLoading(false);
   };

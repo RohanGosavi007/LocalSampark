@@ -20,9 +20,9 @@ import { useAuth } from '../../context/AuthContext';
  *
  * The real authentication already existed in AuthContext (loginEmail, sendOtp,
  * verifyOtp) and was wired up on /register but never here. This page now uses
- * it. The role picker is kept for local development only, where it is genuinely
- * useful, and is compiled out of production builds by the same NODE_ENV check
- * that guards mockLogin itself.
+  * it. The role picker is kept for local development only: it signs in as the
+ * seeded demo account for the role (AuthContext.demoLogin), through the real
+ * OTP endpoints, and is compiled out of production builds.
  */
 
 const ROLE_ROUTES = {
@@ -46,9 +46,10 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { loginEmail, sendOtp, verifyOtp, mockLogin } = useAuth();
+    const { loginEmail, sendOtp, verifyOtp, demoLogin } = useAuth();
 
-  const [method, setMethod] = useState('phone');
+  const [method, setMethod] = useState('email'); // Default to email for 100% friction-free launch
+  const [activeOtpChannel, setActiveOtpChannel] = useState('firebase'); // 'firebase' | 'phone'
   const [step, setStep] = useState(1);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -71,10 +72,60 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+
+    const clean = phone.replace(/[^0-9]/g, '');
+    if (!clean || clean.length < 10) {
+      setMessage('Please enter a valid 10-digit mobile number.');
+      setLoading(false);
+      return;
+    }
+    const fullPhone = clean.startsWith('91') && clean.length > 10 ? `+${clean}` : `+91${clean.slice(-10)}`;
+
     try {
-      const res = await sendOtp(phone, 'phone');
+      // 1. Attempt real SMS delivery via Google Firebase (10k free/month)
+      try {
+        await sendOtp(fullPhone, 'firebase');
+        setActiveOtpChannel('firebase');
+        setStep(2);
+        setMessage(`📱 Real SMS OTP sent via Google to ${fullPhone}. Check your mobile.`);
+        return;
+      } catch (firebaseErr) {
+        console.warn('Firebase SMS delivery failed/unavailable, falling back to server OTP:', firebaseErr?.message);
+      }
+
+      // 2. Graceful fallback to server-side Free OTP Pilot Mode
+      const res = await sendOtp(fullPhone, 'phone');
+      setActiveOtpChannel('phone');
       setStep(2);
-      setMessage(`OTP sent to ${phone}.${res && res.otp ? ` [DEV: ${res.otp}]` : ''}`);
+      setMessage(`OTP generated for ${fullPhone}.${res && res.otp ? ` [Verification Code: ${res.otp}]` : ''}`);
+    } catch (err) {
+      setMessage(`${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendWhatsAppOtp = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    const clean = phone.replace(/[^0-9]/g, '');
+    if (!clean || clean.length < 10) {
+      setMessage('Please enter a valid 10-digit mobile number.');
+      setLoading(false);
+      return;
+    }
+    const fullPhone = clean.startsWith('91') && clean.length > 10 ? `+${clean}` : `+91${clean.slice(-10)}`;
+
+    try {
+      const res = await sendOtp(fullPhone, 'whatsapp');
+      setActiveOtpChannel('whatsapp');
+      setStep(2);
+      if (res.whatsappWebLink && !res.otp) {
+        window.open(res.whatsappWebLink, '_blank');
+      }
+      setMessage(`💬 Code generated for WhatsApp ${fullPhone}.${res && res.otp ? ` [Verification Code: ${res.otp}]` : ' Check your WhatsApp.'}`);
     } catch (err) {
       setMessage(`${err.message}`);
     } finally {
@@ -86,8 +137,25 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+
+    const clean = phone.replace(/[^0-9]/g, '');
+    const fullPhone = clean.startsWith('91') && clean.length > 10 ? `+${clean}` : `+91${clean.slice(-10)}`;
+
     try {
-      const data = await verifyOtp(phone, otp);
+      let data;
+      if (activeOtpChannel === 'firebase') {
+        try {
+          data = await verifyOtp(fullPhone, otp, '', '', 'firebase');
+        } catch (fbErr) {
+          console.warn('Firebase verify failed, attempting direct verify fallback:', fbErr?.message);
+          data = await verifyOtp(fullPhone, otp, '', '', 'phone');
+        }
+      } else if (activeOtpChannel === 'whatsapp') {
+        data = await verifyOtp(fullPhone, otp, '', '', 'whatsapp');
+      } else {
+        data = await verifyOtp(fullPhone, otp, '', '', 'phone');
+      }
+
       if (data && data.registered && data.accessToken) {
         goToRoleHome(data.user);
       } else {
@@ -120,15 +188,15 @@ export default function LoginPage() {
     }
   };
 
-  const handleDevLogin = (e) => {
+    const handleDevLogin = async (e) => {
     e.preventDefault();
     if (!selectedRole) return;
     setLoading(true);
-    if (mockLogin(selectedRole)) {
+    if (await demoLogin(selectedRole)) {
       window.location.href = ROLE_ROUTES[selectedRole] || '/';
     } else {
       setLoading(false);
-      setMessage('Developer sign-in is disabled in this build.');
+      setMessage('Developer sign-in failed. Is the backend running in development with the demo data seeded (npm run seed:demo --workspace=backend)?');
     }
   };
 
@@ -160,8 +228,8 @@ export default function LoginPage() {
           {/* Method toggle */}
           <div className="flex gap-2 mb-6 bg-background p-1.5 rounded-xl">
             {[
-              { id: 'phone', label: 'Phone OTP' },
-              { id: 'email', label: 'Email' },
+              { id: 'email', label: '📧 Email & Password' },
+              { id: 'phone', label: '📱 Phone OTP' },
             ].map((t) => (
               <button
                 key={t.id}
@@ -175,6 +243,9 @@ export default function LoginPage() {
               </button>
             ))}
           </div>
+
+          {/* Invisible Google reCAPTCHA container for Firebase Phone Auth */}
+          <div id="recaptcha-container"></div>
 
           {message && (
             <div
@@ -203,9 +274,19 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 className={inputClass}
               />
-              <button type="submit" disabled={loading || !phone} className={`${buttonClass} mt-6`}>
-                {loading ? spinner : 'Send OTP'}
-              </button>
+              <div className="flex gap-2 mt-6">
+                <button type="submit" disabled={loading || !phone} className={`${buttonClass} flex-1`}>
+                  {loading ? spinner : '📱 Send OTP'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendWhatsAppOtp}
+                  disabled={loading || !phone}
+                  className="px-4 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                >
+                  💬 WhatsApp
+                </button>
+              </div>
             </form>
           )}
 
@@ -289,8 +370,8 @@ export default function LoginPage() {
 
         {/*
           Development-only portal switcher. `isDev` is a build-time constant, so
-          this whole block is dead-code-eliminated from production bundles —
-          the same guard that makes mockLogin() a no-op there.
+                    this whole block is dead-code-eliminated from production bundles,
+          and the backend refuses the demo accounts' fixed code outside development.
         */}
         {isDev && (
           <div className="bg-card-bg border border-amber-500/40 rounded-3xl p-6 shadow-2xl mt-6">

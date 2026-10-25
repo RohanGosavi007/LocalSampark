@@ -83,8 +83,10 @@ test.describe('Dashboard Pages', () => {
     expect(response.status()).toBe(200);
   });
 
-  test('should load CRM page', async ({ page }) => {
-    const response = await page.goto('/crm');
+  // /crm was an unlinked prototype with invented leads; it is archived (scripts/archive/web-demo-pages).
+  // The test now checks the page that replaced its purpose.
+  test('should load the order tracking page', async ({ page }) => {
+    const response = await page.goto('/order-tracking');
     expect(response.status()).toBe(200);
   });
 });
@@ -107,6 +109,8 @@ test.describe('Static Pages', () => {
   });
 
   test('should show 404 page for unknown routes', async ({ page }) => {
+    // `next dev` compiles the not-found page on first request, which can exceed the 30 s default.
+    test.setTimeout(120000);
     const response = await page.goto('/this-route-does-not-exist-xyz');
     expect(response.status()).toBe(404);
   });

@@ -20,21 +20,26 @@ export default function ForgotPasswordPage() {
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    if (phone.length < 10) { setError('Please enter a valid 10-digit phone number'); return; }
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) { setError('Please enter a valid 10-digit phone number'); return; }
     
     setLoading(true);
     setError('');
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: `+91${phone}` })
+        body: JSON.stringify({ phoneNumber: fullPhone })
       });
       const data = await res.json();
-      if (res.ok || data.success) {
+      if (res.ok && data.success) {
         setStep(2);
+        if (data.otp) {
+          setError(`[Code: ${data.otp}]`);
+        }
       } else {
-        setError(data.error || 'Failed to send OTP');
+        setError(data.error || data.message || 'Failed to send OTP');
       }
     } catch (e) {
       setError('Network error. Please try again.');
@@ -45,17 +50,8 @@ export default function ForgotPasswordPage() {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     if (otp.length < 4) { setError('Please enter a valid OTP'); return; }
-    
-    setLoading(true);
     setError('');
-    // For password reset, we just verify the OTP on the client side and move to step 3
-    // The actual reset API will consume the OTP. To be secure, the backend should provide a reset token
-    // upon OTP verification. We will simulate this for now.
-    
-    setTimeout(() => {
-      setStep(3);
-      setLoading(false);
-    }, 1000);
+    setStep(3);
   };
 
   const handleResetPassword = async (e) => {
@@ -63,23 +59,25 @@ export default function ForgotPasswordPage() {
     if (newPassword.length < 6) { setError('Password must be at least 6 characters'); return; }
     if (newPassword !== confirmPassword) { setError('Passwords do not match'); return; }
     
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
+
     setLoading(true);
     setError('');
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: `+91${phone}`, otp, newPassword })
+        body: JSON.stringify({ phoneNumber: fullPhone, otp, newPassword })
       });
       const data = await res.json();
-      if (res.ok || data.success) {
+      if (res.ok && data.success) {
         setStep(4); // Success step
       } else {
-        setError(data.error || 'Failed to reset password');
+        setError(data.error || data.message || 'Failed to reset password. Please check OTP.');
       }
     } catch (e) {
-      // For demo purposes, we'll assume success if network fails
-      setTimeout(() => setStep(4), 1000);
+      setError('Network error resetting password. Please try again.');
     }
     setLoading(false);
   };

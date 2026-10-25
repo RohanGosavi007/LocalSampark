@@ -1,7 +1,16 @@
 const express = require('express');
+const { validate } = require('../../../middleware/validate');
 const router = express.Router();
+
+// `/:id` is registered before `/saved` and `/price-alerts`, so those matched it
+// with id = 'saved' — the signed-in user's saved list was answered by the public
+// listing lookup ("not found"). Mounted at both /marketplace and /products.
+const RESERVED_LISTING_SEGMENTS = new Set(['saved', 'price-alerts']);
+router.param('id', (req, res, next, id) => (RESERVED_LISTING_SEGMENTS.has(id) ? next('route') : next()));
 const { query, queryOne, queryMany } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const { resolveChat } = require('../../../sockets/marketplaceSocket');
+const { pointSql } = require('../../../utils/sqlPoint');
 const crypto = require('crypto');
 
 // ═══════════════════════════════════════════════════════════════
@@ -86,7 +95,7 @@ router.get('/flash-deals', async (req, res, next) => {
   try {
     const deals = await queryMany(`SELECT l.*, u.full_name as seller_name FROM marketplace_listings l
       LEFT JOIN users u ON l.seller_id = u.id
-      WHERE l.status = 'active' AND l.flash_deal_until IS NOT NULL AND l.flash_deal_until > datetime('now')
+      WHERE l.status = 'active' AND l.flash_deal_until IS NOT NULL AND l.flash_deal_until > CURRENT_TIMESTAMP
       ORDER BY l.flash_deal_until ASC LIMIT 20`);
     res.json({ success: true, deals: deals.map(d => ({ ...d, photo_urls: (() => { try { return JSON.parse(d.photo_urls || '[]'); } catch { return []; } })() })) });
   } catch (error) { next(error); }
@@ -115,7 +124,16 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST / — Create listing
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, validate({
+  title: { type: 'string', maxLength: 200 },
+  description: { type: 'string', maxLength: 5000 },
+  category: { type: 'string', maxLength: 60 },
+  condition: { type: 'string', maxLength: 30 },
+  price: { type: 'number', min: 0, max: 100000000 },
+  photo_urls: { type: 'array', maxItems: 10, items: { type: 'string', maxLength: 500 } },
+  latitude: { type: 'number', min: -90, max: 90 },
+  longitude: { type: 'number', min: -180, max: 180 },
+}), async (req, res, next) => {
   try {
     const { title, description, category, condition = 'Good', price, is_negotiable = true, photo_urls = [],
             latitude, longitude, delivery_available = false, zone, flash_deal_until } = req.body;
@@ -139,10 +157,15 @@ router.post('/', authenticate, async (req, res, next) => {
     }
 
     const id = crypto.randomUUID();
+    // `category` is NOT NULL and was bound as null when the form left it
+    // blank, and `coordinate` is NOT NULL and was not written at all, so a
+    // listing could only be created by a client that happened to send both.
+    // The coordinate is set when the seller shares a location and is
+    // otherwise null (migration 114); the listing is placed by region.
     await query(`INSERT INTO marketplace_listings (id, seller_id, title, description, category, condition, price, is_negotiable,
-      photo_urls, latitude, longitude, delivery_available, zone, flash_deal_until, region_id, status)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'active')`,
-      [id, req.user.id, title, description||null, category||null, condition, price, is_negotiable?1:0,
+      photo_urls, latitude, longitude, delivery_available, zone, flash_deal_until, region_id, coordinate, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,${pointSql(latitude, longitude)},'active')`,
+      [id, req.user.id, title, description||null, category||'Other', condition, price, is_negotiable?1:0,
        JSON.stringify(photo_urls), latitude||null, longitude||null, delivery_available?1:0, zone||null, flash_deal_until||null, regionId]);
 
     res.status(201).json({ success: true, listingId: id, message: 'Listing created' });
@@ -207,8 +230,18 @@ router.post('/:id/offer', authenticate, async (req, res, next) => {
 
 router.get('/:id/offers', authenticate, async (req, res, next) => {
   try {
-    const offers = await queryMany(`SELECT o.*, u.full_name as buyer_name FROM marketplace_offers o
-      LEFT JOIN users u ON o.buyer_id = u.id WHERE o.listing_id = $1 ORDER BY o.created_at DESC`, [req.params.id]);
+    // Every offer on any listing was shown to any signed-in user: what each
+    // buyer had bid, and who they were. The seller sees them all; anyone else
+    // sees only the offers they made themselves.
+    const listing = await queryOne('SELECT seller_id FROM marketplace_listings WHERE id = $1', [req.params.id]);
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    const isSeller = String(listing.seller_id) === String(req.user.id);
+
+    const offers = isSeller
+      ? await queryMany(`SELECT o.*, u.full_name as buyer_name FROM marketplace_offers o
+          LEFT JOIN users u ON o.buyer_id = u.id WHERE o.listing_id = $1 ORDER BY o.created_at DESC`, [req.params.id])
+      : await queryMany(`SELECT o.*, u.full_name as buyer_name FROM marketplace_offers o
+          LEFT JOIN users u ON o.buyer_id = u.id WHERE o.listing_id = $1 AND o.buyer_id = $2 ORDER BY o.created_at DESC`, [req.params.id, req.user.id]);
     res.json({ success: true, offers });
   } catch (error) { next(error); }
 });
@@ -271,20 +304,38 @@ router.get('/saved', authenticate, async (req, res, next) => {
 // CHAT
 // ═══════════════════════════════════════════════════════════════
 
+/*
+ * A conversation is between one buyer and the listing's seller. Who is in
+ * which is decided by resolveChat (sockets/marketplaceSocket.js), the same
+ * rule the live chat uses.
+ *
+ * POST used to look the conversation up as "this listing, with the caller as
+ * buyer" for everyone. When the seller replied, no such conversation existed —
+ * so it created one, with the seller recorded as the buyer of their own item.
+ * The buyer never saw the reply, and the seller's inbox filled with
+ * conversations with themselves. The seller also had no way to read a
+ * conversation: GET returned the list and stopped.
+ */
 router.get('/:id/chat', authenticate, async (req, res, next) => {
   try {
     const listing = await queryOne('SELECT * FROM marketplace_listings WHERE id = $1', [req.params.id]);
     if (!listing) return res.status(404).json({ error: 'Listing not found' });
 
     const isSeller = String(listing.seller_id) === String(req.user.id);
-    let chat;
-    if (isSeller) {
+    const chatId = req.query.chatId || req.query.chat_id || null;
+
+    // The seller, not naming a conversation: the list of them.
+    if (isSeller && !chatId) {
       const chats = await queryMany(`SELECT c.*, u.full_name as buyer_name FROM marketplace_chats c
         LEFT JOIN users u ON c.buyer_id = u.id WHERE c.listing_id = $1 ORDER BY c.last_message_at DESC`, [req.params.id]);
       return res.json({ success: true, chats });
-    } else {
-      chat = await queryOne(`SELECT * FROM marketplace_chats WHERE listing_id = $1 AND buyer_id = $2`, [req.params.id, req.user.id]);
-      if (!chat) return res.json({ success: true, messages: [] });
+    }
+
+    const chat = await resolveChat(req.user, { chatRoomId: chatId, listingId: isSeller ? null : req.params.id });
+    if (!chat || String(chat.listing_id) !== String(req.params.id)) {
+      // A buyer who has not written yet has an empty conversation; a chat id
+      // the caller is not part of is simply not found.
+      return chatId ? res.status(404).json({ error: 'Conversation not found' }) : res.json({ success: true, messages: [] });
     }
 
     const messages = await queryMany(`SELECT m.*, u.full_name as sender_name FROM marketplace_chat_messages m
@@ -295,19 +346,28 @@ router.get('/:id/chat', authenticate, async (req, res, next) => {
 
 router.post('/:id/chat', authenticate, async (req, res, next) => {
   try {
-    const { message } = req.body;
+    const message = typeof (req.body || {}).message === 'string' ? req.body.message.trim() : '';
     if (!message) return res.status(400).json({ error: 'message required' });
+    if (message.length > 2000) return res.status(400).json({ error: 'message is too long' });
 
     const listing = await queryOne('SELECT * FROM marketplace_listings WHERE id = $1', [req.params.id]);
     if (!listing) return res.status(404).json({ error: 'Listing not found' });
 
-    let chat = await queryOne(`SELECT * FROM marketplace_chats WHERE listing_id = $1 AND buyer_id = $2`, [req.params.id, req.user.id]);
-    if (!chat) {
-      const chatId = crypto.randomUUID();
-      await query(`INSERT INTO marketplace_chats (id, listing_id, buyer_id, seller_id, last_message, last_message_at)
-        VALUES ($1,$2,$3,$4,$5,CURRENT_TIMESTAMP)`, [chatId, req.params.id, req.user.id, listing.seller_id, message]);
-      chat = { id: chatId };
-    } else {
+    const isSeller = String(listing.seller_id) === String(req.user.id);
+    const chatId = (req.body || {}).chatId || (req.body || {}).chat_id || null;
+    if (isSeller && !chatId) {
+      return res.status(400).json({ error: 'chatId is required: say which buyer you are replying to.' });
+    }
+
+    const chat = await resolveChat(
+      req.user,
+      { chatRoomId: chatId, listingId: isSeller ? null : req.params.id },
+      { create: !isSeller, firstMessage: message }
+    );
+    if (!chat || String(chat.listing_id) !== String(req.params.id)) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+    if (!chat.created) {
       await query(`UPDATE marketplace_chats SET last_message = $1, last_message_at = CURRENT_TIMESTAMP WHERE id = $2`, [message, chat.id]);
     }
 
@@ -316,7 +376,6 @@ router.post('/:id/chat', authenticate, async (req, res, next) => {
     res.status(201).json({ success: true, chatId: chat.id, messageId: msgId });
   } catch (error) { next(error); }
 });
-
 // ═══════════════════════════════════════════════════════════════
 // REPORT
 // ═══════════════════════════════════════════════════════════════

@@ -1,84 +1,116 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text } from 'react-native';
+import {
+  SM, Card, Badge, Button, Field, DataState,
+  useSocietyData, runAction, confirmAction, when, useKitStyles,
+} from '../../../../src/components/society/SocietyKit';
+import { useThemeColors } from '../../../../src/context/ThemeContext';
 
-export default function PollsTab({ role }) {
-  const [polls] = useState([
-    { 
-      id: 1, 
-      title: 'Should we hire a new gardening agency?', 
-      endsIn: '2 days', 
-      options: [
-        { id: 'yes', text: 'Yes, current is bad', votes: 45 },
-        { id: 'no', text: 'No, they are fine', votes: 20 }
-      ],
-      totalVotes: 65
-    }
-  ]);
-
-  const handleVote = () => {
-    Alert.alert('Voted', 'Your vote has been recorded securely.');
-  };
-
+/**
+ * Society votes. One invented poll with invented counts (45 / 20) used to show
+ * for everyone, and voting only displayed "recorded securely" — nothing was.
+ * Votes are now one per person, enforced by the server, and results are the
+ * real tally.
+ */
+function Results({ pollId }) {
+  const s = useKitStyles();
+  const c = useThemeColors();
+  const res = useSocietyData(`${SM}/polls/${pollId}/results`);
+  if (res.loading || res.error) return null;
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {role === 'admin' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Create New Poll</Text>
-          <Text style={styles.subtitle}>Gather community opinion on important decisions.</Text>
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>+ Create Poll</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Active Community Polls</Text>
-        {polls.map(poll => (
-          <View key={poll.id} style={styles.pollCard}>
-            <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12}}>
-              <Text style={styles.pollTitle}>{poll.title}</Text>
-              <Text style={styles.pollTime}>Ends in {poll.endsIn}</Text>
-            </View>
-            
-            {poll.options.map(opt => {
-              const pct = Math.round((opt.votes / poll.totalVotes) * 100);
-              return (
-                <TouchableOpacity key={opt.id} style={styles.optionRow} onPress={handleVote}>
-                  <View style={styles.optionHeader}>
-                    <Text style={styles.optionText}>{opt.text}</Text>
-                    <Text style={styles.optionPct}>{pct}%</Text>
-                  </View>
-                  <View style={styles.barBg}>
-                    <View style={[styles.barFill, { width: `${pct}%` }]} />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            <Text style={styles.totalVotes}>{poll.totalVotes} total votes</Text>
+    <View style={{ marginTop: 8 }}>
+      {(res.data || []).map((r) => (
+        <View key={r.option} style={{ marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={s.rowMeta}>{r.option}</Text>
+            <Text style={s.rowMeta}>{r.percentage}% · {r.votes}</Text>
           </View>
-        ))}
-      </View>
-    </ScrollView>
+          <View style={{ height: 8, borderRadius: 4, backgroundColor: c.sunken, overflow: 'hidden', marginTop: 4 }}>
+            <View style={{ width: `${r.percentage}%`, height: 8, backgroundColor: c.accent }} />
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  
-  pollCard: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  pollTitle: { color: '#0f172a', fontSize: 15, fontWeight: 'bold', flex: 1, paddingRight: 10 },
-  pollTime: { color: '#ef4444', fontSize: 11, fontWeight: 'bold' },
-  
-  optionRow: { marginBottom: 12 },
-  optionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  optionText: { color: '#475569', fontSize: 13, fontWeight: '600' },
-  optionPct: { color: '#64748b', fontSize: 12, fontWeight: 'bold' },
-  
-  barBg: { height: 8, backgroundColor: '#e2e8f0', borderRadius: 4 },
-  barFill: { height: 8, backgroundColor: '#3b82f6', borderRadius: 4 },
-  totalVotes: { color: '#64748b', fontSize: 11, textAlign: 'right', marginTop: 4 }
-});
+export default function PollsTab({ role }) {
+  const s = useKitStyles();
+  const polls = useSocietyData(`${SM}/polls`);
+  const [form, setForm] = useState({ title: '', options: ['', ''] });
+  const [busy, setBusy] = useState(null);
+  const office = role === 'admin';
+
+  const vote = async (p, i) => {
+    setBusy(`${p.id}:${i}`);
+    await runAction('post', `${SM}/polls/${p.id}/vote`, { selectedOption: i }, { onDone: () => polls.reload() });
+    setBusy(null);
+  };
+
+  const create = async () => {
+    setBusy('create');
+    const res = await runAction('post', `${SM}/polls`, {
+      title: form.title.trim(), options: form.options.map((o) => o.trim()).filter(Boolean),
+    }, { success: 'Poll published.' });
+    setBusy(null);
+    if (res) { setForm({ title: '', options: ['', ''] }); polls.reload(); }
+  };
+
+  const close = (p) => confirmAction('Close this poll?', 'No more votes will be accepted.',
+    () => runAction('put', `${SM}/polls/${p.id}/close`, null, { onDone: () => polls.reload() }), 'Close poll');
+
+  return (
+    <View>
+      {office && (
+        <Card title="Create a poll">
+          <Field label="Question" value={form.title} onChangeText={(title) => setForm({ ...form, title })} maxLength={200} />
+          {form.options.map((o, i) => (
+            <Field key={i} label={`Option ${i + 1}`} value={o}
+              onChangeText={(v) => setForm({ ...form, options: form.options.map((x, j) => (j === i ? v : x)) })} />
+          ))}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {form.options.length < 6 && (
+              <Button label="+ Option" tone="secondary" onPress={() => setForm({ ...form, options: [...form.options, ''] })} style={{ flex: 1 }} />
+            )}
+            <Button label="Publish" onPress={create} busy={busy === 'create'} style={{ flex: 1 }}
+              disabled={!form.title.trim() || form.options.filter((o) => o.trim()).length < 2} />
+          </View>
+        </Card>
+      )}
+
+      <DataState state={polls} empty="No polls yet" emptyBody="Polls the committee opens appear here.">
+        {(polls.data || []).map((p) => {
+          const closed = p.status === 'closed';
+          const voted = p.myVote !== null && p.myVote !== undefined;
+          return (
+            <Card key={p.id}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                <Text style={[s.title, { flex: 1 }]}>{p.title}</Text>
+                <Badge label={closed ? 'Closed' : 'Open'} tone={closed ? 'neutral' : 'success'} />
+              </View>
+              <Text style={s.subtitle}>
+                {[p.total_votes === 1 ? '1 vote' : `${p.total_votes} votes`, p.ends_at && `${closed ? 'Ended' : 'Ends'} ${when(p.ends_at)}`, p.creator_name].filter(Boolean).join(' · ')}
+              </Text>
+              {voted || closed ? (
+                <>
+                  {voted && <Text style={s.rowMeta}>You voted: {p.options[p.myVote]}</Text>}
+                  <Results pollId={`${p.id}`} key={`${p.id}-${p.total_votes}`} />
+                </>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  {p.options.map((o, i) => (
+                    <Button key={o + i} label={o} tone="secondary" busy={busy === `${p.id}:${i}`}
+                      disabled={Boolean(busy)} onPress={() => vote(p, i)} accessibilityLabel={`Vote ${o}`} />
+                  ))}
+                </View>
+              )}
+              {office && !closed && (
+                <Button label="Close poll" tone="secondary" small style={{ marginTop: 12, alignSelf: 'flex-start' }} onPress={() => close(p)} />
+              )}
+            </Card>
+          );
+        })}
+      </DataState>
+    </View>
+  );
+}

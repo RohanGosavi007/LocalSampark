@@ -100,7 +100,7 @@ async function adminRoleOf(userId, societyId) {
   try {
     return await queryOne(
       `SELECT permissions FROM society_admin_roles
-        WHERE user_id = $1 AND society_id = $2 AND is_active = true
+        WHERE user_id = $1 AND society_id = $2 AND is_active = '1'
         LIMIT 1`,
       [userId, societyId]
     );
@@ -182,8 +182,22 @@ async function hasSocietyCapability(req, societyId, capability, flatNumber = nul
  *     picking one is how the original bug worked; it asks instead.
  */
 async function resolveSocietyId(req) {
-  const named = req.params?.societyId || req.body?.societyId || req.query?.societyId || null;
-  if (named) return named;
+      // Both spellings, in all three places: the older society routes send
+  // society_id. If a request names more than one society it is refused. The
+  // check below is answered against one id, and a handler reading the id from
+  // a different field would otherwise act on the other: authorised for the
+  // society you run, executed on the one you named second.
+  const candidates = [
+    req.params?.societyId, req.body?.societyId, req.query?.societyId,
+    req.params?.society_id, req.body?.society_id, req.query?.society_id,
+  ].filter((value) => value !== undefined && value !== null && value !== '').map(String);
+  const distinct = [...new Set(candidates)];
+  if (distinct.length > 1) {
+    const err = new Error('The request names more than one society.');
+    err.statusCode = 400;
+    throw err;
+  }
+  if (distinct.length === 1) return distinct[0];
 
   const userId = req.user?.id;
   if (!userId) return null;
@@ -249,7 +263,119 @@ function requireCapability(capability, resolveSocietyIdFn) {
         });
       }
 
-      req.societyId = societyId;
+            req.societyId = societyId;
+      pinSociety(req, societyId);
+      return next();
+    } catch (err) {
+      return next(err);
+    }
+  };
+}
+
+/**
+ * Makes the checked society the one a handler will read.
+ *
+ * Many handlers take `societyId` from the request body. When the society was
+ * resolved from the caller's membership rather than named, the body has none,
+ * and the handler would write a row with no society. The body is given the
+ * resolved id. (A GET handler reads req.societyId: the query string cannot be
+ * rewritten.)
+ */
+function pinSociety(req, societyId) {
+  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    if (req.body.society_id !== undefined) req.body.society_id = societyId;
+    req.body.societyId = societyId;
+  }
+}
+
+/**
+ * Resolver for routes that name a record rather than a society: the society
+ * is the one the record belongs to. `idOf(req)` returns the record's id.
+ *
+ *   requireCapability(MANAGE_SOCIETY, societyOfRow('society_gates', (req) => req.body.gateId))
+ *
+ * Without this, "pin topic 42" has no society to check a role against — which
+ * is how those routes came to check nothing. The table name is from the fixed
+ * list below, never from a request.
+ */
+const ROW_TABLES = new Set([
+  'society_maintenance_bills', 'society_forum_topics', 'society_gates', 'society_guard_shifts',
+    'move_passes', 'society_patrol_logs', 'society_agm',
+]);
+function societyOfRow(table, idOf) {
+  if (!ROW_TABLES.has(table)) throw new Error(`societyOfRow: ${table} is not a society-scoped table on the list`);
+  return async (req) => {
+    const id = idOf(req);
+    if (id === undefined || id === null || id === '') return null;
+    const row = await queryOne(`SELECT society_id FROM ${table} WHERE id = $1`, [id]);
+    return row ? row.society_id : null;
+  };
+}
+
+/**
+ * After a capability check: a resident acts for their own flat.
+ *
+ * Replaces any flatNumber in the body with the one on the caller's membership.
+ * The society office (manageSociety) may act for any flat and is left alone.
+ * Without it, a resident of flat 101 could issue a gate pass "for" flat 502.
+ */
+async function pinOwnFlat(req, res, next) {
+  try {
+    if (await hasSocietyCapability(req, req.societyId, CAPABILITIES.MANAGE_SOCIETY)) return next();
+    const membership = await membershipOf(req.user?.id, req.societyId);
+    if (!membershipIsActive(membership) || !membership.flat_number) {
+      return res.status(403).json({ success: false, message: 'Your membership has no flat recorded; ask the society office.' });
+    }
+    if (req.body && typeof req.body === 'object') {
+      req.body.flatNumber = membership.flat_number;
+      if (req.body.flat_number !== undefined) req.body.flat_number = membership.flat_number;
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * Express guard for "is an active member of this society", in any role.
+ *
+ * For what every member may do — raise an alarm, book the hall, read the
+ * notice board — where no particular capability applies but the society must
+ * still be the caller's own. Sets req.societyId and req.societyMembership
+ * (null for platform staff and for an admin-role holder with no member row).
+ */
+function requireMembership(resolveSocietyIdFn) {
+  return async (req, res, next) => {
+    try {
+      const resolver = typeof resolveSocietyIdFn === 'function' ? resolveSocietyIdFn : resolveSocietyId;
+      const societyId = await resolver(req);
+
+      if (!societyId) {
+        const contexts = await societyContextFor(req);
+        if (contexts.length > 1) {
+          return res.status(400).json({
+            success: false,
+            message: 'You belong to more than one society. Include societyId to say which.',
+            code: 'SOCIETY_AMBIGUOUS',
+            societies: contexts.map((c) => ({ societyId: c.societyId, name: c.societyName, role: c.role })),
+          });
+        }
+        return res.status(403).json({ success: false, message: 'No society is associated with this account.' });
+      }
+
+      const membership = await membershipOf(req.user?.id, societyId);
+      const member = membershipIsActive(membership);
+      if (!member && !isPlatformStaff(req) && !(await adminRoleOf(req.user?.id, societyId))) {
+        return res.status(403).json({
+          success: false,
+          message: 'This account is not a member of that society.',
+          code: 'MEMBERSHIP_REQUIRED',
+        });
+      }
+
+            req.societyId = societyId;
+      req.societyMembership = member ? membership : null;
+      pinSociety(req, societyId);
       return next();
     } catch (err) {
       return next(err);
@@ -318,7 +444,11 @@ module.exports = {
   membershipOf,
   membershipIsActive,
   hasSocietyCapability,
-  requireCapability,
+    requireCapability,
+    requireMembership,
+  societyOfRow,
+  pinOwnFlat,
+  isPlatformStaff,
   resolveSocietyId,
   societyContextFor,
 };

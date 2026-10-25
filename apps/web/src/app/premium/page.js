@@ -1,13 +1,44 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion } from 'framer-motion';
 import { Crown, CheckCircle2, Zap, Star, ShieldCheck, Percent, Truck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { apiGet, SESSION_KEYS } from '@/lib/api';
+import { payFor } from '@/lib/payments';
 
 export default function PremiumPage() {
+  // The price and the benefit come from the server, which is also what charges.
+  const [plan, setPlan] = useState(null);
+  const [member, setMember] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const load = useCallback(async () => {
+    try { setPlan((await apiGet('/premium/plan')).data); } catch (e) { setPlan(null); }
+    if (localStorage.getItem(SESSION_KEYS.token)) {
+      try { setMember(await apiGet('/premium/status')); } catch (e) { setMember(null); }
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const upgrade = async () => {
+    setMessage('');
+    if (!localStorage.getItem(SESSION_KEYS.token)) { window.location.href = '/login'; return; }
+    setBusy(true);
+    try {
+      await payFor({ purpose: 'sampark_plus' }, { description: 'SamparkPlus membership' });
+      setMessage('Welcome to SamparkPlus!');
+      await load();
+    } catch (err) {
+      if (err && err.code !== 'DISMISSED') setMessage(err.message || 'The payment could not be started.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-section-alt flex flex-col font-sans">
       <Header />
@@ -27,7 +58,7 @@ export default function PremiumPage() {
               SamparkPlus
             </h1>
             <p className="text-text-muted max-w-2xl mx-auto text-lg md:text-xl">
-              Elevate your local experience. Zero convenience fees, free deliveries, and exclusive neighborhood deals.
+              Elevate your local experience with free delivery on bigger orders.
             </p>
           </div>
 
@@ -70,18 +101,14 @@ export default function PremiumPage() {
                 <div className="mb-8">
                     <h3 className="text-xl font-bold text-purple-600 mb-2 flex items-center gap-2"><Crown className="w-5 h-5"/> SamparkPlus</h3>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black text-text">₹199</span>
+                        <span className="text-5xl font-black text-text">{plan ? `₹${plan.priceMonthly}` : '—'}</span>
                         <span className="text-text-muted font-bold">/ month</span>
                     </div>
                 </div>
 
                 <div className="space-y-4 mb-8 flex-1">
                     {[
-                        { text: 'Zero convenience fees on bills', icon: Percent },
-                        { text: 'Free delivery on orders ₹500+', icon: Truck },
-                        { text: 'Premium verified badge', icon: ShieldCheck },
-                        { text: 'Exclusive flash deals (Save up to 40%)', icon: Star },
-                        { text: '2x SamparkCoins earning rate', icon: Zap }
+                        { text: plan && plan.freeDeliveryAbove ? `Free delivery on orders ₹${plan.freeDeliveryAbove}+` : 'Free delivery on bigger orders', icon: Truck }
                     ].map((feature, i) => (
                         <div key={i} className="flex items-center gap-3">
                             <div className="w-6 h-6 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0 text-purple-600">
@@ -92,9 +119,13 @@ export default function PremiumPage() {
                     ))}
                 </div>
 
-                <Button className="w-full py-6 text-lg rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xl shadow-purple-500/30 border-none">
-                    Upgrade to Plus
+                <Button onClick={upgrade} disabled={busy} className="w-full py-6 text-lg rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xl shadow-purple-500/30 border-none">
+                    {busy ? 'Opening checkout…' : member && member.isPremium ? 'Extend membership' : 'Upgrade to Plus'}
                 </Button>
+                {member && member.isPremium && member.expiresAt && (
+                  <p className="text-center text-sm text-text-muted mt-3">Active until {new Date(String(member.expiresAt).replace(' ', 'T') + 'Z').toLocaleDateString()}</p>
+                )}
+                {message && <p role="status" className="text-center text-sm font-bold text-purple-600 mt-3">{message}</p>}
             </motion.div>
 
           </div>

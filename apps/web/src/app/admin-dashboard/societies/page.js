@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Home, Users, CheckCircle2, ExternalLink, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { API_BASE } from '../../../lib/api';
 
 export default function GodModeSocieties() {
   const [stats, setStats] = React.useState([
@@ -15,7 +16,7 @@ export default function GodModeSocieties() {
     async function loadSocietiesData() {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-        const res = await fetch('/api/v1/societies', {
+        const res = await fetch(`${API_BASE}/admin/societies`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (res.ok) {

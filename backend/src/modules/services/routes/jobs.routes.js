@@ -1,4 +1,5 @@
 const express = require('express');
+const { validate } = require('../../../middleware/validate');
 const router = express.Router();
 const { query, queryOne, queryMany } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
@@ -242,7 +243,15 @@ router.delete('/postings/:id', authenticate, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════
 
 // POST /apply — Submit application with auto match score
-router.post('/apply', authenticate, async (req, res, next) => {
+router.post('/apply', authenticate, validate({
+  jobId: { type: 'string', required: true, maxLength: 64, label: 'jobId' },
+  applicantName: { type: 'string', maxLength: 100 },
+  applicantPhone: { type: 'string', maxLength: 20 },
+  experienceSummary: { type: 'string', maxLength: 2000 },
+  cover_note: { type: 'string', maxLength: 2000 },
+  resume_id: { type: 'string', maxLength: 64 },
+  voice_intro_url: { type: 'string', maxLength: 500 },
+}), async (req, res, next) => {
   try {
     const { jobId, applicantName, applicantPhone, experienceSummary, cover_note, resume_id, voice_intro_url } = req.body;
     const name = applicantName || req.user.full_name;
@@ -253,17 +262,28 @@ router.post('/apply', authenticate, async (req, res, next) => {
     const job = await queryOne('SELECT * FROM local_job_postings WHERE id = $1', [jobId]);
     if (!job) return res.status(404).json({ error: 'Job not found' });
 
+    // One application per person per job. A second tap used to file a second
+    // application, and the recruiter saw the same candidate twice.
+    const already = await queryOne('SELECT id FROM job_applications WHERE job_id = $1 AND applicant_id = $2', [jobId, req.user.id]);
+    if (already) return res.status(409).json({ error: 'You have already applied for this job', applicationId: already.id });
+
     // Compute match score
     const candidateSkills = await queryMany('SELECT skill_name FROM job_skills WHERE user_id = $1', [req.user.id]);
     const jobSkills = (() => { try { return JSON.parse(job.skills_required || '[]'); } catch { return []; } })();
     const matchScore = computeMatchScore(candidateSkills, jobSkills);
 
     const appId = crypto.randomUUID();
-    await query(`INSERT INTO job_applications (id, job_id, applicant_id, applicant_name, applicant_phone,
-      experience_summary, status, resume_id, match_score, stage, voice_intro_url)
-      VALUES ($1,$2,$3,$4,$5,$6,'applied',$7,$8,'applied',$9)`,
+    await query(`INSERT INTO job_applications (id, job_id, applicant_id, user_id, applicant_name, applicant_phone,
+      experience_summary, status, resume_id, match_score, stage, voice_intro_url, applied_at)
+      VALUES ($1,$2,$3,$3,$4,$5,$6,'applied',$7,$8,'applied',$9,CURRENT_TIMESTAMP)`,
       [appId, jobId, req.user.id, name, phone, experienceSummary||cover_note||null,
        resume_id||null, matchScore, voice_intro_url||null]);
+
+    // The employer's pipeline updates without a refresh (jobsSocket rooms).
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`employer_job_${jobId}`).emit('jobs:application_received', { job_id: jobId, applicationId: appId, applicantName: name, matchScore });
+    }
 
     // Increment applications count
     await query('UPDATE local_job_postings SET applications_count = COALESCE(applications_count, 0) + 1 WHERE id = $1', [jobId]);
@@ -310,10 +330,16 @@ router.put('/applications/:id/stage', authenticate, async (req, res, next) => {
 // GET /applications/:id/match-score — Detailed match breakdown
 router.get('/applications/:id/match-score', authenticate, async (req, res, next) => {
   try {
-    const app = await queryOne('SELECT * FROM job_applications WHERE id = $1', [req.params.id]);
+        const app = await queryOne('SELECT * FROM job_applications WHERE id = $1', [req.params.id]);
     if (!app) return res.status(404).json({ error: 'Application not found' });
 
     const job = await queryOne('SELECT * FROM local_job_postings WHERE id = $1', [app.job_id]);
+    // The applicant's skills, listed against the job. For the applicant and
+    // for the employer who received the application — it was for anyone.
+    const isApplicant = String(app.applicant_id) === String(req.user.id);
+    const isEmployer = job && String(job.employer_id) === String(req.user.id);
+    if (!isApplicant && !isEmployer) return res.status(404).json({ error: 'Application not found' });
+    if (!job) return res.status(404).json({ error: 'Job not found' });
     const candidateSkills = await queryMany('SELECT * FROM job_skills WHERE user_id = $1', [app.applicant_id]);
     const jobSkills = (() => { try { return JSON.parse(job.skills_required || '[]'); } catch { return []; } })();
 

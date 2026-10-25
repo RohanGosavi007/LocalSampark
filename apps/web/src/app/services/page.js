@@ -27,6 +27,12 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Arriving from a dashboard tile: /services?category=plumber
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('category');
+    if (wanted) setSelectedCategory(wanted);
+  }, []);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [showBooking, setShowBooking] = useState(false);
   const [bookingDate, setBookingDate] = useState('');
@@ -171,7 +177,7 @@ export default function ServicesPage() {
                       ● {provider.availability_status || 'Available'}
                     </span>
                     <span className="flex items-center gap-1 text-yellow-400 text-sm">
-                      <Star className="w-3.5 h-3.5 fill-yellow-400" /> {provider.avg_rating || '4.5'}
+                      <Star className="w-3.5 h-3.5 fill-yellow-400" /> {provider.avg_rating || 'New'}
                     </span>
                   </div>
                 </motion.div>

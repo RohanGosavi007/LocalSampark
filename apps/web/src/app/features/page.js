@@ -81,34 +81,6 @@ export default function FeaturesPage() {
           </div>
         </section>
 
-        {/* Stats Bar */}
-        <section className="py-12 bg-gradient-to-r from-primary to-indigo-600 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" />
-          <div className="container relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center divide-x divide-white/10">
-              {[
-                { v: '12,450+', l: 'Active Residents' },
-                { v: '347', l: 'Verified Shops' },
-                { v: '0%', l: 'Merchant Comm.' },
-                { v: '25+', l: 'Pune Zones' },
-                { v: '48hr', l: 'Go-Live Time' },
-                { v: '4.8★', l: 'App Rating' },
-              ].map((s, i) => (
-                <motion.div 
-                  key={s.l}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <p className="text-3xl font-heading font-black text-white mb-1">{s.v}</p>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white/80">{s.l}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Features Content */}
         <section className="py-24">
           <div className="container">

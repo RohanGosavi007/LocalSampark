@@ -1,5 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const { bodyGuard } = require('../middleware/bodyGuard');
+
+// One structural check on every JSON write before any route sees it (see middleware/bodyGuard.js).
+router.use(bodyGuard);
 const apiCache = require('../middleware/cache.middleware');
 const { authLimiter, paymentLimiter, uploadLimiter, adminLimiter } = require('../middleware/rateLimit.middleware');
 
@@ -12,6 +16,7 @@ router.use('/loyalty', require('../modules/core/routes/loyalty.routes'));
 router.use('/notifications', require('../modules/core/routes/notification.routes'));
 router.use('/sos', require('../modules/core/routes/sos.routes'));
 router.use('/zones', apiCache(3600), require('../modules/core/routes/zone.routes'));
+router.use('/public', require('../modules/core/routes/public.routes'));
 router.use('/user-zones', require('../modules/core/routes/user_zone.routes'));
 
 // Territory resolution and franchise territory management.
@@ -167,6 +172,9 @@ router.use('/admin/payouts', adminLimiter, require('../modules/ecommerce/routes/
 // Registered last so these additions cannot shadow an existing route in the
 // /crm, /services or /territory modules mounted above.
 router.use('/', require('../modules/core/routes/dashboards.routes'));
+// The mobile dashboards (service partner, franchise, field agent) call these under /dashboards/*.
+// Without this alias they were 404s and each screen showed its error state.
+router.use('/dashboards', require('../modules/core/routes/dashboards.routes'));
 
 // Simple neighbourhood jobs board — distinct from the full recruitment
 // module at /jobs (postings, applications, resumes, interviews).
@@ -179,6 +187,14 @@ router.use('/jobs-board', require('../modules/services/routes/jobs-board.routes'
 // answers 202.
 router.use('/ml', require('../modules/ml/routes/ml.routes'));
 
-router.use('/test-runner', require('./test-runner.routes'));
+// Development only. This router starts Jest, Playwright and Artillery as
+// child processes of the API server and streams their output. On a deployed
+// server that means a signed-in admin's click runs suites that create and
+// delete rows — and a load test — against the live database, on the machine
+// serving customers. An allow-list, not "anything but production": a staging
+// server holds real-looking data too.
+if (process.env.NODE_ENV === 'development') {
+  router.use('/test-runner', require('./test-runner.routes'));
+}
 
 module.exports = router;

@@ -59,6 +59,29 @@ async function sendViaMSG91(phoneNumber, otp) {
   }
 }
 
+// Provider: Fast2SMS (Free trial available, sends real SMS to Indian numbers without DLT)
+async function sendViaFast2SMS(phoneNumber, otp) {
+  const apiKey = process.env.FAST2SMS_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const rawNumber = phoneNumber.replace(/[^0-9]/g, '').slice(-10);
+    const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(apiKey)}&variables_values=${otp}&route=otp&numbers=${rawNumber}`;
+    const response = await fetch(url, { method: 'GET' });
+    const data = await response.json();
+    if (data.return === true || data.status_code === 200) {
+      console.log(`[SMS] Fast2SMS OTP successfully dispatched to ${phoneNumber}`);
+      return { provider: 'fast2sms', success: true };
+    } else {
+      console.warn(`[SMS] Fast2SMS response: ${JSON.stringify(data)}`);
+      return null;
+    }
+  } catch (error) {
+    console.error('[SMS] Fast2SMS error:', error.message);
+    return null;
+  }
+}
+
 // Provider: Console (Development)
 function sendViaConsole(phoneNumber, otp) {
   console.log(`\n${'='.repeat(50)}`);
@@ -72,22 +95,39 @@ function sendViaConsole(phoneNumber, otp) {
  * @returns {string} 6-digit OTP
  */
 function generateOTP() {
-  return crypto.randomInt(100000, 999999).toString();
+  // randomInt's upper bound is exclusive.
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 /**
  * Send OTP via the best available provider
  * @param {string} phoneNumber - Phone number with country code (e.g., +919999999999)
  * @param {string} otp - 6-digit OTP to send
- * @returns {Object} Result with provider name and success status
+ * @returns {Object} { provider, success }.
  */
 async function sendOTP(phoneNumber, otp) {
-  // Try MSG91 first (production Indian SMS)
-  const msg91Result = await sendViaMSG91(phoneNumber, otp);
-  if (msg91Result) return msg91Result;
+  // Try MSG91 first if configured (production Indian SMS)
+  if (process.env.MSG91_AUTH_KEY) {
+    const msg91Result = await sendViaMSG91(phoneNumber, otp);
+    if (msg91Result) return msg91Result;
+  }
 
-  // Fallback: console logging (always works)
-  return sendViaConsole(phoneNumber, otp);
+  // Try Fast2SMS if configured (free trial credits, instant Indian SMS without DLT)
+  if (process.env.FAST2SMS_API_KEY) {
+    const fast2smsResult = await sendViaFast2SMS(phoneNumber, otp);
+    if (fast2smsResult) return fast2smsResult;
+  }
+
+  // Development & Test Fallback:
+  // In development and test environments, log OTP to console so devs and tests operate seamlessly.
+  // In staging or production, honest failure is returned when no SMS gateway sent the message.
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    sendViaConsole(phoneNumber, otp);
+    return { provider: 'console', success: true };
+  }
+
+  console.error('[SMS] No provider delivered the code (SMS gateway not configured or refused the request).');
+  return { provider: 'none', success: false };
 }
 
 /**

@@ -41,7 +41,7 @@ const MODULES = {
     caption: 'Share a ride, split the fare',
     icon: '🚗',
     tint: '#06b6d4',
-    route: '/advanced',
+    route: '/modules/carpool',
     category: 'carpool',
   },
   FreshMarketplace: {
@@ -49,7 +49,7 @@ const MODULES = {
     caption: 'Buy and sell locally',
     icon: '🛍️',
     tint: '#f59e0b',
-    route: '/advanced',
+    route: '/modules/marketplace',
     category: 'marketplace',
   },
   LocalJobs: {
@@ -65,7 +65,7 @@ const MODULES = {
     caption: 'Notices and visitors',
     icon: '🏘️',
     tint: '#10b981',
-    route: '/community',
+    route: '/modules/society',
     category: 'society',
   },
 };

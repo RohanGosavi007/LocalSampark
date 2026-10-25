@@ -6,23 +6,28 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 export default function LoginScreen() {
+  const [method, setMethod] = useState('email'); // 'email' | 'phone'
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp } = useAuth();
+  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp, loginEmail } = useAuth();
 
   const handleSendOtp = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      Alert.alert('Invalid Number', 'Please enter a valid phone number.');
+    const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      Alert.alert('Invalid Number', 'Please enter a valid 10-digit phone number.');
       return;
     }
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
     setLoading(true);
     try {
-      const data = await sendOtp(phoneNumber);
+      const data = await sendOtp(fullPhone);
       if (data) {
         setOtpSent(true);
-        Alert.alert('OTP Sent', data.mock ? 'Test OTP sent: 123456' : 'An OTP has been sent to your mobile number.');
+        Alert.alert('OTP Sent', data.otp ? `Verification Code: ${data.otp}` : 'An OTP has been sent to your mobile number.');
       }
     } catch (err) {
       if (__DEV__) {
@@ -30,9 +35,28 @@ export default function LoginScreen() {
         setOtpSent(true);
         return;
       }
-      // Advancing to the OTP screen after a failed send leaves the user
-      // waiting on an SMS that was never dispatched.
       Alert.alert('Could not send OTP', err?.message || 'Please try again in a moment.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendWhatsAppOtp = async () => {
+    const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      Alert.alert('Invalid Number', 'Please enter a valid 10-digit phone number.');
+      return;
+    }
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
+    setLoading(true);
+    try {
+      const data = await sendOtp(fullPhone, 'whatsapp');
+      if (data) {
+        setOtpSent(true);
+        Alert.alert('WhatsApp Code Sent', data.otp ? `Verification Code: ${data.otp}` : 'A verification code has been dispatched to your WhatsApp.');
+      }
+    } catch (err) {
+      Alert.alert('Could not send via WhatsApp', err?.message || 'Please use Email or SMS.');
     } finally {
       setLoading(false);
     }
@@ -43,27 +67,44 @@ export default function LoginScreen() {
       Alert.alert('Enter OTP', 'Please enter the OTP to continue.');
       return;
     }
+    const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+    const fullPhone = cleanPhone.startsWith('91') && cleanPhone.length > 10 ? `+${cleanPhone}` : `+91${cleanPhone.slice(-10)}`;
     setLoading(true);
     try {
-      const success = await verifyOtp(phoneNumber, otp);
+      const success = await verifyOtp(fullPhone, otp);
       if (success) {
         router.replace('/(tabs)');
       }
     } catch (err) {
-      // In a release build a failed verification is final. Falling through to
-      // loginWithDevPreset here is what turned "wrong OTP" into "logged in":
-      // that helper's catch minted a local session for any phone/OTP pair.
       if (!__DEV__) {
         Alert.alert('Verification Failed', err.message || 'Invalid OTP code.');
         return;
       }
       console.warn('[DEV ONLY] verifyOtp error, attempting fallback preset verify', err.message);
-      const devSuccess = await loginWithDevPreset('user', phoneNumber, otp);
+      const devSuccess = await loginWithDevPreset('user', fullPhone, otp);
       if (devSuccess) {
         router.replace('/(tabs)');
       } else {
         Alert.alert('Verification Failed', err.message || 'Invalid OTP code.');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter your email and password.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const success = await loginEmail(email.trim(), password);
+      if (success) {
+        router.replace('/(tabs)');
+      }
+    } catch (err) {
+      Alert.alert('Login Failed', err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
@@ -95,45 +136,99 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.centerContainer}>
         <Text style={styles.title}>LocalSampark</Text>
         <Text style={styles.subtitle}>
-          {!otpSent ? "Enter your phone number to continue" : `Enter the OTP sent to ${phoneNumber}`}
+          Sign in to connect with your local neighborhood
         </Text>
 
-        {!otpSent ? (
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mobile Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="+91 9999999999"
-              placeholderTextColor="#64748b"
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-            />
-            <TouchableOpacity style={styles.primaryButton} onPress={handleSendOtp} disabled={loading}>
-              <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Toggle Login Method */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[styles.toggleButton, method === 'phone' && styles.toggleButtonActive]}
+            onPress={() => { setMethod('phone'); setOtpSent(false); }}
+          >
+            <Text style={[styles.toggleButtonText, method === 'phone' && styles.toggleButtonTextActive]}>
+              📱 Phone OTP
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleButton, method === 'email' && styles.toggleButtonActive]}
+            onPress={() => setMethod('email')}
+          >
+            <Text style={[styles.toggleButtonText, method === 'email' && styles.toggleButtonTextActive]}>
+              📧 Email & Password
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {method === 'phone' ? (
+          !otpSent ? (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Mobile Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 9876543210"
+                placeholderTextColor="#64748b"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+              />
+              <TouchableOpacity style={styles.primaryButton} onPress={handleSendOtp} disabled={loading}>
+                <Text style={styles.buttonText}>{loading ? 'Sending Code...' : '📱 Send OTP via SMS'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.primaryButton, { backgroundColor: '#10b981', marginTop: 10 }]} 
+                onPress={handleSendWhatsAppOtp} 
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>{loading ? 'Sending...' : '💬 Send Code via WhatsApp'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Enter 6-Digit OTP</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="123456"
+                placeholderTextColor="#64748b"
+                keyboardType="number-pad"
+                value={otp}
+                onChangeText={setOtp}
+                maxLength={6}
+              />
+              <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyOtp} disabled={loading}>
+                <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify OTP & Login'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ marginTop: 16 }} onPress={() => setOtpSent(false)}>
+                <Text style={{ color: '#3b82f6', textAlign: 'center', fontWeight: 'bold' }}>Change Phone Number</Text>
+              </TouchableOpacity>
+            </View>
+          )
         ) : (
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>One Time Password (OTP)</Text>
+            <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="123456"
+              placeholder="name@email.com"
               placeholderTextColor="#64748b"
-              keyboardType="number-pad"
-              value={otp}
-              onChangeText={setOtp}
-              maxLength={6}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
-            <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyOtp} disabled={loading}>
-              <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify OTP & Login'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ marginTop: 16 }} onPress={() => setOtpSent(false)}>
-              <Text style={{ color: '#3b82f6', textAlign: 'center', fontWeight: 'bold' }}>Change Phone Number</Text>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor="#64748b"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity style={styles.primaryButton} onPress={handleEmailLogin} disabled={loading}>
+              <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Sign In with Email'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -238,8 +333,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
   },
   buttonText: {
-    color: '#0f172a',
+    color: '#ffffff',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 20,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  toggleButtonTextActive: {
+    color: '#3b82f6',
     fontWeight: 'bold',
   },
   presetButton: {

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { query, queryOne, transaction } = require('../../../config/database');
+const { placeholders } = require('../../../utils/sqlList');
+const lifecycle = require('../../../services/orderLifecycle.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { sendNewOrderNotification, sendOrderConfirmation } = require('../../core/services/email.service');
 
@@ -74,8 +76,8 @@ async function attachItems(orders) {
   const itemRows = await query(
     `SELECT order_id, product_id, name, price, quantity
        FROM order_items
-      WHERE order_id = ANY($1::uuid[])`,
-    [orders.map((o) => o.id)]
+      WHERE order_id IN (${placeholders(orders.length)})`,
+    orders.map((o) => o.id)
   );
 
   const byOrder = new Map();
@@ -136,37 +138,31 @@ router.get('/shop/:shopId', authenticate, async (req, res, next) => {
   }
 });
 
+// The rules are in services/orderLifecycle.service.js. This handler let a
+// shop set any status from any other, with no check on payment.
 router.put('/:orderId/status', authenticate, async (req, res, next) => {
   try {
-    const { status } = req.body;
-    if (!ORDER_STATUSES.includes(status)) {
-      return res.status(400).json({ error: `Status must be one of: ${ORDER_STATUSES.join(', ')}` });
+    let outcome;
+    try {
+      outcome = await lifecycle.changeStatus({
+        orderId: req.params.orderId,
+        to: req.body.status,
+        user: req.user,
+        reason: req.body.reason || req.body.cancellationReason,
+      });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ error: error.message, code: error.code });
+      }
+      throw error;
     }
-
-    const order = await queryOne(
-      `SELECT o.id, o.user_id, s.owner_id
-         FROM orders o
-         LEFT JOIN local_shops s ON o.shop_id = s.id
-        WHERE o.id = $1`,
-      [req.params.orderId]
-    );
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-
-    const isOwner = String(order.owner_id) === String(req.user.id);
-    const isCustomerCancelling = String(order.user_id) === String(req.user.id) && status === 'cancelled';
-    if (!isOwner && !isCustomerCancelling && !req.user.is_admin) {
-      return res.status(403).json({ error: 'Not authorised to update this order' });
-    }
-
-    await query(
-      'UPDATE orders SET order_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [status, req.params.orderId]
-    );
 
     const io = req.app.get('io');
-    if (io) io.to(`order_${req.params.orderId}`).emit('ORDER_STATUS_UPDATED', { orderId: req.params.orderId, status });
+    if (io && !outcome.unchanged) {
+      io.to(`order_${req.params.orderId}`).emit('ORDER_STATUS_UPDATED', { orderId: req.params.orderId, status: outcome.to });
+    }
 
-    res.json({ success: true, orderId: req.params.orderId, status });
+    res.json({ success: true, orderId: req.params.orderId, status: outcome.to, refund: outcome.refund });
   } catch (error) {
     next(error);
   }

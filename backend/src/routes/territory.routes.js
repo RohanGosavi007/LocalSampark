@@ -44,7 +44,7 @@ function requireSuperAdmin(req, res, next) {
 async function audit(req, action, detail) {
   try {
     await query(
-      `INSERT INTO admin_audit_log (id, admin_id, action, entity_type, entity_id, changes)
+      `INSERT INTO admin_audit_log (id, admin_id, action, target_type, target_id, details)
        VALUES ($1, $2, $3, 'territory', $4, $5)`,
       [
         crypto.randomUUID(),
@@ -438,7 +438,7 @@ router.post('/admin/assign', ...adminOnly, requireSuperAdmin, async (req, res, n
           message: `Invalid pincode: ${pincodeUtil.describeFailure(req.body.pincode)}.`,
         });
       }
-      const found = await queryOne('SELECT id FROM territories WHERE pincode = $1 AND is_active = true', [normalized]);
+      const found = await queryOne('SELECT id FROM territories WHERE pincode = $1 AND is_active = \'1\'', [normalized]);
       if (!found) {
         return res.status(404).json({ success: false, message: `No active territory for pincode ${normalized}.` });
       }
@@ -487,7 +487,7 @@ router.post('/admin/assign-bulk', ...adminOnly, requireSuperAdmin, async (req, r
     for (const pincode of accepted) {
       try {
         const territory = await queryOne(
-          'SELECT id FROM territories WHERE pincode = $1 AND is_active = true',
+          'SELECT id FROM territories WHERE pincode = $1 AND is_active = \'1\'',
           [pincode]
         );
         if (!territory) {

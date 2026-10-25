@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Settings, ShieldAlert, Key, Globe, EyeOff, Eye, Save, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
+import { Settings, ShieldAlert, Key, Globe, Save, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { API_BASE } from '@/lib/api';
 
@@ -14,11 +14,9 @@ export default function SettingsDashboard() {
   const [pauseRegistrations, setPauseRegistrations] = useState(false);
   const [defaultLang, setDefaultLang] = useState('en');
   
-  const [razorpayKey, setRazorpayKey] = useState('');
-  const [gmapsKey, setGmapsKey] = useState('');
-  
-  const [showRzp, setShowRzp] = useState(false);
-  const [showGmaps, setShowGmaps] = useState(false);
+  // Whether each integration has credentials on the server. The credentials
+  // themselves are never sent here: they live in the server's environment.
+  const [integrations, setIntegrations] = useState(null);
 
   const fetchSettings = async () => {
     try {
@@ -32,8 +30,7 @@ export default function SettingsDashboard() {
         setMaintenanceMode(result.data.maintenance_mode === 'true');
         setPauseRegistrations(result.data.pause_registrations === 'true');
         setDefaultLang(result.data.default_language || 'en');
-        setRazorpayKey(result.data.api_key_razorpay || '');
-        setGmapsKey(result.data.api_key_gmaps || '');
+        setIntegrations(result.data.integrations || null);
       }
     } catch (err) {
       toast.error('Failed to load global settings');
@@ -54,9 +51,7 @@ export default function SettingsDashboard() {
       const payload = {
         maintenance_mode: maintenanceMode.toString(),
         pause_registrations: pauseRegistrations.toString(),
-        default_language: defaultLang,
-        api_key_razorpay: razorpayKey,
-        api_key_gmaps: gmapsKey
+        default_language: defaultLang
       };
 
       const res = await fetch(`${API_BASE}/admin/settings`, {
@@ -71,7 +66,7 @@ export default function SettingsDashboard() {
       const result = await res.json();
       if (result.success) {
         toast.success(result.message);
-        fetchSettings(); // reload obfuscated data
+        fetchSettings();
       } else {
         toast.error(result.error || 'Failed to save settings');
       }
@@ -82,12 +77,11 @@ export default function SettingsDashboard() {
     }
   };
 
-  // Helper to obfuscate string: show first 8 chars, mask the rest
-  const obfuscate = (key, show) => {
-    if (show) return key;
-    if (!key || key.length < 10) return '********';
-    return key.substring(0, 8) + '********';
-  };
+  const INTEGRATIONS = [
+    { key: 'razorpay', label: 'Razorpay (online payments)', detail: (i) => (i.configured ? `Key ${i.keyId}${i.webhookConfigured ? '' : ' · webhook secret not set'}` : null) },
+    { key: 'googleMaps', label: 'Google Maps' },
+    { key: 'sms', label: 'SMS / OTP (MSG91)' },
+  ];
 
   if (loading) {
     return <div className="text-center py-20 text-slate-500 dark:text-slate-400">Loading Configuration Engine...</div>;
@@ -180,57 +174,41 @@ export default function SettingsDashboard() {
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-900 border rounded-3xl p-8 shadow-xl" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-main)' }}>
-              <Key className="w-5 h-5 text-purple-500" /> External API Keys
+              <Key className="w-5 h-5 text-purple-500" /> External Integrations
             </h2>
-            
+
+            {/*
+              This card used to hold editable "Razorpay Live Secret" and Google
+              Maps key fields. They were saved to the database and sent back to
+              this page, and nothing on the server read them: payments have only
+              ever used the keys in the server's environment. It now shows which
+              integrations the server has credentials for.
+            */}
             <div className="bg-purple-500/10 border border-purple-500/30 p-4 rounded-xl mb-6">
                 <p className="text-xs text-purple-400 font-bold flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5"/>
-                  Keys are automatically obfuscated for security. Modifying these keys will immediately affect live production pipelines.
+                  Keys and secrets are set in the server environment, not here. Add or change them in the hosting dashboard and restart the API service.
                 </p>
               </div>
 
-            <div className="space-y-6">
-              
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-500 dark:text-slate-400">
-                  Razorpay Live Secret
-                  <button onClick={() => setShowRzp(!showRzp)} className="text-sky-500 flex items-center gap-1 hover:text-sky-400">
-                    {showRzp ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>} {showRzp ? 'Hide' : 'Reveal'}
-                  </button>
-                </label>
-                <input 
-                  type="text" 
-                  value={obfuscate(razorpayKey, showRzp)}
-                  onChange={e => {
-                    // Only update if they are editing the raw key (not the masked one)
-                    if (showRzp) setRazorpayKey(e.target.value);
-                  }}
-                  readOnly={!showRzp}
-                  className="w-full px-4 py-3 rounded-xl border outline-none font-mono text-sm transition-all focus:border-purple-500"
-                  style={{ backgroundColor: showRzp ? '#1e293b' : 'var(--bg-base)', borderColor: showRzp ? 'rgb(168, 85, 247)' : 'var(--border-color)', color: 'var(--text-main)' }}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider mb-2 flex justify-between text-slate-500 dark:text-slate-400">
-                  Google Maps API Key
-                  <button onClick={() => setShowGmaps(!showGmaps)} className="text-sky-500 flex items-center gap-1 hover:text-sky-400">
-                    {showGmaps ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>} {showGmaps ? 'Hide' : 'Reveal'}
-                  </button>
-                </label>
-                <input 
-                  type="text" 
-                  value={obfuscate(gmapsKey, showGmaps)}
-                  onChange={e => {
-                    if (showGmaps) setGmapsKey(e.target.value);
-                  }}
-                  readOnly={!showGmaps}
-                  className="w-full px-4 py-3 rounded-xl border outline-none font-mono text-sm transition-all focus:border-purple-500"
-                  style={{ backgroundColor: showGmaps ? '#1e293b' : 'var(--bg-base)', borderColor: showGmaps ? 'rgb(168, 85, 247)' : 'var(--border-color)', color: 'var(--text-main)' }}
-                />
-              </div>
-
+            <div className="space-y-4">
+              {INTEGRATIONS.map(({ key, label, detail }) => {
+                const item = integrations && integrations[key];
+                const configured = Boolean(item && item.configured);
+                return (
+                  <div key={key} className="p-4 rounded-2xl border" style={{ borderColor: 'var(--border-color)' }}>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="font-bold text-sm" style={{ color: 'var(--text-main)' }}>{label}</span>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${configured ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/15 text-slate-500'}`}>
+                        {configured ? 'Configured' : 'Not configured'}
+                      </span>
+                    </div>
+                    <p className="text-xs mt-2 font-mono" style={{ color: 'var(--text-muted)' }}>
+                      {(configured && detail && detail(item)) || (item && item.env ? item.env.join(', ') : '')}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

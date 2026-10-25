@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TabError from '../TabError';
+import Pagination from '../Pagination';
 import { fetchJson } from '../../lib/api';
 
 const cardStyle = { background: 'var(--surface-1)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--line)' };
@@ -10,13 +11,16 @@ export default function PropertiesTab({ API_BASE, authHeaders }) {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const fetchProperties = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchJson(`${API_BASE}/admin/properties`, { headers: authHeaders() });
+      const data = await fetchJson(`${API_BASE}/admin/properties?page=${page}&limit=25`, { headers: authHeaders() });
       setProperties(data.properties || data.data || []);
+      setTotal(data.total || 0);
     } catch (e) {
       console.error(e);
       setError(e);
@@ -27,16 +31,16 @@ export default function PropertiesTab({ API_BASE, authHeaders }) {
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [page]);
 
   const handleApproval = async (id, status) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/approvals/property/${id}`, {
+      await fetchJson(`${API_BASE}/admin/approvals/property/${id}`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ status })
       });
-      if (res.ok) {
+      { // fetchJson throws on a failed response, so reaching here means it worked
         setProperties(properties.map(p => p.id === id ? { ...p, status } : p));
       }
     } catch (e) {
@@ -95,6 +99,7 @@ export default function PropertiesTab({ API_BASE, authHeaders }) {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} limit={25} total={total} onPage={setPage} disabled={loading} />
         </div>
       </div>
     </div>

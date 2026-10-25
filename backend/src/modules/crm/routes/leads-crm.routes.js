@@ -6,9 +6,14 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
+// A lead is a person's name, phone number and what they were asking about.
+// Every route here took the shop from the URL and nothing checked it against
+// the caller: any signed-in account could read any shop's enquiries, move
+// them through its pipeline and write into its activity log.
+const { requireShopParam } = require('../../../middleware/shop-owner.middleware');
 
 // â”€â”€ GET /api/v1/leads-crm/:shopId â€” Get all leads for a shop â”€â”€
-router.get('/:shopId', authenticate, async (req, res) => {
+router.get('/:shopId', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { shopId } = req.params;
     const { status, stage, page = 1, limit = 20 } = req.query;
@@ -57,6 +62,10 @@ router.post('/:shopId', authenticate, async (req, res) => {
       userId, referredBy
     } = req.body;
 
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
     const leadNumber = `LEAD-${Date.now().toString(36).toUpperCase()}`;
 
     const result = await query(`INSERT INTO leads (shop_id, lead_number, name, phone, email, source, inquiry_type,
@@ -66,8 +75,9 @@ router.post('/:shopId', authenticate, async (req, res) => {
        RETURNING *`,
       [shopId, leadNumber, name, phone || null, email || null,
        source || 'website', inquiryType || 'general', message || null,
-       budget || null, location || null, propertyType || null,
-       userId || null, referredBy || null]
+              budget || null, location || null, propertyType || null,
+       // The enquirer is the signed-in caller, not whoever the request names.
+       req.user.id, referredBy || null]
     );
 
     // Notify merchant
@@ -90,7 +100,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
 });
 
 // â”€â”€ PUT /api/v1/leads-crm/:shopId/:leadId/stage â€” Move lead through pipeline â”€â”€
-router.put('/:shopId/:leadId/stage', authenticate, async (req, res) => {
+router.put('/:shopId/:leadId/stage', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { leadId } = req.params;
     const { stage, notes } = req.body;
@@ -125,7 +135,7 @@ router.put('/:shopId/:leadId/stage', authenticate, async (req, res) => {
 });
 
 // â”€â”€ POST /api/v1/leads-crm/:shopId/:leadId/activity â€” Add activity/call log â”€â”€
-router.post('/:shopId/:leadId/activity', authenticate, async (req, res) => {
+router.post('/:shopId/:leadId/activity', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { leadId } = req.params;
     const { activityType, notes, callDuration, nextFollowUp } = req.body;
@@ -148,7 +158,7 @@ router.post('/:shopId/:leadId/activity', authenticate, async (req, res) => {
 });
 
 // â”€â”€ GET /api/v1/leads-crm/:shopId/:leadId/activities â€” Get lead activity history â”€â”€
-router.get('/:shopId/:leadId/activities', authenticate, async (req, res) => {
+router.get('/:shopId/:leadId/activities', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { leadId } = req.params;
 
@@ -164,7 +174,7 @@ router.get('/:shopId/:leadId/activities', authenticate, async (req, res) => {
 });
 
 // â”€â”€ GET /api/v1/leads-crm/:shopId/stats â€” Lead analytics â”€â”€
-router.get('/:shopId/stats', authenticate, async (req, res) => {
+router.get('/:shopId/stats', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { shopId } = req.params;
 
@@ -200,7 +210,10 @@ router.get('/:shopId/stats', authenticate, async (req, res) => {
 });
 
 // â”€â”€ GET /api/v1/leads-crm/:shopId/listings â€” Public listings (for directory archetype) â”€â”€
-router.get('/:shopId/listings', authenticate, async (req, res) => {
+// Public: a directory shop's active listings, as its page shows them to any
+// visitor. It required a session, and the page calls it without one, so the
+// listings never loaded.
+router.get('/:shopId/listings', async (req, res) => {
   try {
     const { shopId } = req.params;
     const { type, minBudget, maxBudget, location } = req.query;
@@ -222,7 +235,7 @@ router.get('/:shopId/listings', authenticate, async (req, res) => {
       params.push(maxBudget);
     }
     if (location) {
-      sql += ` AND location ILIKE $${params.length + 1}`;
+      sql += ` AND LOWER(location) LIKE LOWER($${params.length + 1})`;
       params.push(`%${location}%`);
     }
 

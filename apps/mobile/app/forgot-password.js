@@ -43,16 +43,14 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
     try {
-      const data = await apiPost('/auth/reset-password', { token, newPassword });
+      const data = await apiPost('/auth/reset-password', { token: token.trim(), newPassword });
       if (data && data.error) {
         throw new Error(data.error);
       }
       Alert.alert('Success', 'Password has been reset successfully. You can now login.');
       router.replace('/login');
     } catch (err) {
-      // Dev mode fallback
-      Alert.alert('Success', 'Password reset simulated in Dev Mode.');
-      router.replace('/login');
+      Alert.alert('Reset Failed', err?.message || 'Invalid or expired reset token.');
     } finally {
       setLoading(false);
     }

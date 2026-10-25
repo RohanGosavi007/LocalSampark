@@ -23,7 +23,12 @@
 
 const registry = new Map();
 
-function trackInterval(name, fn, ms, { runImmediately = false } = {}) {
+/**
+ * `lock` (default on): only one instance runs each tick — see utils/jobLock.js.
+ * The lock is held for 90% of the interval, so an instance whose timer drifts a
+ * little behind another's is skipped, and the next tick finds it free again.
+ */
+function trackInterval(name, fn, ms, { runImmediately = false, lock = true } = {}) {
   if (registry.has(name)) {
     // Guards against double-initialisation (e.g. startQueueEngine called twice),
     // which previously doubled the polling rate with no way to undo it.
@@ -35,6 +40,11 @@ function trackInterval(name, fn, ms, { runImmediately = false } = {}) {
     if (running) return; // previous pass has not finished; skip this tick
     running = true;
     try {
+      if (lock && process.env.NODE_ENV !== 'test') {
+        // eslint-disable-next-line global-require
+        const { acquireLock } = require('./jobLock');
+        if (!(await acquireLock(`interval:${name}`, Math.floor(ms * 0.9)))) return;
+      }
       await fn();
     } catch (err) {
       // A throw here would otherwise become an unhandled rejection and, in

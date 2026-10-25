@@ -1,25 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, SafeAreaView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
+import { apiGet } from '../src/lib/api';
 
 export default function GlobalSearch() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState(null);
+  const seq = useRef(0);
 
-  const handleSearch = (text) => {
-    setQuery(text);
-    if (text.length > 2) {
-      // Mock search results
-      setResults([
-        { id: '1', title: `${text} Shop`, type: 'Shop', route: '/(tabs)' },
-        { id: '2', title: `${text} Delivery Job`, type: 'Job', route: '/modules/delivery-dashboard' },
-        { id: '3', title: `${text} Service Provider`, type: 'Service', route: '/(tabs)' }
-      ]);
-    } else {
-      setResults([]);
-    }
-  };
+  // Searches shops through GET /shops/search (debounced). The screen used to answer any three
+  // letters with three results it made up from them ("<text> Shop", "<text> Delivery Job").
+  useEffect(() => {
+    const text = query.trim();
+    if (text.length < 3) { setResults([]); setError(null); setSearching(false); return undefined; }
+    const mine = ++seq.current;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const r = await apiGet(`/shops/search?q=${encodeURIComponent(text)}`);
+        if (mine !== seq.current) return;
+        const rows = Array.isArray(r) ? r : (r && (r.shops || r.data)) || [];
+        setResults(rows.map((x) => ({
+          id: String(x.id),
+          title: x.name || x.shop_name || 'Shop',
+          type: x.category || 'Shop',
+          route: `/modules/shops/${x.id}`,
+        })));
+        setError(null);
+      } catch (e) {
+        if (mine === seq.current) { setResults([]); setError(e.message || 'Search is unavailable right now.'); }
+      } finally {
+        if (mine === seq.current) setSearching(false);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const handleSearch = setQuery;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -27,7 +47,7 @@ export default function GlobalSearch() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}><Text style={{ fontSize: 20 }}>←</Text></TouchableOpacity>
         <TextInput
           style={styles.input}
-          placeholder="Search for shops, jobs, services..."
+          placeholder="Search for shops…"
           value={query}
           onChangeText={handleSearch}
           autoFocus
@@ -47,7 +67,7 @@ export default function GlobalSearch() {
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>{query.length > 2 ? 'No results found.' : 'Start typing to search...'}</Text>
+            <Text style={styles.emptyText}>{error ? error : searching ? 'Searching…' : query.trim().length > 2 ? 'No shops found.' : 'Type at least 3 letters to search…'}</Text>
           </View>
         )}
       />

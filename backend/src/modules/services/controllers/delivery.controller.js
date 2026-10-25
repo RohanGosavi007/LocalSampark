@@ -1,6 +1,11 @@
 const crypto = require('crypto');
-const { query, queryOne } = require('../../../config/database');
+const { query, queryOne, withTransaction } = require('../../../config/database');
 const geo = require('../../../utils/geo');
+const { pointSql } = require('../../../utils/sqlPoint');
+const pricing = require('../../../services/deliveryPricing.service');
+const payments = require('../../../services/payments.service');
+const platformConfig = require('../../../services/platformConfig.service');
+const lifecycle = require('../../../services/orderLifecycle.service');
 
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
@@ -27,39 +32,80 @@ const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
 /** Shape a raw order row into the job payload the rider app renders. */
 function toJob(row) {
+  const cash = isCashOrder(row);
   return {
     id: String(row.id),
     order_id: String(row.id),
     status: String(row.order_status || 'pending').toLowerCase(),
-    type: row.fulfillment_method || 'delivery',
-    pickup: row.shop_name || null,
-    pickup_address: row.shop_address || null,
+    type: row.shop_id ? (row.fulfillment_method || 'delivery') : 'parcel',
+    pickup: row.shop_name || (row.shop_id ? null : 'Parcel pickup'),
+    pickup_address: row.shop_address || row.pickup_address || null,
     dropoff: row.delivery_address || null,
     customer_name: row.customer_name || null,
     customer_phone: row.customer_phone || null,
-    // The rider's cut is the delivery fee on the order. It was previously a
-    // fixed ₹45 printed by the app.
-    earnings: Number(row.delivery_fee) || 0,
+    distance_km: row.delivery_distance_km === null || row.delivery_distance_km === undefined ? null : Number(row.delivery_distance_km),
+    // What the rider is paid: by distance, plus any surge. It was the
+    // customer's delivery charge — before that, a fixed ₹45 printed by the app —
+    // so an order with free delivery paid its rider nothing.
+    earnings: riderPay(row),
     total_amount: Number(row.total_amount) || 0,
+    payment_method: String(row.payment_method || '').toLowerCase(),
+    // Cash the rider must take from the customer at the door; 0 when prepaid.
+    cash_to_collect: cash ? Number(row.total_amount) || 0 : 0,
     created_at: row.created_at,
   };
 }
 
+/** A cash order that has not been paid: the rider collects at the door. */
+const isCashOrder = (row) => lifecycle.cashDue(row) > 0;
+const { riderPay } = lifecycle;
+
 const JOB_COLUMNS = `
-  o.id, o.order_status, o.fulfillment_method, o.delivery_address, o.delivery_fee,
+  o.id, o.shop_id, o.order_status, o.fulfillment_method, o.delivery_address, o.delivery_fee,
+  o.rider_payout, o.delivery_distance_km, o.pickup_address, o.payment_method, o.payment_status,
   o.total_amount, o.created_at, o.assigned_agent_id,
   s.name AS shop_name, s.address AS shop_address,
   u.full_name AS customer_name, u.phone_number AS customer_phone`;
-const SurgeEngine = require('../../../services/surge.engine');
+
+// Work a rider can take: a delivery (not a customer pickup) that is ready, and
+// — if it is to be paid online — has been paid.
+const AVAILABLE_JOB = `LOWER(o.order_status) = 'ready' AND o.assigned_agent_id IS NULL
+  AND LOWER(COALESCE(o.fulfillment_method, 'delivery')) = 'delivery'
+  AND NOT (LOWER(COALESCE(o.payment_method, '')) = 'razorpay' AND LOWER(COALESCE(o.payment_status, '')) <> 'paid')`;
+
 const RoutingService = require('../services/routing.service');
 
-async function calculateDeliveryFee(req, res, next) {
+/**
+ * POST /delivery/quote — what a delivery will cost.
+ *
+ *   { shopId, subtotal?, deliveryCoordinate | addressId }   an order from a shop
+ *   { pickup: { lat, lng }, drop: { lat, lng } }            a parcel
+ *
+ * The same calculation an order is charged by (deliveryPricing.service.js).
+ * A fee endpoint existed before this one; it priced by pincode from an
+ * "active orders" and "available drivers" count that the caller supplied.
+ */
+async function quoteDelivery(req, res, next) {
   try {
-    const { pincode = '411015', activeOrders = 10, availableDrivers = 2 } = req.query;
-    const surgeData = await SurgeEngine.calculateSurge(pincode, parseInt(activeOrders), parseInt(availableDrivers));
-    return res.json({ success: true, deliveryDetails: surgeData });
-  } catch (err) {
-    next(err);
+    const body = req.body || {};
+    let shop;
+    if (body.shopId || body.shop_id) {
+      shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [body.shopId || body.shop_id]);
+      if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+    } else {
+      const pickup = pricing.readPoint(body.pickup) || pricing.readPoint({ lat: body.pickupLat, lng: body.pickupLng });
+      if (!pickup) return res.status(400).json({ success: false, code: 'LOCATION_REQUIRED', error: 'A pickup location is required.' });
+      shop = { latitude: pickup.lat, longitude: pickup.lng, delivery_available: 1 };
+    }
+
+    const drop = body.deliveryCoordinate ?? body.drop ?? { lat: body.dropLat, lng: body.dropLng };
+    const bill = await pricing.quote({ shop, subtotal: Number(body.subtotal) || 0, pickup: false, drop });
+    res.json({ success: true, bill });
+  } catch (error) {
+    if (error instanceof pricing.PricingError) {
+      return res.status(error.status).json({ success: false, code: error.code, error: error.message, ...error.details });
+    }
+    next(error);
   }
 }
 
@@ -67,112 +113,115 @@ async function calculateDeliveryFee(req, res, next) {
 // One implementation for the whole backend; see src/utils/geo.js.
 const haversineDistance = geo.distanceKm;
 
-// requestDelivery: P2P courier and on-demand parcel delivery
+/**
+ * POST /delivery/request — send a parcel from one address to another.
+ *
+ * The charge came from the request body (`deliveryFee = 45`), with a distance
+ * the caller also supplied and never used. The parcel was then attached to
+ * whichever shop happened to be first in the table — so it appeared in a
+ * stranger's order queue — and left in a status no rider's job list shows.
+ *
+ * The charge is now worked out from the two locations. A parcel belongs to no
+ * shop; it goes straight to the riders' job list. It can be paid in cash to
+ * the rider, from the wallet, or online.
+ */
 const requestDelivery = async (req, res, next) => {
   try {
-    const {
-      pickupAddress,
-      deliveryAddress,
-      pickupLat,
-      pickupLng,
-      dropLat,
-      dropLng,
-      packageDetails = 'Parcel / Courier Document',
-      pincode = '411015',
-      estimatedDistanceKm = 3.5,
-      deliveryFee = 45
-    } = req.body;
-
+    const body = req.body || {};
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    // Find a default logistics shop in local_shops.
-    //
-    // This read prisma.shop, whose model is @@mapped to `shops` — not the table
-    // registration writes to. In production that lookup found nothing and every
-    // parcel request failed with "No active logistics channel found in region",
-    // however many shops the platform actually had.
-    let shop = await queryOne(
-      `SELECT * FROM local_shops
-        WHERE is_active = 1 AND (delivery_available = 1 OR pickup_available = 1)
-        ORDER BY created_at ASC LIMIT 1`
-    );
-    if (!shop) {
-      shop = await queryOne('SELECT * FROM local_shops WHERE is_active = 1 ORDER BY created_at ASC LIMIT 1');
+    const pickup = pricing.readPoint(body.pickup) || pricing.readPoint({ lat: body.pickupLat, lng: body.pickupLng });
+    const drop = pricing.readPoint(body.drop) || pricing.readPoint({ lat: body.dropLat, lng: body.dropLng });
+    const pickupAddress = typeof body.pickupAddress === 'string' ? body.pickupAddress.trim() : '';
+    const deliveryAddress = typeof body.deliveryAddress === 'string' ? body.deliveryAddress.trim() : '';
+    if (!pickup || !drop) {
+      return res.status(400).json({ success: false, code: 'LOCATION_REQUIRED', error: 'Pickup and drop locations are required to price a delivery.' });
+    }
+    if (!pickupAddress || !deliveryAddress) {
+      return res.status(400).json({ success: false, error: 'Pickup and delivery addresses are required.' });
+    }
+    const method = payments.paymentMethod(body.paymentMethod);
+    if (!method) return res.status(400).json({ success: false, error: 'paymentMethod must be cod, razorpay or wallet' });
+    if (method === 'razorpay' && !payments.onlinePaymentAvailable()) {
+      return res.status(503).json({ success: false, code: 'PAYMENTS_UNAVAILABLE', error: 'Online payment is not available right now. Please choose another payment method.' });
     }
 
-    if (!shop) {
-      return res.status(400).json({ success: false, error: 'No active logistics channel found in region' });
-    }
+    const bill = await pricing.quote({
+      shop: { latitude: pickup.lat, longitude: pickup.lng, delivery_available: 1 },
+      subtotal: 0,
+      pickup: false,
+      drop,
+    });
+    // A parcel has no items: nothing for a small-order fee or free delivery to apply to.
+    const deliveryFee = bill.deliveryBreakdown.base + bill.deliveryBreakdown.distanceCharge + bill.deliveryBreakdown.surge;
+    const totalAmount = Math.round((deliveryFee + bill.platformFee) * 100) / 100;
 
-    const calculatedSurge = await SurgeEngine.calculateSurge(pincode, 5, 2);
-    const finalFeePaise = Math.round((deliveryFee || (calculatedSurge.totalDeliveryFee || 45)) * 100);
-    const orderNumber = `LS-P2P-${Date.now().toString().slice(-6)}`;
-
-    // Create Order and DeliveryRoute
-    /*
-     * Rewritten off Prisma.
-     *
-     * This wrote `orders` in paise columns — subtotalPaise, deliveryFeePaise,
-     * totalAmountPaise — none of which exist; the real column is
-     * `total_amount`, in rupees. It also created a nested `deliveryRoute`, a
-     * model @@mapped to a `delivery_routes` table no migration creates. So a
-     * P2P parcel request could not be stored at all, on either engine.
-     *
-     * `orders` is the table the merchant queue, the rider job list and the
-     * socket rooms all already read, so the job appears everywhere it should.
-     */
     const orderId = crypto.randomUUID();
-    const totalAmount = (finalFeePaise + 500) / 100;
+    const orderNumber = `LS-P2P-${Date.now().toString().slice(-6)}`;
+    const packageDetails = String(body.packageDetails || 'Parcel').slice(0, 300);
 
-    await query(
-      `INSERT INTO orders
-         (id, user_id, shop_id, total_amount, delivery_fee, platform_fee,
-          payment_method, payment_status, order_status, status,
-          fulfillment_method, delivery_address, delivery_coordinate,
-          special_instructions, otp_code, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, 'COD', 'pending', 'pending', 'pending',
-               'DELIVERY', $7, $8, $9, $10, ${NOW})`,
-      [
-        orderId,
-        userId,
-        shop.id,
-        totalAmount,
-        finalFeePaise / 100,
-        5,
-        deliveryAddress || 'Address',
-        `POINT(${dropLng || shop.longitude} ${dropLat || shop.latitude})`,
-        `[P2P Parcel] ${packageDetails} | Pickup: ${pickupAddress || 'Address'} -> Drop: ${deliveryAddress || 'Address'}`,
-        // The rider must quote this back to close the delivery; completeJob
-        // compares it. Six digits from the CSPRNG, not Math.random().
-        String(crypto.randomInt(100000, 1000000)),
-      ]
-    );
+    await withTransaction(async (client) => {
+      if (method === 'wallet') {
+        await payments.debitWallet({ userId, amount: totalAmount, purpose: 'parcel_payment', referenceId: orderId, client });
+      }
+      await client.query(
+        `INSERT INTO orders
+           (id, user_id, subtotal, total_amount, delivery_fee, platform_fee,
+            payment_method, payment_status, order_status, status,
+            fulfillment_method, delivery_address, delivery_coordinate, delivery_lat, delivery_lng,
+            pickup_address, pickup_lat, pickup_lng, delivery_distance_km, surge_multiplier, rider_payout,
+            special_instructions, otp_code)
+         VALUES ($1, $2, 0, $3, $4, $5, $6, $7, 'ready', 'ready', 'delivery', $8,
+                 ${pointSql(drop.lat, drop.lng)}, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        [
+          orderId, userId, totalAmount, deliveryFee, bill.platformFee,
+          method, method === 'wallet' ? 'paid' : 'pending',
+          deliveryAddress, drop.lat, drop.lng,
+          pickupAddress, pickup.lat, pickup.lng, bill.distanceKm, bill.surgeMultiplier, bill.riderPayout,
+          `[Parcel] ${packageDetails}`,
+          // The rider must quote this back to close the delivery; completeJob
+          // compares it. Six digits from the CSPRNG, not Math.random().
+          String(crypto.randomInt(100000, 1000000)),
+        ]
+      );
+    });
 
     const newOrder = await queryOne('SELECT * FROM orders WHERE id = $1', [orderId]);
     newOrder.orderNumber = orderNumber;
 
-    // Notify online riders via WebSocket
+    let paymentData = null;
+    if (method === 'razorpay') {
+      try {
+        paymentData = await payments.createPayment({ user: req.user, purpose: 'order', referenceId: orderId });
+      } catch (err) {
+        console.error(`[delivery] could not start payment for parcel ${orderId}: ${err.message}`);
+      }
+    }
+
+    // Notify online riders via WebSocket — once it can actually be taken.
     const io = req.app.get('io');
-    if (io) {
-      io.emit('new_delivery_job', {
-        jobId: newOrder.id,
-        orderId: newOrder.id,
-        orderNumber: newOrder.orderNumber,
-        pincode,
-        fee: finalFeePaise / 100
-      });
+    if (io && method !== 'razorpay') {
+      io.emit('new_delivery_job', { jobId: newOrder.id, orderId: newOrder.id, orderNumber, fee: bill.riderPayout });
     }
 
     res.status(201).json({
       success: true,
-      message: 'P2P Delivery requested successfully. Finding nearest delivery partner.',
+      message: method === 'razorpay' ? 'Delivery requested; payment pending.' : 'Delivery requested. Finding the nearest delivery partner.',
       order: newOrder,
-      jobId: newOrder.id
+      jobId: newOrder.id,
+      bill: { deliveryFee, platformFee: bill.platformFee, total: totalAmount, distanceKm: bill.distanceKm, etaMinutes: bill.etaMinutes },
+      paymentData,
     });
   } catch (error) {
+    if (error instanceof pricing.PricingError) {
+      return res.status(error.status).json({ success: false, code: error.code, error: error.message, ...error.details });
+    }
+    if (error instanceof payments.PaymentError) {
+      return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+    }
     next(error);
   }
 };
@@ -184,7 +233,7 @@ const getJobs = async (req, res, next) => {
     // A job is available once the shop has marked the order ready and no rider
     // has taken it.
     const params = [];
-    let where = `WHERE LOWER(o.order_status) = 'ready' AND o.assigned_agent_id IS NULL`;
+        let where = `WHERE ${AVAILABLE_JOB}`;
     if (pincode) {
       params.push(pincode);
       where += ` AND s.pincode = $${params.length}`;
@@ -212,12 +261,31 @@ const acceptJob = async (req, res, next) => {
     const { jobId } = req.params;
     const userId = req.user.id;
 
+        // A cash order puts the platform's money in the rider's pocket until it
+    // is deposited. Past the limit, the rider deposits before taking more.
+    const job = await queryOne('SELECT id, payment_method, payment_status, total_amount FROM orders o WHERE o.id = $1', [jobId]);
+    if (job && isCashOrder(job)) {
+      const [agent, limit] = await Promise.all([
+        queryOne('SELECT cash_in_hand FROM delivery_agents WHERE user_id = $1', [userId]),
+        platformConfig.get('rider_cash_limit'),
+      ]);
+      const holding = Number(agent && agent.cash_in_hand) || 0;
+      if (limit > 0 && holding >= limit) {
+        return res.status(409).json({
+          error: `You are holding ₹${holding} in cash. Deposit it before taking another cash order.`,
+          code: 'CASH_LIMIT_REACHED',
+          cashInHand: holding,
+          limit,
+        });
+      }
+    }
+
     // Conditional update rather than read-then-write: two riders tapping Accept
     // at the same moment cannot both win.
     const claimed = await query(
       `UPDATE orders
           SET assigned_agent_id = $1, order_status = 'assigned', updated_at = ${NOW}
-        WHERE id = $2 AND assigned_agent_id IS NULL AND LOWER(order_status) = 'ready'`,
+        WHERE id = $2 AND id IN (SELECT o.id FROM orders o WHERE o.id = $2 AND ${AVAILABLE_JOB})`,
       [userId, jobId]
     );
 
@@ -250,7 +318,7 @@ const completeJob = async (req, res, next) => {
     const userId = req.user.id;
 
     const order = await queryOne(
-      'SELECT id, user_id, shop_id, assigned_agent_id, order_status, otp_code, delivery_fee FROM orders WHERE id = $1',
+                  'SELECT * FROM orders WHERE id = $1',
       [jobId]
     );
 
@@ -281,38 +349,51 @@ const completeJob = async (req, res, next) => {
       return res.status(403).json({ error: 'Incorrect handover code.' });
     }
 
-    await query(
-      `UPDATE orders
-          SET order_status = 'delivered', delivered_at = ${NOW}, updated_at = ${NOW}
-        WHERE id = $1 AND assigned_agent_id = $2`,
-      [jobId, userId]
-    );
-
-    // Credit the rider the delivery fee. The mobile screen used to announce
+        // Credit the rider the delivery fee. The mobile screen used to announce
     // "Earnings (₹45) added to your wallet" with nothing behind it.
-    const earnings = Number(order.delivery_fee) || 0;
-    if (earnings > 0) {
-      let wallet = await queryOne('SELECT id FROM wallets WHERE user_id = $1 LIMIT 1', [userId]);
-      if (!wallet) {
-        const walletId = crypto.randomUUID();
-        await query('INSERT INTO wallets (id, user_id, balance) VALUES ($1, $2, 0)', [walletId, userId]);
-        wallet = { id: walletId };
-      }
-      await query(
-        `UPDATE wallets SET balance = balance + $1, updated_at = ${NOW} WHERE id = $2`,
-        [earnings, wallet.id]
+    //
+    // The UPDATE is the gate: it only changes an order that is still out for
+    // delivery, and the fee is credited only if it changed one. The status was
+    // read above and the credit made unconditionally, so two requests sent
+    // together both passed the read and both paid the fee.
+        let outcome = null;
+    const completed = await withTransaction(async (client) => {
+      const delivered = await client.query(
+        `UPDATE orders
+            SET order_status = 'delivered', status = 'delivered', delivered_at = ${NOW}, updated_at = ${NOW}
+          WHERE id = $1 AND assigned_agent_id = $2 AND LOWER(order_status) IN ('assigned', 'out_for_delivery')`,
+        [jobId, userId]
       );
-      await query(
-        `INSERT INTO wallet_transactions (id, wallet_id, amount, transaction_type, purpose, status)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), wallet.id, earnings, 'credit', 'delivery_earnings', 'completed']
-      );
+      if (!delivered.rowCount) return false;
+
+      // Cash on delivery: the customer has now paid — to the rider. The order
+      // is marked paid and the amount goes onto the rider's cash in hand,
+      // where it stays until they deposit it. Nothing recorded this before: a
+      // cash order stayed "pending" for ever and nobody could say who was
+      // holding the money. The rider's own pay goes to their wallet.
+      outcome = await lifecycle.recordDelivery(client, order);
+      return true;
+    });
+    const earnings = outcome ? outcome.riderEarnings : 0;
+    const cashCollected = outcome ? outcome.cashCollected : 0;
+    if (!completed) {
+      return res.status(409).json({ error: 'This delivery has already been completed.' });
     }
 
-    res.json({
+    // Tell whoever is watching the order (the customer's tracking screen).
+    const io = req.app?.get ? req.app.get('io') : null;
+    if (io) {
+      io.emit(`order_status_${jobId}`, { orderId: jobId, status: 'DELIVERED' });
+      io.to(`order_${jobId}`).to(`order:${jobId}`).emit('order_status_update', { orderId: jobId, status: 'DELIVERED' });
+    }
+
+
+        res.json({
       success: true,
       message: 'Delivery completed successfully!',
-      data: { orderId: jobId, earnings },
+      jobId,
+      status: 'DELIVERED',
+            data: { orderId: jobId, earnings, cashCollected },
     });
   } catch (error) {
     if (error.status) return res.status(error.status).json({ error: error.message });
@@ -423,7 +504,12 @@ const onboarding = async (req, res, next) => {
             );
         }
 
-        await query('UPDATE users SET role = $1 WHERE id = $2', ['delivery_agent', userId]);
+                // The role is not changed here. This used to set it to 'delivery_agent'
+        // for whoever applied, immediately — before any review, and whatever
+        // the account was: a shop owner stopped being one, and an administrator
+        // who tried the form stopped being an administrator. The rider role is
+        // taken up with PUT /auth/switch-role once the application is approved.
+
 
         res.status(200).json({
             success: true,
@@ -458,20 +544,20 @@ const getAnalytics = async (req, res, next) => {
         const [walletRow, lifetimeRow, todayRow, txRows] = await Promise.all([
             queryOne('SELECT id, balance FROM wallets WHERE user_id = $1 LIMIT 1', [userId]),
             queryOne(
-                `SELECT COUNT(*) as deliveries, COALESCE(SUM(delivery_fee), 0) as earnings
+                `SELECT COUNT(*) as deliveries, COALESCE(SUM(COALESCE(NULLIF(rider_payout, 0), delivery_fee)), 0) as earnings
                    FROM orders
                   WHERE assigned_agent_id = $1 AND LOWER(order_status) = 'delivered'`,
                 [userId]
             ),
             queryOne(
-                `SELECT COUNT(*) as deliveries, COALESCE(SUM(delivery_fee), 0) as earnings
+                `SELECT COUNT(*) as deliveries, COALESCE(SUM(COALESCE(NULLIF(rider_payout, 0), delivery_fee)), 0) as earnings
                    FROM orders
                   WHERE assigned_agent_id = $1 AND LOWER(order_status) = 'delivered'
                     AND delivered_at >= $2`,
                 [userId, since]
             ),
             query(
-                `SELECT wt.id, wt.amount, wt.transaction_type, wt.purpose, wt.created_at
+                `SELECT wt.id, wt.amount, wt.type AS transaction_type, wt.purpose, wt.created_at
                    FROM wallet_transactions wt
                    JOIN wallets w ON w.id = wt.wallet_id
                   WHERE w.user_id = $1
@@ -506,7 +592,7 @@ const getAnalytics = async (req, res, next) => {
 };
 
 module.exports = {
-  calculateDeliveryFee,
+  quoteDelivery,
   requestDelivery,
   getJobs,
   acceptJob,

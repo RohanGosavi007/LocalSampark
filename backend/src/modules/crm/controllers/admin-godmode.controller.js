@@ -3,44 +3,44 @@ const { cacheDel } = require('../../../config/redis');
 
 // ─── USER MANAGEMENT ────────────────────────────────────────
 
+// Paged user directory. The console reads `users` and `total`; this answered only with `data`
+// and `pagination`, so the Users tab and the dashboard's user table were always empty. Search
+// covers name, phone and email (the tab filtered on phone_number/email, which were not selected),
+// treats % and _ literally, and the page size is capped.
 exports.getUsers = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || '';
-
-    let whereClause = '';
+    const { pageParams, likePattern } = require('../../../utils/paging');
+    const { page, limit, offset } = pageParams(req.query);
     const params = [];
-
-    if (search) {
-      whereClause = 'WHERE phone_number LIKE $1 OR full_name LIKE $2';
-      params.push(`%${search}%`, `%${search}%`);
+    let whereClause = '';
+    if (req.query.search) {
+      params.push(likePattern(req.query.search));
+      whereClause = `WHERE LOWER(COALESCE(phone_number, '')) LIKE LOWER($1) ESCAPE '\\'
+                      OR LOWER(COALESCE(full_name, '')) LIKE LOWER($1) ESCAPE '\\'
+                      OR LOWER(COALESCE(email, '')) LIKE LOWER($1) ESCAPE '\\'`;
     }
 
     const countRes = await query(`SELECT COUNT(*) as count FROM users ${whereClause}`, params);
-    const total = parseInt(countRes.rows ? countRes.rows[0].count : countRes[0].count);
+    const total = parseInt(countRes.rows ? countRes.rows[0].count : countRes[0].count, 10);
 
-    const queryStr = `
-      SELECT id, phone_number AS phone, full_name, is_verified, created_at, role, is_active
+    params.push(limit, offset);
+    const users = await query(`
+      SELECT id, phone_number, phone_number AS phone, full_name, email, is_verified, is_banned, created_at, role, is_active
       FROM users
       ${whereClause}
       ORDER BY created_at DESC
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `;
-    params.push(limit, offset);
-
-    const users = await query(queryStr, params);
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
+    const rows = users.rows || users;
 
     res.json({
       success: true,
-      data: users.rows || users,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
+      users: rows,
+      data: rows,
+      total,
+      page,
+      limit,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
     next(error);
@@ -74,12 +74,38 @@ exports.updateUserStatus = async (req, res, next) => {
   }
 };
 
+// The roles users.role may hold. STAFF_ROLES are the ones that open the admin
+// console; only a super administrator hands those out.
+const STAFF_ROLES = ['admin', 'super_admin', 'territory_admin', 'area_agent', 'moderator', 'support_admin', 'marketing_admin', 'district_manager'];
+const ASSIGNABLE_ROLES = ['user', 'shop_owner', 'delivery_agent', 'service_provider', 'field_agent', 'franchise_owner', 'society_admin', 'society_guard', ...STAFF_ROLES];
+
 exports.updateUserRole = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { role } = req.body;
-    
+        const { id } = req.params;
+    const role = String((req.body || {}).role || '').trim().toLowerCase();
+
+    // This wrote any string into users.role for any admin-tier caller. A
+    // territory administrator or a moderator could make themselves — or
+    // anyone — a super administrator, and a typo became a role nobody holds.
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      return res.status(400).json({ success: false, error: `role must be one of: ${ASSIGNABLE_ROLES.join(', ')}` });
+    }
+    if (String(id) === String(req.user.id)) {
+      return res.status(400).json({ success: false, error: 'You cannot change your own role.' });
+    }
+    const target = await queryOne('SELECT id, role FROM users WHERE id = $1', [id]);
+    if (!target) return res.status(404).json({ success: false, error: 'User not found' });
+
+    // Granting an administrative role, or changing someone who holds one, is
+    // for a super administrator.
+    const actorIsSuper = String(req.adminRole?.role || req.user.role || '').toLowerCase() === 'super_admin';
+    const touchesStaff = STAFF_ROLES.includes(role) || STAFF_ROLES.includes(String(target.role || '').toLowerCase());
+    if (touchesStaff && !actorIsSuper) {
+      return res.status(403).json({ success: false, error: 'Only a super administrator can grant or change an administrative role.' });
+    }
+
     await query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
+
     
     try {
       await query(`INSERT INTO admin_audit_log (admin_id, admin_name, action, target_type, target_id, details)

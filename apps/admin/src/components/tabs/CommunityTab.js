@@ -32,7 +32,7 @@ export default function CommunityTab({ API_BASE, authHeaders }) {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this community post?')) return;
     try {
-      await fetch(`${API_BASE}/admin/community/posts/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await fetchJson(`${API_BASE}/admin/community/posts/${id}`, { method: 'DELETE', headers: authHeaders() });
       fetchPosts();
     } catch (e) {
       console.error(e);

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,8 @@ const CATEGORIES = [
   { id: 'mobile', label: 'Postpaid', icon: Phone, color: 'text-purple-500' },
 ];
 
+import { API_URL } from '@/lib/api';
+
 export default function BillsPage() {
   const [category, setCategory] = useState('electricity');
   const [provider, setProvider] = useState('');
@@ -21,20 +23,30 @@ export default function BillsPage() {
   const [step, setStep] = useState(1); // 1: fetch, 2: pay, 3: success
   const [loading, setLoading] = useState(false);
   const [billDetails, setBillDetails] = useState(null);
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState('');
+  // null while checking; false when the server has bill payments switched off.
+  const [available, setAvailable] = useState(null);
 
-  const handleFetchBill = (e) => {
+  useEffect(() => {
+    let alive = true;
+    fetch(`${API_URL}/api/v1/bills/status`)
+      .then((r) => r.json())
+      .then((d) => { if (alive) setAvailable(Boolean(d.available)); })
+      .catch(() => { if (alive) setAvailable(false); });
+    return () => { alive = false; };
+  }, []);
+
+  // There is no biller lookup behind this page, so there is no bill to fetch:
+  // it used to invent a customer name, a random amount and a due date. The
+  // person pays the amount they enter, to the biller they chose.
+  const handleReview = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setBillDetails({
-        name: 'Ramesh Sharma',
-        amount: Math.floor(Math.random() * 2000) + 500,
-        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        billMonth: 'August 2026'
-      });
-      setStep(2);
-      setLoading(false);
-    }, 1500);
+    setError('');
+    const value = Math.round(Number(amount) * 100) / 100;
+    if (!Number.isFinite(value) || value < 1) { setError('Enter the amount you want to pay.'); return; }
+    setBillDetails({ amount: value, biller: provider, consumerNumber });
+    setStep(2);
   };
 
   const handlePayBill = async () => {
@@ -49,18 +61,19 @@ export default function BillsPage() {
         },
         body: JSON.stringify({
           provider: provider,
-          amount: billDetails.amount
+          amount: billDetails.amount,
         })
       });
-      const data = await res.json();
-      if (data.success || res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setStep(3);
       } else {
-        alert('Payment failed: ' + (data.error || 'Unknown error'));
+        setError(data.error || 'Payment failed. Nothing was charged.');
       }
     } catch (e) {
-      console.error('Bill payment API failed, using fallback:', e);
-      setStep(3);
+      // Used to show "Payment Successful" here, on a network error, having
+      // charged and recorded nothing.
+      setError('Could not reach the server. Nothing was charged.');
     }
     setLoading(false);
   };
@@ -98,7 +111,12 @@ export default function BillsPage() {
                     ))}
                   </div>
 
-                  <form onSubmit={handleFetchBill} className="space-y-4">
+                  {available === false && (
+                    <div role="status" className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-text">
+                      Bill payments are not open yet. Nothing on this page will charge you.
+                    </div>
+                  )}
+                  <form onSubmit={handleReview} className="space-y-4">
                     <div>
                       <label className="text-text-muted text-sm block mb-1">State / Provider</label>
                       <select required value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-background-alt text-text rounded-xl p-3.5 border border-border focus:border-emerald-500 outline-none">
@@ -112,8 +130,13 @@ export default function BillsPage() {
                       <label className="text-text-muted text-sm block mb-1">Consumer Number</label>
                       <input required type="text" value={consumerNumber} onChange={(e) => setConsumerNumber(e.target.value)} placeholder="e.g. 17001928374" className="w-full bg-background-alt text-text rounded-xl p-3.5 border border-border focus:border-emerald-500 outline-none" />
                     </div>
-                    <button type="submit" disabled={loading} className="w-full py-4 mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                      {loading ? 'Fetching Bill...' : <><Zap className="w-5 h-5" /> Fetch Bill</>}
+                    <div>
+                      <label className="text-text-muted text-sm block mb-1">Amount (₹)</label>
+                      <input required type="number" min="1" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 1250" className="w-full bg-background-alt text-text rounded-xl p-3.5 border border-border focus:border-emerald-500 outline-none" />
+                    </div>
+                    {error && step === 1 && <p role="alert" className="text-red-400 text-sm">{error}</p>}
+                    <button type="submit" disabled={loading || available === false} className="w-full py-4 mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                      <><Zap className="w-5 h-5" /> Review payment</>
                     </button>
                   </form>
                 </motion.div>
@@ -124,24 +147,21 @@ export default function BillsPage() {
                   <h2 className="text-2xl font-bold text-text mb-6">Bill Details</h2>
                   <div className="bg-background-alt border border-border rounded-2xl p-6 mb-8">
                     <div className="flex justify-between items-center border-b border-border pb-4 mb-4">
-                      <span className="text-text-muted">Customer Name</span>
-                      <span className="text-text font-bold">{billDetails.name}</span>
+                      <span className="text-text-muted">Biller</span>
+                      <span className="text-text font-bold">{billDetails.biller}</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-border pb-4 mb-4">
-                      <span className="text-text-muted">Bill Month</span>
-                      <span className="text-text font-bold">{billDetails.billMonth}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-border pb-4 mb-4">
-                      <span className="text-text-muted">Due Date</span>
-                      <span className="text-red-400 font-bold">{billDetails.dueDate}</span>
+                      <span className="text-text-muted">Consumer Number</span>
+                      <span className="text-text font-bold">{billDetails.consumerNumber}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2">
-                      <span className="text-text-muted text-lg">Total Amount</span>
+                      <span className="text-text-muted text-lg">Amount (from your wallet)</span>
                       <span className="text-4xl font-black text-text">₹{billDetails.amount}</span>
                     </div>
                   </div>
+                  {error && <p role="alert" className="text-red-400 text-sm mb-4">{error}</p>}
                   <div className="flex gap-4">
-                    <button onClick={() => setStep(1)} className="px-6 py-4 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">Cancel</button>
+                    <button onClick={() => { setError(''); setStep(1); }} className="px-6 py-4 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">Cancel</button>
                     <button onClick={handlePayBill} disabled={loading} className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center">
                       {loading ? 'Processing...' : `Pay ₹${billDetails.amount}`}
                     </button>
@@ -152,9 +172,9 @@ export default function BillsPage() {
               {step === 3 && (
                 <motion.div key="step3" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10">
                   <CheckCircle2 className="w-24 h-24 text-emerald-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-bold text-text mb-2">Payment Successful!</h2>
-                  <p className="text-text-muted mb-8">Your {category} bill of ₹{billDetails?.amount} has been paid.</p>
-                  <button onClick={() => { setStep(1); setConsumerNumber(''); setProvider(''); }} className="px-8 py-3 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">
+                  <h2 className="text-3xl font-bold text-text mb-2">Payment received</h2>
+                  <p className="text-text-muted mb-8">₹{billDetails?.amount} has been taken from your wallet. Your {category} bill is being processed.</p>
+                  <button onClick={() => { setStep(1); setConsumerNumber(''); setProvider(''); setAmount(''); setError(''); }} className="px-8 py-3 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">
                     Pay Another Bill
                   </button>
                 </motion.div>

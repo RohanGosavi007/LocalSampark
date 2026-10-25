@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import Constants from 'expo-constants';
+import { API_URL } from '../lib/api';
 
 const WalletContext = createContext();
 
@@ -11,10 +11,8 @@ export function WalletProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const isDev = process.env.NODE_ENV === 'development';
-  const API_URL = process.env.EXPO_PUBLIC_API_URL || 
-                  (isDev ? Constants.expoConfig?.extra?.API_URL_DEV : Constants.expoConfig?.extra?.API_URL_PROD) || 
-                  'https://localsampark-api.onrender.com/api/v1';
+  // API_URL comes from src/lib/api like every other request; re-deriving it here keyed on
+  // NODE_ENV instead of __DEV__ and could point wallet calls at a different host.
 
   const fetchWallet = async () => {
     if (!authToken || !user) return;

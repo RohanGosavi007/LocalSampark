@@ -4,12 +4,23 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } fr
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import Constants from 'expo-constants';
+import { API_URL } from '../lib/api';
 
-export default function ImageUploader({ onUploadSuccess, label = "Upload Image" }) {
+/**
+ * Picks a photo and uploads it with POST /api/v1/upload.
+ *
+ * It never worked: it read the session from `authState`, which the auth
+ * context does not provide (so it threw before sending anything), posted to a
+ * development-only address, and read `fileUrl` from a response that did not
+ * have one. KYC photos for rider onboarding were never uploaded.
+ *
+ * `purpose` decides how the server stores the file: 'document' (KYC) and
+ * 'prescription' are private; images such as 'profile_photo' are public.
+ */
+export default function ImageUploader({ onUploadSuccess, label = "Upload Image", purpose = 'general', module = null }) {
   const [imageUri, setImageUri] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { authState } = useAuth();
+  const { authToken } = useAuth();
   
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -39,28 +50,27 @@ export default function ImageUploader({ onUploadSuccess, label = "Upload Image" 
     const match = /\.(\w+)$/.exec(filename);
     const type = match ? `image/${match[1]}` : `image`;
     
-    formData.append('file', { uri, name: filename, type });
+        // Fields before the file, so the server has them when the file arrives.
+    formData.append('purpose', purpose);
+    if (module) formData.append('module', module);
+    formData.append('file', { uri, name: filename, type: type === 'image/jpg' ? 'image/jpeg' : type });
 
     try {
-      const baseUrl = Constants.expoConfig?.extra?.API_URL_DEV || 'http://10.0.2.2:5000';
-      const url = `${baseUrl}/api/v1/upload`; 
-      
-      const response = await fetch(url, {
+      if (!authToken) throw new Error('Please sign in again to upload.');
+      const response = await fetch(`${API_URL}/api/v1/upload`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${authState.token}`
-        },
+        // No Content-Type: fetch sets multipart/form-data with its boundary.
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        Alert.alert('Success', 'Image uploaded successfully!');
-        if (onUploadSuccess) onUploadSuccess(data.fileUrl);
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.url) {
+        Alert.alert('Uploaded', 'Your photo has been uploaded.');
+        if (onUploadSuccess) onUploadSuccess(data.url, data.files && data.files[0]);
       } else {
-        throw new Error(data.message || 'Failed to upload image');
+        throw new Error(data.error || data.message || 'Failed to upload image');
       }
     } catch (error) {
       console.error("Upload error:", error);

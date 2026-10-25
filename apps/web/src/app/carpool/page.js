@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Car, MapPin, Calendar, Clock, Users, ArrowRight, ShieldCheck, CheckCircle2, Navigation, Star, Bike, Shield, AlertTriangle, Plus, Minus, MessageCircle, Phone, X, Heart, ChevronDown, Send, Fuel, Repeat, Filter, SlidersHorizontal } from 'lucide-react';
 import { API_URL } from '@/lib/api';
+import { useSocketEvent } from '@/context/SocketContext';
 
 const RIDE_TYPES = [
   { value: '', label: 'All', icon: '🚘' },
@@ -66,6 +67,11 @@ export default function CarpoolPage() {
   }, [rideType, genderPref, rideDate]);
 
   useEffect(() => { fetchRides(); }, [fetchRides]);
+
+  // Seats change as other commuters book; patch that ride in place.
+  useSocketEvent('carpool:ride_updated', ({ rideId, remaining_seats: left } = {}) => {
+    setRides((prev) => prev.map((r) => (r.id === rideId ? { ...r, remaining_seats: left } : r)));
+  });
 
   useEffect(() => {
     if (activeTab === 'my-rides' && token) {
@@ -171,7 +177,7 @@ export default function CarpoolPage() {
     const from = ride.from_location || ride.origin || 'Start';
     const to = ride.to_location || ride.destination || 'End';
     const driverName = ride.driver?.full_name || 'Verified User';
-    const rating = ride.driver_rating?.avg || '4.5';
+    const rating = ride.driver_rating?.avg || 'New';
     const rideSeats = ride.available_seats || ride.seats_available || 4;
     const remaining = ride.remaining_seats ?? rideSeats;
     const isBike = ride.ride_type === 'bike';

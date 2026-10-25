@@ -1,4 +1,5 @@
 const { query, queryMany, queryOne } = require('../../../config/database');
+const { membershipOf, membershipIsActive } = require('../middleware/society-capability');
 const { v4: uuidv4 } = require('uuid');
 
 const sendMessage = async (req, res, next) => {
@@ -6,14 +7,25 @@ const sendMessage = async (req, res, next) => {
         const senderId = req.user.id;
         const { receiverId, messageText, societyId } = req.body;
         
-        if (!receiverId || !messageText) {
+                if (!receiverId || !messageText) {
             return res.status(400).json({ error: 'Receiver ID and message text are required' });
         }
+        if (String(messageText).length > 4000) {
+            return res.status(400).json({ error: 'Message is too long' });
+        }
+
+        // The route has checked the sender is in this society; the recipient
+        // has to be as well, or this is a way to message any user at all.
+        const recipient = await membershipOf(receiverId, societyId);
+        if (!membershipIsActive(recipient)) {
+            return res.status(404).json({ error: 'That person is not a member of this society.' });
+        }
+
 
         const id = uuidv4();
         await query(`INSERT INTO society_messages 
-            (id, society_id, sender_id, receiver_id, message, is_read, created_at) 
-            VALUES ($1, $2, $3, $4, $5, 0, CURRENT_TIMESTAMP)`,
+            (id, society_id, sender_id, receiver_id, content, message, is_read, created_at)
+            VALUES ($1, $2, $3, $4, $5, $5, 0, CURRENT_TIMESTAMP)`,
             [id, societyId, senderId, receiverId, messageText]
         );
 
@@ -32,7 +44,7 @@ const sendMessage = async (req, res, next) => {
 const getConversations = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { societyId } = req.query;
+        const { societyId } = { ...req.query, societyId: req.societyId || req.query.societyId };
 
         // Group by user we are chatting with
         const conversations = await queryMany(`
@@ -53,7 +65,7 @@ const getConversations = async (req, res, next) => {
 const getMessages = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { societyId, otherUserId } = req.query;
+        const { societyId, otherUserId } = { ...req.query, societyId: req.societyId || req.query.societyId };
 
         const messages = await queryMany(`
             SELECT * FROM society_messages 

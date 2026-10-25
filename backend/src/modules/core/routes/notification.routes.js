@@ -1,8 +1,9 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../middleware/auth.middleware');
-const { query, queryOne } = require('../../../config/database');
-const { sendPushNotification, sendTopicPush } = require('../../../config/firebase');
+const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
+const { query } = require('../../../config/database');
+const { sendTopicPush } = require('../../../config/firebase');
+const push = require('../../../services/push.service');
 const { v4: uuidv4 } = require('uuid');
 
 /**
@@ -69,79 +70,78 @@ router.put('/read-all', authenticate, async (req, res, next) => {
   }
 });
 
-// Register FCM token for push notifications
+/**
+ * POST /notifications/register-token { token, platform } — this device can
+ * receive pushes for the signed-in user. Takes an Expo push token
+ * (ExponentPushToken[…], what the app registers) or a native FCM token.
+ * `fcmToken` is still read, for the old field name.
+ *
+ * The table is declared by migration 082 on both engines; if it is missing,
+ * that is a migration problem and surfaces as one.
+ */
 router.post('/register-token', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.userId || req.user.id;
-    const { fcmToken, platform } = req.body;
-    
-    if (!fcmToken) {
-      return res.status(400).json({ error: 'FCM token is required' });
+    const body = req.body || {};
+    const token = body.token ?? body.fcmToken;
+    const platform = ['ios', 'android', 'web'].includes(body.platform) ? body.platform : 'android';
+
+    if (!push.validToken(token)) {
+      return res.status(400).json({ error: 'A valid push token is required' });
     }
 
-    // Store/update FCM token
-    try {
-      await query(`INSERT INTO user_fcm_tokens (id, user_id, fcm_token, platform, updated_at) 
-         VALUES ($1, $2, $3, $4, datetime('now'))
-         ON CONFLICT(user_id, fcm_token) DO UPDATE SET updated_at = datetime('now')`,
-        [uuidv4(), userId, fcmToken, platform || 'android']
-      );
-    } catch (e) {
-      // Table might not exist yet â€” create it
-      await query(`
-        CREATE TABLE IF NOT EXISTS user_fcm_tokens (
-          id TEXT PRIMARY KEY,
-          user_id TEXT NOT NULL,
-          fcm_token TEXT NOT NULL,
-          platform TEXT DEFAULT 'android',
-          created_at DATETIME DEFAULT (datetime('now')),
-          updated_at DATETIME DEFAULT (datetime('now')),
-          UNIQUE(user_id, fcm_token)
-        )
-      `);
-      await query(`INSERT OR REPLACE INTO user_fcm_tokens (id, user_id, fcm_token, platform, updated_at) 
-         VALUES ($1, $2, $3, $4, datetime('now'))`,
-        [uuidv4(), userId, fcmToken, platform || 'android']
-      );
-    }
+    // A token belongs to one device, and a device to whoever is signed in on
+    // it now: the same phone signed in as someone else must stop receiving the
+    // previous user's notifications.
+    await query('DELETE FROM user_fcm_tokens WHERE fcm_token = $1 AND user_id <> $2', [token, userId]);
+    await query(
+      `INSERT INTO user_fcm_tokens (id, user_id, fcm_token, platform, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+       ON CONFLICT(user_id, fcm_token) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
+      [uuidv4(), userId, token, platform]
+    );
 
-    res.json({ success: true, message: 'FCM token registered' });
+    res.json({ success: true, message: 'Push token registered' });
   } catch (error) {
     next(error);
   }
 });
 
-// Send push notification (admin only)
-router.post('/send', authenticate, async (req, res, next) => {
+/** DELETE /notifications/register-token { token } — on sign-out, stop pushing to this device. */
+router.delete('/register-token', authenticate, async (req, res, next) => {
   try {
-    const { targetUserId, topic, title, body, data } = req.body;
+    const body = req.body || {};
+    const token = body.token ?? body.fcmToken;
+    if (!token) return res.status(400).json({ error: 'token is required' });
+    await query('DELETE FROM user_fcm_tokens WHERE fcm_token = $1 AND user_id = $2', [token, req.user.userId || req.user.id]);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /notifications/send — an administrator pushes a message to one user or
+ * a Firebase topic.
+ *
+ * It was commented "admin only" and guarded by nothing but sign-in, so any
+ * account could push any text to any user: a ready-made phishing channel.
+ */
+router.post('/send', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { targetUserId, topic, title, body, data } = req.body || {};
 
     if (!title || !body) {
       return res.status(400).json({ error: 'Title and body are required' });
     }
+    const message = { title: String(title).slice(0, 120), body: String(body).slice(0, 500), data: data || {} };
 
     if (topic) {
-      // Send to topic (e.g., all users in a region)
-      const result = await sendTopicPush(topic, title, body, data || {});
-      return res.json(result);
+      return res.json(await sendTopicPush(String(topic), message.title, message.body, message.data));
     }
-
     if (targetUserId) {
-      // Send to specific user
-      const tokens = await query('SELECT fcm_token FROM user_fcm_tokens WHERE user_id = $1',
-        [targetUserId]
-      ).catch(() => []);
-
-      if (!tokens || tokens.length === 0) {
-        return res.json({ success: false, message: 'No FCM tokens found for user' });
-      }
-
-      const results = [];
-      for (const t of tokens) {
-        const result = await sendPushNotification(t.fcm_token, title, body, data || {});
-        results.push(result);
-      }
-      return res.json({ success: true, results });
+      const result = await push.sendToUser(targetUserId, message);
+      return res.json({ success: result.sent > 0, ...result });
     }
 
     res.status(400).json({ error: 'Provide targetUserId or topic' });
@@ -150,33 +150,27 @@ router.post('/send', authenticate, async (req, res, next) => {
   }
 });
 
-// Trigger push notification for token queue update
-router.post('/trigger-token-queue-update', authenticate, async (req, res, next) => {
+/**
+ * POST /notifications/trigger-token-queue-update — for administrators.
+ *
+ * It let any signed-in account push "queue update" text of its own choosing to
+ * any user. No app calls it; queue notifications belong to the token-queue
+ * routes, which know who is actually waiting.
+ */
+router.post('/trigger-token-queue-update', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { targetUserId, shopName, currentToken, estimatedWait } = req.body;
+    const { targetUserId, shopName, currentToken, estimatedWait } = req.body || {};
 
     if (!targetUserId) {
       return res.status(400).json({ error: 'targetUserId is required' });
     }
 
-    const title = `${shopName} Queue Update`;
-    const body = `They are currently serving Token #${currentToken}. Your estimated wait is ${estimatedWait} mins.`;
-
-    const tokens = await query('SELECT fcm_token FROM user_fcm_tokens WHERE user_id = $1',
-      [targetUserId]
-    ).catch(() => []);
-
-    if (!tokens || tokens.length === 0) {
-      return res.json({ success: false, message: 'No FCM tokens found for user' });
-    }
-
-    const results = [];
-    for (const t of tokens) {
-      const result = await sendPushNotification(t.fcm_token, title, body, { type: 'token_queue' });
-      results.push(result);
-    }
-
-    res.json({ success: true, results });
+    const result = await push.sendToUser(targetUserId, {
+      title: `${String(shopName || 'Shop').slice(0, 60)} Queue Update`,
+      body: `They are currently serving Token #${Number(currentToken) || 0}. Your estimated wait is ${Number(estimatedWait) || 0} mins.`,
+      data: { type: 'token_queue' },
+    });
+    res.json({ success: result.sent > 0, ...result });
   } catch (error) {
     next(error);
   }

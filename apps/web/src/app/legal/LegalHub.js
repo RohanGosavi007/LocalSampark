@@ -1,0 +1,127 @@
+'use client';
+import React, { useState } from 'react';
+import Header from '../components/Header';
+import { Shield, FileText, RefreshCcw, HelpCircle } from 'lucide-react';
+
+const PATHS = { terms: '/terms', privacy: '/privacy', refunds: '/refunds' };
+
+/**
+ * The tabbed legal documents. `initialTab` lets /terms, /privacy and /refunds each
+ * open on their own document, so each has a URL that can be given to a payment
+ * gateway or an app store.
+ */
+export default function LegalHub({ initialTab = 'terms' }) {
+  const [activeTab, setActiveTab] = useState(PATHS[initialTab] ? initialTab : 'terms');
+
+  const selectTab = (id) => {
+    setActiveTab(id);
+    // Keep the address bar on the document being read, so it can be copied.
+    if (typeof window !== 'undefined' && window.location.pathname !== PATHS[id]) {
+      window.history.replaceState(null, '', PATHS[id]);
+    }
+  };
+
+  const tabs = [
+    { id: 'terms', icon: FileText, label: 'Terms of Service' },
+    { id: 'privacy', icon: Shield, label: 'Privacy Policy' },
+    { id: 'refunds', icon: RefreshCcw, label: 'Refund Policy' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background font-sans text-text">
+      <Header />
+      
+      <div className="max-w-4xl mx-auto p-6 pt-24">
+        
+        <div className="flex items-center gap-3 mb-8">
+          <Shield className="text-blue-500" size={32} />
+          <div>
+            <h1 className="text-3xl font-black text-text">Legal & Compliance Hub</h1>
+            <p className="text-text-muted mt-1 font-medium">Mandatory policies for DPDP Act and Payment Gateway compliance.</p>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-4">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => selectTab(tab.id)}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+                activeTab === tab.id 
+                  ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' 
+                   : "bg-card-bg border border-border text-text-muted hover:text-text hover:border-border"
+              }`}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="bg-card-bg border border-border rounded-3xl p-8 shadow-xl min-h-[500px]">
+          {activeTab === 'terms' && (
+            <div className="prose prose-invert max-w-none animate-fade-in">
+              <h2 className="text-2xl font-bold mb-4">Terms of Service</h2>
+              <p className="text-text-muted text-sm mb-6">Last updated: August 2026</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">1. Acceptance of Terms</h3>
+              <p className="text-text-muted">By accessing and using LocalSampark, you agree to be bound by these Terms of Service. This agreement constitutes a legally binding contract between you and LocalSampark Technologies.</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">2. E-Commerce & Deliveries</h3>
+              <p className="text-text-muted">LocalSampark acts as a technology platform connecting consumers with local merchants. We are not responsible for the quality, safety, or legality of the items sold by merchants on the platform.</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">3. Society Management & Gatekeeper</h3>
+              <p className="text-text-muted">The Gatekeeper module is provided as an intercom utility. LocalSampark assumes no liability for security breaches within the physical premises of the society.</p>
+            </div>
+          )}
+
+          {activeTab === 'privacy' && (
+            <div className="prose prose-invert max-w-none animate-fade-in">
+              <h2 className="text-2xl font-bold mb-4">Privacy Policy (DPDP Act Compliant)</h2>
+              <p className="text-text-muted text-sm mb-6">Last updated: August 2026</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">1. Data Collection</h3>
+              <p className="text-text-muted">We collect information that you provide directly to us, including Name, Address, Phone Number, and Geolocation (for delivery routing). We operate strictly under the Digital Personal Data Protection Act (DPDPA), India.</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">2. Data Processing & Sharing</h3>
+              <p className="text-text-muted">Your data is shared exclusively with Delivery Riders and Shop Owners to fulfill your active orders. We do not sell your personal data to third-party ad networks.</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">3. Your Rights (Data Export & Deletion)</h3>
+              <p className="text-text-muted">You have the absolute right to request a complete export of your personal data, or permanent deletion of your account from our servers. You can execute these actions via the Security section in your Profile.</p>
+            </div>
+          )}
+
+          {activeTab === 'refunds' && (
+            <div className="prose prose-invert max-w-none animate-fade-in">
+              <h2 className="text-2xl font-bold mb-4">Refund & Cancellation Policy</h2>
+              <p className="text-text-muted text-sm mb-6">Mandatory compliance for Razorpay / Payment Gateways</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">1. Order Cancellations</h3>
+              <p className="text-text-muted">You may cancel your order within 5 minutes of placing it for a 100% refund. Once the shop accepts and prepares the order, cancellation may incur a penalty up to 100% of the order value.</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">2. Missing or Defective Items</h3>
+              <p className="text-text-muted">If items are missing or defective, you must raise a ticket via the Support Helpdesk within 24 hours of delivery. Upon verification with the shop and rider, a partial or full refund will be credited to your original payment method within 5-7 business days.</p>
+              
+              <h3 className="text-lg font-bold text-text mt-6 mb-2">3. SaaS Subscription Refunds</h3>
+              <p className="text-text-muted">Shop Owners subscribing to LocalSampark SaaS plans can cancel anytime. Refunds for partial months are not provided. The subscription will remain active until the end of the billing cycle.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Contact Footer */}
+        <div className="mt-8 bg-blue-900/20 border border-blue-900/50 rounded-2xl p-6 flex items-start gap-4">
+          <HelpCircle className="text-blue-500 shrink-0 mt-1" size={24} />
+          <div>
+            <h3 className="font-bold text-text mb-1">Grievance Officer</h3>
+            <p className="text-text-muted text-sm">Under the IT Act 2000, please direct legal inquiries to: <br/><strong>legal@localsampark.com</strong> | +91-9876543210</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

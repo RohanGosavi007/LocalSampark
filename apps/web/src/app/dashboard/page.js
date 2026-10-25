@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion } from 'framer-motion';
@@ -17,6 +17,7 @@ import {
 import StoriesRow from '../components/StoriesRow';
 import WebRTCIntercom from '../../components/WebRTCIntercom';
 import { useAuth } from '@/context/AuthContext';
+import { apiGet } from '@/lib/api';
 import PlatformMap from '../components/PlatformMap';
 
 // Map service IDs to lucide icons
@@ -62,11 +63,7 @@ const FEED_ICON_MAP = {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('feed');
-  const [selectedService, setSelectedService] = useState(null);
-  const [requestSent, setRequestSent] = useState(false);
 
-  const handleBook = (service) => { setSelectedService(service); setRequestSent(false); };
-  const confirmBooking = (e) => { e.preventDefault(); setRequestSent(true); };
 
   // Was a hardcoded "Abhi!" regardless of who was signed in or what time it
   // was. A dashboard that greets everyone by the same name is worse than no
@@ -79,88 +76,70 @@ export default function DashboardPage() {
   }, []);
   const firstName = (user?.name || '').trim().split(' ')[0];
 
-  const [walletBalance] = useState(1250.50);
-  const [orders] = useState([
-    { id: '#LS-2041', shop: 'Sharma Grocery', items: 'Milk × 2, Bread × 1', amount: '₹88', status: 'Delivered', date: 'Today, 10:30 AM' },
-    { id: '#LS-2039', shop: 'Golden Crumb Bakery', items: 'Chocolate Cake × 1', amount: '₹420', status: 'Out for Delivery', date: 'Today, 9:15 AM' },
-    { id: '#LS-2034', shop: 'Pune Pharmacy', items: 'Crocin × 2, Vitamin C', amount: '₹210', status: 'Delivered', date: 'Yesterday' },
-  ]);
+  // Everything on this page comes from the API. It used to be local placeholder state: a wallet
+  // of ₹1,250.50, three orders from named shops, a salon appointment, three jobs, five feed
+  // items (a lost cat with a phone number), "3 rides nearby" and "12 new gigs".
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [jobsList, setJobsList] = useState([]);
+  const [feedItems, setFeedItems] = useState([]);
+  const [failed, setFailed] = useState({});
 
-  const [appointments] = useState([
-    { id: 'apt1', shop: 'Glow & Glamour Salon', service: 'Premium Haircut', date: 'Today, 11:00 AM', status: 'Confirmed' }
-  ]);
+  useEffect(() => {
+    if (!user) return undefined;
+    let alive = true;
+    const day = (iso) => (iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '');
+    const label = (v) => { const t = String(v || 'pending').replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
+    const list = (r) => (Array.isArray(r) ? r : (r && (r.data || r.rows || r.posts)) || []);
+    const jobs = [
+      ['wallet', apiGet('/wallet/history'), (r) => setWalletBalance(typeof r.balance === 'number' ? r.balance : null)],
+      ['orders', apiGet('/orders/my-orders'), (r) => setOrders(list(r).slice(0, 10).map((o) => ({
+        id: `#${String(o.id).slice(0, 8)}`, shop: o.shop_name, amount: `₹${Number(o.total_amount) || 0}`,
+        items: Number(o.items_count) ? `${o.items_count} item${Number(o.items_count) === 1 ? '' : 's'}` : '',
+        status: label(o.status), date: day(o.created_at),
+      })))],
+      ['appointments', apiGet('/services/my-bookings'), (r) => setAppointments(list(r).slice(0, 10).map((b) => ({
+        id: b.id, shop: b.provider || 'Service provider', service: b.service_name || 'Service', date: day(b.scheduled_time), status: label(b.status),
+      })))],
+      ['jobs', apiGet('/jobs-board'), (r) => setJobsList(list(r).slice(0, 10).map((j) => ({
+        id: j.id, title: j.title, location: j.location, salary: j.salary_range || '', type: label(j.job_type),
+      })))],
+      ['feed', apiGet('/feed/posts?limit=10'), (r) => setFeedItems(list(r).map((p) => ({
+        id: p.id, type: p.post_type === 'alert' ? 'alert' : 'post', title: p.full_name || 'Neighbour',
+        text: p.content || '', time: day(p.created_at), priority: p.post_type === 'alert' ? 'high' : 'low',
+      })))],
+    ];
+    jobs.forEach(([key, request, apply]) => {
+      request.then((r) => { if (alive) apply(r || {}); }).catch(() => { if (alive) setFailed((f) => ({ ...f, [key]: true })); });
+    });
+    return () => { alive = false; };
+  }, [user]);
 
-  const [jobsList] = useState([
-    { id: 'j1', title: 'Need Electrician for AC repair', location: 'Dhanori', salary: '₹500 - ₹800', type: 'One-time' },
-    { id: 'j2', title: 'Part-time Delivery Boy', location: 'Viman Nagar', salary: '₹8,000/mo', type: 'Part-time' },
-    { id: 'j3', title: 'Math Tutor for 10th Std', location: 'Lohegaon', salary: '₹3,000/mo', type: 'Part-time' },
-  ]);
-
-  const feedItems = [
-    { id: 1, type: 'alert', title: 'Society Security Alert', text: 'Unknown vehicle spotted near Gate B. Report to security at ext. 201.', time: '2 min ago', priority: 'high' },
-    { id: 2, type: 'deal', title: 'Sharma Grocery Flash Deal', text: 'Fresh organic Paneer arrived! ₹80 per 200g. Only 20 units left.', time: '15 min ago', priority: 'low' },
-    { id: 3, type: 'event', title: 'Ganesh Festival Community Puja', text: 'Dhanori Residents Welfare Association invites everyone. Saturday, 6 PM at Society Ground.', time: '1 hr ago', priority: 'low' },
-    { id: 4, type: 'carpool', title: 'Carpool to Hinjewadi', text: 'Rohan Patil offering ride to Hinjewadi Phase 1. Departure 8:45 AM. 2 seats left.', time: '2 hrs ago', priority: 'low' },
-    { id: 5, type: 'lost', title: 'Lost Pet: Coco (Tabby Cat)', text: 'Last seen near Goodwill Square. Brown fur, orange collar. Please contact Priya: 98765-43210.', time: '3 hrs ago', priority: 'medium' },
-  ];
+  const money = (n) => (n === null ? '—' : `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
   const quickLinks = [
-    { label: 'My Wallet', href: '/wallet', sub: `₹${walletBalance.toLocaleString()}` },
+    { label: 'My Wallet', href: '/wallet', sub: money(walletBalance) },
     { label: 'Society', href: '/society', sub: 'Gate Pass & Notices' },
-    { label: 'Carpool', href: '/carpool', sub: '3 rides nearby' },
+    { label: 'Carpool', href: '/carpool', sub: 'Find or offer a ride' },
     { label: 'Health SOS', href: '/health', sub: 'Emergency & Hospitals' },
-    { label: 'My Orders', href: '/order-tracking', sub: `${orders.length} recent` },
-    { label: 'Jobs', href: '/jobs', sub: '12 new gigs' },
+    { label: 'My Orders', href: '/order-tracking', sub: orders.length ? `${orders.length} recent` : 'Track an order' },
+    { label: 'Jobs', href: '/jobs', sub: jobsList.length ? `${jobsList.length} open` : 'Browse gigs' },
     { label: 'Earn Now', href: '/earn', sub: 'Gigs & Referrals' },
-    { label: 'Refer & Earn', href: '/referral', sub: '₹50 per neighbor' },
-    { label: 'SamparkPlus', href: '/premium', sub: '₹99/mo benefits' },
-    { label: 'Events', href: '/events', sub: '2 upcoming' },
+    { label: 'Refer & Earn', href: '/referral', sub: 'Invite your neighbours' },
+    { label: 'SamparkPlus', href: '/premium', sub: 'Membership benefits' },
+    { label: 'Events', href: '/events', sub: "What's on nearby" },
   ];
 
-  // Each tile is a number plus the screen that acts on it. Values still come
-  // from the local placeholder state this page has always used; wiring them to
-  // the API is a separate change, and inventing live numbers here would be
-  // worse than showing the same placeholders in a better shape.
   const glanceTiles = [
-    {
-      label: 'Wallet',
-      // toLocaleString drops a trailing zero, so 1250.50 rendered as "1,250.5"
-      // \u2014 a money figure that reads like a rounding bug.
-      value:
-        '\u20B9' +
-        walletBalance.toLocaleString('en-IN', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }),
-      note: 'Tap to top up',
-      href: '/wallet',
-      Icon: Wallet,
-      tone: 'var(--accent-text)',
-    },
+    { label: 'Wallet', value: money(walletBalance), note: 'Tap to top up', href: '/wallet', Icon: Wallet, tone: 'var(--accent-text)' },
     {
       label: 'Active orders',
-      value: orders.filter((o) => o.status !== 'Delivered').length,
-      note: 'Out for delivery',
-      href: '/order-tracking',
-      Icon: Package,
-      tone: 'var(--warning)',
+      value: orders.filter((o) => !['Delivered', 'Cancelled', 'Completed'].includes(o.status)).length,
+      note: 'On their way', href: '/order-tracking', Icon: Package, tone: 'var(--warning)',
     },
-    {
-      label: 'Society',
-      value: feedItems.filter((f) => f.type === 'alert').length,
-      note: 'Alerts at your gate',
-      href: '/society',
-      Icon: Building2,
-      tone: 'var(--danger)',
-    },
-    {
-      label: 'Today',
-      value: appointments.length,
-      note: 'Bookings scheduled',
-      href: '/dashboard',
-      Icon: CalendarDays,
-      tone: 'var(--info)',
-    },
+    { label: 'Community', value: feedItems.length, note: 'Recent neighbourhood posts', href: '/community', Icon: Building2, tone: 'var(--info)' },
+    { label: 'Bookings', value: appointments.length, note: 'Service bookings', href: '/services', Icon: CalendarDays, tone: 'var(--info)' },
   ];
 
   const priorityConfig = {
@@ -290,35 +269,14 @@ export default function DashboardPage() {
             <p className="text-text-muted text-sm max-w-lg mx-auto">Book verified laundry, logistics, maids, or car washers directly in your area.</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-            {SERVICES.slice(0, 3).map((s, i) => {
-              const IconComp = SERVICE_ICON_MAP[s.value] || Sparkles;
-              return (
-                <motion.div key={s.value} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                  className="glass-card rounded-2xl border border-border p-6 flex flex-col justify-between group hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 transition-all duration-300"
-                >
-                  <div>
-                    <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center mb-4 text-primary group-hover:scale-110 transition-transform">
-                      <IconComp className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-heading font-bold text-text mb-1">{s.name}</h3>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-amber-500 text-xs">★★★★★</span>
-                      <span className="text-xs text-text-muted">(4.8 • 120 Reviews)</span>
-                    </div>
-                    <p className="text-sm text-text-muted leading-relaxed mb-2">{s.desc}</p>
-                    <p className="text-xs text-text-muted">Provider: <strong className="text-text">{s.provider}</strong></p>
-                  </div>
-                  <div className="border-t border-border pt-4 mt-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-lg font-heading font-black text-primary">{s.rate}</span>
-                      <span className="text-[10px] text-text-muted">{s.commission}</span>
-                    </div>
-                    <Button onClick={() => handleBook(s)} className="w-full">Book Service</Button>
-                  </div>
-                </motion.div>
-              );
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {SERVICES.filter((c) => c.value).slice(0, 8).map((c) => (
+              <a key={c.value} href={`/services?category=${c.value}`}
+                className="glass-card rounded-2xl border border-border p-5 text-center hover:-translate-y-1 hover:shadow-md transition-all">
+                <div className="text-3xl mb-2">{c.icon}</div>
+                <div className="text-sm font-heading font-bold text-text">{c.label}</div>
+              </a>
+            ))}
           </div>
           <div className="text-center mb-12">
             <Button variant="secondary" asChild><a href="/services">View All Services →</a></Button>
@@ -342,6 +300,7 @@ export default function DashboardPage() {
           {/* ── FEED TAB ───────────────────────────── */}
           {activeTab === 'feed' && (
             <div className="space-y-4 mb-12">
+              {feedItems.length === 0 && <p className="text-sm text-text-muted">{failed.feed ? 'The community feed could not be loaded.' : 'No posts from your neighbourhood yet.'}</p>}
               {feedItems.map((item, i) => {
                 const FeedIcon = FEED_ICON_MAP[item.type] || MessageCircle;
                 const pConfig = priorityConfig[item.priority] || priorityConfig.low;
@@ -372,6 +331,7 @@ export default function DashboardPage() {
           {/* ── JOBS TAB ───────────────────────────── */}
           {activeTab === 'jobs' && (
             <div className="space-y-4 mb-12">
+              {jobsList.length === 0 && <p className="text-sm text-text-muted">{failed.jobs ? 'Jobs could not be loaded.' : 'No open jobs right now.'}</p>}
               {jobsList.map((job, i) => (
                 <motion.div key={job.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
                   className="glass-card rounded-2xl p-5 border border-border hover:shadow-md transition-shadow"
@@ -404,6 +364,7 @@ export default function DashboardPage() {
           {/* ── ORDERS TAB ─────────────────────────── */}
           {activeTab === 'orders' && (
             <div className="space-y-3 mb-12">
+              {orders.length === 0 && <p className="text-sm text-text-muted">{failed.orders ? 'Your orders could not be loaded.' : 'You have not placed an order yet.'}</p>}
               {orders.map((order, i) => (
                 <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
                   className="glass-card rounded-2xl p-5 border border-border hover:shadow-md hover:border-primary/20 transition-all"
@@ -434,6 +395,7 @@ export default function DashboardPage() {
           {/* ── APPOINTMENTS TAB ───────────────────── */}
           {activeTab === 'appointments' && (
             <div className="space-y-3 mb-12">
+              {appointments.length === 0 && <p className="text-sm text-text-muted">{failed.appointments ? 'Your bookings could not be loaded.' : 'You have no service bookings.'}</p>}
               {appointments.map((apt, i) => (
                 <motion.div key={apt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="glass-card rounded-2xl p-5 border border-border"
@@ -460,42 +422,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Booking Modal */}
-      {selectedService && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
-          onClick={() => setSelectedService(null)}
-        >
-          <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }}
-            className="bg-background rounded-3xl shadow-2xl border border-border max-w-md w-full p-6"
-            onClick={e => e.stopPropagation()}
-          >
-            {requestSent ? (
-              <div className="text-center py-4">
-                <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle className="w-7 h-7 text-accent" />
-                </div>
-                <h3 className="text-lg font-heading font-bold text-accent mb-2">Booking Request Sent!</h3>
-                <p className="text-sm text-text-muted mb-4">Our local territory runner is matching you with the provider.</p>
-                <Button onClick={() => setSelectedService(null)} className="w-full">Close</Button>
-              </div>
-            ) : (
-              <form onSubmit={confirmBooking} className="space-y-4">
-                <h3 className="text-lg font-heading font-bold text-text">Confirm Booking</h3>
-                <p className="text-sm text-text-muted">Specify details for <strong className="text-text">{selectedService.name}</strong>.</p>
-                <input type="datetime-local" required className="w-full px-4 py-2.5 rounded-xl border border-border bg-background-alt text-text focus:ring-2 focus:ring-primary/30 outline-none" />
-                <input placeholder="Flat No, Wing, Society Name" required className="w-full px-4 py-2.5 rounded-xl border border-border bg-background-alt text-text placeholder:text-text-muted focus:ring-2 focus:ring-primary/30 outline-none" />
-                <div className="flex gap-3 pt-2">
-                  <Button type="button" variant="secondary" onClick={() => setSelectedService(null)} className="flex-1">Cancel</Button>
-                  <Button type="submit" className="flex-1">Confirm</Button>
-                </div>
-              </form>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-
-      <WebRTCIntercom flatNumber={user?.flatNumber || "A-101"} />
+      <WebRTCIntercom flatNumber={user?.flatNumber || ""} />
       <Footer />
     </div>
   );

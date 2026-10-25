@@ -77,15 +77,6 @@ export default function DownloadPage() {
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                  {[{ v: '12,450+', l: 'Active Users' }, { v: '4.8★', l: 'Avg Rating' }, { v: '25+', l: 'Zones Live' }].map(s => (
-                    <div key={s.l} style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>{s.v}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               {/* App Preview Panel */}

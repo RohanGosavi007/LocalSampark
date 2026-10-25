@@ -177,7 +177,7 @@ router.post('/society/register', authenticate, async (req, res, next) => {
         const societyId = crypto.randomUUID();
         await query(
             `INSERT INTO societies (id, region_id, name, address, is_active)
-             VALUES ($1, $2, $3, $4, 1)`,
+             VALUES ($1, $2, $3, $4, '1')`,
             [societyId, regionId || req.user.region_id || null, name, address || '']
         );
 

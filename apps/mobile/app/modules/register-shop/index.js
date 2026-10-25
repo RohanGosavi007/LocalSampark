@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { postWithFallback } from '../../../src/utils/mockDataHelper';
-import DemoBadge from '../../../src/components/DemoBadge';
+import * as Location from 'expo-location';
+import { apiPost } from '../../../src/lib/api';
 
 export default function RegisterShopScreen() {
   const [form, setForm] = useState({ 
@@ -10,22 +10,42 @@ export default function RegisterShopScreen() {
     phone: '', address: '', initialItemName: '', initialItemPriceOrRole: '' 
   });
   const [submitting, setSubmitting] = useState(false);
-  const [isDemo, setIsDemo] = useState(false);
 
   const up = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
+  // Sends the registration to POST /shops and reports what the server said. It used to send
+  // fields the API does not read (`phone`, no coordinates, so every request was refused) and
+  // then show "submitted for verification" whatever came back.
   const handleSubmit = async () => {
-    if (!form.name || !form.phone || !form.address) {
-      Alert.alert('Error', 'Please fill all required fields.');
+    if (!form.name.trim() || !form.category.trim() || !form.phone.trim() || !form.address.trim()) {
+      Alert.alert('Missing details', 'Shop name, category, phone and address are required.');
       return;
     }
     setSubmitting(true);
-    const mockRes = { success: true, message: 'Shop registered successfully', shop_id: `SHOP-${Date.now()}` };
-    const { data, isDemo: demo } = await postWithFallback('/shops', form, mockRes);
-    setSubmitting(false);
-    setIsDemo(demo);
-    Alert.alert('Success', `Your shop registration request has been submitted for verification.${demo ? '\n\n🔧 (Demo Mode)' : ''} Our team will contact you shortly.`);
-    setTimeout(() => router.back(), 1500);
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Alert.alert('Location needed', 'Allow location access while you stand at your shop so customers can find it on the map.');
+        return;
+      }
+      const here = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy?.Balanced });
+      await apiPost('/shops', {
+        name: form.name.trim(),
+        category: form.category.trim(),
+        address: form.address.trim(),
+        phone_number: form.phone.trim(),
+        description: form.initialItemName ? `${form.initialItemName}` : undefined,
+        latitude: here.coords.latitude,
+        longitude: here.coords.longitude,
+      });
+      Alert.alert('Submitted', 'Your shop registration was received. It goes live after verification.');
+      setTimeout(() => router.back(), 1200);
+    } catch (e) {
+      const problems = e && e.data && Array.isArray(e.data.problems) ? e.data.problems.map((p) => p.message).join('\n') : '';
+      Alert.alert('Not registered', problems || (e && e.message) || 'Your shop could not be registered. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

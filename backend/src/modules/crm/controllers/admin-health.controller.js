@@ -1,8 +1,49 @@
 const os = require('os');
 const crypto = require('crypto');
 const { query } = require('../../../config/database');
+const requestMetrics = require('../../../utils/requestMetrics');
+const CacheService = require('../../../services/cache.service');
 // NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+
+/**
+ * Size, connection count and round-trip time of the database, measured.
+ *
+ * The two engines have nothing in common here — a catalog function on one, a
+ * pragma on the other — so this is one of the few places that branches on the
+ * engine. A figure that cannot be read is reported as null. It used to be
+ * reported as '24.5' MB and 12 connections, constants that appeared on the
+ * dashboard as though they had been measured.
+ */
+async function databaseStats() {
+  const stats = { engine: process.env.USE_SQLITE === 'true' ? 'sqlite' : 'postgresql', sizeMB: null, activeConnections: null, pingMs: null };
+
+  try {
+    const started = Date.now();
+    await query('SELECT 1');
+    stats.pingMs = Date.now() - started;
+  } catch { /* left null */ }
+
+  try {
+    if (stats.engine === 'sqlite') {
+      const pages = await query('PRAGMA page_count');
+      const pageSize = await query('PRAGMA page_size');
+      const bytes = Number(pages.rows[0].page_count) * Number(pageSize.rows[0].page_size);
+      stats.sizeMB = Math.round((bytes / (1024 * 1024)) * 10) / 10;
+      // One file, one connection: this process.
+      stats.activeConnections = 1;
+    } else {
+      const size = await query('SELECT pg_database_size(current_database()) AS bytes');
+      stats.sizeMB = Math.round((Number(size.rows[0].bytes) / (1024 * 1024)) * 10) / 10;
+      const connections = await query(
+        'SELECT count(*) AS count FROM pg_stat_activity WHERE datname = current_database()'
+      );
+      stats.activeConnections = Number(connections.rows[0].count);
+    }
+  } catch { /* left null */ }
+
+  return stats;
+}
 
 exports.getHealthMetrics = async (req, res, next) => {
   try {
@@ -12,20 +53,7 @@ exports.getHealthMetrics = async (req, res, next) => {
     const usagePercent = ((usedMem / totalMem) * 100).toFixed(1);
 
     const cpus = os.cpus();
-    const uptime = os.uptime();
-
-    // Try to get a rough database size
-    let dbSizeMB = '24.5';
-    let activeConnections = 12;
-    try {
-      // Very basic Postgres stat (fallback to mock)
-      const stat = await query('SELECT count(*) as count FROM pg_stat_activity');
-      if (stat && stat.rows && stat.rows[0]) {
-        activeConnections = stat.rows[0].count;
-      }
-    } catch (e) {
-      // ignore
-    }
+    const latency = requestMetrics.summary();
 
     const system = {
       memory: {
@@ -35,25 +63,27 @@ exports.getHealthMetrics = async (req, res, next) => {
       },
       cpu: {
         cores: cpus.length,
-        model: cpus[0].model
+        model: cpus[0] ? cpus[0].model : 'unknown'
       },
-      database: {
-        sizeMB: dbSizeMB,
-        activeConnections
-      },
-      uptime: uptime,
+      database: await databaseStats(),
+      uptime: os.uptime(),
+      processUptime: Math.round(process.uptime()),
+      // Measured over the last few hundred requests this process served. Null
+      // until there have been some; it was Math.random() before.
       api: {
-        avgLatencyMs: Math.floor(Math.random() * 40) + 10 // Mock 10-50ms latency
-      }
+        avgLatencyMs: latency.avgLatencyMs,
+        p95LatencyMs: latency.p95LatencyMs,
+        errorRatePercent: latency.errorRatePercent,
+        sampleSize: latency.samples,
+        scope: 'this server process',
+      },
+      cache: CacheService.getStats(),
     };
 
-    const logs = [
-      { timestamp: new Date(Date.now() - 50000).toISOString(), level: 'INFO', route: 'GET /api/v1/auth/verify', message: 'Token verified successfully for user 9123' },
-      { timestamp: new Date(Date.now() - 40000).toISOString(), level: 'WARN', route: 'POST /api/v1/payments/webhook', message: 'Stripe signature mismatch detected' },
-      { timestamp: new Date(Date.now() - 30000).toISOString(), level: 'INFO', route: 'GET /api/v1/shops/nearby', message: 'Cache hit for pincode 400053' },
-      { timestamp: new Date(Date.now() - 20000).toISOString(), level: 'ERROR', route: 'PUT /api/v1/delivery/agents/status', message: 'Connection to Redis logistics cache refused' },
-      { timestamp: new Date().toISOString(), level: 'INFO', route: 'GET /api/v1/admin/health', message: 'System health metrics retrieved by SuperAdmin' },
-    ];
+    // Requests that failed or ran slow, as they happened. This was five
+    // hard-coded lines dated relative to "now", including a payment webhook
+    // signature mismatch and a refused Redis connection that never occurred.
+    const logs = requestMetrics.recentNotable(20);
 
     res.json({ success: true, system, logs });
   } catch (error) {
@@ -63,8 +93,11 @@ exports.getHealthMetrics = async (req, res, next) => {
 
 exports.clearGlobalCache = async (req, res, next) => {
   try {
-    // In a real system, you would call redisClient.flushall() here.
-    // For MVP, we simulate a successful cache purge.
+    // Clears the caches and says what it cleared. It used to clear nothing —
+    // the body of this handler was an audit entry and "Purged Successfully" —
+    // so an admin trying to push out a stale price was told it had worked.
+    const purged = await CacheService.clearAll();
+
     const adminId = req.user.id || req.user.userId;
     try {
       // admin_audit_log.ip_address is NOT NULL, so the caller's address is
@@ -79,15 +112,25 @@ exports.clearGlobalCache = async (req, res, next) => {
           adminId,
           req.ip || req.connection?.remoteAddress || 'unknown',
           (req.get && req.get('user-agent')) || null,
-          'Global cache flushed from Performance Dashboard',
+          JSON.stringify(purged),
         ]
       );
     } catch(e) {
       console.error('Failed to log audit:', e);
     }
-    
-    res.json({ success: true, message: 'Global Cache Purged Successfully' });
+
+    if (purged.failed.length > 0) {
+      return res.status(502).json({
+        success: false,
+        error: `Cache purge incomplete: ${purged.failed.join(', ')} could not be cleared.`,
+        purged,
+      });
+    }
+
+    res.json({ success: true, message: 'Global Cache Purged Successfully', purged });
   } catch (error) {
     next(error);
   }
 };
+
+exports.databaseStats = databaseStats;

@@ -8,6 +8,8 @@
 // 4. Structured JSON output for log aggregation (ELK, CloudWatch, etc.)
 // ═══════════════════════════════════════════════════════════════════════
 
+const requestMetrics = require('../utils/requestMetrics');
+
 const SLOW_THRESHOLD_MS = 500;
 
 /**
@@ -39,6 +41,15 @@ const auditLogger = (req, res, next) => {
       userId,
       ip: req.ip || req.connection?.remoteAddress,
     };
+
+    // Kept for the admin performance screen, which reports these timings.
+    requestMetrics.record({
+      method: req.method,
+      path: logEntry.path,
+      statusCode,
+      responseTimeMs,
+      slowThresholdMs: SLOW_THRESHOLD_MS,
+    });
 
     // Flag slow queries
     if (responseTimeMs > SLOW_THRESHOLD_MS) {

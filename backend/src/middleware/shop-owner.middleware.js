@@ -71,6 +71,48 @@ const requireShopOwner = async (req, res, next) => {
   }
 };
 
+const PLATFORM_ADMIN_ROLES = ['admin', 'super_admin'];
+
+/** Platform staff, in whatever case the role was stored. */
+function isPlatformAdmin(req) {
+  return PLATFORM_ADMIN_ROLES.includes(String(req.user?.role || '').trim().toLowerCase());
+}
+
+/**
+ * Middleware factory: the caller owns the shop named in the URL, or is
+ * platform staff. Sets req.shop.
+ *
+ * requireShopOwner above answers "which shop is yours" for /my-shop/* routes.
+ * This answers the other question — "is THIS shop yours" — for routes shaped
+ * /something/:shopId/…, which is where the id comes from the request and
+ * `authenticate` alone lets any account act on any shop. A shop owner's role
+ * is not enough either: every shop owner has that role, and it says nothing
+ * about which shop.
+ */
+function requireShopParam(param = 'shopId') {
+  return async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      const shopId = req.params[param];
+      if (!shopId) return res.status(400).json({ success: false, error: 'Shop id is required' });
+
+      const shop = await queryOne('SELECT * FROM local_shops WHERE CAST(id AS TEXT) = $1', [String(shopId)]);
+      if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+      if (!isPlatformAdmin(req) && String(shop.owner_id) !== String(req.user.id)) {
+        return res.status(403).json({ success: false, error: 'You do not manage this shop.' });
+      }
+
+      req.shop = shop;
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
+
 /**
  * Middleware: Verify shop owner OR the customer who placed the order.
  * Used on order detail/tracking routes.
@@ -132,4 +174,4 @@ const requireAppointmentAccess = async (req, res, next) => {
   }
 };
 
-module.exports = { requireShopOwner, requireOrderAccess, requireAppointmentAccess };
+module.exports = { requireShopParam, isPlatformAdmin, requireShopOwner, requireOrderAccess, requireAppointmentAccess };

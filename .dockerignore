@@ -1,0 +1,41 @@
+# Build context hygiene. The Dockerfiles use the repository root as their context, so
+# everything here would otherwise be sent to the builder — and, with `COPY . .`, baked into
+# an image layer. Real .env files and local databases must never be in an image.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/*.log
+.git
+.github
+.claude
+
+# secrets and local state
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.production.example
+!**/.env.production.template
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+**/*.sqlite-wal
+**/*.sqlite-shm
+**/private_uploads
+**/google-services.json
+**/keystore.properties
+**/local.properties
+**/*.jks
+**/*.keystore
+
+# not part of the API or web images
+apps/mobile
+apps/admin
+scripts/archive
+playwright-report
+test-results
+build-android
+"Mobile Build Android"
+"Implement Plan"
+docs

@@ -100,9 +100,6 @@ describe('otpStore', () => {
   describe('production safety', () => {
     it('reports itself unavailable in production without Redis', () => {
       process.env.NODE_ENV = 'production';
-      // Behind a load balancer a process-local Map means the verify can land on
-      // a different instance than the send, so login fails for an arbitrary
-      // fraction of users. Callers turn this into a 503.
       expect(otpStore.unavailableReason()).toMatch(/REDIS_URL/);
       expect(otpStore.isAvailable()).toBe(false);
     });

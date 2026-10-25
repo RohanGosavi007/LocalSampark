@@ -11,7 +11,7 @@ router.use(requireFeature('home_services'));
 // GET /categories - Fetch active home service categories
 router.get('/categories', async (req, res, next) => {
   try {
-    const categories = await query('SELECT * FROM home_service_categories WHERE is_active = true ORDER BY name ASC');
+    const categories = await query('SELECT * FROM home_service_categories WHERE is_active = \'1\' ORDER BY name ASC');
     res.json({ success: true, categories: categories.rows || categories });
   } catch (err) {
     next(err);
@@ -22,7 +22,7 @@ router.get('/categories', async (req, res, next) => {
 router.get('/providers', async (req, res, next) => {
   try {
     const { categoryId, lat, lng, radiusKm = 5 } = req.query;
-    let sql = 'SELECT * FROM home_service_providers WHERE is_available = true';
+    let sql = 'SELECT * FROM home_service_providers WHERE is_available = \'1\'';
     const params = [];
 
     if (categoryId) {
@@ -71,8 +71,8 @@ router.post('/bookings', authenticate, async (req, res, next) => {
       // 1. Insert booking
       await txClient.query(`
         INSERT INTO home_service_bookings (
-          id, booking_ref, customer_id, provider_id, category_id, booking_date, time_slot, service_address, pincode, problem_description, inspection_fee, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
+          id, booking_ref, user_id, customer_id, provider_id, category_id, booking_date, time_slot, service_address, pincode, problem_description, inspection_fee, status
+        ) VALUES ($1, $2, $3, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
       `, [bookingId, bookingRef, req.user.id, providerId, categoryId, bookingDate, timeSlot, serviceAddress, pincode || '411015', problemDescription || null, inspectionFee]);
 
       // 2. Ledger balance deduction (if balance exists)

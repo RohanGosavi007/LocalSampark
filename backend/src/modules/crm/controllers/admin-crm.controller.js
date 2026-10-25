@@ -6,8 +6,10 @@ exports.getUsers = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
     
-    // In PostgreSQL, full_name is 'name', phone_number is 'phone' based on Prisma schema.
-    const usersResult = await query(`SELECT id, name AS full_name, phone AS phone_number, role, loyalty_points, created_at 
+    // The columns are full_name and phone_number. This selected `name` and `phone`
+    // "based on the Prisma schema", which is gone, so the admin CRM user list
+    // answered 500 on every call.
+    const usersResult = await query(`SELECT id, full_name, phone_number, role, loyalty_points, created_at 
        FROM users 
        ORDER BY created_at DESC 
        LIMIT $1 OFFSET $2`,

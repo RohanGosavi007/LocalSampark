@@ -20,18 +20,19 @@ router.post('/properties', authenticate, async (req, res, next) => {
 // Landlord dashboard stats
 router.get('/dashboard/:landlordId', authenticate, async (req, res, next) => {
   try {
-    const { landlordId } = req.params;
+        const { landlordId } = req.params;
+    const staff = ['admin', 'super_admin'].includes(String(req.user.role || '').toLowerCase());
+    if (String(landlordId) !== String(req.user.id) && !staff) {
+      return res.status(403).json({ error: 'You can only view your own dashboard.' });
+    }
     const listings = await db.queryMany(`SELECT * FROM property_listings WHERE user_id = $1`,
       [landlordId]
     );
-    
-    // Mock tenant data matching listings
-    const tenants = [
-      { name: 'Karan Malhotra', rentStatus: 'Paid', flat: 'Flat 302, Aashiyana', due: 'July 5' },
-      { name: 'Sunil Gavaskar', rentStatus: 'Overdue', flat: 'Room B, Goodwill PG', due: 'June 25' }
-    ];
 
-    res.json({ listings, tenants });
+    // No tenancy is recorded anywhere in the schema, so there are no tenants
+    // to list. This returned two made-up people — "Karan Malhotra, Paid" and
+    // "Sunil Gavaskar, Overdue" — to every landlord, as their tenants.
+    res.json({ listings, tenants: [] });
   } catch (error) {
     next(error);
   }

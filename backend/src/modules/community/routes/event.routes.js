@@ -147,7 +147,7 @@ router.post('/:id/approve', authenticate, async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Moderator access required' });
     }
     const updated = await query(
-      `UPDATE events SET is_approved = 1, status = 'upcoming' WHERE id = $1`,
+      `UPDATE events SET is_approved = '1', status = 'upcoming' WHERE id = $1`,
       [req.params.id]
     );
     if (!updated.rowCount) {
@@ -165,7 +165,7 @@ router.post('/:id/reject', authenticate, async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Moderator access required' });
     }
     const updated = await query(
-      `UPDATE events SET is_approved = 0, status = 'rejected' WHERE id = $1`,
+      `UPDATE events SET is_approved = '0', status = 'rejected' WHERE id = $1`,
       [req.params.id]
     );
     if (!updated.rowCount) {
@@ -178,16 +178,12 @@ router.post('/:id/reject', authenticate, async (req, res, next) => {
 });
 
 /**
- * POST /:id/book — the booking call the mobile screen actually makes.
- *
- * /:id/tickets already existed with the same capacity logic, but the client
- * posts `numTickets` here and reads back bookingRef / finalPricePaid /
- * coinsDeducted, so it 404'd. This shares the oversell guard and adds the
- * wallet debit and the optional coin discount.
+ * POST /:id/book and POST /:id/rsvp — atomic event ticket purchase & RSVP.
+ * Supports numTickets, ticket_count, or quantity, with wallet deduction and coin discount.
  */
-router.post('/:id/book', authenticate, async (req, res, next) => {
+const handleEventBooking = async (req, res, next) => {
   try {
-    const count = parseInt(req.body.numTickets, 10) || 1;
+    const count = parseInt(req.body.numTickets ?? req.body.ticket_count ?? req.body.quantity, 10) || 1;
     if (count < 1 || count > 20) {
       return res.status(400).json({ success: false, error: 'numTickets must be between 1 and 20' });
     }
@@ -243,7 +239,7 @@ router.post('/:id/book', authenticate, async (req, res, next) => {
         [ticketId, req.params.id, req.user.id, count, finalPrice, crypto.randomUUID(), bookingRef]
       );
 
-      return { ok: true, bookingRef };
+      return { ok: true, bookingRef, ticketId };
     });
 
     if (outcome.soldOut !== undefined) {
@@ -260,15 +256,20 @@ router.post('/:id/book', authenticate, async (req, res, next) => {
       success: true,
       data: {
         bookingRef: outcome.bookingRef,
+        ticketId: outcome.ticketId,
         finalPricePaid: finalPrice,
         coinsDeducted,
       },
-      message: 'Tickets booked',
+      bookingRef: outcome.bookingRef,
+      ticketId: outcome.ticketId,
+      message: 'Tickets booked successfully',
     });
   } catch (error) {
     next(error);
   }
-});
+};
+
+router.post('/:id/book', authenticate, handleEventBooking);
+router.post('/:id/rsvp', authenticate, handleEventBooking);
 
 module.exports = router;
-console.log('--- DEBUG: event.routes.js successfully loaded ---');

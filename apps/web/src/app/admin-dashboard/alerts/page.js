@@ -1,15 +1,17 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { AlertTriangle, Bell, Send, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { API_BASE } from '@/lib/api';
+import { API_BASE, apiGet } from '@/lib/api';
 export default function AdminAlertSystem() {
   const [alertType, setAlertType] = useState('promotional'); // promotional, emergency, system
   const [targetAudience, setTargetAudience] = useState('all'); // all, customers, shops, delivery
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('idle');
+  const [reach, setReach] = useState(null);
+  useEffect(() => { apiGet('/public/stats').then(setReach).catch(() => setReach(null)); }, []);
 
   const handleSendAlert = async () => {
     if (!message) return;
@@ -143,22 +145,14 @@ export default function AdminAlertSystem() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Total Users</span>
-                  <span className="font-black text-xl">12,450</span>
+                  <span className="font-black text-xl">{reach ? reach.neighbors.toLocaleString('en-IN') : '—'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Active Shops</span>
-                  <span className="font-black text-xl">324</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Delivery Agents</span>
-                  <span className="font-black text-xl">89</span>
+                  <span className="font-black text-xl">{reach ? reach.shops.toLocaleString('en-IN') : '—'}</span>
                 </div>
               </div>
               
-              <div className="mt-8 pt-6 border-t border-gray-800">
-                <div className="text-sm text-gray-400 mb-1">Estimated Delivery Time</div>
-                <div className="font-bold text-green-400">&lt; 2 seconds (FCM)</div>
-              </div>
             </Card>
 
             <Card className="p-6">

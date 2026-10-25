@@ -49,6 +49,21 @@ const { errorHandler, notFound } = require('./middleware/error.middleware');
 const app = express();
 const server = http.createServer(app);
 
+// ─── CLIENT ADDRESS BEHIND A REVERSE PROXY ───────────────────
+// In production this process is never reached directly: Render's router (or
+// nginx in docker-compose) is in front of it. Without 'trust proxy', req.ip is
+// that proxy's address for every request, so every limiter keyed by IP — sign
+// in, OTP, payments, checkout — counted the whole user base as one client:
+// the eleventh sign-in attempt in fifteen minutes, by anyone, locked out
+// everyone. The admin IP allow-list compared against the proxy too.
+//
+// The value is the number of proxies to trust, not `true`: trusting every hop
+// would let a client choose its own address by sending X-Forwarded-For.
+// Defaults to one hop in production and none elsewhere; set TRUST_PROXY_HOPS
+// if the deployment has more (a CDN in front of the platform's router, say).
+const { trustProxyHops } = require('./config/proxy');
+app.set('trust proxy', trustProxyHops());
+
 // ── Socket.io Real-Time Engine ──
 const { initSocketIO } = require('./sockets');
 const io = initSocketIO(server);
@@ -88,40 +103,19 @@ app.use(helmet({
 app.use(compression());
 app.set('etag', 'strong'); // Enable strong ETags for HTTP validation caching
 
-// ─── CORS: Whitelist-based origin validation ────────────────
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://localhost:5000',
-  process.env.CLIENT_URL,
-  process.env.ADMIN_URL,
-  process.env.RENDER_EXTERNAL_URL,
-].filter(Boolean);
+// ─── CORS: explicit origin allow-list ───────────────────────
+// See config/origins.js for what is on the list and why "*.onrender.com" and
+// "anything outside production" no longer are.
+const { corsOrigin, configuredOrigins } = require('./config/origins');
+if (process.env.NODE_ENV === 'production' && configuredOrigins().length === 0) {
+  logger.error('CORS: no origin is configured (CLIENT_URL / ADMIN_URL / ALLOWED_ORIGINS). Every browser request will be refused.');
+}
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin for mobile apps, curl, and server-to-server calls
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow all Render service domains (localsampark-web, localsampark API, admin, preview URLs)
-    if (origin.endsWith('.onrender.com') || /^https?:\/\/(localhost|127\.0\.0\.1|.*\.onrender\.com)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-
-    logger.warn(`CORS: Origin ${origin} blocked`);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: (origin, callback) => corsOrigin(origin, (err, ok) => {
+    if (err) logger.warn(`CORS: Origin ${origin} blocked`);
+    callback(err, ok);
+  }),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
@@ -162,7 +156,24 @@ if (process.env.NODE_ENV === 'production') {
 
 // app.use(xss()); // Removed due to IncomingMessage crash
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express.json({ limit: '15mb' }));
+app.use(express.json({
+  limit: '15mb',
+  // Keep the bytes of a webhook delivery exactly as they arrived.
+  //
+  // A provider signs the raw request body, and each webhook route asks for it
+  // with express.raw(). But this parser runs first, for every request, and
+  // consumes the stream — so by the time a webhook route ran, req.body was
+  // already an object, express.raw() had nothing left to read, and the handler
+  // verified the signature against the string "[object Object]". Every
+  // genuine delivery from Razorpay, Stripe and Cashfree was rejected as
+  // unauthorised, and an order paid at the gateway stayed unpaid here.
+  //
+  // Only for webhook paths: holding a second copy of every 15 MB upload body
+  // would cost memory for nothing.
+  verify: (req, _res, buf) => {
+    if (/\/webhooks?(\/|$)/.test(req.originalUrl || req.url || '')) req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 // Populates req.cookies, which authenticate() reads the admin session from and
 // csrf.middleware.js reads the CSRF value from. Without it req.cookies is
@@ -308,11 +319,16 @@ async function startServer() {
         const regionCount = parseInt(regionCheck.rows?.[0]?.count || 0, 10);
         if (regionCount === 0) {
           logger.info('🌱 Fresh database detected. Seeding initial pilot data...');
-          const fs = require('fs');
-          const path = require('path');
-          const seedSql = fs.readFileSync(path.join(__dirname, 'seeds', 'dhanori.sql'), 'utf8');
-          await query(seedSql);
-          logger.info('✅ Initial database seed completed');
+          // Through the seeder, not by executing seeds/dhanori.sql. That file
+          // inserts the demo accounts — a super_admin among them, on a phone
+          // number published in this repository — and this branch is the one
+          // that runs against a brand-new production database. The seeder
+          // writes only reference data (region, settings, loyalty tiers) when
+          // NODE_ENV is production; an administrator is then created with
+          // scripts/provision-admin.js.
+          const { runSeed } = require('./seeds/run');
+          const seeded = await runSeed();
+          logger.info(`✅ Initial database seed completed (${seeded.created} rows${seeded.demo ? ', including demo accounts' : ''})`);
         }
       } catch (migErr) {
         logger.warn('⚠️ PostgreSQL migration/seed notice: ' + migErr.message);
@@ -372,7 +388,7 @@ async function startServer() {
     // to collide with traffic. Produces nothing until the log has real volume,
     // which is the intended state — see modules/ml/jobs/matrix-builder.job.js.
     const matrixBuilder = require('./modules/ml/jobs/matrix-builder.job');
-    const cron = require('node-cron');
+    const cron = require('./utils/cron');
     cron.schedule('15 3 * * *', () => {
       matrixBuilder.rebuild().catch((e) =>
         logger.error('Scheduled affinity rebuild failed: ' + e.message)
@@ -631,7 +647,19 @@ if (process.env.NODE_ENV !== 'test') {
     require('./jobs/overstay-monitor.job');
     require('./jobs/complaint-escalation.job');
     require('./jobs/lease-expiry-reminder.job');
-    require('./jobs/amc-expiry-alert.job');
+        require('./jobs/amc-expiry-alert.job');
+        require('./jobs/subscription-expiry.job');
+        require('./jobs/unpaid-order-expiry.job');
+    // Starts and ends merchants' scheduled campaigns.
+    require('./jobs/campaign-schedule.job');
+    // Prunes spent refresh-token records and stale job locks.
+    require('./jobs/token-cleanup.job');
+    // Calculates each shop's payout for the day before, for an administrator
+    // to approve. Safe to run alongside a manual "calculate": an order is
+    // only ever counted once (services/payout.service.js).
+    require('./jobs/payout-calculation.job');
+    // Daily fraud patterns, for the admin fraud queue.
+    require('./jobs/fraud-analysis.job');
   });
 }
 

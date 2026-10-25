@@ -300,3 +300,56 @@ describe('no catch block substitutes mock data in a release build', () => {
     expect(offenders.sort()).toEqual([]);
   });
 });
+
+describe('one source for the API address', () => {
+  it('no screen or context hard-codes a host or re-derives the API URL', () => {
+    const offenders = [];
+    for (const file of [...walk(path.join(MOBILE, 'app')), ...walk(path.join(MOBILE, 'src'))]) {
+      const rel = path.relative(MOBILE, file).split(path.sep).join('/');
+      if (rel === 'src/lib/api.js') continue;
+      const code = stripComments(fs.readFileSync(file, 'utf8'));
+      if (/10\.0\.2\.2|192\.168\.\d+\.\d+|onrender\.com|ngrok-free/.test(code)) offenders.push(`${rel}: literal host`);
+      if (/process\.env\.EXPO_PUBLIC_API_URL/.test(code)) offenders.push(`${rel}: reads EXPO_PUBLIC_API_URL itself`);
+    }
+    expect(offenders.sort()).toEqual([]);
+  });
+});
+
+describe('screens that used to fall back to invented records', () => {
+  const read = (rel) => stripComments(fs.readFileSync(path.join(MOBILE, rel), 'utf8'));
+
+  it.each([
+    ['app/modules/subscriptions/index.js', /Sharma Dairy|Bisleri|Aaji cha Swad|walletBalance, setWalletBalance\] = useState\(1420/],
+    ['app/modules/bills/index.js', /MSEDCL|MNGL|PMC Water|useState\(4820\)/],
+    ['app/modules/pets/index.js', /Dr\. Anand|Paws & Care|Dhanori Animal|INITIAL_LOST/],
+    ['app/modules/promotions/index.js', /WEEKEND20|BOGO|MOCK_PROMOS/],
+    ['src/screens/carpool/FindRide.js', /Rahul S\.|Priya M\.|Amit K\.|Sneha P\./],
+    ['src/screens/services/HomeServicesScreen.js', /Ramesh Plumbers|Baner Electrical|98220 11223/],
+  ])('%s carries none of its old invented records', (rel, pattern) => {
+    expect(read(rel)).not.toMatch(pattern);
+  });
+
+  it('shop registration reports the server, not a mock success', () => {
+    const src = read('app/modules/register-shop/index.js');
+    expect(src).not.toMatch(/postWithFallback|DemoBadge|mockRes/);
+    expect(src).toMatch(/apiPost\('\/shops'/);
+    expect(src).toMatch(/latitude/);
+  });
+
+  it('the module field dashboard is the live dashboard, not a copy with figures', () => {
+    const src = read('app/modules/field-dashboard/index.js');
+    expect(src).toMatch(/dashboards\/FieldDashboard/);
+    expect(src).not.toMatch(/shopsOnboarded:\s*23|Fresh Mart/);
+  });
+});
+
+describe('every screen edited for production still parses', () => {
+  const babel = require('@babel/core');
+  it.each([
+    'app/modules/register-shop/index.js', 'app/modules/subscriptions/index.js', 'app/modules/bills/index.js',
+    'app/modules/pets/index.js', 'app/modules/promotions/index.js', 'app/search.js', 'app/crm/index.js',
+    'app/modules/field-dashboard/index.js',
+  ])('%s', (rel) => {
+    expect(() => babel.transformFileSync(path.join(MOBILE, rel), { presets: ['babel-preset-expo'], babelrc: false, configFile: false })).not.toThrow();
+  });
+});

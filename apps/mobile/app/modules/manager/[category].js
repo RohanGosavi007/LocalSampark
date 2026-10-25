@@ -48,19 +48,42 @@ export default function ManagerDashboard() {
         
         <View style={styles.featuresGrid}>
           {config.features.map((feature, idx) => (
-            <TouchableOpacity key={idx} style={styles.featureCard}>
+            <TouchableOpacity 
+              key={idx} 
+              style={styles.featureCard}
+              onPress={() => {
+                const lower = feature.toLowerCase();
+                if (lower.includes('order') || lower.includes('queue') || lower.includes('table')) {
+                  router.push('/(tabs)/orders');
+                } else if (lower.includes('inventor') || lower.includes('product') || lower.includes('stock') || lower.includes('item') || lower.includes('variant')) {
+                  router.push('/(tabs)/products');
+                } else if (lower.includes('appointment') || lower.includes('schedule') || lower.includes('booking')) {
+                  router.push('/(tabs)/appointments');
+                } else {
+                  router.push('/shop-manager');
+                }
+              }}
+            >
               <View style={styles.featureIconBg}>
-                <Ionicons name="star" size={20} color="#3b82f6" />
+                <Ionicons name="sparkles" size={20} color="#3b82f6" />
               </View>
               <Text style={styles.featureText}>{feature}</Text>
-              <Text style={styles.stubText}>Coming Soon</Text>
+              <Text style={styles.activePill}>Manage Now →</Text>
             </TouchableOpacity>
           ))}
         </View>
 
+        <TouchableOpacity 
+          style={styles.openOperationsBtn}
+          onPress={() => router.push('/shop-manager')}
+        >
+          <Ionicons name="storefront-outline" size={20} color="#ffffff" style={{ marginRight: 8 }} />
+          <Text style={styles.openOperationsText}>Open Full Shop Operations Console</Text>
+        </TouchableOpacity>
+
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={24} color="#6b7280" />
-          <Text style={styles.infoText}>These specialized modules are currently under development. You will be notified when they are ready for beta testing.</Text>
+          <Text style={styles.infoText}>Category-specific workflows are linked directly to your active shop catalog, appointment calendar, and order desk.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -87,6 +110,9 @@ const styles = StyleSheet.create({
   featureIconBg: { backgroundColor: '#eff6ff', padding: 8, borderRadius: 8, marginBottom: 12 },
   featureText: { fontSize: 14, fontWeight: 'bold', color: '#374151', marginBottom: 8 },
   stubText: { fontSize: 10, color: '#f59e0b', backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, fontWeight: 'bold' },
+  activePill: { fontSize: 11, color: '#2563eb', fontWeight: '600' },
+  openOperationsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 20 },
+  openOperationsText: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
   
   infoBox: { flexDirection: 'row', backgroundColor: '#f3f4f6', padding: 16, borderRadius: 12, alignItems: 'flex-start', gap: 12 },
   infoText: { flex: 1, fontSize: 14, color: '#4b5563', lineHeight: 20 }

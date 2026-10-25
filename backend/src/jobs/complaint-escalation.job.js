@@ -1,11 +1,15 @@
-const cron = require('node-cron');
+const cron = require('../utils/cron');
 const { query, queryMany } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
-// Mock FCM
-const sendPushNotification = async (userId, payload) => {
-    console.log(`[FCM Alert] Sending push to ${userId}:`, payload.title);
-};
+const notifications = require('../modules/core/services/notification.service');
+
+// Delivered through the notification service, so an escalation reaches the
+// recipient's inbox. This was a local stub that wrote a line to the server log
+// and notified nobody — an SLA breach was "escalated" to people who never
+// heard about it.
+const sendPushNotification = (userId, payload) =>
+    notifications.sendToUser(userId, { type: 'system', ...payload });
 
 const logComplaintActivity = async (complaintId, action, performedBy, notes) => {
     await query(
@@ -61,13 +65,13 @@ cron.schedule('*/30 * * * *', async () => {
                 
                 // Notify logic (Mock)
                 if (notifyRoles.includes('assigned') && complaint.assigned_to) {
-                    await sendPushNotification(complaint.assigned_to, { title: 'SLA Warning', body: `Complaint "${complaint.title}" is approaching its SLA.` });
+                    await sendPushNotification(complaint.assigned_to, { title: 'SLA Warning', body: `Complaint "${complaint.title}" is approaching its SLA.`, data: { complaint_id: complaint.id } });
                 }
                 
                 if (notifyRoles.includes('admin')) {
-                    const admins = await queryMany('SELECT user_id FROM society_admin_roles WHERE society_id = $1 AND is_active = true', [complaint.society_id]);
+                    const admins = await queryMany('SELECT user_id FROM society_admin_roles WHERE society_id = $1 AND is_active = \'1\'', [complaint.society_id]);
                     for (const admin of admins) {
-                        await sendPushNotification(admin.user_id, { title: `SLA Breach L${newLevel}`, body: `Complaint "${complaint.title}" has breached SLA.` });
+                        await sendPushNotification(admin.user_id, { title: `SLA Breach L${newLevel}`, body: `Complaint "${complaint.title}" has breached SLA.`, data: { complaint_id: complaint.id, level: newLevel } });
                     }
                 }
             }

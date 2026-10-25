@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { apiGet, apiPost } from '@/lib/api';
 
 const DeliveryMap = dynamic(() => import('./components/DeliveryMap'), { 
   ssr: false,
@@ -30,47 +31,87 @@ export default function DeliveryDashboard() {
   const [loading, setLoading] = useState(false);
   const [otpModal, setOtpModal] = useState({ show: false, jobId: null, otp: '' });
 
-  useEffect(() => {
-    fetchJobs();
+  const [analytics, setAnalytics] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Real jobs from /delivery/jobs and /delivery/my-jobs, and real figures from /delivery/analytics.
+  // This portal used to list invented jobs from named shops, "accept" them with an alert,
+  // accept the PIN "1234" for any delivery, and show ₹1,240 / 28 deliveries / 4.9 stars to
+  // every rider.
+  const toCard = (j) => ({
+    id: j.id,
+    type: j.type || 'delivery',
+    distance: j.distance_km != null ? `${j.distance_km} km` : '',
+    item_details: `Order #${String(j.order_id || j.id).slice(0, 8)} • ₹${j.total_amount}${j.cash_to_collect ? ` • collect ₹${j.cash_to_collect} cash` : ''}`,
+    pickup_location: j.pickup_address || j.pickup || 'See shop',
+    dropoff_location: j.dropoff || 'See order',
+    price_fiat: j.earnings,
+  });
+
+  const fetchJobs = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (activeTab === 'available') {
+        const r = await apiGet('/delivery/jobs');
+        setAvailableJobs((r.data || []).map(toCard));
+      } else if (activeTab === 'active') {
+        const r = await apiGet('/delivery/my-jobs');
+        setMyJobs((r.data || []).map(toCard));
+      } else if (activeTab === 'dashboard') {
+        const [a, m] = await Promise.all([apiGet('/delivery/analytics'), apiGet('/delivery/my-jobs')]);
+        setAnalytics(a.data || null);
+        setMyJobs((m.data || []).map(toCard));
+      }
+    } catch (e) {
+      setError(e.status === 403 ? 'This portal is for registered delivery partners.' : (e.message || 'Could not load deliveries.'));
+    } finally {
+      setLoading(false);
+    }
   }, [activeTab]);
 
-  const fetchJobs = () => {
-    setLoading(true);
-    setTimeout(() => {
-      if (activeTab === 'available') {
-        setAvailableJobs([
-          { id: 'JOB-901', item_details: 'Grocery (2 items)', pickup_location: 'Sharma Grocery, Dhanori', dropoff_location: 'Ganga Arcadia, Lohegaon', price_fiat: 45, distance: '2.1 km', type: 'grocery' },
-          { id: 'JOB-902', item_details: 'Medicines (Prescription)', pickup_location: 'Apollo Pharmacy, Viman Nagar', dropoff_location: 'Rohan Mithila, Viman Nagar', price_fiat: 30, distance: '1.2 km', type: 'pharmacy' },
-        ]);
-      } else if (activeTab === 'active') {
-        setMyJobs([
-          { id: 'JOB-801', item_details: 'Bakery Items (Cake)', pickup_location: 'Cake & Co, Dhanori', dropoff_location: 'Porwal Road, Dhanori', price_fiat: 50, coords: { pickup: [18.5793, 73.8780], dropoff: [18.5820, 73.8850] } }
-        ]);
-      }
-      setLoading(false);
-    }, 800);
-  };
+  useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
-  const handleAcceptJob = (jobId) => {
-    alert('Smart Dispatch: Job Assigned! Route optimized.');
-    setActiveTab('active');
-  };
-
-  const handleCompleteJob = () => {
-    if (otpModal.otp === '1234') {
-        alert('Delivery Completed Successfully! 🎉 Payment of ₹50 added to wallet.');
-        setOtpModal({ show: false, jobId: null, otp: '' });
-        fetchJobs();
-    } else {
-        alert('Invalid OTP. Please check with customer.');
+  const handleAcceptJob = async (jobId) => {
+    try {
+      await apiPost(`/delivery/jobs/${jobId}/accept`, {});
+      setActiveTab('active');
+    } catch (e) {
+      alert(e.message || 'That job could not be accepted. Someone else may have taken it.');
+      fetchJobs();
     }
   };
 
+  const handleCompleteJob = async () => {
+    try {
+      await apiPost(`/delivery/jobs/${otpModal.jobId}/complete`, { otp: otpModal.otp });
+      setOtpModal({ show: false, jobId: null, otp: '' });
+      fetchJobs();
+    } catch (e) {
+      alert(e.message || 'That PIN was not accepted. Please check it with the customer.');
+    }
+  };
+
+  const triggerSos = () => {
+    if (!confirm('Send an emergency SOS alert with your location?')) return;
+    const send = async (coords) => {
+      try {
+        await apiPost('/sos/trigger', { type: 'delivery', ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}) });
+        alert('SOS alert sent.');
+      } catch (e) {
+        alert(`The SOS alert was NOT sent (${e.message || 'no connection'}). Call 112 now.`);
+      }
+    };
+    if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => send(p.coords), () => send(null), { timeout: 8000 });
+    else send(null);
+  };
+
+  const today = analytics && analytics.todayAnalytics;
   const stats = [
-      { label: "Today's Earnings", value: "₹1,240", icon: TrendingUp, color: "text-green-500", bg: "bg-green-500/10" },
-      { label: "Deliveries", value: "28", icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-      { label: "Active Runs", value: myJobs.length.toString(), icon: Navigation, color: "text-primary", bg: "bg-primary/10" },
-      { label: "Runner Rating", value: "4.9 ⭐", icon: ShieldCheck, color: "text-amber-500", bg: "bg-amber-500/10" }
+    { label: "Today's Earnings", value: today ? `₹${today.total_earnings}` : '—', icon: TrendingUp, color: "text-green-500", bg: "bg-green-500/10" },
+    { label: "Deliveries Today", value: today ? String(today.total_deliveries) : '—', icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Active Runs", value: myJobs.length.toString(), icon: Navigation, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Runner Rating", value: analytics && analytics.rating != null ? `${analytics.rating} ⭐` : 'No ratings yet', icon: ShieldCheck, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   const navItems = [
@@ -113,7 +154,7 @@ export default function DeliveryDashboard() {
             <div className="mt-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
                 <div className="flex items-center gap-2 text-red-500 font-bold mb-1"><AlertTriangle className="w-4 h-4" /> SOS Alert</div>
                 <p className="text-xs text-text-muted mb-3">Press in case of emergency during delivery.</p>
-                <Button variant="outline" className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white" size="sm">Trigger SOS</Button>
+                <Button variant="outline" onClick={triggerSos} className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white" size="sm">Trigger SOS</Button>
             </div>
         </aside>
 
@@ -134,6 +175,7 @@ export default function DeliveryDashboard() {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-10 pb-32 lg:pb-10 bg-section-alt">
             
+            {error && <p role="alert" className="mb-6 text-red-500 font-bold">{error}</p>}
             <AnimatePresence mode="wait">
                 {activeTab === 'dashboard' && (
                     <motion.div key="dash" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>

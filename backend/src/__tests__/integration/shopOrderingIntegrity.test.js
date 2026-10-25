@@ -347,3 +347,181 @@ describe('shop registration validation', () => {
     expect(validate({ ...valid, address: '' })).toContain('address');
   });
 });
+
+describe('POST /shops/register, through the route', () => {
+  /**
+   * The cases above restate the validator's rules because it is not exported,
+   * which left the route itself unexercised. It then broke without one test
+   * noticing: a refactor deleted the validator and kept the call, so every
+   * registration answered 500 with "validateShopRegistration is not defined".
+   * These go through the router, so a missing function, a wrong column or a
+   * constraint the INSERT cannot satisfy all fail here.
+   */
+  const express = require('express');
+  const request = require('supertest');
+  const jwt = require('jsonwebtoken');
+  const { getJwtSecret } = require('../../config/secrets');
+
+  const REGION = 'test-region-0001'; // seeded by jest.globalSetup.js
+
+  const valid = {
+    name: 'SOI Route Kirana',
+    address: '12 MG Road, Pune',
+    latitude: 18.53,
+    longitude: 73.87,
+    phoneNumber: '9822001122',
+  };
+
+  let app;
+  let token;
+
+  const removeRegisteredShops = async () => {
+    await query('DELETE FROM shop_qr_codes WHERE shop_id IN (SELECT id FROM local_shops WHERE owner_id = $1)', [OWNER]);
+    await query("DELETE FROM local_shops WHERE owner_id = $1 AND id NOT LIKE 'soi-%'", [OWNER]);
+  };
+
+  beforeAll(async () => {
+    await query('UPDATE users SET region_id = $1 WHERE id = $2', [REGION, OWNER]);
+
+    app = express();
+    app.use(express.json());
+    app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
+    // eslint-disable-next-line no-unused-vars
+    app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+
+    token = jwt.sign({ userId: OWNER }, getJwtSecret(), { expiresIn: '5m' });
+  });
+
+  afterAll(removeRegisteredShops);
+
+  const register = (body, auth = true) => {
+    const req = request(app).post('/shops/register');
+    if (auth) req.set('Authorization', `Bearer ${token}`);
+    return req.send(body);
+  };
+
+  test('an anonymous request is refused before anything is validated', async () => {
+    const res = await register(valid, false);
+    expect(res.status).toBe(401);
+  });
+
+  test('an invalid payload answers 400 and names each field', async () => {
+    const res = await register({ ...valid, latitude: null, longitude: undefined, name: ' ' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    const fields = res.body.problems.map((p) => p.field);
+    expect(fields).toEqual(expect.arrayContaining(['name', 'latitude', 'longitude']));
+    for (const problem of res.body.problems) {
+      expect(typeof problem.message).toBe('string');
+    }
+  });
+
+  test('a category that names no row is refused', async () => {
+    const res = await register({ ...valid, category_id: 'soi-no-such-category' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.problems).toEqual([
+      expect.objectContaining({ field: 'category_id' }),
+    ]);
+  });
+
+  test('a payload with no category at all is refused rather than failing on the constraint', async () => {
+    // local_shops.category is NOT NULL. The route never supplied it, so this
+    // reached the INSERT and came back as a 500.
+    const res = await register(valid);
+
+    expect(res.status).toBe(400);
+    expect(res.body.problems).toEqual([
+      expect.objectContaining({ field: 'category_id' }),
+    ]);
+  });
+
+  test('a valid payload creates a pending shop in the owner\'s region', async () => {
+    const category = await queryOne('SELECT id, name FROM shop_categories WHERE is_active = 1 LIMIT 1');
+    const res = await register({ ...valid, category_id: category.id });
+
+    expect(res.body.error).toBeUndefined();
+    expect(res.status).toBe(201);
+
+    const row = await queryOne('SELECT * FROM local_shops WHERE id = $1', [res.body.id]);
+    expect(row).toBeTruthy();
+    expect(row.owner_id).toBe(OWNER);
+    expect(row.name).toBe(valid.name);
+    expect(row.approval_status).toBe('pending');
+    // req.user.regionId was read where the row has region_id, so this was NULL
+    // and the shop appeared in no region-scoped listing.
+    expect(row.region_id).toBe(REGION);
+    expect(Number(row.latitude)).toBeCloseTo(valid.latitude);
+    expect(Number(row.longitude)).toBeCloseTo(valid.longitude);
+    // The two NOT NULL columns the INSERT used to leave out.
+    expect(row.category).toBe(category.name);
+    expect(row.coordinate).toBe(`POINT(${valid.longitude} ${valid.latitude})`);
+
+    const qr = await queryOne('SELECT qr_data FROM shop_qr_codes WHERE shop_id = $1', [res.body.id]);
+    expect(qr.qr_data).toContain(res.body.id);
+  });
+});
+
+describe('writing to a shop that is not yours', () => {
+  /**
+   * POST /:id/services and POST /:id/staff took `authenticate` and nothing
+   * else, so any signed-in account could add a service — at whatever price —
+   * or a staff member to any shop. POST /:id/products had the same gap closed
+   * earlier; these two were beside it and were missed.
+   */
+  const express = require('express');
+  const request = require('supertest');
+  const jwt = require('jsonwebtoken');
+  const { getJwtSecret } = require('../../config/secrets');
+
+  let app;
+  const tokenFor = (userId) => jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' });
+  const post = (path, userId, body) =>
+    request(app).post(path).set('Authorization', `Bearer ${tokenFor(userId)}`).send(body);
+
+  const removeWritten = async () => {
+    await query('DELETE FROM shop_services WHERE shop_id = $1', [SHOP]);
+    await query("DELETE FROM shop_staff WHERE shop_id = $1 AND id NOT LIKE 'soi-%'", [SHOP]);
+  };
+
+  beforeAll(async () => {
+    await removeWritten();
+    app = express();
+    app.use(express.json());
+    app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
+    // eslint-disable-next-line no-unused-vars
+    app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  });
+
+  afterAll(removeWritten);
+
+  test.each([
+    ['services', { name: 'Free haircut', price: 0, duration_minutes: 30 }, 'shop_services'],
+    ['staff', { name: 'Planted Staff', role: 'manager' }, 'shop_staff'],
+  ])('a customer cannot add %s to someone else\'s shop', async (resource, body, table) => {
+    const res = await post(`/shops/${SHOP}/${resource}`, CUSTOMER, body);
+
+    expect(res.status).toBe(403);
+    const row = await queryOne(`SELECT id FROM ${table} WHERE shop_id = $1 AND name = $2`, [SHOP, body.name]);
+    expect(row).toBeFalsy();
+  });
+
+  test.each([
+    ['services', { name: 'Hair spa', price: 800, duration_minutes: 45 }, 'shop_services'],
+    ['staff', { name: 'New Stylist', role: 'stylist' }, 'shop_staff'],
+  ])('the owner can add %s', async (resource, body, table) => {
+    const res = await post(`/shops/${SHOP}/${resource}`, OWNER, body);
+
+    expect(res.body.error).toBeUndefined();
+    expect(res.status).toBe(201);
+    const row = await queryOne(`SELECT id, name FROM ${table} WHERE shop_id = $1 AND name = $2`, [SHOP, body.name]);
+    expect(row).toBeTruthy();
+    expect(row.id).toBeTruthy();
+  });
+
+  test('a shop that does not exist is a 404, not an insert', async () => {
+    const res = await post('/shops/soi-no-such-shop/services', OWNER, { name: 'Ghost service', price: 1 });
+    expect(res.status).toBe(404);
+  });
+});

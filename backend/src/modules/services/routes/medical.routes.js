@@ -3,12 +3,13 @@ const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');
 const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const coins = require('../../../services/coins.service');
 
 // GET /doctors - Search doctors dynamically
 router.get('/doctors', async (req, res, next) => {
   try {
     const { specialization, pincode } = req.query;
-    let sql = 'SELECT * FROM medical_doctors WHERE is_available = true';
+    let sql = 'SELECT * FROM medical_doctors WHERE is_available = \'1\'';
     const params = [];
 
     if (specialization) {
@@ -37,7 +38,9 @@ router.get('/doctors', async (req, res, next) => {
 });
 
 // GET /admin/records - Fetch all doctors for admin verification
-router.get('/admin/records', async (req, res, next) => {
+// Had no authentication at all: every doctor's row — phone number and licence
+// number included — to anyone who asked.
+router.get('/admin/records', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const doctors = await query('SELECT * FROM medical_doctors ORDER BY created_at DESC');
     res.json({ success: true, data: doctors.rows || doctors });
@@ -47,11 +50,17 @@ router.get('/admin/records', async (req, res, next) => {
 });
 
 // PUT /admin/doctors/:id/verify - Toggle verification
-router.put('/admin/doctors/:id/verify', authenticate, async (req, res, next) => {
+// "Verified" is the platform vouching for a doctor to patients. This was
+// `authenticate` only, so anyone with an account could put that mark on
+// anyone — themselves included.
+router.put('/admin/doctors/:id/verify', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { is_verified } = req.body;
-    await query('UPDATE medical_doctors SET is_verified = $1 WHERE id = $2', [is_verified ? 1 : 0, id]);
+    const { is_verified } = req.body || {};
+    const updated = await query('UPDATE medical_doctors SET is_verified = $1 WHERE id = $2', [is_verified ? '1' : '0', id]);
+    if (updated && updated.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Doctor not found' });
+    }
     res.json({ success: true, message: 'Doctor verification status updated' });
   } catch (err) {
     next(err);
@@ -162,7 +171,7 @@ router.post('/requests', authenticate, async (req, res, next) => {
       `INSERT INTO medical_requests
            (id, requester_id, created_by, patient_name, phone, request_type,
             required_item, blood_group, description, location, urgency, status, dispatched)
-       VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'open', 0)`,
+       VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'open', '0')`,
       [id, req.user.id, req.user.full_name || req.user.name || 'Anonymous',
        req.user.phone || null, requestType || 'Blood', requiredItem,
        // For a blood request the required item IS the blood group; keeping
@@ -235,7 +244,7 @@ router.post('/donors', authenticate, async (req, res, next) => {
 
       if ((existing.rows || []).length) {
         await client.query(
-          'UPDATE blood_donors SET blood_group = $1, pincode = $2, is_available = 1 WHERE id = $3',
+          'UPDATE blood_donors SET blood_group = $1, pincode = $2, is_available = \'1\' WHERE id = $3',
           [bloodGroup, pincode, existing.rows[0].id]
         );
         return { updated: true, rewarded: false };
@@ -243,16 +252,12 @@ router.post('/donors', authenticate, async (req, res, next) => {
 
       await client.query(
         `INSERT INTO blood_donors (id, society_id, user_id, blood_group, pincode, is_available)
-         VALUES ($1, $2, $3, $4, $5, 1)`,
+         VALUES ($1, $2, $3, $4, $5, '1')`,
         [crypto.randomUUID(), PUBLIC_DONOR_SCOPE, req.user.id, bloodGroup, pincode]
       );
 
-      if (rewardEnabled) {
-        await client.query(
-          `INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description)
-           VALUES ($1, $2, $3, 'credit', 'Blood donor registration')`,
-          [crypto.randomUUID(), req.user.id, DONOR_REWARD_COINS]
-        );
+            if (rewardEnabled) {
+        await coins.credit({ userId: req.user.id, amount: DONOR_REWARD_COINS, reason: 'Blood donor registration', client });
       }
 
       return { updated: false, rewarded: rewardEnabled };
@@ -307,7 +312,7 @@ router.post('/admin/reward-toggle', authenticate, requireAdmin, async (req, res,
     } else {
       await query(
         `INSERT INTO admin_config (id, config_key, config_value, config_category, is_active, updated_by)
-         VALUES ($1, $2, $3, 'medical', 1, $4)`,
+         VALUES ($1, $2, $3, 'medical', '1', $4)`,
         [crypto.randomUUID(), DONOR_REWARD_KEY, String(enabled), req.user.id]
       );
     }

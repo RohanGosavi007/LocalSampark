@@ -36,7 +36,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
     setSavingKey(feature.feature_key);
     try {
       const newEnabled = !feature.is_enabled;
-      const res = await fetch(`${API_BASE}/gtm/admin/features/${feature.feature_key}`, {
+      await fetchJson(`${API_BASE}/gtm/admin/features/${feature.feature_key}`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({
@@ -47,7 +47,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
         })
       });
 
-      if (res.ok) {
+      { // fetchJson throws on a failed response, so reaching here means it worked
         setFeatures(prev => prev.map(f => f.feature_key === feature.feature_key ? { ...f, is_enabled: newEnabled } : f));
       }
     } catch (e) {
@@ -61,7 +61,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
     setSavingKey(feature_key);
     try {
       const pincodesArray = pincodesStr.split(',').map(p => p.trim()).filter(Boolean);
-      const res = await fetch(`${API_BASE}/gtm/admin/features/${feature_key}`, {
+      await fetchJson(`${API_BASE}/gtm/admin/features/${feature_key}`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({
@@ -71,7 +71,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
         })
       });
 
-      if (res.ok) {
+      { // fetchJson throws on a failed response, so reaching here means it worked
         alert(`Rollout settings saved for '${feature_key}'!`);
         fetchFeatures();
       }

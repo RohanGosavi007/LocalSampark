@@ -84,7 +84,7 @@ const orderMeal = async (req, res, next) => {
 
         // Deduct from wallet
         await query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [coinsDeducted, userId]);
-        await query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Home Chef Discount')`,
+        await query(`INSERT INTO loyalty_transactions (user_id, amount, transaction_type, type, source, description) VALUES ($1, $2, 'spent', 'spent', 'Home Chef Discount', 'Home Chef Discount')`,
           [userId, coinsDeducted]
         );
       }

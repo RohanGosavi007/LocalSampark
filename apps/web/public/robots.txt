@@ -3,5 +3,23 @@ Allow: /
 Disallow: /admin/
 Disallow: /profile/
 Disallow: /api/
+Disallow: /admin-dashboard/
+Disallow: /dashboard/
+Disallow: /delivery-dashboard/
+Disallow: /field-dashboard/
+Disallow: /franchise-dashboard/
+Disallow: /moderator-dashboard/
+Disallow: /security-dashboard/
+Disallow: /service-dashboard/
+Disallow: /shop-dashboard/
+Disallow: /society-admin/
+Disallow: /society-admin-dashboard/
+Disallow: /sos-dashboard/
+Disallow: /wallet/
+Disallow: /checkout/
+Disallow: /payouts/
+Disallow: /login/
+Disallow: /register/
+Disallow: /unauthorized/
 
 Sitemap: https://localsampark.in/sitemap.xml

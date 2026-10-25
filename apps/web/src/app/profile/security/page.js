@@ -3,31 +3,50 @@ import React, { useState } from 'react';
 import Header from '../../components/Header';
 import { ShieldAlert, Download, Trash2, AlertTriangle, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { apiGet, apiPost, clearSession } from '@/lib/api';
 
 export default function SecurityPage() {
   const router = useRouter();
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleDataExport = () => {
-    // Generate a mock JSON file and trigger download
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ user: "Admin", history: [] }));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "localsampark_data_export.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+  // Both actions call the privacy API (DPDP access and erasure). The export used to be a
+  // file containing { user: "Admin", history: [] } and the deletion only logged the person
+  // out after two seconds, leaving the account and its data exactly as they were.
+  const handleDataExport = async () => {
+    setError(null);
+    setIsExporting(true);
+    try {
+      const res = await apiGet('/users/me/data-export');
+      const url = URL.createObjectURL(new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'localsampark_data_export.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.status === 429 ? 'You can export your data once every 24 hours. Please try again later.' : (err.message || 'Your data could not be exported.'));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'DELETE') return;
+    setError(null);
     setIsDeleting(true);
-    // Mock deletion process
-    setTimeout(() => {
-      localStorage.removeItem('localsampark_token');
+    try {
+      await apiPost('/users/me/delete-account', { confirmation: 'DELETE_MY_ACCOUNT', reason: 'Requested in app' });
+      clearSession();
       router.push('/login');
-    }, 2000);
+    } catch (err) {
+      setError(err.message || 'Your account could not be deleted. Nothing was changed.');
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -46,6 +65,7 @@ export default function SecurityPage() {
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          {error && <p role="alert" className="text-red-500 font-bold text-sm">{error}</p>}
           
           <div>
             <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
@@ -57,10 +77,11 @@ export default function SecurityPage() {
             </p>
             <button 
               onClick={handleDataExport}
+              disabled={isExporting}
               className="w-full bg-card-bg hover:bg-background-alt text-text font-bold py-3 rounded-xl transition-colors border border-border flex items-center justify-center gap-2"
             >
               <Download size={18} />
-              Download My Data
+              {isExporting ? 'Preparing…' : 'Download My Data'}
             </button>
           </div>
 

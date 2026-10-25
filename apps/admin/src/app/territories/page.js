@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { API_BASE, getAuthHeaders } from '../../lib/api';
+import { API_BASE, getAuthHeaders, fetchJson, toList } from '../../lib/api';
 export default function TerritoriesPage() {
   const [territories, setTerritories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // No Authorization header: the session is an httpOnly cookie that the
@@ -11,14 +12,14 @@ export default function TerritoriesPage() {
     // request aimed at our API. Reading 'admin_token' from localStorage here
     // produced the literal string "Bearer null" once the token stopped being
     // stored there.
-    fetch(`${API_BASE}/admin/regions`, { headers: getAuthHeaders() })
-      .then(r => r.json())
+    fetchJson(`${API_BASE}/admin/regions`, { headers: getAuthHeaders() })
       .then(data => {
-        setTerritories(data);
+        setTerritories(toList(data));
         setLoading(false);
       })
       .catch(err => {
-        console.error(err);
+        // A failed load used to leave an empty table, indistinguishable from "no territories".
+        setError(err.message || 'Could not load territories');
         setLoading(false);
       });
   }, []);
@@ -32,6 +33,7 @@ export default function TerritoriesPage() {
         </div>
       </div>
       
+      {error && <p role="alert" style={{ color: 'var(--danger)', fontWeight: 700 }}>{error}</p>}
       {loading ? <p>Loading territories...</p> : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {territories.map(t => (
@@ -43,7 +45,7 @@ export default function TerritoriesPage() {
               </div>
             </div>
           ))}
-          {territories.length === 0 && <p style={{ color: 'var(--ink-muted)' }}>No territories found.</p>}
+          {!error && territories.length === 0 && <p style={{ color: 'var(--ink-muted)' }}>No territories found.</p>}
         </div>
       )}
     </div>

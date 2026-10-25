@@ -4,11 +4,16 @@ const { v4: uuidv4 } = require('uuid');
 const createVendor = async (req, res, next) => {
     try {
         const { societyId, vendorName, vendorType, contactPerson, contactPhone, gstNumber, monthlyCost } = req.body;
+        if (!societyId || !vendorName || !String(vendorName).trim()) {
+            return res.status(400).json({ success: false, error: 'societyId and vendorName are required' });
+        }
         const id = uuidv4();
 
-        await query(`INSERT INTO society_vendors 
-            (id, society_id, vendor_name, vendor_type, contact_person, contact_phone, gst_number, monthly_cost) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        // `name` is NOT NULL and was never written; see asset-registry for the
+        // same legacy-column pairing.
+        await query(`INSERT INTO society_vendors
+            (id, society_id, name, vendor_name, vendor_type, contact_person, contact_phone, gst_number, monthly_cost)
+            VALUES ($1, $2, $3, $3, $4, $5, $6, $7, $8)`,
             [id, societyId, vendorName, vendorType, contactPerson, contactPhone, gstNumber, monthlyCost]
         );
 
@@ -19,7 +24,7 @@ const createVendor = async (req, res, next) => {
 const listVendors = async (req, res, next) => {
     try {
         const { societyId } = req.query;
-        const vendors = await queryMany('SELECT * FROM society_vendors WHERE society_id = $1 AND is_active = true', [societyId]);
+        const vendors = await queryMany('SELECT * FROM society_vendors WHERE society_id = $1 AND is_active = \'1\'', [societyId]);
         res.json({ success: true, data: vendors });
     } catch (error) { next(error); }
 };
@@ -46,7 +51,7 @@ const payVendorInvoice = async (req, res, next) => {
         const adminId = req.user.id;
         const { invoiceId, paymentReference, paymentMethod } = req.body;
 
-        await query('UPDATE society_vendor_invoices SET payment_status = "paid", payment_date = CURRENT_TIMESTAMP, payment_reference = $1, payment_method = $2, approved_by = $3 WHERE id = $4',
+        await query('UPDATE society_vendor_invoices SET payment_status = \'paid\', payment_date = CURRENT_TIMESTAMP, payment_reference = $1, payment_method = $2, approved_by = $3 WHERE id = $4',
             [paymentReference, paymentMethod, adminId, invoiceId]
         );
 

@@ -103,7 +103,7 @@ export default function HeroBanner({
   headline = 'Everything local. One app.',
   subhead = 'Shops, services and neighbours within walking distance — discovered, booked and delivered in minutes.',
   primaryCta = { label: 'Explore shops', href: '/shops' },
-  secondaryCta = { label: 'List your shop', href: '/shop-registration' },
+  secondaryCta = { label: 'List your shop', href: '/register-shop' },
   children,
 }) {
   const reduce = useReducedMotion();

@@ -37,8 +37,11 @@ async function assertShopOwner(req, res) {
 }
 
 // â”€â”€ GET /api/v1/fleet-assets/:shopId â€” Get all assets â”€â”€
+// The shop's own fleet, with maintenance state and registration details: the
+// owner's and staff's to see. It was readable by any signed-in account.
 router.get('/:shopId', authenticate, async (req, res) => {
   try {
+    if (!(await assertShopOwner(req, res))) return;
     const { shopId } = req.params;
     const { status, assetType } = req.query;
 
@@ -209,6 +212,9 @@ router.post('/:shopId/book', authenticate, async (req, res) => {
 // â”€â”€ GET /api/v1/fleet-assets/:shopId/bookings â€” Get all rental bookings â”€â”€
 router.get('/:shopId/bookings', authenticate, async (req, res) => {
   try {
+    // The catalogue and its availability stay open to customers; the list of
+    // bookings — who rented what, and when — is the shop's.
+    if (!(await assertShopOwner(req, res))) return;
     const { shopId } = req.params;
     const { status } = req.query;
 

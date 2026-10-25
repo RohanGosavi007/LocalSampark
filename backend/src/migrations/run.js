@@ -52,6 +52,9 @@ async function runMigration() {
     console.log('🔄 Running migrations...');
     const isSqlite = process.env.USE_SQLITE === 'true';
     if (isSqlite) {
+      // Disable foreign keys during migrations so rebuild operations can drop & swap tables
+      await new Promise((resolve) => pool.exec('PRAGMA foreign_keys = OFF;', () => resolve()));
+
       // Run init.sqlite.sql first
       const initSql = fs.readFileSync(path.join(__dirname, 'init.sqlite.sql'), 'utf8');
       await new Promise((resolve, reject) => {
@@ -135,6 +138,7 @@ async function runMigration() {
           console.log(`⚠️ Migration ${file} error:`, err.message);
         }
       }
+      await new Promise((resolve) => pool.exec('PRAGMA foreign_keys = ON;', () => resolve()));
     } else {
       const checkTables = await pool.query(
         "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'"

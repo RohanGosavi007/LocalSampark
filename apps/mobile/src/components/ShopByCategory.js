@@ -5,14 +5,14 @@ import { theme } from '../theme/theme';
 import BouncyButton from './BouncyButton';
 
 const CATEGORIES = [
-  { id: '1', name: 'Grocery', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082008.png' },
-  { id: '2', name: 'Fresh Fruits', icon: 'https://cdn-icons-png.flaticon.com/512/3194/3194591.png' },
-  { id: '3', name: 'Carpool', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', route: '/advanced' },
-  { id: '4', name: 'Marketplace', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png', route: '/advanced' },
-  { id: '5', name: 'Jobs & Gigs', icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', route: '/advanced' },
-  { id: '6', name: 'Pharmacy', icon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png' },
-  { id: '7', name: 'Bakery', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081993.png' },
-  { id: '8', name: 'Pet Care', icon: 'https://cdn-icons-png.flaticon.com/512/2990/2990714.png' },
+  { id: '1', name: 'Grocery', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082008.png', route: '/(tabs)/directory?category=grocery' },
+  { id: '2', name: 'Fresh Fruits', icon: 'https://cdn-icons-png.flaticon.com/512/3194/3194591.png', route: '/(tabs)/directory?category=fruits' },
+  { id: '3', name: 'Carpool', icon: 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', route: '/modules/carpool' },
+  { id: '4', name: 'Marketplace', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png', route: '/modules/marketplace' },
+  { id: '5', name: 'Jobs & Gigs', icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', route: '/modules/jobs' },
+  { id: '6', name: 'Pharmacy', icon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png', route: '/(tabs)/directory?category=pharmacy' },
+  { id: '7', name: 'Bakery', icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081993.png', route: '/(tabs)/directory?category=bakery' },
+  { id: '8', name: 'Pet Care', icon: 'https://cdn-icons-png.flaticon.com/512/2990/2990714.png', route: '/(tabs)/directory?category=petcare' },
 ];
 
 export default function ShopByCategory() {

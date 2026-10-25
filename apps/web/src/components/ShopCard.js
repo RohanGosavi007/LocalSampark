@@ -177,7 +177,7 @@ const ShopCardComponent = ({ shop, category, index, onQuickView }) => {
               e.stopPropagation();
               onQuickView(shop);
             }}
-            className="rounded-md bg-commerce-surface/95 px-2 py-1 text-[11px] font-bold text-commerce-ink opacity-0 shadow-commerce transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-commerce-surface/95 px-3 py-1 text-[11px] font-bold text-commerce-ink opacity-0 shadow-commerce transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100"
           >
             Quick view
           </button>

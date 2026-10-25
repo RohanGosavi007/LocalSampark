@@ -29,22 +29,43 @@ export default function LeadDirectoryVisitorView({ shop }) {
     }
   }, [shop?.id]);
 
-  // Demo data if API is empty
-  const displayListings = listings.length > 0 ? listings : [
-    { id: 1, title: '2 BHK Fully Furnished Flat', listing_type: 'rent', price: 18000, location: 'Shivaji Nagar, Pune', features: '1200 sqft, East Facing', is_featured: true, contact_phone: '9876543210', created_at: new Date().toISOString() },
-    { id: 2, title: 'Delivery Executive Needed', listing_type: 'job', price: 15000, location: 'Kothrud', features: 'Bike + License required', is_featured: false, contact_phone: '9876543210', created_at: new Date().toISOString() },
-    { id: 3, title: 'Scrap Metal Buyer (Best Rates)', listing_type: 'scrap', price: '₹40/kg', location: 'Home Pickup Available', features: 'Iron, Copper, Aluminium', is_featured: true, contact_phone: '9876543210', created_at: new Date().toISOString() },
-    { id: 4, title: 'Looking for Bride', listing_type: 'matrimony', price: null, location: 'Pune', features: '28 Yrs, Software Engineer', is_featured: false, contact_phone: '9876543210', created_at: new Date().toISOString() },
-  ];
+  const displayListings = listings;
 
-  const handleInquiry = (e) => {
+  const [sending, setSending] = useState(false);
+  const [inquiryError, setInquiryError] = useState(null);
+  const [inquirySent, setInquirySent] = useState(false);
+
+  // Creates a lead for the shop (the owner is notified live). This used to wait 0.8 seconds and
+  // alert "Your inquiry has been sent to the owner" without contacting the server.
+  const handleInquiry = async (e) => {
     e.preventDefault();
-    // Simulate API call to create lead
-    setTimeout(() => {
-      setShowInquiryModal(false);
+    if (sending) return;
+    setSending(true);
+    setInquiryError(null);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      if (!token) throw new Error('Please log in to send an inquiry.');
+      const res = await fetch(`${API_URL}/api/v1/leads-crm/${shop.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          message: formData.message,
+          source: 'website',
+          inquiryType: selectedListing ? selectedListing.listing_type : 'general',
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Your inquiry could not be sent.');
+      setInquirySent(true);
       setFormData({ name: '', phone: '', message: '' });
-      alert('Your inquiry has been sent to the owner. They will contact you shortly.');
-    }, 800);
+      setTimeout(() => { setShowInquiryModal(false); setInquirySent(false); }, 2000);
+    } catch (err) {
+      setInquiryError(err.message || 'Your inquiry could not be sent.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const getListingIcon = (type) => {
@@ -81,7 +102,7 @@ export default function LeadDirectoryVisitorView({ shop }) {
           </p>
           <div className="flex flex-wrap gap-4 text-sm font-semibold text-text-muted">
             <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-cat-directory" /> {shop?.address || 'Local Area'}</span>
-            <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> {shop?.rating || '4.8'} Rating</span>
+            <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> {shop?.rating ? `${shop.rating} Rating` : 'New'}</span>
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cat-directory-light text-cat-directory">Verified Connect</span>
           </div>
         </div>
@@ -198,6 +219,9 @@ export default function LeadDirectoryVisitorView({ shop }) {
           </motion.div>
         ))}
       </div>
+      {displayListings.length === 0 && (
+        <p className="text-center text-text-muted py-12">This shop has no listings yet.</p>
+      )}
 
       {/* Inquiry Modal */}
       <AnimatePresence>
@@ -254,8 +278,10 @@ export default function LeadDirectoryVisitorView({ shop }) {
                     placeholder="I am interested in this listing. Please call me back."
                   />
                 </div>
-                <Button type="submit" className="w-full py-4 text-base bg-cat-directory hover:bg-cat-directory-dark mt-2">
-                  Send Inquiry to Owner
+                {inquiryError && <p role="alert" className="text-red-500 text-sm font-bold">{inquiryError}</p>}
+                {inquirySent && <p role="status" className="text-green-600 text-sm font-bold">Your inquiry was sent. The owner will contact you.</p>}
+                <Button type="submit" disabled={sending || inquirySent} className="w-full py-4 text-base bg-cat-directory hover:bg-cat-directory-dark mt-2">
+                  {sending ? 'Sending…' : 'Send Inquiry to Owner'}
                 </Button>
                 <p className="text-center text-xs text-text-muted mt-4">
                   By inquiring, you share your contact details securely via LocalSampark.

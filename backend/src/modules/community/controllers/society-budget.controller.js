@@ -21,8 +21,9 @@ const getBudgets = async (req, res, next) => {
         let sql = 'SELECT * FROM society_budgets WHERE society_id = $1';
         const params = [societyId];
         if (year) {
-            sql += ' AND financial_year = ?';
+            // $2, not ?: see guard-shift.controller.js for what the ? did.
             params.push(year);
+            sql += ` AND financial_year = $${params.length}`;
         }
         const budgets = await queryMany(sql, params);
         res.json({ success: true, data: budgets });

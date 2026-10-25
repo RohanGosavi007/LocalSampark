@@ -4,8 +4,13 @@ const { v4: uuidv4 } = require('uuid');
 const configureGate = async (req, res, next) => {
     try {
         const { societyId, gateName, gateType, locationDescription } = req.body;
+        if (!societyId || !gateName || !String(gateName).trim()) {
+            return res.status(400).json({ success: false, error: 'societyId and gateName are required' });
+        }
         const id = uuidv4();
-        await query('INSERT INTO society_gates (id, society_id, gate_name, gate_type, location_description) VALUES ($1, $2, $3, $4, $5)',
+        // `name` is NOT NULL and was never written; see asset-registry for the
+        // same legacy-column pairing.
+        await query('INSERT INTO society_gates (id, society_id, name, gate_name, gate_type, location_description) VALUES ($1, $2, $3, $3, $4, $5)',
             [id, societyId, gateName, gateType, locationDescription]
         );
         res.json({ success: true, message: 'Gate configured successfully' });
@@ -22,7 +27,7 @@ const assignGuardToGate = async (req, res, next) => {
 
 const lookupVehicle = async (req, res, next) => {
     try {
-        const { societyId, vehicleNumber } = req.query;
+        const { societyId, vehicleNumber } = { ...req.query, societyId: req.societyId || req.query.societyId };
         const vehicle = await queryOne('SELECT * FROM vehicles WHERE vehicle_number = $1', [vehicleNumber]);
         
         if (vehicle) {
@@ -36,7 +41,7 @@ const lookupVehicle = async (req, res, next) => {
 
 const getVehicleLog = async (req, res, next) => {
     try {
-        const { societyId } = req.query;
+        const { societyId } = { ...req.query, societyId: req.societyId || req.query.societyId };
         const logs = await queryMany('SELECT * FROM society_vehicle_log WHERE society_id = $1 ORDER BY created_at DESC LIMIT 100', [societyId]);
         res.json({ success: true, data: logs });
     } catch (error) { next(error); }
@@ -44,7 +49,7 @@ const getVehicleLog = async (req, res, next) => {
 
 const getUtilityHistory = async (req, res, next) => {
     try {
-        const { societyId } = req.query;
+        const { societyId } = { ...req.query, societyId: req.societyId || req.query.societyId };
         const logs = await queryMany('SELECT * FROM society_utility_deliveries WHERE society_id = $1 ORDER BY created_at DESC LIMIT 100', [societyId]);
         res.json({ success: true, data: logs });
     } catch (error) { next(error); }
@@ -52,8 +57,8 @@ const getUtilityHistory = async (req, res, next) => {
 
 const getGateDashboard = async (req, res, next) => {
     try {
-        const { societyId } = req.query;
-        const gates = await queryMany('SELECT * FROM society_gates WHERE society_id = $1 AND is_active = true', [societyId]);
+        const { societyId } = { ...req.query, societyId: req.societyId || req.query.societyId };
+        const gates = await queryMany('SELECT * FROM society_gates WHERE society_id = $1 AND is_active = \'1\'', [societyId]);
         
         for (const gate of gates) {
             gate.todayVehicles = (await queryOne('SELECT COUNT(*) as cnt FROM society_vehicle_log WHERE gate_id = $1 AND date(created_at) = date("now")', [gate.id])).cnt;

@@ -126,7 +126,7 @@ export default function ShopManagerDashboard({ params }) {
               <p style={{ color: 'var(--text-muted)', fontSize: '15px', margin: '8px 0 20px' }}>
                 Please log in to access your shop management dashboard.
               </p>
-              <Link href="/auth/login" style={{
+              <Link href="/login" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
                 padding: '12px 28px', borderRadius: '14px', textDecoration: 'none',
                 background: `linear-gradient(135deg, ${catInfo.color}, ${catInfo.color}cc)`,

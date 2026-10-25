@@ -3,17 +3,21 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { Image } from 'expo-image';
 import { OfflineQueueService } from '../../../../src/services/OfflineQueueService';
 import NetInfo from '@react-native-community/netinfo';
+import { apiGet } from '../../../../src/lib/api';
 
 export default function RetailManager() {
   const [isOnline, setIsOnline] = useState(true);
-  const [orders, setOrders] = useState([
-    {
-      id: 'LST-4821',
-      customer: 'Ramesh S.',
-      status: 'pending',
-      items: ['Dal - 1 kg', 'Rice - 5 kg', 'Sugar - 2 kg']
-    }
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [loadError, setLoadError] = useState(null);
+
+  // The shop's own pending orders (GET /shops/my-shop). This started with one invented order, "Ramesh S.".
+  useEffect(() => {
+    apiGet('/shops/my-shop')
+      .then((r) => setOrders((r.orders || []).filter((o) => ['pending', 'confirmed'].includes(String(o.order_status || o.status).toLowerCase())).map((o) => ({
+        id: String(o.id), customer: o.customer_name || 'Customer', status: o.order_status || o.status || 'pending', items: [`₹${o.total_amount}`],
+      }))))
+      .catch((e) => setLoadError(e.message || 'Orders could not be loaded.'));
+  }, []);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {

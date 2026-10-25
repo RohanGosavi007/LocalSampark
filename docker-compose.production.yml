@@ -1,14 +1,24 @@
-version: '3.8'
+# Self-hosted production stack: PostGIS, PgBouncer, Redis, API, web app, nginx (TLS).
+#
+#   export DB_PASSWORD=...            # required: compose refuses to start without it
+#   export API_PUBLIC_URL=https://api.localsampark.in
+#   export SITE_PUBLIC_URL=https://localsampark.in
+#   docker compose -f docker-compose.production.yml up -d --build
+#
+# Real values live in backend/.env.production (see the root .env.example). nginx needs
+# certificates at ./ssl/fullchain.pem and ./ssl/privkey.pem (e.g. copied from certbot).
+# Images are built from the repository root; the Dockerfiles say why.
 
 services:
-  # ─── PostgreSQL Database ──────────────────────────
   postgres:
-    image: postgres:15-alpine
+    # PostGIS, not stock PostgreSQL: the schema opens with CREATE EXTENSION postgis and
+    # declares GEOGRAPHY columns throughout.
+    image: postgis/postgis:15-3.4-alpine
     container_name: localsampark-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: localsampark_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-YOUR_SECURE_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
       POSTGRES_DB: localsampark
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -18,15 +28,14 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── 10x NEW: PgBouncer Connection Pooler ─────────
-  # Transaction-mode pooling: keeps PostgreSQL under 20 active connections
-  # while allowing 100+ Node.js-side connections via the pool
+  # Transaction-mode pooling keeps PostgreSQL under ~20 server connections while the Node
+  # pool holds many more client connections.
   pgbouncer:
-    image: edoburu/pgbouncer:latest
+    image: edoburu/pgbouncer:v1.23.1-p2
     container_name: localsampark-pgbouncer
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://localsampark_user:${DB_PASSWORD:-YOUR_SECURE_PASSWORD}@postgres:5432/localsampark
+      DATABASE_URL: postgres://localsampark_user:${DB_PASSWORD:?set DB_PASSWORD}@postgres:5432/localsampark
       POOL_MODE: transaction
       MAX_DB_CONNECTIONS: 20
       DEFAULT_POOL_SIZE: 20
@@ -45,7 +54,6 @@ services:
       postgres:
         condition: service_healthy
 
-  # ─── Redis Cache & Queue ──────────────────────────
   redis:
     image: redis:7-alpine
     container_name: localsampark-redis
@@ -59,11 +67,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── Backend API ──────────────────────────────────
   api:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: localsampark-api
     restart: unless-stopped
     depends_on:
@@ -80,34 +87,34 @@ services:
       DB_PORT: 6432
       DB_NAME: localsampark
       DB_USER: localsampark_user
-      DB_PASSWORD: ${DB_PASSWORD:-YOUR_SECURE_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      TRUST_PROXY_HOPS: "1"
+    networks:
+      default:
+        # nginx.conf (shared with the dev and staging stacks) names the API upstream "backend".
+        aliases:
+          - backend
+    # The HEALTHCHECK lives in backend/Dockerfile (busybox wget; the alpine image has no curl).
 
-  # ─── Web Frontend ─────────────────────────────────
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Compiled into the browser bundle at build time; changing them means rebuilding.
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:?set API_PUBLIC_URL}
+        NEXT_PUBLIC_SITE_URL: ${SITE_PUBLIC_URL:?set SITE_PUBLIC_URL}
     container_name: localsampark-web
     restart: unless-stopped
     depends_on:
       - api
-    env_file:
-      - ./apps/web/.env.production
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: https://api.localsampark.com
 
-  # ─── NGINX Reverse Proxy ──────────────────────────
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: localsampark-nginx
     restart: unless-stopped
     ports:
@@ -115,6 +122,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - web
       - api

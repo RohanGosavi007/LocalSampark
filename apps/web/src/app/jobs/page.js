@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, MapPin, Clock, Search, ChevronRight, Building2, IndianRupee, Users, Star, Send, X, CheckCircle2, Filter, Bookmark, BookmarkCheck, Mic, MicOff, FileText, Award, TrendingUp, BarChart3, MessageCircle, Calendar, ChevronDown, Plus, Sparkles, Shield, Eye } from 'lucide-react';
 import { API_URL } from '@/lib/api';
+import { getSharedSocket } from '@/context/SocketContext';
 
 const JOB_TYPES = [
   { value: '', label: 'All Types', icon: '💼' },
@@ -60,6 +61,8 @@ export default function JobsPage() {
   const [postJobForm, setPostJobForm] = useState({ title: '', category: '', salary_range: '', job_type: 'full_time', description: '', requirements: '', sector: 'private', remote_allowed: false, skills_required: [], urgency: 'normal' });
   const [postJobSkill, setPostJobSkill] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+  const [voiceIntroUrl, setVoiceIntroUrl] = useState(null);
   const [matchScore, setMatchScore] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -96,7 +99,11 @@ export default function JobsPage() {
     }
     if (activeTab === 'resume' && token) {
       fetch(`${API_URL}/api/v1/jobs/resumes/me`, { headers: authHeaders }).then(r => r.json()).then(d => {
-        if (d.resume) { setResume(d.resume); setResumeForm({ headline: d.resume.headline || '', summary: d.resume.summary || '', experience_years: d.resume.experience_years || 0, education: d.resume.education || '' }); }
+        if (d.resume) {
+          setResume(d.resume);
+          setResumeForm({ headline: d.resume.headline || '', summary: d.resume.summary || '', experience_years: d.resume.experience_years || 0, education: d.resume.education || '' });
+          if (d.resume.voice_intro_url) setVoiceIntroUrl(d.resume.voice_intro_url);
+        }
         setSkills(d.skills || []);
       }).catch(() => {});
       fetch(`${API_URL}/api/v1/jobs/recommendations`, { headers: authHeaders }).then(r => r.json()).then(d => setRecommendations(d.recommendations || [])).catch(() => {});
@@ -106,6 +113,49 @@ export default function JobsPage() {
       fetch(`${API_URL}/api/v1/jobs/companies`).then(r => r.json()).then(d => setCompanies(d.companies || [])).catch(() => {});
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const socket = getSharedSocket();
+    if (!socket) return;
+
+    socket.emit('jobs:join_applications');
+
+    const handleStageUpdated = (data) => {
+      if (!data) return;
+      setApplications(prev => prev.map(a => {
+        if (a.id === data.application_id) {
+          return { ...a, stage: data.new_stage };
+        }
+        return a;
+      }));
+    };
+
+    const handleAppReceived = (data) => {
+      if (!data) return;
+      setJobs(prev => prev.map(j => {
+        if (j.id === data.job_id) {
+          return { ...j, applications_count: (j.applications_count || 0) + 1 };
+        }
+        return j;
+      }));
+    };
+
+    socket.on('jobs:stage_updated', handleStageUpdated);
+    socket.on('jobs:application_received', handleAppReceived);
+
+    return () => {
+      socket.off('jobs:stage_updated', handleStageUpdated);
+      socket.off('jobs:application_received', handleAppReceived);
+    };
+  }, []);
+
+  useEffect(() => {
+    const socket = getSharedSocket();
+    if (!socket || !jobs?.length) return;
+    jobs.forEach(j => {
+      if (j?.id) socket.emit('jobs:join_employer', { job_id: j.id });
+    });
+  }, [jobs]);
 
   const toggleSave = async (jobId) => {
     if (!token) { alert('Please login'); return; }
@@ -120,7 +170,12 @@ export default function JobsPage() {
     if (!token) { alert('Please login'); return; }
     try {
       const res = await fetch(`${API_URL}/api/v1/jobs/apply`, {
-        method: 'POST', headers: authHeaders, body: JSON.stringify({ jobId, cover_note: applyNote, resume_id: resume?.id })
+        method: 'POST', headers: authHeaders, body: JSON.stringify({
+          jobId,
+          cover_note: applyNote,
+          resume_id: resume?.id,
+          voice_intro_url: voiceIntroUrl || resume?.voice_intro_url || null
+        })
       });
       const data = await res.json();
       if (data.success || res.ok) {
@@ -136,7 +191,11 @@ export default function JobsPage() {
     try {
       await fetch(`${API_URL}/api/v1/jobs/resumes`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ ...resumeForm, skills: [...skills.map(s => s.skill_name), newSkill.trim()] })
+        body: JSON.stringify({
+          ...resumeForm,
+          voice_intro_url: voiceIntroUrl || resume?.voice_intro_url || null,
+          skills: [...skills.map(s => s.skill_name), newSkill.trim()]
+        })
       });
       setSkills(prev => [...prev, { skill_name: newSkill.trim(), proficiency: 'intermediate' }]);
       setNewSkill('');
@@ -148,7 +207,11 @@ export default function JobsPage() {
     try {
       await fetch(`${API_URL}/api/v1/jobs/resumes`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ ...resumeForm, skills: skills.map(s => ({ name: s.skill_name, proficiency: s.proficiency })) })
+        body: JSON.stringify({
+          ...resumeForm,
+          voice_intro_url: voiceIntroUrl || resume?.voice_intro_url || null,
+          skills: skills.map(s => ({ name: s.skill_name, proficiency: s.proficiency }))
+        })
       });
       alert('Resume saved!');
     } catch (e) { alert('Failed'); }
@@ -161,12 +224,48 @@ export default function JobsPage() {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-      mediaRecorder.onstop = () => {
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        // In production: upload blob to /api/v1/upload and get URL
-        alert('🎤 Voice intro recorded! (Upload integration coming soon)');
         stream.getTracks().forEach(t => t.stop());
+        if (!token) {
+          alert('Microphone recording stopped. Please log in to upload your voice intro.');
+          return;
+        }
+        try {
+          setIsUploadingVoice(true);
+          const formData = new FormData();
+          formData.append('file', blob, 'voice_intro.webm');
+          formData.append('purpose', 'voice_intro');
+          const uploadRes = await fetch(`${API_URL}/api/v1/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData,
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && (uploadData.url || uploadData.fileUrl)) {
+            const finalUrl = uploadData.url || uploadData.fileUrl;
+            setVoiceIntroUrl(finalUrl);
+            await fetch(`${API_URL}/api/v1/jobs/resumes`, {
+              method: 'POST',
+              headers: authHeaders,
+              body: JSON.stringify({
+                ...resumeForm,
+                voice_intro_url: finalUrl,
+                skills: skills.map(s => ({ name: s.skill_name, proficiency: s.proficiency }))
+              })
+            });
+            alert('🎤 Voice intro uploaded and linked to your resume!');
+          } else {
+            alert(uploadData.error || 'Failed to upload voice recording.');
+          }
+        } catch (err) {
+          alert('Failed to upload audio: ' + (err.message || 'Network error'));
+        } finally {
+          setIsUploadingVoice(false);
+        }
       };
       mediaRecorder.start();
       setIsRecording(true);
@@ -518,12 +617,33 @@ export default function JobsPage() {
 
                   {/* Voice Intro */}
                   <div className="bg-card-bg border border-border rounded-2xl p-6">
-                    <h3 className="text-lg font-bold text-text mb-2">🎤 Voice Introduction</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-text">🎤 Voice Introduction</h3>
+                      {voiceIntroUrl && (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Active Intro
+                        </span>
+                      )}
+                    </div>
                     <p className="text-text-muted text-sm mb-4">Record a 30-second voice intro to stand out to recruiters (Apna-style)</p>
-                    <button onClick={isRecording ? stopRecording : startRecording}
-                      className={`w-full py-4 font-bold rounded-xl transition text-lg flex items-center justify-center gap-2 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-purple-600 text-white hover:bg-purple-500'}`}>
-                      {isRecording ? <><MicOff className="w-5 h-5" /> Stop Recording</> : <><Mic className="w-5 h-5" /> Start Recording</>}
-                    </button>
+
+                    {voiceIntroUrl && (
+                      <div className="mb-4 p-3 bg-background-alt/80 border border-border rounded-xl">
+                        <p className="text-xs text-text-muted mb-2 font-medium">Recorded Voice Audio:</p>
+                        <audio controls src={voiceIntroUrl.startsWith('http') ? voiceIntroUrl : `${API_URL}${voiceIntroUrl}`} className="w-full h-10 rounded-lg outline-none" />
+                      </div>
+                    )}
+
+                    {isUploadingVoice ? (
+                      <div className="w-full py-3.5 bg-purple-600/30 border border-purple-500/50 rounded-xl text-purple-300 font-semibold text-center text-sm flex items-center justify-center gap-2 animate-pulse">
+                        <Sparkles className="w-4 h-4 animate-spin" /> Uploading voice intro to server...
+                      </div>
+                    ) : (
+                      <button onClick={isRecording ? stopRecording : startRecording}
+                        className={`w-full py-4 font-bold rounded-xl transition text-base flex items-center justify-center gap-2 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20'}`}>
+                        {isRecording ? <><MicOff className="w-5 h-5" /> Stop Recording & Save</> : <><Mic className="w-5 h-5" /> {voiceIntroUrl ? 'Record New Voice Intro' : 'Start Recording Voice Intro'}</>}
+                      </button>
+                    )}
                   </div>
 
                   {/* AI Recommendations */}

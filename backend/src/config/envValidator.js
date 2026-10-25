@@ -18,6 +18,9 @@ const RECOMMENDED_VARS = [
   'FIREBASE_CLIENT_EMAIL',
   'MSG91_AUTH_KEY',
   'MSG91_TEMPLATE_ID',
+  // Links in emails (verification, order tracking) are built from these; unset, they point at localhost.
+  'BACKEND_URL',
+  'FRONTEND_URL',
   'GOOGLE_MAPS_API_KEY',
   'SMTP_HOST',
   'SMTP_USER',
@@ -38,8 +41,8 @@ const RECOMMENDED_VARS = [
  * startup error is the right escalation, not a boot failure.
  */
 const SECURITY_CRITICAL_PRODUCTION_VARS = {
-  PAYMENT_WEBHOOK_SECRET:
-    'Razorpay/Cashfree payment webhooks will be REJECTED (POST /payments/webhook/:provider returns 400).',
+    RAZORPAY_WEBHOOK_SECRET:
+    'Razorpay webhooks will be REJECTED (POST /webhooks/razorpay returns 503), so a payment whose browser never returns to confirm it stays unpaid. PAYMENT_WEBHOOK_SECRET is accepted as an older name for the same value.',
   SAAS_WEBHOOK_SECRET:
     'SaaS billing webhooks will be REJECTED (POST /saas/webhook/billing returns 503). Falls back to PAYMENT_WEBHOOK_SECRET.',
   STRIPE_WEBHOOK_SECRET:
@@ -123,8 +126,11 @@ function validateEnv() {
 
     // Security controls that are silently off when unset. Reported separately
     // and per-variable so the consequence is visible, not just the name.
+    const isSet = (key) => Boolean(process.env[key] && process.env[key].trim() !== '');
+    // An older name some deployments set for the same secret.
+    const ALIASES = { RAZORPAY_WEBHOOK_SECRET: 'PAYMENT_WEBHOOK_SECRET' };
     const missingSecurity = Object.keys(SECURITY_CRITICAL_PRODUCTION_VARS)
-      .filter(key => !process.env[key] || process.env[key].trim() === '');
+      .filter(key => !isSet(key) && !(ALIASES[key] && isSet(ALIASES[key])));
 
     if (missingSecurity.length > 0) {
       console.error('🔓 SECURITY: webhook secrets missing in production. Affected endpoints fail closed:');

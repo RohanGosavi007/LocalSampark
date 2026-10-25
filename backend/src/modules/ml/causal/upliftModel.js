@@ -451,7 +451,7 @@ async function loadTrainingLog({ windowDays = 90, limit = 50000 } = {}) {
       `SELECT e.item_id AS item_id,
               SUM(CASE WHEN e.event_type = 'IMPRESSION' THEN 1 ELSE 0 END) AS impressions,
               SUM(CASE WHEN e.event_type = 'CARD_CLICK' THEN 1 ELSE 0 END) AS clicks,
-              MAX(CASE WHEN e.is_exploration = 1 THEN 1 ELSE 0 END)        AS explored,
+              MAX(CASE WHEN e.is_exploration = '1' THEN 1 ELSE 0 END)        AS explored,
               MAX(CASE WHEN e.event_type IN ('CALL_VENDOR', 'PURCHASE_INTENT')
                        THEN 1 ELSE 0 END)                                  AS converted,
               s.rating       AS rating,
@@ -531,10 +531,10 @@ async function trainFromLog({ windowDays = 90, persist = true } = {}) {
     const versionRes = await query('SELECT MAX(version) AS v FROM ml_uplift_model');
     const version = (Number((versionRes.rows || versionRes || [])[0]?.v) || 0) + 1;
 
-    await query('UPDATE ml_uplift_model SET is_active = 0 WHERE is_active = 1');
+    await query('UPDATE ml_uplift_model SET is_active = \'0\' WHERE is_active = \'1\'');
     await query(
       `INSERT INTO ml_uplift_model (id, version, is_active, feature_names, weights, metrics)
-       VALUES ($1, $2, 1, $3, $4, $5)`,
+       VALUES ($1, $2, '1', $3, $4, $5)`,
       [
         crypto.randomUUID(),
         version,
@@ -559,7 +559,7 @@ async function loadActive({ force = false } = {}) {
   if (!force && active) return active;
   try {
     const res = await query(
-      'SELECT version, weights, metrics FROM ml_uplift_model WHERE is_active = 1 LIMIT 1'
+      'SELECT version, weights, metrics FROM ml_uplift_model WHERE is_active = \'1\' LIMIT 1'
     );
     const row = (res.rows || res || [])[0];
     if (!row) {

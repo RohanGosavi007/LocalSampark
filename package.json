@@ -20,7 +20,7 @@
     "test": "npm run test --workspaces --if-present",
     "test:unit": "npm run test --workspace=backend -- --testPathIgnorePatterns=setup --forceExit",
     "test:unit:coverage": "npm run test --workspace=backend -- --coverage --testPathIgnorePatterns=setup",
-    "test:api": "npm run test --workspace=backend -- --testPathPatterns=integration",
+    "test:api": "npm run test --workspace=backend -- --testPathPatterns=integration --forceExit",
     "test:e2e": "npx playwright test",
     "test:e2e:web": "npx playwright test --project=web-chromium",
     "test:e2e:admin": "npx playwright test --project=admin-chromium",
@@ -34,15 +34,15 @@
     "test:report": "npx playwright show-report test-results/html-report"
   },
   "engines": {
-    "node": "20.x"
-  },
-  "dependencies": {
-    "ajv": "^8.20.0"
+    "node": ">=20"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "playwright": "^1.61.1"
+  },
+  "dependencies": {
+    "next-sitemap": "^4.2.3"
   }
 }

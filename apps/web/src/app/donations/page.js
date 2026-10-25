@@ -26,19 +26,11 @@ export default function DonationsPage() {
       if (items.length > 0) {
         setRequests(items);
       } else {
-        setRequests([
-          { id: 1, title: 'Winter Clothes Drive', org: 'Hope Foundation', target: '200 items', collected: 120, location: 'Viman Nagar', urgent: true },
-          { id: 2, title: 'Books for Rural School', org: 'Vidya Trust', target: '500 books', collected: 350, location: 'Kalyani Nagar', urgent: false },
-          { id: 3, title: 'Food Rations for Orphanage', org: 'Care Home', target: '100 kg Rice', collected: 40, location: 'Wadgaon Sheri', urgent: true },
-        ]);
+        setRequests([]);
       }
     } catch (e) {
-      console.error('Donations API failed, using mock data:', e);
-      setRequests([
-        { id: 1, title: 'Winter Clothes Drive', org: 'Hope Foundation', target: '200 items', collected: 120, location: 'Viman Nagar', urgent: true },
-        { id: 2, title: 'Books for Rural School', org: 'Vidya Trust', target: '500 books', collected: 350, location: 'Kalyani Nagar', urgent: false },
-        { id: 3, title: 'Food Rations for Orphanage', org: 'Care Home', target: '100 kg Rice', collected: 40, location: 'Wadgaon Sheri', urgent: true },
-      ]);
+      console.error('Donations API failed:', e);
+      setRequests([]);
     }
     setLoading(false);
   };

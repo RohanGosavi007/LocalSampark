@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ShieldAlert, Activity, Users, MapPin, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { API_BASE } from '../../../lib/api';
 
 export default function GodModeSOS() {
   const [stats, setStats] = React.useState([
@@ -15,7 +16,7 @@ export default function GodModeSOS() {
     async function loadSOSData() {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-        const res = await fetch('/api/v1/sos/alerts', {
+        const res = await fetch(`${API_BASE}/sos/alerts`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (res.ok) {

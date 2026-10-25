@@ -1,4 +1,5 @@
 const { query } = require('../../../config/database');
+const platformConfig = require('../../../services/platformConfig.service');
 
 /**
  * Get all revenue models (subscriptions, loyalty)
@@ -66,14 +67,18 @@ const getRevenueModels = async (req, res, next) => {
  */
 const updateSubscriptionPlan = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { price, is_active } = req.body;
+        const { id } = req.params;
+    const { price, is_active } = req.body || {};
+    const amount = Number(price);
+    if (price === undefined || price === null || price === '' || !Number.isFinite(amount) || amount < 0 || amount > 100000) {
+      return res.status(400).json({ success: false, error: 'price must be a number from 0 to 100000' });
+    }
 
     await query(`
       UPDATE subscription_plans
       SET price = $1, is_active = $2
       WHERE id = $3
-    `, [price, is_active, id]);
+        `, [amount, is_active, id]);
 
     res.json({ success: true, message: 'Subscription plan updated successfully' });
   } catch (error) {
@@ -102,20 +107,63 @@ const updateLoyaltyTier = async (req, res, next) => {
 };
 
 /**
- * Update configs (profit allocation, ad pricing)
+ * Update configs (profit allocation, ad pricing).
+ *
+ * This wrote whatever keys and values it was sent straight into admin_config
+ * — the table the pricing settings live in — so it could set
+ * default_commission_percent to "free" or delivery_base_fee to -500. Pricing
+ * settings now go through platformConfig.update(), which checks each against
+ * its range; the other keys this screen shows must be numbers from 0 to
+ * 100000. Anything else is refused, and nothing is saved unless all of it is
+ * valid.
  */
+const LEGACY_KEYS = new Set([
+  'platform_profit_split', 'reward_pool_split', 'reserve_split', 'ad_cpc', 'ad_cpm',
+  'product_commission_percent', 'skilled_job_commission_percent', 'event_ticket_commission_percent',
+  'property_listing_fee', 'marketplace_listing_fee', 'franchise_commission_rate', 'delivery_payout_rate',
+]);
+
 const updateConfig = async (req, res, next) => {
   try {
-    const updates = req.body; // { key: value }
-    const keys = Object.keys(updates);
-    
-    for (const key of keys) {
-      // Upsert into admin_config
+    const updates = req.body && typeof req.body === 'object' ? req.body : {};
+    const pricing = {};
+    const legacy = {};
+    const errors = {};
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (platformConfig.SETTINGS[key]) {
+        pricing[key] = value;
+      } else if (LEGACY_KEYS.has(key)) {
+        const number = Number(value);
+        if (value === '' || value === null || !Number.isFinite(number) || number < 0 || number > 100000) {
+          errors[key] = 'Must be a number from 0 to 100000';
+        } else {
+          legacy[key] = number;
+        }
+      } else {
+        errors[key] = 'Unknown setting';
+      }
+    }
+
+    // Checked in full before anything is written.
+    for (const key of Object.keys(pricing)) {
+      if (platformConfig.coerce(key, pricing[key]) === undefined) errors[key] = 'Not a valid value for this setting';
+    }
+    if (Object.keys(errors).length) {
+      return res.status(400).json({ success: false, error: 'Some settings are not valid. Nothing was changed.', errors });
+    }
+
+    if (Object.keys(pricing).length) {
+      const outcome = await platformConfig.update(pricing, req.user && req.user.id);
+      if (outcome.errors) return res.status(400).json({ success: false, error: 'Some settings are not valid.', errors: outcome.errors });
+    }
+    for (const [key, value] of Object.entries(legacy)) {
+      // config_value is JSONB on PostgreSQL: a number in text form is valid JSON.
       await query(`
-        INSERT INTO admin_config (config_key, config_value) 
-        VALUES ($1, $2) 
-        ON CONFLICT(config_key) DO UPDATE SET config_value = $3
-      `, [key, String(updates[key]), String(updates[key])]);
+        INSERT INTO admin_config (config_key, config_value, config_category)
+        VALUES ($1, $2, 'revenue_model')
+        ON CONFLICT(config_key) DO UPDATE SET config_value = EXCLUDED.config_value, updated_at = CURRENT_TIMESTAMP
+      `, [key, String(value)]);
     }
 
     res.json({ success: true, message: 'Configuration updated successfully' });

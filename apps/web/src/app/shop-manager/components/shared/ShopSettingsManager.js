@@ -10,16 +10,16 @@ import { API_BASE } from '@/lib/api';
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const INITIAL_SETTINGS = {
-  shopName: 'Sharma General Store',
-  tagline: 'Fresh groceries, delivered to your door',
-  description: 'We are a family-run grocery store serving the Dhanori community since 2005. We stock fresh produce, daily essentials, and specialty items.',
-  gstNumber: '27AABCS1429B1ZB',
-  fssai: 'FSSAI-2021-PUNE-00123',
+  shopName: '',
+  tagline: '',
+  description: '',
+  gstNumber: '',
+  fssai: '',
   logoUrl: '',
   bannerUrl: '',
-  phone: '+91 98765 43210',
-  whatsapp: '+91 98765 43210',
-  email: 'sharma.store@gmail.com',
+  phone: '',
+  whatsapp: '',
+  email: '',
   website: '',
   hours: {
     Monday:    { open: '08:00', close: '21:00', closed: false },

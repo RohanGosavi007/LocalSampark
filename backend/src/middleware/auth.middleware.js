@@ -147,52 +147,96 @@ const optionalAuth = async (req, res, next) => {
 };
 
 // Check if user has admin role
+/**
+ * Platform staff tiers.
+ *
+ *   ADMIN, SUPER_ADMIN   full administrators (requireAdmin)
+ *   any other tier in    staff with a scoped grant — e.g. MODERATOR, FINANCE,
+ *   admin_roles          TERRITORY_ADMIN — who may use only routes that name
+ *                        the permission they need (requireStaff followed by
+ *                        requirePermission(domain, action)).
+ *
+ * requireAdmin admitted every admin_roles row whatever its tier, and gave a row
+ * with no permissions {"all": true}. Since 322 routes check requireAdmin alone,
+ * granting someone "moderator" made them a full administrator. A scoped grant
+ * now starts with no permissions: its holder can do exactly what the grant's
+ * permissions say, on the routes that check them, and nothing else.
+ */
+const FULL_ADMIN_ROLES = new Set(['ADMIN', 'SUPER_ADMIN']);
+
+async function resolveAdminRole(req) {
+  let adminRole = null;
+
+  // Primary source: an explicit grant in admin_roles. Roles are normalised to
+  // upper case because consumers such as admin.routes.js compare
+  // req.adminRole.role against 'SUPER_ADMIN' directly.
+  try {
+    const { queryOne } = require('../config/database');
+    const granted = await queryOne(
+      'SELECT * FROM admin_roles WHERE user_id = $1',
+      [req.user.id || req.user.userId]
+    );
+    if (granted && granted.role) {
+      const role = String(granted.role).toUpperCase();
+      adminRole = {
+        role,
+        regionId: granted.regionId || granted.region_id || null,
+        permissions: granted.permissions || (FULL_ADMIN_ROLES.has(role) ? '{"all": true}' : '{}'),
+        scoped: !FULL_ADMIN_ROLES.has(role),
+      };
+    }
+  } catch {
+    // admin_roles may not exist in every deployment; fall through to
+    // users.role below rather than failing the request.
+  }
+
+  // Fallback: the role carried on the user record itself. It also outranks a
+  // scoped grant: an administrator account with a stray moderator row is still
+  // an administrator.
+  if (!adminRole || adminRole.scoped) {
+    const userRoleStr = (req.user.role || '').toUpperCase();
+    if (FULL_ADMIN_ROLES.has(userRoleStr)) {
+      adminRole = {
+        role: userRoleStr,
+        regionId: req.user.regionId || req.user.region_id || null,
+        permissions: '{"all": true}',
+        scoped: false,
+      };
+    }
+  }
+  return adminRole;
+}
+
+/** Full administrators: ADMIN or SUPER_ADMIN, by grant or by account role. */
 const requireAdmin = async (req, res, next) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required.' });
     }
-
-    let adminRole = null;
-
-    // Primary source: an explicit grant in admin_roles. This lookup was missing
-    // entirely, so anyone who was an admin only via that table was rejected.
-    // Roles are normalised to upper case because consumers such as
-    // admin.routes.js compare req.adminRole.role against 'SUPER_ADMIN' directly.
-    try {
-      const { queryOne } = require('../config/database');
-      const granted = await queryOne(
-        'SELECT * FROM admin_roles WHERE user_id = $1',
-        [req.user.id || req.user.userId]
-      );
-      if (granted && granted.role) {
-        adminRole = {
-          role: String(granted.role).toUpperCase(),
-          regionId: granted.regionId || granted.region_id || null,
-          permissions: granted.permissions || '{"all": true}'
-        };
-      }
-    } catch {
-      // admin_roles may not exist in every deployment; fall through to
-      // users.role below rather than failing the request.
-    }
-
-    // Fallback: the role carried on the user record itself.
-    if (!adminRole) {
-      const userRoleStr = (req.user.role || '').toUpperCase();
-      if (userRoleStr === 'ADMIN' || userRoleStr === 'SUPER_ADMIN') {
-        adminRole = {
-          role: userRoleStr,
-          regionId: req.user.regionId || req.user.region_id || null,
-          permissions: '{"all": true}'
-        };
-      }
-    }
-
-    if (!adminRole) {
+    const adminRole = await resolveAdminRole(req);
+    if (!adminRole || adminRole.scoped) {
       return res.status(403).json({ error: 'Admin access required.' });
     }
+    req.adminRole = adminRole;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
+/**
+ * Any platform staff, full or scoped. Always follow it with
+ * requirePermission(domain, action), which is what limits a scoped grant.
+ */
+const requireStaff = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+    const adminRole = await resolveAdminRole(req);
+    if (!adminRole) {
+      return res.status(403).json({ error: 'Staff access required.' });
+    }
     req.adminRole = adminRole;
     next();
   } catch (error) {
@@ -218,7 +262,13 @@ const requireRole = (...roles) => {
 };
 
 // Generate tokens
-function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
+/**
+ * An access token is short (1 hour by default) and is renewed with the refresh
+ * token; clients that cannot renew — the admin console, which has no refresh
+ * token — pass `accessExpiresIn`. Each refresh token carries a unique `jti`, so
+ * the server can tell when one is presented twice (see the refresh route).
+ */
+function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}, { accessExpiresIn } = {}) {
   const jwtSecret = getJwtSecret();
   const jwtRefreshSecret = getJwtRefreshSecret();
 
@@ -232,11 +282,11 @@ function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}) {
   const accessToken = jwt.sign(
     payload,
     jwtSecret,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: accessExpiresIn || process.env.JWT_EXPIRES_IN || '1h' }
   );
 
   const refreshToken = jwt.sign(
-    { userId, tokenVersion },
+    { userId, tokenVersion, jti: require('crypto').randomUUID() },
     jwtRefreshSecret,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
   );
@@ -318,6 +368,22 @@ const requireAreaAgent = (req, res, next) => {
   const role = (req.adminRole?.role || req.user?.role || '').toUpperCase();
   if (!role || !allowedRoles.includes(role)) {
     return res.status(403).json({ error: 'Area Agent or Super Admin access required.' });
+  }
+  next();
+};
+
+/**
+ * After requireAdmin: the caller is a super administrator.
+ *
+ * requireAdmin admits every administrative tier — territory admins, moderators,
+ * support staff. Some actions are not for all of them: changing what a role is
+ * allowed to do, or who holds one. The tier is read from req.adminRole, which
+ * requireAdmin resolved from admin_roles (or the user record).
+ */
+const requireSuperAdmin = (req, res, next) => {
+  const role = String((req.adminRole && req.adminRole.role) || (req.user && req.user.role) || '').toUpperCase();
+  if (role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super administrator access required.' });
   }
   next();
 };
@@ -410,12 +476,18 @@ const enforceMultiTenancy = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+        // Roles are stored lower case ('shop_owner', 'super_admin'); the ROLES
+    // constants are upper case and ROLES.SHOP_OWNER is 'VENDOR'. Compared raw,
+    // as this was, neither branch below could match a real account: a shop
+    // owner was refused every Vendor CRM route, and so was an administrator.
+    const role = String(req.user.role || '').trim().toUpperCase();
+
     // Admins bypass tenant checks
-    if (req.user.role === ROLES.SUPER_ADMIN || req.user.role === ROLES.ADMIN) {
+    if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN) {
       return next();
     }
 
-    if (req.user.role === ROLES.SHOP_OWNER || req.user.role === 'VENDOR' || req.user.role === 'VENDOR_OWNER' || req.user.role === 'VENDOR_STAFF') {
+    if (['SHOP_OWNER', 'SERVICE_PROVIDER', 'VENDOR', 'VENDOR_OWNER', 'VENDOR_STAFF'].includes(role)) {
       // As above: one data path for both dialects, rather than silently
       // routing to Prisma whenever USE_SQLITE is not exactly 'true'.
       const { queryOne } = require('../config/database');
@@ -462,6 +534,8 @@ const enforceMultiTenancy = async (req, res, next) => {
 
 module.exports = {
   authenticate,
+  requireSuperAdmin,
+  requireStaff,
   optionalAuth,
   requireAdmin,
   requireRole,

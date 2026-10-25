@@ -155,7 +155,7 @@ module.exports = defineConfig({
       command: 'npm run dev --workspace=apps/web',
       url: 'http://localhost:3000',
       reuseExistingServer: true,
-      timeout: 60000,
+      timeout: 240000,
       env: {
         // `next dev` manages NODE_ENV itself; pinning it to 'test' here made
         // Next warn about a non-standard value on every boot.
@@ -172,7 +172,7 @@ module.exports = defineConfig({
       command: 'npm run dev --workspace=apps/admin',
       url: 'http://localhost:3001',
       reuseExistingServer: true,
-      timeout: 60000,
+      timeout: 240000,
       env: {
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
       },

@@ -60,10 +60,11 @@ router.post('/', authenticate, async (req, res, next) => {
         const id = crypto.randomUUID();
         await query(
             `INSERT INTO local_job_postings
-                 (id, employer_id, title, description, job_type, salary_range, address, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')`,
+                 (id, employer_id, title, category, description, job_type, salary_range, address, status)
+             VALUES ($1, $2, $3, $8, $4, $5, $6, $7, 'active')`,
             [id, req.user.id, title, description || '',
-             jobType || 'Full-time', salaryRange || '', location]
+             jobType || 'Full-time', salaryRange || '', location,
+             (req.body.category && String(req.body.category).trim()) || 'General']
         );
 
         res.status(201).json({

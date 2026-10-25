@@ -336,11 +336,11 @@ async function train({
     const versionRes = await query('SELECT MAX(version) AS v FROM ml_sequence_model');
     const version = (Number((versionRes.rows || versionRes || [])[0]?.v) || 0) + 1;
 
-    await query('UPDATE ml_sequence_model SET is_active = 0 WHERE is_active = 1');
+    await query('UPDATE ml_sequence_model SET is_active = \'0\' WHERE is_active = \'1\'');
     await query(
       `INSERT INTO ml_sequence_model
          (id, version, is_active, d_model, n_heads, max_len, vocabulary, weights, metrics)
-       VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8)`,
+       VALUES ($1, $2, '1', $3, $4, $5, $6, $7, $8)`,
       [
         crypto.randomUUID(),
         version,
@@ -380,7 +380,7 @@ async function loadActive({ force = false } = {}) {
     try {
       const res = await query(
         `SELECT version, d_model, n_heads, max_len, vocabulary, weights, metrics
-           FROM ml_sequence_model WHERE is_active = 1 LIMIT 1`
+           FROM ml_sequence_model WHERE is_active = '1' LIMIT 1`
       );
       const row = (res.rows || res || [])[0];
       if (!row) {

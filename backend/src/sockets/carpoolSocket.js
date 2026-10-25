@@ -19,14 +19,22 @@ module.exports = function carpoolSocket(io, socket) {
       user_id: socket.user?.id
     });
 
-    // Store in DB asynchronously (fire-and-forget)
+    // Store in DB asynchronously (fire-and-forget).
+    //
+    // The module path was '../../config/database', which resolves outside src:
+    // require() threw on every call, and the empty catch discarded it. No
+    // driver location was ever stored, so a ride's track could not be replayed
+    // after the fact — which is what it is kept for when an SOS is raised.
+    // Still not awaited, but a failure is now reported instead of dropped.
     try {
-      const { query } = require('../../config/database');
+      const { query } = require('../config/database');
       query(
         `INSERT INTO carpool_live_locations (ride_id, user_id, latitude, longitude, speed, heading) VALUES ($1, $2, $3, $4, $5, $6)`,
         [ride_id, socket.user?.id, latitude, longitude, speed || 0, heading || 0]
-      ).catch(() => {});
-    } catch (e) {}
+      ).catch((err) => console.error('[Carpool] could not store driver location:', err.message));
+    } catch (e) {
+      console.error('[Carpool] could not store driver location:', e.message);
+    }
   });
 
   // Join ride tracking room
@@ -101,15 +109,18 @@ module.exports = function carpoolSocket(io, socket) {
     };
     io.to(`ride_${ride_id}`).emit('carpool:new_message', payload);
 
-    // Persist to DB
+    // Persist to DB. Same wrong path and same silent catch as the location
+    // write above, so in-ride chat was delivered live and never saved.
     try {
-      const { query } = require('../../config/database');
+      const { query } = require('../config/database');
       const crypto = require('crypto');
       query(
         `INSERT INTO carpool_chat_messages (id, ride_id, sender_id, message, message_type) VALUES ($1, $2, $3, $4, $5)`,
         [crypto.randomUUID(), ride_id, socket.user?.id, message, message_type || 'text']
-      ).catch(() => {});
-    } catch (e) {}
+      ).catch((err) => console.error('[Carpool] could not store chat message:', err.message));
+    } catch (e) {
+      console.error('[Carpool] could not store chat message:', e.message);
+    }
   });
 
   // ═══ RIDE STATUS UPDATES ═══

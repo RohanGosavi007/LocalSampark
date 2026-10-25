@@ -1,28 +1,38 @@
-# LocalSampark — Render.com Deployment Configuration (Backend + Background Workers)
+# LocalSampark — Render.com Blueprint (API + web app + Redis + PostgreSQL).
+#
+# The admin console is deployed on Vercel (apps/admin/vercel.json). Every variable the
+# platform reads is listed in the root .env.example; sync:false values are prompted for
+# in the Render dashboard instead of being stored in this file.
+#
+# Background work (campaign schedule, subscription expiry, token cleanup, surge pricing)
+# runs inside the API process, guarded by database job locks so it is safe to scale to
+# several instances. There is no separate worker service: the one that used to be declared
+# here started backend/src/jobs/campaignScheduler.js, a file that no longer exists.
 services:
-  # 1. Main API Server
+  # 1. API server (Express + Socket.IO)
   - type: web
     name: localsampark-api
     runtime: node
     region: singapore
     plan: starter
-    buildCommand: npm ci --prefix backend
-    startCommand: npm start --prefix backend
+    # From the repository root: the only lockfile is the workspace root's, and npm ci refuses
+    # to run without one.
+    buildCommand: npm ci --workspace=backend
+    startCommand: npm start --workspace=backend
     healthCheckPath: /health
+    autoDeploy: false # managed by GitHub Actions
     envVars:
       - key: NODE_ENV
         value: production
-      # The deployed commit is surfaced on /health so the deploy workflow can
-      # confirm the NEW build is serving before reporting success — without it
-      # the health check can only prove that *something* is up, which is what
-      # previously let a failed deploy pass as green.
+      - key: USE_SQLITE
+        value: "false"
+      # Schema migrations are applied on boot (server.js), so a deploy needs no extra step.
       #
-      # No envVar entry is needed: Render injects RENDER_GIT_COMMIT into every
-      # service automatically, and backend/src/server.js reads it (falling back
-      # to GIT_COMMIT, which is what other platforms would set).
-      # Graceful-shutdown budget. Render sends SIGTERM and waits ~30s before
-      # SIGKILL; the server drains for DRAIN then force-exits at DEADLINE, both
-      # inside that window. See the shutdown handler in backend/src/server.js.
+      # The deployed commit is surfaced on /health so the deploy workflow can confirm the NEW
+      # build is serving. Render injects RENDER_GIT_COMMIT itself.
+      #
+      # Graceful shutdown: Render sends SIGTERM and waits ~30s before SIGKILL; the server drains
+      # for DRAIN then force-exits at DEADLINE, both inside that window.
       - key: SHUTDOWN_DRAIN_MS
         value: "5000"
       - key: SHUTDOWN_DEADLINE_MS
@@ -36,22 +46,57 @@ services:
           type: redis
           name: localsampark-redis
           property: connectionString
+      # ── Auth ──
       - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: ADMIN_JWT_EXPIRES_IN
+        value: 12h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      # ── Public URLs (CORS and links in emails) ──
+      # CLIENT_URL is required at boot: envValidator exits without it.
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: localsampark-web
+          property: envVars.RENDER_EXTERNAL_URL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: localsampark-web
+          property: envVars.RENDER_EXTERNAL_URL
+      # Verification emails link to the API; unset, they pointed at localhost.
+      - key: BACKEND_URL
         sync: false
+      - key: ADMIN_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # Proxies in front of this process (rate limits, admin IP allow-list). See config/proxy.js.
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: CCTV_WEBHOOK_SECRET
+        sync: false
+      # ── Supabase (realtime) ──
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_KEY
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      # ── Payment gateways ────────────────────────────────────────────────
-      # These were not declared here at all, so they were unset in production.
-      # The effect was silent: paymentGateway.service.js dropped into
-      # simulated-order mode, and payment.gateway.js signed webhooks with a
-      # literal 'mocksecret' published in the source. Both now fail closed, so
-      # the endpoints return 400/503 until these are filled in.
-      # sync:false means Render prompts for the value instead of storing it here.
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      # ── Payment gateways ──
+      # Unset, online payment answers 503 and cash on delivery / wallet keep working; webhooks
+      # are refused rather than trusted.
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET
+        sync: false
+      # The secret typed into the Razorpay dashboard webhook (/api/v1/webhooks/razorpay), not the key secret.
+      - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
       - key: PAYMENT_WEBHOOK_SECRET
         sync: false
@@ -61,50 +106,29 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      # ── SMS / OTP delivery (MSG91) ──────────────────────────────────────
-      # Without these, smsOtp.service.js logs the OTP instead of sending it,
-      # and reports success either way.
+      # ── SMS / OTP (MSG91) ──
       - key: MSG91_AUTH_KEY
         sync: false
       - key: MSG91_TEMPLATE_ID
         sync: false
-      # ── Firebase Admin (push notifications) ─────────────────────────────
+      # ── Firebase Admin (push) ──
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_CLIENT_EMAIL
         sync: false
       - key: FIREBASE_PRIVATE_KEY
         sync: false
-    autoDeploy: false # Managed by GitHub Actions
+      - key: SENTRY_DSN
+        sync: false
 
-  # 2. BullMQ Campaign & Surge Pricing Worker
-  - type: worker
-    name: localsampark-worker
-    runtime: node
-    region: singapore
-    plan: starter
-    buildCommand: npm ci --prefix backend
-    startCommand: node backend/src/jobs/campaignScheduler.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: localsampark-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: localsampark-redis
-          property: connectionString
-
-  # 3. Redis Cache Engine
+  # 2. Redis (cache, rate limits, queues)
   - type: redis
     name: localsampark-redis
     region: singapore
     plan: starter
+    ipAllowList: [] # internal connections only
 
-  # 5. Frontend Web App
+  # 3. Web app (Next.js)
   - type: web
     name: localsampark-web
     runtime: node
@@ -113,20 +137,23 @@ services:
     buildCommand: npm ci && npm run build:web
     startCommand: npm run start --workspace=apps/web
     healthCheckPath: /api/health
+    autoDeploy: false
     envVars:
       - key: NODE_ENV
         value: production
       - key: NODE_OPTIONS
         value: "--max-old-space-size=4096"
+      # Baked into the browser bundle at build time.
       - key: NEXT_PUBLIC_API_URL
         fromService:
           type: web
           name: localsampark-api
           property: envVars.RENDER_EXTERNAL_URL
-    autoDeploy: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
 
 databases:
-  # 4. Core PostgreSQL Database
+  # 4. PostgreSQL (needs the PostGIS extension: CREATE EXTENSION postgis;)
   - name: localsampark-db
     databaseName: localsampark
     user: localsampark_admin

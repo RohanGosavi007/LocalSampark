@@ -1,8 +1,118 @@
 # LocalSampark — Investor Readiness Report
 
-**Date:** 2026-09-19
+**Date:** 2026-10-09 (second pass; the first pass, 2026-09-19, follows from §1)
 **Scope:** `apps/web`, `apps/admin`, `apps/mobile`, `backend`
 **Companion documents:** [`PARITY_AUDIT.md`](PARITY_AUDIT.md) (feature parity matrix), [`DESIGN_AUDIT.md`](DESIGN_AUDIT.md) (UI/UX audit)
+
+---
+
+## 0. Second pass — 2026-10-09
+
+The first pass left two items open: the mobile society module was static (§5.3), and mobile screens other than order tracking did not subscribe to real-time events (§5.2). Both are closed. Re-running the demo personas through every pillar against a live server then found more defects. Each one below was reproduced before it was fixed and verified after.
+
+### 0.1 Defects that would have stopped the demo
+
+| # | Defect | Effect on the demo | Fix |
+|---|---|---|---|
+| 1 | **The society API had 8 routes, and the web society page and mobile tabs call far more.** Members, bills, polls, amenities, complaints, parking, events, directory, the guard inbox, visitor approve/decline and the emergency board all answered 404 on web, and mobile never called them. | Every society tab except the gate log was empty or broken, on both platforms | 56 new routes (64 total): 53 handlers in a new `society-resident.controller.js` plus visitor approve/decline/check-in on the existing state machine, each behind the existing per-society capability guards. Pinned by a contract test that reads both clients' source and fails on any call without a route |
+| 2 | **14 of 16 mobile society tabs were placeholders or fabricated.** Five said "Feature coming soon". Parking showed a Honda City and a Royal Enfield as every resident's vehicles. Polls showed invented vote counts, and "Vote" only displayed an alert. SOS displayed "Security is on the way" and sent nothing. Pre-approvals lived in component state with a fixed PIN. Bills read fields the API does not return, so every bill showed ₹0 / Unpaid | A resident would have seen invented data, or an SOS that summoned nobody | All 16 tabs rebuilt on one shared kit (`src/components/society/SocietyKit.js`): real endpoints, loading/error/empty states, 44pt targets, themed. The society role now comes from the server's membership, not the platform role |
+| 3 | **The workspace packages resolved to another copy of the repo.** `node_modules/@localsampark/*` linked to `localsampark 22-09-2026`. The backend, web and admin all loaded `@localsampark/shared` from that stale snapshot | The territory geofencing suite could not load (`territoryTopology` absent there), and edits to `packages/` were invisible to the apps | Links repointed to this checkout |
+| 4 | **The dev database was 15+ migrations behind the code.** `orders.rider_payout` (migration 122) was missing | Order placement and every rider endpoint 500'd: `no such column: rider_payout` | `npm run db:migrate` (after a backup). It is now step 2 of §6 |
+| 5 | **The demo rider was not a rider.** Every delivery route requires an approved `delivery_agents` row; the seeder never created one | The rider dashboard answered 403 `NOT_A_RIDER` on every call | Seeded, KYC approved, online in Dhanori |
+| 6 | **No demo shop appeared under any category.** `/shops/nearby` filters on `category_id`; demo shops set only a free-text category | Tap "Grocery" and the seeded supermarket was missing | The seeder resolves `category_id` from `shop_categories` |
+| 7 | **The job board showed none of the seeded jobs.** The board reads `local_job_postings`; the seeder wrote two other tables | The job seeker saw two leftover "Smoke Job" rows | Seeded into the board table. Applying now refuses duplicates (409) and records `applied_at` |
+| 8 | **Gate visitor alerts were never stored.** `visitor_alert` is not a type the notifications table's CHECK constraint accepts, so the insert failed | With push unconfigured, a resident received nothing when a visitor arrived | Unlisted types are stored as `system`, with the real type kept in `data.type` |
+| 9 | **SOS raised from the society board reached no one live.** It broadcast to a `society_<id>` room that no handler ever joined | The guard saw it only after a refresh | `join_society_room` added (members only) |
+| 10 | **Every mobile persona button signed in as the consumer.** The switcher passed role names its phone map does not contain | "Merchant" opened the shop dashboard as a shopper | Rebuilt with eight real personas (§0.4) |
+
+### 0.2 Other defects fixed
+
+- **Notice board leak:** `GET /societies/notices?societyId=…` read any society's notices for any signed-in account. It is now members-only and verified live (403).
+- **Web gate entry always 400'd.** The web form sends `visitorName` / `flatNumber`, while the handler read `name` / `flat`. Both spellings are now accepted.
+- **Guard parcel queue was always empty.** It filtered `status = 'received'`, while parcels are stored as `'pending'`.
+- **Web notices posted to a route that doesn't exist** (`/society-management/notices`). The contract test caught it.
+- **Web society actions:** 23 buttons flashed "✅" without checking the response, and a refusal (a second vote, an overlapping booking) became an unhandled promise rejection. Writes now return `{success:false, error}`, and the buttons show the server's reason.
+- **Web staff attendance grid** expected `{attendance, allStaff}` from an endpoint that returns an array.
+- **Mobile `/modules/carpool`** showed seat *capacity*, so the count never dropped as people booked.
+- **SOS sent the Gateway of India.** `sos/index.js` reported 18.922, 72.834 and pincode 400001 from every phone. It now sends the device's fix, falls back to the last-known one, and otherwise sends no coordinates rather than false ones.
+- **Mumbai pincode 400001 was hardcoded** in delivery jobs, lost-and-found (including posting), scrap pickups, the blood-bank and medical donor forms, and town-square tips. All now use the user's resolved territory pincode.
+- Keyboard handling in the society module: `KeyboardAvoidingView`, `keyboardShouldPersistTaps`. Tab chips and back button raised to 44pt.
+
+### 0.3 Status by pillar
+
+"Verified live" means exercised against a running server as the seeded personas, not inspected.
+
+| Pillar | Status | Evidence |
+|---|---|---|
+| **3. Society security & gate** | ✅ Verified live | 82-check API probe across four personas: every read, every write, every double-action conflict, every permission refusal. 13-check socket probe: walk-in → resident `VISITOR_ALERT` in 38 ms; resident approves → guard `VISITOR_RESPONSE` in 19 ms; SOS → guard in 17 ms; notice → residents live; non-members refused every room. Pinned by `integration/societyResidentSurface.test.js` (38) and `societyClientContract.test.js` (5) |
+| **6. Delivery & dispatch** | ✅ Rider and customer reads verified live | The rider sees the in-flight order and one ready for pickup; the customer sees their history. The full lifecycle is covered by the existing `integration/orderLifecycle.test.js` and was not re-driven by hand in this pass |
+| **5. Carpool** | ✅ Verified live | Booking returns remaining seats; another client's socket receives `carpool:ride_updated` in 39 ms, and web and mobile patch the ride in place |
+| **4. Jobs** | ✅ Board and apply verified live; employer live updates server-side only | 10 seeded postings across Retail, Logistics, Security, Facilities and Administration, with 30 applicants in four stages. The server emits `jobs:application_received`, but **no client subscribes yet** |
+| **1. Shops & categories** | ✅ Category browsing verified live | All 15 demo shops appear under their category in `/shops/nearby` |
+| **2. Geofencing & territory** | ✅ Tests pass; not re-audited by hand | `territoryTopology` (26) now runs at all (see 0.1 #3); `geofenceMonitor` and `territoryResolution` pass |
+
+### 0.4 Demo data and personas
+
+`npm run seed:demo --workspace=backend` now writes **419 rows**, identical on re-run, with zero failed inserts and **17/17 checks** passing. Re-seeding also clears what a rehearsal leaves on demo records: orders at demo shops, seat bookings, job applications and votes.
+
+| Dataset | Seeded |
+|---|---:|
+| Shops, each in a real `shop_categories` category | 15 |
+| Catalogue items | 138 |
+| Job postings on the board / applicants in 4 stages | 10 / 30 |
+| Carpool rides, partly booked | 7 |
+| Orders: pending, confirmed, preparing, ready (OTP 4826), out for delivery (rider assigned, OTP 4822), delivered | 6 |
+| Society members (6 personas + 16 neighbours + 4 guards) | 26 |
+| Guards on today's roster across two gates / gate passes / today's gate register | 5 / 10 / 8 |
+| Bills (paid, pending, overdue) / events with RSVPs / polls with votes | 22 / 3 / 2 |
+
+Gate passes use codes **482101–482110**. One visitor, *Santosh Patil → B-401*, is left **pending**, so the resident persona can approve them live on stage.
+
+**Persona switcher** (development builds of both apps): tap **👤 Personas**. Eight personas on mobile (Consumer, Resident, Committee, Gate guard, Merchant, Rider, Commuter, Job seeker); the same plus Service pro and Admin on web. Each signs in through the real OTP flow and opens that persona's screen.
+
+### 0.5 Real-time data flow
+
+```mermaid
+flowchart LR
+  subgraph Clients
+    M[Mobile app<br/>one authenticated socket]
+    W[Web app<br/>shared SocketProvider]
+  end
+  subgraph Backend
+    R[REST handlers] -->|io.to room .emit| S[socket.io server<br/>JWT handshake → socket.user.id]
+    R --> DB[(One database<br/>SQLite dev · PostgreSQL prod)]
+    R --> N[notification.service<br/>inbox row + push]
+  end
+  M & W -->|REST| R
+  S -->|flat_SOC_FLAT: VISITOR_ALERT, PACKAGE_ARRIVED| M & W
+  S -->|gatekeeper_SOC: VISITOR_RESPONSE, GUARD_MESSAGE| M & W
+  S -->|society_SOC: SOCIETY_EMERGENCY, SOCIETY_NOTICE, SOCIETY_EVENT_CREATED| M & W
+  S -->|order_ID: order_status_*| M & W
+  S -->|broadcast: carpool:ride_updated| M & W
+```
+
+Every room join is authorised on the server against society membership or order ownership. A client cannot listen to a flat, gate or society it does not belong to; this was probed live with a non-member persona.
+
+### 0.6 Verification (this pass)
+
+| Suite | Result |
+|---|---|
+| Backend unit + integration | **1267 passed, 97/97 suites** (was 1198 with one suite unable to load) |
+| Mobile jest | **211 passed, 10/10 suites** |
+| Web production build | **Compiles, no warnings** |
+| Admin production build | **Compiles, no warnings** |
+| Changed mobile files: Babel (app preset) + ESLint (project config) | All compile; 0 lint errors |
+| Live society API probe / live socket probe / live carpool socket probe | 82/82 · 13/13 · 1/1 |
+| Seeder, run twice | 419 rows both times, 17/17 checks |
+
+### 0.7 Still open
+
+- **No device run.** The Android app was verified by compiling every changed file with the app's Babel preset, linting, and the jest suite, not on a phone or emulator. Run it on a device before the pitch.
+- **Jobs live updates:** the server emits them; no client listens yet.
+- **Migration 107** (`society_members` without a flat) cannot drop its old table on the dev database because of foreign keys. It has failed this way since before this pass; a `society_members_rebuilt` table is left over. Nothing reads it.
+- **Demo-shop photos** are the same two stock images for every shop; one product image is shared across all items.
+- **Dead code:** `apps/mobile/src/screens/carpool/FindRide.js` is imported nowhere and asserts a 4.9 rating for every ride.
+- Phases from the brief not started: the consumer shop gaps listed in §5.4 and a per-screen Android back-button audit.
 
 ---
 
@@ -214,9 +324,9 @@ Two more defects fell out of that work:
 - **`/resident` joined `flat_SOC-123_A-402`** — a hardcoded society and flat. Every resident on the platform listened to the same fake room, so nobody received their own visitor alerts. It now resolves the real membership from the server, and `join_flat_room` verifies it.
 - **`/gatekeeper` POSTed visitors to an authenticated route with no `Authorization` header**, and joined the gate room with `{ gateId: 'GATE-1' }` and no society — which the server requires, since the gate id alone is not unique and every deployment's first gate is called GATE-1. Both fixed; the room is joined once on mount rather than per submit.
 
-**What remains:** mobile screens beyond order tracking (gate console, society notices, shop orders) still need to subscribe. The transport, the hooks and the authorisation are in place and tested.
+**What remains:** *(second pass)* the gate console, society notices, packages, messages, SOS and events now subscribe; see §0.5. Shop orders were not revisited. The transport, the hooks and the authorisation are in place and tested.
 
-### 5.3 Mobile society module is still largely static
+### 5.3 Mobile society module is still largely static — *resolved in the second pass, see §0*
 
 Eleven of sixteen society tabs make no API call; five are `"Feature coming soon..."` placeholders. `VisitorsTab` holds pre-approvals in React state and never sends them, so a resident can pre-approve a visitor and the guard will not see it — the seeder now creates three real pre-approvals so the gate console has something to check against, but the mobile write path is still local-only.
 
@@ -229,17 +339,21 @@ Phase 4 in full (Zod/Yup schema validation across forms, offline retry queues, i
 ## 6. Running the demo
 
 ```bash
-# 1. Backend (SQLite — see §5.1 before choosing this)
+# 1. Bring the schema up to date (idempotent; back up backend/src/data/localsampark.db first).
+#    Skipping this is what made checkout and the rider screens 500 — see §0.1 #4.
+USE_SQLITE=true npm run migrate --workspace=backend
+
+# 2. Seed (re-run before the pitch to clear a rehearsal)
+USE_SQLITE=true npm run seed:demo --workspace=backend
+
+# 3. Backend (SQLite — see §5.1 before choosing this)
 USE_SQLITE=true NODE_ENV=development PORT=5000 node backend/src/server.js
 
-# 2. Seed
-npm run seed:demo --workspace=backend
-
-# 3. Apps
+# 4. Apps
 npm run dev:web     # localhost:3000
 npm run dev:admin   # localhost:3001
 
-# 4. Sign in with any persona from §2, OTP 123456
+# 5. Tap 👤 Personas (bottom right) or sign in with any persona from §2, OTP 123456
 ```
 
 The web app takes over a minute to compile its first route on a cold `next dev`. Warm it before anyone is watching.

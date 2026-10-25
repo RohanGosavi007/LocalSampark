@@ -1,208 +1,163 @@
 /**
- * Shop payout / commission arithmetic.
+ * Settlement arithmetic for one order.
  *
- * The pre-launch audit measured 3.7% branch coverage across the backend, and the
- * money paths were the worst of it — the pre-existing wallet test asserts that a
- * SQL string the test itself declares contains a substring, so it exercises no
- * application code at all.
+ * services/payout.service.js settleOrder() is pure: an order row, the
+ * commission terms fixed on it, and the platform settings in; what the shop
+ * earns, what the platform takes, and who was holding the money, out. The
+ * payout for a period is the sum of these lines (less TDS and any dues
+ * carried forward), which src/__tests__/services/shopPayouts.test.js runs
+ * against the real tables.
  *
- * These tests drive the real PayoutService.calculateShopPayout with the database
- * mocked, and assert on the money rather than on the shape of a query string.
+ * These assert on the money, case by case, for each place the customer's
+ * money can be when the order is delivered.
  */
-const { query, queryMany } = require('../src/config/database');
+const { settleOrder, collectedBy } = require('../src/services/payout.service');
 
-jest.mock('../src/config/database', () => ({
-  query: jest.fn().mockResolvedValue({ rows: [] }),
-  queryMany: jest.fn(),
-  queryOne: jest.fn(),
-  pool: { query: jest.fn() },
-}));
+const CONFIG = { gst_on_commission_percent: 18, gateway_fee_percent: 2 };
+const FIVE = { percent: 5, convenienceFee: 0 };
 
-const PayoutService = require('../src/services/payout.service');
-
-/** Pull the values written into shop_payouts by the call under test. */
-function payoutInsert() {
-  const call = query.mock.calls.find((c) => /INSERT INTO shop_payouts/i.test(c[0]));
-  if (!call) return null;
-  const p = call[1];
-  return {
-    grossGMV: parseFloat(p[4]),
-    totalOrders: p[5],
-    platformCommission: parseFloat(p[6]),
-    commissionRate: p[7],
-    gatewayFee: parseFloat(p[8]),
-    deliveryDeductions: parseFloat(p[9]),
-    gstOnCommission: parseFloat(p[10]),
-    tds: parseFloat(p[11]),
-    netPayout: parseFloat(p[12]),
-  };
-}
-
-function lineItems() {
-  return query.mock.calls
-    .filter((c) => /INSERT INTO payout_line_items/i.test(c[0]))
-    .map((c) => ({
-      orderAmount: parseFloat(c[1][3]),
-      commission: parseFloat(c[1][4]),
-      gatewayFee: parseFloat(c[1][5]),
-      net: parseFloat(c[1][6]),
-    }));
-}
-
-const P0 = '2026-08-01';
-const P1 = '2026-09-01';
-
-beforeEach(() => {
-  jest.clearAllMocks();
-  query.mockResolvedValue({ rows: [] });
+/** An order as it is stored: ₹500 of items, delivered by a platform rider. */
+const order = (overrides = {}) => ({
+  id: 'o1',
+  subtotal: 500,
+  total_amount: 545, // + ₹40 delivery + ₹5 platform fee
+  delivery_fee: 40,
+  platform_fee: 5,
+  small_order_fee: 0,
+  discount: 0,
+  payment_method: 'razorpay',
+  cash_collected_by: null,
+  assigned_agent_id: 'rider-1',
+  fulfillment_method: 'delivery',
+  ...overrides,
 });
 
-describe('calculateShopPayout — core arithmetic', () => {
-  it('returns null when the shop had no delivered orders', async () => {
-    queryMany.mockResolvedValue([]);
-    const result = await PayoutService.calculateShopPayout('shop_1', P0, P1);
-    expect(result).toBeNull();
-    // Nothing should be written for an empty period.
-    expect(query).not.toHaveBeenCalled();
+describe('who was holding the money', () => {
+  it('the platform, for an order paid online or from the wallet', () => {
+    expect(collectedBy(order({ payment_method: 'razorpay' }))).toBe('platform');
+    expect(collectedBy(order({ payment_method: 'wallet' }))).toBe('platform');
   });
 
-  it('computes commission on the full order value, delivery fee included', async () => {
-    queryMany.mockResolvedValue([
-      { id: 'o1', total_amount: '1000', delivery_fee: '40', payment_method: 'razorpay' },
-    ]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const p = payoutInsert();
-
-    expect(p.grossGMV).toBeCloseTo(1000, 2);
-    expect(p.deliveryDeductions).toBeCloseTo(40, 2);
-    // 10% of the full 1000, delivery fee included
-    expect(p.platformCommission).toBeCloseTo(100, 2);
-    // 2% gateway fee is charged on the FULL gross, not the net
-    expect(p.gatewayFee).toBeCloseTo(20, 2);
-    // 18% GST on the commission
-    expect(p.gstOnCommission).toBeCloseTo(18, 2);
-    expect(p.netPayout).toBeCloseTo(1000 - 100 - 20 - 18, 2);
+  it('the rider or the shop for cash, as recorded at delivery', () => {
+    expect(collectedBy(order({ payment_method: 'cod', cash_collected_by: 'rider' }))).toBe('rider');
+    expect(collectedBy(order({ payment_method: 'cod', cash_collected_by: 'shop' }))).toBe('shop');
   });
 
-  it('aggregates across multiple orders', async () => {
-    queryMany.mockResolvedValue([
-      { id: 'o1', total_amount: '500', delivery_fee: '20' },
-      { id: 'o2', total_amount: '300', delivery_fee: '20' },
-      { id: 'o3', total_amount: '200', delivery_fee: '0' },
-    ]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const p = payoutInsert();
-
-    expect(p.totalOrders).toBe(3);
-    expect(p.grossGMV).toBeCloseTo(1000, 2);
-    expect(p.deliveryDeductions).toBeCloseTo(40, 2);
-    expect(p.platformCommission).toBeCloseTo(100, 2);
-  });
-
-  it('honours a non-default commission rate', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '1000', delivery_fee: '0' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 25);
-    expect(payoutInsert().platformCommission).toBeCloseTo(250, 2);
-  });
-
-  it('defaults to a 10% rate when none is supplied', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '1000', delivery_fee: '0' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1);
-    expect(payoutInsert().commissionRate).toBe(10.0);
-  });
-
-  it('treats a missing delivery_fee as zero rather than NaN', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '1000' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const p = payoutInsert();
-    expect(Number.isNaN(p.deliveryDeductions)).toBe(false);
-    expect(p.deliveryDeductions).toBeCloseTo(0, 2);
-    expect(p.platformCommission).toBeCloseTo(100, 2);
+  it('for a cash order from before collection was recorded: the rider if there was one, else the shop', () => {
+    expect(collectedBy(order({ payment_method: 'cod' }))).toBe('rider');
+    expect(collectedBy(order({ payment_method: 'cod', assigned_agent_id: null }))).toBe('shop');
   });
 });
 
-describe('calculateShopPayout — TDS threshold branch', () => {
-  // TDS applies at commission > 50000, i.e. GMV of 500,000 at 10%.
-  it('does not deduct TDS below the threshold', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '400000', delivery_fee: '0' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    expect(payoutInsert().tds).toBeCloseTo(0, 2);
+describe('an order paid online, delivered by a platform rider', () => {
+  const line = settleOrder(order(), FIVE, CONFIG);
+
+  it('charges commission on the items only — not on the delivery charge or the platform fee', () => {
+    expect(line.items).toBe(500);
+    expect(line.commissionAmount).toBe(25);
   });
 
-  it('does not deduct TDS exactly at the threshold (strict >)', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '500000', delivery_fee: '0' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const p = payoutInsert();
-    expect(p.platformCommission).toBeCloseTo(50000, 2);
-    expect(p.tds).toBeCloseTo(0, 2);
+  it('keeps the delivery charge for the platform, which pays the rider from it', () => {
+    expect(line.sales).toBe(500);
+    expect(line.shopDelivered).toBe(false);
   });
 
-  it('deducts 1% TDS above the threshold', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '600000', delivery_fee: '0' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const p = payoutInsert();
-    expect(p.platformCommission).toBeCloseTo(60000, 2);
-    expect(p.tds).toBeCloseTo(600, 2);
-  });
-});
-
-describe('calculateShopPayout — audit trail', () => {
-  it('writes one line item per order', async () => {
-    queryMany.mockResolvedValue([
-      { id: 'o1', total_amount: '100', delivery_fee: '0' },
-      { id: 'o2', total_amount: '200', delivery_fee: '0' },
-    ]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    expect(lineItems()).toHaveLength(2);
+  it('adds GST on the commission and the gateway cost on the shop\'s share', () => {
+    expect(line.gst).toBe(4.5);
+    expect(line.gatewayFee).toBe(10);
   });
 
-  it('line items reconcile with the payout when there are no delivery fees', async () => {
-    queryMany.mockResolvedValue([
-      { id: 'o1', total_amount: '600', delivery_fee: '0' },
-      { id: 'o2', total_amount: '400', delivery_fee: '0' },
-    ]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const summed = lineItems().reduce((s, l) => s + l.commission, 0);
-    expect(summed).toBeCloseTo(payoutInsert().platformCommission, 2);
-  });
-
-  it('line items reconcile with the payout even when delivery fees exist', async () => {
-    // Regression guard for the reconciliation bug: the aggregate used to
-    // charge on (grossGMV - deliveryFees) while line items charged on the full
-    // total_amount, so the audit trail never tied out to the payout.
-    queryMany.mockResolvedValue([
-      { id: 'o1', total_amount: '1000', delivery_fee: '100' },
-    ]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-
-    const aggregate = payoutInsert().platformCommission; // 10% of 1000 = 100
-    const summed = lineItems().reduce((s, l) => s + l.commission, 0); // 10% of 1000 = 100
-
-    expect(aggregate).toBeCloseTo(100, 2);
-    expect(summed).toBeCloseTo(100, 2);
-    expect(summed - aggregate).toBeCloseTo(0, 2);
+  it('owes the shop the rest', () => {
+    expect(line.collectedBy).toBe('platform');
+    expect(line.shopHolds).toBe(0);
+    expect(line.net).toBe(500 - 25 - 4.5 - 10);
   });
 });
 
-describe('calculateShopPayout — money safety', () => {
-  it('never writes NaN into a monetary column', async () => {
-    queryMany.mockResolvedValue([
-      { id: 'o1', total_amount: null, delivery_fee: undefined },
-      { id: 'o2', total_amount: '250', delivery_fee: '25' },
-    ]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 10);
-    const p = payoutInsert();
-    for (const [field, value] of Object.entries(p)) {
-      expect(`${field}:${Number.isNaN(Number(value))}`).toBe(`${field}:false`);
+describe('a wallet order', () => {
+  it('has no gateway cost: the money never went through the gateway', () => {
+    const line = settleOrder(order({ payment_method: 'wallet' }), FIVE, CONFIG);
+    expect(line.gatewayFee).toBe(0);
+    expect(line.net).toBe(500 - 25 - 4.5);
+  });
+});
+
+describe('cash collected by a platform rider', () => {
+  it('is settled exactly like a prepaid order: the platform owes the shop', () => {
+    const line = settleOrder(order({ payment_method: 'cod', cash_collected_by: 'rider' }), FIVE, CONFIG);
+    expect(line.collectedBy).toBe('rider');
+    expect(line.gatewayFee).toBe(0);
+    expect(line.net).toBe(500 - 25 - 4.5);
+  });
+});
+
+describe('cash collected by the shop', () => {
+  it('at the counter: the shop holds everything and owes commission, GST and the platform fee', () => {
+    const pickup = order({
+      payment_method: 'cod', cash_collected_by: 'shop', assigned_agent_id: null,
+      fulfillment_method: 'pickup', delivery_fee: 0, total_amount: 505,
+    });
+    const line = settleOrder(pickup, FIVE, CONFIG);
+
+    expect(line.shopHolds).toBe(505);
+    expect(line.platformFeesHeldByShop).toBe(5);
+    expect(line.net).toBe(-(25 + 4.5 + 5));
+  });
+
+  it('on its own delivery: the delivery charge is the shop\'s, so only commission, GST and the platform fee are owed', () => {
+    const selfDelivered = order({ payment_method: 'cod', cash_collected_by: 'shop', assigned_agent_id: null });
+    const line = settleOrder(selfDelivered, FIVE, CONFIG);
+
+    expect(line.shopDelivered).toBe(true);
+    expect(line.sales).toBe(540);
+    expect(line.net).toBe(-(25 + 4.5 + 5));
+  });
+});
+
+describe('a prepaid order the shop delivered itself', () => {
+  it('passes the delivery charge to the shop, with the gateway cost on it', () => {
+    const line = settleOrder(order({ assigned_agent_id: null }), FIVE, CONFIG);
+    expect(line.sales).toBe(540);
+    expect(line.gatewayFee).toBe(10.8);
+    expect(line.net).toBe(540 - 25 - 4.5 - 10.8);
+  });
+});
+
+describe('commission terms', () => {
+  it('adds the per-order fee to the percentage, and charges GST on both', () => {
+    const line = settleOrder(order({ payment_method: 'wallet' }), { percent: 10, convenienceFee: 3 }, CONFIG);
+    expect(line.commissionAmount).toBe(53);
+    expect(line.gst).toBe(9.54);
+  });
+
+  it('charges nothing at 0%', () => {
+    const line = settleOrder(order({ payment_method: 'wallet' }), { percent: 0, convenienceFee: 0 }, CONFIG);
+    expect(line.commissionAmount).toBe(0);
+    expect(line.net).toBe(500);
+  });
+});
+
+describe('orders placed before the item total was recorded', () => {
+  it('take the items to be the total less the charges, a platform discount added back', () => {
+    const legacy = order({ subtotal: null, total_amount: 525, discount: 20, payment_method: 'wallet' });
+    expect(settleOrder(legacy, FIVE, CONFIG).items).toBe(500);
+  });
+
+  it('treat missing charges as zero rather than NaN', () => {
+    const legacy = { id: 'o2', total_amount: '300', payment_method: 'wallet', assigned_agent_id: 'r' };
+    const line = settleOrder(legacy, FIVE, CONFIG);
+    for (const value of Object.values(line)) {
+      if (typeof value === 'number') expect(Number.isNaN(value)).toBe(false);
     }
+    expect(line.items).toBe(300);
   });
+});
 
-  it('rounds every stored monetary value to 2 decimal places', async () => {
-    queryMany.mockResolvedValue([{ id: 'o1', total_amount: '333.33', delivery_fee: '11.11' }]);
-    await PayoutService.calculateShopPayout('shop_1', P0, P1, 7.5);
-    const call = query.mock.calls.find((c) => /INSERT INTO shop_payouts/i.test(c[0]));
-    for (const idx of [4, 6, 8, 9, 10, 11, 12]) {
-      expect(String(call[1][idx])).toMatch(/^-?\d+\.\d{2}$/);
+describe('money safety', () => {
+  it('rounds every amount to paise', () => {
+    const line = settleOrder(order({ subtotal: 333.33, payment_method: 'razorpay' }), { percent: 7.5, convenienceFee: 0 }, CONFIG);
+    for (const key of ['commissionAmount', 'gst', 'gatewayFee', 'net', 'sales']) {
+      expect(Math.round(line[key] * 100) / 100).toBe(line[key]);
     }
   });
 });

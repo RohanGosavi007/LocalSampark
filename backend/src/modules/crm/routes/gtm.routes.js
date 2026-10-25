@@ -77,6 +77,10 @@ router.put('/admin/features/:key', authenticate, requireAdmin, async (req, res, 
 router.post('/interest-lead', async (req, res, next) => {
   try {
     const { feature_key, pincode } = req.body;
+    // feature_key is NOT NULL; a missing one was a 500 from the constraint.
+    if (typeof feature_key !== 'string' || !feature_key.trim() || feature_key.length > 80) {
+      return res.status(400).json({ success: false, error: 'feature_key is required' });
+    }
     const crypto = require('crypto');
     await query(`
       INSERT INTO feature_interest_leads (id, feature_key, pincode, user_id) 

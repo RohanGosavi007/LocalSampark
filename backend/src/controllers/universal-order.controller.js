@@ -1,45 +1,95 @@
 const { query, queryOne, queryMany, withTransaction } = require('../config/database');
+const { placeholders } = require('../utils/sqlList');
+const payments = require('../services/payments.service');
+
+const MAX_LINES = 100;
+const MAX_QUANTITY = 999;
 
 const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
 
+/**
+ * POST /universal-orders — book or reserve from a shop's universal catalogue,
+ * to be paid at the shop.
+ *
+ * Prices come from the catalogue. paymentMethod is recorded as 'cod'; nothing
+ * is collected here (see the note where other methods are refused).
+ *
+ * It used to record no payment method at all (the client put one in `notes`),
+ * so every order looked the same to the shop whether or not it was paid for.
+ */
 exports.createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { shopId, orderType, totalAmount, scheduledTime, deliveryAddress, notes, items } = req.body;
+    const { shopId, orderType, scheduledTime, deliveryAddress, notes, items } = req.body || {};
 
-    if (!shopId || !totalAmount || !Array.isArray(items) || items.length === 0) {
+    if (!shopId || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid order data' });
     }
+    if (items.length > MAX_LINES) {
+      return res.status(400).json({ success: false, message: `An order can hold at most ${MAX_LINES} lines` });
+    }
 
-    const itemIds = items.map((i) => i.id);
+    const method = payments.paymentMethod((req.body || {}).paymentMethod);
+    if (!method) {
+      return res.status(400).json({ success: false, message: 'paymentMethod must be cod, razorpay or wallet' });
+    }
+
+    const itemIds = items.map((i) => i && i.id);
     if (itemIds.some((id) => !id)) {
       return res.status(400).json({ success: false, message: 'Every order item requires an id' });
     }
 
+    // A quantity is a whole number of at least one. It was `Number(q) || 1`,
+    // which let -5 through: a negative line reduced the total, and enough of
+    // them made an order that cost nothing or less.
+    const quantities = items.map((i) => (i.quantity === undefined || i.quantity === null ? 1 : Number(i.quantity)));
+    if (quantities.some((q) => !Number.isInteger(q) || q < 1 || q > MAX_QUANTITY)) {
+      return res.status(400).json({ success: false, message: 'Each item needs a whole quantity of at least 1' });
+    }
+
     // Server-authoritative pricing: never trust client-supplied prices.
     const catalogRows = await queryMany(
-      `SELECT id, price, is_active FROM universal_catalog_items WHERE shop_id = $1 AND id = ANY($2::int[])`,
-      [shopId, itemIds]
+      `SELECT id, price, is_active FROM universal_catalog_items WHERE shop_id = $1 AND id IN (${placeholders(itemIds.length, 2)})`,
+      [shopId, ...itemIds]
     );
     const catalog = new Map(catalogRows.map((row) => [String(row.id), row]));
 
     for (const item of items) {
       const row = catalog.get(String(item.id));
-      if (!row || row.is_active === false) {
+      // is_active is BOOLEAN on PostgreSQL and 0/1 on SQLite; `=== false` alone
+      // let a withdrawn item be ordered on SQLite.
+      if (!row || row.is_active === false || row.is_active === 0 || row.is_active === '0') {
         return res.status(400).json({ success: false, message: `Item ${item.id} is unavailable for this shop` });
       }
     }
 
-    const computedTotal = items.reduce(
-      (sum, item) => sum + Number(catalog.get(String(item.id)).price) * (Number(item.quantity) || 1),
-      0
-    );
+    const computedTotal = Math.round(
+      items.reduce((sum, item, index) => sum + Number(catalog.get(String(item.id)).price) * quantities[index], 0) * 100
+    ) / 100;
+    if (!Number.isFinite(computedTotal) || computedTotal < 0) {
+      return res.status(400).json({ success: false, message: 'This order cannot be priced' });
+    }
+
+        // These orders are paid at the shop. Money taken here — from a wallet or
+    // through Razorpay — would sit with the platform: shop settlement
+    // (services/payout.service.js) works from the `orders` table and never
+    // sees this one, so the shop would not be paid for it. To pay in advance,
+    // the same catalogue can be ordered through POST /checkout, which is
+    // settled.
+    if (method !== 'cod') {
+      return res.status(400).json({
+        success: false,
+        code: 'PAY_AT_SHOP_ONLY',
+        message: 'This order is paid at the shop. To pay online or from your wallet, order through checkout.',
+      });
+    }
 
     const orderId = await withTransaction(async (client) => {
       const orderResult = await client.query(
         `INSERT INTO universal_orders
-           (shop_id, user_id, status, total_amount, order_type, scheduled_time, delivery_address, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           (shop_id, user_id, status, total_amount, order_type, scheduled_time, delivery_address, notes,
+            payment_method, payment_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING id`,
         [
           shopId,
@@ -49,19 +99,22 @@ exports.createOrder = async (req, res) => {
           orderType || 'retail',
           scheduledTime || null,
           deliveryAddress || null,
-          notes || null,
+          notes ? String(notes).slice(0, 1000) : null,
+          method,
+          'pending',
         ]
       );
       const newOrderId = orderResult.rows[0].id;
 
-      for (const item of items) {
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
         await client.query(
           `INSERT INTO universal_order_items (order_id, item_id, quantity, price_at_time, meta_data)
            VALUES ($1, $2, $3, $4, $5)`,
           [
             newOrderId,
             item.id,
-            Number(item.quantity) || 1,
+            quantities[index],
             catalog.get(String(item.id)).price,
             item.metaData ? JSON.stringify(item.metaData) : null,
           ]
@@ -71,7 +124,14 @@ exports.createOrder = async (req, res) => {
       return newOrderId;
     });
 
-    res.status(201).json({ success: true, message: 'Order created successfully', orderId, totalAmount: computedTotal });
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      orderId,
+      totalAmount: computedTotal,
+      paymentMethod: method,
+      paymentStatus: 'pending',
+    });
   } catch (error) {
     console.error('Error creating universal order:', error);
     res.status(500).json({ success: false, message: 'Server error creating order' });
@@ -109,8 +169,8 @@ exports.getShopOrders = async (req, res) => {
       `SELECT oi.*, c.title, c.item_type
          FROM universal_order_items oi
          JOIN universal_catalog_items c ON oi.item_id = c.id
-        WHERE oi.order_id = ANY($1::int[])`,
-      [orders.map((o) => o.id)]
+        WHERE oi.order_id IN (${placeholders(orders.length)})`,
+      orders.map((o) => o.id)
     );
 
     const itemsByOrder = new Map();
@@ -149,8 +209,8 @@ exports.getMyOrders = async (req, res) => {
       `SELECT oi.*, c.title, c.item_type
          FROM universal_order_items oi
          JOIN universal_catalog_items c ON oi.item_id = c.id
-        WHERE oi.order_id = ANY($1::int[])`,
-      [orders.map((o) => o.id)]
+        WHERE oi.order_id IN (${placeholders(orders.length)})`,
+      orders.map((o) => o.id)
     );
 
     const itemsByOrder = new Map();

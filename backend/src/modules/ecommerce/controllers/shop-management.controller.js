@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { query, queryMany, queryOne } = require('../../../config/database');
 const { cacheInvalidate } = require('../../../config/redis');
 const notificationService = require('../../core/services/notification.service');
+const lifecycle = require('../../../services/orderLifecycle.service');
 const emailService = require('../../core/services/email.service');
 
 /**
@@ -131,7 +132,7 @@ async function getShopDashboard(req, res, next) {
         "SELECT COUNT(*) as count FROM shop_appointments WHERE shop_id = $1 AND LOWER(status) IN ('pending','confirmed')",
         [shopId]
       ),
-      queryOne('SELECT COUNT(*) as count FROM shop_products WHERE shop_id = $1 AND is_available = 1', [shopId]),
+      queryOne('SELECT COUNT(*) as count FROM shop_products WHERE shop_id = $1 AND is_available = \'1\'', [shopId]),
       queryOne('SELECT COUNT(*) as count FROM shop_services WHERE shop_id = $1 AND is_available = 1', [shopId]),
       queryOne('SELECT COUNT(*) as count, AVG(rating) as avg FROM shop_reviews WHERE shop_id = $1', [shopId]),
       queryOne('SELECT COUNT(*) as count FROM shop_staff WHERE shop_id = $1', [shopId]),
@@ -211,28 +212,10 @@ async function getShopDashboard(req, res, next) {
  * the right table. And it mixed $1 and ? placeholders in one statement.)
  */
 
-// The lifecycle the merchant UI drives. Stored lowercase in orders.order_status.
-const ORDER_TRANSITIONS = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['preparing', 'cancelled'],
-  preparing: ['ready', 'cancelled'],
-  ready: ['assigned', 'out_for_delivery', 'cancelled'],
-  assigned: ['out_for_delivery', 'cancelled'],
-  out_for_delivery: ['delivered'],
-  delivered: ['return_requested'],
-  return_requested: ['returned'],
-  returned: [],
-  cancelled: [],
-};
-
-/** The Kanban board uses its own labels; map them onto the stored ones. */
-function normaliseStatus(input) {
-  const v = String(input || '').toLowerCase();
-  if (v === 'dispatched') return 'out_for_delivery';
-  if (v === 'accepted') return 'confirmed';
-  if (v === 'ready_for_pickup') return 'ready';
-  return v;
-}
+// The lifecycle itself — who may move an order where, and what each move sets
+// in motion — is in services/orderLifecycle.service.js, shared with the
+// customer's and the rider's endpoints.
+const { normaliseStatus } = lifecycle;
 
 function toBoardStatus(stored) {
   const v = String(stored || '').toLowerCase();
@@ -242,46 +225,39 @@ function toBoardStatus(stored) {
 async function updateOrderStatus(req, res, next) {
   try {
     const { orderId } = req.params;
-    const { status, preparation_time_minutes } = req.body;
+    const { status, preparation_time_minutes, reason } = req.body;
     const shop = req.shop;
 
-    const order = await queryOne(
-      'SELECT * FROM orders WHERE id = $1 AND shop_id = $2',
-      [orderId, shop.id]
-    );
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-
-    const currentStatus = normaliseStatus(order.order_status || order.status);
-    const newStatus = normaliseStatus(status);
-
-    if (!Object.prototype.hasOwnProperty.call(ORDER_TRANSITIONS, newStatus)) {
-      return res.status(400).json({ error: `Unknown status "${status}"` });
-    }
-
-    if (currentStatus !== newStatus && !ORDER_TRANSITIONS[currentStatus]?.includes(newStatus)) {
-      return res.status(400).json({ error: `Invalid transition from ${currentStatus} to ${newStatus}` });
-    }
-
-    // Scoped to the shop as well as the id, so an order id belonging to another
-    // shop cannot be moved even if the lookup above is ever relaxed.
-    await query(
-      'UPDATE orders SET order_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND shop_id = $3',
-      [newStatus, orderId, shop.id]
-    );
-
-    const updated = await queryOne('SELECT * FROM orders WHERE id = $1', [orderId]);
-    const customer = await queryOne('SELECT * FROM users WHERE id = $1', [updated.user_id]);
-
-    if (customer) {
-      await notificationService.notifyOrderUpdate(customer.id, orderId, newStatus, shop?.name || 'Shop');
-      if (customer.email && ['confirmed', 'out_for_delivery', 'delivered', 'cancelled'].includes(newStatus)) {
-        await emailService.sendOrderConfirmation(customer, updated, shop);
+    let outcome;
+    try {
+      // shopId scopes the change to this shop: an order id belonging to
+      // another shop is "not found", whoever is asking.
+      outcome = await lifecycle.changeStatus({ orderId, to: status, user: req.user, shopId: shop.id, reason });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ error: error.message, code: error.code });
       }
+      throw error;
     }
 
-    notificationService.emitOrderStatus(orderId, newStatus, { preparationTime: preparation_time_minutes });
+    const { order: updated, to: newStatus } = outcome;
+    if (!outcome.unchanged) {
+      const customer = await queryOne('SELECT * FROM users WHERE id = $1', [updated.user_id]);
+      if (customer) {
+        await notificationService.notifyOrderUpdate(customer.id, orderId, newStatus, shop?.name || 'Shop');
+        if (customer.email && ['confirmed', 'out_for_delivery', 'delivered', 'cancelled'].includes(newStatus)) {
+          await emailService.sendOrderConfirmation(customer, updated, shop);
+        }
+      }
+      notificationService.emitOrderStatus(orderId, newStatus, { preparationTime: preparation_time_minutes });
+    }
 
-    res.json({ success: true, order: { ...updated, status: toBoardStatus(newStatus) } });
+    res.json({
+      success: true,
+      order: { ...updated, status: toBoardStatus(newStatus) },
+      refund: outcome.refund,
+      cashCollected: outcome.delivery ? outcome.delivery.cashCollected : 0,
+    });
   } catch (error) { next(error); }
 }
 
@@ -972,14 +948,45 @@ async function searchDirectory(req, res, next) {
 }
 
 // ─── RIDER MANAGEMENT (Phase 7) ──────────────────────────────────
+/**
+ * PUT /shops/my-shop/orders/:orderId/assign-rider { riderId } — send one of
+ * the shop's own riders with a booking.
+ *
+ * Both updates were by id alone: any shop owner could dispatch any other
+ * shop's order, with any rider on the platform, including one already out on
+ * a delivery. The order must be this shop's, and the rider one of its own and
+ * free.
+ */
 async function assignRiderToOrder(req, res, next) {
   try {
     const { orderId } = req.params;
-    const { riderId } = req.body;
-    
-    // Assign rider
-    await query('UPDATE universal_orders SET rider_id = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [riderId, 'dispatched', orderId]);
-    await query('UPDATE delivery_riders SET status = $1, current_order_id = $2 WHERE id = $3', ['on_delivery', orderId, riderId]);
+    const { riderId } = req.body || {};
+    const shop = req.shop;
+    if (!riderId) return res.status(400).json({ error: 'riderId is required' });
+
+    const order = await queryOne(
+      'SELECT id, status FROM universal_orders WHERE CAST(id AS TEXT) = $1 AND shop_id = $2',
+      [String(orderId), shop.id]
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (['completed', 'cancelled', 'dispatched'].includes(String(order.status || '').toLowerCase())) {
+      return res.status(409).json({ error: `This order is ${String(order.status).toLowerCase()} and cannot be dispatched.` });
+    }
+
+    const rider = await queryOne('SELECT id, status FROM delivery_riders WHERE id = $1 AND shop_id = $2', [riderId, shop.id]);
+    if (!rider) return res.status(404).json({ error: 'Rider not found in your fleet' });
+
+    // The rider is claimed only if still free, so two orders cannot take them at once.
+    const claimed = await query(
+      "UPDATE delivery_riders SET status = 'on_delivery', current_order_id = $1 WHERE id = $2 AND shop_id = $3 AND COALESCE(status, 'available') <> 'on_delivery'",
+      [String(order.id), rider.id, shop.id]
+    );
+    if (!(claimed.rowCount ?? claimed.changes)) return res.status(409).json({ error: 'That rider is already out on a delivery.' });
+
+    await query(
+      "UPDATE universal_orders SET rider_id = $1, status = 'dispatched', updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND shop_id = $3",
+      [rider.id, order.id, shop.id]
+    );
 
     // Broadcast Socket
     const io = req.app.get('io');
@@ -1413,15 +1420,34 @@ async function updateTableStatus(req, res, next) {
   try {
     const { tableId } = req.params;
     const shop = req.shop;
-    const { status, currentOrderId } = req.body;
+        const { status, currentOrderId } = req.body || {};
 
-    const updates = [`status = '${status}'`];
-    if (status === 'occupied') updates.push(`occupied_at = '${new Date().toISOString()}'`);
-    if (status === 'available') updates.push(`occupied_at = NULL`, `current_order_id = NULL`);
-    if (currentOrderId) updates.push(`current_order_id = '${currentOrderId}'`);
+    // `status` and `currentOrderId` came straight from the request body into
+    // the statement, between quotes: SET status = '<anything>'. A value with a
+    // quote in it closed the string and continued the UPDATE — any column of
+    // any of the shop's tables, or a sub-select reading another table into
+    // one. They are bound parameters now, and the status is one of the states
+    // a table can be in.
+    const TABLE_STATUSES = ['available', 'occupied', 'reserved', 'cleaning'];
+    if (!TABLE_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${TABLE_STATUSES.join(', ')}` });
+    }
+
+    const params = [tableId, shop.id, status];
+    const updates = ['status = $3'];
+    if (status === 'occupied') {
+      params.push(new Date().toISOString());
+      updates.push(`occupied_at = $${params.length}`);
+    }
+    if (status === 'available') {
+      updates.push('occupied_at = NULL', 'current_order_id = NULL');
+    } else if (currentOrderId) {
+      params.push(String(currentOrderId));
+      updates.push(`current_order_id = $${params.length}`);
+    }
 
     const updated = await queryOne(`UPDATE restaurant_tables SET ${updates.join(', ')} WHERE id = $1 AND shop_id = $2 RETURNING *`,
-      [tableId, shop.id]
+      params
     );
     if (!updated) return res.status(404).json({ error: 'Table not found' });
 
@@ -1561,7 +1587,7 @@ async function markNotificationRead(req, res, next) {
 async function getShopLeads(req, res, next) {
   try {
     const shop = req.shop;
-    const leads = await queryMany('SELECT ul.*, u.name as customer_name, u.phone as customer_phone FROM universal_leads ul JOIN users u ON ul.user_id = u.id WHERE ul.shop_id = $1 ORDER BY ul.created_at DESC',
+    const leads = await queryMany('SELECT ul.*, u.full_name as customer_name, COALESCE(u.phone_number, u.phone) as customer_phone FROM universal_leads ul JOIN users u ON ul.user_id = u.id WHERE ul.shop_id = $1 ORDER BY ul.created_at DESC',
       [shop.id]
     );
 

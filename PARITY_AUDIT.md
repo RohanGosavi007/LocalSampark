@@ -37,6 +37,8 @@ The admin column is low by design, not by omission: the console reads almost eve
 
 ### 1.1 Society & civic — the real gap
 
+> **Closed 2026-10-09.** The gap ran the other way as well: most of the `/society-management` paths the web page called had no backend route at all, so web was largely 404s too. `/society-management` went from 8 routes to 64. All 16 mobile society tabs now call the same endpoints as web, and `backend/src/__tests__/societyClientContract.test.js` fails if either client calls a path the router does not serve. See INVESTOR_READY_REPORT.md §0. The analysis below is kept as the record of what was found.
+
 Called from web, absent from mobile:
 
 ```

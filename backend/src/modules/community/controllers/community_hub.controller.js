@@ -1,63 +1,81 @@
+const crypto = require('crypto');
 const { query, queryOne, withTransaction } = require('../../../config/database');
+const coins = require('../../../services/coins.service');
 
 let IS_WEEKEND_GARAGE_SALE_ACTIVE = false;
 
+/**
+ * Lost & found bounties and the coins-only garage sale.
+ *
+ * These spent and paid SamparkCoins from loyalty_wallets, a table nothing ever
+ * credited, so every bounty and every purchase failed for want of coins — and
+ * the bounty was never checked, so a negative bounty added coins instead of
+ * holding them. They now use the one coin balance (services/coins.service.js):
+ * a bounty is held from the poster when the alert goes up and paid to the
+ * finder when it is resolved; a purchase moves the price from buyer to seller
+ * in one transaction.
+ */
+
+class HubError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const sendHubError = (res, error) => {
+  if (error instanceof HubError) return res.status(error.status).json({ success: false, error: error.message });
+  if (coins.sendCoinError(res, error)) return true;
+  return false;
+};
+
+const text = (value, max) => (typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null);
+
 // ---------------------------------------------------------
-// LOST & FOUND (Part 1)
+// LOST & FOUND
 // ---------------------------------------------------------
 
 /**
- * Report a Lost Pet/Item
+ * POST /community-hub/lost/post { itemName, description, pincode, bountyCoins }
+ * The bounty (0 for none) is taken from the poster now and held until the
+ * item is found.
  */
 const postLostItem = async (req, res, next) => {
   try {
-    const { itemName, description, pincode, bountyCoins } = req.body;
-    const userId = req.user.id;
+    const { description, pincode } = req.body || {};
+    const itemName = text((req.body || {}).itemName, 120);
+    if (!itemName) return res.status(400).json({ success: false, error: 'itemName is required' });
 
-    await withTransaction(async (client) => {
-      // Check if user has enough coins to fund the bounty they set, locking wallet
-      const walletResult = await client.query(`SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
-        [userId]
-      );
-      const wallet = walletResult.rows[0];
-
-      if (!wallet || wallet.total_coins < bountyCoins) {
-        throw new Error(`You do not have enough SamparkCoins to fund a ${bountyCoins} 🪙 bounty.`);
-      }
-
-      // Deduct coins immediately and hold them in escrow
-      await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [bountyCoins, userId]);
-      await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Lost & Found Bounty Escrow')`,
-        [userId, bountyCoins]
-      );
-
-      const alert = await client.query(`INSERT INTO lost_found_alerts (user_id, item_name, description, pincode, bounty_coins, status) 
-         VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
-        [userId, itemName, description, pincode, bountyCoins]
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Amber Alert Broadcasted to Pincode!',
-        data: alert.rows[0]
-      });
-    });
-  } catch (error) {
-    if (error.message.includes('not have enough SamparkCoins')) {
-      return res.status(400).json({ error: error.message });
+    const rawBounty = (req.body || {}).bountyCoins;
+    const bounty = rawBounty === undefined || rawBounty === null || rawBounty === '' ? 0 : Number(rawBounty);
+    if (!Number.isInteger(bounty) || bounty < 0 || bounty > coins.MAX_AMOUNT) {
+      return res.status(400).json({ success: false, error: 'bountyCoins must be a whole number of coins, 0 or more' });
     }
-    next(error);
+
+    const id = crypto.randomUUID();
+    const alert = await withTransaction(async (client) => {
+      if (bounty > 0) {
+        await coins.debit({ userId: req.user.id, amount: bounty, reason: 'Lost & Found bounty held', referenceId: `lost:${id}`, client });
+      }
+      await client.query(
+        `INSERT INTO lost_found_alerts (id, user_id, item_name, description, pincode, bounty_coins, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'active')`,
+        [id, req.user.id, itemName, text(description, 1000), text(pincode, 10), bounty]
+      );
+      return (await client.query('SELECT * FROM lost_found_alerts WHERE id = $1', [id])).rows[0];
+    });
+
+    res.status(201).json({ success: true, message: 'Alert broadcast to your pincode.', data: alert });
+  } catch (error) {
+    if (!sendHubError(res, error)) next(error);
   }
 };
 
-/**
- * Get active alerts
- */
 const getLostItems = async (req, res, next) => {
   try {
     const { pincode } = req.query;
     let sql = `
-      SELECT l.*, u.full_name as poster_name 
+      SELECT l.*, u.full_name as poster_name
       FROM lost_found_alerts l
       JOIN users u ON l.user_id = u.id
       WHERE l.status = 'active'
@@ -76,77 +94,82 @@ const getLostItems = async (req, res, next) => {
 };
 
 /**
- * Mark as Found (Pay the Finder)
+ * POST /community-hub/lost/:alertId/resolve { finderId }
+ * The poster marks their item found and names who found it; the held bounty
+ * goes to that person. The finder must be a real account other than the
+ * poster. The UPDATE is the gate, so an alert is paid out once.
  */
 const resolveLostItem = async (req, res, next) => {
   try {
     const { alertId } = req.params;
-    const { finderId } = req.body; 
-    const ownerId = req.user.id; 
+    const finderId = (req.body || {}).finderId;
+    const ownerId = req.user.id;
 
-    await withTransaction(async (client) => {
-      // Lock alert to prevent double resolution
-      const alertResult = await client.query(`SELECT * FROM lost_found_alerts WHERE id = $1 AND user_id = $2 FOR UPDATE`, 
-        [alertId, ownerId]
-      );
-      const alert = alertResult.rows[0];
+    const result = await withTransaction(async (client) => {
+      const alert = (await client.query('SELECT * FROM lost_found_alerts WHERE id = $1 AND user_id = $2', [alertId, ownerId])).rows[0];
+      if (!alert) throw new HubError(404, 'Alert not found.');
+      if (alert.status !== 'active') throw new HubError(409, 'This alert has already been resolved.');
 
-      if (!alert || alert.status !== 'active') {
-        throw new Error('Invalid alert or already resolved.');
+      const bounty = Number(alert.bounty_coins) || 0;
+      if (bounty > 0) {
+        if (!finderId) throw new HubError(400, 'finderId is required to pay the bounty.');
+        if (String(finderId) === String(ownerId)) throw new HubError(400, 'The finder must be someone else.');
+        const finder = (await client.query('SELECT id FROM users WHERE id = $1', [finderId])).rows[0];
+        if (!finder) throw new HubError(404, 'Finder not found.');
       }
 
-      // Transfer bounty to Finder
-      await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins + $1 WHERE user_id = $2`, [alert.bounty_coins, finderId]);
-      await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Lost & Found Hero Bounty')`,
-        [finderId, alert.bounty_coins]
+      const closed = await client.query(
+        "UPDATE lost_found_alerts SET status = 'resolved', finder_id = $1 WHERE id = $2 AND status = 'active'",
+        [finderId || null, alertId]
       );
+      if (!closed.rowCount) throw new HubError(409, 'This alert has already been resolved.');
 
-      await client.query(`UPDATE lost_found_alerts SET status = 'resolved', finder_id = $1 WHERE id = $2`, [finderId, alertId]);
+      if (bounty > 0) {
+        await coins.credit({ userId: finderId, amount: bounty, reason: 'Lost & Found bounty', referenceId: `lost:${alertId}`, client });
+      }
+      return { bounty };
+    });
 
-      res.json({ success: true, message: `Bounty of ${alert.bounty_coins} 🪙 transferred to the Finder!` });
+    res.json({
+      success: true,
+      message: result.bounty > 0 ? `Bounty of ${result.bounty} coins paid to the finder.` : 'Marked as found.',
     });
   } catch (error) {
-    if (error.message === 'Invalid alert or already resolved.') {
-      return res.status(400).json({ error: error.message });
-    }
-    next(error);
+    if (!sendHubError(res, error)) next(error);
   }
 };
 
 // ---------------------------------------------------------
-// GARAGE SALE (Part 2) - 100% COIN ECONOMY
+// GARAGE SALE — paid in coins
 // ---------------------------------------------------------
 
-/**
- * Post an item for sale (Coins only)
- */
 const postGarageItem = async (req, res, next) => {
   try {
-    // If Admin hasn't turned on Weekend mode, and we don't have 24/7 mode fallback... wait, User requested BOTH. 
-    // Let's assume the frontend will show a banner if Weekend mode is ON, but it's always allowed 24/7 unless explicitly blocked.
-    // For now, we always allow it, but we expose the Weekend flag to UI for urgency.
+    const itemName = text((req.body || {}).itemName, 120);
+    const priceCoins = Number((req.body || {}).priceCoins);
+    if (!itemName) return res.status(400).json({ success: false, error: 'itemName is required' });
+    if (!Number.isInteger(priceCoins) || priceCoins < 1 || priceCoins > coins.MAX_AMOUNT) {
+      return res.status(400).json({ success: false, error: 'priceCoins must be a whole number of coins, at least 1' });
+    }
 
-    const { itemName, description, priceCoins } = req.body;
-    const userId = req.user.id;
-
-    const item = await query(`INSERT INTO garage_sale_items (seller_id, item_name, description, price_coins, status) 
-       VALUES ($1, $2, $3, $4, 'available') RETURNING *`,
-      [userId, itemName, description, priceCoins]
+    const id = crypto.randomUUID();
+    await query(
+      `INSERT INTO garage_sale_items (id, seller_id, item_name, description, price_coins, status)
+       VALUES ($1, $2, $3, $4, $5, 'available')`,
+      [id, req.user.id, itemName, text((req.body || {}).description, 1000), priceCoins]
     );
+    const item = await queryOne('SELECT * FROM garage_sale_items WHERE id = $1', [id]);
 
-    res.status(201).json({ success: true, message: 'Item posted to the Garage Sale!', data: item.rows[0] });
+    res.status(201).json({ success: true, message: 'Item posted to the Garage Sale!', data: item });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * Get available garage sale items
- */
 const getGarageItems = async (req, res, next) => {
   try {
     const items = await query(`
-      SELECT g.*, u.full_name as seller_name 
+      SELECT g.*, u.full_name as seller_name
       FROM garage_sale_items g
       JOIN users u ON g.seller_id = u.id
       WHERE g.status = 'available'
@@ -158,68 +181,47 @@ const getGarageItems = async (req, res, next) => {
 };
 
 /**
- * Buy an item using Coins
+ * POST /community-hub/garage/:itemId/buy
+ *
+ * The item is claimed and the coins move in one transaction: the conditional
+ * UPDATE takes the item only while it is still available, so two buyers
+ * cannot both have it.
+ *
+ * This used to accept `deliveryRequested` and write a row to delivery_jobs —
+ * a table no rider screen reads, with a fixed ₹30 fee and a Mumbai pincode.
+ * Nobody would have come. Buyer and seller arrange the handover; a delivery
+ * can be booked as a parcel (POST /delivery/request).
  */
 const buyGarageItem = async (req, res, next) => {
   try {
     const { itemId } = req.params;
-    const { deliveryRequested, dropoffLocation } = req.body;
     const buyerId = req.user.id;
 
-    await withTransaction(async (client) => {
-      // Lock garage sale item to prevent race condition (double purchase)
-      const itemResult = await client.query(`SELECT * FROM garage_sale_items WHERE id = $1 AND status = 'available' FOR UPDATE`, 
-        [itemId]
+    const item = await withTransaction(async (client) => {
+      const found = (await client.query('SELECT * FROM garage_sale_items WHERE id = $1', [itemId])).rows[0];
+      if (!found || found.status !== 'available') throw new HubError(404, 'Item not available.');
+      if (String(found.seller_id) === String(buyerId)) throw new HubError(400, 'Cannot buy your own item.');
+
+      const taken = await client.query(
+        "UPDATE garage_sale_items SET status = 'sold', buyer_id = $1 WHERE id = $2 AND status = 'available'",
+        [buyerId, itemId]
       );
-      const item = itemResult.rows[0];
+      if (!taken.rowCount) throw new HubError(409, 'Someone has just bought this item.');
 
-      if (!item) throw new Error('Item not available.');
-      if (item.seller_id === buyerId) throw new Error('Cannot buy your own item.');
-
-      // Check Buyer Wallet, lock it
-      const buyerWalletResult = await client.query(`SELECT total_coins FROM loyalty_wallets WHERE user_id = $1 FOR UPDATE`, 
-        [buyerId]
-      );
-      const buyerWallet = buyerWalletResult.rows[0];
-
-      if (!buyerWallet || buyerWallet.total_coins < item.price_coins) {
-        throw new Error(`Not enough coins. Item costs ${item.price_coins} 🪙.`);
-      }
-
-      // 1. Deduct from Buyer
-      await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins - $1 WHERE user_id = $2`, [item.price_coins, buyerId]);
-      await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'spent', 'Garage Sale Purchase')`, [buyerId, item.price_coins]);
-
-      // 2. Add to Seller
-      await client.query(`UPDATE loyalty_wallets SET total_coins = total_coins + $1 WHERE user_id = $2`, [item.price_coins, item.seller_id]);
-      await client.query(`INSERT INTO loyalty_transactions (user_id, amount, type, source) VALUES ($1, $2, 'earned', 'Garage Sale Sale')`, [item.seller_id, item.price_coins]);
-
-      // 3. Update Item
-      await client.query(`UPDATE garage_sale_items SET status = 'sold', buyer_id = $1 WHERE id = $2`, [buyerId, itemId]);
-
-      // 4. (Optional) Ping Delivery Agent Network
-      let deliveryJobId = null;
-      if (deliveryRequested) {
-         const newJob = await client.query(`INSERT INTO delivery_jobs (requester_id, pickup_location, dropoff_location, item_details, delivery_type, payment_pref, price_fiat, price_coins, pincode, status) 
-           VALUES ($1, 'Seller Address', $2, $3, 'walker', 'fiat', 30, 0, '400001', 'pending') RETURNING *`,
-          [buyerId, dropoffLocation, `Garage Sale: ${item.item_name}`]
-        );
-        deliveryJobId = newJob.rows[0].id;
-      }
-
-      res.json({ 
-        success: true, 
-        message: 'Item purchased successfully!', 
-        data: { deliveryJobId }
+      await coins.transfer({
+        fromUserId: buyerId, toUserId: found.seller_id, amount: Number(found.price_coins),
+        reason: 'Garage sale', referenceId: `garage:${itemId}`, client,
       });
+      return found;
+    });
+
+    res.json({
+      success: true,
+      message: 'Item purchased. Contact the seller to arrange the handover.',
+      data: { itemId: item.id, priceCoins: Number(item.price_coins), sellerId: item.seller_id },
     });
   } catch (error) {
-    if (error.message === 'Item not available.' || 
-        error.message === 'Cannot buy your own item.' || 
-        error.message.includes('Not enough coins')) {
-      return res.status(400).json({ error: error.message });
-    }
-    next(error);
+    if (!sendHubError(res, error)) next(error);
   }
 };
 
@@ -229,8 +231,8 @@ const buyGarageItem = async (req, res, next) => {
 const toggleWeekendMode = async (req, res, next) => {
   try {
     const { enabled } = req.body;
-    IS_WEEKEND_GARAGE_SALE_ACTIVE = enabled;
-    res.json({ success: true, message: `Weekend Garage Sale Mode is now ${enabled ? 'ACTIVE' : 'INACTIVE'}` });
+    IS_WEEKEND_GARAGE_SALE_ACTIVE = Boolean(enabled);
+    res.json({ success: true, message: `Weekend Garage Sale Mode is now ${IS_WEEKEND_GARAGE_SALE_ACTIVE ? 'ACTIVE' : 'INACTIVE'}` });
   } catch (error) {
     next(error);
   }

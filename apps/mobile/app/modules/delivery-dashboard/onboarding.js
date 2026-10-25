@@ -74,7 +74,8 @@ export default function DeliveryOnboardingScreen() {
             <Text style={styles.sectionTitle}>Basic Details</Text>
             
             <ImageUploader 
-              label="Profile Photo (Clear face)" 
+                            label="Profile Photo (Clear face)" 
+              purpose="profile_photo" 
               onUploadSuccess={(url) => setFormData({...formData, profileImage: url})} 
             />
 
@@ -108,7 +109,9 @@ export default function DeliveryOnboardingScreen() {
             <Text style={styles.sectionTitle}>KYC Documents</Text>
             
             <ImageUploader 
-              label="Driving License (Front)" 
+                            label="Driving License (Front)" 
+              purpose="document"
+              module="kyc" 
               onUploadSuccess={(url) => setFormData({...formData, dlImage: url})} 
             />
 
@@ -122,7 +125,9 @@ export default function DeliveryOnboardingScreen() {
             />
 
             <ImageUploader 
-              label="Vehicle RC (Front)" 
+                            label="Vehicle RC (Front)" 
+              purpose="document"
+              module="kyc" 
               onUploadSuccess={(url) => setFormData({...formData, rcImage: url})} 
             />
 

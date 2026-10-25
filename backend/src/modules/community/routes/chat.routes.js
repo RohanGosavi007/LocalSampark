@@ -37,8 +37,10 @@ router.get('/messages/:userId', authenticate, async (req, res, next) => {
 // GET search-users
 router.get('/search-users', authenticate, async (req, res, next) => {
     try {
-        const { q } = req.query;
-        if (!q) return res.json({ success: true, data: [] });
+        // Three characters minimum: a one-letter search listed ten users at a time,
+        // which is a way to walk the whole user table.
+        const q = String(req.query.q || '').trim().slice(0, 60);
+        if (q.length < 3) return res.json({ success: true, data: [] });
         const result = await query(`
             SELECT id, full_name, role FROM users 
             WHERE (full_name LIKE $1 OR id LIKE $1) AND id != $2 
@@ -79,7 +81,7 @@ router.get('/conversations', authenticate, async (req, res, next) => {
               (SELECT COUNT(*) FROM messages m
                 WHERE m.sender_id = t.peer_id
                   AND m.receiver_id = $1
-                  AND (m.is_read = false OR m.is_read = 0)) AS unread_count
+                  AND (m.is_read = false OR m.is_read = '0')) AS unread_count
          FROM threads t
          LEFT JOIN users u ON u.id = t.peer_id
         WHERE t.rn = 1 AND t.peer_id IS NOT NULL

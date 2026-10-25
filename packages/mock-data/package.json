@@ -2,15 +2,15 @@
   "name": "@localsampark/mock-data",
   "version": "1.0.0",
   "private": true,
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "index.ts",
+  "types": "index.ts",
   "exports": {
+    ".": "./index.ts",
     "./seeds/*": "./seeds/*.json",
     "./adapters/admin": "./adapters/admin-adapter.ts",
     "./adapters/mobile": "./adapters/mobile-adapter.ts"
   },
   "scripts": {
-    "validate": "node scripts/validate-seeds.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

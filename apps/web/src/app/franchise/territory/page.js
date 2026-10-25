@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Header from '../../components/Header';
 import { Map as MapIcon, Users, Store, TrendingUp, AlertTriangle } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 
 export default function TerritoryManager() {
@@ -11,7 +12,7 @@ export default function TerritoryManager() {
 
   useEffect(() => {
     // 1. Fetch Territories Data
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const BACKEND_URL = API_URL;
     fetch(`${BACKEND_URL}/api/v1/territory/map`)
       .then(res => res.json())
       .then(data => {

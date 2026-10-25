@@ -9,6 +9,12 @@
 database.sqlite
 localsampark.db
 
+# Files users upload (public images, and private documents such as
+# prescriptions and KYC). Never committed.
+public/uploads/
+private_uploads/
+src/modules/public/
+
 # Logs
 logs/
 *.log

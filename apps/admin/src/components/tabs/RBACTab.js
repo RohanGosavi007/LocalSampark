@@ -49,7 +49,7 @@ export default function RBACTab({ franchisePartners, API_BASE, authHeaders }) {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      await fetch(`${API_BASE}/admin/users/${userId}/role`, {
+      await fetchJson(`${API_BASE}/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ role: newRole })

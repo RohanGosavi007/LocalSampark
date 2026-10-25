@@ -1,10 +1,13 @@
 ﻿const express = require('express');
 const router = express.Router();
 const { query } = require('../../../config/database');
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
 
 // GET /overview - Aggregate GMV, lead counts, and top active sectors by territory
-router.get('/overview', authenticate, async (req, res, next) => {
+// Platform-wide GMV, booking revenue and lead counts. This was `authenticate`
+// only, so any signed-in citizen could read the company's totals. (The admin
+// consoles use /admin/analytics/overview; nothing calls this path.)
+router.get('/overview', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { pincode } = req.query;
 

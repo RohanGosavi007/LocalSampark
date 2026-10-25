@@ -1,79 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const PaymentGatewayEngine = require('../../../services/payment.gateway');
-const { query } = require('../../../config/database');
+const { authenticate } = require('../../../middleware/auth.middleware');
+const razorpayRoutes = require('../../payments/routes/razorpay.routes');
+const { razorpayWebhook } = require('../../core/routes/webhooks.routes');
 
-// Webhook Handler for Payment Callbacks (Razorpay/Cashfree)
-router.post('/webhook/:provider', express.raw({ type: 'application/json' }), async (req, res) => {
-  const { provider } = req.params;
-  const payload = req.body;
-  const signature = req.headers['x-razorpay-signature'] || req.headers['x-webhook-signature'];
+/**
+ * /payments — older entry points, kept as aliases of the one Razorpay flow.
+ *
+ * The real routes are /payments/razorpay/{config,order,verify}
+ * (modules/payments/routes/razorpay.routes.js) and POST /webhooks/razorpay.
+ *
+ * What used to be here:
+ *
+ *   POST /create-order   no authentication; summed a cart of prices sent by the
+ *                        client and recorded that as the amount owed.
+ *   POST /verify         no authentication; checked a Razorpay signature and
+ *                        then marked paid whichever order_id the body named —
+ *                        so one genuine payment could settle any order.
+ *   POST /webhook/:provider
+ *                        a second Razorpay webhook, with its own secret, that
+ *                        wrote to shop_orders from a free-text note.
+ *
+ * Each now runs the same handler as its replacement, so an old client gets the
+ * new rules rather than the old holes: the caller must be signed in, the amount
+ * comes from the order, and a payment settles only the order it was created for.
+ */
 
-  try {
-    // 1. Verify Signature for Security
-    const payloadString = payload.toString('utf8');
-    // Cashfree signs (timestamp + body), so its header has to be forwarded or
-    // the signature cannot be reconstructed. Razorpay ignores the extra field.
-    const isValid = PaymentGatewayEngine.verifyWebhookSignature(
-      provider,
-      payloadString,
-      signature,
-      process.env.PAYMENT_WEBHOOK_SECRET,
-      { timestamp: req.headers['x-webhook-timestamp'] }
-    );
+router.use('/razorpay', razorpayRoutes);
 
-    if (!isValid) {
-      console.error(`[PaymentWebhook] Invalid signature for provider: ${provider}`);
-      return res.status(400).send('Invalid signature');
-    }
+// Same handler, same secret, same settlement as POST /webhooks/razorpay.
+router.post('/webhook/razorpay', express.raw({ type: 'application/json' }), razorpayWebhook);
 
-    // 2. Parse payload based on provider
-    let orderId, paymentStatus, paymentRef;
-
-    if (provider === 'razorpay') {
-      const event = JSON.parse(payloadString);
-      if (event.event === 'order.paid') {
-        const paymentEntity = event.payload.payment.entity;
-        orderId = paymentEntity.notes.internal_order_id; // mapped during creation
-        paymentStatus = 'paid';
-        paymentRef = paymentEntity.id;
-      }
-    } else if (provider === 'cashfree') {
-      const event = JSON.parse(payloadString);
-      if (event.type === 'PAYMENT_SUCCESS_WEBHOOK') {
-        orderId = event.data.order.order_id;
-        paymentStatus = 'paid';
-        paymentRef = event.data.payment.cf_payment_id;
-      }
-    }
-
-    // 3. Update Database Idempotently
-    if (orderId && paymentStatus === 'paid') {
-      console.log(`[PaymentWebhook] Marking order ${orderId} as paid (Ref: ${paymentRef})`);
-      
-      // Update order status in database
-      await query(`
-        UPDATE shop_orders 
-        SET payment_status = $1, 
-            payment_gateway_ref = $2,
-            status = 'accepted'
-        WHERE id = $3 AND payment_status != 'paid'
-      `, [paymentStatus, paymentRef, orderId]);
-    }
-
-    res.status(200).send('OK');
-  } catch (error) {
-    console.error('[PaymentWebhook] Error processing webhook:', error);
-    res.status(500).send('Webhook Error');
-  }
-});
-
-const { createCheckoutOrder, verifyPayment } = require('../controllers/payments.controller');
-
-// Create payment gateway order
-router.post('/create-order', createCheckoutOrder);
-
-// Verify payment signature
-router.post('/verify', verifyPayment);
+router.post('/create-order', authenticate, razorpayRoutes.paymentAttemptLimiter, razorpayRoutes.createOrder);
+router.post('/verify', authenticate, razorpayRoutes.paymentAttemptLimiter, razorpayRoutes.verify);
 
 module.exports = router;

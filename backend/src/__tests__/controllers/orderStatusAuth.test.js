@@ -7,9 +7,11 @@
  * paid without paying.
  *
  * authenticate() alone does not fix it — it only proves who is calling. These
- * tests pin the actual rule: admins and the owning vendor have full control, the
- * assigned rider may only move an order through delivery, the customer may only
- * cancel their own order and only before it ships, and everyone else is refused.
+ * tests pin the actual rule (services/orderLifecycle.service.js): admins and the
+ * owning vendor move it through its states, the assigned rider may mark it picked
+ * up but completes delivery only with the customer's code, the customer may only
+ * cancel their own order and only before preparation starts, and everyone else is
+ * refused.
  *
  * The handler was moved off Prisma onto raw SQL (`orders` joined to
  * `local_shops`) when the dual-schema split was closed, so these mock the
@@ -24,6 +26,9 @@ jest.mock('../../config/database', () => ({
   query: (...args) => mockQuery(...args),
   queryOne: (...args) => mockQueryOne(...args),
   queryMany: jest.fn(),
+  // The status change and its effects are one transaction; the mock client
+  // sends its statements to the same spy.
+  withTransaction: (callback) => callback({ query: (...args) => mockQuery(...args) }),
 }));
 
 // The controller constructs a Razorpay client at module load.
@@ -76,7 +81,7 @@ const wrote = () => mockQuery.mock.calls.some(([sql]) => /^\s*UPDATE\s+orders/i.
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockQuery.mockResolvedValue({ rowCount: 1 });
+  mockQuery.mockResolvedValue({ rowCount: 1, rows: [] });
 });
 
 const allowed = (res) => res.statusCode !== 403;
@@ -103,7 +108,7 @@ describe('who may change an order status', () => {
   });
 
   it('allows an admin', async () => {
-    const { req, res, next } = mockReqRes({ id: STRANGER_ID, role: 'super_admin' }, 'REFUNDED');
+    const { req, res, next } = mockReqRes({ id: STRANGER_ID, role: 'super_admin' }, 'CANCELLED');
     await updateOrderStatus(req, res, next);
     expect(allowed(res)).toBe(true);
   });
@@ -116,16 +121,23 @@ describe('who may change an order status', () => {
 });
 
 describe('assigned rider', () => {
-  it('may mark the order delivered', async () => {
-    const { req, res, next } = mockReqRes({ id: RUNNER_ID, role: 'delivery_agent' }, 'DELIVERED');
+  it('may mark the order picked up', async () => {
+    const { req, res, next } = mockReqRes({ id: RUNNER_ID, role: 'delivery_agent' }, 'OUT_FOR_DELIVERY', order({ order_status: 'assigned' }));
     await updateOrderStatus(req, res, next);
     expect(allowed(res)).toBe(true);
+    expect(wrote()).toBe(true);
   });
 
-  it('may not refund it', async () => {
-    // Delivery staff moving an order to REFUNDED is a finance action, not a
-    // delivery one.
-    const { req, res, next } = mockReqRes({ id: RUNNER_ID, role: 'delivery_agent' }, 'REFUNDED');
+  it("may not mark it delivered here: that needs the customer's code", async () => {
+    const { req, res, next } = mockReqRes({ id: RUNNER_ID, role: 'delivery_agent' }, 'DELIVERED', order({ order_status: 'out_for_delivery' }));
+    await updateOrderStatus(req, res, next);
+    expect(res.statusCode).toBe(403);
+    expect(res.payload.code).toBe('HANDOVER_CODE_REQUIRED');
+    expect(wrote()).toBe(false);
+  });
+
+  it('may not cancel it', async () => {
+    const { req, res, next } = mockReqRes({ id: RUNNER_ID, role: 'delivery_agent' }, 'CANCELLED', order({ order_status: 'assigned' }));
     await updateOrderStatus(req, res, next);
     expect(res.statusCode).toBe(403);
   });
@@ -158,18 +170,18 @@ describe('customer', () => {
     expect(allowed(res)).toBe(true);
   });
 
-  it('may not cancel once it is out for delivery', async () => {
-    const { req, res, next } = mockReqRes(
-      { id: CUSTOMER_ID, role: 'user' },
-      'CANCELLED',
-      order({ order_status: 'out_for_delivery' })
-    );
-    await updateOrderStatus(req, res, next);
-    expect(res.statusCode).toBe(403);
+  it('may not cancel once the shop is preparing it', async () => {
+    for (const status of ['preparing', 'out_for_delivery']) {
+      const { req, res, next } = mockReqRes({ id: CUSTOMER_ID, role: 'user' }, 'CANCELLED', order({ order_status: status }));
+      await updateOrderStatus(req, res, next);
+      expect(res.statusCode).toBe(409);
+      expect(res.payload.code).toBe('TOO_LATE_TO_CANCEL');
+    }
+    expect(wrote()).toBe(false);
   });
 
   it('may not mark their own order delivered', async () => {
-    // This is the headline case: delivered also sets payment_status = 'paid'.
+    // This was the headline case: delivered used to set payment_status = 'paid'.
     const { req, res, next } = mockReqRes({ id: CUSTOMER_ID, role: 'user' }, 'DELIVERED');
     await updateOrderStatus(req, res, next);
     expect(res.statusCode).toBe(403);

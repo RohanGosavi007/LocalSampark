@@ -107,7 +107,7 @@ export default function RetailVisitorView({ shop, products = [], onAddToCart }) 
               <div className={viewMode === 'grid' ? 'p-3' : 'flex-1'}>
                 <div className="flex items-start justify-between mb-1">
                   <p className="font-bold text-sm text-text line-clamp-2 leading-tight">{product.name || 'Product'}</p>
-                  <StockBadge stock={product.stock !== undefined ? product.stock : Math.floor(Math.random() * 20)} />
+                  {product.stock !== undefined && product.stock !== null && <StockBadge stock={product.stock} />}
                 </div>
                 {product.unit && <p className="text-[10px] text-text-muted mt-0.5">{product.unit}</p>}
                 

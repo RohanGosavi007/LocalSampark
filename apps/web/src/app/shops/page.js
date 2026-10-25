@@ -603,31 +603,13 @@ export default function ShopsPage() {
                     </p>
                   </div>
                   <div className="bg-amber-500 text-black px-3 py-1 rounded-full font-bold flex items-center gap-1 shadow-sm">
-                    <Star className="w-4 h-4 fill-black" /> {quickViewShop.rating || '4.5'}
+                    <Star className="w-4 h-4 fill-black" /> {quickViewShop.rating || 'New'}
                   </div>
                 </div>
                 
                 <p className="text-text-muted leading-relaxed mb-8">
                   {quickViewShop.description || 'Welcome to our shop! We offer the best products and services in your neighborhood.'}
                 </p>
-                
-                <div className="mb-8">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-text-muted mb-4 pb-2 border-b border-border">Top Products</h4>
-                  <div className="space-y-3">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="flex justify-between items-center bg-background p-4 rounded-xl border border-border hover:border-primary/50 transition-colors">
-                         <div>
-                           <div className="font-bold text-text">Popular Item {i}</div>
-                           <div className="text-xs text-text-muted font-medium">Bestseller</div>
-                         </div>
-                         <div className="flex items-center gap-4">
-                           <span className="font-bold text-lg text-text">₹{Math.floor(Math.random() * 500) + 50}</span>
-                           <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">Add</Button>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
                 
                 <Button className="w-full shadow-lg shadow-primary/20" size="lg" asChild>
                   <a href={`/shops/${quickViewShop.id}`}>View Full Catalog & Shop</a>

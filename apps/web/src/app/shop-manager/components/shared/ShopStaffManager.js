@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { API_BASE } from '@/lib/api';
 import {
   Users, Plus, Edit2, Trash2, Shield, Phone, Mail,
   CheckCircle, XCircle, Search, Clock, CreditCard, ChevronDown
@@ -23,7 +24,7 @@ export default function ShopStaffManager({ token, shopId }) {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/v1/shops/my-shop/staff`, {
+      const res = await fetch(`${API_BASE}/shops/my-shop/staff`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -53,13 +54,13 @@ export default function ShopStaffManager({ token, shopId }) {
     if (!form.name || !form.phone) return;
     try {
       if (editingId) {
-        await fetch(`/api/v1/shops/my-shop/staff/${editingId}`, {
+        await fetch(`${API_BASE}/shops/my-shop/staff/${editingId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(form)
         });
       } else {
-        await fetch(`/api/v1/shops/my-shop/staff`, {
+        await fetch(`${API_BASE}/shops/my-shop/staff`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(form)
@@ -76,7 +77,7 @@ export default function ShopStaffManager({ token, shopId }) {
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to remove this staff member?')) {
       try {
-        await fetch(`/api/v1/shops/my-shop/staff/${id}`, {
+        await fetch(`${API_BASE}/shops/my-shop/staff/${id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         });

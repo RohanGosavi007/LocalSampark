@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator } from 'react-native';
 
 import { API_V1 } from '../../../src/config/api';
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
 export default function MobileMedical() {
   const [tab, setTab] = useState('requests'); // requests, register
   const [requests, setRequests] = useState([]);
@@ -10,7 +11,7 @@ export default function MobileMedical() {
 
   // Forms
   const [newRequest, setNewRequest] = useState({ requestType: 'Blood', requiredItem: '', description: '', location: '', urgency: 'Standard' });
-  const [donorForm, setDonorForm] = useState({ bloodGroup: 'O+', pincode: '400001' });
+  const [donorForm, setDonorForm] = useState({ bloodGroup: 'O+', pincode: useTerritoryStore.getState().pincode || '' }) // was '400001' (Mumbai) for everyone;
 
   useEffect(() => {
     fetchRequests();

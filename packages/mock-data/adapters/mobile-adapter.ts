@@ -36,6 +36,10 @@ import usersData from '../seeds/users.json';
 import territoriesData from '../seeds/territories.json';
 import walletsData from '../seeds/wallets.json';
 
+// Metro defines __DEV__; Node and the web bundlers do not, and reading an
+// undeclared identifier throws rather than yielding undefined.
+declare const __DEV__: boolean | undefined;
+
 // ─── NETWORK SIMULATION ─────────────────────────────────────────
 
 export type NetworkProfile = '4G_URBAN' | '3G_SUBURBAN' | '2G_RURAL' | 'WIFI' | 'OFFLINE';
@@ -143,7 +147,7 @@ function formatINR(paise: number): string {
 export class MockMobileAPI {
   private static networkProfile: NetworkProfile = '4G_URBAN';
   private static cache = new MockOfflineCache();
-  private static verbose = __DEV__ ?? false;
+  private static verbose = typeof __DEV__ !== 'undefined' ? Boolean(__DEV__) : false;
 
   /** Switch network simulation profile (useful for demo presentations) */
   static setNetworkProfile(profile: NetworkProfile): void {

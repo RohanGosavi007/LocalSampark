@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
 import { API_V1 } from '../../../src/config/api';
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
 export default function TownSquareScreen() {
   const [activeTab, setActiveTab] = useState('news');
   const [news, setNews] = useState([]);
@@ -107,7 +108,7 @@ export default function TownSquareScreen() {
     }
     try {
       const token = await AsyncStorage.getItem('token');
-      const payload = { title: newTipTitle, content: newTipContent, pincode: '400001', location: '' };
+      const payload = { title: newTipTitle, content: newTipContent, pincode: useTerritoryStore.getState().pincode || undefined, location: '' };
       const data = await apiPost('/townsquare/news', payload);
       Alert.alert('Success', data.message);
       setNewTipTitle('');

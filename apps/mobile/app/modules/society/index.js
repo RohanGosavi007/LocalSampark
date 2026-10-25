@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../src/context/AuthContext';
 import { withRoleGuard } from '../../../src/utils/permissions';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSocietyContext } from '../../../src/components/society/SocietyKit';
 
 // Import all 16 Tab Components
 import VisitorsTab from './tabs/VisitorsTab';
@@ -67,6 +68,9 @@ const tabsByRole = {
     { id: 'packages', icon: '📦', label: 'Packages', Component: PackagesTab },
     { id: 'parking', icon: '🚗', label: 'Parking', Component: ParkingTab },
     { id: 'polls', icon: '📊', label: 'Polls', Component: PollsTab },
+    { id: 'staff', icon: '🧹', label: 'Staff', Component: StaffTab },
+    { id: 'messages', icon: '💬', label: 'Message Gate', Component: MessagesTab },
+    { id: 'reminders', icon: '⏰', label: 'Gate Reminders', Component: RemindersTab },
     { id: 'emergency', icon: '🚨', label: 'Emergency', Component: EmergencyTab },
     { id: 'directory', icon: '📞', label: 'Directory', Component: DirectoryTab },
     { id: 'events', icon: '🎉', label: 'Events', Component: EventsTab },
@@ -77,7 +81,15 @@ const tabsByRole = {
 
 function SocietyModule() {
   const { user } = useAuth();
-  const internalRole = ROLES_MAP[user?.role] || 'resident';
+  // What a person may do in a society is decided by their membership there,
+  // not their platform role: a shop owner can live in A-102, and a resident
+  // can sit on the committee. The server's answer wins once it arrives; the
+  // platform role is only the first guess.
+  const { context } = useSocietyContext();
+  const caps = context?.capabilities;
+  const internalRole = caps
+    ? (caps.manageSociety ? 'admin' : caps.logGateEntry ? 'guard' : 'resident')
+    : (ROLES_MAP[user?.role] || 'resident');
   
   // The guard terminal deep-links straight to a tab (?tab=packages and so on).
   // Without this the link silently landed on Visitors every time.
@@ -118,7 +130,9 @@ function SocietyModule() {
           Complete society management - visitors, bills, complaints, amenities, and more
         </Text>
         <View style={styles.roleBadge}>
-          <Text style={styles.roleBadgeText}>Viewing as: {internalRole.toUpperCase()}</Text>
+          <Text style={styles.roleBadgeText}>
+            {context?.societyName ? `${context.societyName}${context.flatNumber ? ` · ${context.flatNumber}` : ''} · ` : ''}{internalRole.toUpperCase()}
+          </Text>
         </View>
       </LinearGradient>
 
@@ -130,6 +144,8 @@ function SocietyModule() {
               key={tab.id} 
               style={[styles.tabButton, activeTab === tab.id && styles.activeTabButton]}
               onPress={() => setActiveTab(tab.id)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === tab.id }}
             >
               <Text style={[styles.tabIcon, activeTab === tab.id && styles.activeTabIcon]}>{tab.icon}</Text>
               <Text style={[styles.tabText, activeTab === tab.id && styles.activeTabText]}>{tab.label}</Text>
@@ -139,9 +155,13 @@ function SocietyModule() {
       </View>
 
       {/* Tab Content */}
-      <ScrollView contentContainerStyle={styles.content}>
-        {renderActiveTab()}
-      </ScrollView>
+      {/* Every tab now has a form; without this the keyboard covered the
+          submit button on Android and a tap outside a field was swallowed. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          {renderActiveTab()}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
     </SafeAreaView>
   );
@@ -150,7 +170,7 @@ function SocietyModule() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   header: { padding: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0', flexDirection: 'row', alignItems: 'center' },
-  backBtn: { marginRight: 12 }, 
+  backBtn: { marginRight: 12, minHeight: 44, minWidth: 44, justifyContent: 'center' }, 
   backBtnText: { color: '#3b82f6', fontWeight: 'bold', fontSize: 16 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#0f172a' },
   
@@ -195,6 +215,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   tabButton: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

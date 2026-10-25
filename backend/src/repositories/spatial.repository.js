@@ -73,7 +73,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.is_active = true
+      WHERE t.is_active = '1'
         AND t.boundary_geojson IS NOT NULL
         AND COALESCE(t.boundary_verified, 0) = 1
     `);
@@ -180,7 +180,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.is_active = true
+      WHERE t.is_active = '1'
         AND COALESCE(t.centroid_verified, 0) = 1
     `);
 
@@ -238,7 +238,7 @@ class SpatialRepository {
       FROM territories t
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
-      WHERE t.is_active = true
+      WHERE t.is_active = '1'
         AND COALESCE(t.centroid_verified, 0) = 1
     `);
 
@@ -510,7 +510,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
-      WHERE t.pincode = $1 AND t.is_active = true
+      WHERE t.pincode = $1 AND t.is_active = '1'
     `, [normalized]);
   }
 
@@ -521,7 +521,7 @@ class SpatialRepository {
     const states = await query('SELECT * FROM location_states ORDER BY name');
     const districts = await query('SELECT * FROM location_districts ORDER BY name');
     const talukas = await query('SELECT * FROM location_talukas ORDER BY name');
-    const territories = await query('SELECT * FROM territories WHERE is_active = true ORDER BY name');
+    const territories = await query('SELECT * FROM territories WHERE is_active = \'1\' ORDER BY name');
 
     return {
       states: states.rows || states,

@@ -3,7 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 
 import { API_V1 } from '../../../src/config/api';
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
 export default function MobileDeliveryAgent() {
+  // The user's own pincode. This was hardcoded to 400001 (Mumbai, Fort), so
+  // anyone outside south Mumbai saw an empty list here and anything they
+  // posted was filed under a city they do not live in.
+  const pincode = useTerritoryStore((s) => s.pincode);
+  const pinQuery = pincode ? `?pincode=${encodeURIComponent(pincode)}` : '';
   const [tab, setTab] = useState('available'); // available, active
   const [availableJobs, setAvailableJobs] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
@@ -21,11 +27,11 @@ export default function MobileDeliveryAgent() {
     //      fetchJobs();
     //   }
     // });
-  }, [tab, isOnline]);
+  }, [tab, isOnline, pincode]);
 
   const fetchJobs = async () => {
     try {
-      const data = await apiGet('/delivery/jobs?pincode=400001');
+      const data = await apiGet(`/delivery/jobs${pinQuery}`);
       if (data.success) setAvailableJobs(data.data);
     } catch(e) {}
     setLoading(false);
@@ -81,7 +87,7 @@ export default function MobileDeliveryAgent() {
         </View>
         {isOnline && (
           <View style={styles.pingNotice}>
-            <Text style={styles.pingText}>📡 Listening for WebSocket pings in Pincode 400001...</Text>
+            <Text style={styles.pingText}>📡 Listening for delivery pings in {pincode ? `pincode ${pincode}` : 'your area'}…</Text>
           </View>
         )}
       </View>

@@ -15,19 +15,12 @@ const { queryOne } = require('../config/database');
 
 let io;
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://localhost:5000',
-  process.env.CLIENT_URL,
-  process.env.ADMIN_URL
-].filter(Boolean);
+const { corsOrigin } = require('../config/origins');
 
 const initSockets = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
+            origin: corsOrigin,
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -136,7 +129,29 @@ const initSockets = (server) => {
       // Namespaced by society. The gate id alone is not unique across
       // societies, and every deployment's first gate is called GATE-1.
       socket.join(`gatekeeper_${societyId}_${gateId || 'default'}`);
+      // Every gate of the society. A resident answering from the app (REST)
+      // does not know which gate the visitor is standing at, so the answer is
+      // published here as well as to the gate that asked.
+      socket.join(`gatekeeper_${societyId}`);
       socket.emit('joined_gatekeeper_room', { societyId, gateId: gateId || 'default' });
+    });
+
+    /**
+     * The whole-society room. raiseEmergency has always broadcast
+     * SOCIETY_EMERGENCY to `society_<id>`, and nothing ever joined it — so an
+     * SOS reached no open app at all. Any active member, guard or office may
+     * join; nobody outside the society may.
+     */
+    socket.on('join_society_room', async ({ societyId } = {}) => {
+      if (!societyId) return;
+      const membership = await societyCaps.membershipOf(socket.user?.id, societyId);
+      const permitted = societyCaps.membershipIsActive(membership)
+        || await societyCaps.hasSocietyCapability({ user: socket.user }, societyId, societyCaps.CAPABILITIES.MANAGE_SOCIETY);
+      if (!permitted) {
+        return socket.emit('socket_error', { event: 'join_society_room', reason: 'not_authorised' });
+      }
+      socket.join(`society_${societyId}`);
+      socket.emit('joined_society_room', { societyId });
     });
 
     socket.on('VISITOR_RESPONSE', async (data = {}) => {

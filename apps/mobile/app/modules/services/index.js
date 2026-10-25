@@ -7,24 +7,12 @@ import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../../theme
 import { getServiceIcon } from '../../../src/config/icons';
 import { apiGet, apiPost } from '../../../src/config/api';
 
-export const STATIC_SERVICES = [
-  { id: 'laundry', category: 'Cleaning', name: 'Premium Laundry & Dry Cleaning', desc: 'Doorstep pickup, wash, steam iron, and delivery within 24 hours.', rate: '₹79/kg', commission: '10% Platform Booking Commission', provider: 'Dhanori Cleaners & Dryers' },
-  { id: 'logistics', category: 'Transport', name: 'Society Mini-Logistics (Tata Ace)', desc: 'Hire a mini-truck for shifting furniture, appliances, or bulky items.', rate: '₹450 base + ₹15/km', commission: '10% Platform Booking Commission', provider: 'Pune Local Tempo Association' },
-  { id: 'maid', category: 'Help', name: 'Standby Cook / Maid Service', desc: 'Get a temporary, verified replacement helper when your regular maid is on leave.', rate: '₹350/day (4 hours)', commission: '₹50 Match Fee', provider: 'Sampark Domestic Helpline' },
-  { id: 'carwash', category: 'Cleaning', name: 'Daily Morning Car Wash', desc: 'Monthly subscription for daily cleaning of your vehicle in society parking lot.', rate: '₹600/month', commission: '10% Platform Booking Commission', provider: 'Dhanori Auto Washers' },
-  { id: 'parcel', category: 'Transport', name: 'Hyperlocal Courier Dispatch', desc: 'Send keys, documents, lunchboxes anywhere in Dhanori instantly.', rate: '₹49 base + ₹8/km', commission: '20% Platform Runner Cut', provider: 'LocalSampark Active Runners' },
-  { id: 'water', category: 'Delivery', name: 'Purified Water Can Delivery', desc: 'Get bulk 20-litre drinking water cans delivered straight to your kitchen door.', rate: '₹60/can', commission: '₹5 Platform Fee/can', provider: 'H2O Express Purity Services' },
-  { id: 'deepclean', category: 'Cleaning', name: 'Full Home Deep Cleaning', desc: 'Get your flat vacuumed, kitchen scrubbed, bathrooms sanitized by professionals.', rate: '₹2,499 (2 BHK)', commission: '10% Platform Commission', provider: 'Sparkle Home Cleaners' },
-  { id: 'homesalon', category: 'Salon', name: 'Doorstep Salon & Grooming', desc: 'Hair styling, facials, waxing, manicures, or massage therapies at home.', rate: '₹599 base', commission: '12% Booking Share', provider: 'Elite Home Salon Stylists' },
-  { id: 'petgrooming', category: 'Pets', name: 'Pet Grooming & Vet Visit', desc: 'Home visits for pet washing, hair trim, nails, vaccinations, or vet companion walks.', rate: '₹399/session', commission: '10% platform commission', provider: 'Dhanori Pet Care Club' },
-  { id: 'medicines', category: 'Delivery', name: 'Rapid Medicine Delivery', desc: 'Get prescription medicines delivered in 30 minutes from local pharmacies.', rate: '₹30 delivery fee', commission: '10% Pharmacy Share', provider: 'Pune Wellness Pharmacy' },
-];
-
 const CATEGORIES = ['All', 'Cleaning', 'Transport', 'Help', 'Delivery', 'Salon', 'Pets', 'Repair'];
 const TIME_SLOTS = ['09:00 AM', '11:00 AM', '01:00 PM', '03:00 PM', '05:00 PM', '07:00 PM'];
 
 export default function ServicesScreen() {
-  const [services, setServices] = useState(STATIC_SERVICES);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
   const [requestSent, setRequestSent] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,6 +23,7 @@ export default function ServicesScreen() {
   const [selectedTime, setSelectedTime] = useState('');
   const [bookingAddress, setBookingAddress] = useState('');
   const [promoCode, setPromoCode] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState([]);
 
   // Generate next 7 days for horizontal picker
   const dates = Array.from({length: 7}).map((_, i) => {
@@ -43,21 +32,59 @@ export default function ServicesScreen() {
     return d;
   });
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const result = await apiGet('/services/nearby', token);
-        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-          const dbServices = result.data.map(s => ({
-            id: s.id, category: s.category || 'Repair', name: s.service_name, desc: `${s.category} Service`,
-            rate: `₹${s.hourly_rate}/hr`, commission: '10% Platform Commission', provider: 'Local Verified Pro'
-          }));
-          setServices([...dbServices, ...STATIC_SERVICES]);
+  const fetchServices = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      let result = await apiGet('/services/nearby', token);
+      let list = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : []);
+      if (!list || list.length === 0) {
+        result = await apiGet('/services', token);
+        list = Array.isArray(result) ? result : (Array.isArray(result?.services) ? result.services : (Array.isArray(result?.data) ? result.data : []));
+      }
+
+      if (Array.isArray(list) && list.length > 0) {
+        setServices(list.map(s => ({
+          id: s.id,
+          category: s.category || 'Repair',
+          name: s.name || s.service_name || 'Home Service',
+          desc: s.description || `${s.category || 'Professional'} services at your doorstep.`,
+          rate: s.base_price != null ? `₹${s.base_price}` : (s.hourly_rate != null ? `₹${s.hourly_rate}/hr` : 'Custom Quote'),
+          commission: 'Platform Verified',
+          provider: s.provider_name || 'Local Verified Pro',
+          rating: s.rating != null && Number(s.rating) > 0 ? Number(s.rating).toFixed(1) : null,
+          totalRatings: s.total_ratings != null && Number(s.total_ratings) > 0 ? Number(s.total_ratings) : null
+        })));
+      } else {
+        setServices([]);
+      }
+    } catch (e) {
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAddresses = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+      const res = await apiGet('/users/addresses', token);
+      if (res && Array.isArray(res.addresses) && res.addresses.length > 0) {
+        setSavedAddresses(res.addresses);
+        const defaultAddr = res.addresses.find(a => a.is_default) || res.addresses[0];
+        if (defaultAddr && !bookingAddress) {
+          setBookingAddress(`${defaultAddr.flat_or_house_number || ''} ${defaultAddr.street_address || ''}, ${defaultAddr.area || ''}`.trim());
         }
-      } catch (e) { /* Graceful fallback to static data */ }
-    };
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
     fetchServices();
+    fetchAddresses();
   }, []);
 
   const handleBook = (service) => { 
@@ -75,14 +102,13 @@ export default function ServicesScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       const scheduled_time = `${bookingDate.toISOString().split('T')[0]} ${selectedTime}`;
-      await apiPost('/services/book', { service_id: selectedService.id, scheduled_time, address: bookingAddress, promo: promoCode }, token);
+      const res = await apiPost('/services/book', { service_id: selectedService.id, scheduled_time, address: bookingAddress, promo: promoCode }, token);
+      if (res && res.error) {
+        Alert.alert('Booking Failed', res.error);
+        return;
+      }
       setRequestSent(true);
     } catch (e) {
-      // The catch was an empty `/* Fallback */` and the success screen was shown
-      // regardless, so a booking that the server rejected still told the
-      // customer "Booking Request Sent! Our local runner is matching you with
-      // the provider" — and they would have waited for a provider nobody had
-      // been asked to send.
       Alert.alert(
         'Booking not sent',
         e?.message || 'We could not send your booking request. Please try again.'
@@ -142,45 +168,49 @@ export default function ServicesScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Services Grid */}
-        {filteredServices.map(s => {
-          const iconConfig = getServiceIcon(s.id);
-          return (
-            <View key={s.id} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.iconContainer, { backgroundColor: iconConfig.color + '15' }]}>
-                  <Ionicons name={iconConfig.name} size={22} color={iconConfig.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>{s.name}</Text>
-                  <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={12} color="#f59e0b" />
-                    <Text style={styles.ratingText}> 4.8 • 120 Reviews</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
+        ) : filteredServices.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="construct-outline" size={48} color={COLORS.border} />
+            <Text style={styles.emptyTitle}>No services found</Text>
+            <Text style={styles.emptyDesc}>No active service providers currently listed in this category.</Text>
+          </View>
+        ) : (
+          filteredServices.map(s => {
+            const iconConfig = getServiceIcon(s.id);
+            return (
+              <View key={s.id} style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.iconContainer, { backgroundColor: iconConfig.color + '15' }]}>
+                    <Ionicons name={iconConfig.name} size={22} color={iconConfig.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>{s.name}</Text>
+                    {s.rating ? (
+                      <View style={styles.ratingRow}>
+                        <Ionicons name="star" size={12} color="#f59e0b" />
+                        <Text style={styles.ratingText}> {s.rating}{s.totalRatings ? ` • ${s.totalRatings} Reviews` : ''}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 </View>
-              </View>
 
-              <Text style={styles.cardDesc} numberOfLines={2}>{s.desc}</Text>
-              <View style={styles.providerRow}>
-                <Ionicons name="person-outline" size={12} color={COLORS.textMuted} />
-                <Text style={styles.providerText}> {s.provider}</Text>
-              </View>
+                <Text style={styles.cardDesc} numberOfLines={2}>{s.desc}</Text>
+                <View style={styles.providerRow}>
+                  <Ionicons name="person-outline" size={12} color={COLORS.textMuted} />
+                  <Text style={styles.providerText}> {s.provider}</Text>
+                </View>
 
-              <View style={styles.cardFooter}>
-                <Text style={styles.rateText}>{s.rate}</Text>
-                <TouchableOpacity style={styles.bookBtn} onPress={() => handleBook(s)} activeOpacity={0.7}>
-                  <Text style={styles.bookBtnText}>Book Now</Text>
-                </TouchableOpacity>
+                <View style={styles.cardFooter}>
+                  <Text style={styles.rateText}>{s.rate}</Text>
+                  <TouchableOpacity style={styles.bookBtn} onPress={() => handleBook(s)} activeOpacity={0.7}>
+                    <Text style={styles.bookBtnText}>Book Now</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          );
-        })}
-
-        {filteredServices.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={48} color={COLORS.border} />
-            <Text style={styles.emptyTitle}>No services found</Text>
-            <Text style={styles.emptyDesc}>Try adjusting your search.</Text>
-          </View>
+            );
+          })
         )}
       </ScrollView>
 
@@ -250,6 +280,29 @@ export default function ServicesScreen() {
 
                 {/* Address */}
                 <Text style={styles.label}>Address / Landmark</Text>
+                {savedAddresses.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                    {savedAddresses.map((addr) => {
+                      const fullAddr = `${addr.flat_or_house_number || ''} ${addr.street_address || ''}, ${addr.area || ''}`.trim();
+                      const isSelected = bookingAddress === fullAddr;
+                      return (
+                        <TouchableOpacity
+                          key={addr.id}
+                          style={[
+                            styles.timeCard,
+                            isSelected && styles.timeCardActive,
+                            { paddingHorizontal: 12, paddingVertical: 6, marginRight: 8, height: 'auto' }
+                          ]}
+                          onPress={() => setBookingAddress(fullAddr)}
+                        >
+                          <Text style={[styles.timeText, isSelected && styles.timeTextActive, { fontSize: 12 }]}>
+                            📍 {addr.label || 'Home'}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                )}
                 <TextInput 
                   style={[styles.input, { height: 80, textAlignVertical: 'top' }]} 
                   multiline 

@@ -1,26 +1,8 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
-const HOSPITALS = [
-  { name: 'Dhanori Lifeline Hospital', type: 'Multi-Specialty', dist: '0.8 km', phone: '+91 98765-43212', beds: '24/7 Emergency', icon: '🏥' },
-  { name: 'Pune District Hospital', type: 'Government', dist: '3.2 km', phone: '020-26125600', beds: 'Free OPD', icon: '🏨' },
-  { name: 'Surya Mother & Child Care', type: 'Maternity', dist: '1.5 km', phone: '+91 98765-43214', beds: 'NICU Available', icon: '🍼' },
-];
-
-const DOCTORS = [
-  { name: 'Dr. Ajay Patil', spec: 'General Physician', clinic: 'Goodwill Square Clinic', phone: '+91 98765-11110', timing: 'Mon–Sat, 9AM–1PM & 5–8PM', icon: '👨‍⚕️' },
-  { name: 'Dr. Shalini Deshmukh', spec: 'Pediatrician', clinic: 'Tingre Nagar Rd Clinic', phone: '+91 98765-22220', timing: 'Mon–Sat, 10AM–2PM', icon: '👩‍⚕️' },
-  { name: 'Dr. Ravi Bhosale', spec: 'Cardiologist', clinic: 'Dhanori Heart Center', phone: '+91 98765-33330', timing: 'Tue & Thu, 11AM–4PM', icon: '❤️' },
-  { name: 'Dr. Meera Kulkarni', spec: 'Dermatologist', clinic: 'Ganga Aria Clinic', phone: '+91 98765-44440', timing: 'Mon, Wed, Fri, 4–7PM', icon: '🌿' },
-];
-
-const PHARMACIES = [
-  { name: 'Goodwill Pharmacy', note: '24/7 Open', phone: '+91 98765-43213', icon: '💊' },
-  { name: 'Pune Wellness Chemist', note: 'Daily 7AM–11PM', phone: '+91 98765-55550', icon: '🧴' },
-  { name: 'Jan Aushadhi Store', note: 'Generic Medicines', phone: '1800-111-255', icon: '🏷️' },
-];
+import { apiGet, apiPost } from '@/lib/api';
 
 const EMERGENCY_CONTACTS = [
   { label: 'Medical Ambulance', number: '108', color: '#ef4444' },
@@ -34,15 +16,40 @@ const EMERGENCY_CONTACTS = [
 export default function HealthPage() {
   const [sosActive, setSosActive] = useState(false);
   const [sosConfirmed, setSosConfirmed] = useState(false);
-  const [activeTab, setActiveTab] = useState('hospitals');
+  const [sosError, setSosError] = useState(null);
+  const [activeTab, setActiveTab] = useState('doctors');
+  const [doctors, setDoctors] = useState(null);
+  const [doctorsError, setDoctorsError] = useState(null);
 
+  useEffect(() => {
+    apiGet('/medical/doctors')
+      .then((r) => setDoctors(Array.isArray(r) ? r : (r && (r.doctors || r.data)) || []))
+      .catch((e) => setDoctorsError(e.message || 'Doctors could not be loaded.'));
+  }, []);
+
+  // Sends a real alert (POST /sos/trigger) with the device position, and says what happened. It used
+  // to wait two seconds and announce "SOS broadcast sent — neighbours alerted, ambulance dispatched"
+  // without contacting anything. An emergency button that lies is worse than none.
   const handleSOS = () => {
+    if (sosActive) return;
     setSosActive(true);
-    setTimeout(() => {
-      setSosActive(false);
-      setSosConfirmed(true);
-      setTimeout(() => setSosConfirmed(false), 6000);
-    }, 2000);
+    setSosError(null);
+    setSosConfirmed(false);
+    const send = async (coords) => {
+      try {
+        await apiPost('/sos/trigger', { type: 'medical', ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}) });
+        setSosConfirmed(true);
+      } catch (e) {
+        setSosError(e.status === 401 ? 'Please log in to send an SOS alert. Call 108 for an ambulance now.' : `The alert was NOT sent (${e.message || 'no connection'}). Call 108 or 112 now.`);
+      } finally {
+        setSosActive(false);
+      }
+    };
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((p) => send(p.coords), () => send(null), { timeout: 8000, maximumAge: 30000 });
+    } else {
+      send(null);
+    }
   };
 
   return (
@@ -58,16 +65,21 @@ export default function HealthPage() {
               Health & <span className="gradient-text">SOS Emergency</span> Network
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '580px', margin: '0 auto' }}>
-              One-tap SOS broadcast, nearest hospitals, verified local doctors, and 24/7 pharmacy directory — all within Dhanori's trusted network.
+              One-tap SOS alert, national emergency numbers and the doctors listed on LocalSampark — all within Dhanori's trusted network.
             </p>
           </div>
 
           {/* SOS Button */}
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            {sosError && (
+              <div role="alert" style={{ background: '#450a0a', border: '1px solid #ef4444', borderRadius: '1rem', padding: '1.25rem', marginBottom: '1.5rem', maxWidth: '520px', margin: '0 auto 1.5rem' }}>
+                <p style={{ color: '#f87171', fontWeight: 700, margin: 0 }}>{sosError}</p>
+              </div>
+            )}
             {sosConfirmed && (
               <div style={{ background: '#450a0a', border: '1px solid #ef4444', borderRadius: '1rem', padding: '1.25rem 2rem', marginBottom: '2rem', display: 'inline-block' }}>
                 <p style={{ color: '#f87171', fontWeight: 700, margin: 0, fontSize: '1rem' }}>
-                  🚨 SOS BROADCAST SENT — All neighbors within 5km radius alerted. Local ambulance dispatched.
+                  🚨 SOS alert sent to LocalSampark responders with your location. If this is life-threatening, also call 108 now.
                 </p>
               </div>
             )}
@@ -92,7 +104,7 @@ export default function HealthPage() {
               </button>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '1.25rem', maxWidth: '300px', margin: '1.25rem auto 0' }}>
-              Caution: Broadcasts emergency alert to all verified neighbors and dispatches local medical response.
+              Sends an alert with your location to LocalSampark responders. It does not replace calling an ambulance: dial 108 or 112.
             </p>
           </div>
 
@@ -111,9 +123,8 @@ export default function HealthPage() {
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0' }}>
             {[
-              { id: 'hospitals', label: '🏥 Hospitals' },
               { id: 'doctors', label: '👨‍⚕️ Doctors' },
-              { id: 'pharmacies', label: '💊 Pharmacies' },
+              { id: 'nearby', label: '💊 Pharmacies & hospitals' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                 padding: '0.75rem 1.5rem', borderRadius: '0.5rem 0.5rem 0 0', border: 'none', cursor: 'pointer',
@@ -125,57 +136,29 @@ export default function HealthPage() {
             ))}
           </div>
 
-          {/* Hospitals */}
-          {activeTab === 'hospitals' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {HOSPITALS.map((h, i) => (
-                <div key={i} className="glass-card" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '1.5rem', alignItems: 'center', padding: '1.75rem' }}>
-                  <div style={{ width: '60px', height: '60px', background: '#450a0a22', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>{h.icon}</div>
-                  <div>
-                    <h3 style={{ margin: '0 0 0.35rem', fontSize: '1.15rem' }}>{h.name}</h3>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{h.type} · 📍 {h.dist} from Dhanori · {h.beds}</p>
-                  </div>
-                  <a href={`tel:${h.phone}`} className="btn btn-primary" style={{ padding: '0.55rem 1.25rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                    📞 {h.phone}
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Doctors */}
           {activeTab === 'doctors' && (
             <div className="grid-2">
-              {DOCTORS.map((d, i) => (
-                <div key={i} className="glass-card" style={{ padding: '1.75rem' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '2rem' }}>{d.icon}</div>
-                    <div>
-                      <h3 style={{ margin: '0 0 0.2rem', fontSize: '1.1rem' }}>{d.name}</h3>
-                      <span className="badge badge-primary" style={{ fontSize: '0.72rem' }}>{d.spec}</span>
-                    </div>
-                  </div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 0.3rem' }}>📍 {d.clinic}</p>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 1.25rem' }}>🕐 {d.timing}</p>
-                  <a href={`tel:${d.phone}`} className="btn btn-secondary" style={{ width: '100%', padding: '0.55rem', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
-                    📞 {d.phone}
-                  </a>
+              {doctorsError && <p role="alert" style={{ color: '#f87171', fontWeight: 700 }}>{doctorsError}</p>}
+              {doctors === null && !doctorsError && <p style={{ color: 'var(--text-muted)' }}>Loading doctors…</p>}
+              {doctors && doctors.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No doctors are listed yet.</p>}
+              {(doctors || []).map((d) => (
+                <div key={d.id} className="glass-card" style={{ padding: '1.75rem' }}>
+                  <h3 style={{ margin: '0 0 0.2rem', fontSize: '1.1rem' }}>{d.name}</h3>
+                  {d.specialization && <span className="badge badge-primary" style={{ fontSize: '0.72rem' }}>{d.specialization}</span>}
+                  {(d.clinic_name || d.hospital_name) && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0.75rem 0 0.3rem' }}>📍 {d.clinic_name || d.hospital_name}</p>}
+                  {d.consultation_fee != null && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 1rem' }}>Consultation ₹{d.consultation_fee}</p>}
+                  {d.phone && <a href={`tel:${d.phone}`} className="btn btn-secondary" style={{ width: '100%', padding: '0.55rem', fontSize: '0.85rem' }}>📞 {d.phone}</a>}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Pharmacies */}
-          {activeTab === 'pharmacies' && (
-            <div className="grid-3">
-              {PHARMACIES.map((p, i) => (
-                <div key={i} className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>{p.icon}</div>
-                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.35rem' }}>{p.name}</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>{p.note}</p>
-                  <a href={`tel:${p.phone}`} className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem' }}>📞 {p.phone}</a>
-                </div>
-              ))}
+          {/* Pharmacies and hospitals live in the shop directory */}
+          {activeTab === 'nearby' && (
+            <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem' }}>Pharmacies and hospitals registered on LocalSampark are in the shop directory.</p>
+              <a href="/shops" className="btn btn-primary">Browse the shop directory</a>
             </div>
           )}
 

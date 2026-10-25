@@ -73,7 +73,9 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
-      - run: npm run test:unit -- --ci --testPathPattern=integration
+      # Jest 30 renamed --testPathPattern to --testPathPatterns and exits on the
+      # old spelling; the root test:api script already carries the new one.
+      - run: npm run test:api -- --ci
 
   # ── Job 4: E2E Web Tests ───────────────────────────────────
   e2e-web:

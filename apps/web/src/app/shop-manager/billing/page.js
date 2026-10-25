@@ -2,9 +2,52 @@
 import React, { useState } from 'react';
 import Header from '../../components/Header';
 import { Check, Star, Zap, Shield, Crown } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 export default function ShopBillingPage() {
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
+  const [subscribing, setSubscribing] = useState(false);
+
+  const handleSubscribe = async (plan) => {
+    if (plan.cta === 'Current Plan') return;
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      alert('Please log in as a shop merchant to upgrade your plan.');
+      return;
+    }
+    setSubscribing(true);
+    try {
+      const shopRes = await fetch(`${API_URL}/api/v1/shops/my-shop`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const shopData = await shopRes.json();
+      const shopId = shopData?.shop?.id || shopData?.id;
+      if (!shopId) {
+        alert('No registered shop found for this account. Please register your shop first.');
+        setSubscribing(false);
+        return;
+      }
+
+      const subRes = await fetch(`${API_URL}/api/v1/subscriptions/vendor-saas/subscribe`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ shopId, planId: plan.id })
+      });
+      const subData = await subRes.json();
+      if (subRes.ok && subData.success) {
+        alert(`Success! 🎉 ${subData.message || 'Your plan has been upgraded with 0% platform commission active!'}`);
+      } else {
+        alert(subData.error || 'Could not activate plan. Please ensure sufficient wallet balance or contact support.');
+      }
+    } catch (err) {
+      alert(err.message || 'Network error processing plan upgrade.');
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   const plans = [
     {
@@ -141,12 +184,16 @@ export default function ShopBillingPage() {
                     <span className="text-text-muted font-bold mb-2">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
                   </div>
 
-                  <button className={`w-full py-4 rounded-xl font-bold transition-colors mb-8 ${
-                    plan.cta === 'Current Plan' 
-                      ? 'bg-slate-800 text-slate-400 cursor-default'
-                      : `text-white hover:opacity-90 ${plan.bgColor}`
-                  }`}>
-                    {plan.cta}
+                  <button 
+                    onClick={() => handleSubscribe(plan)}
+                    disabled={subscribing || plan.cta === 'Current Plan'}
+                    className={`w-full py-4 rounded-xl font-bold transition-colors mb-8 ${
+                      plan.cta === 'Current Plan' 
+                        ? 'bg-slate-800 text-slate-400 cursor-default'
+                        : `text-white hover:opacity-90 ${plan.bgColor} ${subscribing ? 'opacity-60' : ''}`
+                    }`}
+                  >
+                    {subscribing ? 'Processing...' : plan.cta}
                   </button>
 
                   <div className="space-y-4">

@@ -88,17 +88,23 @@ exports.toggleDoctorVerification = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'is_verified must be a boolean' });
     }
 
-    const provider = await queryOne('SELECT id FROM medical_providers WHERE id = $1', [id]);
-    if (!provider) {
-      return res.status(404).json({ success: false, message: 'Medical provider not found' });
+    // The Medical tab lists doctors (medical_doctors); verification also applies to the
+    // facility-level medical_providers rows. Update whichever table holds this id.
+    const doctor = await queryOne('SELECT id FROM medical_doctors WHERE id = $1', [id]);
+    if (doctor) {
+      await query('UPDATE medical_doctors SET is_verified = $1 WHERE id = $2', [is_verified, id]);
+    } else {
+      const provider = await queryOne('SELECT id FROM medical_providers WHERE id = $1', [id]);
+      if (!provider) {
+        return res.status(404).json({ success: false, message: 'Medical provider not found' });
+      }
+      await query(
+        `UPDATE medical_providers
+            SET is_verified = $1, status = $2, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $3`,
+        [is_verified, is_verified ? 'verified' : 'pending', id]
+      );
     }
-
-    await query(
-      `UPDATE medical_providers
-          SET is_verified = $1, status = $2, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $3`,
-      [is_verified, is_verified ? 'verified' : 'pending', id]
-    );
 
     res.json({
       success: true,

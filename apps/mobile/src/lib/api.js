@@ -126,7 +126,16 @@ async function clearSession() {
  * Enhanced fetch wrapper with error handling, timeout, and auto-logout interceptors
  */
 async function request(endpoint, options = {}) {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  let cleanEndpoint = endpoint;
+  if (!endpoint.startsWith('http')) {
+    if (cleanEndpoint.startsWith('/api/v1')) {
+      cleanEndpoint = cleanEndpoint.replace(/^\/api\/v1/, '');
+    }
+    if (!cleanEndpoint.startsWith('/')) {
+      cleanEndpoint = `/${cleanEndpoint}`;
+    }
+  }
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${cleanEndpoint}`;
   const authHeaders = await getAuthHeaders();
   
   const controller = new AbortController();

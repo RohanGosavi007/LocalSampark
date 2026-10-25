@@ -14,7 +14,7 @@ class BillingEngineService {
         const activeFlatsCount = (await queryOne('SELECT COUNT(*) as count FROM society_flat_ledger WHERE society_id = $1', [societyId])).count;
         if (activeFlatsCount === 0) return 0;
 
-        const chargeHeads = await queryMany('SELECT * FROM society_charge_heads WHERE society_id = $1 AND category = "service_charge" AND is_active = true', [societyId]);
+        const chargeHeads = await queryMany('SELECT * FROM society_charge_heads WHERE society_id = $1 AND category = \'service_charge\' AND is_active = \'1\'', [societyId]);
         
         let totalServiceCharge = 0;
         for (const head of chargeHeads) {
@@ -55,7 +55,7 @@ class BillingEngineService {
         const flat = await queryOne('SELECT member_id FROM society_flat_ledger WHERE society_id = $1 AND flat_number = $2', [societyId, flatNumber]);
         if (!flat || !flat.member_id) return 0;
 
-        const vehicles = await queryMany('SELECT vehicle_type FROM vehicles WHERE owner_id = $1 AND is_active = true', [flat.member_id]);
+        const vehicles = await queryMany('SELECT vehicle_type FROM vehicles WHERE owner_id = $1 AND is_active = \'1\'', [flat.member_id]);
         
         let parkingCharge = 0;
         for (const v of vehicles) {
@@ -147,9 +147,9 @@ class BillingEngineService {
                 // For simplicity, inserting into society_maintenance_bills 
                 // Note: society_maintenance_bills table might need structure alignment, assuming standard fields:
                 await query(`INSERT INTO society_maintenance_bills 
-                    (id, society_id, flat_number, member_id, month, year, total_amount, paid_amount, payment_status, due_date, created_at) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 'pending', $8, CURRENT_TIMESTAMP)`,
-                    [billId, societyId, flat.flat_number, flat.member_id, month, year, totalAmount, dueDate.toISOString()]
+                    (id, society_id, flat_number, member_id, month, year, base_amount, total_amount, paid_amount, payment_status, due_date, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $9, $7, 0, 'pending', $8, CURRENT_TIMESTAMP)`,
+                    [billId, societyId, flat.flat_number, flat.member_id, month, year, totalAmount, dueDate.toISOString(), baseServiceCharge]
                 );
 
                 // Insert Invoice Items
@@ -175,7 +175,7 @@ class BillingEngineService {
     async applyAdvanceBalance(memberId, billId, advanceBalance, billAmount, societyId, flatNumber) {
         const amountToApply = Math.min(advanceBalance, billAmount);
         
-        await query('UPDATE society_maintenance_bills SET paid_amount = paid_amount + $1, payment_status = CASE WHEN total_amount <= (paid_amount + $2) THEN "paid" ELSE "partial" END WHERE id = $3',
+        await query('UPDATE society_maintenance_bills SET paid_amount = paid_amount + $1, payment_status = CASE WHEN total_amount <= (paid_amount + $2) THEN \'paid\' ELSE \'partial\' END WHERE id = $3',
             [amountToApply, amountToApply, billId]
         );
 

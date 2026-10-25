@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { query } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
@@ -29,10 +29,10 @@ router.get('/nearby', authenticate, async (req, res, next) => {
 // POST book service
 router.post('/book', authenticate, async (req, res, next) => {
     try {
-        const { service_id, scheduled_time } = req.body;
+        const { service_id, scheduled_time, address } = req.body;
         const id = crypto.randomUUID();
-        await query('INSERT INTO service_bookings (id, service_id, user_id, scheduled_time, status) VALUES ($1, $2, $3, $4, $5)',
-            [id, service_id, req.user.id, scheduled_time, 'pending']);
+        await query('INSERT INTO service_bookings (id, service_id, user_id, scheduled_time, address, status) VALUES ($1, $2, $3, $4, $5, $6)',
+            [id, service_id, req.user.id, scheduled_time, address || null, 'pending']);
         res.status(201).json({ success: true, id, message: 'Service booked successfully' });
     } catch (err) {
         next(err);

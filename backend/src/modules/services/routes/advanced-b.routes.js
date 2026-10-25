@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { query, queryOne, queryMany } = require('../../../config/database');
+const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
+const { pointSql } = require('../../../utils/sqlPoint');
 
 // ═══════════════════════════════════════════════════════════════
 // M3: TIMED AUCTION MODE
@@ -11,22 +12,38 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 // Create auction for a listing
 router.post('/marketplace/auctions', authenticate, async (req, res, next) => {
   try {
-    const { listing_id, starting_price, bid_increment = 50, duration_hours = 24 } = req.body;
+        const { listing_id, starting_price, bid_increment = 50, duration_hours = 24 } = req.body || {};
     const listing = await queryOne('SELECT * FROM marketplace_listings WHERE id = $1 AND seller_id = $2', [listing_id, req.user.id]);
     if (!listing) return res.status(404).json({ success: false, error: 'Listing not found or unauthorized' });
 
+    const start = starting_price === undefined || starting_price === null || starting_price === '' ? Number(listing.price) : Number(starting_price);
+    const step = Number(bid_increment);
+    const hours = Number(duration_hours);
+    if (!Number.isFinite(start) || start < 0 || start > 10000000) {
+      return res.status(400).json({ success: false, error: 'starting_price must be a number from 0 to 1,00,00,000' });
+    }
+    if (!Number.isFinite(step) || step < 1 || step > 1000000) {
+      return res.status(400).json({ success: false, error: 'bid_increment must be at least ₹1' });
+    }
+    if (!Number.isFinite(hours) || hours < 1 || hours > 168) {
+      return res.status(400).json({ success: false, error: 'duration_hours must be from 1 to 168 (one week)' });
+    }
+    const open = await queryOne("SELECT id FROM marketplace_auctions WHERE listing_id = $1 AND status = 'active'", [listing_id]);
+    if (open) return res.status(409).json({ success: false, error: 'This listing already has an auction running.' });
+
+
     const id = crypto.randomUUID();
-    const endsAt = new Date(Date.now() + duration_hours * 3600000).toISOString();
+        const endsAt = new Date(Date.now() + hours * 3600000).toISOString();
 
     await query(
       `INSERT INTO marketplace_auctions (id, listing_id, starting_price, current_bid, bid_increment, ends_at, status) VALUES ($1,$2,$3,$4,$5,$6,'active')`,
-      [id, listing_id, starting_price || listing.price, starting_price || listing.price, bid_increment, endsAt]
+      [id, listing_id, start, start, step, endsAt]
     );
     await query(`UPDATE marketplace_listings SET listing_mode = 'auction' WHERE id = $1`, [listing_id]);
 
     res.json({
       success: true,
-      auction: { id, listing_id, starting_price: starting_price || listing.price, bid_increment, ends_at: endsAt, status: 'active', duration_hours }
+            auction: { id, listing_id, starting_price: start, bid_increment: step, ends_at: endsAt, status: 'active', duration_hours: hours }
     });
   } catch (error) { next(error); }
 });
@@ -69,25 +86,47 @@ router.get('/marketplace/auctions/:auctionId', async (req, res, next) => {
 // Place bid on auction
 router.post('/marketplace/auctions/:auctionId/bid', authenticate, async (req, res, next) => {
   try {
-    const { bid_amount } = req.body;
-    const auction = await queryOne('SELECT * FROM marketplace_auctions WHERE id = $1', [req.params.auctionId]);
+        const bid_amount = Math.round(Number((req.body || {}).bid_amount) * 100) / 100;
+    if (!Number.isFinite(bid_amount) || bid_amount <= 0) {
+      return res.status(400).json({ success: false, error: 'bid_amount must be a number of rupees' });
+    }
+    const auction = await queryOne(
+      `SELECT a.*, l.seller_id FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON l.id = a.listing_id WHERE a.id = $1`,
+      [req.params.auctionId]
+    );
     if (!auction) return res.status(404).json({ success: false, error: 'Auction not found' });
     if (auction.status !== 'active') return res.status(400).json({ success: false, error: 'Auction has ended' });
+    // A seller bidding up their own item.
+    if (String(auction.seller_id) === String(req.user.id)) {
+      return res.status(403).json({ success: false, error: 'You cannot bid on your own auction' });
+    }
 
     const now = new Date();
     if (new Date(auction.ends_at) <= now) return res.status(400).json({ success: false, error: 'Auction expired' });
-    if (bid_amount < (auction.current_bid || 0) + auction.bid_increment) {
-      return res.status(400).json({ success: false, error: `Minimum bid: ₹${(auction.current_bid || 0) + auction.bid_increment}` });
+    const minimum = (Number(auction.current_bid) || 0) + (Number(auction.bid_increment) || 0);
+    if (bid_amount < minimum) {
+      return res.status(400).json({ success: false, error: `Minimum bid: ₹${minimum}` });
     }
 
-    await query(
-      `INSERT INTO marketplace_auction_bids (auction_id, bidder_id, bid_amount) VALUES ($1,$2,$3)`,
-      [req.params.auctionId, req.user.id, bid_amount]
-    );
-    await query(
-      `UPDATE marketplace_auctions SET current_bid = $1, highest_bidder_id = $2, total_bids = total_bids + 1 WHERE id = $3`,
-      [bid_amount, req.user.id, req.params.auctionId]
-    );
+    // The UPDATE is the check that counts: it applies only while this bid is
+    // still at least the increment above the current one, so of two bids read
+    // against the same price, only one can win it.
+    const accepted = await withTransaction(async (client) => {
+      const raised = await client.query(
+        `UPDATE marketplace_auctions SET current_bid = $1, highest_bidder_id = $2, total_bids = COALESCE(total_bids, 0) + 1
+          WHERE id = $3 AND status = 'active' AND COALESCE(current_bid, 0) + COALESCE(bid_increment, 0) <= $1`,
+        [bid_amount, req.user.id, req.params.auctionId]
+      );
+      if (!raised.rowCount) return false;
+      await client.query(
+        `INSERT INTO marketplace_auction_bids (auction_id, bidder_id, bid_amount) VALUES ($1,$2,$3)`,
+        [req.params.auctionId, req.user.id, bid_amount]
+      );
+      return true;
+    });
+    if (!accepted) {
+      return res.status(409).json({ success: false, error: 'Someone has just bid higher. Refresh to see the new minimum.' });
+    }
 
     // Real-time broadcast
     try {
@@ -153,7 +192,7 @@ router.post('/jobs/video-resume', authenticate, async (req, res, next) => {
 
     const resume = await queryOne('SELECT id FROM job_resumes WHERE user_id = $1', [req.user.id]);
     if (resume) {
-      await query('UPDATE job_resumes SET video_resume_url = $1, updated_at = datetime(\'now\') WHERE user_id = $2', [video_url, req.user.id]);
+      await query('UPDATE job_resumes SET video_resume_url = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2', [video_url, req.user.id]);
     } else {
       await query('INSERT INTO job_resumes (id, user_id, video_resume_url, headline) VALUES ($1,$2,$3,$4)',
         [crypto.randomUUID(), req.user.id, video_url, '']);
@@ -250,7 +289,7 @@ router.post('/jobs/assessments/:assessmentId/submit', authenticate, async (req, 
     const passed = score >= (assessment.passing_score || 60);
 
     await query(
-      'INSERT INTO job_assessment_attempts (assessment_id, user_id, score, passed, answers, completed_at) VALUES ($1,$2,$3,$4,$5,datetime(\'now\'))',
+      'INSERT INTO job_assessment_attempts (assessment_id, user_id, score, passed, answers, completed_at) VALUES ($1,$2,$3,$4,$5,CURRENT_TIMESTAMP)',
       [req.params.assessmentId, req.user.id, score, passed ? 1 : 0, JSON.stringify(answers)]
     );
 
@@ -259,8 +298,16 @@ router.post('/jobs/assessments/:assessmentId/submit', authenticate, async (req, 
       try {
         const resume = await queryOne('SELECT id FROM job_resumes WHERE user_id = $1', [req.user.id]);
         if (resume) {
-          await query('INSERT OR IGNORE INTO job_skills (resume_id, skill_name, proficiency, verified) VALUES ($1,$2,\'advanced\',1)',
-            [resume.id, assessment.skill_name]);
+          // The column is is_verified, user_id is NOT NULL, and INSERT OR
+          // IGNORE is SQLite-only: this statement failed on both engines, and
+          // the catch below swallowed it, so a passed assessment never showed
+          // on anyone's profile. A skill the user already lists is promoted
+          // rather than ignored — passing the test is the point.
+          await query(
+            `INSERT INTO job_skills (id, user_id, resume_id, skill_name, proficiency, is_verified)
+             VALUES ($1, $2, $3, $4, 'advanced', 1)
+             ON CONFLICT (user_id, skill_name) DO UPDATE SET proficiency = 'advanced', is_verified = 1`,
+            [crypto.randomUUID(), req.user.id, resume.id, assessment.skill_name]);
         }
       } catch (e) {}
     }
@@ -301,9 +348,16 @@ router.post('/carpool/recurring/publish', authenticate, async (req, res, next) =
     const rideId = crypto.randomUUID();
     const rideDate = new Date().toISOString().split('T')[0];
 
+    // departure_date and total_seats are NOT NULL and were not written, so the
+    // auto-publish always failed; see POST /rides in carpool.routes.js, which
+    // had the same gap. Coordinates are set when the schedule has them.
     await query(
-      `INSERT INTO carpool_rides (id, driver_id, from_location, to_location, departure_time, seats_available, available_seats, price_per_seat, ride_type, gender_preference, ride_date, recurring_id, status, from_lat, from_lng, to_lat, to_lng)
-       VALUES ($1,$2,$3,$4,$5,$6,$6,$7,$8,$9,$10,$11,'active',$12,$13,$14,$15)`,
+      `INSERT INTO carpool_rides (id, driver_id, from_location, to_location, origin, destination, departure_time,
+         seats_available, total_seats, available_seats, price_per_seat, ride_type, gender_preference,
+         ride_date, departure_date, recurring_id, status, from_lat, from_lng, to_lat, to_lng,
+         from_coordinate, to_coordinate)
+       VALUES ($1,$2,$3,$4,$3,$4,$5,$6,$6,$6,$7,$8,$9,$10,$10,$11,'active',$12,$13,$14,$15,
+               ${pointSql(recurring.from_lat, recurring.from_lng)}, ${pointSql(recurring.to_lat, recurring.to_lng)})`,
       [rideId, req.user.id, recurring.from_location, recurring.to_location, recurring.departure_time,
        recurring.seats_available || 3, recurring.price_per_seat || 0, recurring.ride_type || 'car',
        recurring.gender_preference || 'any', rideDate, recurring_id,
@@ -358,7 +412,7 @@ router.post('/carpool/groups/:groupId/join', authenticate, async (req, res, next
     const memberCount = await queryOne('SELECT COUNT(*) as cnt FROM carpool_group_members WHERE group_id = $1', [req.params.groupId]);
     if ((memberCount?.cnt || 0) >= group.max_members) return res.status(400).json({ success: false, error: 'Group is full' });
 
-    await query('INSERT OR IGNORE INTO carpool_group_members (group_id, user_id) VALUES ($1,$2)', [req.params.groupId, req.user.id]);
+    await query('INSERT INTO carpool_group_members (group_id, user_id) VALUES ($1,$2) ON CONFLICT (group_id, user_id) DO NOTHING', [req.params.groupId, req.user.id]);
     res.json({ success: true, message: `Joined "${group.name}"!` });
   } catch (error) { next(error); }
 });
@@ -456,7 +510,7 @@ router.get('/gamification/leaderboard', async (req, res, next) => {
 
 router.get('/marketplace/storefront/:sellerId', async (req, res, next) => {
   try {
-    const seller = await queryOne('SELECT id, full_name, profile_photo, created_at FROM users WHERE id = $1', [req.params.sellerId]);
+    const seller = await queryOne('SELECT id, full_name, avatar_url AS profile_photo, created_at FROM users WHERE id = $1', [req.params.sellerId]);
     if (!seller) return res.status(404).json({ success: false, error: 'Seller not found' });
 
     const listings = await queryMany(
@@ -495,9 +549,9 @@ router.get('/jobs/compare-companies', async (req, res, next) => {
       const company = await queryOne('SELECT * FROM company_profiles WHERE id = $1', [id]);
       if (company) {
         const reviews = await queryOne(
-          `SELECT AVG(rating) as avg, COUNT(*) as cnt FROM company_reviews WHERE company_id = $1`, [id]
+          `SELECT AVG(overall_rating) as avg, COUNT(*) as cnt FROM company_reviews WHERE company_id = $1`, [id]
         );
-        const jobs = await queryOne(`SELECT COUNT(*) as cnt FROM job_postings WHERE company_id = $1 AND status = 'active'`, [id]);
+        const jobs = await queryOne(`SELECT COUNT(*) as cnt FROM local_job_postings WHERE company_id = $1 AND status = 'active'`, [id]);
         companies.push({
           ...company,
           avg_rating: reviews?.avg ? parseFloat(reviews.avg).toFixed(1) : '0',

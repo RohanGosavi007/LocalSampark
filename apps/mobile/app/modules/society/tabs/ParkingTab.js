@@ -1,77 +1,79 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View } from 'react-native';
+import {
+  SM, Card, Row, Badge, Button, Field, Chips, Stats, DataState,
+  useSocietyData, runAction, confirmAction, titleCase,
+} from '../../../../src/components/society/SocietyKit';
 
+/**
+ * Parking slots. Two vehicles were hardcoded as the resident's own — a Honda
+ * City and a Royal Enfield in slot A-42 — for every resident. A resident now
+ * sees their flat's slots; the gate searches the register by plate; the
+ * committee allocates.
+ */
 export default function ParkingTab({ role }) {
-  const [vehicles] = useState([
-    { id: 1, type: 'Car', make: 'Honda City', number: 'MH-12-AB-1234', slot: 'A-42' },
-    { id: 2, type: 'Bike', make: 'Royal Enfield', number: 'MH-12-XY-9876', slot: 'A-42B' }
-  ]);
+  const resident = role === 'resident';
+  const slots = useSocietyData(resident ? `${SM}/my-parking` : `${SM}/parking`);
+  const [plate, setPlate] = useState('');
+  const [form, setForm] = useState({ slotNumber: '', slotType: 'car', flatNumber: '', vehicleNumber: '' });
+  const [busy, setBusy] = useState(false);
+
+  const norm = (v) => String(v || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+  const rows = (slots.data || []).filter((s) => !plate || norm(s.vehicle_number).includes(norm(plate)) || norm(s.flat_number).includes(norm(plate)));
+  const occupied = (slots.data || []).filter((s) => s.is_occupied === 1 || s.is_occupied === true || s.flat_number).length;
+
+  const add = async () => {
+    setBusy(true);
+    const res = await runAction('post', `${SM}/parking`, {
+      ...form, slotNumber: form.slotNumber.trim().toUpperCase(), flatNumber: form.flatNumber.trim().toUpperCase() || undefined,
+      vehicleNumber: form.vehicleNumber.trim().toUpperCase() || undefined,
+    }, { success: 'Slot saved.' });
+    setBusy(false);
+    if (res) { setForm({ slotNumber: '', slotType: 'car', flatNumber: '', vehicleNumber: '' }); slots.reload(); }
+  };
+
+  const remove = (s) => confirmAction(`Delete slot ${s.slot_number}?`, 'The allocation is removed.',
+    () => runAction('delete', `${SM}/parking/${s.id}`, null, { onDone: () => slots.reload() }), 'Delete');
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <View>
+      {!resident && (
+        <Stats items={[
+          { label: 'Slots', value: (slots.data || []).length },
+          { label: 'Allocated', value: occupied },
+          { label: 'Free', value: (slots.data || []).length - occupied },
+        ]} />
+      )}
+
       {role === 'admin' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Manage Society Parking</Text>
-          <Text style={styles.subtitle}>Allocate or reassign parking slots to residents.</Text>
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Slot Allocation</Text>
-          </TouchableOpacity>
-        </View>
+        <Card title="Allocate a slot">
+          <Field label="Slot number" placeholder="e.g. P-12" autoCapitalize="characters" value={form.slotNumber}
+            onChangeText={(slotNumber) => setForm({ ...form, slotNumber })} />
+          <Chips options={['car', 'bike', 'ev', 'visitor']} value={form.slotType} onChange={(slotType) => setForm({ ...form, slotType })} />
+          <Field label="Flat (optional)" autoCapitalize="characters" value={form.flatNumber} onChangeText={(flatNumber) => setForm({ ...form, flatNumber })} />
+          <Field label="Vehicle number (optional)" autoCapitalize="characters" value={form.vehicleNumber}
+            onChangeText={(vehicleNumber) => setForm({ ...form, vehicleNumber })} />
+          <Button label="Save slot" onPress={add} busy={busy} disabled={!form.slotNumber.trim()} />
+        </Card>
       )}
 
-      {role === 'guard' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Verify Vehicle Log</Text>
-          <TextInput style={styles.input} placeholder="Search Vehicle Number..." placeholderTextColor="#94a3b8" />
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Search Registry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {(role === 'resident' || role === 'admin') && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>My Registered Vehicles</Text>
-          {vehicles.map(v => (
-            <View key={v.id} style={styles.vehicleRow}>
-              <View style={styles.iconContainer}>
-                <Text style={styles.icon}>{v.type === 'Car' ? '🚗' : '🏍️'}</Text>
-              </View>
-              <View style={{flex: 1}}>
-                <Text style={styles.vTitle}>{v.make}</Text>
-                <Text style={styles.vMeta}>{v.number}</Text>
-              </View>
-              <View style={styles.slotBadge}>
-                <Text style={styles.slotText}>Slot {v.slot}</Text>
-              </View>
-            </View>
+      <Card title={resident ? 'My parking' : 'Parking register'}>
+        {!resident && (
+          <Field placeholder="Search plate or flat, e.g. MH12AB" autoCapitalize="characters" value={plate}
+            onChangeText={setPlate} accessibilityLabel="Search parking register" />
+        )}
+        <DataState state={{ ...slots, data: rows }}
+          empty={plate ? 'Not registered in this society' : resident ? 'No slot allocated' : 'No slots yet'}
+          emptyBody={plate ? 'Treat it as a visitor vehicle.' : resident ? 'Ask the society office to allocate one.' : null}>
+          {rows.map((s, i) => (
+            <Row key={s.id} first={i === 0} title={`Slot ${s.slot_number}`}
+              meta={[[titleCase(s.slot_type), s.flat_number && `Flat ${s.flat_number}`].filter(Boolean).join(' · '), s.vehicle_number]}
+              right={role === 'admin'
+                ? <Button label="Delete" tone="secondary" small onPress={() => remove(s)} />
+                : <Badge label={s.flat_number ? 'Allocated' : 'Free'} tone={s.flat_number ? 'info' : 'success'} />} />
           ))}
-          <TouchableOpacity style={styles.outlineBtn}>
-            <Text style={styles.outlineBtnText}>+ Register New Vehicle</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </ScrollView>
+        </DataState>
+      </Card>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { color: '#64748b', fontSize: 13, marginBottom: 16 },
-  input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, marginBottom: 16, color: '#0f172a' },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  
-  vehicleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 12 },
-  iconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: '#e2e8f0' },
-  icon: { fontSize: 20 },
-  vTitle: { color: '#0f172a', fontSize: 14, fontWeight: 'bold', marginBottom: 2 },
-  vMeta: { color: '#64748b', fontSize: 12 },
-  
-  slotBadge: { backgroundColor: '#e0e7ff', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
-  slotText: { color: '#4f46e5', fontWeight: 'bold', fontSize: 12 },
-  
-  outlineBtn: { borderWidth: 1, borderColor: '#3b82f6', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 4 },
-  outlineBtnText: { color: '#3b82f6', fontWeight: 'bold', fontSize: 14 }
-});

@@ -1,27 +1,123 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * Payout Reconciliation Service
- * 10x Plan: Section 20.2.3 — Automated Payout Engine
+ * Shop settlement
  * ═══════════════════════════════════════════════════════════════════════
+ *
+ * Squaring up with a shop for the orders delivered in a period. Money can be
+ * in three places when an order is delivered, and the settlement depends on
+ * which:
+ *
+ *   paid online or from the wallet     the platform holds it → it owes the shop
+ *   cash, collected by a platform      the rider holds it for the platform
+ *   rider                              → the platform owes the shop
+ *   cash, collected by the shop        the shop holds all of it, the platform's
+ *   (pickup, or its own delivery)      share included → the shop owes the platform
+ *
+ * For every order, whichever of those it was:
+ *
+ *   the shop earns      the items
+ *                     + the delivery charge, if the shop delivered it itself
+ *                       (a platform rider's delivery charge is the platform's:
+ *                       it pays the rider out of it)
+ *   the platform takes  commission on the items, at the rate fixed when the
+ *                       order was placed, plus the shop's per-order fee
+ *                     + GST on that commission
+ *                     + the payment gateway's cost, on an order paid online
+ *   the shop has        the order total, if it collected the cash
+ *   already received
+ *
+ * The platform fee and small-order fee are the platform's own charges to the
+ * customer. They never enter the shop's earnings; a shop that collected cash
+ * collected them too, which is why its line comes out negative by that much
+ * more.
+ *
+ * A period can come out negative — a shop that mostly takes cash at the
+ * counter owes more commission than the platform owes it. That payout is
+ * recorded as dues and deducted from the shop's next payout rather than lost.
+ *
+ * The previous version charged commission on the delivery fee, never paid out
+ * a cash order (nor collected commission on one), and before that read a
+ * column that does not exist and so never calculated anything.
  */
 const { query, queryOne, queryMany, withTransaction } = require('../config/database');
 const logger = require('../config/logger');
 const crypto = require('crypto');
+const commission = require('./commission.service');
+const platformConfig = require('./platformConfig.service');
+
+// An order ready to be settled: delivered, paid — by whatever route — and not
+// yet in any payout. `o` is the orders alias.
+const SETTLEABLE = `LOWER(o.order_status) = 'delivered'
+          AND o.delivered_at IS NOT NULL
+          AND LOWER(COALESCE(o.payment_status, '')) = 'paid'
+          AND NOT EXISTS (SELECT 1 FROM payout_line_items pli WHERE pli.order_id = o.id)`;
+
+const money = (value) => Math.round((Number(value) || 0) * 100) / 100;
+// What is written to the monetary columns: always two decimal places.
+const fixed = (value) => money(value).toFixed(2);
+const lower = (value) => String(value || '').toLowerCase();
+
+/** Who was holding the customer's money when the order was delivered. */
+function collectedBy(order) {
+  if (lower(order.payment_method) !== 'cod') return 'platform';
+  if (lower(order.cash_collected_by) === 'shop') return 'shop';
+  if (lower(order.cash_collected_by) === 'rider') return 'rider';
+  // A cash order from before collection was recorded: with a platform rider
+  // the rider took the cash, otherwise the shop did.
+  return order.assigned_agent_id ? 'rider' : 'shop';
+}
+
+/**
+ * One order's settlement. `terms` is { percent, convenienceFee } — the rate
+ * fixed on the order when it was placed. `config` is the platform settings.
+ */
+function settleOrder(order, terms, config) {
+  const total = Number(order.total_amount) || 0;
+  const deliveryFee = Number(order.delivery_fee) || 0;
+  const platformFees = (Number(order.platform_fee) || 0) + (Number(order.small_order_fee) || 0);
+  // Orders placed before `subtotal` was recorded: the items are what is left
+  // of the total once the charges are taken off (a discount was the platform's).
+  const items = order.subtotal === null || order.subtotal === undefined
+    ? Math.max(0, total + (Number(order.discount) || 0) - deliveryFee - platformFees)
+    : Number(order.subtotal) || 0;
+
+  const holder = collectedBy(order);
+  const shopDelivered = lower(order.fulfillment_method) !== 'pickup' && !order.assigned_agent_id;
+  const shopDeliveryFee = shopDelivered ? deliveryFee : 0;
+
+  const sales = money(items + shopDeliveryFee);
+  const commissionAmount = money(items * (terms.percent / 100) + (terms.convenienceFee || 0));
+  const gst = money(commissionAmount * (config.gst_on_commission_percent / 100));
+  // The gateway's cost is charged on what went through the gateway for the
+  // shop. A wallet or cash order did not go through it at all.
+  const gatewayFee = lower(order.payment_method) === 'razorpay' ? money(sales * (config.gateway_fee_percent / 100)) : 0;
+  const shopHolds = holder === 'shop' ? money(total) : 0;
+
+  return {
+    orderId: order.id,
+    collectedBy: holder,
+    items: money(items),
+    sales,
+    commissionAmount,
+    gst,
+    gatewayFee,
+    shopHolds,
+    platformFeesHeldByShop: holder === 'shop' ? money(platformFees) : 0,
+    shopDelivered,
+    net: money(sales - commissionAmount - gst - gatewayFee - shopHolds),
+  };
+}
 
 class PayoutService {
 
-  /**
-   * Calculate payouts for all shops for a given period
-   */
+  /** Settle every shop that has orders delivered in the period. */
   static async calculatePayouts(periodStart, periodEnd) {
     const shops = await queryMany(
-      `SELECT DISTINCT ls.id as shop_id, ls.name as shop_name, ls.category,
-              COALESCE(ls.commission_rate, 10.0) as commission_rate
-       FROM orders o
-       JOIN local_shops ls ON o.shop_id = ls.id
-       WHERE o.order_status = 'delivered'
-         AND o.delivered_at IS NOT NULL
-         AND o.created_at >= $1 AND o.created_at < $2`,
+      `SELECT DISTINCT ls.id AS shop_id
+         FROM orders o
+         JOIN local_shops ls ON o.shop_id = ls.id
+        WHERE ${SETTLEABLE}
+          AND o.delivered_at >= $1 AND o.delivered_at < $2`,
       [periodStart, periodEnd]
     );
 
@@ -29,91 +125,146 @@ class PayoutService {
 
     for (const shop of shops) {
       try {
-        const payout = await this.calculateShopPayout(shop.shop_id, periodStart, periodEnd, shop.commission_rate);
+        const payout = await this.calculateShopPayout(shop.shop_id, periodStart, periodEnd);
         payouts.push(payout);
       } catch (error) {
         logger.error(`Payout calculation failed for shop ${shop.shop_id}: ${error.message}`);
       }
     }
 
-    logger.info(`💰 Calculated ${payouts.length} payouts for period ${periodStart} → ${periodEnd}`);
+    logger.info(`💰 Calculated ${payouts.filter(Boolean).length} payouts for period ${periodStart} → ${periodEnd}`);
     return payouts;
   }
 
   /**
-   * Calculate payout for a single shop
+   * The commission a shop is charged today, as a percentage: its own rate,
+   * else its category's, else the platform default. Orders carry the rate
+   * they were placed at; this is for an order that has none recorded.
    */
-  static async calculateShopPayout(shopId, periodStart, periodEnd, commissionRate = 10.0) {
-    // Get all delivered orders in the period
+  static async commissionRateFor(shopId) {
+    return commission.rateForShopId(shopId);
+  }
+
+  /**
+   * Settle one shop for a period. Returns null when there is nothing to
+   * settle. The payout row, its lines and the dues it absorbs are written
+   * together.
+   *
+   * `commissionRate`, when given, overrides the rate for orders that have
+   * none of their own recorded.
+   */
+  static async calculateShopPayout(shopId, periodStart, periodEnd, commissionRate) {
     const orders = await queryMany(
-      `SELECT id, total_amount, delivery_fee, payment_method
-       FROM orders
-       WHERE shop_id = $1
-         AND order_status = 'delivered'
-         AND created_at >= $2 AND created_at < $3`,
+      `SELECT o.id, o.total_amount, o.subtotal, o.discount, o.delivery_fee, o.platform_fee, o.small_order_fee,
+              o.payment_method, o.cash_collected_by, o.assigned_agent_id, o.fulfillment_method, o.commission_percent,
+              sc.commission_percent AS locked_percent, sc.convenience_fee AS locked_convenience_fee
+         FROM orders o
+         LEFT JOIN shop_commissions sc ON sc.order_id = o.id AND sc.order_type = 'product_order'
+        WHERE o.shop_id = $1
+          AND ${SETTLEABLE}
+          AND o.delivered_at >= $2 AND o.delivered_at < $3`,
       [shopId, periodStart, periodEnd]
     );
 
     if (orders.length === 0) return null;
 
-    // Calculate financials
-    const grossGMV = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
-    const totalDeliveryFees = orders.reduce((sum, o) => sum + parseFloat(o.delivery_fee || 0), 0);
-    // Commission is charged on the full order value, delivery fee included.
-    //
-    // This aggregate previously used (grossGMV - totalDeliveryFees) while the
-    // per-order line items below used the full total_amount, so the audit trail
-    // never tied out to the payout — it overstated commission by exactly
-    // rate% of delivery fees. The line-item basis was confirmed authoritative,
-    // so the aggregate is aligned to it. Note this raises platform commission
-    // relative to the previous aggregate for any shop charging delivery.
-    const orderAmount = grossGMV;
+    const config = await platformConfig.all();
+    const usable = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+    let fallbackRate = null;
+    const rateWhenUnrecorded = async () => {
+      if (fallbackRate === null) {
+        fallbackRate = usable(commissionRate) ? Number(commissionRate) : await this.commissionRateFor(shopId);
+      }
+      return fallbackRate;
+    };
 
-    const platformCommission = orderAmount * (commissionRate / 100);
-    const paymentGatewayFee = grossGMV * 0.02; // 2% Razorpay fee
-    const gstOnCommission = platformCommission * 0.18; // 18% GST on commission
-    const tdsDeducted = platformCommission > 50000 ? platformCommission * 0.01 : 0; // 1% TDS above ₹50K
-    const netPayout = grossGMV - platformCommission - paymentGatewayFee - gstOnCommission - tdsDeducted;
-
-    // Create payout record
-    const payoutId = crypto.randomUUID();
-    await query(
-      `INSERT INTO shop_payouts (id, shop_id, period_start, period_end,
-        gross_gmv, total_orders, platform_commission, commission_rate,
-        payment_gateway_fee, delivery_deductions, gst_on_commission,
-        tds_deducted, net_payout, payout_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'calculated')`,
-      [payoutId, shopId, periodStart, periodEnd,
-       grossGMV.toFixed(2), orders.length, platformCommission.toFixed(2), commissionRate,
-       paymentGatewayFee.toFixed(2), totalDeliveryFees.toFixed(2), gstOnCommission.toFixed(2),
-       tdsDeducted.toFixed(2), netPayout.toFixed(2)]
-    );
-
-    // Create line items for audit trail
+    const lines = [];
     for (const order of orders) {
-      const lineId = crypto.randomUUID();
-      const orderAmt = parseFloat(order.total_amount);
-      const lineCommission = orderAmt * (commissionRate / 100);
-      const lineGateway = orderAmt * 0.02;
-      const lineNet = orderAmt - lineCommission - lineGateway;
-
-      await query(
-        `INSERT INTO payout_line_items (id, payout_id, order_id, order_amount, commission_amount, gateway_fee, net_amount)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [lineId, payoutId, order.id, orderAmt.toFixed(2), lineCommission.toFixed(2), lineGateway.toFixed(2), lineNet.toFixed(2)]
-      );
+      let percent;
+      if (usable(order.locked_percent)) percent = Number(order.locked_percent);
+      else if (usable(order.commission_percent)) percent = Number(order.commission_percent);
+      else percent = await rateWhenUnrecorded();
+      lines.push(settleOrder(order, { percent, convenienceFee: Number(order.locked_convenience_fee) || 0 }, config));
     }
+
+    const sum = (pick) => money(lines.reduce((total, line) => total + pick(line), 0));
+    const grossSales = sum((l) => l.sales);
+    const itemSales = sum((l) => l.items);
+    const platformCommission = sum((l) => l.commissionAmount);
+    const gstOnCommission = sum((l) => l.gst);
+    const paymentGatewayFee = sum((l) => l.gatewayFee);
+    const shopCollected = sum((l) => l.shopHolds);
+    const platformFeesDue = sum((l) => l.platformFeesHeldByShop);
+    // Tax deducted at source on the shop's sales through the platform
+    // (Income-tax Act s.194-O). The rate is a platform setting; confirm it,
+    // and whether a given shop is exempt, with the platform's accountant.
+    const tdsDeducted = money(itemSales * (config.tds_on_sales_percent / 100));
+
+    // Dues from earlier periods that came out negative and have not yet been
+    // taken off a payout.
+    const owed = await queryMany(
+      "SELECT id, net_payout FROM shop_payouts WHERE shop_id = $1 AND payout_status = 'dues' AND absorbed_into IS NULL",
+      [shopId]
+    );
+    const carriedDues = money(owed.reduce((total, row) => total + Math.abs(Number(row.net_payout) || 0), 0));
+
+    const netPayout = money(grossSales - platformCommission - gstOnCommission - paymentGatewayFee - tdsDeducted - shopCollected - carriedDues);
+    const status = netPayout < 0 ? 'dues' : 'calculated';
+    const effectiveRate = itemSales > 0 ? money((platformCommission / itemSales) * 100) : 0;
+
+    const payoutId = crypto.randomUUID();
+    await withTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO shop_payouts (id, shop_id, period_start, period_end,
+          gross_gmv, total_orders, total_deliveries, platform_commission, commission_rate,
+          payment_gateway_fee, delivery_deductions, gst_on_commission,
+          tds_deducted, net_payout, payout_status,
+          shop_collected_amount, platform_fees_due, carried_dues)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        [payoutId, shopId, periodStart, periodEnd,
+          fixed(grossSales), orders.length, lines.filter((l) => l.shopDelivered).length, fixed(platformCommission), effectiveRate,
+          // delivery_deductions: nothing is deducted for delivery. A platform
+          // rider's delivery charge was never part of the shop's sales.
+          fixed(paymentGatewayFee), fixed(0), fixed(gstOnCommission),
+          fixed(tdsDeducted), fixed(netPayout), status,
+          fixed(shopCollected), fixed(platformFeesDue), fixed(carriedDues)]
+      );
+
+      // Line items: the audit trail, and what marks an order as settled.
+      for (const line of lines) {
+        await client.query(
+          `INSERT INTO payout_line_items (id, payout_id, order_id, order_amount, commission_amount, gateway_fee, net_amount, collected_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [crypto.randomUUID(), payoutId, line.orderId, fixed(line.sales), fixed(line.commissionAmount), fixed(line.gatewayFee), fixed(line.net), line.collectedBy]
+        );
+        await client.query(
+          "UPDATE shop_commissions SET status = 'settled', settled_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND status = 'pending'",
+          [line.orderId]
+        );
+      }
+
+      for (const row of owed) {
+        await client.query(
+          'UPDATE shop_payouts SET absorbed_into = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND absorbed_into IS NULL',
+          [payoutId, row.id]
+        );
+      }
+    });
 
     return {
       payoutId,
       shopId,
-      grossGMV: parseFloat(grossGMV.toFixed(2)),
+      status,
+      grossGMV: grossSales,
       totalOrders: orders.length,
-      platformCommission: parseFloat(platformCommission.toFixed(2)),
-      paymentGatewayFee: parseFloat(paymentGatewayFee.toFixed(2)),
-      gstOnCommission: parseFloat(gstOnCommission.toFixed(2)),
-      tdsDeducted: parseFloat(tdsDeducted.toFixed(2)),
-      netPayout: parseFloat(netPayout.toFixed(2)),
+      platformCommission,
+      paymentGatewayFee,
+      gstOnCommission,
+      tdsDeducted,
+      shopCollected,
+      platformFeesDue,
+      carriedDues,
+      netPayout,
     };
   }
 
@@ -152,7 +303,8 @@ class PayoutService {
   }
 
   /**
-   * Approve a calculated payout (admin action)
+   * Approve a calculated payout (admin action). A payout recorded as dues is
+   * money the shop owes; there is nothing to approve or send.
    */
   static async approvePayout(payoutId, adminId) {
     const payout = await queryOne(`SELECT * FROM shop_payouts WHERE id = $1`, [payoutId]);
@@ -162,7 +314,7 @@ class PayoutService {
     }
 
     await query(
-      `UPDATE shop_payouts SET payout_status = 'approved', approved_by = $1, approved_at = datetime('now'), updated_at = datetime('now')
+      `UPDATE shop_payouts SET payout_status = 'approved', approved_by = $1, approved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`,
       [adminId, payoutId]
     );
@@ -176,7 +328,7 @@ class PayoutService {
    */
   static async markPayoutInitiated(payoutId, reference) {
     await query(
-      `UPDATE shop_payouts SET payout_status = 'initiated', payout_reference = $1, updated_at = datetime('now')
+      `UPDATE shop_payouts SET payout_status = 'initiated', payout_reference = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`,
       [reference, payoutId]
     );
@@ -187,7 +339,7 @@ class PayoutService {
    */
   static async markPayoutCompleted(payoutId) {
     await query(
-      `UPDATE shop_payouts SET payout_status = 'completed', paid_at = datetime('now'), updated_at = datetime('now')
+      `UPDATE shop_payouts SET payout_status = 'completed', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [payoutId]
     );
@@ -195,3 +347,5 @@ class PayoutService {
 }
 
 module.exports = PayoutService;
+module.exports.settleOrder = settleOrder;
+module.exports.collectedBy = collectedBy;

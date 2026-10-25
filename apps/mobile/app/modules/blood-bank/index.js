@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
 import { API_V1 } from '../../../src/config/api';
+import { useTerritoryStore } from '../../../src/store/useTerritoryStore';
 export default function BloodDonationScreen() {
   const [activeTab, setActiveTab] = useState('requests'); // requests, donors, admin
   const [requests, setRequests] = useState([]);
@@ -15,7 +16,7 @@ export default function BloodDonationScreen() {
 
   // Forms
   const [newRequest, setNewRequest] = useState({ requestType: 'Blood', requiredItem: 'O+', description: '', location: '', urgency: 'Urgent' });
-  const [donorForm, setDonorForm] = useState({ bloodGroup: 'O+', pincode: '400001' });
+  const [donorForm, setDonorForm] = useState({ bloodGroup: 'O+', pincode: useTerritoryStore.getState().pincode || '' }) // was '400001' (Mumbai) for everyone;
 
   useEffect(() => {
     fetchRequests();

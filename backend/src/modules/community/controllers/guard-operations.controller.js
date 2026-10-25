@@ -3,8 +3,8 @@ const { v4: uuidv4 } = require('uuid');
 
 const getPatrolRoutes = async (req, res, next) => {
     try {
-        const { societyId } = req.query;
-        const routes = await queryMany('SELECT * FROM society_patrol_routes WHERE society_id = $1 AND is_active = true', [societyId]);
+        const { societyId } = { ...req.query, societyId: req.societyId || req.query.societyId };
+        const routes = await queryMany('SELECT * FROM society_patrol_routes WHERE society_id = $1 AND is_active = \'1\'', [societyId]);
         res.json({ success: true, data: routes });
     } catch (error) { next(error); }
 };

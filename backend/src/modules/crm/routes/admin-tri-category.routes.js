@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { query, queryOne, queryMany } = require('../../../config/database');
+const escrowService = require('../../../services/escrow.service');
 const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
 
 // ═══════════════════════════════════════════════════════════════
@@ -108,18 +109,19 @@ router.get('/marketplace/escrows', authenticate, requireAdmin, async (req, res, 
 
 router.put('/marketplace/escrows/:id/resolve', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { resolution } = req.body; // 'release_to_seller' or 'refund_to_buyer'
-    const escrow = await queryOne('SELECT * FROM marketplace_escrow WHERE id = $1', [req.params.id]);
-    if (!escrow) return res.status(404).json({ success: false, error: 'Escrow not found' });
+        // 'release_to_seller' or 'refund_to_buyer'. This changed the status and
+    // nothing else — no one was paid and no one was refunded — and answered
+    // "resolved" for any other value while doing nothing at all.
+    const { resolution } = req.body || {};
+    const escrow = await escrowService.resolveByAdmin({ escrowId: req.params.id, resolution });
 
-    if (resolution === 'release_to_seller') {
-      await query("UPDATE marketplace_escrow SET status = 'released', released_at = datetime('now') WHERE id = $1", [req.params.id]);
-    } else if (resolution === 'refund_to_buyer') {
-      await query("UPDATE marketplace_escrow SET status = 'refunded', released_at = datetime('now') WHERE id = $1", [req.params.id]);
+    res.json({ success: true, status: escrow.status, message: `Escrow dispute resolved: ${resolution}` });
+  } catch (err) {
+    if (err instanceof escrowService.EscrowError) {
+      return res.status(err.status).json({ success: false, code: err.code, error: err.message });
     }
-
-    res.json({ success: true, message: `Escrow dispute resolved: ${resolution}` });
-  } catch (err) { next(err); }
+    next(err);
+  }
 });
 
 router.put('/marketplace/listings/:id/status', authenticate, requireAdmin, async (req, res, next) => {
@@ -136,7 +138,7 @@ router.put('/marketplace/listings/:id/status', authenticate, requireAdmin, async
 
 router.get('/jobs/overview-stats', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const totalJobs = await queryOne('SELECT COUNT(*) as count FROM job_postings');
+    const totalJobs = await queryOne('SELECT COUNT(*) as count FROM local_job_postings');
     const totalApplications = await queryOne('SELECT COUNT(*) as count FROM job_applications');
     const totalResumes = await queryOne('SELECT COUNT(*) as count FROM job_resumes');
     const totalAssessments = await queryOne('SELECT COUNT(*) as count FROM job_assessment_attempts');
@@ -158,7 +160,7 @@ router.get('/jobs/applications', authenticate, requireAdmin, async (req, res, ne
     const applications = await queryMany(`
       SELECT ja.*, jp.title as job_title, u.full_name as applicant_name, u.phone_number as applicant_phone
       FROM job_applications ja
-      LEFT JOIN job_postings jp ON ja.job_id = jp.id
+      LEFT JOIN local_job_postings jp ON ja.job_id = jp.id
       LEFT JOIN users u ON ja.applicant_id = u.id
       ORDER BY ja.created_at DESC
       LIMIT 100

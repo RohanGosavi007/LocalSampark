@@ -1,136 +1,88 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { router } from 'expo-router';
-import { apiGet, apiPost } from '../../../../src/lib/api';
+import React, { useState } from 'react';
+import { View, Text } from 'react-native';
+import {
+  SM, Card, Row, Badge, Button, Field, Chips, DataState,
+  useSocietyData, useSocietyContext, useSocietyLive, runAction, confirmAction, titleCase, when, useKitStyles,
+} from '../../../../src/components/society/SocietyKit';
 
 /**
- * The society's events tab.
+ * The society's own events.
  *
- * Two events were listed that nobody had scheduled: an "Annual General Meeting"
- * on 25 Jul 2026 at 10:00 AM in the Clubhouse, and a "Diwali Celebration" on
- * 10 Nov 2026 at 6:00 PM on the Central Lawn. Both carried an RSVP button that
- * did nothing, so a resident could have blocked out a morning for a meeting
- * that was never called and told the committee they were coming without anyone
- * receiving it.
- *
- * "+ Create New Event" had no handler either.
- *
- * /events returns the events that have actually been created, and RSVP books a
- * real ticket through /events/:id/book.
+ * This tab listed the platform-wide /events catalogue and "RSVP" bought a
+ * ticket through /events/:id/book, so a resident saw city events instead of
+ * their society's, and RSVPing to the AGM was not possible. It now lists this
+ * society's events, RSVP is going / maybe / not going, and the committee
+ * creates and cancels them.
  */
+const nextDays = (n) => Array.from({ length: n }, (_, i) => {
+  const d = new Date(Date.now() + (i + 1) * 86400000);
+  return { value: d.toISOString().slice(0, 10), label: d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) };
+});
+
 export default function EventsTab({ role }) {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [busyId, setBusyId] = useState(null);
-  const [booked, setBooked] = useState(() => new Set());
+  const s = useKitStyles();
+  const { context } = useSocietyContext();
+  const events = useSocietyData(`${SM}/events`);
+  const office = role === 'admin';
+  const [form, setForm] = useState({ title: '', description: '', eventDate: nextDays(1)[0].value, startTime: '18:00', venue: '', eventType: 'general' });
+  const [busy, setBusy] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiGet('/events');
-      setEvents(res?.data ?? []);
-      setError(null);
-    } catch (err) {
-      setEvents([]);
-      setError(err?.message || 'Could not load events.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useSocietyLive(context, { society: true }, { SOCIETY_EVENT_CREATED: () => events.reload() });
 
-  useEffect(() => { load(); }, [load]);
-
-  const rsvp = useCallback(async (event) => {
-    setBusyId(event.id);
-    try {
-      await apiPost(`/events/${event.id}/book`, { numTickets: 1 });
-      setBooked((prev) => new Set(prev).add(String(event.id)));
-      Alert.alert('You are on the list', `Your place at ${event.title} is booked.`);
-    } catch (err) {
-      // The button used to do nothing at all, so a full event and a successful
-      // booking looked identical.
-      Alert.alert('Not booked', err?.message || 'Your RSVP was not recorded.');
-    } finally {
-      setBusyId(null);
-    }
-  }, []);
-
-  const when = (event) => {
-    const date = event.event_date
-      ? new Date(event.event_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-      : '';
-    return [date, event.start_time].filter(Boolean).join(' at ');
+  const rsvp = async (e, status) => {
+    setBusy(`${e.id}:${status}`);
+    await runAction('post', `${SM}/events/${e.id}/rsvp`, { status }, { onDone: () => events.reload() });
+    setBusy(null);
   };
 
+  const create = async () => {
+    setBusy('create');
+    const res = await runAction('post', `${SM}/events`, form, { success: 'Event published.' });
+    setBusy(null);
+    if (res) { setForm({ ...form, title: '', description: '', venue: '' }); events.reload(); }
+  };
+
+  const cancel = (e) => confirmAction(`Cancel ${e.title}?`, 'It is removed for everyone.',
+    () => runAction('delete', `${SM}/events/${e.id}`, null, { onDone: () => events.reload() }), 'Cancel event');
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {role === 'admin' && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Manage Society Events</Text>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/modules/events/create')}>
-            <Text style={styles.primaryBtnText}>+ Create New Event</Text>
-          </TouchableOpacity>
-        </View>
+    <View>
+      {office && (
+        <Card title="Create an event">
+          <Field label="Title" value={form.title} onChangeText={(title) => setForm({ ...form, title })} maxLength={120} />
+          <Chips options={nextDays(7)} value={form.eventDate} onChange={(eventDate) => setForm({ ...form, eventDate })} />
+          <Field label="Start time (HH:MM)" value={form.startTime} keyboardType="numbers-and-punctuation"
+            onChangeText={(startTime) => setForm({ ...form, startTime })} />
+          <Field label="Venue" placeholder="e.g. Clubhouse" value={form.venue} onChangeText={(venue) => setForm({ ...form, venue })} />
+          <Chips options={['general', 'meeting', 'festival', 'sports', 'kids']} value={form.eventType}
+            onChange={(eventType) => setForm({ ...form, eventType })} />
+          <Field label="Details (optional)" multiline value={form.description} onChangeText={(description) => setForm({ ...form, description })} />
+          <Button label="Publish event" onPress={create} busy={busy === 'create'} disabled={!form.title.trim()} />
+        </Card>
       )}
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Upcoming Events</Text>
-
-        {loading ? (
-          <ActivityIndicator color="#3b82f6" style={{ paddingVertical: 20 }} />
-        ) : events.length === 0 ? (
-          <Text style={styles.emptyText}>
-            {error || 'Nothing is scheduled yet. Events your society creates will appear here.'}
-          </Text>
-        ) : events.map((ev) => (
-          <View key={String(ev.id)} style={styles.eventCard}>
-            <View style={styles.eventHeader}>
-              <Text style={styles.eTitle}>{ev.title}</Text>
-              {ev.category ? (
-                <View style={[styles.badge, styles.badgeSecondary]}>
-                  <Text style={[styles.badgeText, styles.badgeSecondaryText]}>{ev.category}</Text>
-                </View>
-              ) : null}
-            </View>
-            {when(ev) ? <Text style={styles.eMeta}>📅 {when(ev)}</Text> : null}
-            {ev.venue ? <Text style={styles.eMeta}>📍 {ev.venue}</Text> : null}
-            {ev.organizer_name ? <Text style={styles.eMeta}>🙋 {ev.organizer_name}</Text> : null}
-
-            <TouchableOpacity
-              style={[styles.rsvpBtn, booked.has(String(ev.id)) && styles.rsvpBtnDone]}
-              disabled={busyId === ev.id || booked.has(String(ev.id))}
-              onPress={() => rsvp(ev)}
-            >
-              {busyId === ev.id
-                ? <ActivityIndicator size="small" color="#3b82f6" />
-                : <Text style={styles.rsvpBtnText}>{booked.has(String(ev.id)) ? 'You are going' : 'RSVP Yes'}</Text>}
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+      <Card title="Upcoming in your society">
+        <DataState state={events} empty="Nothing scheduled" emptyBody="Events your committee schedules appear here.">
+          {(events.data || []).map((e, i) => (
+            <Row key={e.id} first={i === 0} title={e.title}
+              meta={[
+                `${when(e.event_date, { time: false })}${e.start_time ? ` · ${e.start_time}` : ''}${e.venue ? ` · ${e.venue}` : ''}`,
+                `${e.going_count} going${e.max_attendees ? ` of ${e.max_attendees}` : ''}${e.organizer_name ? ` · by ${e.organizer_name}` : ''}`,
+              ]}
+              right={<Badge label={titleCase(e.event_type)} tone="info" />}>
+              {e.description ? <Text style={[s.rowMeta, { marginTop: 4 }]}>{e.description}</Text> : null}
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                {['going', 'maybe', 'not_going'].map((st) => (
+                  <Button key={st} small label={st === 'not_going' ? "Can't go" : titleCase(st)}
+                    tone={e.myRsvp === st ? 'primary' : 'secondary'} busy={busy === `${e.id}:${st}`}
+                    onPress={() => rsvp(e, st)} accessibilityLabel={`RSVP ${st.replace('_', ' ')} to ${e.title}`} />
+                ))}
+                {office && <Button small label="Cancel" tone="danger" onPress={() => cancel(e)} />}
+              </View>
+            </Row>
+          ))}
+        </DataState>
+      </Card>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: { backgroundColor: '#ffffff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 },
-  sectionTitle: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
-  primaryBtn: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
-  emptyText: { color: '#64748b', fontSize: 13, lineHeight: 19 },
-
-  eventCard: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 12 },
-  eventHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  eTitle: { color: '#0f172a', fontSize: 15, fontWeight: 'bold', flex: 1, paddingRight: 10 },
-  eMeta: { color: '#64748b', fontSize: 13, marginBottom: 4 },
-
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1 },
-  badgeText: { fontSize: 10, fontWeight: 'bold' },
-  badgeSecondary: { backgroundColor: 'rgba(236, 72, 153, 0.1)', borderColor: 'rgba(236, 72, 153, 0.2)' },
-  badgeSecondaryText: { color: '#ec4899' },
-
-  rsvpBtn: { borderWidth: 1, borderColor: '#3b82f6', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 12 },
-  rsvpBtnDone: { borderColor: '#cbd5e1', backgroundColor: '#f1f5f9' },
-  rsvpBtnText: { color: '#3b82f6', fontWeight: 'bold', fontSize: 13 },
-});

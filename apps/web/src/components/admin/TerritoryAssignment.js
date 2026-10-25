@@ -54,7 +54,7 @@ export default function TerritoryAssignment() {
   const handleAssign = async (territoryId) => {
     if (!selectedUserId) return;
     try {
-      await apiPost('/admin/assign-territory', {
+      await apiPost('/admin/territory-assignments', {
         userId: selectedUserId,
         territoryId,
         role: 'territory_franchise'

@@ -1,4 +1,5 @@
 const express = require('express');
+const { validate } = require('../../../middleware/validate');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const crypto = require('crypto');
@@ -52,7 +53,13 @@ router.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
-router.put('/me', authenticate, async (req, res, next) => {
+router.put('/me', authenticate, validate({
+  fullName: { type: 'string', maxLength: 100, label: 'Name' },
+  name: { type: 'string', maxLength: 100, label: 'Name' },
+  email: { type: 'string', format: 'email', maxLength: 254 },
+  avatarUrl: { type: 'string', maxLength: 500 },
+  regionId: { type: 'string', maxLength: 64 },
+}), async (req, res, next) => {
   try {
     const { fullName, name, email, avatarUrl, regionId } = req.body;
 
@@ -148,9 +155,13 @@ router.post('/me/documents', authenticate, async (req, res, next) => {
     // in file_url, so the fallback was both unnecessary and wrong. Once the
     // fallback went, the catch did nothing but rethrow — the outer handler
     // below already forwards to next().
+    // title and encryption_key are NOT NULL and were not written, so every
+    // submission failed on the constraint. The title is the document type;
+    // encryption_key is empty because nothing here encrypts the file, and an
+    // empty key says so, where a generated one would claim otherwise.
     await query(
-      `INSERT INTO user_documents (id, user_id, document_type, document_number, file_url, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      `INSERT INTO user_documents (id, user_id, document_type, title, document_number, file_url, encryption_key, status, created_at)
+       VALUES ($1, $2, $3, $3, $4, $5, '', $6, NOW())`,
       [docId, req.user.id, documentType, documentNumber || '', docUrl, 'PENDING_VERIFICATION']
     );
 

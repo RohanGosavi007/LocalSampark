@@ -82,13 +82,11 @@ export default function RevenueTab({
           <button
             disabled={totalShare !== 100}
             onClick={() => {
-              fetch(`${API_BASE}/admin/config/global_commission_split`, {
+              fetchJson(`${API_BASE}/admin/config/global_commission_split`, {
                 method: 'PUT', headers: authHeaders(),
                 body: JSON.stringify({ value: { platformShare, franchiseShare, agentShare, miscShare }, category: 'revenue' })
-              }).then(res => res.json()).then(data => {
-                if (!data.error) alert('✅ Commission split saved globally!');
-                else alert(data.error);
-              }).catch(console.error);
+              }).then(() => alert('✅ Commission split saved globally!'))
+                .catch((e) => alert(`❌ Not saved: ${e.message}`));
             }}
             style={{ ...btnPrimary, opacity: totalShare !== 100 ? 0.5 : 1, cursor: totalShare !== 100 ? 'not-allowed' : 'pointer' }}
           >

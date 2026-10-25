@@ -1,9 +1,12 @@
 const express = require('express');
+const { validate } = require('../../../middleware/validate');
 const router = express.Router();
 const { query, queryOne, queryMany, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
 const geo = require('../../../utils/geo');
+const { pointSql } = require('../../../utils/sqlPoint');
+const { sqlDate } = require('../../../utils/sqlTime');
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -83,7 +86,18 @@ router.get('/rides/:id', async (req, res, next) => {
 });
 
 // POST /rides — Create a new ride offer
-router.post('/rides', authenticate, async (req, res, next) => {
+router.post('/rides', authenticate, validate({
+  from_location: { type: 'string', maxLength: 200 },
+  to_location: { type: 'string', maxLength: 200 },
+  seats_available: { type: 'integer', min: 1, max: 8 },
+  price_per_seat: { type: 'number', min: 0, max: 10000 },
+  from_lat: { type: 'number', min: -90, max: 90 },
+  to_lat: { type: 'number', min: -90, max: 90 },
+  from_lng: { type: 'number', min: -180, max: 180 },
+  to_lng: { type: 'number', min: -180, max: 180 },
+  ride_date: { type: 'string', maxLength: 10 },
+  departure_time: { type: 'string', maxLength: 8 },
+}), async (req, res, next) => {
   try {
     const { from_location, to_location, from_lat, from_lng, to_lat, to_lng, departure_time, ride_date,
             seats_available = 3, price_per_seat = 0, vehicle_id, ride_type = 'car', gender_preference = 'any',
@@ -91,19 +105,40 @@ router.post('/rides', authenticate, async (req, res, next) => {
 
     if (!from_location || !to_location) return res.status(400).json({ error: 'From and To locations are required' });
 
+    // A ride with no departure time cannot be matched or boarded, and the
+    // column is NOT NULL (a TIME on PostgreSQL), so it is asked for here
+    // rather than discovered at the INSERT.
+    if (!departure_time || !/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(departure_time))) {
+      return res.status(400).json({ error: 'departure_time is required, as HH:MM' });
+    }
+    if (ride_date && !/^\d{4}-\d{2}-\d{2}$/.test(String(ride_date))) {
+      return res.status(400).json({ error: 'ride_date must be YYYY-MM-DD' });
+    }
+    const seats = Math.floor(Number(seats_available));
+    if (!Number.isFinite(seats) || seats < 1) {
+      return res.status(400).json({ error: 'seats_available must be at least 1' });
+    }
+    const rideDate = ride_date || sqlDate(0);
+
     const id = crypto.randomUUID();
     let dist = null;
     if (from_lat && from_lng && to_lat && to_lng) {
       dist = haversineKm(parseFloat(from_lat), parseFloat(from_lng), parseFloat(to_lat), parseFloat(to_lng));
     }
 
+    // departure_date and total_seats are the table's original NOT NULL columns;
+    // ride_date and seats_available are the ones added for this route. Only the
+    // second pair was written, so every ride offer failed on the constraint.
+    // Both pairs now carry the value. The two coordinates are set when the
+    // request has them and are otherwise null (migration 114).
     await query(`INSERT INTO carpool_rides (id, driver_id, from_location, to_location, origin, destination,
-      from_lat, from_lng, to_lat, to_lng, departure_time, ride_date, seats_available, available_seats,
-      price_per_seat, vehicle_id, ride_type, gender_preference, is_intercity, luggage_space, max_detour_km,
-      estimated_distance_km, fare_type, status)
-      VALUES ($1,$2,$3,$4,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,'active')`,
+      from_lat, from_lng, to_lat, to_lng, departure_time, ride_date, departure_date, seats_available, total_seats,
+      available_seats, price_per_seat, vehicle_id, ride_type, gender_preference, is_intercity, luggage_space,
+      max_detour_km, estimated_distance_km, fare_type, from_coordinate, to_coordinate, status)
+      VALUES ($1,$2,$3,$4,$3,$4,$5,$6,$7,$8,$9,$10,$10,$11,$11,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+              ${pointSql(from_lat, from_lng)}, ${pointSql(to_lat, to_lng)}, 'active')`,
       [id, req.user.id, from_location, to_location, from_lat||null, from_lng||null, to_lat||null, to_lng||null,
-       departure_time||null, ride_date||null, seats_available, price_per_seat, vehicle_id||null, ride_type,
+       departure_time, rideDate, seats, price_per_seat, vehicle_id||null, ride_type,
        gender_preference, is_intercity?1:0, luggage_space, max_detour_km, dist, fare_type]);
 
     // Insert waypoints
@@ -154,7 +189,10 @@ router.delete('/rides/:id', authenticate, async (req, res, next) => {
 // BOOKING
 // ═══════════════════════════════════════════════════════════════
 
-router.post('/rides/:id/book', authenticate, async (req, res, next) => {
+router.post('/rides/:id/book', authenticate, validate({
+  seats_booked: { type: 'integer', min: 1, max: 8 },
+  bid_amount: { type: 'number', min: 0, max: 100000 },
+}), async (req, res, next) => {
   try {
     const seats = parseInt(req.body.seats_booked, 10) || 1;
     if (seats < 1 || seats > 8) return res.status(400).json({ error: 'seats_booked must be 1-8' });
@@ -174,9 +212,29 @@ router.post('/rides/:id/book', authenticate, async (req, res, next) => {
       ON CONFLICT (ride_id, passenger_id) DO UPDATE SET seats_booked = EXCLUDED.seats_booked, status = 'confirmed'`,
       [bookingId, req.params.id, req.user.id, seats, req.body.bid_amount || ride.price_per_seat]);
 
-    res.status(201).json({ success: true, bookingId, seatsBooked: seats, message: 'Ride booked' });
+    const remaining = await announceSeats(req, req.params.id, capacity);
+    res.status(201).json({ success: true, bookingId, seatsBooked: seats, remainingSeats: remaining, message: 'Ride booked' });
   } catch (err) { next(err); }
 });
+
+/**
+ * Tells every open ride list that a ride's free seats changed.
+ *
+ * A booking changed nothing anyone else could see until they refreshed, so two
+ * commuters could both watch "1 seat left" and the second learn it was gone
+ * only from a 409. Ride inventory is public — the list endpoint needs no
+ * login — so it is broadcast, not sent to a room.
+ */
+async function announceSeats(req, rideId, capacity) {
+  const taken = await queryOne(
+    `SELECT COALESCE(SUM(seats_booked), 0) AS booked FROM carpool_bookings WHERE ride_id = $1 AND status = 'confirmed'`,
+    [rideId]
+  );
+  const remaining = Math.max(0, Number(capacity) - parseInt(taken?.booked || 0, 10));
+  const io = req.app.get('io');
+  if (io) io.emit('carpool:ride_updated', { rideId, remaining_seats: remaining, at: new Date().toISOString() });
+  return remaining;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // BIDDING (inDrive-style)
@@ -211,8 +269,15 @@ router.post('/rides/:id/bid', authenticate, async (req, res, next) => {
 // GET /rides/:id/bids — List all bids for a ride
 router.get('/rides/:id/bids', authenticate, async (req, res, next) => {
   try {
-    const bids = await queryMany(`SELECT b.*, u.full_name as bidder_name, u.avatar_url FROM carpool_bids b
-      LEFT JOIN users u ON b.bidder_id = u.id WHERE b.ride_id = $1 ORDER BY b.created_at DESC`, [req.params.id]);
+    const ride = await queryOne('SELECT driver_id FROM carpool_rides WHERE id = $1', [req.params.id]);
+    if (!ride) return res.status(404).json({ error: 'Ride not found' });
+    const isDriver = String(ride.driver_id) === String(req.user.id);
+
+    const bids = isDriver
+      ? await queryMany(`SELECT b.*, u.full_name as bidder_name, u.avatar_url FROM carpool_bids b
+          LEFT JOIN users u ON b.bidder_id = u.id WHERE b.ride_id = $1 ORDER BY b.created_at DESC`, [req.params.id])
+      : await queryMany(`SELECT b.*, u.full_name as bidder_name, u.avatar_url FROM carpool_bids b
+          LEFT JOIN users u ON b.bidder_id = u.id WHERE b.ride_id = $1 AND b.bidder_id = $2 ORDER BY b.created_at DESC`, [req.params.id, req.user.id]);
     res.json({ success: true, bids });
   } catch (err) { next(err); }
 });
@@ -235,6 +300,7 @@ router.put('/bids/:id/respond', authenticate, async (req, res, next) => {
         VALUES ($1,$2,$3,$4,'confirmed',$5)
         ON CONFLICT (ride_id, passenger_id) DO UPDATE SET seats_booked = EXCLUDED.seats_booked, status = 'confirmed', bid_amount = EXCLUDED.bid_amount`,
         [bookingId, bid.ride_id, bid.bidder_id, bid.seats_requested, bid.bid_amount]);
+      await announceSeats(req, bid.ride_id, ride.available_seats ?? ride.seats_available ?? 4);
       res.json({ success: true, message: 'Bid accepted, booking created', bookingId });
     } else if (action === 'reject') {
       await query(`UPDATE carpool_bids SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [req.params.id]);
@@ -297,8 +363,29 @@ router.post('/rides/:id/sos', authenticate, async (req, res, next) => {
 // IN-RIDE CHAT
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Whether the caller is on this ride: its driver, or a passenger with a
+ * booking. The ride chat — where pickup points and phone numbers get
+ * exchanged — could be read, and written to, by any signed-in user who had
+ * the ride's id.
+ */
+async function onRide(rideId, userId) {
+  const ride = await queryOne('SELECT driver_id FROM carpool_rides WHERE id = $1', [rideId]);
+  if (!ride) return null;
+  if (String(ride.driver_id) === String(userId)) return true;
+  const booking = await queryOne(
+    "SELECT id FROM carpool_bookings WHERE ride_id = $1 AND passenger_id = $2 AND COALESCE(status, '') <> 'cancelled' LIMIT 1",
+    [rideId, userId]
+  );
+  return Boolean(booking);
+}
+
 router.get('/rides/:id/chat', authenticate, async (req, res, next) => {
   try {
+    const member = await onRide(req.params.id, req.user.id);
+    if (member === null) return res.status(404).json({ error: 'Ride not found' });
+    if (!member) return res.status(403).json({ error: 'Only the driver and booked passengers can use this chat.' });
+
     const messages = await queryMany(`SELECT m.*, u.full_name as sender_name FROM carpool_chat_messages m
       LEFT JOIN users u ON m.sender_id = u.id WHERE m.ride_id = $1 ORDER BY m.created_at ASC`, [req.params.id]);
     res.json({ success: true, messages });
@@ -308,7 +395,11 @@ router.get('/rides/:id/chat', authenticate, async (req, res, next) => {
 router.post('/rides/:id/chat', authenticate, async (req, res, next) => {
   try {
     const { message } = req.body;
-    if (!message) return res.status(400).json({ error: 'message is required' });
+        if (!message) return res.status(400).json({ error: 'message is required' });
+    const member = await onRide(req.params.id, req.user.id);
+    if (member === null) return res.status(404).json({ error: 'Ride not found' });
+    if (!member) return res.status(403).json({ error: 'Only the driver and booked passengers can use this chat.' });
+
     const msgId = crypto.randomUUID();
     await query(`INSERT INTO carpool_chat_messages (id, ride_id, sender_id, message) VALUES ($1,$2,$3,$4)`,
       [msgId, req.params.id, req.user.id, message]);

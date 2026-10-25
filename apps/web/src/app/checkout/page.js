@@ -3,172 +3,247 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, CreditCard, MapPin, Truck, CheckCircle2, Navigation, AlertCircle, Store } from 'lucide-react';
+import { ShoppingBag, CreditCard, MapPin, Truck, CheckCircle2, AlertCircle, Store, Wallet, Clock } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
 import { useAuth } from '../../context/AuthContext';
-import { apiPost } from '../../lib/api';
-import UpiGateway from '../../components/UpiGateway';
-import Link from 'next/link';
+import { API_BASE, getAuthHeaders } from '../../lib/api';
+import { openCheckout, payFor } from '../../lib/payments';
+import { fetchQuote, currentPosition, billLines, etaText } from '../../lib/deliveryQuote';
 
+/**
+ * The cart checkout.
+ *
+ * What this page did before: it showed a total made of a "distance fee", a
+ * "high demand surge" that was hard-coded on and a "small order fee" — none of
+ * which the server charges — and its Pay button opened a "UPI simulator" which,
+ * after a five-second animation, invented an order number, emptied the cart and
+ * showed "Order Confirmed!". No request was sent. The shop never heard of it.
+ *
+ * What it does now:
+  *   - the bill comes from POST /checkout/quote, the same pricing the order uses.
+ *     Delivery is charged by distance, so it needs to know where the order is
+ *     going: a saved address, or the customer's current location;
+ *   - Pay places the order with POST /checkout;
+ *   - cash on delivery and wallet are complete at that point (the wallet is
+ *     debited by the server as part of placing the order);
+ *   - online payment opens Razorpay Checkout for the payment the server opened
+ *     and the order is confirmed as paid only once the server has verified it.
+ *     If the customer closes the window the order exists, unpaid, and the same
+ *     button retries the payment instead of ordering again.
+ *
+ * Online payment is offered only when the API reports it is configured.
+ */
 export default function CheckoutPage() {
   const [step, setStep] = useState(1); // 1: Cart, 2: Address/Fulfillment, 3: Payment, 4: Success
   const [address, setAddress] = useState('');
   const [pincode, setPincode] = useState('');
   const [fulfillmentMethod, setFulfillmentMethod] = useState('DELIVERY'); // 'DELIVERY' | 'SELF_PICKUP'
-  const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // 'RAZORPAY' | 'STRIPE' | 'CASHFREE' | 'COD'
+  const [paymentMethod, setPaymentMethod] = useState('COD'); // 'RAZORPAY' | 'WALLET' | 'COD'
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState('');
-  const [showUpi, setShowUpi] = useState(false);
+  const [error, setError] = useState('');
 
-  // Use the cart store
-  const { items: cartItems, getCartTotal, clearCart, currentShopName, currentShopId, sessionId } = useCartStore();
+  // The server's bill for this cart, and why there is none if there is none.
+  const [quote, setQuote] = useState(null);
+    const [quoteError, setQuoteError] = useState(null);
+  // Where a delivery is going, as a point. A saved address may carry its own.
+  const [location, setLocation] = useState(null);
+  const [locating, setLocating] = useState(false);
+  // An order that has been placed for online payment and not paid yet.
+  const [pendingOrder, setPendingOrder] = useState(null);
+  // The order shown on the confirmation step: { id, paid, method }.
+  const [confirmed, setConfirmed] = useState(null);
+
+  const { items: cartItems, getCartTotal, clearCart, currentShopName, currentShopId } = useCartStore();
   const total = getCartTotal();
-  
-  // Dynamic Pricing Logic
-  const hasPlusPass = false; // Mock state
-  const isSurge = true; // High demand mock
-  
-  const smallOrderFee = total < 100 ? 15 : 0;
-  const distanceFee = 20;
-  const surgeFee = isSurge ? 20 : 0;
-  
-  const calculatedDeliveryFee = hasPlusPass ? 0 : (distanceFee + surgeFee);
-  const platformFee = 10;
-  
-  const finalTotal = total + (fulfillmentMethod === 'SELF_PICKUP' ? 0 : calculatedDeliveryFee) + platformFee + smallOrderFee;
 
-  const [allowedPayments, setAllowedPayments] = useState(['RAZORPAY', 'STRIPE', 'CASHFREE', 'COD']);
   const [allowedFulfillments, setAllowedFulfillments] = useState(['DELIVERY', 'SELF_PICKUP']);
+  const [shopPayments, setShopPayments] = useState(['RAZORPAY', 'WALLET', 'COD']);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  
+
   const { token } = useAuth();
 
+  const onlineAvailable = Boolean(quote && quote.paymentMethods && quote.paymentMethods.razorpay);
+    const codAvailable = !quote || quote.paymentMethods.cod;
+  const allowedPayments = ['RAZORPAY', 'WALLET', 'COD'].filter(
+    (m) => (m === 'WALLET' || shopPayments.includes(m)) && (m !== 'RAZORPAY' || onlineAvailable) && (m !== 'COD' || codAvailable)
+  );
+  const delivering = fulfillmentMethod === 'DELIVERY';
+
+  /** A saved address chosen: its text, and its location if it has one. */
+  const chooseAddress = (addr) => {
+    setSelectedAddressId(addr.id);
+    setAddress(addr.street_address + ', ' + addr.city);
+    setPincode(addr.postal_code);
+    const lat = Number(addr.latitude);
+    const lng = Number(addr.longitude);
+    setLocation(addr.latitude !== null && addr.latitude !== undefined && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null);
+  };
+
+  const useMyLocation = async () => {
+    setError('');
+    setLocating(true);
+    try {
+      setLocation(await currentPosition());
+    } catch (e) {
+      setError(e.message);
+    }
+    setLocating(false);
+  };
+
   useEffect(() => {
-    if (token) {
-      const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      fetch(`${BACKEND_URL}/api/v1/users/addresses`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+    if (!token) return;
+    fetch(`${API_BASE}/users/addresses`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.data.length > 0) {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setSavedAddresses(data.data);
-          const defaultAddr = data.data.find(a => a.is_default === 1) || data.data[0];
-          setSelectedAddressId(defaultAddr.id);
-          setAddress(defaultAddr.street_address + ', ' + defaultAddr.city);
-          setPincode(defaultAddr.postal_code);
+                    const defaultAddr = data.data.find(a => a.is_default === 1 || a.is_default === true) || data.data[0];
+          chooseAddress(defaultAddr);
         }
       })
       .catch(err => console.error('Failed to fetch addresses', err));
-    }
   }, [token]);
 
   useEffect(() => {
     if (!currentShopId) return;
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    fetch(`${BACKEND_URL}/api/v1/shops/${currentShopId}`)
+    fetch(`${API_BASE}/shops/${currentShopId}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.category_details) {
-          const payments = (data.category_details.allowed_payment_methods || 'RAZORPAY,STRIPE,CASHFREE,COD').split(',');
-          const fulfillments = (data.category_details.allowed_fulfillment_methods || 'DELIVERY,SELF_PICKUP').split(',');
-          setAllowedPayments(payments);
+          const payments = (data.category_details.allowed_payment_methods || 'RAZORPAY,COD').split(',').map(s => s.trim());
+          const fulfillments = (data.category_details.allowed_fulfillment_methods || 'DELIVERY,SELF_PICKUP').split(',').map(s => s.trim());
+          setShopPayments(payments);
           setAllowedFulfillments(fulfillments);
-          
-          if (payments.length > 0 && !payments.includes(paymentMethod)) {
-            setPaymentMethod(payments[0]);
-          }
           if (fulfillments.length > 0 && !fulfillments.includes(fulfillmentMethod)) {
             setFulfillmentMethod(fulfillments[0]);
           }
         }
       })
       .catch(err => console.error('Failed to fetch shop rules:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentShopId]);
 
-  // Load Razorpay Script
+  // Ask the server what this cart costs whenever it, or how it is fulfilled, changes.
+  const cartKey = cartItems.map(i => `${i.id}:${i.quantity}`).join(',');
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+    if (!currentShopId || cartItems.length === 0 || pendingOrder) {
+      if (cartItems.length === 0) setQuote(null);
+      return undefined;
+    }
+        let cancelled = false;
+    fetchQuote({
+      shopId: currentShopId,
+      fulfillmentMethod,
+      items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
+      ...(fulfillmentMethod === 'DELIVERY'
+        ? { addressId: selectedAddressId || undefined, deliveryCoordinate: location || undefined }
+        : {}),
+    })
+      .then((data) => { if (!cancelled) { setQuote(data); setQuoteError(null); } })
+      .catch((e) => { if (!cancelled) { setQuote(null); setQuoteError(e); } });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentShopId, cartKey, fulfillmentMethod, pendingOrder, selectedAddressId, location ? `${location.lat},${location.lng}` : '']);
+
+  // Until the delivery location is known, the cart is priced but the delivery is not.
+  const needsLocation = Boolean(quoteError && quoteError.code === 'LOCATION_REQUIRED');
+
+  // Keep the selected method one that is actually on offer.
+  useEffect(() => {
+    if (allowedPayments.length > 0 && !allowedPayments.includes(paymentMethod)) {
+      setPaymentMethod(allowedPayments[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedPayments.join(','), paymentMethod]);
+
+  const bill = pendingOrder ? pendingOrder.bill : quote ? quote.bill : null;
+  const finalTotal = bill ? bill.total : null;
+  const money = (value) => (value === null || value === undefined ? '—' : `₹${Number(value).toFixed(2)}`);
+
+  const finish = (order, paid, method) => {
+    setConfirmed({ id: order.id, paid, method });
+    setPendingOrder(null);
+    setStep(4);
+    clearCart();
+  };
+
+  const payOnline = async (order, payment) => {
+    const display = { name: currentShopName || 'LocalSampark', description: `Order ${String(order.id).slice(0, 8)}` };
+    try {
+      if (payment) await openCheckout(payment, display);
+      else await payFor({ purpose: 'order', referenceId: order.id }, display);
+      finish(order, true, 'RAZORPAY');
+    } catch (e) {
+      // The order stands, unpaid. Say so, and let the same button try again.
+      setError(
+        e.code === 'DISMISSED'
+          ? 'Payment was not completed. Your order is saved — press Pay to try again.'
+          : `${e.message} Your order is saved — press Pay to try again.`
+      );
+    }
+  };
 
   const handlePlaceOrder = async () => {
-    if (fulfillmentMethod === 'DELIVERY' && (!address || !pincode)) {
-      alert('Please provide complete delivery details');
+    setError('');
+
+    if (!token) {
+      setError('Please sign in to place your order.');
+      return;
+    }
+
+    // An order is already waiting for its payment: pay for that one.
+    if (pendingOrder) {
+      setLoading(true);
+      await payOnline(pendingOrder.order, null);
+      setLoading(false);
+      return;
+    }
+
+        if (delivering && (!address || !pincode)) {
+      setError('Please provide complete delivery details.');
+      return;
+    }
+    if (delivering && !location && !selectedAddressId) {
+      setError('Share your delivery location so the delivery charge can be worked out.');
       return;
     }
 
     setLoading(true);
-    
     try {
-      // Create Order on Backend via new Universal Orders API
-      const orderType = cartItems.some(i => i.item_type && i.item_type !== 'physical_good') ? 'booking' : 'retail';
-      
-      const payload = {
-        shopId: currentShopId,
-        orderType,
-        totalAmount: total + (fulfillmentMethod === 'DELIVERY' ? 60 : 10),
-        deliveryAddress: fulfillmentMethod === 'DELIVERY' ? `${address}, ${pincode}` : 'Self Pickup',
-        items: cartItems.map(item => ({
-          id: item.id,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        notes: `Payment: ${paymentMethod}`
-      };
-
-      const data = await apiPost('/universal-orders', payload);
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to place order');
+      const res = await fetch(`${API_BASE}/checkout`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          shopId: currentShopId,
+          fulfillmentMethod,
+          paymentMethod: paymentMethod.toLowerCase(),
+                    deliveryAddress: delivering ? `${address}, ${pincode}` : null,
+          addressId: delivering && selectedAddressId ? selectedAddressId : undefined,
+          deliveryCoordinate: delivering && location ? location : undefined,
+          items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.message || `Order failed (${res.status})`);
       }
 
-      const generatedOrderId = data.orderId;
-
       if (paymentMethod === 'RAZORPAY') {
-        // Initialize Razorpay (Mocking key for universal orders)
-        const options = {
-          key: 'rzp_test_mock',
-          amount: Math.round((total + (fulfillmentMethod === 'DELIVERY' ? 60 : 10)) * 100), // in paise
-          currency: 'INR',
-          name: 'LocalSampark',
-          description: `Order from ${currentShopName}`,
-          order_id: data.orderId, 
-          handler: async function (response) {
-            setOrderId(data.orderId);
-            setStep(4);
-            clearCart();
-          },
-          theme: { color: '#4f46e5' }
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (response) {
-          alert(`Payment Failed: ${response.error.description}`);
-        });
-        rzp.open();
-      } else if (paymentMethod === 'STRIPE' || paymentMethod === 'CASHFREE') {
-        // For now, redirect or simulate success for Stripe/Cashfree
-        alert(`${paymentMethod} initialized! (Simulating success)`);
-        setOrderId(generatedOrderId);
-        setStep(4);
-        clearCart();
+        setPendingOrder({ order: data.order, bill: data.bill });
+        if (data.paymentData) {
+          await payOnline(data.order, data.paymentData);
+        } else {
+          setError(`${data.paymentError || 'Online payment could not be started.'} Your order is saved — press Pay to try again.`);
+        }
       } else {
-        // COD
-        setOrderId(generatedOrderId);
-        setStep(4);
-        clearCart();
+        // Cash on delivery, or a wallet order the server has already debited.
+        finish(data.order, paymentMethod === 'WALLET', paymentMethod);
       }
     } catch (e) {
       console.error(e);
-      alert('Order failed: ' + e.message);
+      setError(e.message);
     }
-    
     setLoading(false);
   };
 
@@ -265,11 +340,7 @@ export default function CheckoutPage() {
                               {savedAddresses.map(addr => (
                                 <button
                                   key={addr.id}
-                                  onClick={() => {
-                                    setSelectedAddressId(addr.id);
-                                    setAddress(addr.street_address + ', ' + addr.city);
-                                    setPincode(addr.postal_code);
-                                  }}
+                                                                    onClick={() => chooseAddress(addr)}
                                   className={`shrink-0 text-left p-4 rounded-xl border transition-colors w-64 ${selectedAddressId === addr.id ? 'bg-primary-glass border-primary' : 'bg-card-bg border-border hover:border-primary/50'}`}
                                 >
                                   <div className="font-bold text-text mb-1">{addr.address_type.toUpperCase()}</div>
@@ -281,11 +352,26 @@ export default function CheckoutPage() {
                           </div>
                         )}
 
+                                                <button
+                          type="button"
+                          onClick={useMyLocation}
+                          disabled={locating}
+                          className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border border-dashed border-border text-text font-bold hover:border-primary transition disabled:opacity-50"
+                        >
+                          <MapPin className="w-5 h-5" />
+                          {locating ? 'Finding your location…' : location ? 'Location shared — update it' : 'Use my current location'}
+                        </button>
+                        <p className="text-text-muted text-xs">Delivery is charged by distance from the shop.</p>
+
                         <div>
                           <label className="text-text-muted text-sm font-medium mb-1 block">{savedAddresses.length > 0 ? 'Or enter new address' : 'Full Delivery Address'}</label>
                           <textarea
                             value={address}
-                            onChange={(e) => { setAddress(e.target.value); setSelectedAddressId(null); }}
+                                                        onChange={(e) => {
+                              if (selectedAddressId) setLocation(null);
+                              setAddress(e.target.value);
+                              setSelectedAddressId(null);
+                            }}
                             placeholder="Apt, Building, Street..."
                             className="w-full bg-background-alt text-text rounded-xl p-4 border border-border focus:border-primary outline-none resize-none h-32"
                           />
@@ -318,9 +404,16 @@ export default function CheckoutPage() {
                     <h2 className="text-2xl font-bold text-text mb-6 border-b border-border pb-4">Payment Method</h2>
                     <div className="space-y-4">
 
+                      {quote && !onlineAvailable && (
+                        <p className="text-text-muted text-sm flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          Online payment (UPI, cards, netbanking) is not available right now.
+                        </p>
+                      )}
+
                       {allowedPayments.includes('RAZORPAY') && (
                         <label className={`block p-4 border rounded-2xl cursor-pointer transition-all flex items-center gap-4 ${paymentMethod === 'RAZORPAY' ? 'bg-primary/10 border-primary shadow-glow' : 'bg-background-alt/50 border-border hover:border-primary/50'}`}>
-                          <input type="radio" name="payment" value="RAZORPAY" checked={paymentMethod === 'RAZORPAY'} onChange={() => setPaymentMethod('RAZORPAY')} className="w-5 h-5 accent-primary" />
+                          <input type="radio" name="payment" value="RAZORPAY" checked={paymentMethod === 'RAZORPAY'} onChange={() => setPaymentMethod('RAZORPAY')} disabled={Boolean(pendingOrder)} className="w-5 h-5 accent-primary" />
                           <div>
                             <p className="text-text font-bold flex items-center gap-2">Razorpay <span className="px-2 py-0.5 bg-primary-glass text-primary rounded-full text-xs">Recommended in India</span></p>
                             <p className="text-text-muted text-sm">UPI, Cards, NetBanking</p>
@@ -328,29 +421,19 @@ export default function CheckoutPage() {
                         </label>
                       )}
 
-                      {allowedPayments.includes('STRIPE') && (
-                        <label className={`block p-4 border rounded-2xl cursor-pointer transition-all flex items-center gap-4 ${paymentMethod === 'STRIPE' ? 'bg-primary/10 border-primary shadow-glow' : 'bg-background-alt/50 border-border hover:border-primary/50'}`}>
-                          <input type="radio" name="payment" value="STRIPE" checked={paymentMethod === 'STRIPE'} onChange={() => setPaymentMethod('STRIPE')} className="w-5 h-5 accent-primary" />
+                      {allowedPayments.includes('WALLET') && (
+                        <label className={`block p-4 border rounded-2xl cursor-pointer transition-all flex items-center gap-4 ${paymentMethod === 'WALLET' ? 'bg-primary/10 border-primary shadow-glow' : 'bg-background-alt/50 border-border hover:border-primary/50'}`}>
+                          <input type="radio" name="payment" value="WALLET" checked={paymentMethod === 'WALLET'} onChange={() => setPaymentMethod('WALLET')} disabled={Boolean(pendingOrder)} className="w-5 h-5 accent-primary" />
                           <div>
-                            <p className="text-text font-bold">Stripe</p>
-                            <p className="text-text-muted text-sm">International Credit/Debit Cards</p>
-                          </div>
-                        </label>
-                      )}
-
-                      {allowedPayments.includes('CASHFREE') && (
-                        <label className={`block p-4 border rounded-2xl cursor-pointer transition-all flex items-center gap-4 ${paymentMethod === 'CASHFREE' ? 'bg-primary/10 border-primary shadow-glow' : 'bg-background-alt/50 border-border hover:border-primary/50'}`}>
-                          <input type="radio" name="payment" value="CASHFREE" checked={paymentMethod === 'CASHFREE'} onChange={() => setPaymentMethod('CASHFREE')} className="w-5 h-5 accent-primary" />
-                          <div>
-                            <p className="text-text font-bold">Cashfree</p>
-                            <p className="text-text-muted text-sm">Alternative India Payment Gateway</p>
+                            <p className="text-text font-bold flex items-center gap-2"><Wallet className="w-4 h-4" /> LocalSampark Wallet</p>
+                            <p className="text-text-muted text-sm">Paid from your wallet balance when you place the order</p>
                           </div>
                         </label>
                       )}
 
                       {allowedPayments.includes('COD') && (
                         <label className={`block p-4 border rounded-2xl cursor-pointer transition-all flex items-center gap-4 ${paymentMethod === 'COD' ? 'bg-primary/10 border-primary shadow-glow' : 'bg-background-alt/50 border-border hover:border-primary/50'}`}>
-                          <input type="radio" name="payment" value="COD" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} className="w-5 h-5 accent-primary" />
+                          <input type="radio" name="payment" value="COD" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} disabled={Boolean(pendingOrder)} className="w-5 h-5 accent-primary" />
                           <div>
                             <p className="text-text font-bold">{fulfillmentMethod === 'SELF_PICKUP' ? 'Pay at Store (Cash/UPI)' : 'Cash on Delivery (COD)'}</p>
                             <p className="text-text-muted text-sm">Pay when you receive the order</p>
@@ -362,20 +445,6 @@ export default function CheckoutPage() {
                   </motion.div>
                 )}
                 
-                {/* UPI Simulator Modal */}
-                {showUpi && (
-                  <UpiGateway 
-                    amount={finalTotal} 
-                    onClose={() => setShowUpi(false)} 
-                    onSuccess={() => {
-                      setShowUpi(false);
-                      setOrderId('ORD-' + Math.floor(Math.random() * 1000000));
-                      setStep(4);
-                      clearCart();
-                    }} 
-                  />
-                )}
-
                 {/* Step 4: Success */}
                 {step === 4 && (
                   <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-card-bg border border-border rounded-3xl p-10 shadow-glass-glow backdrop-blur-xl text-center">
@@ -392,7 +461,13 @@ export default function CheckoutPage() {
 
                     <div className="bg-background-alt rounded-2xl p-6 inline-block text-left mb-8 border border-border min-w-[300px]">
                       <p className="text-text-muted text-sm mb-1">Order Tracking ID</p>
-                      <p className="text-text font-bold text-xl mb-4">{orderId}</p>
+                      <p className="text-text font-bold text-xl mb-4 break-all">{confirmed?.id}</p>
+                      <p className="text-text-muted text-sm mb-1">Payment</p>
+                      <p className="text-text font-bold mb-4">
+                        {confirmed?.paid
+                          ? (confirmed.method === 'WALLET' ? 'Paid from wallet' : 'Paid online')
+                          : (fulfillmentMethod === 'SELF_PICKUP' ? 'Pay at the store' : 'Pay on delivery')}
+                      </p>
                       <p className="text-text-muted text-sm mb-1">Status</p>
                       <p className="text-primary font-bold flex items-center gap-2">
                         {fulfillmentMethod === 'SELF_PICKUP' ? <Store className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
@@ -404,7 +479,7 @@ export default function CheckoutPage() {
                       <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">
                         Back to Home
                       </button>
-                      <button onClick={() => window.location.href = `/order-tracking?id=${orderId}`} className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow">
+                      <button onClick={() => window.location.href = `/order-tracking?id=${confirmed?.id}`} className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow">
                         Track Order
                       </button>
                     </div>
@@ -420,77 +495,58 @@ export default function CheckoutPage() {
                   <h3 className="text-xl font-bold text-text mb-6">Order Summary</h3>
 
                   <div className="space-y-4 mb-6 text-sm">
-                    <div className="flex justify-between text-text-muted">
-                      <span>Item Total ({cartItems.length} items)</span>
-                      <span>₹{total.toFixed(2)}</span>
-                    </div>
-
-                    {smallOrderFee > 0 && (
-                      <div className="flex justify-between text-secondary">
-                        <span>Small Order Fee</span>
-                        <span>+₹{smallOrderFee.toFixed(2)}</span>
+                                        {bill ? billLines(bill, { pickup: !delivering }).map((line) => (
+                      <div key={line.label} className="flex justify-between text-text-muted">
+                        <span>{line.label}{line.note && <span className="block text-xs">{line.note}</span>}</span>
+                        <span>{line.value}</span>
+                      </div>
+                    )) : (
+                      <div className="flex justify-between text-text-muted">
+                        <span>Item Total ({cartItems.length} items)</span>
+                        <span>{money(total)}</span>
                       </div>
                     )}
-
-                    <div className="flex justify-between text-text-muted">
-                      <span>Platform Fee</span>
-                      <span>₹{platformFee.toFixed(2)}</span>
-                    </div>
-
-                    {fulfillmentMethod === 'DELIVERY' && (
-                      <>
-                        <div className="flex justify-between text-text-muted">
-                          <span>Delivery Fee</span>
-                          {hasPlusPass ? (
-                            <span className="text-emerald-400 font-bold">FREE</span>
-                          ) : (
-                            <span>₹{distanceFee.toFixed(2)}</span>
-                          )}
-                        </div>
-                        {isSurge && !hasPlusPass && (
-                          <div className="flex justify-between text-purple-400 font-bold">
-                            <span>High Demand Surge</span>
-                            <span>+₹{surgeFee.toFixed(2)}</span>
-                          </div>
-                        )}
-                      </>
+                    {needsLocation && !pendingOrder && (
+                      <p className="text-text-muted text-xs">The delivery charge appears once you share where the order is going.</p>
                     )}
-                    {fulfillmentMethod === 'SELF_PICKUP' && (
-                      <div className="flex justify-between text-emerald-400 font-bold">
-                        <span>Delivery Fee</span>
-                        <span>FREE (Pickup)</span>
-                      </div>
+                    {etaText(bill, { pickup: !delivering }) && (
+                      <p className="flex items-center gap-2 text-text-muted"><Clock className="w-4 h-4" /> {etaText(bill, { pickup: !delivering })}</p>
                     )}
 
                     <div className="border-t border-border pt-4 flex justify-between items-end">
                       <span className="text-text-muted">Total to Pay</span>
-                      <span className="text-3xl font-black text-white">₹{finalTotal.toFixed(2)}</span>
+                      <span className="text-3xl font-black text-white">{money(finalTotal)}</span>
                     </div>
                   </div>
 
-                  {!hasPlusPass && fulfillmentMethod === 'DELIVERY' && (
-                    <div className="bg-gradient-to-r from-secondary-glass to-accent-glass border border-secondary/20 rounded-xl p-4 mb-6">
-                      <h4 className="font-bold text-secondary text-sm mb-1">Save ₹{distanceFee + surgeFee} on this order!</h4>
-                      <p className="text-text-muted text-xs mb-3">Get unlimited free deliveries with LocalSampark Plus.</p>
-                      <Link href="/resident/plus" className="text-xs font-bold text-white bg-secondary px-3 py-1.5 rounded-lg hover:bg-secondary-hover transition-colors inline-block">
-                        Join Plus
-                      </Link>
-                    </div>
+                                    {quoteError && !needsLocation && !pendingOrder && (
+                    <p className="text-red-400 text-sm mb-4 flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {quoteError.message}
+                    </p>
+                  )}
+                  {error && (
+                    <p className="text-red-400 text-sm mb-4 flex items-start gap-2" role="alert">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
+                    </p>
                   )}
 
                   {step === 1 && (
-                    <button onClick={() => setStep(2)} disabled={cartItems.length === 0} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow disabled:opacity-50">
+                                        <button onClick={() => setStep(2)} disabled={cartItems.length === 0 || (!quote && !needsLocation)} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow disabled:opacity-50">
                       Proceed to Fulfillment
                     </button>
                   )}
                   {step === 2 && (
-                    <button onClick={() => setStep(3)} disabled={fulfillmentMethod === 'DELIVERY' && (!address || !pincode)} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow disabled:opacity-50">
+                                        <button onClick={() => setStep(3)} disabled={!quote || (delivering && (!address || !pincode))} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow disabled:opacity-50">
                       Proceed to Payment
                     </button>
                   )}
                   {step === 3 && (
-                    <button onClick={() => setShowUpi(true)} disabled={loading} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary-hover transition shadow-emerald-glow flex justify-center items-center gap-2">
-                      {loading ? <span className="animate-pulse">Processing...</span> : <>Pay ₹{finalTotal.toFixed(2)}</>}
+                    <button onClick={handlePlaceOrder} disabled={loading || !bill || allowedPayments.length === 0} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary-hover transition shadow-emerald-glow flex justify-center items-center gap-2 disabled:opacity-50">
+                      {loading
+                        ? <span className="animate-pulse">Processing...</span>
+                        : pendingOrder
+                          ? <>Pay {money(finalTotal)}</>
+                          : paymentMethod === 'COD' ? <>Place Order · {money(finalTotal)}</> : <>Pay {money(finalTotal)}</>}
                     </button>
                   )}
                 </div>

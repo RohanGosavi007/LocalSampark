@@ -5,17 +5,18 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start -p 3001"
+    "start": "next start -p 3001",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@phosphor-icons/react": "^2.1.10",
-    "lucide-react": "^1.23.0",
+    "@localsampark/shared": "*",
+    "leaflet": "^1.9.4",
     "next": "^15.5.25",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@localsampark/shared": "*",
-    "@turf/turf": "^7.4.0",
-    "leaflet": "^1.9.4",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^4.2.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -39,6 +39,9 @@ export default function MarketplacePage() {
   const [flashDeals, setFlashDeals] = useState([]);
   const [postForm, setPostForm] = useState({ title: '', price: '', category: '', condition: 'Good', description: '', is_negotiable: true, delivery_available: false, photo_urls: [] });
   const [postSubmitted, setPostSubmitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null); // { type: 'error' | 'ok', text }
+  const showNotice = (type, text) => { setNotice({ type, text }); setTimeout(() => setNotice(null), 5000); };
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
   const authHeaders = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
@@ -74,7 +77,7 @@ export default function MarketplacePage() {
   }, [activeTab]);
 
   const toggleSave = async (listingId) => {
-    if (!token) { alert('Please login to save items'); return; }
+    if (!token) { showNotice('error', 'Please log in to save items.'); return; }
     try {
       const res = await fetch(`${API_URL}/api/v1/marketplace/${listingId}/save`, { method: 'POST', headers: authHeaders });
       const data = await res.json();
@@ -92,14 +95,24 @@ export default function MarketplacePage() {
   };
 
   const submitOffer = async () => {
-    if (!token || !offerAmount) return;
+    if (busy) return;
+    if (!token) { showNotice('error', 'Please log in to make an offer.'); return; }
+    const amount = parseFloat(offerAmount);
+    if (!(amount > 0)) { showNotice('error', 'Enter an offer amount greater than 0.'); return; }
+    setBusy(true);
     try {
-      await fetch(`${API_URL}/api/v1/marketplace/${selectedListing.id}/offer`, {
-        method: 'POST', headers: authHeaders, body: JSON.stringify({ offer_amount: parseFloat(offerAmount), message: offerMessage })
+      const res = await fetch(`${API_URL}/api/v1/marketplace/${selectedListing.id}/offer`, {
+        method: 'POST', headers: authHeaders, body: JSON.stringify({ offer_amount: amount, message: offerMessage })
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        showNotice('error', body.error || 'Your offer could not be sent.');
+        return;
+      }
       setOfferSubmitted(true);
       setTimeout(() => { setShowOfferModal(false); setOfferSubmitted(false); setOfferAmount(''); setOfferMessage(''); }, 2000);
-    } catch (e) { alert('Failed'); }
+    } catch (e) { showNotice('error', 'No connection. Your offer was not sent.'); }
+    finally { setBusy(false); }
   };
 
   const loadChat = async (listingId) => {
@@ -124,14 +137,18 @@ export default function MarketplacePage() {
 
   const handlePost = async (e) => {
     e.preventDefault();
-    if (!token) { alert('Please login'); return; }
+    if (busy) return;
+    if (!token) { showNotice('error', 'Please log in to post a listing.'); return; }
+    setBusy(true);
     try {
       const res = await fetch(`${API_URL}/api/v1/marketplace`, {
         method: 'POST', headers: authHeaders, body: JSON.stringify(postForm)
       });
-      const data = await res.json();
-      if (data.success) { setPostSubmitted(true); setTimeout(() => { setPostSubmitted(false); setActiveTab('browse'); fetchListings(); }, 2000); }
-    } catch (e) { alert('Failed'); }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) { setPostSubmitted(true); setTimeout(() => { setPostSubmitted(false); setActiveTab('browse'); fetchListings(); }, 2000); }
+      else showNotice('error', data.error || 'Your listing could not be published. Check the details and try again.');
+    } catch (e) { showNotice('error', 'No connection. Your listing was not published.'); }
+    finally { setBusy(false); }
   };
 
   const ListingCard = ({ item, i }) => {
@@ -182,6 +199,7 @@ export default function MarketplacePage() {
   return (
     <>
       <Header />
+      {notice && (<div role="alert" className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-xl font-bold shadow-xl text-white ${notice.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>{notice.text}</div>)}
       <main className="min-h-screen bg-background pt-20 pb-16">
         {/* Hero */}
         <section className="relative overflow-hidden py-12 px-4 border-b border-border">
@@ -369,8 +387,8 @@ export default function MarketplacePage() {
                     </label>
                   </div>
 
-                  <button type="submit" className="w-full py-4 bg-gradient-to-r from-primary to-blue-600 text-white font-bold rounded-xl hover:shadow-lg transition text-lg">
-                    Publish Listing 🚀
+                  <button type="submit" disabled={busy} className="w-full py-4 bg-gradient-to-r from-primary to-blue-600 text-white font-bold rounded-xl hover:shadow-lg transition text-lg disabled:opacity-60">
+                    {busy ? 'Publishing…' : 'Publish Listing 🚀'}
                   </button>
                 </form>
               )}
@@ -486,7 +504,7 @@ export default function MarketplacePage() {
                     </div>
                     <textarea value={offerMessage} onChange={e => setOfferMessage(e.target.value)} placeholder="Add a message (optional)"
                       className="w-full bg-background-alt text-text rounded-xl p-3 border border-border text-sm outline-none resize-none h-16 mb-4" />
-                    <button onClick={submitOffer} className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition text-lg">
+                    <button onClick={submitOffer} disabled={busy} className="disabled:opacity-60 w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition text-lg">
                       Submit Offer 🤝
                     </button>
                   </>

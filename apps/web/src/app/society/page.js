@@ -32,18 +32,31 @@ function resolve(path) {
 // ─── API Helper ─────────────────────────────────────────────
 async function api(path, options = {}) {
   const token = localStorage.getItem('auth_token');
-  const res = await fetch(resolve(path), {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
+  const isWrite = options.method && options.method !== 'GET';
+  let res;
+  try {
+    res = await fetch(resolve(path), {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
+      body: options.body ? JSON.stringify(options.body) : undefined
+    });
+  } catch (e) {
+    if (isWrite) return { success: false, error: 'Could not reach the server. Check your connection.' };
+    throw e;
+  }
 
-  // A 404 used to parse into `{error: ...}` and then collapse to [] at the call
-  // site, so a missing route looked exactly like an empty list. Surfacing it
-  // lets the tab render its error state instead of an empty table.
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body?.error || body?.message || `Request failed (${res.status})`);
+    const message = body?.error || body?.message || `Request failed (${res.status})`;
+    // Writes are answered, not thrown. Every action button here reads
+    // `r.success` / `r.error` and has no try/catch, so a thrown refusal — a
+    // second vote, a slot already booked — became an unhandled rejection and
+    // the user saw nothing at all.
+    if (isWrite) return { ...body, success: false, error: message, status: res.status };
+    // Reads still throw. A 404 used to parse into `{error: ...}` and collapse
+    // to [] at the call site, so a missing route looked exactly like an empty
+    // list; the loader turns this into the tab's error state instead.
+    const err = new Error(message);
     err.status = res.status;
     throw err;
   }
@@ -339,7 +352,9 @@ export default function SocietyPage() {
       }
       else if (tab === 'staff') {
         const r = await api('/staff'); setStaff(r.data || []);
-        if (societyRole === 'guard' || societyRole === 'admin') { const a = await api('/staff/attendance/today'); setTodayAttendance(a.data || { attendance: [], allStaff: [] }); }
+        // /staff/attendance/today returns the day's rows as an array (the gate
+        // dashboards read it that way); the grid pairs them with the roster.
+        if (societyRole === 'guard' || societyRole === 'admin') { const a = await api('/staff/attendance/today'); setTodayAttendance({ attendance: a.data || [], allStaff: r.data || [] }); }
       }
       else if (tab === 'bills') {
         if (societyRole === 'admin') { const r = await api('/bills'); setBills(r.data || []); const s = await api('/bills/summary'); setBillSummary(s.data || null); }
@@ -506,11 +521,11 @@ export default function SocietyPage() {
               <td style={{...styles.td, ...styles.tdLast}}>
                 <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
                   {societyRole === 'resident' && v.status === 'pending' && <>
-                    <button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{await api(`/visitors/${v.id}/approve`,{method:'PUT'});flash('✅ Approved');load('visitors');}}>✅ Allow</button>
-                    <button className="btn btn-danger" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{await api(`/visitors/${v.id}/decline`,{method:'PUT'});flash('❌ Declined');load('visitors');}}>❌ Decline</button>
+                    <button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{const _r=await api(`/visitors/${v.id}/approve`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'✅ Approved');load('visitors');}}>✅ Allow</button>
+                    <button className="btn btn-danger" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{const _r=await api(`/visitors/${v.id}/decline`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'❌ Declined');load('visitors');}}>❌ Decline</button>
                   </>}
-                  {societyRole === 'guard' && v.status === 'approved' && <button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{await api(`/visitors/${v.id}/check-in`,{method:'PUT'});flash('Checked in');load('visitors');}}>🚶 Check In</button>}
-                  {societyRole === 'guard' && v.status === 'checked_in' && <button className="btn btn-secondary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{await api(`/visitors/${v.id}/check-out`,{method:'PUT'});flash('Checked out');load('visitors');}}>🚪 Check Out</button>}
+                  {societyRole === 'guard' && v.status === 'approved' && <button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{const _r=await api(`/visitors/${v.id}/check-in`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'Checked in');load('visitors');}}>🚶 Check In</button>}
+                  {societyRole === 'guard' && v.status === 'checked_in' && <button className="btn btn-secondary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{const _r=await api(`/visitors/${v.id}/check-out`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'Checked out');load('visitors');}}>🚪 Check Out</button>}
                 </div>
               </td>
             </tr>
@@ -553,8 +568,8 @@ export default function SocietyPage() {
                 <td style={styles.td}>{editMemberId===m.id?<select style={{...styles.select,padding:'0.3rem',width:'100px'}} value={editMemberForm.role||''} onChange={e=>setEditMemberForm({...editMemberForm,role:e.target.value})}><option value="resident">Resident</option><option value="guard">Guard</option><option value="admin">Admin</option></select>:<span className="badge badge-primary" style={{textTransform:'capitalize'}}>{m.role}</span>}</td>
                 <td style={styles.td}><span style={styles.statusBadge(m.is_active?'approved':'declined')}>{m.is_active?'Active':'Inactive'}</span></td>
                 <td style={{...styles.td,...styles.tdLast}}>
-                  {editMemberId===m.id?<div style={{display:'flex',gap:'0.3rem'}}><button className="btn btn-primary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/members/${m.id}`,{method:'PUT',body:editMemberForm});flash('Updated');setEditMemberId(null);load('members');}}>Save</button><button className="btn btn-secondary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={()=>setEditMemberId(null)}>Cancel</button></div>:
-                  <div style={{display:'flex',gap:'0.3rem'}}><button className="btn btn-secondary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={()=>{setEditMemberId(m.id);setEditMemberForm({flatNumber:m.flat_number,role:m.role});}}>✏️</button><button className="btn btn-danger" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{if(confirm('Remove member?')){await api(`/members/${m.id}`,{method:'DELETE'});flash('Removed');load('members');}}}>🗑️</button></div>}
+                  {editMemberId===m.id?<div style={{display:'flex',gap:'0.3rem'}}><button className="btn btn-primary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/members/${m.id}`,{method:'PUT',body:editMemberForm});flash(_r.success===false?'❌ '+_r.error:'Updated');setEditMemberId(null);load('members');}}>Save</button><button className="btn btn-secondary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={()=>setEditMemberId(null)}>Cancel</button></div>:
+                  <div style={{display:'flex',gap:'0.3rem'}}><button className="btn btn-secondary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={()=>{setEditMemberId(m.id);setEditMemberForm({flatNumber:m.flat_number,role:m.role});}}>✏️</button><button className="btn btn-danger" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{if(confirm('Remove member?')){const _r=await api(`/members/${m.id}`,{method:'DELETE'});flash(_r.success===false?'❌ '+_r.error:'Removed');load('members');}}}>🗑️</button></div>}
                 </td>
               </tr>
             ))}</tbody>
@@ -589,7 +604,7 @@ export default function SocietyPage() {
                 <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{new Date(m.created_at).toLocaleString()}</span>
               </div>
               <p style={{margin:'0.5rem 0',color:'var(--text)'}}>{m.message}</p>
-              {!m.is_read && <button className="btn btn-secondary" style={{padding:'0.2rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/guard-messages/${m.id}/read`,{method:'PUT'});load('messages');}}>Mark Read</button>}
+              {!m.is_read && <button className="btn btn-secondary" style={{padding:'0.2rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/guard-messages/${m.id}/read`,{method:'PUT'});if(_r.success===false)flash('❌ '+_r.error);load('messages');}}>Mark Read</button>}
             </div>
           ))}
           {guardMessages.length===0 && <p style={{color:'var(--text-muted)',textAlign:'center'}}>No messages</p>}
@@ -627,7 +642,7 @@ export default function SocietyPage() {
             <div key={r.id} style={{padding:'1rem',borderRadius:'var(--radius-sm)',marginBottom:'0.75rem',border:'1px solid var(--card-border)',borderLeft:`4px solid ${r.priority==='critical'?'#ef4444':r.priority==='high'?'#f59e0b':'var(--primary)'}`,background:'var(--card-bg)'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <strong>{r.priority==='critical'?'🔴':r.priority==='high'?'🟡':'🔵'} {r.title}</strong>
-                <button className="btn btn-secondary" style={{padding:'0.2rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/guard-reminders/${r.id}/dismiss`,{method:'PUT'});flash('Dismissed');load('reminders');}}>Dismiss</button>
+                <button className="btn btn-secondary" style={{padding:'0.2rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/guard-reminders/${r.id}/dismiss`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'Dismissed');load('reminders');}}>Dismiss</button>
               </div>
               {r.description && <p style={{fontSize:'0.85rem',color:'var(--text-muted)',margin:'0.3rem 0'}}>{r.description}</p>}
               <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>⏰ {new Date(r.reminder_time).toLocaleString()} • Set by {r.created_by_name}</span>
@@ -675,8 +690,8 @@ export default function SocietyPage() {
                   {att?.check_in_time && <div style={{fontSize:'0.72rem',color:'var(--accent)'}}>In: {new Date(att.check_in_time).toLocaleTimeString()}</div>}
                   {att?.check_out_time && <div style={{fontSize:'0.72rem',color:'var(--secondary)'}}>Out: {new Date(att.check_out_time).toLocaleTimeString()}</div>}
                   <div style={{display:'flex',gap:'0.4rem',marginTop:'0.75rem',justifyContent:'center'}}>
-                    {!att?.check_in_time && <button className="btn btn-primary" style={{padding:'0.3rem 0.7rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/staff/${s.id}/attendance`,{method:'POST',body:{action:'check_in'}});flash('✅ Checked in');load('staff');}}>Check In</button>}
-                    {att?.check_in_time && !att?.check_out_time && <button className="btn btn-accent" style={{padding:'0.3rem 0.7rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/staff/${s.id}/attendance`,{method:'POST',body:{action:'check_out'}});flash('✅ Checked out');load('staff');}}>Check Out</button>}
+                    {!att?.check_in_time && <button className="btn btn-primary" style={{padding:'0.3rem 0.7rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/staff/${s.id}/attendance`,{method:'POST',body:{action:'check_in'}});flash(_r.success===false?'❌ '+_r.error:'✅ Checked in');load('staff');}}>Check In</button>}
+                    {att?.check_in_time && !att?.check_out_time && <button className="btn btn-accent" style={{padding:'0.3rem 0.7rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/staff/${s.id}/attendance`,{method:'POST',body:{action:'check_out'}});flash(_r.success===false?'❌ '+_r.error:'✅ Checked out');load('staff');}}>Check Out</button>}
                   </div>
                 </div>
               );
@@ -743,7 +758,7 @@ export default function SocietyPage() {
                 <td style={styles.td}><span style={styles.statusBadge(b.payment_status)}>{b.payment_status}</span></td>
                 <td style={styles.td}>{b.due_date}</td>
                 <td style={{...styles.td,...styles.tdLast}}>
-                  {societyRole==='resident'&&b.payment_status!=='paid'&&<button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.72rem'}} onClick={async()=>{const ref=prompt('Enter payment reference (UPI ID / Transaction ID):');if(ref){await api(`/bills/${b.id}/pay`,{method:'PUT',body:{paymentReference:ref}});flash('✅ Paid');load('bills');}}}>💳 Pay Now</button>}
+                  {societyRole==='resident'&&b.payment_status!=='paid'&&<button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.72rem'}} onClick={async()=>{const ref=prompt('Enter payment reference (UPI ID / Transaction ID):');if(ref){const _r=await api(`/bills/${b.id}/pay`,{method:'PUT',body:{paymentReference:ref}});flash(_r.success===false?'❌ '+_r.error:'✅ Paid');load('bills');}}}>💳 Pay Now</button>}
                 </td>
               </tr>
             ))}</tbody>
@@ -777,7 +792,7 @@ export default function SocietyPage() {
               <span className="badge" style={{background:s.is_occupied?'rgba(239,68,68,0.15)':'rgba(16,185,129,0.15)',color:s.is_occupied?'#ef4444':'#10b981'}}>{s.is_occupied?'Occupied':'Available'}</span>
               <div style={{fontSize:'0.78rem',color:'var(--text-muted)',marginTop:'0.5rem'}}>{s.slot_type} • {s.flat_number||'Unassigned'}</div>
               {s.vehicle_number && <div style={{fontSize:'0.85rem',fontWeight:600,marginTop:'0.25rem'}}>🚗 {s.vehicle_number}</div>}
-              {societyRole==='admin'&&<button className="btn btn-danger" style={{padding:'0.2rem 0.5rem',fontSize:'0.7rem',marginTop:'0.5rem'}} onClick={async()=>{await api(`/parking/${s.id}`,{method:'DELETE'});load('parking');}}>Remove</button>}
+              {societyRole==='admin'&&<button className="btn btn-danger" style={{padding:'0.2rem 0.5rem',fontSize:'0.7rem',marginTop:'0.5rem'}} onClick={async()=>{const _r=await api(`/parking/${s.id}`,{method:'DELETE'});if(_r.success===false)flash('❌ '+_r.error);load('parking');}}>Remove</button>}
             </div>
           ))}
           {parkingSlots.length===0 && <p style={{color:'var(--text-muted)',gridColumn:'1/-1',textAlign:'center'}}>No parking slots configured</p>}
@@ -832,7 +847,7 @@ export default function SocietyPage() {
               <div><strong>{b.amenity_name}</strong> • {b.booking_date} • {b.start_time} - {b.end_time}</div>
               <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
                 <span style={styles.statusBadge(b.status)}>{b.status}</span>
-                {b.status==='confirmed'&&<button className="btn btn-danger" style={{padding:'0.2rem 0.5rem',fontSize:'0.7rem'}} onClick={async()=>{await api(`/bookings/${b.id}/cancel`,{method:'PUT'});flash('Cancelled');load('amenities');}}>Cancel</button>}
+                {b.status==='confirmed'&&<button className="btn btn-danger" style={{padding:'0.2rem 0.5rem',fontSize:'0.7rem'}} onClick={async()=>{const _r=await api(`/bookings/${b.id}/cancel`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'Cancelled');load('amenities');}}>Cancel</button>}
               </div>
             </div>
           ))}
@@ -874,8 +889,8 @@ export default function SocietyPage() {
             {c.admin_notes && <p style={{fontSize:'0.8rem',color:'var(--primary)',fontStyle:'italic'}}>Admin: {c.admin_notes}</p>}
             {societyRole==='admin'&&c.status!=='resolved'&&c.status!=='closed'&&(
               <div style={{display:'flex',gap:'0.4rem',marginTop:'0.5rem'}}>
-                <button className="btn btn-primary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const notes=prompt('Admin notes:');await api(`/complaints/${c.id}/assign`,{method:'PUT',body:{status:'in_progress',adminNotes:notes||''}});flash('Updated');load('complaints');}}>In Progress</button>
-                <button className="btn btn-accent" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/complaints/${c.id}/resolve`,{method:'PUT'});flash('✅ Resolved');load('complaints');}}>Resolve</button>
+                <button className="btn btn-primary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const notes=prompt('Admin notes:');const _r=await api(`/complaints/${c.id}/assign`,{method:'PUT',body:{status:'in_progress',adminNotes:notes||''}});flash(_r.success===false?'❌ '+_r.error:'Updated');load('complaints');}}>In Progress</button>
+                <button className="btn btn-accent" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/complaints/${c.id}/resolve`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'✅ Resolved');load('complaints');}}>Resolve</button>
               </div>
             )}
           </div>
@@ -910,7 +925,7 @@ export default function SocietyPage() {
             </div>
             <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
               <span style={styles.statusBadge(p.status)}>{p.status}</span>
-              {p.status==='received'&&<button className="btn btn-primary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/packages/${p.id}/collect`,{method:'PUT'});flash('✅ Collected');load('packages');}}>Collect</button>}
+              {p.status==='received'&&<button className="btn btn-primary" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/packages/${p.id}/collect`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'✅ Collected');load('packages');}}>Collect</button>}
             </div>
           </div>
         ))}
@@ -955,7 +970,7 @@ export default function SocietyPage() {
                   {p.description && <p style={{fontSize:'0.85rem',color:'var(--text-muted)',margin:'0.3rem 0'}}>{p.description}</p>}
                   <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>By {p.creator_name} • {p.total_votes} votes • {p.status}</span>
                 </div>
-                {societyRole==='admin'&&p.status==='active'&&<button className="btn btn-danger" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/polls/${p.id}/close`,{method:'PUT'});flash('Poll closed');load('polls');}}>Close</button>}
+                {societyRole==='admin'&&p.status==='active'&&<button className="btn btn-danger" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/polls/${p.id}/close`,{method:'PUT'});flash(_r.success===false?'❌ '+_r.error:'Poll closed');load('polls');}}>Close</button>}
               </div>
               <div style={{marginTop:'1rem'}}>
                 {results ? results.results.map((r,i)=>(
@@ -966,7 +981,7 @@ export default function SocietyPage() {
                 )) : options.map((o,i)=>(
                   <div key={i} style={{marginBottom:'0.4rem'}}>
                     {p.status==='active'&&p.myVote===null&&societyRole==='resident'?
-                      <button className="btn btn-secondary" style={{width:'100%',justifyContent:'start',padding:'0.5rem 1rem',fontSize:'0.85rem'}} onClick={async()=>{await api(`/polls/${p.id}/vote`,{method:'POST',body:{selectedOption:i}});flash('✅ Voted');load('polls');}}>{o}</button>
+                      <button className="btn btn-secondary" style={{width:'100%',justifyContent:'start',padding:'0.5rem 1rem',fontSize:'0.85rem'}} onClick={async()=>{const _r=await api(`/polls/${p.id}/vote`,{method:'POST',body:{selectedOption:i}});flash(_r.success===false?'❌ '+_r.error:'✅ Voted');load('polls');}}>{o}</button>
                       :<div style={{padding:'0.5rem 1rem',borderRadius:'var(--radius-sm)',border:'1px solid var(--card-border)',fontSize:'0.85rem',background:p.myVote===i?'var(--primary-light)':'transparent'}}>{o} {p.myVote===i&&'✓'}</div>
                     }
                   </div>
@@ -1008,7 +1023,7 @@ export default function SocietyPage() {
             <div key={e.id} style={{padding:'1rem',borderRadius:'var(--radius-sm)',marginBottom:'0.75rem',border:'2px solid #ef4444',background:'rgba(239,68,68,0.05)'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div><strong style={{fontSize:'1.1rem',color:'#ef4444'}}>🚨 {e.alert_type?.replace('_',' ').toUpperCase()}</strong><span style={{fontSize:'0.85rem',color:'var(--text-muted)'}}> — {e.flat_number} by {e.triggered_by_name}</span></div>
-                {(societyRole==='admin'||societyRole==='guard')&&<button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{await api(`/emergency/${e.id}/resolve`,{method:'PUT',body:{status:'resolved'}});flash('✅ Resolved');load('emergency');}}>Resolve</button>}
+                {(societyRole==='admin'||societyRole==='guard')&&<button className="btn btn-primary" style={{padding:'0.3rem 0.8rem',fontSize:'0.75rem'}} onClick={async()=>{const _r=await api(`/emergency/${e.id}/resolve`,{method:'PUT',body:{status:'resolved'}});flash(_r.success===false?'❌ '+_r.error:'✅ Resolved');load('emergency');}}>Resolve</button>}
               </div>
               {e.description && <p style={{fontSize:'0.85rem',marginTop:'0.3rem'}}>{e.description}</p>}
               <span style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>{new Date(e.created_at).toLocaleString()}</span>
@@ -1075,9 +1090,9 @@ export default function SocietyPage() {
               </div>
               <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
                 {societyRole==='resident'&&['going','maybe','not_going'].map(s=>(
-                  <button key={s} className={`btn ${e.myRsvp===s?'btn-primary':'btn-secondary'}`} style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/events/${e.id}/rsvp`,{method:'POST',body:{status:s}});load('events');}}>{s==='going'?'✅ Going':s==='maybe'?'🤔 Maybe':'❌ No'}</button>
+                  <button key={s} className={`btn ${e.myRsvp===s?'btn-primary':'btn-secondary'}`} style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/events/${e.id}/rsvp`,{method:'POST',body:{status:s}});if(_r.success===false)flash('❌ '+_r.error);load('events');}}>{s==='going'?'✅ Going':s==='maybe'?'🤔 Maybe':'❌ No'}</button>
                 ))}
-                {societyRole==='admin'&&<button className="btn btn-danger" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{await api(`/events/${e.id}`,{method:'DELETE'});flash('Event cancelled');load('events');}}>Cancel</button>}
+                {societyRole==='admin'&&<button className="btn btn-danger" style={{padding:'0.25rem 0.6rem',fontSize:'0.72rem'}} onClick={async()=>{const _r=await api(`/events/${e.id}`,{method:'DELETE'});flash(_r.success===false?'❌ '+_r.error:'Event cancelled');load('events');}}>Cancel</button>}
               </div>
             </div>
           </div>
@@ -1101,7 +1116,7 @@ export default function SocietyPage() {
               </select></div>
           </div>
           <div className="form-group"><label className="form-label">Content</label><textarea className="form-input" rows={3} value={noticeForm.content} onChange={e=>setNoticeForm({...noticeForm,content:e.target.value})} placeholder="Notice content..." /></div>
-          <button className="btn btn-primary" onClick={async()=>{const r=await api('/notices',{method:'POST',body:noticeForm});if(r.success){flash('✅ Notice posted');setNoticeForm({title:'',content:'',priority:'normal'});load('notices');}else flash('❌ '+(r.error||'Error'));}}>Post Notice</button>
+          <button className="btn btn-primary" onClick={async()=>{const r=await api('/societies/notices',{method:'POST',body:noticeForm});if(r.success){flash('✅ Notice posted');setNoticeForm({title:'',content:'',priority:'normal'});load('notices');}else flash('❌ '+(r.error||'Error'));}}>Post Notice</button>
         </div>
       )}
       <div className="glass-card">
@@ -1553,8 +1568,8 @@ export default function SocietyPage() {
             </div>
           </div>
           <div style={{display:'flex',gap:'1rem',justifyContent:'center'}}>
-            <button className="btn" style={{padding:'1rem 3rem',fontSize:'1.2rem',fontWeight:900,background:'linear-gradient(135deg,#10b981,#059669)',color:'#fff',borderRadius:'var(--radius)',boxShadow:'0 12px 30px rgba(16,185,129,0.5)'}} onClick={async()=>{await api(`/visitors/${doorbellData.visitorId}/approve`,{method:'PUT'});setDoorbellData(null);flash('✅ Approved');load('visitors');}}>✅ ALLOW ENTRY</button>
-            <button className="btn" style={{padding:'1rem 3rem',fontSize:'1.2rem',fontWeight:900,background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',borderRadius:'var(--radius)',boxShadow:'0 12px 30px rgba(239,68,68,0.5)'}} onClick={async()=>{await api(`/visitors/${doorbellData.visitorId}/decline`,{method:'PUT'});setDoorbellData(null);flash('❌ Declined');load('visitors');}}>❌ DECLINE</button>
+            <button className="btn" style={{padding:'1rem 3rem',fontSize:'1.2rem',fontWeight:900,background:'linear-gradient(135deg,#10b981,#059669)',color:'#fff',borderRadius:'var(--radius)',boxShadow:'0 12px 30px rgba(16,185,129,0.5)'}} onClick={async()=>{const _r=await api(`/visitors/${doorbellData.visitorId}/approve`,{method:'PUT'});if(_r.success===false)flash('❌ '+_r.error);setDoorbellData(null);flash('✅ Approved');load('visitors');}}>✅ ALLOW ENTRY</button>
+            <button className="btn" style={{padding:'1rem 3rem',fontSize:'1.2rem',fontWeight:900,background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',borderRadius:'var(--radius)',boxShadow:'0 12px 30px rgba(239,68,68,0.5)'}} onClick={async()=>{const _r=await api(`/visitors/${doorbellData.visitorId}/decline`,{method:'PUT'});if(_r.success===false)flash('❌ '+_r.error);setDoorbellData(null);flash('❌ Declined');load('visitors');}}>❌ DECLINE</button>
           </div>
           <button style={{marginTop:'1.5rem',background:'transparent',border:'1px solid rgba(255,255,255,0.3)',color:'#fff',padding:'0.5rem 1.5rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'0.85rem'}} onClick={()=>setDoorbellData(null)}>Dismiss</button>
         </div>

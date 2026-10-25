@@ -17,7 +17,7 @@ async function processPendingPayouts() {
       try {
         completedBookings = await query(`
           SELECT * FROM home_service_bookings 
-          WHERE status = 'completed' AND (is_payout_settled = 0 OR is_payout_settled = false OR is_payout_settled IS NULL)
+          WHERE status = 'completed' AND (is_payout_settled = 0 OR is_payout_settled = '0' OR is_payout_settled IS NULL)
           LIMIT $1
         `, [limit]);
       } catch (err) {
@@ -32,12 +32,21 @@ async function processPendingPayouts() {
       for (const b of bookings) {
         try {
           await withTransaction(async (txClient) => {
-            // Mark payout as settled
-            await txClient.query('UPDATE home_service_bookings SET is_payout_settled = 1 WHERE id = $1', [b.id]);
+            // Mark payout as settled — and only go on if this run is the one
+            // that marked it. The row was read outside the transaction, so a
+            // second server instance (or an overlapping run) could be holding
+            // the same booking; without the check both credited the provider.
+            const claimed = await txClient.query(
+              "UPDATE home_service_bookings SET is_payout_settled = 1 WHERE id = $1 AND (is_payout_settled = 0 OR is_payout_settled = '0' OR is_payout_settled IS NULL)",
+              [b.id]
+            );
+            if (!claimed.rowCount) return;
 
-            // Credit technician balance
-            if (b.provider_id) {
-              const fee = parseFloat(b.inspection_fee) || 199;
+            // Credit technician balance: the fee on the booking. It used to be
+            // `inspection_fee || 199` — a booking with no fee recorded paid
+            // the provider ₹199 that nobody had been charged.
+            const fee = parseFloat(b.inspection_fee);
+            if (b.provider_id && Number.isFinite(fee) && fee > 0) {
               await txClient.query(`
                 UPDATE home_service_providers 
                 SET wallet_balance = COALESCE(wallet_balance, 0) + $1 
@@ -56,7 +65,7 @@ async function processPendingPayouts() {
               `, [txId, b.provider_id, fee, 'credit', `Escrow Payout for Service #${b.id || ''}`]);
             }
           });
-          console.log(`[Worker:Payout] Released ₹${b.inspection_fee || 199} escrow to provider ${b.provider_id}`);
+          console.log(`[Worker:Payout] Settled booking ${b.id}: ₹${parseFloat(b.inspection_fee) || 0} to provider ${b.provider_id}`);
         } catch (innerError) {
           console.error(`[Worker:Payout] Error processing payout for booking ${b.id}:`, innerError.message);
           // Mark with error flag or advance to prevent stuck row

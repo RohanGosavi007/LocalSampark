@@ -4,32 +4,6 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 export default function FourWheelerVisitorView({ shop }) {
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>🚘 Live Repair Tracking</Text>
-        <Text style={styles.desc}>Track your car's service status.</Text>
-        
-        <View style={styles.trackerContainer}>
-          <Text style={styles.vehicleName}>Maruti Suzuki Swift (MH-12-AB-1234)</Text>
-          <View style={styles.progressStep}>
-            <Text>✅ Received</Text>
-          </View>
-          <View style={styles.progressStep}>
-            <Text>✅ Inspection</Text>
-          </View>
-          <View style={styles.progressStepActive}>
-            <Text style={styles.activeStepText}>⏳ Repair In Progress</Text>
-            <Text style={styles.subText}>Mechanic: Amit</Text>
-          </View>
-          <View style={styles.progressStepPending}>
-            <Text style={styles.pendingText}>○ Ready for Pickup</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.btnSecondary}>
-          <Text style={styles.btnSecondaryText}>View Job Card & Estimate</Text>
-        </TouchableOpacity>
-      </View>
-
       <View style={styles.cardEmergency}>
         <Text style={styles.cardTitleEmergency}>🚨 Breakdown / Towing Request</Text>
         <Text style={styles.desc}>Stuck on the road? We'll send a tow truck to your GPS location.</Text>

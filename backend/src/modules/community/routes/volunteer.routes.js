@@ -3,6 +3,7 @@ const router = express.Router();
 const { query, withTransaction } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
+const coins = require('../../../services/coins.service');
 
 /**
  * "Shramdaan" — micro-volunteering with SamparkCoin bounties.
@@ -46,47 +47,67 @@ router.get('/tasks', authenticate, async (req, res, next) => {
     }
 });
 
+/**
+ * The bounty economy, as the screen describes it ("attach a coin bounty from
+ * your wallet"; "Mark Completed (Owner/Admin)"):
+ *
+ *   post      the bounty is taken from the poster's coins and held
+ *   claim     anyone but the poster
+ *   complete  the poster (or an administrator) confirms the work was done,
+ *             and the held bounty goes to the volunteer
+ *   cancel    the poster calls off an unclaimed task and gets the bounty back
+ *
+ * The bounty used to be any number the poster typed, taken from nobody, and
+ * paid out when the *volunteer* said the task was done — so posting a task,
+ * claiming it yourself and completing it created coins from nothing.
+ */
 router.post('/post', authenticate, async (req, res, next) => {
     try {
-        const { title, description, bountyCoins, type } = req.body;
+        const { title, description, bountyCoins, type } = req.body || {};
 
         if (!title || !String(title).trim()) {
             return res.status(400).json({ success: false, error: 'title is required' });
         }
 
-        const bounty = Number(bountyCoins) || 0;
-        if (bounty < 0) {
-            return res.status(400).json({ success: false, error: 'bountyCoins cannot be negative' });
+        const bounty = bountyCoins === undefined || bountyCoins === null || bountyCoins === '' ? 0 : Number(bountyCoins);
+        if (!Number.isInteger(bounty) || bounty < 0 || bounty > coins.MAX_AMOUNT) {
+            return res.status(400).json({ success: false, error: 'bountyCoins must be a whole number of coins, 0 or more' });
         }
 
-        await query(
-            `INSERT INTO volunteer_tasks
-                 (poster_id, title, description, bounty_coins, type, status)
-             VALUES ($1, $2, $3, $4, $5, 'open')`,
-            [req.user.id, title, description || '', bounty, type || 'civic_issue']
-        );
+        await withTransaction(async (client) => {
+            const created = await client.query(
+                `INSERT INTO volunteer_tasks
+                     (poster_id, title, description, bounty_coins, type, status)
+                 VALUES ($1, $2, $3, $4, $5, 'open')
+                 RETURNING id`,
+                [req.user.id, String(title).trim().slice(0, 200), String(description || '').slice(0, 2000), bounty, type === 'micro_task' ? 'micro_task' : 'civic_issue']
+            );
+            if (bounty > 0) {
+                await coins.debit({ userId: req.user.id, amount: bounty, reason: 'Shramdaan bounty held', referenceId: `volunteer:${created.rows[0].id}`, client });
+            }
+        });
 
         res.status(201).json({ success: true, message: 'Volunteer task posted' });
     } catch (err) {
-        next(err);
+        if (!coins.sendCoinError(res, err)) next(err);
     }
 });
 
 router.post('/:id/volunteer', authenticate, async (req, res, next) => {
     try {
         // Claim-if-open in a single statement so two volunteers tapping at the
-        // same moment cannot both be assigned.
+        // same moment cannot both be assigned. Not the poster's own task.
         const claimed = await query(
             `UPDATE volunteer_tasks
                 SET status = 'claimed', volunteer_id = $1
-              WHERE id = $2 AND status = 'open'`,
+              WHERE id = $2 AND status = 'open' AND CAST(poster_id AS TEXT) <> CAST($1 AS TEXT)`,
             [req.user.id, req.params.id]
         );
 
         if (!claimed.rowCount) {
             return res.status(409).json({
                 success: false,
-                error: 'This task has already been claimed',
+                error: 'This task is not open to you: it has been claimed, or it is your own',
             });
         }
 
@@ -96,36 +117,33 @@ router.post('/:id/volunteer', authenticate, async (req, res, next) => {
     }
 });
 
+const STAFF = new Set(['admin', 'super_admin', 'moderator']);
+
 router.post('/:id/complete', authenticate, async (req, res, next) => {
     try {
+        const isStaff = STAFF.has(String(req.user.role || '').toLowerCase());
         const outcome = await withTransaction(async (client) => {
+            const task = (await client.query('SELECT * FROM volunteer_tasks WHERE id = $1', [req.params.id])).rows[0];
+            if (!task) return { missing: true };
+            if (!isStaff && String(task.poster_id) !== String(req.user.id)) return { forbidden: true };
+
             const closed = await client.query(
-                `UPDATE volunteer_tasks
-                    SET status = 'completed'
-                  WHERE id = $1 AND volunteer_id = $2 AND status = 'claimed'`,
-                [req.params.id, req.user.id]
+                `UPDATE volunteer_tasks SET status = 'completed' WHERE id = $1 AND status = 'claimed'`,
+                [req.params.id]
             );
             if (!closed.rowCount) return { notClaimed: true };
 
-            const found = await client.query(
-                'SELECT bounty_coins FROM volunteer_tasks WHERE id = $1',
-                [req.params.id]
-            );
-            const bounty = Number((found.rows || [])[0]?.bounty_coins) || 0;
-
+            const volunteerId = task.volunteer_id;
+            const bounty = Number(task.bounty_coins) || 0;
             if (bounty > 0) {
-                await client.query(
-                    `INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description)
-                     VALUES ($1, $2, $3, 'credit', 'Shramdaan task bounty')`,
-                    [crypto.randomUUID(), req.user.id, bounty]
-                );
+                await coins.credit({ userId: volunteerId, amount: bounty, reason: 'Shramdaan task bounty', referenceId: `volunteer:${task.id}`, client });
             }
 
             const tally = await client.query(
                 `SELECT COUNT(*) AS completed
                    FROM volunteer_tasks
                   WHERE volunteer_id = $1 AND status = 'completed'`,
-                [req.user.id]
+                [volunteerId]
             );
             const completed = Number((tally.rows || [])[0]?.completed) || 0;
 
@@ -139,7 +157,7 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
                     `INSERT INTO user_badges (id, user_id, badge_type, badge_name, badge_icon, description, earned_at)
                      VALUES ($1, $2, 'community_hero', 'Community Hero', '🏅',
                              'Completed ${HERO_BADGE_THRESHOLD} Shramdaan tasks', CURRENT_TIMESTAMP)`,
-                    [crypto.randomUUID(), req.user.id]
+                    [crypto.randomUUID(), volunteerId]
                 );
                 badgeEarned = true;
             }
@@ -147,20 +165,45 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
             return { ok: true, bounty, badgeEarned };
         });
 
+        if (outcome.missing) return res.status(404).json({ success: false, error: 'Task not found' });
+        if (outcome.forbidden) {
+            return res.status(403).json({ success: false, error: 'Only the person who posted this task can mark it completed' });
+        }
         if (outcome.notClaimed) {
-            return res.status(409).json({
-                success: false,
-                error: 'Only the volunteer who claimed this task can complete it',
-            });
+            return res.status(409).json({ success: false, error: 'Only a task someone has volunteered for can be completed' });
         }
 
         res.json({
             success: true,
             badgeEarned: outcome.badgeEarned,
             message: outcome.bounty
-                ? `Task completed! ${outcome.bounty} coins credited.`
+                ? `Task completed! ${outcome.bounty} coins paid to the volunteer.`
                 : 'Task completed!',
         });
+    } catch (err) {
+        if (!coins.sendCoinError(res, err)) next(err);
+    }
+});
+
+router.post('/:id/cancel', authenticate, async (req, res, next) => {
+    try {
+        const outcome = await withTransaction(async (client) => {
+            const task = (await client.query('SELECT * FROM volunteer_tasks WHERE id = $1', [req.params.id])).rows[0];
+            if (!task || String(task.poster_id) !== String(req.user.id)) return { missing: true };
+            const closed = await client.query(
+                `UPDATE volunteer_tasks SET status = 'cancelled' WHERE id = $1 AND status = 'open'`,
+                [req.params.id]
+            );
+            if (!closed.rowCount) return { notOpen: true };
+            const bounty = Number(task.bounty_coins) || 0;
+            if (bounty > 0) {
+                await coins.credit({ userId: req.user.id, amount: bounty, reason: 'Shramdaan bounty returned', referenceId: `volunteer:${task.id}`, client });
+            }
+            return { refunded: bounty };
+        });
+        if (outcome.missing) return res.status(404).json({ success: false, error: 'Task not found' });
+        if (outcome.notOpen) return res.status(409).json({ success: false, error: 'Only a task nobody has taken yet can be cancelled' });
+        res.json({ success: true, refundedCoins: outcome.refunded });
     } catch (err) {
         next(err);
     }
@@ -187,8 +230,8 @@ router.post('/register', authenticate, async (req, res, next) => {
             return res.status(400).json({ success: false, error: 'task_id is required' });
         }
         const claimed = await query(
-            `UPDATE volunteer_tasks SET status = 'claimed', volunteer_id = $1
-              WHERE id = $2 AND status = 'open'`,
+                        `UPDATE volunteer_tasks SET status = 'claimed', volunteer_id = $1
+              WHERE id = $2 AND status = 'open' AND CAST(poster_id AS TEXT) <> CAST($1 AS TEXT)`,
             [req.user.id, taskId]
         );
         if (!claimed.rowCount) {

@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+const cron = require('../utils/cron');
 const { query, queryMany } = require('../config/database');
 const billingService = require('../modules/community/services/billing-engine.service');
 
@@ -23,13 +23,13 @@ cron.schedule('0 0 * * *', async () => {
                 // Upsert to penalty ledger
                 const existing = await query('SELECT id FROM society_penalty_ledger WHERE bill_id = $1', [bill.id]);
                 if (existing.rows && existing.rows.length > 0) {
-                    await query('UPDATE society_penalty_ledger SET penalty_amount = $1 WHERE bill_id = $2', [penalty, bill.id]);
+                    await query('UPDATE society_penalty_ledger SET penalty_amount = $1, amount = $1 WHERE bill_id = $2', [penalty, bill.id]);
                 } else {
                     const id = require('uuid').v4();
                     await query(
                         `INSERT INTO society_penalty_ledger 
-                        (id, society_id, bill_id, flat_number, principal_overdue, interest_rate, days_overdue, penalty_amount) 
-                        VALUES ($1, $2, $3, $4, (SELECT (total_amount - paid_amount) FROM society_maintenance_bills WHERE id = $5), 18, 1, $6)`,
+                        (id, society_id, bill_id, flat_number, amount, principal_overdue, interest_rate, days_overdue, penalty_amount)
+                        VALUES ($1, $2, $3, $4, $6, (SELECT (total_amount - paid_amount) FROM society_maintenance_bills WHERE id = $5), 18, 1, $6)`,
                         [id, bill.society_id, bill.id, bill.flat_number, bill.id, penalty]
                     );
                 }

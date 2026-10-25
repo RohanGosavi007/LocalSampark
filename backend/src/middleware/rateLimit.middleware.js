@@ -81,16 +81,78 @@ const authLimiter = rateLimit({
   }
 });
 
-// Strict limiter for payment endpoints
+// Outside production the payment limits are raised out of the way, as the auth
+// limit above is: a test run or a developer clicking through checkout makes
+// more payment calls in a minute than a customer does in a day.
+const paymentMax = (productionMax) => (process.env.NODE_ENV === 'production' ? productionMax : 1000);
+
+const isWebhookPath = (req) => /\/webhooks?(\/|$)/.test(req.originalUrl || req.url || '');
+
+// Per-address limiter for the payment mounts (/payments, /wallet, /checkout).
+//
+// It counts attempts to move money, not everything under those mounts:
+//   - reads are skipped. /wallet/history is mounted here, and counting it
+//     meant opening the wallet screen twenty times stopped a customer paying;
+//   - gateway webhooks are skipped. Razorpay delivers from a handful of
+//     addresses, so a per-address limit of 20 would have dropped the
+//     twenty-first confirmation in a quarter of an hour — a paid order left
+//     unpaid here. Webhooks are authenticated by signature instead.
+// The ceiling is per address, and many customers share one (a housing
+// society's Wi-Fi, a mobile carrier's NAT), so it is a coarse flood guard; the
+// per-account limit below is the one that bounds a single customer.
 const paymentLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: paymentMax(100),
   message: { error: 'Too many payment requests. Please try again later.' },
+    // …and nor is a price quote, which a cart asks for every time it changes.
+  skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method) || isWebhookPath(req) || /\/quote\/?$/.test(req.path),
   store: getStore('rl:pay:'),
   handler: (req, res, next, options) => {
     logger.warn(`[RATE LIMIT] Payment limit hit: ${req.ip} | Path: ${req.path}`);
     res.status(options.statusCode).send(options.message);
   }
+});
+
+// Per-account limiter for starting and confirming a payment. Goes after
+// authenticate(), which is what makes req.user available to key on.
+const paymentAttemptLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: paymentMax(20),
+  message: { success: false, error: 'Too many payment attempts. Please try again later.' },
+  keyGenerator: (req, res) => (req.user && req.user.id ? `user:${req.user.id}` : ipKeyGenerator(req, res)),
+  store: getStore('rl:payuser:'),
+  handler: (req, res, next, options) => {
+    logger.warn(`[RATE LIMIT] Payment attempt limit hit: user ${req.user && req.user.id} | Path: ${req.path}`);
+    res.status(options.statusCode).send(options.message);
+  }
+});
+
+// Per-account limiter for placing an order. After authenticate().
+//
+// checkout.routes.js had its own: ten per address per quarter of an hour,
+// applied before authentication. Ten is a fair ceiling for one customer and far
+// too low for one address — a housing society behind a single router is one
+// address — so it is keyed by account here.
+const orderPlacementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: paymentMax(10),
+  message: { success: false, error: 'Too many checkout attempts. Please try again later.' },
+  keyGenerator: (req, res) => (req.user && req.user.id ? `user:${req.user.id}` : ipKeyGenerator(req, res)),
+  store: getStore('rl:order:'),
+});
+
+// Attempts at a delivery handover code, per rider and job. After
+// authenticate(). Five wrong guesses at a four-digit code is 0.05% of the
+// space; without a limit the general API limit allowed all ten thousand in
+// under ninety minutes.
+const handoverCodeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
+  message: { success: false, error: 'Too many attempts at the handover code. Please wait and try again.' },
+  keyGenerator: (req, res) => `${req.user && req.user.id ? req.user.id : ipKeyGenerator(req, res)}:${req.params.jobId || ''}`,
+  // A correct code is not an attempt to guess one.
+  skipSuccessfulRequests: true,
+  store: getStore('rl:handover:'),
 });
 
 // Strict limiter for upload endpoints
@@ -126,7 +188,10 @@ module.exports = {
   rateLimiter,
   roleBasedRateLimiter,
   authLimiter,
-  paymentLimiter,
+    paymentLimiter,
+    paymentAttemptLimiter,
+    orderPlacementLimiter,
+  handoverCodeLimiter,
   uploadLimiter,
   adminLimiter,
   ddosProtector

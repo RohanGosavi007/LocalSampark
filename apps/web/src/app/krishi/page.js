@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import MandiTicker from '../components/MandiTicker';
 import { useLanguage } from '../components/LanguageToggle';
 import { RURAL_CATEGORIES, TOP_FEATURES } from '../data/rural-services';
 import { motion } from 'framer-motion';
@@ -27,7 +26,6 @@ export default function KrishiPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <MandiTicker />
       
       <main className="flex-1 overflow-hidden">
         {/* Rural Hero Section */}

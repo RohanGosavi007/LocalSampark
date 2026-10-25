@@ -2,31 +2,30 @@
 import React, { useState, useEffect } from 'react';
 import { Headset, CheckCircle, Clock, Search, Settings, Filter, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { API_BASE } from '@/lib/api';
+import { adminGet, adminPost, adminPut } from '@/lib/api';
 
 export default function SupportDashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDomain, setFilterDomain] = useState('all');
+  const [search, setSearch] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
-  const [autoReplyMessage, setAutoReplyMessage] = useState('Thank you for reaching out. A support agent will review your ticket shortly.');
+  const [autoReplyMessage, setAutoReplyMessage] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('admin_token');
-      // In a real app we would fetch the auto-reply config via a separate endpoint
-      // Mocking auto-reply state load for UI demo
-      
-      const res = await fetch(API_BASE + '/admin/support/tickets', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setTickets(data.data);
+      const [tix, auto] = await Promise.all([
+        adminGet('/admin/support/tickets'),
+        adminGet('/admin/support/auto-reply'),
+      ]);
+      setTickets(tix.data || []);
+      if (auto.data) {
+        setAutoReplyEnabled(Boolean(auto.data.enabled));
+        setAutoReplyMessage(auto.data.message || '');
       }
     } catch (err) {
-      toast.error('Failed to load tickets');
+      toast.error(err.message || 'Failed to load tickets');
     } finally {
       setLoading(false);
     }
@@ -39,18 +38,10 @@ export default function SupportDashboard() {
   const saveAutoReply = async () => {
     setSavingSettings(true);
     try {
-      const token = localStorage.getItem('admin_token');
-      const res = await fetch(API_BASE + '/admin/support/auto-reply', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: autoReplyEnabled, message: autoReplyMessage })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message);
-      }
+      const data = await adminPost('/admin/support/auto-reply', { enabled: autoReplyEnabled, message: autoReplyMessage });
+      toast.success(data.message || 'Saved');
     } catch (err) {
-      toast.error('Failed to save settings');
+      toast.error(err.message || 'Failed to save settings');
     } finally {
       setSavingSettings(false);
     }
@@ -58,23 +49,18 @@ export default function SupportDashboard() {
 
   const updateTicketStatus = async (id, status) => {
     try {
-      const token = localStorage.getItem('admin_token');
-      const res = await fetch(`${API_BASE}/admin/support/tickets/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message);
-        fetchData();
-      }
+      const data = await adminPut(`/admin/support/tickets/${id}/status`, { status });
+      toast.success(data.message || 'Updated');
+      fetchData();
     } catch (err) {
-      toast.error('Failed to update ticket');
+      toast.error(err.message || 'Failed to update ticket');
     }
   };
 
-  const filteredTickets = tickets.filter(t => filterDomain === 'all' || t.domain === filterDomain);
+  const domains = [...new Set(tickets.map((t) => t.domain).filter(Boolean))].sort();
+  const needle = search.trim().toLowerCase();
+  const filteredTickets = tickets.filter(t => (filterDomain === 'all' || t.domain === filterDomain)
+    && (!needle || `${t.subject || ''} ${t.description || ''}`.toLowerCase().includes(needle)));
 
   return (
     <div className="max-w-7xl mx-auto pb-12 space-y-8">
@@ -95,7 +81,7 @@ export default function SupportDashboard() {
           <div className="flex gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
-              <input type="text" placeholder="Search tickets..." className="w-full pl-9 pr-4 py-2 rounded-xl border outline-none text-sm bg-transparent" style={{ borderColor: 'var(--border-color)', color: 'var(--text-main)' }}/>
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tickets..." className="w-full pl-9 pr-4 py-2 rounded-xl border outline-none text-sm bg-transparent" style={{ borderColor: 'var(--border-color)', color: 'var(--text-main)' }}/>
             </div>
             <div className="relative w-48">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
@@ -105,9 +91,7 @@ export default function SupportDashboard() {
                 className="w-full pl-9 pr-4 py-2 rounded-xl border outline-none text-sm appearance-none bg-transparent" style={{ borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
               >
                 <option value="all">All Domains</option>
-                <option value="ecommerce">Local Shops</option>
-                <option value="mobility">Riders</option>
-                <option value="general">General App</option>
+                {domains.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
           </div>

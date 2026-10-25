@@ -4,25 +4,25 @@ const { query, queryOne, withTransaction } = require('../../../config/database')
 const { authenticate, enforceMultiTenancy, requireAdmin } = require('../../../middleware/auth.middleware');
 const crypto = require('crypto');
 const PaymentGatewayEngine = require('../../../services/payment.gateway');
+const { rawBodyOf } = require('../../../utils/webhookSignature');
+const payments = require('../../../services/payments.service');
+const { sendPaymentError } = require('../../payments/routes/razorpay.routes');
 
 // GET /plans - List available SaaS tiers (Public/Authenticated)
 router.get('/plans', async (req, res, next) => {
   try {
     let plans;
     try {
-      const res = await query('SELECT * FROM saas_plans WHERE is_active = true OR is_active = true');
+      const res = await query('SELECT * FROM saas_plans WHERE is_active = \'1\' OR is_active = \'1\'');
       plans = res.rows || res || [];
     } catch (e) {
       plans = [];
     }
     
-    if (!plans.length) {
-      plans = [
-        { id: 'plan_basic', name: 'Starter Merchant', price_monthly: 499, features_json: '["Up to 50 products","Standard Analytics","Basic Support"]' },
-        { id: 'plan_growth', name: 'Growth Business', price_monthly: 999, features_json: '["Unlimited products","Real-time Analytics","Marketing Campaigns","Priority Support"]' },
-        { id: 'plan_enterprise', name: 'Enterprise Super-Shop', price_monthly: 1999, features_json: '["Multi-location Management","Custom Domain","Dedicated Account Manager","AI Insights"]' }
-      ];
-    }
+        // An empty table used to be answered with three invented plans — "Starter
+    // Merchant" at ₹499 and so on — that existed nowhere else: choosing one
+    // and subscribing answered "Plan not found". The plans on sale are the
+    // rows in saas_plans (seeds/run.js creates the standard two).
     res.json({ success: true, plans });
   } catch (err) {
     next(err);
@@ -46,25 +46,62 @@ router.get('/my-subscription', authenticate, enforceMultiTenancy, async (req, re
   }
 });
 
-// POST /subscribe - Initiate subscription checkout
+/**
+ * POST /subscribe — buy 30 days of a plan for the caller's shop.
+ *
+ * This "mocked checkout session generation": it invented a gateway
+ * subscription id, stored a pending subscription against it and answered
+ * "Proceed to payment gateway" — with nothing to proceed to. The only thing
+ * that could ever activate the subscription was a webhook naming that
+ * invented id.
+ *
+ * It is now a payment like any other. The pending subscription is the thing
+ * being paid for; payments.service opens a Razorpay order for the plan's
+ * monthly price, and when that payment is verified (by POST
+ * /payments/razorpay/verify or the Razorpay webhook) the subscription becomes
+ * active for 30 days and the shop moves to the premium tier. Renewal is the
+ * same call again. Without Razorpay keys it answers 503 and stores nothing.
+ */
 router.post('/subscribe', authenticate, enforceMultiTenancy, async (req, res, next) => {
   try {
-    const { planId } = req.body;
+    const { planId } = req.body || {};
     if (!planId) return res.status(400).json({ error: 'planId is required' });
+    // Admins pass the tenancy check without a shop of their own.
+    if (!req.shopId) return res.status(400).json({ error: 'A subscription is bought by the shop it is for.' });
 
-    const plan = await queryOne('SELECT * FROM saas_plans WHERE id = $1 AND is_active = true', [planId]);
+    const plan = await queryOne('SELECT * FROM saas_plans WHERE id = $1 AND is_active = \'1\'', [planId]);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    if (!(Number(plan.price_monthly) >= 1)) {
+      return res.status(400).json({ error: 'This plan is free and needs no subscription.' });
+    }
+    if (!payments.onlinePaymentAvailable()) {
+      return res.status(503).json({
+        success: false,
+        code: 'PAYMENTS_UNAVAILABLE',
+        error: 'Online payment is not available right now.',
+      });
+    }
 
-    // Mocking Razorpay/Stripe Checkout Session Generation
-    const mockGatewayId = `sub_${crypto.randomUUID().replace(/-/g, '').substring(0, 14)}`;
-
-    await query('INSERT INTO vendor_subscriptions (id, shop_id, plan_id, status, gateway_subscription_id) VALUES ($1, $2, $3, $4, $5)',
-      [crypto.randomUUID(), req.shopId, planId, 'pending', mockGatewayId]
+    // One open request per shop and plan: pressing Subscribe twice pays once.
+    let subscription = await queryOne(
+      "SELECT id FROM vendor_subscriptions WHERE shop_id = $1 AND plan_id = $2 AND status = 'pending' ORDER BY created_at DESC LIMIT 1",
+      [req.shopId, planId]
     );
+    if (!subscription) {
+      subscription = { id: crypto.randomUUID() };
+      await query(
+        'INSERT INTO vendor_subscriptions (id, shop_id, plan_id, status) VALUES ($1, $2, $3, $4)',
+        [subscription.id, req.shopId, planId, 'pending']
+      );
+    }
 
-    res.json({ success: true, gateway_subscription_id: mockGatewayId, message: 'Proceed to payment gateway' });
+    const payment = await payments.createPayment({
+      user: req.user, purpose: 'saas_subscription', referenceId: subscription.id,
+    });
+
+    res.status(201).json({ success: true, subscriptionId: subscription.id, plan: { id: plan.id, name: plan.name, price_monthly: Number(plan.price_monthly) }, payment });
   } catch (err) {
-    next(err);
+    sendPaymentError(res, err, next);
   }
 });
 
@@ -87,7 +124,13 @@ router.post('/webhook/billing', express.raw({ type: 'application/json' }), async
       return res.status(503).json({ error: 'Webhook signature verification unavailable' });
     }
 
-    const rawPayload = req.body.toString('utf8');
+    // Not req.body.toString(): by the time this runs the app's JSON parser has
+    // turned the body into an object, whose toString() is "[object Object]", so
+    // no genuine delivery could ever verify.
+    const rawPayload = rawBodyOf(req);
+    if (rawPayload === null) {
+      return res.status(400).json({ error: 'Raw webhook body unavailable' });
+    }
     const isValid = PaymentGatewayEngine.verifyWebhookSignature('razorpay', rawPayload, signature, secret);
     
     if (!isValid) {

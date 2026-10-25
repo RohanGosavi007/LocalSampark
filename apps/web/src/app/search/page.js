@@ -3,8 +3,8 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import ShareWidget from '../../components/ShareWidget';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Star, Megaphone, ShoppingCart } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
+import { Star } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 function GlobalSearchPageInner() {
   const router = useRouter();
@@ -15,12 +15,6 @@ function GlobalSearchPageInner() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // Need context to dispatch cart adds
-  const { dispatch } = useCart() || { dispatch: () => {} };
-
-  // Mock Ad Engine Response
-  const [sponsoredProducts, setSponsoredProducts] = useState([]);
-
   useEffect(() => {
     if (initialQuery) {
       handleSearch(initialQuery);
@@ -30,19 +24,9 @@ function GlobalSearchPageInner() {
   const handleSearch = async (searchQuery) => {
     if (!searchQuery.trim()) return;
     
-    // Simulate Ad Engine Matching
-    const lowerQ = searchQuery.toLowerCase();
-    if (lowerQ.includes('milk') || lowerQ.includes('dairy')) {
-      setSponsoredProducts([{ id: 'AD1', name: 'Amul Taaza Toned Milk 1L', price: 68, shop: 'Balaji SuperMart' }]);
-    } else if (lowerQ.includes('bread') || lowerQ.includes('bakery')) {
-      setSponsoredProducts([{ id: 'AD2', name: 'Premium Multigrain Bread', price: 55, shop: 'Pune Baking Co.' }]);
-    } else {
-      setSponsoredProducts([{ id: 'AD3', name: 'Aashirvaad Atta 5kg', price: 210, shop: 'Green Grocers' }]);
-    }
-
     try {
       setLoading(true);
-      const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const BACKEND_URL = API_URL;
       const res = await fetch(`${BACKEND_URL}/api/v1/shops/search?q=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       if (data.success) {
@@ -84,39 +68,6 @@ function GlobalSearchPageInner() {
         ) : (
           <div className="space-y-8">
             
-            {/* Sponsored Retail Media Ad Block */}
-            {sponsoredProducts.length > 0 && query && (
-              <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Megaphone className="text-blue-400 w-5 h-5" />
-                  <h3 className="text-blue-100 font-bold">Sponsored Products</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {sponsoredProducts.map(p => (
-                    <div key={p.id} className="bg-card-bg border border-border rounded-xl p-4 flex flex-col hover:border-blue-500 transition-colors">
-                      <div className="bg-blue-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded self-start mb-2">Ad</div>
-                      <h4 className="font-bold text-text mb-1 line-clamp-1">{p.name}</h4>
-                      <p className="text-xs text-text-muted mb-3">{p.shop}</p>
-                      <div className="mt-auto flex items-center justify-between">
-                        <span className="font-black text-lg text-blue-400">₹{p.price}</span>
-                        <button 
-                          onClick={() => {
-                            if (dispatch) {
-                              dispatch({ type: 'ADD_ITEM', payload: { ...p, quantity: 1 } });
-                              alert(`${p.name} added to cart from Sponsored Ad!`);
-                            }
-                          }}
-                          className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition-colors"
-                        >
-                          <ShoppingCart size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {results.length > 0 ? (
               <div className="space-y-4">
                 <h2 className="text-xl font-bold text-text-muted mb-6">Found {results.length} local shops</h2>
@@ -126,14 +77,14 @@ function GlobalSearchPageInner() {
                 className={`bg-card-bg border p-6 rounded-xl flex gap-6 transition-colors ${shop.is_promoted ? 'border-yellow-500/50 hover:border-yellow-400 bg-yellow-500/5' : 'border-border hover:border-blue-500'}`}
               >
                 <div
-                    onClick={() => router.push(`/shop/${shop.id}`)}
+                    onClick={() => router.push(`/shops/${shop.id}`)}
                     className="w-24 h-24 bg-background-alt rounded-lg flex items-center justify-center text-3xl shrink-0 cursor-pointer"
                 >
                   🏪
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
-                    <div onClick={() => router.push(`/shop/${shop.id}`)} className="cursor-pointer">
+                    <div onClick={() => router.push(`/shops/${shop.id}`)} className="cursor-pointer">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-bold text-text hover:text-blue-400">{shop.name}</h3>
                         {shop.is_promoted ? (

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useRouter } from 'next/navigation';
-import { API_BASE } from '../../lib/api';
+import { API_BASE, getAuthHeaders, fetchJson } from '../../lib/api';
 export default function SettingsPage() {
     const { admin, loading } = useAdminAuth();
     const router = useRouter();
@@ -19,8 +19,7 @@ export default function SettingsPage() {
 
     const fetchTheme = async () => {
         try {
-            const res = await fetch(`${API_BASE}/settings/theme`);
-            const data = await res.json();
+            const data = await fetchJson(`${API_BASE}/settings/theme`);
             if (data.success && data.theme) {
                 setTheme(data.theme);
             }
@@ -32,23 +31,14 @@ export default function SettingsPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${API_BASE}/settings/theme`, {
+            const data = await fetchJson(`${API_BASE}/settings/theme`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ theme })
             });
-            const data = await res.json();
-            if (data.success) {
-                alert('Theme updated successfully! The changes will reflect across all apps.');
-            } else {
-                alert('Error updating theme: ' + data.message);
-            }
+            alert(data.success ? 'Theme updated successfully! The changes will reflect across all apps.' : 'The theme was not saved.');
         } catch (err) {
-            alert('Failed to update theme.');
+            alert('Theme not saved: ' + (err.message || 'request failed'));
             console.error(err);
         } finally {
             setIsSaving(false);

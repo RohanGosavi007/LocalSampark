@@ -17,10 +17,12 @@ const RideItem = memo(({ item }) => (
             <Text style={s.s7}>{item.driver}</Text>
             {item.isVerified && <ShieldCheck size={14} color="#3b82f6" />}
           </View>
-          <View style={s.s8}>
-            <Star size={12} color="#fbbf24" fill="#fbbf24" />
-            <Text style={s.s9}>{item.rating}</Text>
-          </View>
+          {item.rating != null && (
+            <View style={s.s8}>
+              <Star size={12} color="#fbbf24" fill="#fbbf24" />
+              <Text style={s.s9}>{item.rating}</Text>
+            </View>
+          )}
         </View>
       </View>
       <Text style={s.s10}>₹{item.price}</Text>
@@ -94,8 +96,8 @@ export default function FindRide() {
             time: r.departure_time || '09:00 AM',
             price: r.seat_price || r.price,
             seats: r.available_seats || r.seats,
-            rating: 4.9,
-            isVerified: true,
+            rating: r.driver_rating && r.driver_rating.avg ? r.driver_rating.avg : null,
+            isVerified: Boolean(r.driver_verified),
             isEV: Boolean(r.is_ev),
             isWomenOnly: Boolean(r.is_women_only)
           })));
@@ -103,15 +105,11 @@ export default function FindRide() {
           return;
         }
       } catch (e) {
-        console.warn('Carpool API offline, falling back to mock dataset:', e.message);
+        // An outage is shown as an outage; it used to be papered over with four invented rides
+        // ("Rahul S.", "Priya M."…) that a rider could try to book.
+        console.warn('Carpool API unavailable:', e.message);
       }
-
-      setRides([
-        { id: '1', driver: 'Rahul S.', from: 'Hinjewadi Phase 1', to: 'Pune Station', time: '09:00 AM', price: 60, seats: 2, rating: 4.8, isVerified: true, isEV: false, isWomenOnly: false },
-        { id: '2', driver: 'Priya M.', from: 'Wakad', to: 'Viman Nagar', time: '10:30 AM', price: 120, seats: 3, rating: 4.9, isVerified: true, isEV: true, isWomenOnly: true },
-        { id: '3', driver: 'Amit K.', from: 'Baner', to: 'Magarpatta', time: '08:45 AM', price: 90, seats: 1, rating: 5.0, isVerified: true, isEV: false, isWomenOnly: false },
-        { id: '4', driver: 'Sneha P.', from: 'Kothrud', to: 'Kharadi', time: '11:00 AM', price: 150, seats: 2, rating: 4.7, isVerified: true, isEV: true, isWomenOnly: true },
-      ]);
+      setRides([]);
       setLoading(false);
     }
     loadRides();
