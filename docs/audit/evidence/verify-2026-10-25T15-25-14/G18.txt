@@ -1,0 +1,1160 @@
+=== Feature Verification Summary ===
+Total Launch Features: 53
+Verified: 0
+Code Complete: 4
+In Progress: 49
+Not Started: 0
+
+Discrepancies (28):
+[
+  {
+    "id": "C5",
+    "title": "Catalog Search",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: C5 Full-Text Search Engine [C5.1] returns query_too_short for single character query",
+      "api/postgres: C5 Full-Text Search Engine [C5.2] finds shop by exact or partial name in Dhanori",
+      "api/postgres: C5 Full-Text Search Engine [C5.3] finds shop by category or description keywords",
+      "api/postgres: C5 Full-Text Search Engine [C5.4] filters results by categorySlug when specified"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C6",
+    "title": "Cart Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: C6 Server-Side Multi-Shop Cart & D6 Per-Shop Grouping [C6.1] adds items to guest cart with inventory validation",
+      "api/postgres: C6 Server-Side Multi-Shop Cart & D6 Per-Shop Grouping [C6.2] multi-shop cart groups items by shop with min order & delivery fees (D6)",
+      "api/postgres: C6 Server-Side Multi-Shop Cart & D6 Per-Shop Grouping [C6.3] merges guest cart into user account on login",
+      "api/postgres: C6 Server-Side Multi-Shop Cart & D6 Per-Shop Grouping [C6.4] clears cart when requested"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C7",
+    "title": "Database-Backed Coupon Engine",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: C7 Coupon Engine [C7.1] validates fixed discount coupon successfully",
+      "api/postgres: C7 Coupon Engine [C7.2] rejects coupon when minimum order value is not met",
+      "api/postgres: C7 Coupon Engine [C7.3] calculates percentage discount and caps at max_discount_amount",
+      "api/postgres: C7 Coupon Engine [C7.4] rejects unknown or invalid coupon code",
+      "api/postgres: C7 Coupon Engine [C7.5] atomically redeems coupon and increments current_uses",
+      "api/postgres: C7 Coupon Engine [C7.6] POST /orders/validate-coupon endpoint returns validated coupon"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C9",
+    "title": "Order Management & Tracking",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: S2 Product Variants & C9/N7 GST Tax Invoice Generation [C9.1] generates order tax invoice with GST & FSSAI details",
+      "api/postgres: S2 Product Variants & C9/N7 GST Tax Invoice Generation [C9.2] streams generated GST tax invoice PDF"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C10",
+    "title": "Returns & Refunds",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C10 / S5: Real-Time Delivery Tracking & Milestones [C10.1] should reject unauthenticated tracking requests with 401",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C10 / S5: Real-Time Delivery Tracking & Milestones [C10.2] should reject unauthorized user attempting to track another user order with 403",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C10 / S5: Real-Time Delivery Tracking & Milestones [C10.3] should return live tracking with milestones, rider GPS fix, and ETA for customer",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C10 / S5: Real-Time Delivery Tracking & Milestones [C10.4] should support legacy /tracking/:orderId endpoint with identical payload"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C11",
+    "title": "Verified Reviews & Ratings",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.1] should reject return request on an active non-delivered order with 400",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.2] should reject return request when window has expired (>48h for bakery) with 400",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.3] should successfully submit return request for delivered COD order within 48h",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.4] should submit return request for delivered Online order",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.5] should prevent duplicate return submission on the same order",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.6] should restrict pending-review queue from regular shoppers with 403",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.7] should allow Territory Admin to inspect pending returns review queue",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.8] should execute hybrid refund: COD order approved by Territory Admin credits wallet balance",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C11 / S6: Returns & Multi-Tier Refund Approval [C11.9] should execute hybrid refund: Online order approved by Super Admin triggers gateway refund"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C13",
+    "title": "Notification System",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C13 / N7: GST Section 31 Tax Invoice Download [C13.1] should reject invoice download from unauthorized caller with 403",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C13 / N7: GST Section 31 Tax Invoice Download [C13.2] should return structured JSON invoice with GSTIN & FSSAI details for customer",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C13 / N7: GST Section 31 Tax Invoice Download [C13.3] should stream valid A4 PDF tax invoice with correct Content-Type"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C14",
+    "title": "Support & Grievance Redressal",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C14: In-App Support & Statutory Grievance Redressal [C14.1] should expose public statutory Grievance Officer details under 2020 Rules",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C14: In-App Support & Statutory Grievance Redressal [C14.2] should register statutory grievance linked to order with 48h acknowledgement SLA",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C14: In-App Support & Statutory Grievance Redressal [C14.3] should inspect ticket details and verify 30-day statutory resolution countdown",
+      "api/postgres: Milestone M5: After-Order Experience (C10–C14, S5–S7) C14: In-App Support & Statutory Grievance Redressal [C14.4] should submit support ticket directly through order endpoint /orders/:id/support"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S1",
+    "title": "Seller Onboarding & KYC",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S1.1] Seller KYC Submission, Storage Isolation & Admin Review submits KYC documents for review and saves statutory details",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S1.1] Seller KYC Submission, Storage Isolation & Admin Review retrieves KYC record with short-lived signed URLs for private docs",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S1.1] Seller KYC Submission, Storage Isolation & Admin Review allows admin to request resubmission with a mandatory reason",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S1.1] Seller KYC Submission, Storage Isolation & Admin Review allows admin to verify KYC and automatically activate the shop"
+    ],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S2",
+    "title": "Seller Catalog & Inventory Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S2.1] Catalog Inventory Availability & Low-Stock Alerts updates product availability toggle and inventory count",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S2.1] Catalog Inventory Availability & Low-Stock Alerts identifies products below low-stock threshold",
+      "api/postgres: S2 Product Variants & C9/N7 GST Tax Invoice Generation [S2.1] creates product variant with price modifier and inventory",
+      "api/postgres: S2 Product Variants & C9/N7 GST Tax Invoice Generation [S2.2] gets all variants for a product",
+      "api/postgres: S2 Product Variants & C9/N7 GST Tax Invoice Generation [S2.3] updates product variant modifier and inventory count",
+      "api/postgres: S2 Product Variants & C9/N7 GST Tax Invoice Generation [S2.4] deletes product variant"
+    ],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S3",
+    "title": "Seller Order Operations & Kitchen Display",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S3.1] Kitchen Display Order Acceptance & Rejection rejects order rejection when mandatory reason is missing",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S3.1] Kitchen Display Order Acceptance & Rejection accepts incoming order from kitchen display (pending -> confirmed)",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S3.1] Kitchen Display Order Acceptance & Rejection rejects order with reason when item runs out of stock (confirmed -> cancelled)",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S3.2] 80mm ESC/POS Monospace Thermal Packing Slip Generation generates 80mm monospace thermal slip text",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S3.2] 80mm ESC/POS Monospace Thermal Packing Slip Generation generates structured JSON packing slip when requested"
+    ],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S4",
+    "title": "Seller Financials & Payouts",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S4.1] Seller Financials, 0% Commission & Settlement Statement verifies 0% platform commission default in platform configuration",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S4.1] Seller Financials, 0% Commission & Settlement Statement generates daily settlement statement with 0% launch commission breakdown",
+      "api/postgres: Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4) [S4.1] Seller Financials, 0% Commission & Settlement Statement exports downloadable CSV settlement statement"
+    ],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A1",
+    "title": "Admin Commerce KPI Dashboard",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A1: Admin Commerce KPI Dashboard [A1.1] should return live aggregated commerce operational metrics"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A2",
+    "title": "Admin Seller & KYC Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A2: Store & Seller Governance [A2.1] should list registered shops with approval status",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A2: Store & Seller Governance [A2.2] should reject emergency suspension without a mandatory reason",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A2: Store & Seller Governance [A2.3] should execute emergency store suspension kill-switch with reason and log audit trail"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A3",
+    "title": "Admin Catalog Moderation & Categories",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A3: Catalog Moderation & Categories [A3.1] should perform category taxonomy CRUD operations",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A3: Catalog Moderation & Categories [A3.2] should flag restricted goods in product moderation queue",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A3: Catalog Moderation & Categories [A3.3] should allow admin to moderate product status"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A4",
+    "title": "Admin Order Operations & Interventions",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A4: Order Operations & Interventions [A4.1] should search orders across filters and return results",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A4: Order Operations & Interventions [A4.2] should retrieve full chronological order timeline and details",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A4: Order Operations & Interventions [A4.3] should allow emergency force-cancellation with mandatory reason",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A4: Order Operations & Interventions [A4.4] should issue manual administrative refund to customer wallet",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A4: Order Operations & Interventions [A4.5] should list operational SLA breaches"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A5",
+    "title": "Admin Returns & Dispute Queue",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A5: Returns & Dispute Resolution Queue [A5.1] should list open customer disputes",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A5: Returns & Dispute Resolution Queue [A5.2] should resolve dispute with customer refund and update status"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A6",
+    "title": "Admin Payouts & Commission Configuration",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A6: Payouts & Commission Configuration [A6.1] should verify 0% default commission and allow admin updates",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A6: Payouts & Commission Configuration [A6.2] should allow setting shop-specific commission rate overrides"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A7",
+    "title": "Admin Promotions, Campaigns & CMS",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A7: Promotions, Coupons & Banner CMS [A7.1] should create platform-wide coupon",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A7: Promotions, Coupons & Banner CMS [A7.2] should create and list promotional banners"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A8",
+    "title": "Admin RBAC & Immutable Audit Log",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A8: RBAC & Route Protection [A8.1] should reject unauthenticated requests with 401",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A8: RBAC & Route Protection [A8.2] should reject non-admin regular users with 403 Forbidden",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A8: Immutable Audit Logging [A8.3] should retrieve immutable administrative audit log records"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A9",
+    "title": "Admin Serviceability Zones",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A9: Serviceability Zones [A9.1] should list delivery serviceability zones and toggle active status",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A9: Serviceability Zones [A9.2] should retrieve unserviceable waitlist inquiries"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A10",
+    "title": "Admin Delivery Fleet & Cash Reconciliation",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A10: Delivery Fleet & Cash Reconciliation [A10.1] should return live fleet monitor status and locations",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A10: Delivery Fleet & Cash Reconciliation [A10.2] should report fleet cash-in-hand summary and threshold adherence"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A11",
+    "title": "Admin Grievance & Support Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A11: Grievance & Support Management (Hybrid) [A11.1] should list statutory grievances with 48h acknowledgement SLA status",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A11: Grievance & Support Management (Hybrid) [A11.2] should record statutory acknowledgement and update status"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A12",
+    "title": "Admin Feature Flags & Vertical Kill Switches",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A12: Feature Flags & Vertical Kill Switches [A12.1] should retrieve feature flags and support atomic administrative updates"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api",
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A13",
+    "title": "Admin Financial & Tax Report Exports",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A13: Financial & Tax Report Exports (Dual Format) [A13.1] should export standard orders CSV report",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A13: Financial & Tax Report Exports (Dual Format) [A13.2] should export statutory GST Section 52 TCS 1% CA audit report"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A14",
+    "title": "Admin Broadcast Notifications",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A14: Broadcast Notifications [A14.1] should reject broadcast without mandatory title and body",
+      "api/postgres: Milestone M4.3: Admin Commerce Ops Hub (A1–A14) A14: Broadcast Notifications [A14.2] should queue geo-targeted broadcast announcement and record audit log"
+    ],
+    "missingPlatforms": [
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P3",
+    "title": "Double-Entry Financial Ledger",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: P3 Double-Entry Platform Payments Ledger [P3.1] rejects imbalanced transactions",
+      "api/postgres: P3 Double-Entry Platform Payments Ledger [P3.2] records balanced transaction and updates balance",
+      "api/postgres: P3 Double-Entry Platform Payments Ledger [P3.3] records order payment with 0% launch commission and delivery fee",
+      "api/postgres: P3 Double-Entry Platform Payments Ledger [P3.4] records order refund and debits seller payable",
+      "api/postgres: P3 Double-Entry Platform Payments Ledger [P3.5] account statement reproduces chronological history and entries"
+    ],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P8",
+    "title": "Observability & Health Checks",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [
+      "api/postgres: Milestone M8 — Health & Readiness Probes (P8 Observability) [P8.1] GET /health returns 200 and operational liveness metadata",
+      "api/postgres: Milestone M8 — Health & Readiness Probes (P8 Observability) [P8.2] GET /ready returns 200 and verifies database & schema readiness"
+    ],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "missingEvidence": []
+  }
+]
+
+Features Breakdown:
+[
+  {
+    "id": "C1",
+    "title": "Customer Account & Authentication",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C2",
+    "title": "Location & Serviceability",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C3",
+    "title": "Discovery & Shop Listings",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C4",
+    "title": "Product Detail & Legal Metrology",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C5",
+    "title": "Catalog Search",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 4
+  },
+  {
+    "id": "C6",
+    "title": "Cart Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 4
+  },
+  {
+    "id": "C7",
+    "title": "Database-Backed Coupon Engine",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 6,
+    "failedTestCount": 6
+  },
+  {
+    "id": "C8",
+    "title": "Checkout Flow",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C9",
+    "title": "Order Management & Tracking",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "C10",
+    "title": "Returns & Refunds",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 4
+  },
+  {
+    "id": "C11",
+    "title": "Verified Reviews & Ratings",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 9,
+    "failedTestCount": 9
+  },
+  {
+    "id": "C12",
+    "title": "Wishlist & Saved Items",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 12,
+    "failedTestCount": 12
+  },
+  {
+    "id": "C13",
+    "title": "Notification System",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 3
+  },
+  {
+    "id": "C14",
+    "title": "Support & Grievance Redressal",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 4
+  },
+  {
+    "id": "S1",
+    "title": "Seller Onboarding & KYC",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 4
+  },
+  {
+    "id": "S2",
+    "title": "Seller Catalog & Inventory Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 6,
+    "failedTestCount": 6
+  },
+  {
+    "id": "S3",
+    "title": "Seller Order Operations & Kitchen Display",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 5
+  },
+  {
+    "id": "S4",
+    "title": "Seller Financials & Payouts",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 3
+  },
+  {
+    "id": "S5",
+    "title": "Shop-Level Coupons & Offers",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S6",
+    "title": "Seller Review Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S7",
+    "title": "Seller Business Analytics",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "R1",
+    "title": "Rider Onboarding & Duty Toggle",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 8
+  },
+  {
+    "id": "R2",
+    "title": "Rider Task Assignment & Dispatch",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 6
+  },
+  {
+    "id": "R3",
+    "title": "Rider Fulfillment & Proof of Delivery",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 8
+  },
+  {
+    "id": "R4",
+    "title": "Rider Real-Time Location Sharing",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "api",
+      "web"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 6
+  },
+  {
+    "id": "R5",
+    "title": "Rider COD Cash Ledger & Earnings",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 8
+  },
+  {
+    "id": "A1",
+    "title": "Admin Commerce KPI Dashboard",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 1,
+    "failedTestCount": 1
+  },
+  {
+    "id": "A2",
+    "title": "Admin Seller & KYC Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 3
+  },
+  {
+    "id": "A3",
+    "title": "Admin Catalog Moderation & Categories",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 3
+  },
+  {
+    "id": "A4",
+    "title": "Admin Order Operations & Interventions",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 5
+  },
+  {
+    "id": "A5",
+    "title": "Admin Returns & Dispute Queue",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A6",
+    "title": "Admin Payouts & Commission Configuration",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A7",
+    "title": "Admin Promotions, Campaigns & CMS",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A8",
+    "title": "Admin RBAC & Immutable Audit Log",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 3
+  },
+  {
+    "id": "A9",
+    "title": "Admin Serviceability Zones",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A10",
+    "title": "Admin Delivery Fleet & Cash Reconciliation",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A11",
+    "title": "Admin Grievance & Support Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A12",
+    "title": "Admin Feature Flags & Vertical Kill Switches",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 1,
+    "failedTestCount": 1
+  },
+  {
+    "id": "A13",
+    "title": "Admin Financial & Tax Report Exports",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "A14",
+    "title": "Admin Broadcast Notifications",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 2,
+    "failedTestCount": 2
+  },
+  {
+    "id": "P1",
+    "title": "Canonical Commerce Pipeline",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P2",
+    "title": "Payment Gateway Integration",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P3",
+    "title": "Double-Entry Financial Ledger",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 5
+  },
+  {
+    "id": "P4",
+    "title": "Cloud Object Storage & Media Pipeline",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P5",
+    "title": "Unified Notification Provider Engine",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P6",
+    "title": "Unified Module Registry & Feature Flag System",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P7",
+    "title": "Web SEO & Metadata Automation",
+    "scope": "launch",
+    "status": "CODE COMPLETE",
+    "platforms": [
+      "web"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P8",
+    "title": "Observability & Health Checks",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 2
+  },
+  {
+    "id": "P9",
+    "title": "Security, Rate Limiting & Input Validation",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P10",
+    "title": "Automated Database Backups",
+    "scope": "launch",
+    "status": "CODE COMPLETE",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 10,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P11",
+    "title": "Privacy-Friendly Product Analytics",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P12",
+    "title": "Accessibility & Internationalization",
+    "scope": "launch",
+    "status": "CODE COMPLETE",
+    "platforms": [
+      "web",
+      "android"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P13",
+    "title": "Performance Budgets & Low-End Device Optimization",
+    "scope": "launch",
+    "status": "CODE COMPLETE",
+    "platforms": [
+      "web",
+      "api",
+      "android"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  }
+]

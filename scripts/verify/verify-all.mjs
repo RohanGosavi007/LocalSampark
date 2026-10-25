@@ -605,7 +605,13 @@ async function main() {
       passed: res.passed,
       skipped: res.skipped || false,
       summary: res.summary,
-      log: res.log
+      log: res.log,
+      ...(res.totalCount !== undefined ? {
+        totalCount: res.totalCount,
+        verifiedCount: res.verifiedCount,
+        codeCompleteCount: res.codeCompleteCount,
+        inProgressCount: res.inProgressCount
+      } : {})
     });
   }
 

@@ -1,0 +1,10 @@
+=== Secret Scan Report ===
+Violations: [
+  {
+    "file": "scripts/verify/__tests__/harness.test.mjs",
+    "line": 118,
+    "ruleId": "HIGH_ENTROPY_SECRET",
+    "description": "Hardcoded 32+ Hex Secret",
+    "snippet": "'// Temporary test secret\\nconst JWT_SECRET = \"0123456789abcdef0123456789abcdef\";\\n',"
+  }
+]

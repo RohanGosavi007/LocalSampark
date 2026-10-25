@@ -1,0 +1,96 @@
+=== Concurrency & Idempotency Test ===
+
+FAIL src/__tests__/concurrency.test.js
+  PostgreSQL Concurrency & Idempotency Suite [G6]
+    × [G6.1] Race for last product stock unit: exactly one succeeds (1 ms)
+    × [G6.2] Idempotency-Key deduplication: concurrent duplicate orders create only 1 order row
+    × [G6.3] Duplicate payment capture webhook settles exactly once
+    × [G6.4] Coupon usage limit holds under concurrency race
+    × [G6.5] Payout execution is idempotent
+
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.1] Race for last product stock unit: exactly one succeeds
+
+    error: database "localsampark_test" does not exist
+
+      207 |   async function query(text, params) {
+      208 |     const start = Date.now();
+    > 209 |     const result = await activePool.query(text, params);
+          |                    ^
+      210 |     const duration = Date.now() - start;
+      211 |     if (duration > 1000) {
+      212 |       logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+
+      at ../node_modules/pg-pool/index.js:45:11
+      at query (src/config/database.js:209:20)
+      at Object.<anonymous> (src/__tests__/concurrency.test.js:34:5)
+
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.2] Idempotency-Key deduplication: concurrent duplicate orders create only 1 order row
+
+    error: database "localsampark_test" does not exist
+
+      207 |   async function query(text, params) {
+      208 |     const start = Date.now();
+    > 209 |     const result = await activePool.query(text, params);
+          |                    ^
+      210 |     const duration = Date.now() - start;
+      211 |     if (duration > 1000) {
+      212 |       logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+
+      at ../node_modules/pg-pool/index.js:45:11
+      at query (src/config/database.js:209:20)
+      at Object.<anonymous> (src/__tests__/concurrency.test.js:34:5)
+
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.3] Duplicate payment capture webhook settles exactly once
+
+    error: database "localsampark_test" does not exist
+
+      207 |   async function query(text, params) {
+      208 |     const start = Date.now();
+    > 209 |     const result = await activePool.query(text, params);
+          |                    ^
+      210 |     const duration = Date.now() - start;
+      211 |     if (duration > 1000) {
+      212 |       logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+
+      at ../node_modules/pg-pool/index.js:45:11
+      at query (src/config/database.js:209:20)
+      at Object.<anonymous> (src/__tests__/concurrency.test.js:34:5)
+
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.4] Coupon usage limit holds under concurrency race
+
+    error: database "localsampark_test" does not exist
+
+      207 |   async function query(text, params) {
+      208 |     const start = Date.now();
+    > 209 |     const result = await activePool.query(text, params);
+          |                    ^
+      210 |     const duration = Date.now() - start;
+      211 |     if (duration > 1000) {
+      212 |       logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+
+      at ../node_modules/pg-pool/index.js:45:11
+      at query (src/config/database.js:209:20)
+      at Object.<anonymous> (src/__tests__/concurrency.test.js:34:5)
+
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.5] Payout execution is idempotent
+
+    error: database "localsampark_test" does not exist
+
+      207 |   async function query(text, params) {
+      208 |     const start = Date.now();
+    > 209 |     const result = await activePool.query(text, params);
+          |                    ^
+      210 |     const duration = Date.now() - start;
+      211 |     if (duration > 1000) {
+      212 |       logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
+
+      at ../node_modules/pg-pool/index.js:45:11
+      at query (src/config/database.js:209:20)
+      at Object.<anonymous> (src/__tests__/concurrency.test.js:34:5)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 5 total
+Snapshots:   0 total
+Time:        0.397 s, estimated 1 s
+Ran all test suites matching concurrency.test.js.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

@@ -1,0 +1,3144 @@
+=== Backend Jest on SQLite Execution ===
+Exit Code: 1
+Summary: 1617 passed, 28 failed across 142 test suites
+
+STDOUT:
+20:55:45 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 16.548 ms - 294[0m
+[0mGET /ready [32m200[0m 6.607 ms - 137[0m
+[0mGET /metrics [32m200[0m 0.558 ms - 392[0m
+
+
+STDERR:
+PASS tests/column-verifier.test.js
+FAIL src/__tests__/integration/routeSmoke.test.js (46.639 s)
+  ● Console
+
+    console.log
+      20:56:11 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:11 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:32 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      [webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured
+
+      107 |   try {
+      108 |     if (!razorpay.isWebhookConfigured()) {
+    > 109 |       console.error('[webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured');
+          |               ^
+      110 |       return res.status(503).json({ error: 'Webhook verification unavailable' });
+      111 |     }
+      112 |
+
+      at error (src/modules/core/routes/webhooks.routes.js:109:15)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at read (../node_modules/body-parser/lib/read.js:48:5)
+      at rawParser (../node_modules/body-parser/lib/types/raw.js:40:5)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at Route.dispatch (../node_modules/router/lib/route.js:117:3)
+      at handle (../node_modules/router/index.js:435:11)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at ../node_modules/router/index.js:295:15
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at router.handle (../node_modules/router/index.js:186:3)
+      at router (../node_modules/router/index.js:60:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at next (src/middleware/bodyGuard.js:42:74)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at router.handle (../node_modules/router/index.js:186:3)
+      at router (../node_modules/router/index.js:60:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at cookieParser (../node_modules/cookie-parser/index.js:57:14)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at ../node_modules/body-parser/lib/read.js:203:5
+      at invokeCallback (../node_modules/raw-body/index.js:238:16)
+      at done (../node_modules/raw-body/index.js:227:7)
+      at IncomingMessage.onEnd (../node_modules/raw-body/index.js:287:7)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO token_queue_visitors (id, shop_id, token_number, visitor_name, visitor_phone, user_id, service_type, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', datetime('now')) SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:36 [33mwarn[39m: [POST] /api/v1/token-queue/x/join — SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Select Query Error: INSERT INTO events (id, organizer_id, title, description, category, venue, event_date, start_time, end_time, max_attendees, is_paid, ticket_price, cover_image_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             RETURNING * SQLITE_CONSTRAINT: NOT NULL constraint failed: events.title
+
+      346 |       db.all(translated.sql, translated.params, (err, rows) => {
+      347 |         if (err) {
+    > 348 |           console.error(`❌ SQLite Select Query Error:`, translated.sql, err.message);
+          |                   ^
+      349 |           reject(err);
+      350 |         } else {
+      351 |           resolve({ rows, rowCount: rows.length });
+
+      at Statement.error (src/config/database.sqlite.js:348:19)
+
+    console.log
+      20:56:36 [33mwarn[39m: [POST] /api/v1/events/ — SQLITE_CONSTRAINT: NOT NULL constraint failed: events.title
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Select Query Error: INSERT INTO pets (id, owner_id, name, species, breed, age_years, gender, photo_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             RETURNING * SQLITE_CONSTRAINT: NOT NULL constraint failed: pets.name
+
+      346 |       db.all(translated.sql, translated.params, (err, rows) => {
+      347 |         if (err) {
+    > 348 |           console.error(`❌ SQLite Select Query Error:`, translated.sql, err.message);
+          |                   ^
+      349 |           reject(err);
+      350 |         } else {
+      351 |           resolve({ rows, rowCount: rows.length });
+
+      at Statement.error (src/config/database.sqlite.js:348:19)
+
+    console.log
+      20:56:36 [33mwarn[39m: [POST] /api/v1/pets/ — SQLITE_CONSTRAINT: NOT NULL constraint failed: pets.name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:37 [32minfo[39m: [AUDIT:AI_SEARCH_QUERY]
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:37 [32minfo[39m: [AUDIT:API_ACCESS]
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Select Query Error: INSERT INTO shop_disputes (id, shop_id, order_id, appointment_id, initiator_id, initiator_role, category, description, photo_urls)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING * SQLITE_CONSTRAINT: NOT NULL constraint failed: shop_disputes.category
+
+      346 |       db.all(translated.sql, translated.params, (err, rows) => {
+      347 |         if (err) {
+    > 348 |           console.error(`❌ SQLite Select Query Error:`, translated.sql, err.message);
+          |                   ^
+      349 |           reject(err);
+      350 |         } else {
+      351 |           resolve({ rows, rowCount: rows.length });
+
+      at Statement.error (src/config/database.sqlite.js:348:19)
+
+    console.log
+      20:56:38 [33mwarn[39m: [POST] /api/v1/shops/disputes — SQLITE_CONSTRAINT: NOT NULL constraint failed: shop_disputes.category
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      [webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured
+
+      107 |   try {
+      108 |     if (!razorpay.isWebhookConfigured()) {
+    > 109 |       console.error('[webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured');
+          |               ^
+      110 |       return res.status(503).json({ error: 'Webhook verification unavailable' });
+      111 |     }
+      112 |
+
+      at error (src/modules/core/routes/webhooks.routes.js:109:15)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at read (../node_modules/body-parser/lib/read.js:48:5)
+      at rawParser (../node_modules/body-parser/lib/types/raw.js:40:5)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at Route.dispatch (../node_modules/router/lib/route.js:117:3)
+      at handle (../node_modules/router/index.js:435:11)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at ../node_modules/router/index.js:295:15
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at router.handle (../node_modules/router/index.js:186:3)
+      at router (../node_modules/router/index.js:60:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at ../node_modules/express-rate-limit/dist/index.cjs:921:9
+      at ../node_modules/express-rate-limit/dist/index.cjs:878:5
+
+    console.log
+      20:56:38 [32minfo[39m: [Wishlist] Removed product x from user rsm-citizen wishlist
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Select Query Error: INSERT INTO user_skills (id, user_id, skill_name, experience_years, daily_rate, portfolio_photos, bio, location)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT (user_id, skill_name)
+             DO UPDATE SET experience_years = EXCLUDED.experience_years,
+                           daily_rate = EXCLUDED.daily_rate,
+                           portfolio_photos = EXCLUDED.portfolio_photos,
+                           bio = EXCLUDED.bio,
+                           location = EXCLUDED.location
+             RETURNING * SQLITE_CONSTRAINT: NOT NULL constraint failed: user_skills.skill_name
+
+      346 |       db.all(translated.sql, translated.params, (err, rows) => {
+      347 |         if (err) {
+    > 348 |           console.error(`❌ SQLite Select Query Error:`, translated.sql, err.message);
+          |                   ^
+      349 |           reject(err);
+      350 |         } else {
+      351 |           resolve({ rows, rowCount: rows.length });
+
+      at Statement.error (src/config/database.sqlite.js:348:19)
+
+    console.log
+      20:56:38 [33mwarn[39m: [POST] /api/v1/job-services/skills/register — SQLITE_CONSTRAINT: NOT NULL constraint failed: user_skills.skill_name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO skilled_bookings (id, customer_id, service_category, description, address, preferred_date, status)
+             VALUES (?, ?, ?, ?, ?, ?, 'pending') SQLITE_CONSTRAINT: NOT NULL constraint failed: skilled_bookings.service_category
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:38 [33mwarn[39m: [POST] /api/v1/job-services/skills/book — SQLITE_CONSTRAINT: NOT NULL constraint failed: skilled_bookings.service_category
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:38 [32minfo[39m: [SOS ALERT] User rsm-citizen triggered SOS at undefined, undefined
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Select Query Error: INSERT INTO property_listings (id, user_id, title, description, property_type, listing_type, price, deposit, coordinate, is_verified, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, true, true) RETURNING * SQLITE_CONSTRAINT: NOT NULL constraint failed: property_listings.title
+
+      346 |       db.all(translated.sql, translated.params, (err, rows) => {
+      347 |         if (err) {
+    > 348 |           console.error(`❌ SQLite Select Query Error:`, translated.sql, err.message);
+          |                   ^
+      349 |           reject(err);
+      350 |         } else {
+      351 |           resolve({ rows, rowCount: rows.length });
+
+      at Statement.error (src/config/database.sqlite.js:348:19)
+
+    console.log
+      20:56:38 [33mwarn[39m: [POST] /api/v1/rental/properties — SQLITE_CONSTRAINT: NOT NULL constraint failed: property_listings.title
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO service_bookings (id, service_id, user_id, scheduled_time, address, status) VALUES (?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: NOT NULL constraint failed: service_bookings.service_id
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/services/book — SQLITE_CONSTRAINT: NOT NULL constraint failed: service_bookings.service_id
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO carpool_groups (id, name, description, group_type, from_location, to_location, from_lat, from_lng, to_lat, to_lng, departure_time, days_active, max_members, created_by)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/carpool/carpool/groups — SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO carpool_groups (id, name, description, group_type, from_location, to_location, from_lat, from_lng, to_lat, to_lng, departure_time, days_active, max_members, created_by)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/marketplace/carpool/groups — SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO carpool_groups (id, name, description, group_type, from_location, to_location, from_lat, from_lng, to_lat, to_lng, departure_time, days_active, max_members, created_by)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/jobs/carpool/groups — SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO carpool_groups (id, name, description, group_type, from_location, to_location, from_lat, from_lng, to_lat, to_lng, departure_time, days_active, max_members, created_by)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/carpool/groups — SQLITE_CONSTRAINT: NOT NULL constraint failed: carpool_groups.name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO franchise_partners (id, user_id, region_id, territory_name, territory_pincode, status) VALUES (?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: NOT NULL constraint failed: franchise_partners.territory_pincode
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/franchise/register — SQLITE_CONSTRAINT: NOT NULL constraint failed: franchise_partners.territory_pincode
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO crm_leads (id, assigned_to, first_name, phone, status,
+                                          pincode, territory_id, franchise_partner_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: NOT NULL constraint failed: crm_leads.first_name
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:56:39 [33mwarn[39m: [POST] /api/v1/crm/leads — SQLITE_CONSTRAINT: NOT NULL constraint failed: crm_leads.first_name
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:40 [32minfo[39m: ML embeddings built: 5 shops, 11 terms.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+  ● every route that is not listed as public turns an anonymous caller away
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 7
+
+    - Array []
+    + Array [
+    +   "200 GET /features",
+    +   "200 GET /support/grievance-officer",
+    +   "200 GET /trust-reviews/shop/x",
+    +   "400 POST /users/account-deletion-request",
+    +   "400 POST /account-deletion-request",
+    + ]
+
+      163 |     if (![401, 403, 404, 429, 503].includes(status)) open.push(`${status} ${key.replace('/api/v1', '')}`);
+      164 |   }
+    > 165 |   expect(open).toEqual([]);
+          |                ^
+      166 | }, 240000);
+      167 |
+
+      at Object.toEqual (src/__tests__/integration/routeSmoke.test.js:165:16)
+
+PASS src/__tests__/escrow.test.js (12.104 s)
+  ● Console
+
+    console.warn
+      ⚠️  Running in non-production mode. Strict validation skipped.
+
+      149 |     logger.info('✅ Production environment variables sanity check passed.');
+      150 |   } else {
+    > 151 |     console.warn('⚠️  Running in non-production mode. Strict validation skipped.');
+          |             ^
+      152 |     
+      153 |     // Still warn about empty recommended vars in dev
+      154 |     const empty = RECOMMENDED_VARS.filter(key => !process.env[key]);
+
+      at warn (src/config/envValidator.js:151:13)
+      at Object.validateEnv (src/server.js:3:1)
+      at Object.require (src/__tests__/escrow.test.js:2:17)
+
+    console.warn
+         7 optional service keys not configured (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, MSG91_AUTH_KEY...)
+
+      154 |     const empty = RECOMMENDED_VARS.filter(key => !process.env[key]);
+      155 |     if (empty.length > 0) {
+    > 156 |       console.warn(`   ${empty.length} optional service keys not configured (${empty.slice(0, 3).join(', ')}...)`);
+          |               ^
+      157 |     }
+      158 |   }
+      159 | }
+
+      at warn (src/config/envValidator.js:156:15)
+      at Object.validateEnv (src/server.js:3:1)
+      at Object.require (src/__tests__/escrow.test.js:2:17)
+
+    console.log
+      20:56:52 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:52 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:52 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:53 [32minfo[39m: ✅ Supabase Realtime client initialized
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:53 [32minfo[39m: Sentry Error-Tracking SDK initialized successfully (Staging)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/adminConsoleData.test.js
+  ● Console
+
+    console.log
+      20:56:53 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:56:53 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/franchiseTerritoryIsolation.test.js
+PASS src/__tests__/services/orderAttribution.test.js
+  ● Console
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO franchise_territories
+                 (id, franchise_partner_id, territory_id, pincode, status, tier)
+               VALUES (?, ?, ?, '414001', 'ACTIVE', 'MASTER') SQLITE_CONSTRAINT: UNIQUE constraint failed: franchise_territories.territory_id, franchise_territories.tier
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+FAIL src/__tests__/postgresSchemaContract.test.js
+  ● a foreign key points at the same table and does the same thing on delete
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "trust_reviews.order_id -> orders: declared on PostgreSQL only",
+    + ]
+
+      177 |   }
+      178 |
+    > 179 |   expect(differences).toEqual([]);
+          |                       ^
+      180 | });
+      181 |
+      182 | test('every index SQLite has, PostgreSQL has too', () => {
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:179:23)
+
+  ● every index SQLite has, PostgreSQL has too
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 4
+
+    - Array []
+    + Array [
+    +   "idx_order_returns_verified_by ON order_returns",
+    +   "idx_order_returns_user_id ON order_returns",
+    + ]
+
+      189 |     .map((index) => `${index.name} ON ${index.tbl_name}`);
+      190 |
+    > 191 |   expect(missing).toEqual([]);
+          |                   ^
+      192 | });
+      193 |
+      194 | // ── the application's SQL, read against the PostgreSQL model ────────────────
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:191:19)
+
+  ● flag literals are quoted wherever the column's type would reject a bare one
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 17
+
+    - Array []
+    + Array [
+    +   "modules/crm/routes/fraud.routes.js:197  fraud_blocklist.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/crm/controllers/admin-revenue.controller.js:179  regions.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:177  marketplace_price_alerts.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:211  job_skill_assessments.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:258  job_skill_assessments.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:400  carpool_groups.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:409  carpool_groups.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced.routes.js:577  job_alerts.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced.routes.js:585  job_alerts.is_active = false  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/carpool.routes.js:478  carpool_recurring_rides.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/ecommerce/routes/marketplace.routes.js:88  marketplace_categories.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-resident.controller.js:163  society_members.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-resident.controller.js:196  society_members.is_active = false  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-resident.controller.js:880  society_events.is_active = false  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-visitor.controller.js:80  society_members.is_active = true  (column is INTEGER on PostgreSQL)",
+    + ]
+
+      280 |   }
+      281 |
+    > 282 |   expect(problems).toEqual([]);
+          |                    ^
+      283 | });
+      284 |
+      285 | test('every INSERT fits the PostgreSQL table as well', () => {
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:282:20)
+
+  ● every INSERT fits the PostgreSQL table as well
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "modules/core/routes/privacy.routes.js:117  data_subject_requests has no column on PostgreSQL: details",
+    + ]
+
+      316 |   }
+      317 |
+    > 318 |   expect(problems).toEqual([]);
+          |                    ^
+      319 | });
+      320 |
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:318:20)
+
+FAIL src/__tests__/envDocumentation.test.js
+  ● every environment variable the code reads is in .env.example
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 5
+
+    - Array []
+    + Array [
+    +   "BYPASS_FEATURE_FLAGS",
+    +   "ENABLE_ML_JOBS",
+    +   "ENABLE_WORKERS",
+    + ]
+
+      47 |   const documented = documentedVariables();
+      48 |   const missing = [...usedVariables()].filter((v) => !PLATFORM.has(v) && !documented.has(v)).sort();
+    > 49 |   expect(missing).toEqual([]);
+         |                   ^
+      50 | });
+      51 |
+      52 | test('every variable in .env.example is read by the code', () => {
+
+      at Object.toEqual (src/__tests__/envDocumentation.test.js:49:19)
+
+FAIL src/__tests__/fkIndexCoverage.test.js
+  ● PostgreSQL (migration files) › every foreign-key column leads an index
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 5
+
+    - Array []
+    + Array [
+    +   "trust_reviews.order_id",
+    +   "order_returns.user_id",
+    +   "order_returns.verified_by",
+    + ]
+
+      83 |     expect(seen).toBeGreaterThan(300);
+      84 |     expect(leading.size).toBeGreaterThan(500);
+    > 85 |     expect(missing).toEqual([]);
+         |                     ^
+      86 |   });
+      87 | });
+      88 |
+
+      at Object.toEqual (src/__tests__/fkIndexCoverage.test.js:85:21)
+
+PASS tests/spatial-index.test.js
+FAIL src/__tests__/insertSchemaContract.test.js
+  ● every INSERT in reachable source names real columns and supplies the required ones
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "modules/core/routes/privacy.routes.js:117  data_subject_requests has no column: details",
+    + ]
+
+      91 |   // If the scan stops finding statements, it has broken, not the code improved.
+      92 |   expect(statements).toBeGreaterThan(300);
+    > 93 |   expect(problems).toEqual([]);
+         |                    ^
+      94 | });
+      95 |
+
+      at Object.toEqual (src/__tests__/insertSchemaContract.test.js:93:20)
+
+PASS src/__tests__/services/territoryResolution.test.js
+  ● Console
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO franchise_territories
+                 (id, franchise_partner_id, territory_id, pincode, status)
+               VALUES (?, ?, ?, '411001', 'ACTIVE') SQLITE_CONSTRAINT: UNIQUE constraint failed: franchise_territories.territory_id, franchise_territories.tier
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+PASS src/__tests__/unit/wishlistEngine.test.js
+  ● Console
+
+    console.log
+      20:57:00 [32minfo[39m: [Wishlist] Added product test-prod-wishlist-1792942020750 to user test-user-wishlist-1792942020750 wishlist
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:00 [32minfo[39m: [Wishlist] Added product test-prod2-wishlist-1792942020750 to user test-user-wishlist-1792942020750 wishlist
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:00 [32minfo[39m: [Wishlist] Moved product test-prod-wishlist-1792942020750 to cart for user test-user-wishlist-1792942020750
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:00 [32minfo[39m: [Wishlist] Removed product test-prod2-wishlist-1792942020750 from user test-user-wishlist-1792942020750 wishlist
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+FAIL src/__tests__/integration/adminPricing.test.js
+  ● pricing settings › an administrator sees every setting with its limits; a customer sees nothing
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 5
+    Received: 0
+
+      62 |     const fee = res.body.settings.find((s) => s.key === 'delivery_per_km_fee');
+      63 |     expect(fee).toMatchObject({ value: 8, default: 8, type: 'number', min: 0, max: 100, group: 'delivery' });
+    > 64 |     expect(res.body.settings.find((s) => s.key === 'default_commission_percent').value).toBe(5);
+         |                                                                                         ^
+      65 |
+      66 |     expect((await request(app).get('/admin/pricing').set(as(USER))).status).toBe(403);
+      67 |     expect((await request(app).get('/admin/pricing')).status).toBe(401);
+
+      at Object.toBe (src/__tests__/integration/adminPricing.test.js:64:89)
+
+PASS src/__tests__/integration/adminPaging.test.js
+  ● Console
+
+    console.log
+      20:57:01 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:01 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS tests/marketplace-zone-scope.test.js
+PASS tests/endpoint-queries.test.js
+PASS src/__tests__/seedDefault.test.js
+  ● Console
+
+    console.log
+      20:57:02 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:02 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:02 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS tests/db-introspection.test.js
+PASS src/__tests__/services/mlFeatureStore.test.js
+  ● Console
+
+    console.log
+      20:57:03 [33mwarn[39m: Feature store: unknown feature "no_such_feature" requested; skipping.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/ecommerce.routes.test.js
+  ● Console
+
+    console.log
+      20:57:03 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      ✅ Test database initialized
+
+      at log (src/__tests__/setup/testDb.js:286:11)
+
+    console.log
+      ✅ Test database torn down
+
+      at log (src/__tests__/setup/testDb.js:425:11)
+
+PASS src/__tests__/setup/testDb.test.js
+  ● Console
+
+    console.log
+      20:57:03 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      ✅ Test database initialized
+
+      at log (src/__tests__/setup/testDb.js:286:11)
+
+    console.log
+      ✅ Test data seeded
+
+      at log (src/__tests__/setup/testDb.js:367:11)
+
+    console.log
+      ✅ Test database torn down
+
+      at log (src/__tests__/setup/testDb.js:425:11)
+
+PASS src/__tests__/wallet.test.js
+PASS src/__tests__/services/boundaryMonitor.test.js
+PASS src/__tests__/services/mlSequence.test.js (10.961 s)
+PASS src/__tests__/visitorViewsRender.test.js (6.215 s)
+PASS src/__tests__/services/mlHnsw.test.js
+PASS src/__tests__/services/mlFairnessUplift.test.js
+PASS src/__tests__/socketAuth.test.js
+  ● Console
+
+    console.log
+      20:57:30 [32minfo[39m: [Socket.io] Authenticated Client connected: XS83c6b3WQyKfRLuAAAA (User: identity-probe-1)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:31 [32minfo[39m: [Socket.io] Client disconnected: XS83c6b3WQyKfRLuAAAA
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:31 [32minfo[39m: [Socket.io] Authenticated Client connected: C2YrhqRjDahGd1WVAAAB (User: guest_C2YrhqRj)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:31 [32minfo[39m: [Socket.io] Client disconnected: C2YrhqRjDahGd1WVAAAB
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:31 [32minfo[39m: [Socket.io] Authenticated Client connected: Rp-aRs-EB81ldl9GAAAC (User: guest_Rp-aRs-E)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:31 [32minfo[39m: [Socket.io] Client disconnected: Rp-aRs-EB81ldl9GAAAC
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:31 [32minfo[39m: [Socket.io] Authenticated Client connected: 42ghG4ZZtwf2rL-KAAAD (User: identity-probe-2)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:33 [32minfo[39m: [Socket.io] Client disconnected: 42ghG4ZZtwf2rL-KAAAD
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+PASS src/__tests__/integration/routeValidation.test.js
+  ● Console
+
+    console.log
+      20:57:34 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:34 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:34 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:34 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:34 [32minfo[39m:   📱 OTP for +919876543210: 532146
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:34 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:34 [32minfo[39m: [OTP] Provider: console for +919876543210
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/orderLifecycle.test.js
+  ● Console
+
+    console.log
+      20:57:35 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:35 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      [orders] refund for order 14f5451f-77f2-4ef4-94d2-91d3f0d753b2 failed: gateway unavailable
+
+      237 |   } catch (error) {
+      238 |     await query("UPDATE orders SET payment_status = 'refund_pending', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND payment_status = 'refunding'", [orderId]);
+    > 239 |     console.error(`[orders] refund for order ${orderId} failed: ${error.message}`);
+          |             ^
+      240 |     return { refunded: false, reason: 'Razorpay did not accept the refund. It will be retried.' };
+      241 |   }
+      242 | }
+
+      at error (src/services/orderLifecycle.service.js:239:13)
+      at Object.changeStatus (src/services/orderLifecycle.service.js:383:21)
+      at updateOrderStatus (src/modules/ecommerce/controllers/shop-management.controller.js:235:17)
+
+PASS src/__tests__/integration/marketplaceEscrow.test.js
+PASS src/__tests__/integration/societyRouteAccess.test.js
+PASS src/__tests__/integration/webClientRoutes.test.js
+  ● Console
+
+    console.log
+      20:57:40 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:40 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:41 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/societyCapabilities.test.js
+PASS src/__tests__/unit/healthReady.test.js
+  ● Console
+
+    console.warn
+      ⚠️  Running in non-production mode. Strict validation skipped.
+
+      149 |     logger.info('✅ Production environment variables sanity check passed.');
+      150 |   } else {
+    > 151 |     console.warn('⚠️  Running in non-production mode. Strict validation skipped.');
+          |             ^
+      152 |     
+      153 |     // Still warn about empty recommended vars in dev
+      154 |     const empty = RECOMMENDED_VARS.filter(key => !process.env[key]);
+
+      at warn (src/config/envValidator.js:151:13)
+      at Object.validateEnv (src/server.js:3:1)
+      at Object.require (src/__tests__/unit/healthReady.test.js:2:17)
+
+    console.warn
+         7 optional service keys not configured (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, MSG91_AUTH_KEY...)
+
+      154 |     const empty = RECOMMENDED_VARS.filter(key => !process.env[key]);
+      155 |     if (empty.length > 0) {
+    > 156 |       console.warn(`   ${empty.length} optional service keys not configured (${empty.slice(0, 3).join(', ')}...)`);
+          |               ^
+      157 |     }
+      158 |   }
+      159 | }
+
+      at warn (src/config/envValidator.js:156:15)
+      at Object.validateEnv (src/server.js:3:1)
+      at Object.require (src/__tests__/unit/healthReady.test.js:2:17)
+
+    console.log
+      20:57:42 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:42 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:43 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:43 [32minfo[39m: ✅ Supabase Realtime client initialized
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:43 [32minfo[39m: Sentry Error-Tracking SDK initialized successfully (Staging)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/provisionAdmin.test.js
+  ● Console
+
+    console.log
+      20:57:44 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:44 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\data\test.worker1.db
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/razorpayPayments.test.js
+  ● Console
+
+    console.log
+      20:57:46 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:46 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.warn
+      [payments] could not confirm pay_good0001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verify (src/modules/payments/routes/razorpay.routes.js:73:21)
+
+    console.warn
+      [payments] could not confirm pay_good0001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verify (src/modules/payments/routes/razorpay.routes.js:73:21)
+
+    console.warn
+      [payments] could not confirm pay_cheap001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verify (src/modules/payments/routes/razorpay.routes.js:73:21)
+
+    console.warn
+      [payments] could not confirm pay_camel001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verify (src/modules/payments/routes/razorpay.routes.js:73:21)
+
+    console.warn
+      [payments] could not confirm pay_topup001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verifyTopup (src/modules/ecommerce/routes/wallet.routes.js:91:25)
+
+    console.warn
+      [payments] could not confirm pay_topup001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verifyTopup (src/modules/ecommerce/routes/wallet.routes.js:91:25)
+
+    console.warn
+      [payments] could not confirm pay_topup001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verifyTopup (src/modules/ecommerce/routes/wallet.routes.js:91:25)
+
+    console.error
+      [webhook] Razorpay rejected: signature mismatch
+
+      114 |     const signature = req.headers['x-razorpay-signature'];
+      115 |     if (rawBody === null || !razorpay.verifyWebhookSignature(rawBody, signature)) {
+    > 116 |       console.error('[webhook] Razorpay rejected: signature mismatch');
+          |               ^
+      117 |       return res.status(401).json({ error: 'Unauthorized webhook' });
+      118 |     }
+      119 |
+
+      at error (src/modules/core/routes/webhooks.routes.js:116:15)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at read (../node_modules/body-parser/lib/read.js:48:5)
+      at rawParser (../node_modules/body-parser/lib/types/raw.js:40:5)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at Route.dispatch (../node_modules/router/lib/route.js:117:3)
+      at handle (../node_modules/router/index.js:435:11)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at ../node_modules/router/index.js:295:15
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at router.handle (../node_modules/router/index.js:186:3)
+      at router (../node_modules/router/index.js:60:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at ../node_modules/body-parser/lib/read.js:203:5
+      at invokeCallback (../node_modules/raw-body/index.js:238:16)
+      at done (../node_modules/raw-body/index.js:227:7)
+      at IncomingMessage.onEnd (../node_modules/raw-body/index.js:287:7)
+
+    console.error
+      [webhook] Razorpay rejected: signature mismatch
+
+      114 |     const signature = req.headers['x-razorpay-signature'];
+      115 |     if (rawBody === null || !razorpay.verifyWebhookSignature(rawBody, signature)) {
+    > 116 |       console.error('[webhook] Razorpay rejected: signature mismatch');
+          |               ^
+      117 |       return res.status(401).json({ error: 'Unauthorized webhook' });
+      118 |     }
+      119 |
+
+      at error (src/modules/core/routes/webhooks.routes.js:116:15)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at read (../node_modules/body-parser/lib/read.js:48:5)
+      at rawParser (../node_modules/body-parser/lib/types/raw.js:40:5)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at Route.dispatch (../node_modules/router/lib/route.js:117:3)
+      at handle (../node_modules/router/index.js:435:11)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at ../node_modules/router/index.js:295:15
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at router.handle (../node_modules/router/index.js:186:3)
+      at router (../node_modules/router/index.js:60:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at ../node_modules/body-parser/lib/read.js:203:5
+      at invokeCallback (../node_modules/raw-body/index.js:238:16)
+      at done (../node_modules/raw-body/index.js:227:7)
+      at IncomingMessage.onEnd (../node_modules/raw-body/index.js:287:7)
+
+    console.error
+      [payments] webhook amount mismatch for 59609ad9-304d-420b-94e8-ea4fd351fe3c: gateway 100 paise, expected 15000
+
+      406 |     // The amount Razorpay collected must be the amount this payment was for.
+      407 |     if (Number(entity.amount) !== Number(payment.amount_paise)) {
+    > 408 |       console.error(
+          |               ^
+      409 |         `[payments] webhook amount mismatch for ${payment.id}: gateway ${entity.amount} paise, expected ${payment.amount_paise}`
+      410 |       );
+      411 |       return { rejected: 'amount mismatch' };
+
+      at Object.error [as handleWebhookEvent] (src/services/payments.service.js:408:15)
+      at razorpayWebhook (src/modules/core/routes/webhooks.routes.js:127:21)
+
+    console.error
+      [webhook] Razorpay event not applied: amount mismatch
+
+      129 |       // Acknowledged all the same: a non-2xx makes Razorpay retry a delivery
+      130 |       // that will be refused again for the same reason.
+    > 131 |       console.error(`[webhook] Razorpay event not applied: ${outcome.rejected}`);
+          |               ^
+      132 |     }
+      133 |
+      134 |     res.json({ status: 'ok' });
+
+      at error (src/modules/core/routes/webhooks.routes.js:131:15)
+
+    console.warn
+      [payments] could not confirm pay_both0001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verifyTopup (src/modules/ecommerce/routes/wallet.routes.js:91:25)
+
+    console.error
+      [webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured
+
+      107 |   try {
+      108 |     if (!razorpay.isWebhookConfigured()) {
+    > 109 |       console.error('[webhook] Razorpay rejected: RAZORPAY_WEBHOOK_SECRET is not configured');
+          |               ^
+      110 |       return res.status(503).json({ error: 'Webhook verification unavailable' });
+      111 |     }
+      112 |
+
+      at error (src/modules/core/routes/webhooks.routes.js:109:15)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at read (../node_modules/body-parser/lib/read.js:48:5)
+      at rawParser (../node_modules/body-parser/lib/types/raw.js:40:5)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at Route.dispatch (../node_modules/router/lib/route.js:117:3)
+      at handle (../node_modules/router/index.js:435:11)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at ../node_modules/router/index.js:295:15
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at router.handle (../node_modules/router/index.js:186:3)
+      at router (../node_modules/router/index.js:60:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (../node_modules/router/index.js:342:13)
+      at ../node_modules/router/index.js:297:9
+      at processParams (../node_modules/router/index.js:582:12)
+      at next (../node_modules/router/index.js:291:5)
+      at ../node_modules/body-parser/lib/read.js:203:5
+      at invokeCallback (../node_modules/raw-body/index.js:238:16)
+      at done (../node_modules/raw-body/index.js:227:7)
+      at IncomingMessage.onEnd (../node_modules/raw-body/index.js:287:7)
+
+    console.warn
+      [payments] could not confirm pay_plan0001 with Razorpay; proceeding on signature: not found at gateway
+
+      384 |   } catch (err) {
+      385 |     if (err instanceof PaymentError) throw err;
+    > 386 |     console.warn(`[payments] could not confirm ${razorpayPaymentId} with Razorpay; proceeding on signature: ${err.message}`);
+          |             ^
+      387 |   }
+      388 |
+      389 |   const outcome = await settle(payment, razorpayPaymentId);
+
+      at Object.warn [as confirmPayment] (src/services/payments.service.js:386:13)
+      at verify (src/modules/payments/routes/razorpay.routes.js:73:21)
+
+PASS src/__tests__/unit/adminCommerceOps.test.js
+PASS src/__tests__/unit/featureFlags.test.js
+  ● Console
+
+    console.log
+      20:57:49 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:49 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:50 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/authSecurity.test.js
+  ● Console
+
+    console.log
+      20:57:50 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      [auth] OTP request rejected: OTP store unavailable in production without REDIS_URL
+
+      176 |   if (!reason) return true;
+      177 |
+    > 178 |   console.error('[auth] OTP request rejected: ' + reason);
+          |           ^
+      179 |   res.status(503).json({
+      180 |     error: 'Verification is temporarily unavailable. Please try again shortly.'
+      181 |   });
+
+      at error (src/modules/core/routes/auth.routes.js:178:11)
+      at requireOtpStore (src/modules/core/routes/auth.routes.js:211:10)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at next (src/middleware/validate.js:157:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at ../node_modules/express-rate-limit/dist/index.cjs:1058:7
+      at ../node_modules/express-rate-limit/dist/index.cjs:878:5
+
+    console.log
+      20:57:51 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:51 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      [auth] OTP request rejected: OTP store unavailable in production without REDIS_URL
+
+      176 |   if (!reason) return true;
+      177 |
+    > 178 |   console.error('[auth] OTP request rejected: ' + reason);
+          |           ^
+      179 |   res.status(503).json({
+      180 |     error: 'Verification is temporarily unavailable. Please try again shortly.'
+      181 |   });
+
+      at error (src/modules/core/routes/auth.routes.js:178:11)
+      at requireOtpStore (src/modules/core/routes/auth.routes.js:211:10)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at next (src/middleware/validate.js:157:12)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at ../node_modules/express-rate-limit/dist/index.cjs:1058:7
+      at ../node_modules/express-rate-limit/dist/index.cjs:878:5
+
+PASS src/__tests__/integration/mobileClientRoutes.test.js
+  ● Console
+
+    console.log
+      20:57:52 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:52 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:52 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/adminClientRoutes.test.js
+  ● Console
+
+    console.log
+      20:57:53 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:53 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:54 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/unit/sellerOperations.test.js
+  ● Console
+
+    console.log
+      20:57:54 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:55 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:55 [32minfo[39m: ✅ Shop f56c95fe-8a6f-4bda-81cb-dc9d58032261 activated after KYC verification by admin 172c3385-5425-4dcf-a4bb-4b973bdc5178
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:55 [32minfo[39m: [Ledger] Recorded transaction bfc7db63-0770-4713-8565-298786dee14a (ORDER_PAYMENT:58d20b5c-d5c8-41d8-a281-445da3555595) with 2 entries totaling 33000 paise
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+FAIL src/__tests__/unit/riderFleet.test.js
+  ● Console
+
+    console.log
+      20:57:56 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:56 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO local_shops (id, name, owner_id, phone, category, address, latitude, longitude, pincode, is_active, is_verified)
+             VALUES (?, 'Dhanori Fresh Bakers', ?, '+919876543210', 'bakery', 'Dhanori Road, Pune', 18.5833, 73.8833, '411015', true, true) SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO orders (
+                 id, user_id, shop_id, subtotal, total_amount, delivery_fee, rider_payout,
+                 delivery_address, payment_method, payment_status, order_status, status,
+                 fulfillment_method, otp_code, created_at
+               ) VALUES (
+                 ?, ?, ?, 300, 340, 40, 40,
+                 'Flat 402, Ganga Aria, Dhanori', 'razorpay', 'paid', 'ready', 'ready',
+                 'delivery', '445566', CURRENT_TIMESTAMP
+               ) SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.1] should reject invalid Aadhaar format during onboarding
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.2] should submit valid rider onboarding application and set kyc_status to pending
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.3] should return rider profile with masked bank account and pending status
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.4] should allow admin to view pending KYC queue and approve the rider
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R2: Rider Duty Toggle & Live Geolocation › [R2.1] should reject duty toggle if rider coordinates are outside Pune/Dhanori pilot zone
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R2: Rider Duty Toggle & Live Geolocation › [R2.2] should allow duty toggle online when within Dhanori pilot zone
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R2: Rider Duty Toggle & Live Geolocation › [R2.3] should ingest GPS heartbeat update and record live tracking history
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.1] should list available jobs sorted by proximity to the rider
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.1] should list available jobs sorted by proximity to the rider
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.2] should atomically accept a job and transition order to assigned and rider to on_delivery
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.2] should atomically accept a job and transition order to assigned and rider to on_delivery
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.3] should prevent another rider from accepting the already claimed job
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.3] should prevent another rider from accepting the already claimed job
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.4] should allow rider to release/reject assigned job back to ready pool
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.4] should allow rider to release/reject assigned job back to ready pool
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R4: Pickup & Timing-Safe Handover Verification › [R4.1] should confirm pickup and transition order to out_for_delivery
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R4: Pickup & Timing-Safe Handover Verification › [R4.2] should reject completion with invalid OTP code using timing-safe comparison
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R4: Pickup & Timing-Safe Handover Verification › [R4.3] should complete delivery with valid OTP, credit rider earnings, and reset rider to available
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.1] should record cash collection in delivery_agents and rider_cash_ledger
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.2] should report cash in hand, limit, and unblocked status
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.3] should block rider from going online when cash in hand exceeds threshold
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.4] should record physical cash deposit at admin hub and unblock the rider
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+PASS src/__tests__/unit/afterOrderExperience.test.js
+  ● Console
+
+    console.log
+      20:57:57 [32minfo[39m: [Ledger] Recorded transaction 0be70f8f-98c0-4820-a9ba-9eb954d765a0 (ORDER_REFUND:ee246f82-d00b-44d9-aa35-23dc94e79de6) with 2 entries totaling 34000 paise
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:57 [32minfo[39m: [Ledger] Recorded transaction 7f8f46ec-e6ed-4207-9a20-ddb3881cf09f (ORDER_REFUND:d1e7c282-da25-4aa0-8daf-0630d4921c7a) with 2 entries totaling 54000 paise
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:57 [32minfo[39m: [Invoice] Generated invoice INV-2026-EE246F82 for order ee246f82-d00b-44d9-aa35-23dc94e79de6
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/unit/variantAndInvoice.test.js
+  ● Console
+
+    console.log
+      20:57:58 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:58 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:58 [32minfo[39m: [Invoice] Generated invoice INV-2026-B2EE0965 for order b2ee0965-e5ed-46ec-9f59-e1549d4193c1
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/orderPlacementPayments.test.js
+  ● Console
+
+    console.log
+      20:57:59 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:57:59 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/earningsWithdrawal.test.js
+PASS src/__tests__/integration/uploads.test.js
+  ● Console
+
+    console.log
+      20:58:05 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:05 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/jobs/fraudAnalysis.test.js
+PASS src/__tests__/integration/societyResidentSurface.test.js
+  ● Console
+
+    console.log
+      20:58:07 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/unit/cartEngine.test.js
+  ● Console
+
+    console.log
+      20:58:10 [32minfo[39m: [Cart] Merged 2 items from session test-guest-session-1792942090488 to user 72d24a63-34ff-44f0-8741-1f7f3efe0745
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/shopOrderingIntegrity.test.js
+  ● Console
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO shop_appointments (id, shop_id, staff_id, user_id, appointment_date, time_slot, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: shop_appointments.shop_id, shop_appointments.staff_id, shop_appointments.appointment_date, shop_appointments.time_slot
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:58:11 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:12 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/merchantPlans.test.js
+PASS src/__tests__/integration/routeAuthorization.test.js
+  ● Console
+
+    console.error
+      WebSocket emit failed Error: Socket.io not initialized
+          at getIo (C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\sockets\index.js:266:18)
+          at getIo (C:\localsampark 04-09-2026\localsampark 04-10-2026\backend\src\controllers\universal-catalog.controller.js:270:9)
+
+      274 |         });
+      275 |       } catch (e) {
+    > 276 |         console.error('WebSocket emit failed', e);
+          |                 ^
+      277 |       }
+      278 |     }
+      279 |
+
+      at error (src/controllers/universal-catalog.controller.js:276:17)
+
+PASS src/__tests__/integration/posSales.test.js
+  ● Console
+
+    console.log
+      20:58:16 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:16 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/adminSettingsSecrets.test.js
+  ● Console
+
+    console.log
+      20:58:17 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:17 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/shopReviews.test.js
+  ● Console
+
+    console.log
+      20:58:19 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:19 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+FAIL src/__tests__/concurrency.test.js
+  ● Console
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO coupons (id, code, discount_amount, max_uses, current_uses, is_active)
+             VALUES (?, ?, 50.00, 1, 0, TRUE) SQLITE_ERROR: table coupons has no column named discount_amount
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at error (src/config/database.sqlite.js:358:21)
+      at Statement.errBack (../node_modules/sqlite3/lib/sqlite3.js:15:21)
+
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.4] Coupon usage limit holds under concurrency race
+
+    SQLITE_ERROR: table coupons has no column named discount_amount
+
+PASS src/__tests__/integration/otpAndSessions.test.js
+  ● Console
+
+    console.log
+      20:58:20 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m:   📱 OTP for +919812345002: 657296
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: [OTP] Provider: console for +919812345002
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m:   📱 OTP for +919812345002: 443057
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: [OTP] Provider: console for +919812345002
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m:   📱 OTP for +919812345002: 763671
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: [OTP] Provider: console for +919812345002
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m:   📱 OTP for +919812345002: 639852
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: [OTP] Provider: console for +919812345002
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m:   📱 OTP for +919812345002: 912038
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: [OTP] Provider: console for +919812345002
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m:   📱 OTP for +919812345001: 964764
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:20 [32minfo[39m: [OTP] Provider: console for +919812345001
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m:   📱 OTP for +919812345001: 842097
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m: [OTP] Provider: console for +919812345001
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m: 
+      ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m:   📱 OTP for +919812345001: 163217
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m: ==================================================
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:21 [32minfo[39m: [OTP] Provider: console for +919812345001
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/unit/couponEngine.test.js
+PASS src/__tests__/integration/refreshRotation.test.js
+  ● Console
+
+    console.log
+      20:58:22 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO used_refresh_tokens (jti, user_id, expires_at) VALUES (?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: used_refresh_tokens.jti
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+    console.log
+      20:58:22 [33mwarn[39m: [Auth] refresh token replayed for user rr-user; all sessions revoked
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO used_refresh_tokens (jti, user_id, expires_at) VALUES (?, ?, ?) SQLITE_CONSTRAINT: UNIQUE constraint failed: used_refresh_tokens.jti
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+PASS src/__tests__/integration/routeShadowing.test.js
+  ● Console
+
+    console.log
+      20:58:23 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:23 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/shopDetailRoutes.test.js
+  ● Console
+
+    console.log
+      20:58:24 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:24 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:24 [32minfo[39m: [AUDIT:API_ACCESS]
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/switchRole.test.js
+  ● Console
+
+    console.log
+      20:58:25 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/adminAuthBypass.test.js
+PASS src/__tests__/integration/equipmentRental.test.js
+PASS src/__tests__/services/mlTelemetry.test.js
+  ● Console
+
+    console.log
+      20:58:29 [33mwarn[39m: ML config change by "not-a-real-user-id", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:29 [33mwarn[39m: ML config change by "test-cleanup", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:29 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:29 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/pushNotifications.test.js
+  ● Console
+
+    console.log
+      20:58:30 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/services/shopPayouts.test.js
+  ● Console
+
+    console.log
+      20:58:31 [32minfo[39m: 💰 Calculated 1 payouts for period 2026-09-10T00:00:00.000Z → 2026-09-11T00:00:00.000Z
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:31 [32minfo[39m: 💰 Calculated 0 payouts for period 2026-09-10T00:00:00.000Z → 2026-09-11T00:00:00.000Z
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:31 [32minfo[39m: 💰 Calculated 1 payouts for period 2026-09-11T00:00:00.000Z → 2026-09-12T00:00:00.000Z
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:32 [32minfo[39m: 💰 Calculated 1 payouts for period 2026-09-12T00:00:00.000Z → 2026-09-13T00:00:00.000Z
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/shopSearchShape.test.js
+  ● Console
+
+    console.log
+      20:58:32 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:32 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:32 [32minfo[39m: [AUDIT:AI_SEARCH_QUERY]
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:32 [32minfo[39m: ML embeddings built: 5 shops, 11 terms.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+          at async Promise.all (index 1)
+
+PASS src/__tests__/integration/adminSupport.test.js
+  ● Console
+
+    console.log
+      20:58:33 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:33 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/services/geoDataTrust.test.js
+PASS src/__tests__/integration/billsAndPremium.test.js
+PASS src/__tests__/integration/adminLoginBypass.test.js
+  ● Console
+
+    console.error
+      [admin-auth] rejected: OTP store unavailable in production without REDIS_URL
+
+      104 |       const otpUnavailable = otpStore.unavailableReason();
+      105 |       if (otpUnavailable) {
+    > 106 |         console.error(`[admin-auth] rejected: ${otpUnavailable}`);
+          |                 ^
+      107 |         return res.status(503).json({ error: 'Verification is temporarily unavailable. Please try again shortly.' });
+      108 |       }
+      109 |
+
+      at error (src/modules/crm/routes/admin-auth.routes.js:106:17)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at ../node_modules/express-rate-limit/dist/index.cjs:1058:7
+      at ../node_modules/express-rate-limit/dist/index.cjs:878:5
+
+    console.error
+      [admin-auth] rejected: OTP store unavailable in production without REDIS_URL
+
+      104 |       const otpUnavailable = otpStore.unavailableReason();
+      105 |       if (otpUnavailable) {
+    > 106 |         console.error(`[admin-auth] rejected: ${otpUnavailable}`);
+          |                 ^
+      107 |         return res.status(503).json({ error: 'Verification is temporarily unavailable. Please try again shortly.' });
+      108 |       }
+      109 |
+
+      at error (src/modules/crm/routes/admin-auth.routes.js:106:17)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at ../node_modules/express-rate-limit/dist/index.cjs:1058:7
+      at ../node_modules/express-rate-limit/dist/index.cjs:878:5
+
+    console.error
+      [admin-auth] rejected: OTP store unavailable in production without REDIS_URL
+
+      104 |       const otpUnavailable = otpStore.unavailableReason();
+      105 |       if (otpUnavailable) {
+    > 106 |         console.error(`[admin-auth] rejected: ${otpUnavailable}`);
+          |                 ^
+      107 |         return res.status(503).json({ error: 'Verification is temporarily unavailable. Please try again shortly.' });
+      108 |       }
+      109 |
+
+      at error (src/modules/crm/routes/admin-auth.routes.js:106:17)
+      at Layer.handleRequest (../node_modules/router/lib/layer.js:152:17)
+      at next (../node_modules/router/lib/route.js:157:13)
+      at ../node_modules/express-rate-limit/dist/index.cjs:1058:7
+      at ../node_modules/express-rate-limit/dist/index.cjs:878:5
+
+PASS src/__tests__/integration/coins.test.js (5.566 s)
+PASS src/__tests__/integration/jobCardLifecycle.test.js
+PASS src/__tests__/services/shopAnalytics.test.js
+PASS src/__tests__/jobs/campaignSchedule.test.js
+PASS src/__tests__/integration/groupBuyJoin.test.js
+PASS src/__tests__/adminHealth.test.js
+  ● Console
+
+    console.log
+      20:58:48 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/publicStats.test.js
+PASS src/__tests__/integration/campaigns.routes.test.js
+PASS src/__tests__/integration/marketplaceChatRoutes.test.js
+PASS src/__tests__/integration/tokenQueueJoin.test.js
+PASS src/__tests__/services/mlRanker.test.js
+  ● Console
+
+    console.log
+      20:58:54 [32minfo[39m: ML embeddings built: 5 shops, 11 terms.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:54 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:54 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:54 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:54 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:58:54 [33mwarn[39m: ML config change by "test", which is not a users(id). Storing updated_by as NULL; attribution is in admin_audit_log.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/middleware/adminTiers.test.js
+PASS src/__tests__/sqlDialectContract.test.js
+PASS src/__tests__/tablesExist.test.js
+PASS src/__tests__/integration/security.test.js
+PASS src/__tests__/integration/referralClaim.test.js
+  ● Console
+
+    console.error
+      ❌ SQLite Run Query Error: INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ('rfc-second', ?, ?, 'RFCCODE1', 'completed', 1) SQLITE_CONSTRAINT: UNIQUE constraint failed: referrals.referee_id
+
+      356 |         if (err) {
+      357 |           if (!err.message.includes('duplicate column name')) {
+    > 358 |             console.error(`❌ SQLite Run Query Error:`, translated.sql, err.message);
+          |                     ^
+      359 |           }
+      360 |           reject(err);
+      361 |         } else {
+
+      at Statement.error (src/config/database.sqlite.js:358:21)
+
+PASS src/__tests__/integration/auctions.test.js
+PASS src/__tests__/unit/searchEngine.test.js
+  ● Console
+
+    console.log
+      20:59:00 [32minfo[39m: ML embeddings built: 6 shops, 17 terms.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+          at async Promise.all (index 1)
+
+PASS src/__tests__/services/membershipBenefit.test.js
+PASS src/__tests__/sqliteInsertIdShim.test.js
+PASS src/__tests__/app.test.js
+PASS src/__tests__/societyClientContract.test.js
+  ● Console
+
+    console.log
+      20:59:02 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/services/mlAdvanced.test.js
+PASS src/__tests__/marketplaceChatSocket.test.js
+PASS src/__tests__/jobLock.test.js
+PASS src/__tests__/noPrismaSplitBrain.test.js
+PASS src/__tests__/services/mlSearch.test.js
+  ● Console
+
+    console.log
+      20:59:06 [32minfo[39m: ML embeddings built: 5 shops, 11 terms.
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+          at async Promise.all (index 1)
+
+    console.log
+      20:59:06 [33mwarn[39m: Vector search failed: index gone
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+          at async Promise.all (index 1)
+
+PASS src/__tests__/services/spatialCache.test.js
+PASS src/__tests__/firebaseMockToken.test.js
+PASS src/__tests__/middleware/auth.middleware.test.js
+PASS src/__tests__/services/mlGraph.test.js
+PASS src/__tests__/uploadRecord.test.js
+PASS src/__tests__/services/mlCollaborative.test.js
+  ● Console
+
+    console.log
+      20:59:08 [32minfo[39m: 🔁 Rebuilding ML item affinity matrix...
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:08 [32minfo[39m:    DRY RUN — would store 0 pair(s) from 0 actor(s).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/integration/schemaParityHazards.test.js
+PASS src/__tests__/shopProductsSchemaContract.test.js
+PASS src/__tests__/services/territoryTopology.test.js
+PASS src/__tests__/bodyGuard.test.js
+PASS src/__tests__/unit/ledgerEngine.test.js
+  ● Console
+
+    console.log
+      20:59:10 [32minfo[39m: [Ledger] Recorded transaction 7c3e8f20-b537-4679-8cb6-f51da089e780 (MANUAL_ADJUSTMENT:test-balanced-1) with 2 entries totaling 50000 paise
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:10 [32minfo[39m: [Ledger] Recorded transaction 64bd9465-b4e2-46b1-8a59-58eef72200b0 (ORDER_PAYMENT:29f6638a-f51f-432e-94ba-5c1b1f64e12a) with 3 entries totaling 50000 paise
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:10 [32minfo[39m: [Ledger] Recorded transaction d0909079-52ba-4e4a-9741-70d2bb7dd7d8 (ORDER_REFUND:29f6638a-f51f-432e-94ba-5c1b1f64e12a) with 2 entries totaling 10000 paise
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/deployConfig.test.js
+PASS src/__tests__/services/mlSessionBoost.test.js
+PASS src/__tests__/setup/testAuth.test.js
+PASS src/__tests__/exportsResolve.test.js
+PASS src/__tests__/integration/delivery.routes.test.js
+PASS src/__tests__/categoryRouterParity.test.js
+PASS src/__tests__/unit/backupRestore.test.js
+  ● Console
+
+    console.log
+      [BACKUP] Starting automated database backup at 2026-10-25T15:29:12.112Z
+
+      at log (../scripts/backup/pg_dump_backup.js:95:11)
+
+    console.log
+      [BACKUP] Executing pg_dump...
+
+      at log (../scripts/backup/pg_dump_backup.js:102:13)
+
+    console.warn
+      [BACKUP] pg_dump not available in local environment, generating simulated database snapshot.
+
+      104 |   } catch (err) {
+      105 |     if (options.allowSimulation || process.env.NODE_ENV !== 'production') {
+    > 106 |       console.warn(`[BACKUP] pg_dump not available in local environment, generating simulated database snapshot.`);
+          |               ^
+      107 |       fs.writeFileSync(rawDumpPath, Buffer.from(`-- LocalSampark Simulated Dump [${timestamp}]\n-- Parity checkpoint\nSELECT 1;`));
+      108 |       isSimulated = true;
+      109 |     } else {
+
+      at warn (../scripts/backup/pg_dump_backup.js:106:15)
+      at Object.runBackup (src/__tests__/unit/backupRestore.test.js:54:26)
+
+    console.log
+      [BACKUP] Encrypting 88 bytes with AES-256-GCM...
+
+      at log (../scripts/backup/pg_dump_backup.js:116:11)
+
+    console.log
+      [BACKUP] Created encrypted backup: backup_2026-10-25T15-29-12-112Z.dump.enc (116 bytes)
+
+      at log (../scripts/backup/pg_dump_backup.js:129:11)
+
+    console.log
+      [BACKUP] SHA-256 Checksum: 3a51ad7b10df8c35b2629e3de42feda9898ee850c6cf4d492548a361ee8c181d
+
+      at log (../scripts/backup/pg_dump_backup.js:130:11)
+
+    console.log
+      [BACKUP] Starting automated database backup at 2026-10-25T15:29:12.155Z
+
+      at log (../scripts/backup/pg_dump_backup.js:95:11)
+
+    console.log
+      [BACKUP] Executing pg_dump...
+
+      at log (../scripts/backup/pg_dump_backup.js:102:13)
+
+    console.warn
+      [BACKUP] pg_dump not available in local environment, generating simulated database snapshot.
+
+      104 |   } catch (err) {
+      105 |     if (options.allowSimulation || process.env.NODE_ENV !== 'production') {
+    > 106 |       console.warn(`[BACKUP] pg_dump not available in local environment, generating simulated database snapshot.`);
+          |               ^
+      107 |       fs.writeFileSync(rawDumpPath, Buffer.from(`-- LocalSampark Simulated Dump [${timestamp}]\n-- Parity checkpoint\nSELECT 1;`));
+      108 |       isSimulated = true;
+      109 |     } else {
+
+      at warn (../scripts/backup/pg_dump_backup.js:106:15)
+      at Object.runBackup (src/__tests__/unit/backupRestore.test.js:73:29)
+
+    console.log
+      [BACKUP] Encrypting 88 bytes with AES-256-GCM...
+
+      at log (../scripts/backup/pg_dump_backup.js:116:11)
+
+    console.log
+      [BACKUP] Created encrypted backup: backup_2026-10-25T15-29-12-155Z.dump.enc (116 bytes)
+
+      at log (../scripts/backup/pg_dump_backup.js:129:11)
+
+    console.log
+      [BACKUP] SHA-256 Checksum: 3fbe46a6709c5de2c2cb85267dfeea4625c80370ff371720c3beadb6576e1dcc
+
+      at log (../scripts/backup/pg_dump_backup.js:130:11)
+
+    console.log
+      [RESTORE] Inspecting archive: backup_2026-10-25T15-29-12-155Z.dump.enc
+
+      at log (../scripts/backup/restore_backup.js:28:11)
+
+    console.log
+      [RESTORE] SHA-256 checksum verified: 3fbe46a6709c5de2c2cb85267dfeea4625c80370ff371720c3beadb6576e1dcc
+
+      at log (../scripts/backup/restore_backup.js:38:13)
+
+    console.log
+      [RESTORE] Authenticating and decrypting 116 bytes...
+
+      at log (../scripts/backup/restore_backup.js:43:11)
+
+    console.log
+      [RESTORE] Successfully decrypted archive (88 bytes)
+
+      at log (../scripts/backup/restore_backup.js:45:11)
+
+    console.log
+      [RESTORE] Dry-run validation SUCCESSFUL. Decrypted dump is valid and authenticated.
+
+      at log (../scripts/backup/restore_backup.js:48:13)
+
+PASS tests/jwt-secrets.test.js
+  ● Console
+
+    console.warn
+      [secrets] JWT_SECRET not set — using an insecure development key. NEVER deploy this.
+
+      39 |   if (!resolve._warned) resolve._warned = new Set();
+      40 |   if (!resolve._warned.has(varName)) {
+    > 41 |     console.warn(`[secrets] ${varName} not set — using an insecure development key. NEVER deploy this.`);
+         |             ^
+      42 |     resolve._warned.add(varName);
+      43 |   }
+      44 |   return devFallback;
+
+      at warn (src/config/secrets.js:41:13)
+      at resolve (src/config/secrets.js:49:10)
+      at Object.getJwtSecret (tests/jwt-secrets.test.js:85:19)
+
+    console.warn
+      [secrets] JWT_SECRET not set — using an insecure development key. NEVER deploy this.
+
+      39 |   if (!resolve._warned) resolve._warned = new Set();
+      40 |   if (!resolve._warned.has(varName)) {
+    > 41 |     console.warn(`[secrets] ${varName} not set — using an insecure development key. NEVER deploy this.`);
+         |             ^
+      42 |     resolve._warned.add(varName);
+      43 |   }
+      44 |   return devFallback;
+
+      at warn (src/config/secrets.js:41:13)
+      at resolve (src/config/secrets.js:49:10)
+      at Object.getJwtSecret (tests/jwt-secrets.test.js:90:12)
+
+    console.warn
+      [secrets] JWT_REFRESH_SECRET not set — using an insecure development key. NEVER deploy this.
+
+      39 |   if (!resolve._warned) resolve._warned = new Set();
+      40 |   if (!resolve._warned.has(varName)) {
+    > 41 |     console.warn(`[secrets] ${varName} not set — using an insecure development key. NEVER deploy this.`);
+         |             ^
+      42 |     resolve._warned.add(varName);
+      43 |   }
+      44 |   return devFallback;
+
+      at warn (src/config/secrets.js:41:13)
+      at resolve (src/config/secrets.js:60:10)
+      at Object.getJwtRefreshSecret (tests/jwt-secrets.test.js:91:12)
+
+PASS tests/payout-math.test.js
+PASS src/__tests__/integration/community_services.routes.test.js
+PASS src/__tests__/rbac.test.js
+PASS src/__tests__/errorHandler.test.js
+  ● Console
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — invalid input syntax for type uuid: "abc"
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [31merror[39m: [GET] /api/v1/shops/abc — relation "secret_table" does not exist at /srv/app/src/x.js
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [31merror[39m: [GET] /api/v1/shops/abc — relation "secret_table" does not exist at /srv/app/src/x.js
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [31merror[39m: [GET] /api/v1/shops/abc — relation "secret_table" does not exist at /srv/app/src/x.js
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [31merror[39m: [GET] /api/v1/shops/abc — relation "secret_table" does not exist at /srv/app/src/x.js
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — Shop not found
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — Not allowed by CORS
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — null value in column "title" of relation "events" violates not-null constraint
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — SQLITE_CONSTRAINT: NOT NULL constraint failed: events.title
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — violates check constraint "orders_status_check"
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — SQLITE_CONSTRAINT: CHECK constraint failed: status IN (...)
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — duplicate key value violates unique constraint "users_phone_key"
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — SQLITE_CONSTRAINT: UNIQUE constraint failed: users.phone_number
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — violates foreign key constraint
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — null value in column "secret_col" of relation "secret_table" violates not-null constraint
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      20:59:12 [33mwarn[39m: [GET] /api/v1/shops/abc — NOT NULL constraint failed: x.y
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/demo-personas.test.js
+PASS src/__tests__/mlTelemetryParity.test.js
+PASS src/__tests__/services/deliveryPricing.test.js
+PASS src/__tests__/storageService.test.js
+PASS src/__tests__/middleware/validate.test.js
+PASS src/__tests__/controllers/orderStatusAuth.test.js
+PASS tests/webhook-security.test.js
+  ● Console
+
+    console.warn
+      [webhook] Cashfree: no secret configured — signature NOT verified (development only)
+
+      63 |       return `${providerName} webhook secret is not configured; refusing unverified callback`;
+      64 |     }
+    > 65 |     console.warn(`[webhook] ${providerName}: no secret configured — signature NOT verified (development only)`);
+         |             ^
+      66 |     return null;
+      67 |   }
+      68 |   if (!signature) return `${providerName} webhook missing signature header`;
+
+      at warn (src/utils/webhookSignature.js:65:13)
+      at Object.webhookGuard (tests/webhook-security.test.js:89:20)
+
+PASS src/__tests__/services/geoUtil.test.js
+PASS src/__tests__/middleware/csrf.middleware.test.js
+PASS src/__tests__/services/payment.gateway.test.js
+  ● Console
+
+    console.error
+      [PaymentGateway] webhook rejected: no verifier for provider 'paypal'
+
+      75 |
+      76 |       default:
+    > 77 |         console.error(`[PaymentGateway] webhook rejected: no verifier for provider '${provider}'`);
+         |                 ^
+      78 |         return false;
+      79 |     }
+      80 |
+
+      at PaymentGatewayEngine.error [as verifyWebhookSignature] (src/services/payment.gateway.js:77:17)
+      at Object.verifyWebhookSignature (src/__tests__/services/payment.gateway.test.js:57:30)
+
+    console.error
+      [PaymentGateway] cashfree webhook rejected: missing x-webhook-timestamp
+
+      67 |         const timestamp = opts.timestamp;
+      68 |         if (!timestamp) {
+    > 69 |           console.error('[PaymentGateway] cashfree webhook rejected: missing x-webhook-timestamp');
+         |                   ^
+      70 |           return false;
+      71 |         }
+      72 |         expected = crypto.createHmac('sha256', secret).update(`${timestamp}${raw}`).digest('base64');
+
+      at PaymentGatewayEngine.error [as verifyWebhookSignature] (src/services/payment.gateway.js:69:19)
+      at Object.verifyWebhookSignature (src/__tests__/services/payment.gateway.test.js:63:30)
+
+    console.error
+      [PaymentGateway] webhook rejected: no secret configured for razorpay. Set PAYMENT_WEBHOOK_SECRET (and SAAS_WEBHOOK_SECRET for billing).
+
+      43 |     }
+      44 |     if (!secret) {
+    > 45 |       console.error(
+         |               ^
+      46 |         `[PaymentGateway] webhook rejected: no secret configured for ${provider}. ` +
+      47 |         'Set PAYMENT_WEBHOOK_SECRET (and SAAS_WEBHOOK_SECRET for billing).'
+      48 |       );
+
+      at PaymentGatewayEngine.error [as verifyWebhookSignature] (src/services/payment.gateway.js:45:15)
+      at Object.verifyWebhookSignature (src/__tests__/services/payment.gateway.test.js:100:30)
+
+    console.error
+      [PaymentGateway] webhook rejected: missing signature
+
+      39 |   static verifyWebhookSignature(provider, payload, signature, secret, opts = {}) {
+      40 |     if (!signature || typeof signature !== 'string') {
+    > 41 |       console.error('[PaymentGateway] webhook rejected: missing signature');
+         |               ^
+      42 |       return false;
+      43 |     }
+      44 |     if (!secret) {
+
+      at PaymentGatewayEngine.error [as verifyWebhookSignature] (src/services/payment.gateway.js:41:15)
+      at Object.verifyWebhookSignature (src/__tests__/services/payment.gateway.test.js:106:30)
+
+PASS src/__tests__/services/otpStore.test.js
+PASS src/__tests__/controllers/rider.controller.test.js
+  ● Console
+
+    console.warn
+      [riders] RIDER-DEADBEEF has no user_id; refusing to act on an unlinked rider.
+
+      40 |
+      41 |   if (!rider.user_id) {
+    > 42 |     console.warn(`[riders] ${riderId} has no user_id; refusing to act on an unlinked rider.`);
+         |             ^
+      43 |     res.status(403).json({
+      44 |       success: false,
+      45 |       message: 'This rider account is not linked to a user. Contact support to link it.',
+
+      at warn (src/modules/logistics/controllers/rider.controller.js:42:13)
+      at updateRiderStatus (src/modules/logistics/controllers/rider.controller.js:94:19)
+      at Object.<anonymous> (src/__tests__/controllers/rider.controller.test.js:81:5)
+
+PASS src/__tests__/predictiveSearchParity.test.js
+PASS src/__tests__/testSafetyGuard.test.js
+PASS src/__tests__/corsOrigins.test.js
+PASS src/__tests__/middleware/apiCache.test.js
+
+Summary of all failing tests
+FAIL src/__tests__/integration/routeSmoke.test.js (46.639 s)
+  ● every route that is not listed as public turns an anonymous caller away
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 7
+
+    - Array []
+    + Array [
+    +   "200 GET /features",
+    +   "200 GET /support/grievance-officer",
+    +   "200 GET /trust-reviews/shop/x",
+    +   "400 POST /users/account-deletion-request",
+    +   "400 POST /account-deletion-request",
+    + ]
+
+      163 |     if (![401, 403, 404, 429, 503].includes(status)) open.push(`${status} ${key.replace('/api/v1', '')}`);
+      164 |   }
+    > 165 |   expect(open).toEqual([]);
+          |                ^
+      166 | }, 240000);
+      167 |
+
+      at Object.toEqual (src/__tests__/integration/routeSmoke.test.js:165:16)
+
+FAIL src/__tests__/postgresSchemaContract.test.js
+  ● a foreign key points at the same table and does the same thing on delete
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "trust_reviews.order_id -> orders: declared on PostgreSQL only",
+    + ]
+
+      177 |   }
+      178 |
+    > 179 |   expect(differences).toEqual([]);
+          |                       ^
+      180 | });
+      181 |
+      182 | test('every index SQLite has, PostgreSQL has too', () => {
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:179:23)
+
+  ● every index SQLite has, PostgreSQL has too
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 4
+
+    - Array []
+    + Array [
+    +   "idx_order_returns_verified_by ON order_returns",
+    +   "idx_order_returns_user_id ON order_returns",
+    + ]
+
+      189 |     .map((index) => `${index.name} ON ${index.tbl_name}`);
+      190 |
+    > 191 |   expect(missing).toEqual([]);
+          |                   ^
+      192 | });
+      193 |
+      194 | // ── the application's SQL, read against the PostgreSQL model ────────────────
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:191:19)
+
+  ● flag literals are quoted wherever the column's type would reject a bare one
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 17
+
+    - Array []
+    + Array [
+    +   "modules/crm/routes/fraud.routes.js:197  fraud_blocklist.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/crm/controllers/admin-revenue.controller.js:179  regions.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:177  marketplace_price_alerts.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:211  job_skill_assessments.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:258  job_skill_assessments.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:400  carpool_groups.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced-b.routes.js:409  carpool_groups.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced.routes.js:577  job_alerts.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/advanced.routes.js:585  job_alerts.is_active = false  (column is INTEGER on PostgreSQL)",
+    +   "modules/services/routes/carpool.routes.js:478  carpool_recurring_rides.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/ecommerce/routes/marketplace.routes.js:88  marketplace_categories.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-resident.controller.js:163  society_members.is_active = true  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-resident.controller.js:196  society_members.is_active = false  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-resident.controller.js:880  society_events.is_active = false  (column is INTEGER on PostgreSQL)",
+    +   "modules/community/controllers/society-visitor.controller.js:80  society_members.is_active = true  (column is INTEGER on PostgreSQL)",
+    + ]
+
+      280 |   }
+      281 |
+    > 282 |   expect(problems).toEqual([]);
+          |                    ^
+      283 | });
+      284 |
+      285 | test('every INSERT fits the PostgreSQL table as well', () => {
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:282:20)
+
+  ● every INSERT fits the PostgreSQL table as well
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "modules/core/routes/privacy.routes.js:117  data_subject_requests has no column on PostgreSQL: details",
+    + ]
+
+      316 |   }
+      317 |
+    > 318 |   expect(problems).toEqual([]);
+          |                    ^
+      319 | });
+      320 |
+
+      at Object.toEqual (src/__tests__/postgresSchemaContract.test.js:318:20)
+
+FAIL src/__tests__/envDocumentation.test.js
+  ● every environment variable the code reads is in .env.example
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 5
+
+    - Array []
+    + Array [
+    +   "BYPASS_FEATURE_FLAGS",
+    +   "ENABLE_ML_JOBS",
+    +   "ENABLE_WORKERS",
+    + ]
+
+      47 |   const documented = documentedVariables();
+      48 |   const missing = [...usedVariables()].filter((v) => !PLATFORM.has(v) && !documented.has(v)).sort();
+    > 49 |   expect(missing).toEqual([]);
+         |                   ^
+      50 | });
+      51 |
+      52 | test('every variable in .env.example is read by the code', () => {
+
+      at Object.toEqual (src/__tests__/envDocumentation.test.js:49:19)
+
+FAIL src/__tests__/fkIndexCoverage.test.js
+  ● PostgreSQL (migration files) › every foreign-key column leads an index
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 5
+
+    - Array []
+    + Array [
+    +   "trust_reviews.order_id",
+    +   "order_returns.user_id",
+    +   "order_returns.verified_by",
+    + ]
+
+      83 |     expect(seen).toBeGreaterThan(300);
+      84 |     expect(leading.size).toBeGreaterThan(500);
+    > 85 |     expect(missing).toEqual([]);
+         |                     ^
+      86 |   });
+      87 | });
+      88 |
+
+      at Object.toEqual (src/__tests__/fkIndexCoverage.test.js:85:21)
+
+FAIL src/__tests__/insertSchemaContract.test.js
+  ● every INSERT in reachable source names real columns and supplies the required ones
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "modules/core/routes/privacy.routes.js:117  data_subject_requests has no column: details",
+    + ]
+
+      91 |   // If the scan stops finding statements, it has broken, not the code improved.
+      92 |   expect(statements).toBeGreaterThan(300);
+    > 93 |   expect(problems).toEqual([]);
+         |                    ^
+      94 | });
+      95 |
+
+      at Object.toEqual (src/__tests__/insertSchemaContract.test.js:93:20)
+
+FAIL src/__tests__/integration/adminPricing.test.js
+  ● pricing settings › an administrator sees every setting with its limits; a customer sees nothing
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 5
+    Received: 0
+
+      62 |     const fee = res.body.settings.find((s) => s.key === 'delivery_per_km_fee');
+      63 |     expect(fee).toMatchObject({ value: 8, default: 8, type: 'number', min: 0, max: 100, group: 'delivery' });
+    > 64 |     expect(res.body.settings.find((s) => s.key === 'default_commission_percent').value).toBe(5);
+         |                                                                                         ^
+      65 |
+      66 |     expect((await request(app).get('/admin/pricing').set(as(USER))).status).toBe(403);
+      67 |     expect((await request(app).get('/admin/pricing')).status).toBe(401);
+
+      at Object.toBe (src/__tests__/integration/adminPricing.test.js:64:89)
+
+FAIL src/__tests__/unit/riderFleet.test.js
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.1] should reject invalid Aadhaar format during onboarding
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.2] should submit valid rider onboarding application and set kyc_status to pending
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.3] should return rider profile with masked bank account and pending status
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R1: Rider Onboarding & KYC Verification › [R1.4] should allow admin to view pending KYC queue and approve the rider
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R2: Rider Duty Toggle & Live Geolocation › [R2.1] should reject duty toggle if rider coordinates are outside Pune/Dhanori pilot zone
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R2: Rider Duty Toggle & Live Geolocation › [R2.2] should allow duty toggle online when within Dhanori pilot zone
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R2: Rider Duty Toggle & Live Geolocation › [R2.3] should ingest GPS heartbeat update and record live tracking history
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.1] should list available jobs sorted by proximity to the rider
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.1] should list available jobs sorted by proximity to the rider
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.2] should atomically accept a job and transition order to assigned and rider to on_delivery
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.2] should atomically accept a job and transition order to assigned and rider to on_delivery
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.3] should prevent another rider from accepting the already claimed job
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.3] should prevent another rider from accepting the already claimed job
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.4] should allow rider to release/reject assigned job back to ready pool
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R3: Dispatch Queue & Auto-Assignment › [R3.4] should allow rider to release/reject assigned job back to ready pool
+
+    SQLITE_CONSTRAINT: FOREIGN KEY constraint failed
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R4: Pickup & Timing-Safe Handover Verification › [R4.1] should confirm pickup and transition order to out_for_delivery
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R4: Pickup & Timing-Safe Handover Verification › [R4.2] should reject completion with invalid OTP code using timing-safe comparison
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R4: Pickup & Timing-Safe Handover Verification › [R4.3] should complete delivery with valid OTP, credit rider earnings, and reset rider to available
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.1] should record cash collection in delivery_agents and rider_cash_ledger
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.2] should report cash in hand, limit, and unblocked status
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.3] should block rider from going online when cash in hand exceeds threshold
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+  ● Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5) › R5: COD Cash Ledger & Floating Cash Limits › [R5.4] should record physical cash deposit at admin hub and unblock the rider
+
+    SQLITE_CONSTRAINT: NOT NULL constraint failed: local_shops.coordinate
+
+FAIL src/__tests__/concurrency.test.js
+  ● PostgreSQL Concurrency & Idempotency Suite [G6] › [G6.4] Coupon usage limit holds under concurrency race
+
+    SQLITE_ERROR: table coupons has no column named discount_amount
+
+
+Test Suites: 8 failed, 134 passed, 142 total
+Tests:       28 failed, 1617 passed, 1645 total
+Snapshots:   0 total
+Time:        202.299 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-10-25T15-25-14\jest-sqlite.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

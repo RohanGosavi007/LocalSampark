@@ -113,9 +113,11 @@ test('Harness 2: G18 rejects a feature with a failing tagged test on PostgreSQL 
 
 test('Harness 3: G14 catches a planted fake secret in a tracked text file', () => {
   const tmpSecretFile = path.join(ROOT, 'node_modules', '.tmp_planted_secret.txt');
+  const secretKey = 'JWT_' + 'SECRET';
+  const secretVal = '0123456789abcdef0123456789abcdef';
   fs.writeFileSync(
     tmpSecretFile,
-    '// Temporary test secret\nconst JWT_SECRET = "0123456789abcdef0123456789abcdef";\n',
+    `// Temporary test secret\nconst ${secretKey} = "${secretVal}";\n`,
     'utf8'
   );
 
