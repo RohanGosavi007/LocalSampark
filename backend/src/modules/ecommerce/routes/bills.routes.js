@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const { validate } = require('../../../middleware/validate');
 const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');

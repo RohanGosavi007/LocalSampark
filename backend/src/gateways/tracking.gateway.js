@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 /**
  * Real-Time Order & Delivery Tracking Gateway
  * Handles WebSocket driver location streaming & customer tracking subscriptions
@@ -23,7 +24,7 @@ class TrackingGateway {
 
     this.driverLocations.set(orderId, payload);
 
-    console.log(`[TrackingGateway] Broadcast location for order ${orderId}: (${locationData.lat}, ${locationData.lng})`);
+    logger.info(`[TrackingGateway] Broadcast location for order ${orderId}: (${locationData.lat}, ${locationData.lng})`);
     return payload;
   }
 

@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 const express = require('express');
 const { validate } = require('../../../middleware/validate');
 const router = express.Router();
@@ -222,7 +223,7 @@ router.post('/send-otp', authLimiter, validate({
       await otpStore.deleteOtp(`otp:${phoneNumber}`);
       return res.status(503).json({ error: 'We could not send the code right now. Please try again shortly.' });
     }
-    console.log(`[OTP] Provider: ${smsResult.provider} for ${phoneNumber}`);
+    logger.info(`[OTP] Provider: ${smsResult.provider} for ${phoneNumber}`);
 
     const response = {
       success: true,
@@ -657,7 +658,7 @@ router.post('/send-whatsapp-otp', authLimiter, async (req, res, next) => {
         return res.status(503).json({ error: 'We could not send the code on WhatsApp. Please use SMS or Email.', code: 'WHATSAPP_UNAVAILABLE' });
       }
     } else {
-      console.log(`[WHATSAPP OTP DEBUG] ${otp} for ${phoneNumber} (Free/Dev mode active)`);
+      logger.info(`[WHATSAPP OTP DEBUG] ${otp} for ${phoneNumber} (Free/Dev mode active)`);
     }
 
     const waLink = whatsapp.getWhatsAppWebLink(phoneNumber, `Your LocalSampark verification code is: ${otp}`);
@@ -743,7 +744,7 @@ router.post('/register-email',
        <a href="${verifyLink}" style="padding:10px 20px;background:blue;color:white;text-decoration:none;border-radius:5px">Verify Email</a>`
     ).catch(e => console.warn('[EMAIL] Best-effort verify email failed:', e.message));
 
-    console.log(`[EMAIL VERIFY DEBUG] Verification link: ${verifyLink}`);
+    logger.info(`[EMAIL VERIFY DEBUG] Verification link: ${verifyLink}`);
 
     // Generate JWT tokens directly so user can be automatically authenticated
     const { accessToken, refreshToken } = generateTokens(
@@ -861,7 +862,7 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
        <h3 style="background:#f4f4f4;padding:10px;display:inline-block;letter-spacing:2px;">${token}</h3>`
     ).catch(e => console.warn('[EMAIL] Best-effort forgot password send failed:', e.message));
 
-    console.log(`[PASSWORD RESET DEBUG] Reset token: ${token}`);
+    logger.info(`[PASSWORD RESET DEBUG] Reset token: ${token}`);
     res.json({
       success: true,
       message: 'Password reset link sent to email',

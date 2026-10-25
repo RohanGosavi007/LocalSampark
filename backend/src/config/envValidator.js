@@ -1,3 +1,4 @@
+const logger = require('./logger.js');
 // LocalSampark Production Environment Sanity Checker
 
 const REQUIRED_ENV_VARS = [
@@ -145,7 +146,7 @@ function validateEnv() {
       console.error('   Set them in the Render dashboard (they are declared sync:false in render.yaml).');
     }
 
-    console.log('✅ Production environment variables sanity check passed.');
+    logger.info('✅ Production environment variables sanity check passed.');
   } else {
     console.warn('⚠️  Running in non-production mode. Strict validation skipped.');
     

@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const cron = require('../utils/cron');
 const { query } = require('../config/database');
 const { sendTopicPush, sendPushNotification } = require('../config/firebase');
@@ -31,7 +32,7 @@ cron.schedule('*/5 * * * *', async () => {
 
                 // Check if visitor has overstayed
                 if (now > (checkInTime + allowedDurationMs)) {
-                    console.log(`[Alert] Visitor ${visitor.visitor_name} (Flat ${visitor.flat_number}) has overstayed!`);
+                    logger.info(`[Alert] Visitor ${visitor.visitor_name} (Flat ${visitor.flat_number}) has overstayed!`);
                     
                     // Mark as alert sent
                     await query('UPDATE society_visitors SET overstay_alert_sent = \'1\' WHERE id = $1', [visitor.id]);

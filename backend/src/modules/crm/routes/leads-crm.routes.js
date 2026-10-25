@@ -1,5 +1,5 @@
-﻿/**
- * LEADS CRM ROUTES â€” Archetype 6: Hyperlocal Directory & Community Leads
+/**
+ * LEADS CRM ROUTES — Archetype 6: Hyperlocal Directory & Community Leads
  * For: Real Estate, Matrimony, Local Jobs, Scrap/Kabadi, Krishi Mandi, Community Volunteer Hubs
  */
 const express = require('express');
@@ -12,7 +12,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 // them through its pipeline and write into its activity log.
 const { requireShopParam } = require('../../../middleware/shop-owner.middleware');
 
-// â”€â”€ GET /api/v1/leads-crm/:shopId â€” Get all leads for a shop â”€â”€
+// â”€â”€ GET /api/v1/leads-crm/:shopId — Get all leads for a shop â”€â”€
 router.get('/:shopId', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -52,7 +52,7 @@ router.get('/:shopId', authenticate, requireShopParam(), async (req, res) => {
   }
 });
 
-// â”€â”€ POST /api/v1/leads-crm/:shopId â€” Create new lead (visitor inquiry) â”€â”€
+// â”€â”€ POST /api/v1/leads-crm/:shopId — Create new lead (visitor inquiry) â”€â”€
 router.post('/:shopId', authenticate, async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -99,7 +99,7 @@ router.post('/:shopId', authenticate, async (req, res) => {
   }
 });
 
-// â”€â”€ PUT /api/v1/leads-crm/:shopId/:leadId/stage â€” Move lead through pipeline â”€â”€
+// â”€â”€ PUT /api/v1/leads-crm/:shopId/:leadId/stage — Move lead through pipeline â”€â”€
 router.put('/:shopId/:leadId/stage', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { leadId } = req.params;
@@ -134,7 +134,7 @@ router.put('/:shopId/:leadId/stage', authenticate, requireShopParam(), async (re
   }
 });
 
-// â”€â”€ POST /api/v1/leads-crm/:shopId/:leadId/activity â€” Add activity/call log â”€â”€
+// â”€â”€ POST /api/v1/leads-crm/:shopId/:leadId/activity — Add activity/call log â”€â”€
 router.post('/:shopId/:leadId/activity', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { leadId } = req.params;
@@ -157,7 +157,7 @@ router.post('/:shopId/:leadId/activity', authenticate, requireShopParam(), async
   }
 });
 
-// â”€â”€ GET /api/v1/leads-crm/:shopId/:leadId/activities â€” Get lead activity history â”€â”€
+// â”€â”€ GET /api/v1/leads-crm/:shopId/:leadId/activities — Get lead activity history â”€â”€
 router.get('/:shopId/:leadId/activities', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { leadId } = req.params;
@@ -173,7 +173,7 @@ router.get('/:shopId/:leadId/activities', authenticate, requireShopParam(), asyn
   }
 });
 
-// â”€â”€ GET /api/v1/leads-crm/:shopId/stats â€” Lead analytics â”€â”€
+// â”€â”€ GET /api/v1/leads-crm/:shopId/stats — Lead analytics â”€â”€
 router.get('/:shopId/stats', authenticate, requireShopParam(), async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -209,7 +209,7 @@ router.get('/:shopId/stats', authenticate, requireShopParam(), async (req, res) 
   }
 });
 
-// â”€â”€ GET /api/v1/leads-crm/:shopId/listings â€” Public listings (for directory archetype) â”€â”€
+// â”€â”€ GET /api/v1/leads-crm/:shopId/listings — Public listings (for directory archetype) â”€â”€
 // Public: a directory shop's active listings, as its page shows them to any
 // visitor. It required a session, and the page calls it without one, so the
 // listings never loaded.

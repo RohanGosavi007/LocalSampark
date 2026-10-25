@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 const express = require('express');
 const router = express.Router();
 const { query, queryOne, withTransaction } = require('../../../config/database');
@@ -149,7 +150,7 @@ router.post('/webhook/billing', express.raw({ type: 'application/json' }), async
       // 1. Check Idempotency (prevent duplicate processing)
       const existingEvent = await dbClient.query('SELECT event_id FROM webhook_events WHERE event_id = $1', [event_id]);
       if ((existingEvent.rows || existingEvent).length > 0) {
-        console.log(`Webhook ${event_id} already processed. Ignoring.`);
+        logger.info(`Webhook ${event_id} already processed. Ignoring.`);
         return; // Idempotent success
       }
 

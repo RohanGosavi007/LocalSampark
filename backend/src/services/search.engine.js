@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const Typesense = require('typesense');
 
 /**
@@ -60,7 +61,7 @@ class SearchEngine {
       await client.collections('shops').retrieve();
     } catch (e) {
       await client.collections().create(shopSchema);
-      console.log('✅ Typesense "shops" collection created successfully.');
+      logger.info('✅ Typesense "shops" collection created successfully.');
     }
   }
 

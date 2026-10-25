@@ -194,7 +194,7 @@ router.post('/blocklist', authenticate, requireAdmin, async (req, res, next) => 
     await query(`INSERT INTO fraud_blocklist (id, entity_type, entity_value, reason, blocked_by, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (entity_type, entity_value)
-       DO UPDATE SET reason = $4, blocked_by = $5, expires_at = $6, is_active = 1`,
+       DO UPDATE SET reason = $4, blocked_by = $5, expires_at = $6, is_active = true`,
       [id, entity_type, entity_value, reason, adminId, expires_at || null]
     );
 

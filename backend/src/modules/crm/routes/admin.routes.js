@@ -899,7 +899,7 @@ router.put('/regions/:id/features', authenticate, requireAdmin, async (req, res,
     const { features } = req.body; // e.g. { delivery: true, jobs: false, rentals: true, events: true, services: true }
     if (!features) return res.status(400).json({ error: 'features object required' });
     
-    // Store features as JSON in a column â€” first check if column exists, if not we store in admin_config
+    // Store features as JSON in a column — first check if column exists, if not we store in admin_config
     const key = `territory_features_${req.params.id}`;
     await queryOne(`INSERT INTO admin_config (config_key, config_value, config_category, description, updated_by)
        VALUES ($1, $2, 'territory_features', $3, $4)
@@ -1327,7 +1327,7 @@ router.put('/delivery/agents/:id/status', authenticate, requireAdmin, async (req
  * above.
  */
 
-// GET /admin/territory-assignments â€” List all assignments
+// GET /admin/territory-assignments — List all assignments
 router.get('/territory-assignments', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const result = await query(`
@@ -1387,7 +1387,7 @@ router.post('/territory-assignments', authenticate, requireAdmin, requireSuperAd
   } catch (error) { next(error); }
 });
 
-// DELETE /admin/territory-assignments/:id â€” Remove assignment
+// DELETE /admin/territory-assignments/:id — Remove assignment
 router.delete('/territory-assignments/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     await query('UPDATE admin_territory_assignments SET is_active = \'0\' WHERE id = $1', [req.params.id]);

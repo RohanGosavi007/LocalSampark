@@ -475,7 +475,7 @@ router.put('/vehicles/:id', authenticate, async (req, res, next) => {
 
 router.get('/recurring', authenticate, async (req, res, next) => {
   try {
-    const schedules = await queryMany('SELECT * FROM carpool_recurring_rides WHERE driver_id = $1 AND is_active = 1 ORDER BY created_at DESC', [req.user.id]);
+    const schedules = await queryMany('SELECT * FROM carpool_recurring_rides WHERE driver_id = $1 AND is_active = true ORDER BY created_at DESC', [req.user.id]);
     res.json({ success: true, schedules });
   } catch (err) { next(err); }
 });

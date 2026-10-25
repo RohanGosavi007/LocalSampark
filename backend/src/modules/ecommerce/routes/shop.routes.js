@@ -684,7 +684,7 @@ router.get('/:id/staff/:sid/slots', async (req, res, next) => {
                     id: `slot_${hour}`,
                     time: timeStr,
                     surgeMultiplier: i === 2 || i === 3 ? 1.2 : 1.0,
-                    status: Math.random() > 0.7 ? 'booked' : 'available'
+                    status: (hour % 4 === 0) ? 'booked' : 'available'
                 });
             }
             return res.json({ slots });
@@ -1347,7 +1347,7 @@ router.post('/returns', authenticate, shopMgmt.createReturn);
 router.get('/chat/:shopId/:userId', authenticate, shopMgmt.getChatMessages);
 router.post('/chat/:shopId/:userId', authenticate, shopMgmt.sendChatMessage);
 
-// â”€â”€â”€ JOB CARDS (Garage, Repair, Laundry â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ JOB CARDS (Garage, Repair, Laundry — Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/job-cards', authenticate, requireShopOwner, shopMgmt.getJobCards);
 router.post('/my-shop/job-cards', authenticate, requireShopOwner, shopMgmt.createJobCard);
 router.put('/my-shop/job-cards/:jobCardId', authenticate, requireShopOwner, shopMgmt.updateJobCard);
@@ -1357,15 +1357,15 @@ const pos = require('../controllers/pos.controller');
 router.post('/my-shop/pos-sales', authenticate, requireShopOwner, pos.createSale);
 router.get('/my-shop/pos-sales', authenticate, requireShopOwner, pos.listSales);
 
-// â”€â”€â”€ QUOTATIONS (Home Service, Events â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ QUOTATIONS (Home Service, Events — Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/my-shop/quotations', authenticate, requireShopOwner, shopMgmt.createQuotation);
 
-// â”€â”€â”€ KDS â€” Kitchen Display System (Restaurant â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ KDS — Kitchen Display System (Restaurant — Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/kds', authenticate, requireShopOwner, shopMgmt.getKDSTickets);
 router.post('/my-shop/kds', authenticate, requireShopOwner, shopMgmt.createKDSTicket);
 router.put('/my-shop/kds/:ticketId', authenticate, requireShopOwner, shopMgmt.updateKDSTicket);
 
-// â”€â”€â”€ TABLE MANAGEMENT (Restaurant â€” Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ TABLE MANAGEMENT (Restaurant — Shop Owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/my-shop/tables', authenticate, requireShopOwner, shopMgmt.getRestaurantTables);
 router.put('/my-shop/tables/:tableId', authenticate, requireShopOwner, shopMgmt.updateTableStatus);
 

@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 // Carpool Real-Time Socket Handler
 // Powers: Live map tracking, bid updates, SOS broadcast, ride chat
 
@@ -42,7 +43,7 @@ module.exports = function carpoolSocket(io, socket) {
     const { ride_id } = data;
     if (!ride_id) return;
     socket.join(`ride_${ride_id}`);
-    console.log(`[Carpool] ${socket.user?.id || socket.id} joined ride_${ride_id}`);
+    logger.info(`[Carpool] ${socket.user?.id || socket.id} joined ride_${ride_id}`);
     socket.emit('carpool:joined', { ride_id, status: 'tracking' });
   });
 

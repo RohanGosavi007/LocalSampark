@@ -44,11 +44,7 @@ function socketOrigin() {
 function readToken() {
   if (typeof window === 'undefined') return null;
   try {
-    return (
-      window.localStorage.getItem('auth_token') ||
-      window.localStorage.getItem('token') ||
-      null
-    );
+    return window.localStorage.getItem('auth_token') || null;
   } catch {
     return null;
   }

@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const cron = require('../utils/cron');
 const { queryMany } = require('../config/database');
 const notifications = require('../modules/core/services/notification.service');
@@ -20,7 +21,7 @@ function grantsAssets(permissions) {
 
 // Run daily at 10:00 AM
 cron.schedule('0 10 * * *', async () => {
-    console.log('[Job] Running AMC Expiry Alert Job...');
+    logger.info('[Job] Running AMC Expiry Alert Job...');
     try {
         // The target day is bound rather than written as date('now', '+45
         // days'), which only SQLite understands.
@@ -33,7 +34,7 @@ cron.schedule('0 10 * * *', async () => {
         `, [sqlDate(45)]);
 
         for (const asset of expiringAssets) {
-            console.log(`[Alert] AMC for asset ${asset.asset_name} expires in 45 days.`);
+            logger.info(`[Alert] AMC for asset ${asset.asset_name} expires in 45 days.`);
 
             // Notify Facility Managers
             const roles = await queryMany(`

@@ -1,5 +1,5 @@
-﻿/**
- * TOKEN QUEUE ROUTES â€” Archetype 3: Clinic/Salon/Doctor Token Management
+/**
+ * TOKEN QUEUE ROUTES — Archetype 3: Clinic/Salon/Doctor Token Management
  * For: Dentists, Pathology Labs, Salons, Physiotherapy, Ayurvedic, Dieticians
  */
 const express = require('express');
@@ -12,7 +12,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 // shop. requireShopParam checks the shop in the URL against the caller.
 const { requireShopParam } = require('../../../middleware/shop-owner.middleware');
 
-// â”€â”€ GET /api/v1/token-queue/:shopId â€” Get current queue state â”€â”€
+// â”€â”€ GET /api/v1/token-queue/:shopId — Get current queue state â”€â”€
 router.get('/:shopId', async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -45,7 +45,7 @@ router.get('/:shopId', async (req, res, next) => {
   }
 });
 
-// â”€â”€ POST /api/v1/token-queue/:shopId/increment â€” Merchant calls next token â”€â”€
+// â”€â”€ POST /api/v1/token-queue/:shopId/increment — Merchant calls next token â”€â”€
 router.post('/:shopId/increment', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -92,7 +92,7 @@ router.post('/:shopId/increment', authenticate, requireShopParam(), async (req, 
   }
 });
 
-// â”€â”€ POST /api/v1/token-queue/:shopId/join â€” Visitor joins the queue â”€â”€
+// â”€â”€ POST /api/v1/token-queue/:shopId/join — Visitor joins the queue â”€â”€
 router.post('/:shopId/join', authenticate, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -157,7 +157,7 @@ router.post('/:shopId/join', authenticate, async (req, res, next) => {
   }
 });
 
-// â”€â”€ PUT /api/v1/token-queue/:shopId/pause â€” Pause/unpause the queue â”€â”€
+// â”€â”€ PUT /api/v1/token-queue/:shopId/pause — Pause/unpause the queue â”€â”€
 router.put('/:shopId/pause', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -178,7 +178,7 @@ router.put('/:shopId/pause', authenticate, requireShopParam(), async (req, res, 
   }
 });
 
-// â”€â”€ POST /api/v1/token-queue/:shopId/reset â€” Reset queue for the day â”€â”€
+// â”€â”€ POST /api/v1/token-queue/:shopId/reset — Reset queue for the day â”€â”€
 router.post('/:shopId/reset', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -209,7 +209,7 @@ router.post('/:shopId/reset', authenticate, requireShopParam(), async (req, res,
   }
 });
 
-// â”€â”€ GET /api/v1/token-queue/:shopId/visitors â€” Get today's visitor list â”€â”€
+// â”€â”€ GET /api/v1/token-queue/:shopId/visitors — Get today's visitor list â”€â”€
 router.get('/:shopId/visitors', authenticate, requireShopParam(), async (req, res, next) => {
   try {
     const { shopId } = req.params;

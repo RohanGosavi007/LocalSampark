@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const { generateTokens, authenticate } = require('../../../middleware/auth.middleware');
 const otpStore = require('../../core/services/otpStore.service');
 const { generateCsrfToken, CSRF_COOKIE } = require('../../../middleware/csrf.middleware');
+const logger = require('../../../config/logger');
 
 // Default dev PIN for bootstrapping (will be bcrypt-compared)
 const DEV_DEFAULT_PIN = '123456';
@@ -139,7 +140,9 @@ router.post('/login', authLimiter, async (req, res, next) => {
       if (isDevBypass) {
         try {
           await query('UPDATE users SET role = $1 WHERE id = $2', ['super_admin', user.id]);
-        } catch (e) {}
+        } catch (e) {
+          logger.warn('Failed to update dev user role to super_admin: ' + e.message);
+        }
         user.role = 'super_admin';
       } else {
         return res.status(403).json({ error: 'Access denied. Admin role not assigned.' });

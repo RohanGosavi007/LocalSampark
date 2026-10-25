@@ -174,7 +174,7 @@ router.post('/marketplace/price-alerts', authenticate, async (req, res, next) =>
 router.get('/marketplace/price-alerts', authenticate, async (req, res, next) => {
   try {
     const alerts = await queryMany(
-      `SELECT pa.*, l.title, l.price as current_price FROM marketplace_price_alerts pa LEFT JOIN marketplace_listings l ON pa.listing_id = l.id WHERE pa.user_id = $1 AND pa.is_active = 1 ORDER BY pa.created_at DESC`,
+      `SELECT pa.*, l.title, l.price as current_price FROM marketplace_price_alerts pa LEFT JOIN marketplace_listings l ON pa.listing_id = l.id WHERE pa.user_id = $1 AND pa.is_active = true ORDER BY pa.created_at DESC`,
       [req.user.id]
     );
     res.json({ success: true, alerts });
@@ -208,7 +208,7 @@ router.post('/jobs/video-resume', authenticate, async (req, res, next) => {
 // Get available assessments
 router.get('/jobs/assessments', async (req, res, next) => {
   try {
-    let assessments = await queryMany('SELECT * FROM job_skill_assessments WHERE is_active = 1 ORDER BY skill_name');
+    let assessments = await queryMany('SELECT * FROM job_skill_assessments WHERE is_active = true ORDER BY skill_name');
     if (assessments.length === 0) {
       // Seed some default assessments
       const defaults = [
@@ -255,7 +255,7 @@ router.get('/jobs/assessments', async (req, res, next) => {
             [id, d.skill, d.questions]);
         } catch (e) {}
       }
-      assessments = await queryMany('SELECT * FROM job_skill_assessments WHERE is_active = 1');
+      assessments = await queryMany('SELECT * FROM job_skill_assessments WHERE is_active = true');
     }
     // Don't send answers to client
     const safe = assessments.map(a => {
@@ -397,7 +397,7 @@ router.get('/carpool/groups', async (req, res, next) => {
     const groups = await queryMany(
       `SELECT g.*, u.full_name as creator_name,
        (SELECT COUNT(*) FROM carpool_group_members WHERE group_id = g.id) as member_count
-       FROM carpool_groups g LEFT JOIN users u ON g.created_by = u.id WHERE g.is_active = 1 ORDER BY g.created_at DESC LIMIT 30`
+       FROM carpool_groups g LEFT JOIN users u ON g.created_by = u.id WHERE g.is_active = true ORDER BY g.created_at DESC LIMIT 30`
     );
     res.json({ success: true, groups });
   } catch (error) { next(error); }
@@ -406,7 +406,7 @@ router.get('/carpool/groups', async (req, res, next) => {
 // Join group
 router.post('/carpool/groups/:groupId/join', authenticate, async (req, res, next) => {
   try {
-    const group = await queryOne('SELECT * FROM carpool_groups WHERE id = $1 AND is_active = 1', [req.params.groupId]);
+    const group = await queryOne('SELECT * FROM carpool_groups WHERE id = $1 AND is_active = true', [req.params.groupId]);
     if (!group) return res.status(404).json({ success: false, error: 'Group not found' });
 
     const memberCount = await queryOne('SELECT COUNT(*) as cnt FROM carpool_group_members WHERE group_id = $1', [req.params.groupId]);

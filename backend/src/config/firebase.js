@@ -1,3 +1,4 @@
+const logger = require('./logger.js');
 /**
  * Firebase Admin SDK Configuration
  * Handles initialization for Auth (SMS OTP) and Cloud Messaging (Push Notifications)
@@ -38,7 +39,7 @@ try {
 
     messaging = admin.messaging ? admin.messaging() : null;
     isInitialized = true;
-    console.log('✅ Firebase Admin SDK initialized successfully');
+    logger.info('✅ Firebase Admin SDK initialized successfully');
   } else {
     console.warn('⚠️ Firebase credentials not configured — SMS OTP and Push will use fallback mode');
   }
@@ -56,7 +57,7 @@ try {
  */
 async function sendPushNotification(fcmToken, title, body, data = {}) {
   if (!isInitialized || !messaging) {
-    console.log(`[PUSH STUB] To: ${fcmToken?.slice(0, 20)}... | ${title}: ${body}`);
+    logger.info(`[PUSH STUB] To: ${fcmToken?.slice(0, 20)}... | ${title}: ${body}`);
     return { success: false, reason: 'Firebase not configured' };
   }
 
@@ -83,7 +84,7 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
     };
 
     const response = await messaging.send(message);
-    console.log(`[PUSH] Sent to ${fcmToken?.slice(0, 20)}...: ${title}`);
+    logger.info(`[PUSH] Sent to ${fcmToken?.slice(0, 20)}...: ${title}`);
     return { success: true, messageId: response };
   } catch (error) {
     console.error('[PUSH ERROR]', error.message);
@@ -100,7 +101,7 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
  */
 async function sendMulticastPush(fcmTokens, title, body, data = {}) {
   if (!isInitialized || !messaging || !fcmTokens?.length) {
-    console.log(`[PUSH STUB] Multicast to ${fcmTokens?.length || 0} devices: ${title}`);
+    logger.info(`[PUSH STUB] Multicast to ${fcmTokens?.length || 0} devices: ${title}`);
     return { successCount: 0, failureCount: fcmTokens?.length || 0 };
   }
 
@@ -114,7 +115,7 @@ async function sendMulticastPush(fcmTokens, title, body, data = {}) {
     };
 
     const response = await messaging.sendEachForMulticast(message);
-    console.log(`[PUSH] Multicast: ${response.successCount} sent, ${response.failureCount} failed`);
+    logger.info(`[PUSH] Multicast: ${response.successCount} sent, ${response.failureCount} failed`);
     return {
       successCount: response.successCount,
       failureCount: response.failureCount,
@@ -134,7 +135,7 @@ async function sendMulticastPush(fcmTokens, title, body, data = {}) {
  */
 async function sendTopicPush(topic, title, body, data = {}) {
   if (!isInitialized || !messaging) {
-    console.log(`[PUSH STUB] Topic "${topic}": ${title}`);
+    logger.info(`[PUSH STUB] Topic "${topic}": ${title}`);
     return { success: false };
   }
 

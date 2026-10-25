@@ -1,10 +1,11 @@
+const logger = require('../../../config/logger.js');
 const axios = require('axios');
 const { query } = require('../../../config/database');
 
 class PoliceVerificationService {
     // Mock integration with external API (e.g. state police portals)
     async submitToPolicePortal(verificationId, data) {
-        console.log(`[Police API] Submitting verification ${verificationId} for ${data.personName}`);
+        logger.info(`[Police API] Submitting verification ${verificationId} for ${data.personName}`);
         
         // Mock successful submission
         await query('UPDATE society_police_verification SET status = \'submitted\', submitted_to_police_at = CURRENT_TIMESTAMP WHERE id = $1',

@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { query, queryOne } = require('../../../config/database');

@@ -76,11 +76,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `backend/src/config/database.js:L210-216`
 - **Symptom:** Database adapter intercepts Postgres error `42883` and rewrites `= 1` / `= 0` to `= true` / `= false` for six column names at runtime.
 - **Root Cause:** SQL queries written with SQLite integer booleans rather than standard parameterized booleans.
-- **Fix:** Fix SQL queries at source to use `$n` parameters with boolean types, log when auto-heal fires during Postgres testing, and retire the shim.
-- **Test:** Suite execution against PostgreSQL without auto-heal interception.
-- **Evidence:** Inspect `backend/src/config/database.js`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Fixed SQL queries across backend codebase to use standard boolean `true` / `false` literals supported natively by both PostgreSQL and SQLite. Removed the auto-heal regex shim from `backend/src/config/database.js`.
+- **Test:** Full PostgreSQL concurrency suite and Gate G4/G6 executions pass without auto-heal interception.
+- **Evidence:** Clean execution of database.js query handler without retry; `backend/src/config/database.js`.
+- **Commit:** `launch/ecommerce-v1 (M2)`
+- **Status:** CLOSED
 
 ---
 
@@ -127,7 +127,7 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Fix:** Removed hardcoded `JWT_SECRET=production_super_secret` from `docker-compose.yml`, mapped to `${JWT_SECRET}`, and added `production_super_secret` to banned secret list in `backend/src/config/envValidator.js` which exits process on boot in production.
 - **Test:** Tested envValidator with `NODE_ENV=production` and verified deployConfig tests pass (`npx jest src/__tests__/deployConfig.test.js`).
 - **Evidence:** Verified clean execution of deployConfig.test.js.
-- **Commit:** Pending
+- **Commit:** `3d4dc00`
 - **Status:** CLOSED
 
 ---
@@ -140,27 +140,27 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** Monorepo-wide (~140 empty catch blocks, ~317 `console.log` in backend)
 - **Symptom:** Failures are silently suppressed without user notification or structured log tracing.
 - **Root Cause:** Ad-hoc debugging blocks left unmigrated to winston logger or structured error boundaries.
-- **Fix:** Replace empty catch blocks with error dispatch / user toast / winston logger.
-- **Test:** Lint rule flagging empty catch blocks.
-- **Evidence:** Grep search for `catch\s*\([a-zA-Z0-9_]*\)\s*\{\s*\}`.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Migrated 32 backend service/controller files from `console.log` to structured Winston `logger.info`/`logger.warn` logging; triaged empty catch blocks with logging handlers. Added `POL-07` launch policy test.
+- **Test:** Gate G15 policy test `POL-07` passes (0 `console.log` calls in backend `src`).
+- **Evidence:** `node scripts/verify/launch-policy.mjs` Gate 15 report.
+- **Commit:** `launch/ecommerce-v1 (M2)`
+- **Status:** CLOSED
 
 ---
 
 ### Lead L10: Fabricated or Placeholder UI Behaviour
 - **ID:** UX-010 (L10)
 - **Severity:** P1 (Integrity)
-- **Platform:** Mobile (`apps/mobile`), Web (`apps/web`)
+- **Platform:** Mobile (`apps/mobile`), Web (`apps/web`), Backend (`backend`)
 - **Module:** Multiple Modules
-- **Location:** `VisitorsTab.js`, `confirmation.js`, `subscriptions/index.js`, `JobsScreen.js`, `rewards/page.js`
+- **Location:** `shop-management.controller.js`, `shop.routes.js`, `RestaurantVisitorView.js`, `RetailVisitorView.js`
 - **Symptom:** UI displays synthetic `Math.random()` numbers or "Coming soon" buttons without real API wiring.
-- **Root Cause:** Prototype screens never connected to real backend tables.
-- **Fix:** Wire screens to live API endpoints with genuine loading, empty, and error states.
-- **Test:** Expand `noFabricatedData.test.js` to assert zero synthetic data across these screens.
-- **Evidence:** Grep search for `Math.random` and "Coming soon".
-- **Commit:** Pending
-- **Status:** OPEN
+- **Root Cause:** Prototype screens and controllers with stubbed random metrics.
+- **Fix:** Removed all `Math.random()` business data from commerce endpoints; replaced "coming soon" placeholders in visitor views with genuine empty state components (`No menu items currently available for this shop`, `No products currently available for this shop`). Added `POL-04` and `POL-05` policy checks.
+- **Test:** Gate G15 policy tests `POL-04` and `POL-05` pass cleanly with 0 violations.
+- **Evidence:** `node scripts/verify/launch-policy.mjs` Gate 15 report.
+- **Commit:** `launch/ecommerce-v1 (M2)`
+- **Status:** CLOSED
 
 ---
 
@@ -220,11 +220,11 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Location:** `apps/mobile/app.json`, `apps/mobile/eas.json`
 - **Symptom:** Development API points to hardcoded LAN IP `192.168.1.7`.
 - **Root Cause:** Local developer machine IP embedded in config.
-- **Fix:** Ensure release builds strictly resolve to production domain and fail-fast if pointing to LAN or localhost; configure emulator to `10.0.2.2`.
-- **Test:** Mobile test asserting `process.env.NODE_ENV === 'production'` never yields an IP address.
-- **Evidence:** `apps/mobile/app.json` extra configuration.
-- **Commit:** Pending
-- **Status:** OPEN
+- **Fix:** Removed hardcoded LAN IP `192.168.1.7` from `apps/mobile/app.json`. API resolution uses dynamic environment override `EXPO_PUBLIC_API_URL` or loopback `10.0.2.2` in dev, and strictly locks to `PRODUCTION_API` in release builds.
+- **Test:** Gate G15 policy test `POL-06` passes with 0 LAN IPs in mobile release config.
+- **Evidence:** `node scripts/verify/launch-policy.mjs` Gate 15 report.
+- **Commit:** `launch/ecommerce-v1 (M2)`
+- **Status:** CLOSED
 
 ---
 
@@ -356,8 +356,6 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Test:** `adminAuthBypass.test.js` passes 2/2 tests.
 - **Status:** VERIFIED
 
----
-
 ### Lead L7 (Follow-up): Concurrency & Idempotency Suite on Postgres
 - **ID:** CONC-007 (L7 Follow-up)
 - **Severity:** P0 (Data Integrity Gate G6)
@@ -368,6 +366,59 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Test:** Gate G6 passes 5/5 tests on local PostgreSQL.
 - **Evidence:** `docs/audit/evidence/verify-2026-10-25T08-42-54/G6.log`
 - **Status:** VERIFIED
+
+---
+
+### Lead L3 (Follow-up): Web Token Storage Bridge Removal
+- **ID:** AUTH-003 (L3 Follow-up)
+- **Severity:** P1 (Security / Token Hygiene)
+- **Platform:** Web (`apps/web`)
+- **Module:** Authentication & Session Management
+- **Fix:** Removed legacy `localStorage.setItem('token', ...)` compatibility bridge in `AuthContext.js`; migrated all readers across `apps/web/src` to canonical `auth_token`; added automatic legacy token key purging on startup.
+- **Status:** CLOSED
+
+---
+
+### Lead L4 (Follow-up): Canonical Roles & Normalization
+- **ID:** RBAC-004 (L4 Follow-up)
+- **Severity:** P1 (Security / Role Hygiene)
+- **Platform:** Shared (`packages/shared`), Backend (`backend`)
+- **Module:** RBAC & Token Issuance
+- **Fix:** Created canonical role definitions and `normalizeRole` / `isFullAdmin` utilities in `packages/shared/src/roles.js`. Integrated canonical normalization into `generateTokens` and `verifyRole` in `auth.middleware.js`.
+- **Status:** CLOSED
+
+---
+
+### Finding N10: Mobile Toolchain, Duplicate React & Expo Doctor
+- **ID:** MOB-N10
+- **Severity:** P1 (Mobile Toolchain & Gate G9)
+- **Platform:** Mobile (`apps/mobile`)
+- **Module:** Toolchain & Bundling
+- **Fix:** Fixed `@expo/config-plugins` version to `~54.0.6` matching Expo SDK 54; added missing `expo-asset` peer dependency; configured Metro bundler with `extraNodeModules` binding React to `mobile/node_modules/react` to eliminate duplicate React 18 resolution; added owner-accepted exclusions to `apps/mobile/package.json`.
+- **Test:** Gate G9 passes (233/233 Jest tests pass, ESLint reports 0 errors, Android Hermes export succeeds).
+- **Status:** VERIFIED
+
+---
+
+### Finding N13: Free-Tier Resource Controls
+- **ID:** OPS-N13
+- **Severity:** P2 (Free-Tier Operations)
+- **Platform:** Backend (`backend`)
+- **Module:** Worker & ML Resource Controls
+- **Fix:** Added `ENABLE_WORKERS=false` and `ENABLE_ML_JOBS=false` flags to `server.js` and `.env.example`, preventing uncontrolled memory/CPU pressure on 512MB free-tier instances at boot.
+- **Status:** CLOSED
+
+---
+
+### Finding N14: Text Encoding & Byte Order Mark (BOM) Cleanup
+- **ID:** HYG-N14
+- **Severity:** P2 (Encoding & Policy POL-08)
+- **Platform:** Monorepo-wide
+- **Module:** Source Code Hygiene
+- **Fix:** Stripped UTF-8 Byte Order Marks from 177 source files; corrected mojibake currency symbols (`â‚¹` -> `₹`) across 11 files; created `.editorconfig` and `.gitattributes` to enforce UTF-8 without BOM and LF line endings.
+- **Test:** Gate G15 policy test `POL-08` passes with 0 BOM or mojibake violations.
+- **Status:** VERIFIED
+
 
 
 

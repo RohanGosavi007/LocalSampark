@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const { Queue, Worker } = require('bullmq');
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -57,7 +58,7 @@ class AuditLogger {
       }
 
       // Fallback: Asynchronous console logging
-      console.log(`[AUDIT:${event.toUpperCase()}]`, JSON.stringify(payload));
+      logger.info(`[AUDIT:${event.toUpperCase()}]`, JSON.stringify(payload));
     });
   }
 }

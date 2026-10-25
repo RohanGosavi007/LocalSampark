@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const cron = require('../utils/cron');
 const { query, queryMany } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
@@ -20,7 +21,7 @@ const logComplaintActivity = async (complaintId, action, performedBy, notes) => 
 
 // Run every 30 minutes
 cron.schedule('*/30 * * * *', async () => {
-    console.log('[Job] Running Complaint Escalation Job...');
+    logger.info('[Job] Running Complaint Escalation Job...');
     try {
         // Fetch all open/assigned/in-progress complaints
         const activeComplaints = await queryMany(`
@@ -61,7 +62,7 @@ cron.schedule('*/30 * * * *', async () => {
                 await query('UPDATE society_complaints SET escalation_level = $1 WHERE id = $2', [newLevel, complaint.id]);
                 await logComplaintActivity(complaint.id, 'escalated', 'SYSTEM', `Escalated to Level ${newLevel}`);
 
-                console.log(`[Escalation] Complaint ${complaint.id} escalated to Level ${newLevel}`);
+                logger.info(`[Escalation] Complaint ${complaint.id} escalated to Level ${newLevel}`);
                 
                 // Notify logic (Mock)
                 if (notifyRoles.includes('assigned') && complaint.assigned_to) {

@@ -206,23 +206,12 @@ if (process.env.USE_SQLITE === 'true') {
 
   async function query(text, params) {
     const start = Date.now();
-    try {
-      const result = await activePool.query(text, params);
-      const duration = Date.now() - start;
-      if (duration > 1000) {
-        logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
-      }
-      return result;
-    } catch (err) {
-      // Auto-heal boolean = integer mismatch in Postgres (error code 42883)
-      if (err.code === '42883' && (text.includes('= 1') || text.includes('= 0') || text.includes('!= 0'))) {
-        let fixedSql = text
-          .replace(/\b(is_active|is_verified|is_available|is_online|is_tenant|active)\s*=\s*1\b/gi, '$1 = true')
-          .replace(/\b(is_active|is_verified|is_available|is_online|is_tenant|active)\s*=\s*0\b/gi, '$1 = false');
-        return await activePool.query(fixedSql, params);
-      }
-      throw err;
+    const result = await activePool.query(text, params);
+    const duration = Date.now() - start;
+    if (duration > 1000) {
+      logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));
     }
+    return result;
   }
 
   async function queryOne(text, params) {

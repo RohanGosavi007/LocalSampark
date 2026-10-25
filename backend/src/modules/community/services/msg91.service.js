@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 const axios = require('axios');
 
 class MSG91Service {
@@ -9,7 +10,7 @@ class MSG91Service {
     async makeCall(phone, flowId, variables = {}) {
         try {
             // Mock integration for MSG91 Voice API
-            console.log(`[MSG91] Initiating IVR call to ${phone} with flow ${flowId}`);
+            logger.info(`[MSG91] Initiating IVR call to ${phone} with flow ${flowId}`);
             
             /* Real Implementation:
             const response = await axios.post(`${this.baseUrl}/voice/call`, {
@@ -30,7 +31,7 @@ class MSG91Service {
     }
 
     async sendSMS(phone, message) {
-        console.log(`[MSG91] Sending SMS to ${phone}: ${message}`);
+        logger.info(`[MSG91] Sending SMS to ${phone}: ${message}`);
         return { success: true };
     }
 }

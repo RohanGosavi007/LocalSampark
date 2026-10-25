@@ -1,11 +1,10 @@
-const ROLES = {
-  USER: 'user',
-  SHOP_OWNER: 'shop_owner',
-  DELIVERY_AGENT: 'delivery_agent',
-  MODERATOR: 'moderator',
-  ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin'
-};
+const {
+  ROLES,
+  LEGACY_ROLE_ALIASES,
+  normalizeRole,
+  isFullAdmin,
+  isValidRole
+} = require('./src/roles');
 
 const ORDER_STATUS = {
   PENDING: 'pending',
@@ -29,6 +28,10 @@ const POST_TYPES = {
 
 module.exports = {
   ROLES,
+  LEGACY_ROLE_ALIASES,
+  normalizeRole,
+  isFullAdmin,
+  isValidRole,
   ORDER_STATUS,
   POST_TYPES
 };

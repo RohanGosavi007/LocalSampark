@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const communityHubController = require('../controllers/community_hub.controller');
 const { authenticate, requireAdmin, requireRole } = require('../../../middleware/auth.middleware');

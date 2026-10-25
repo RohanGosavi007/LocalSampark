@@ -1,5 +1,5 @@
-﻿/**
- * JOB CARDS ROUTES â€” Archetype 4: Repair & Service Job Management
+/**
+ * JOB CARDS ROUTES — Archetype 4: Repair & Service Job Management
  * For: Auto Mechanics, AC/Appliance Repair, Mobile Repair, Plumbing, Electrical
  */
 const express = require('express');
@@ -104,7 +104,7 @@ const JOB_STATUSES = Object.keys(JOB_STATUS_FLOW);
 
 const MILESTONE_STATUSES = Object.freeze(['pending', 'in_progress', 'completed', 'skipped']);
 
-// â”€â”€ GET /api/v1/job-cards/:shopId â€” Get all job cards for a shop â”€â”€
+// â”€â”€ GET /api/v1/job-cards/:shopId — Get all job cards for a shop â”€â”€
 router.get('/:shopId', authenticate, requireShopAccess, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -139,7 +139,7 @@ router.get('/:shopId', authenticate, requireShopAccess, async (req, res, next) =
   }
 });
 
-// â”€â”€ GET /api/v1/job-cards/:shopId/:cardId â€” Get single job card with milestones â”€â”€
+// â”€â”€ GET /api/v1/job-cards/:shopId/:cardId — Get single job card with milestones â”€â”€
 router.get('/:shopId/:cardId', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -168,7 +168,7 @@ router.get('/:shopId/:cardId', authenticate, requireShopAccess, loadCard, async 
   }
 });
 
-// â”€â”€ POST /api/v1/job-cards/:shopId â€” Create new job card â”€â”€
+// â”€â”€ POST /api/v1/job-cards/:shopId — Create new job card â”€â”€
 router.post('/:shopId', authenticate, requireShopAccess, async (req, res, next) => {
   try {
     const { shopId } = req.params;
@@ -259,7 +259,7 @@ router.post('/:shopId', authenticate, requireShopAccess, async (req, res, next) 
   }
 });
 
-// â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/status â€” Update job card status â”€â”€
+// â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/status — Update job card status â”€â”€
 router.put('/:shopId/:cardId/status', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { shopId, cardId } = req.params;
@@ -308,7 +308,7 @@ router.put('/:shopId/:cardId/status', authenticate, requireShopAccess, loadCard,
   }
 });
 
-// â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/milestone/:milestoneId â€” Update milestone â”€â”€
+// â”€â”€ PUT /api/v1/job-cards/:shopId/:cardId/milestone/:milestoneId — Update milestone â”€â”€
 router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId, milestoneId } = req.params;
@@ -346,7 +346,7 @@ router.put('/:shopId/:cardId/milestone/:milestoneId', authenticate, requireShopA
   }
 });
 
-// â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/parts â€” Add parts/labor to job card â”€â”€
+// â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/parts — Add parts/labor to job card â”€â”€
 router.post('/:shopId/:cardId/parts', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -374,7 +374,7 @@ router.post('/:shopId/:cardId/parts', authenticate, requireShopAccess, loadCard,
   }
 });
 
-// â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/photo â€” Upload photo proof â”€â”€
+// â”€â”€ POST /api/v1/job-cards/:shopId/:cardId/photo — Upload photo proof â”€â”€
 router.post('/:shopId/:cardId/photo', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -392,7 +392,7 @@ router.post('/:shopId/:cardId/photo', authenticate, requireShopAccess, loadCard,
   }
 });
 
-// â”€â”€ GET /api/v1/job-cards/:shopId/:cardId/photos â€” Get all photos for a job card â”€â”€
+// â”€â”€ GET /api/v1/job-cards/:shopId/:cardId/photos — Get all photos for a job card â”€â”€
 router.get('/:shopId/:cardId/photos', authenticate, requireShopAccess, loadCard, async (req, res, next) => {
   try {
     const { cardId } = req.params;
@@ -407,7 +407,7 @@ router.get('/:shopId/:cardId/photos', authenticate, requireShopAccess, loadCard,
   }
 });
 
-// â”€â”€ GET /api/v1/job-cards/:shopId/track/:jobNumber â€” Public tracking by job number â”€â”€
+// â”€â”€ GET /api/v1/job-cards/:shopId/track/:jobNumber — Public tracking by job number â”€â”€
 router.get('/:shopId/track/:jobNumber', async (req, res, next) => {
   try {
     const { shopId, jobNumber } = req.params;

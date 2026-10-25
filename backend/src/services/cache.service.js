@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 /**
  * ═══════════════════════════════════════════════════════════════════════
  * Unified Cache Service — LRU In-Memory + Redis Hybrid
@@ -75,7 +76,7 @@ try {
   // Test if Redis functions exist and aren't stubs
   if (typeof cacheGet === 'function' && process.env.NODE_ENV === 'production') {
     useRedis = true;
-    console.log('[CacheService] Using Redis backend (production).');
+    logger.info('[CacheService] Using Redis backend (production).');
   } else {
     useRedis = false;
   }
@@ -84,7 +85,7 @@ try {
 }
 
 if (!useRedis) {
-  console.log('[CacheService] Using in-memory LRU backend (development).');
+  logger.info('[CacheService] Using in-memory LRU backend (development).');
   cacheGet = async (key) => lruInstance.get(key);
   cacheSet = async (key, value, ttl) => lruInstance.set(key, value, ttl);
   cacheInvalidate = async (pattern) => lruInstance.invalidate(pattern);

@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 /**
  * SMS OTP Service for LocalSampark
  * 
@@ -47,7 +48,7 @@ async function sendViaMSG91(phoneNumber, otp) {
 
     const data = await response.json();
     if (data.type === 'success') {
-      console.log(`[SMS] MSG91 OTP sent to ${phoneNumber}`);
+      logger.info(`[SMS] MSG91 OTP sent to ${phoneNumber}`);
       return { provider: 'msg91', success: true };
     } else {
       console.warn(`[SMS] MSG91 failed: ${JSON.stringify(data)}`);
@@ -70,7 +71,7 @@ async function sendViaFast2SMS(phoneNumber, otp) {
     const response = await fetch(url, { method: 'GET' });
     const data = await response.json();
     if (data.return === true || data.status_code === 200) {
-      console.log(`[SMS] Fast2SMS OTP successfully dispatched to ${phoneNumber}`);
+      logger.info(`[SMS] Fast2SMS OTP successfully dispatched to ${phoneNumber}`);
       return { provider: 'fast2sms', success: true };
     } else {
       console.warn(`[SMS] Fast2SMS response: ${JSON.stringify(data)}`);
@@ -84,9 +85,9 @@ async function sendViaFast2SMS(phoneNumber, otp) {
 
 // Provider: Console (Development)
 function sendViaConsole(phoneNumber, otp) {
-  console.log(`\n${'='.repeat(50)}`);
-  console.log(`  📱 OTP for ${phoneNumber}: ${otp}`);
-  console.log(`${'='.repeat(50)}\n`);
+  logger.info(`\n${'='.repeat(50)}`);
+  logger.info(`  📱 OTP for ${phoneNumber}: ${otp}`);
+  logger.info(`${'='.repeat(50)}\n`);
   return { provider: 'console', success: true };
 }
 

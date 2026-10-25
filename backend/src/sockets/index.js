@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../config/secrets');
@@ -71,14 +72,14 @@ const initSockets = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`[Socket.io] Authenticated Client connected: ${socket.id} (User: ${socket.user?.id})`);
+    logger.info(`[Socket.io] Authenticated Client connected: ${socket.id} (User: ${socket.user?.id})`);
 
     // Allow clients to join shop-specific rooms for private broadcast
     socket.on('join_shop_room', (shopId) => {
       socket.join(`shop_${shopId}`);
       socket.join(`shop:${shopId}`); 
       socket.join(`room:shop:${shopId}`);
-      console.log(`[Socket.io] Client joined room:shop:${shopId}`);
+      logger.info(`[Socket.io] Client joined room:shop:${shopId}`);
     });
 
     /**
@@ -254,7 +255,7 @@ const initSockets = (server) => {
     territorySocket(io, socket);
 
     socket.on('disconnect', () => {
-      console.log(`[Socket.io] Client disconnected: ${socket.id}`);
+      logger.info(`[Socket.io] Client disconnected: ${socket.id}`);
     });
   });
 

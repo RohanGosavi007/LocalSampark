@@ -23,7 +23,7 @@ export default function ShopManagerDashboard({ params }) {
   const getToken = () => {
     if (typeof window === 'undefined') return null;
     try {
-      const stored = localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('admin_token');
+      const stored = localStorage.getItem('auth_token') || localStorage.getItem('admin_token');
       return stored || null;
     } catch { return null; }
   };

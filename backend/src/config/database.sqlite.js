@@ -1,3 +1,4 @@
+const logger = require('./logger.js');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
@@ -289,7 +290,7 @@ async function connectDB() {
           db.run("ALTER TABLE local_shops ADD COLUMN is_featured INTEGER DEFAULT 0", (err2) => {
             db.run("ALTER TABLE local_shops ADD COLUMN rating REAL DEFAULT 4.5", (err3) => {
               db.run("ALTER TABLE local_shops ADD COLUMN commission_override_percent REAL DEFAULT NULL", (err4) => {
-                console.log(`📂 SQLite connected. Database location: ${dbPath}`);
+                logger.info(`📂 SQLite connected. Database location: ${dbPath}`);
                 resolve();
               });
             });

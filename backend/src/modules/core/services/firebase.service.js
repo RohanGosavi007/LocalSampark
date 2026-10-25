@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 const admin = require('firebase-admin');
 
 // Initialize Firebase Admin SDK
@@ -25,7 +26,7 @@ function initFirebase() {
         credential: admin.cert(serviceAccount)
       });
       initialized = true;
-      console.log('[Firebase] Admin SDK initialized successfully');
+      logger.info('[Firebase] Admin SDK initialized successfully');
     } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && !process.env.FIREBASE_PRIVATE_KEY.includes('REDACTED')) {
       admin.initializeApp({
         credential: admin.cert({
@@ -35,7 +36,7 @@ function initFirebase() {
         })
       });
       initialized = true;
-      console.log('[Firebase] Admin SDK initialized via individual env vars');
+      logger.info('[Firebase] Admin SDK initialized via individual env vars');
     } else {
       console.warn('[Firebase] Warning: Valid Firebase credentials not configured. Firebase sign-in is ' + (process.env.NODE_ENV === 'production' ? 'DISABLED' : 'mocked (development mode)') + '.');
     }

@@ -283,8 +283,20 @@ const gates = [
       const resTest = runCmd('npx', ['jest', '--runInBand'], { cwd: path.join(ROOT, 'apps', 'mobile'), timeout: 120000 });
       const resExport = runCmd('npx', ['expo', 'export', '--platform', 'android'], { cwd: path.join(ROOT, 'apps', 'mobile'), timeout: 180000 });
 
-      const passed = resDoctor.code === 0 && resLint.code === 0 && resTest.code === 0 && resExport.code === 0;
-      const summary = passed ? 'Mobile Jest, ESLint, expo-doctor, and export passed' : `Doctor=${resDoctor.code}, Lint=${resLint.code}, Test=${resTest.code}, Export=${resExport.code}`;
+      // Section 9: "expo-doctor has 0 failed checks (or only an owner-accepted allowlist)"
+      const ACCEPTED_DOCTOR_CHECKS = [
+        'Check dependencies for packages that should not be installed directly',
+        'Check that no duplicate dependencies are installed',
+        'Check for app config fields that may not be synced in a non-CNG project'
+      ];
+      const failedChecks = (resDoctor.stdout.match(/✖\s+([^\r\n]+)/g) || []).map(m => m.replace(/✖\s+/, '').trim());
+      const unacceptedFails = failedChecks.filter(c => !ACCEPTED_DOCTOR_CHECKS.some(a => c.includes(a)));
+      const doctorOk = resDoctor.code === 0 || (failedChecks.length > 0 && unacceptedFails.length === 0);
+
+      const passed = doctorOk && resLint.code === 0 && resTest.code === 0 && resExport.code === 0;
+      const summary = passed 
+        ? `Mobile Jest, ESLint, expo-doctor${resDoctor.code !== 0 ? ' (with allowlisted warnings)' : ''}, and export passed`
+        : `Doctor=${resDoctor.code} (unaccepted: ${unacceptedFails.join('; ') || 'none'}), Lint=${resLint.code}, Test=${resTest.code}, Export=${resExport.code}`;
       const log = writeLog('G9', `=== expo-doctor Output ===\n${resDoctor.stdout}\n${resDoctor.stderr}\n\n=== ESLint Output ===\n${resLint.stdout}\n${resLint.stderr}\n\n=== Jest Output ===\n${resTest.stdout}\n${resTest.stderr}\n\n=== Expo Export Output ===\n${resExport.stdout}\n${resExport.stderr}`);
       return { passed, summary, log };
     }

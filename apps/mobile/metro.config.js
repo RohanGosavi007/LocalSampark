@@ -1,8 +1,21 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
-const config = getDefaultConfig(__dirname);
-config.projectRoot = __dirname;
+const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, '../..');
+
+const config = getDefaultConfig(projectRoot);
+config.projectRoot = projectRoot;
+config.watchFolders = [monorepoRoot];
+config.resolver = config.resolver || {};
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(monorepoRoot, 'node_modules')
+];
+config.resolver.extraNodeModules = {
+  react: path.resolve(projectRoot, 'node_modules/react'),
+  'react-native': path.resolve(projectRoot, 'node_modules/react-native')
+};
 
 // ── Inject globalThis.expo shim BEFORE any module loads ────────────────────
 // This prevents: "TypeError: Cannot read property 'requireNativeModule' of undefined"

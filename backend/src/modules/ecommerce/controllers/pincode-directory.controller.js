@@ -64,7 +64,7 @@ async function getShopsByPincode(req, res, next) {
      * no column behind them are derived where that is honest (photo_urls gives
      * the logo and banner, the name gives a slug) and null where it is not.
      */
-    const conditions = ['s.pincode = $1', 's.is_active = 1'];
+    const conditions = ['s.pincode = $1', 's.is_active = true'];
     const params = [pincode];
 
     if (category_id) {

@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const db = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
@@ -188,7 +188,7 @@ router.get('/leaderboard', authenticate, async (req, res, next) => {
     const leaderboard = leaderboardData.map(l => ({
       name: `${l.name} (${l.role})`,
       points: Math.floor(l.total_earned / 100), // Simple points calculation
-      amount: `â‚¹${parseFloat(l.total_earned).toLocaleString('en-IN')}`
+      amount: `₹${parseFloat(l.total_earned).toLocaleString('en-IN')}`
     }));
     res.json(leaderboard);
   } catch (error) {

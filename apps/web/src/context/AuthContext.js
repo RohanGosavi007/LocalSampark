@@ -58,6 +58,7 @@ export function AuthProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
+        localStorage.removeItem('token'); // Purge legacy token key
         const storedToken = localStorage.getItem(SESSION_KEYS.token);
         const storedUserStr = localStorage.getItem(SESSION_KEYS.user);
         const storedActiveRole = localStorage.getItem(SESSION_KEYS.role);
@@ -111,7 +112,6 @@ export function AuthProvider({ children }) {
 
   const saveAuthSession = (data) => {
     localStorage.setItem(SESSION_KEYS.token, data.accessToken);
-    localStorage.setItem('token', data.accessToken); // Bidirectional compatibility bridge for legacy callers
     if (data.refreshToken) localStorage.setItem(SESSION_KEYS.refreshToken, data.refreshToken);
     localStorage.setItem(SESSION_KEYS.user, JSON.stringify(data.user));
 

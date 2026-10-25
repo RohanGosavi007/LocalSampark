@@ -453,7 +453,7 @@ router.put('/admin/overrides', ...adminOnly, async (req, res, next) => {
     if (found) {
       await query(
         'UPDATE ml_item_overrides SET override_type = $1, boost_factor = $2, ' +
-        'pinned_position = $3, reason = $4, is_active = 1, created_by = $5 WHERE id = $6',
+        'pinned_position = $3, reason = $4, is_active = true, created_by = $5 WHERE id = $6',
         [type, boost, position, String(body.reason).slice(0, 500), actor, found.id]
       );
     } else {

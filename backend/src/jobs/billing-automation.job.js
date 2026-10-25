@@ -1,10 +1,11 @@
+const logger = require('../config/logger.js');
 const cron = require('../utils/cron');
 const { query, queryMany } = require('../config/database');
 const billingService = require('../modules/community/services/billing-engine.service');
 
 // Run daily at midnight to check for overdue bills and apply penalties
 cron.schedule('0 0 * * *', async () => {
-    console.log('[Job] Running Daily Billing Automation Job...');
+    logger.info('[Job] Running Daily Billing Automation Job...');
     try {
         const queryStr = `
             SELECT id, society_id, flat_number 
@@ -36,7 +37,7 @@ cron.schedule('0 0 * * *', async () => {
             }
         }
         
-        console.log(`[Job] Processed ${overdueBills.length} overdue bills.`);
+        logger.info(`[Job] Processed ${overdueBills.length} overdue bills.`);
     } catch (error) {
         console.error('[Job Error] Billing automation failed:', error);
     }
@@ -44,7 +45,7 @@ cron.schedule('0 0 * * *', async () => {
 
 // Run on the 1st of every month to generate bills (Simulated)
 cron.schedule('0 0 1 * *', async () => {
-    console.log('[Job] Monthly Bill Generation Started...');
+    logger.info('[Job] Monthly Bill Generation Started...');
     try {
         const societies = await queryMany('SELECT id FROM societies WHERE is_active = true');
         const month = new Date().getMonth() + 1;
@@ -55,7 +56,7 @@ cron.schedule('0 0 1 * *', async () => {
             const exists = await query('SELECT id FROM society_maintenance_bills WHERE society_id = $1 AND month = $2 AND year = $3 LIMIT 1', [soc.id, month, year]);
             if (!exists.rows || exists.rows.length === 0) {
                 await billingService.generateMonthlyInvoices(soc.id, month, year);
-                console.log(`[Job] Generated bills for society ${soc.id}`);
+                logger.info(`[Job] Generated bills for society ${soc.id}`);
             }
         }
     } catch (error) {

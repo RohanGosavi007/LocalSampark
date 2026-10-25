@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { requireCapability, CAPABILITIES } = require('../middleware/society-capability');

@@ -130,7 +130,7 @@ export default function RetailVisitorView({ shop, products = [], onAddToCart }) 
         <div className="text-center py-12 bg-background-alt rounded-2xl border border-border">
           <ShoppingBag className="w-12 h-12 mx-auto text-text-muted mb-3" />
           <p className="text-text-muted font-medium">
-            {searchQuery ? 'No products match your search' : 'Products coming soon'}
+            {searchQuery ? 'No products match your search' : 'No products currently available for this shop.'}
           </p>
         </div>
       )}

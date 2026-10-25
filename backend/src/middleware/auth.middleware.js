@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, getJwtRefreshSecret } = require('../config/secrets');
+const { ROLES, normalizeRole, isFullAdmin } = require('@localsampark/shared');
 
 const { verifyCsrf } = require('./csrf.middleware');
 
@@ -273,9 +274,11 @@ function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}, { acc
   const jwtSecret = getJwtSecret();
   const jwtRefreshSecret = getJwtRefreshSecret();
 
+  const canonicalRole = normalizeRole(role || ROLES.USER);
+
   const payload = {
     userId,
-    role: role || 'CUSTOMER',
+    role: canonicalRole,
     tokenVersion,
     ...extraPayload
   };
@@ -329,15 +332,15 @@ const verifyRole = (allowedRoles) => {
         return res.status(401).json({ success: false, error: 'Session invalidated. Please login again.' });
       }
 
-      const roleUpper = String(userRole || '').toUpperCase().replace(/^SUPERADMIN$/, 'SUPER_ADMIN');
-      if (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN') {
+      const normUserRole = normalizeRole(userRole);
+      if (isFullAdmin(normUserRole)) {
         req.user = decoded;
         return next();
       }
 
       // Check granular roles
-      const allowedNormalized = (allowedRoles || []).map((r) => String(r).toUpperCase().replace(/^SUPERADMIN$/, 'SUPER_ADMIN'));
-      if (!allowedNormalized.includes(roleUpper) && !allowedRoles.includes(userRole)) {
+      const allowedNormalized = (allowedRoles || []).map((r) => normalizeRole(r));
+      if (!allowedNormalized.includes(normUserRole)) {
         return res.status(403).json({ success: false, error: `Forbidden: Requires ${allowedRoles.join(' or ')}` });
       }
 
@@ -389,38 +392,6 @@ const requireSuperAdmin = (req, res, next) => {
     return res.status(403).json({ error: 'Super administrator access required.' });
   }
   next();
-};
-
-const ROLES = {
-  USER: 'CUSTOMER',
-  SHOP_OWNER: 'VENDOR',
-  DELIVERY_AGENT: 'DELIVERY',
-  SERVICE_PROVIDER: 'VENDOR',
-  FIELD_AGENT: 'FIELD_AGENT',
-  SECURITY_GUARD: 'SECURITY_GUARD',
-  AREA_AGENT: 'AREA_AGENT',
-  TERRITORY_ADMIN: 'TERRITORY_ADMIN',
-  FRANCHISE_OWNER: 'FRANCHISE_OWNER',
-  SOCIETY_ADMIN: 'SOCIETY_ADMIN',
-  SOCIETY_GUARD: 'SOCIETY_GUARD',
-  MODERATOR: 'MODERATOR',
-  ADMIN: 'ADMIN',
-  SUPER_ADMIN: 'SUPER_ADMIN',
-  // Phase 6: Enterprise RBAC roles
-  DISTRICT_MANAGER: 'DISTRICT_MANAGER',
-  TERRITORY_FRANCHISE: 'TERRITORY_FRANCHISE',
-  // Phase 8: Marketing
-  MARKETING_ADMIN: 'MARKETING_ADMIN',
-  // Phase 9: Ad Manager
-  AD_MANAGER: 'AD_MANAGER',
-  // Phase 11: Support Admin
-  SUPPORT_ADMIN: 'SUPPORT_ADMIN',
-  // Phase 12: Specialized Verticals
-  VERTICAL_MANAGER: 'VERTICAL_MANAGER',
-  // Phase 13: Krishi
-  KRISHI_EXPERT: 'KRISHI_EXPERT',
-  // Phase 14: Mobility
-  MOBILITY_MANAGER: 'MOBILITY_MANAGER'
 };
 
 const hasAccess = (allowedRoles) => {
@@ -479,18 +450,13 @@ const enforceMultiTenancy = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-        // Roles are stored lower case ('shop_owner', 'super_admin'); the ROLES
-    // constants are upper case and ROLES.SHOP_OWNER is 'VENDOR'. Compared raw,
-    // as this was, neither branch below could match a real account: a shop
-    // owner was refused every Vendor CRM route, and so was an administrator.
-    const role = String(req.user.role || '').trim().toUpperCase();
-
     // Admins bypass tenant checks
-    if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN) {
+    if (isFullAdmin(req.user.role)) {
       return next();
     }
 
-    if (['SHOP_OWNER', 'SERVICE_PROVIDER', 'VENDOR', 'VENDOR_OWNER', 'VENDOR_STAFF'].includes(role)) {
+    const normRole = normalizeRole(req.user.role);
+    if ([ROLES.SHOP_OWNER, ROLES.SERVICE_PROVIDER].includes(normRole) || ['vendor', 'vendor_owner', 'vendor_staff'].includes(normRole)) {
       // As above: one data path for both dialects, rather than silently
       // routing to Prisma whenever USE_SQLITE is not exactly 'true'.
       const { queryOne } = require('../config/database');

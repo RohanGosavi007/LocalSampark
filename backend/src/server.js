@@ -382,19 +382,22 @@ async function startServer() {
       `);
     });
 
-    // Initialize Queue Engine (BullMQ if Redis connected, Synchronous Fallback otherwise)
-    const { startQueueEngine } = require('./jobs/worker');
-    startQueueEngine(activeRedis);
-    
-    // 10x Scale: Initialize Async Notification Queue
-    notificationService.initQueue(activeRedis);
+    // Queue Engine (BullMQ / In-Memory worker)
+    const enableWorkers = String(process.env.ENABLE_WORKERS || 'false').toLowerCase() === 'true';
+    if (enableWorkers) {
+      const { startQueueEngine } = require('./jobs/worker');
+      startQueueEngine(activeRedis);
+      notificationService.initQueue(activeRedis);
+      logger.info('✅ Background queue workers enabled');
+    } else {
+      logger.info('ℹ️ Background queue workers disabled (ENABLE_WORKERS !== true)');
+    }
 
-    // ML config invalidation. Without this, a change to a ranking weight — or
-    // the kill switch — reaches other instances only when their 30s cache
-    // expires, so the fleet spends that window split between the old and new
-    // behaviour. Degrades to TTL-only when Redis is absent.
-    const mlConfig = require('./modules/ml/services/mlconfig.service');
-    await mlConfig.initInvalidationListener();
+    // Machine Learning cron jobs and telemetry background tasks
+    const enableMlJobs = String(process.env.ENABLE_ML_JOBS || 'false').toLowerCase() === 'true';
+    if (enableMlJobs) {
+      const mlConfig = require('./modules/ml/services/mlconfig.service');
+      await mlConfig.initInvalidationListener();
 
     // Nightly rebuild of the item-to-item affinity matrix from the interaction
     // log. Runs at 03:15 local, when the rebuild's table swap is least likely
@@ -529,7 +532,7 @@ async function startServer() {
       try {
         const store = require('./modules/ml/featurestore');
         const { query } = require('./config/database');
-        const shops = await query('SELECT id FROM local_shops WHERE COALESCE(is_active, 1) = 1 LIMIT 2000');
+        const shops = await query('SELECT id FROM local_shops WHERE COALESCE(is_active, true) = true LIMIT 2000');
         const ids = (shops.rows || shops || []).map((row) => row.id);
         if (ids.length === 0) return;
         for (const feature of store.registry.forEntity('shop')) {
@@ -550,6 +553,9 @@ async function startServer() {
       .catch((e) => logger.warn('Vector index load failed: ' + e.message));
 
     logger.info('✅ ML phase-2 jobs scheduled (graph 03:45, vectors 04:10, cold start 04:30, sequence + uplift Sun 05:00).');
+    } else {
+      logger.info('ℹ️ ML background cron jobs disabled (ENABLE_ML_JOBS !== true)');
+    }
 
   } catch (error) {
     logger.error('❌ Failed to start server: ' + error.message);

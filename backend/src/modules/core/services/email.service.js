@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 const nodemailer = require('nodemailer');
 
 // ─── EMAIL TRANSPORTER ──────────────────────────────────────────
@@ -74,8 +75,8 @@ function getBaseTemplate(content, title) {
 async function sendEmail(to, subject, htmlContent) {
   try {
     if (!process.env.SMTP_USER) {
-      console.log(`[EMAIL] Would send to ${to}: ${subject}`);
-      console.log(`[EMAIL] Content preview: ${htmlContent.substring(0, 200)}...`);
+      logger.info(`[EMAIL] Would send to ${to}: ${subject}`);
+      logger.info(`[EMAIL] Content preview: ${htmlContent.substring(0, 200)}...`);
       return { success: true, mock: true };
     }
 
@@ -86,7 +87,7 @@ async function sendEmail(to, subject, htmlContent) {
       html: htmlContent,
     });
 
-    console.log(`[EMAIL] Sent to ${to}: ${info.messageId}`);
+    logger.info(`[EMAIL] Sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`[EMAIL] Failed to send to ${to}:`, error.message);

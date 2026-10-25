@@ -1,4 +1,5 @@
-﻿const express = require('express');
+const logger = require('../../../config/logger.js');
+const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const { authenticate } = require('../../../middleware/auth.middleware');
@@ -21,7 +22,7 @@ router.get('/providers', async (req, res, next) => {
 router.post('/sos', authenticate, async (req, res, next) => {
   try {
     const { latitude, longitude } = req.body;
-    console.log(`[SOS ALERT] User ${req.user.id} triggered SOS at ${latitude}, ${longitude}`);
+    logger.info(`[SOS ALERT] User ${req.user.id} triggered SOS at ${latitude}, ${longitude}`);
 
     // Notify nearby clients using Supabase broadcast if required
     const supabaseRealtime = req.app.get('supabaseRealtime');

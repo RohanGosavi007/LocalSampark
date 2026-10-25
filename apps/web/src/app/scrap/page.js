@@ -42,7 +42,7 @@ export default function ScrapPage() {
     
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
+      const token = localStorage.getItem('auth_token') || '';
       const res = await fetch(`${API_BASE}/scrap/schedule`, {
         method: 'POST',
         headers: {

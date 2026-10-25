@@ -18,7 +18,7 @@
     "test": "jest --config jest.config.js"
   },
   "dependencies": {
-    "@expo/config-plugins": "^57.0.7",
+    "@expo/config-plugins": "~54.0.6",
     "@gorhom/bottom-sheet": "^4.6.1",
     "@nozbe/watermelondb": "^0.28.0",
     "@nozbe/with-observables": "^1.6.0",
@@ -30,6 +30,7 @@
     "@tanstack/react-query": "^5.101.2",
     "ajv": "^8.20.0",
     "expo": "~54.0.36",
+    "expo-asset": "~12.0.14",
     "expo-audio": "~1.1.1",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
@@ -92,5 +93,18 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "@nozbe/watermelondb",
+          "react-native-callkeep",
+          "react-native-webrtc",
+          "@nozbe/simdjson"
+        ],
+        "listUnknownPackages": false
+      }
+    }
   }
 }

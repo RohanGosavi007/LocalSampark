@@ -77,7 +77,7 @@ async function notifyFlatResidents(societyId, flatNumber, notification) {
 
   const result = await query(
     `SELECT user_id FROM society_members
-      WHERE society_id = $1 AND flat_number = $2 AND is_active = 1`,
+      WHERE society_id = $1 AND flat_number = $2 AND is_active = true`,
     [societyId, flatNumber]
   );
 

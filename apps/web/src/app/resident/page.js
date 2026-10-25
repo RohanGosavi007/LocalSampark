@@ -30,7 +30,7 @@ export default function ResidentSuperApp() {
     (async () => {
       try {
         const { API_URL } = await import('@/lib/api');
-        const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         const res = await fetch(`${API_URL}/api/v1/societies/my-society`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

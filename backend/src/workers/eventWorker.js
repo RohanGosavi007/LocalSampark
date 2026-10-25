@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const { query } = require('../config/database');
 const { trackInterval } = require('../utils/intervals');
 
@@ -25,14 +26,14 @@ async function processExpiredEvents() {
       )
     `, [todayStr]);
 
-    console.log('[Worker:Event] Event & Ticket expiration check completed cleanly.');
+    logger.info('[Worker:Event] Event & Ticket expiration check completed cleanly.');
   } catch (err) {
     console.error('[Worker:Event] Error processing expired events:', err.message);
   }
 }
 
 function initEventWorker() {
-  console.log('⚡ [Worker] Event Ticket Expiration Worker Initialized (Interval: 6 hrs)');
+  logger.info('⚡ [Worker] Event Ticket Expiration Worker Initialized (Interval: 6 hrs)');
   trackInterval('event-expiry', processExpiredEvents, 21600000); // 6 hour poll interval
 }
 

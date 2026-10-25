@@ -1,17 +1,18 @@
+const logger = require('../../../config/logger.js');
 const { query, queryOne } = require('../../../config/database');
 const { v4: uuidv4 } = require('uuid');
 const msg91 = require('./msg91.service');
 const whatsapp = require('./whatsapp.service');
 // Mock FCM
 const sendPushNotification = async (userId, payload) => {
-    console.log(`[FCM] Sending push to user ${userId}:`, payload.title);
+    logger.info(`[FCM] Sending push to user ${userId}:`, payload.title);
     return true;
 };
 
 class NotificationFallbackService {
     async sendApprovalRequest(visitorId, societyId, residentId, visitorName, flatNumber) {
         // Step 1: FCM Push Notification
-        console.log(`[Fallback] Step 1: FCM Push to Resident ${residentId}`);
+        logger.info(`[Fallback] Step 1: FCM Push to Resident ${residentId}`);
         await sendPushNotification(residentId, {
             title: 'Visitor at Gate',
             body: `${visitorName} is at the gate for flat ${flatNumber}. Approve or Deny?`,
@@ -27,7 +28,7 @@ class NotificationFallbackService {
         const visitor = await queryOne('SELECT status FROM society_visitors WHERE id = $1', [visitorId]);
         if (visitor && visitor.status !== 'waiting') return;
 
-        console.log(`[Fallback] Step 2: WhatsApp to Resident ${residentId}`);
+        logger.info(`[Fallback] Step 2: WhatsApp to Resident ${residentId}`);
         const member = await queryOne('SELECT phone FROM users WHERE id = $1', [residentId]);
         
         if (member && member.phone) {
@@ -43,7 +44,7 @@ class NotificationFallbackService {
         const visitor = await queryOne('SELECT status, ivr_fallback_triggered FROM society_visitors WHERE id = $1', [visitorId]);
         if (!visitor || visitor.status !== 'waiting' || visitor.ivr_fallback_triggered) return;
 
-        console.log(`[Fallback] Step 3: IVR Call to Resident ${residentPhone}`);
+        logger.info(`[Fallback] Step 3: IVR Call to Resident ${residentPhone}`);
         
         // Mark IVR triggered to prevent loops
         await query('UPDATE society_visitors SET ivr_fallback_triggered = 1 WHERE id = $1', [visitorId]);
@@ -71,7 +72,7 @@ class NotificationFallbackService {
             await query('UPDATE society_visitors SET status = $1 WHERE id = $2', [newStatus, log.visitor_id]);
 
             // Notify Guard
-            console.log(`[FCM] Notify Guard: Visitor ${log.visitor_id} ${newStatus} via IVR`);
+            logger.info(`[FCM] Notify Guard: Visitor ${log.visitor_id} ${newStatus} via IVR`);
 
             res.send('OK');
         } catch (error) {

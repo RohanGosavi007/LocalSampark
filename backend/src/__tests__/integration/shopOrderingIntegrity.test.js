@@ -55,7 +55,7 @@ beforeAll(async () => {
       [id, name, phone, role]);
   }
 
-  const category = await queryOne('SELECT id FROM shop_categories WHERE is_active = 1 LIMIT 1');
+  const category = await queryOne('SELECT id FROM shop_categories WHERE is_active = true LIMIT 1');
 
   await query(
     // local_shops carries legacy NOT NULL columns alongside the modern ones:
@@ -438,7 +438,7 @@ describe('POST /shops/register, through the route', () => {
   });
 
   test('a valid payload creates a pending shop in the owner\'s region', async () => {
-    const category = await queryOne('SELECT id, name FROM shop_categories WHERE is_active = 1 LIMIT 1');
+    const category = await queryOne('SELECT id, name FROM shop_categories WHERE is_active = true LIMIT 1');
     const res = await register({ ...valid, category_id: category.id });
 
     expect(res.body.error).toBeUndefined();

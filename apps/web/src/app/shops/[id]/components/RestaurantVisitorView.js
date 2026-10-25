@@ -160,7 +160,7 @@ export default function RestaurantVisitorView({ shop, products = [], onAddToCart
       ) : (
         <div className="text-center py-12 bg-background-alt rounded-2xl border border-border">
           <UtensilsCrossed className="w-10 h-10 mx-auto text-text-muted mb-2" />
-          <p className="text-text-muted text-sm">{searchQuery ? 'No dishes match your search' : 'Menu coming soon!'}</p>
+          <p className="text-text-muted text-sm">{searchQuery ? 'No dishes match your search' : 'No menu items currently available for this shop.'}</p>
         </div>
       )}
 

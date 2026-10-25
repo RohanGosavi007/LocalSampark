@@ -30,7 +30,7 @@ export default function LoyaltyGamification({ shopId, shopName }) {
 
   async function fetchLoyaltyData() {
     try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) { setLoading(false); return; }
       const res = await fetch(`${API_BASE}/shops/${shopId}/loyalty`, {
         headers: { Authorization: `Bearer ${token}` }

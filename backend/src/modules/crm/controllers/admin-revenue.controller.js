@@ -176,7 +176,7 @@ const getDashboardStats = async (req, res, next) => {
         // platform.
         query('SELECT COUNT(*) AS count FROM local_shops')
           .then((r) => Number((r.rows || r)[0]?.count || 0)),
-        count('SELECT COUNT(*) AS count FROM regions WHERE is_active = 1'),
+        count('SELECT COUNT(*) AS count FROM regions WHERE is_active = true'),
         count('SELECT COUNT(*) AS count FROM regions'),
         count('SELECT COUNT(*) AS count FROM users'),
         count('SELECT COUNT(*) AS count FROM orders'),

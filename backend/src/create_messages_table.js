@@ -1,3 +1,4 @@
+const logger = require('./config/logger.js');
 const { query, connectDB } = require('./config/database');
 
 async function run() {
@@ -12,7 +13,7 @@ async function run() {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  console.log("Messages table created.");
+  logger.info("Messages table created.");
   process.exit(0);
 }
 

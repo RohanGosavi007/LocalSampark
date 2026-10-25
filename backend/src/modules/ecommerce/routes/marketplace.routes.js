@@ -85,7 +85,7 @@ router.get('/', async (req, res, next) => {
 // GET /categories — DB-driven categories
 router.get('/categories', async (req, res, next) => {
   try {
-    const cats = await queryMany('SELECT * FROM marketplace_categories WHERE is_active = 1 ORDER BY display_order ASC');
+    const cats = await queryMany('SELECT * FROM marketplace_categories WHERE is_active = true ORDER BY display_order ASC');
     res.json({ success: true, categories: cats });
   } catch (error) { next(error); }
 });

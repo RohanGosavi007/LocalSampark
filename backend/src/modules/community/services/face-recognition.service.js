@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 const faceapi = require('face-api.js');
 const { Canvas, Image, ImageData } = require('canvas');
 const { query, queryOne } = require('../../../config/database');
@@ -15,12 +16,12 @@ class FaceRecognitionService {
 
     async loadModels() {
         if (this.modelsLoaded) return;
-        console.log('[Face API] Loading models...');
+        logger.info('[Face API] Loading models...');
         await faceapi.nets.ssdMobilenetv1.loadFromDisk(this.modelsPath);
         await faceapi.nets.faceLandmark68Net.loadFromDisk(this.modelsPath);
         await faceapi.nets.faceRecognitionNet.loadFromDisk(this.modelsPath);
         this.modelsLoaded = true;
-        console.log('[Face API] Models loaded successfully.');
+        logger.info('[Face API] Models loaded successfully.');
     }
 
     // Register a new staff member's face

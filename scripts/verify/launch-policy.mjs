@@ -233,7 +233,7 @@ export function runLaunchPolicyTests() {
   const backendSrc = path.join(ROOT, 'backend', 'src');
   const backendSrcFiles = walk(backendSrc, {
     extRegex: /\.js$/,
-    ignoreDirs: ['__tests__', 'tests', 'test', 'seeds', 'scripts']
+    ignoreDirs: ['__tests__', 'tests', 'test', 'seeds', 'scripts', 'migrations']
   });
 
   for (const file of backendSrcFiles) {

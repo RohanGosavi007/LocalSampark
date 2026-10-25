@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
 const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');

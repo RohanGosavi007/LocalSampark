@@ -38,7 +38,7 @@ export default function ShopChat({ shopId, shopName, shopLogo, mode = 'floating'
 
   async function fetchMessages() {
     try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) return;
       const res = await fetch(`${API_BASE}/shops/${shopId}/chat`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -70,7 +70,7 @@ export default function ShopChat({ shopId, shopName, shopLogo, mode = 'floating'
     setNewMessage('');
 
     try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`${API_BASE}/shops/${shopId}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

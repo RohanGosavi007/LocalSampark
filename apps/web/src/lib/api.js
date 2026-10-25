@@ -17,7 +17,7 @@ export { API_URL, API_BASE };
  */
 export function getAuthHeaders() {
   const token = typeof window !== 'undefined' 
-    ? (localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('admin_token') || '')
+    ? (localStorage.getItem('auth_token') || localStorage.getItem('admin_token') || '')
     : '';
   const territoryId = typeof window !== 'undefined' ? localStorage.getItem('territoryId') : '';
   const headers = {

@@ -319,7 +319,7 @@ describe('member approval queue', () => {
 
   test('approving activates the membership', async () => {
     const result = await query(
-      `UPDATE society_members SET status = 'approved', is_active = 1
+      `UPDATE society_members SET status = 'approved', is_active = true
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );
@@ -331,7 +331,7 @@ describe('member approval queue', () => {
 
   test('a rejection deactivates rather than deleting', async () => {
     await query(
-      `UPDATE society_members SET status = 'rejected', is_active = 0
+      `UPDATE society_members SET status = 'rejected', is_active = false
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );
@@ -349,7 +349,7 @@ describe('member approval queue', () => {
     // Scoped by society as well as by member id: the id alone would let a
     // committee member of one society decide an application to another.
     const result = await query(
-      `UPDATE society_members SET status = 'approved', is_active = 1
+      `UPDATE society_members SET status = 'approved', is_active = true
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_B]
     );
@@ -358,12 +358,12 @@ describe('member approval queue', () => {
 
   test('deciding twice is refused rather than silently repeated', async () => {
     const first = await query(
-      `UPDATE society_members SET status = 'approved', is_active = 1
+      `UPDATE society_members SET status = 'approved', is_active = true
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );
     const second = await query(
-      `UPDATE society_members SET status = 'rejected', is_active = 0
+      `UPDATE society_members SET status = 'rejected', is_active = false
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );

@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const { query, withTransaction } = require('../config/database');
 const { trackInterval } = require('../utils/intervals');
 
@@ -65,7 +66,7 @@ async function processPendingPayouts() {
               `, [txId, b.provider_id, fee, 'credit', `Escrow Payout for Service #${b.id || ''}`]);
             }
           });
-          console.log(`[Worker:Payout] Settled booking ${b.id}: ₹${parseFloat(b.inspection_fee) || 0} to provider ${b.provider_id}`);
+          logger.info(`[Worker:Payout] Settled booking ${b.id}: ₹${parseFloat(b.inspection_fee) || 0} to provider ${b.provider_id}`);
         } catch (innerError) {
           console.error(`[Worker:Payout] Error processing payout for booking ${b.id}:`, innerError.message);
           // Mark with error flag or advance to prevent stuck row
@@ -79,7 +80,7 @@ async function processPendingPayouts() {
 }
 
 function initPaymentWorker() {
-  console.log('⚡ [Worker] Technician Payout Worker Initialized (Interval: 1 hr)');
+  logger.info('⚡ [Worker] Technician Payout Worker Initialized (Interval: 1 hr)');
   trackInterval('technician-payouts', processPendingPayouts, 3600000); // 1 hour poll interval
 }
 

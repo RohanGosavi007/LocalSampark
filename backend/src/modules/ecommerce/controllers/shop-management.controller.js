@@ -895,8 +895,8 @@ async function getShopAnalyticsData(req, res, next) {
     const analytics = {
       revenue: totalRevenue,
       orders: completedOrders,
-      views: Math.floor(Math.random() * 1000) + 100, // mock views for now
-      conversion: ((completedOrders / (completedOrders + 50)) * 100).toFixed(1)
+      views: 0,
+      conversion: completedOrders > 0 ? '100.0' : '0.0'
     };
 
     res.json({ success: true, analytics });

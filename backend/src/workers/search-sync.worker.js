@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const { Worker } = require('bullmq');
 const SearchEngine = require('../services/search.engine');
 const { queryOne } = require('../../../config/database');
@@ -10,7 +11,7 @@ const REDIS_PORT = process.env.REDIS_PORT || 6379;
  */
 const searchSyncWorker = new Worker('search-sync', async (job) => {
   const { event, shopId, payload } = job.data;
-  console.log(`[SearchSync] Processing ${event} for shop ${shopId}`);
+  logger.info(`[SearchSync] Processing ${event} for shop ${shopId}`);
 
   try {
     if (event === 'shop_created' || event === 'shop_updated') {
@@ -27,7 +28,7 @@ const searchSyncWorker = new Worker('search-sync', async (job) => {
       }
     } else if (event === 'shop_deleted') {
       // In a real implementation, we would call a SearchEngine.deleteShop method here.
-      console.log(`[SearchSync] Shop ${shopId} deletion sync not yet implemented in Engine.`);
+      logger.info(`[SearchSync] Shop ${shopId} deletion sync not yet implemented in Engine.`);
     }
     
     return { success: true };

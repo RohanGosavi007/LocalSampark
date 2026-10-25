@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 // ═══════════════════════════════════════════════════════════════════════
 // Audit Logging Middleware — Comprehensive request/response tracking
 // ═══════════════════════════════════════════════════════════════════════
@@ -71,7 +72,7 @@ const auditLogger = (req, res, next) => {
 
     // Standard request log (debug level)
     if (process.env.NODE_ENV === 'development' && !logEntry.alert) {
-      console.log(`📡 [API] ${req.method} ${req.originalUrl} → ${statusCode} (${responseTimeMs}ms) [${userRole}]`);
+      logger.info(`📡 [API] ${req.method} ${req.originalUrl} → ${statusCode} (${responseTimeMs}ms) [${userRole}]`);
     }
 
     // Set response headers for client-side debugging

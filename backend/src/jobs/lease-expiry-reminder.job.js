@@ -1,3 +1,4 @@
+const logger = require('../config/logger.js');
 const cron = require('../utils/cron');
 const { queryMany } = require('../config/database');
 const notifications = require('../modules/core/services/notification.service');
@@ -5,7 +6,7 @@ const { sqlDate, dayOf } = require('../utils/sqlTime');
 
 // Run daily at 9:00 AM to check for expiring leases and police verifications
 cron.schedule('0 9 * * *', async () => {
-    console.log('[Job] Running Lease & Police Verification Expiry Reminder...');
+    logger.info('[Job] Running Lease & Police Verification Expiry Reminder...');
     try {
         // The target day is bound rather than written as date('now', '+30
         // days'), which only SQLite understands.
@@ -20,7 +21,7 @@ cron.schedule('0 9 * * *', async () => {
         `, [inThirtyDays]);
 
         for (const record of expiringVerifications) {
-            console.log(`[Alert] Police verification for ${record.person_name} (${record.flat_number}) expires in 30 days.`);
+            logger.info(`[Alert] Police verification for ${record.person_name} (${record.flat_number}) expires in 30 days.`);
 
             // Notify flat owner (assume member_id is fetched via flat_number)
             const members = await queryMany('SELECT user_id FROM society_members WHERE society_id = $1 AND flat_number = $2', [record.society_id, record.flat_number]);
@@ -46,7 +47,7 @@ cron.schedule('0 9 * * *', async () => {
         `, [inThirtyDays]);
 
         for (const lease of expiringLeases) {
-            console.log(`[Alert] Lease for ${lease.tenant_name} (${lease.flat_number}) expires in 30 days.`);
+            logger.info(`[Alert] Lease for ${lease.tenant_name} (${lease.flat_number}) expires in 30 days.`);
             if (!lease.member_id) continue;
             // Notify flat owner
             await notifications.sendToUser(lease.member_id, {

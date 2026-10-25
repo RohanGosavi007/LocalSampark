@@ -1,3 +1,4 @@
+const logger = require('../../../config/logger.js');
 class WhatsAppService {
     constructor() {
         this.token = process.env.WHATSAPP_TOKEN || 'dummy_token';
@@ -5,12 +6,12 @@ class WhatsAppService {
     }
 
     async sendTemplateMessage(phone, templateName, params) {
-        console.log(`[WhatsApp] Sending template ${templateName} to ${phone}`);
+        logger.info(`[WhatsApp] Sending template ${templateName} to ${phone}`);
         return { success: true, message_id: 'mock_wa_id_' + Date.now() };
     }
 
     async sendFreeFormMessage(phone, message) {
-        console.log(`[WhatsApp] Sending message to ${phone}: ${message}`);
+        logger.info(`[WhatsApp] Sending message to ${phone}: ${message}`);
         return { success: true };
     }
 }
