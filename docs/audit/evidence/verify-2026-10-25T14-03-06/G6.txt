@@ -1,0 +1,16 @@
+=== Concurrency & Idempotency Test ===
+
+PASS src/__tests__/concurrency.test.js
+  PostgreSQL Concurrency & Idempotency Suite [G6]
+    √ [G6.1] Race for last product stock unit: exactly one succeeds (78 ms)
+    √ [G6.2] Idempotency-Key deduplication: concurrent duplicate orders create only 1 order row (61 ms)
+    √ [G6.3] Duplicate payment capture webhook settles exactly once (8 ms)
+    √ [G6.4] Coupon usage limit holds under concurrency race (8 ms)
+    √ [G6.5] Payout execution is idempotent (11 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        1.01 s
+Ran all test suites matching concurrency.test.js.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

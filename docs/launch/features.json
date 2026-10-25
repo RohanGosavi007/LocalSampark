@@ -22,7 +22,7 @@
       "[C1.2] auth: secure storage isolation",
       "[C1.3] auth: account deletion flow"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/authSecurity.test.js",
       "backend/src/__tests__/integration/otpAndSessions.test.js",
@@ -50,7 +50,7 @@
       "[C2.1] location: pilot zone boundary check",
       "[C2.2] location: unserviceable waitlist capture"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/services/deliveryPricing.test.js",
       "backend/src/__tests__/services/boundaryMonitor.test.js",
@@ -76,7 +76,7 @@
       "[C3.1] discovery: nearby shops within radius",
       "[C3.2] discovery: shop hours and open status"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/integration/shopDetailRoutes.test.js",
       "backend/src/__tests__/integration/shopOrderingIntegrity.test.js",
@@ -104,7 +104,7 @@
       "[C4.1] product: legal metrology validation",
       "[C4.2] product: variant selection and price sync"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/variantAndInvoice.test.js",
       "backend/src/__tests__/integration/shopDetailRoutes.test.js",
@@ -133,7 +133,7 @@
       "[C5.3] finds shop by category or description keywords",
       "[C5.4] filters results by categorySlug when specified"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/searchEngine.test.js"
     ],
@@ -161,7 +161,7 @@
       "[C6.3] merges guest cart into user account on login",
       "[C6.4] clears cart when requested"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/cartEngine.test.js"
     ],
@@ -192,7 +192,7 @@
       "[C7.5] restricts first-order coupons to new customers",
       "[C7.6] restricts shop coupons to eligible shops"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/couponEngine.test.js",
       "backend/src/__tests__/concurrency.test.js"
@@ -219,7 +219,7 @@
       "[C8.1] checkout: server quote integrity",
       "[C8.2] checkout: idempotency key deduplication"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/integration/orderPlacementPayments.test.js",
       "backend/src/__tests__/concurrency.test.js"
@@ -246,7 +246,7 @@
       "[C9.1] generates order tax invoice with GST & FSSAI details",
       "[C9.2] streams generated GST tax invoice PDF"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/variantAndInvoice.test.js"
     ],
@@ -272,7 +272,7 @@
       "[C10.1] returns: return request validation",
       "[C10.2] returns: refund ledger integration"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/afterOrderExperience.test.js"
     ],
@@ -297,7 +297,7 @@
     "tests": [
       "[C11.1] reviews: verified purchase enforcement"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/afterOrderExperience.test.js"
     ],
@@ -320,7 +320,7 @@
     "tests": [
       "[C12.1] wishlist: add, remove, and list items"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/wishlistEngine.test.js"
     ],
@@ -344,7 +344,7 @@
     "tests": [
       "[C13.1] notifications: push token format alignment (N17)"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/integration/pushNotifications.test.js",
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
@@ -370,7 +370,7 @@
     "tests": [
       "[C14.1] grievance: ticket creation and 48hr sla tracking"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/afterOrderExperience.test.js"
     ],
@@ -395,7 +395,7 @@
     "tests": [
       "[S1.1] seller: kyc submission and secure document storage"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/sellerOperations.test.js"
     ],
@@ -424,7 +424,7 @@
       "[S2.3] updates product variant modifier and inventory count",
       "[S2.4] deletes product variant"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/variantAndInvoice.test.js",
       "backend/src/__tests__/unit/sellerOperations.test.js"
@@ -452,7 +452,7 @@
       "[S3.1] kitchen display order accept and reject with mandatory reason",
       "[S3.2] 80mm ESC/POS monospace thermal packing slip generation"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/sellerOperations.test.js",
       "backend/src/__tests__/unit/variantAndInvoice.test.js"
@@ -478,7 +478,7 @@
     "tests": [
       "[S4.1] seller: 0% launch commission calculation and statement generation"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/sellerOperations.test.js"
     ],
@@ -501,7 +501,7 @@
     "tests": [
       "[S5.1] shop-coupon: shop-specific scope validation"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/couponEngine.test.js",
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
@@ -525,7 +525,7 @@
     "tests": [
       "[S6.1] seller: reply to verified review"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/afterOrderExperience.test.js"
     ],
@@ -548,7 +548,7 @@
     "tests": [
       "[S7.1] analytics: real database aggregation metrics"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/services/shopAnalytics.test.js",
       "backend/src/__tests__/unit/sellerOperations.test.js"
@@ -577,7 +577,7 @@
       "[R2.1] rider: pilot zone geofence validation",
       "[R2.2] rider: online/offline duty status toggle"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/riderFleet.test.js"
     ],
@@ -602,7 +602,7 @@
       "[R3.3] rider: duplicate claim prevention",
       "[R3.4] rider: job release/rejection back to ready pool"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/riderFleet.test.js"
     ],
@@ -627,7 +627,7 @@
       "[R4.2] rider: timing-safe invalid handover code rejection",
       "[R4.3] rider: valid OTP delivery completion and wallet credit"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/riderFleet.test.js"
     ],
@@ -650,7 +650,7 @@
     "tests": [
       "[R2.3] rider: battery-aware GPS coordinate ingestion and live tracking history"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/riderFleet.test.js"
     ],
@@ -676,7 +676,7 @@
       "[R5.3] rider: auto-block duty online when cash exceeds threshold",
       "[R5.4] rider: physical hub cash deposit and unblock"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/riderFleet.test.js"
     ],
@@ -698,7 +698,7 @@
     "tests": [
       "[A1.1] admin: kpi metrics aggregation"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -720,7 +720,7 @@
     "tests": [
       "[A2.1] admin: seller approval and suspension"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -742,7 +742,7 @@
     "tests": [
       "[A3.1] admin: category management and restricted goods rules"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -765,7 +765,7 @@
     "tests": [
       "[A4.1] admin: order search and emergency intervention"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -787,7 +787,7 @@
     "tests": [
       "[A5.1] admin: dispute resolution and refund execution"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -809,7 +809,7 @@
     "tests": [
       "[A6.1] admin: commission rate configuration"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -831,7 +831,7 @@
     "tests": [
       "[A7.1] admin: coupon creation and banner cms"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -854,7 +854,7 @@
       "[A8.1] admin: rbac route permission guard",
       "[A8.2] admin: immutable audit log record"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -876,7 +876,7 @@
     "tests": [
       "[A9.1] admin: zone polygon and serviceability check"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -898,7 +898,7 @@
     "tests": [
       "[A10.1] admin: rider fleet status and cash reconciliation"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -920,7 +920,7 @@
     "tests": [
       "[A11.1] admin: grievance ticket workflow"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -944,7 +944,7 @@
     "tests": [
       "[A12.1] admin: feature flag toggle hides navigation and blocks route"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -966,7 +966,7 @@
     "tests": [
       "[A13.1] admin: gst tcs csv export generation"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -988,7 +988,7 @@
     "tests": [
       "[A14.1] admin: broadcast respecting consent flag"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
     ],
@@ -1013,7 +1013,7 @@
       "[P1.1] pipeline: canonical state transitions",
       "[P1.2] pipeline: legacy order route proxies"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/integration/orderLifecycle.test.js",
       "backend/src/__tests__/integration/orderPlacementPayments.test.js"
@@ -1037,7 +1037,7 @@
     "tests": [
       "[P2.1] payments: razorpay signature verification and idempotent webhook"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/integration/razorpayPayments.test.js",
       "backend/src/__tests__/concurrency.test.js"
@@ -1063,7 +1063,7 @@
       "[P3.4] records order refund and debits seller payable",
       "[P3.5] account statement reproduces chronological history and entries"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/ledgerEngine.test.js"
     ],
@@ -1087,7 +1087,7 @@
       "[P4.1] media: storage provider interface",
       "[P4.2] media: mime sniffing and signed urls"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/storageService.test.js",
       "backend/src/__tests__/integration/uploads.test.js"
@@ -1109,7 +1109,7 @@
     "tests": [
       "[P5.1] notifications: email and push transport adapters"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/integration/pushNotifications.test.js",
       "backend/src/__tests__/unit/adminCommerceOps.test.js"
@@ -1141,7 +1141,7 @@
       "[P6.6] disabled vertical route returns 404",
       "[P6.7] web client feature flag helper correctly identifies disabled verticals"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/unit/featureFlags.test.js"
     ],
@@ -1163,7 +1163,7 @@
     "tests": [
       "[P7.1] seo: json-ld and dynamic sitemap generation"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "apps/web/tests/seo.test.mjs"
     ],
@@ -1188,7 +1188,7 @@
     "tests": [
       "[P8.1] observability: health and ready endpoints"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/healthReady.test.js"
     ],
@@ -1215,7 +1215,7 @@
       "[P9.1] security: envValidator blocks production free otp",
       "[P9.2] security: rate limiter on auth routes"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/authSecurity.test.js",
       "backend/src/__tests__/integration/security.test.js",
@@ -1237,7 +1237,7 @@
     "tests": [
       "[P10.1] backup: pg_dump backup and restore dry-run script"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/backupRestore.test.js",
       "scripts/backup/pg_dump_backup.js",
@@ -1261,7 +1261,7 @@
     "tests": [
       "[P11.1] analytics: consent gate verification"
     ],
-    "status": "VERIFIED",
+    "status": "IN PROGRESS",
     "evidence": [
       "apps/web/tests/legalCompliance.test.mjs"
     ],
@@ -1285,7 +1285,7 @@
       "[P12.1] i18n: translation key coverage",
       "[P12.2] a11y: axe core accessibility check"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "apps/web/tests/a11y.test.mjs"
     ],
@@ -1310,7 +1310,7 @@
       "[P13.1] perf: api latency benchmark",
       "[P13.2] perf: bundle size budget checks"
     ],
-    "status": "VERIFIED",
+    "status": "CODE COMPLETE",
     "evidence": [
       "apps/web/tests/performanceBudget.test.mjs"
     ],

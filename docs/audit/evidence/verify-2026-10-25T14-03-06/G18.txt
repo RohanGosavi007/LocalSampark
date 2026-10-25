@@ -1,0 +1,273 @@
+=== Feature Verification Summary ===
+Total Launch Features: 53
+Verified: 53
+Unverified: 0
+
+List:
+[
+  {
+    "id": "C1",
+    "title": "Customer Account & Authentication",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C2",
+    "title": "Location & Serviceability",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C3",
+    "title": "Discovery & Shop Listings",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C4",
+    "title": "Product Detail & Legal Metrology",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C5",
+    "title": "Catalog Search",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C6",
+    "title": "Cart Management",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C7",
+    "title": "Database-Backed Coupon Engine",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C8",
+    "title": "Checkout Flow",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C9",
+    "title": "Order Management & Tracking",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C10",
+    "title": "Returns & Refunds",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C11",
+    "title": "Verified Reviews & Ratings",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C12",
+    "title": "Wishlist & Saved Items",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C13",
+    "title": "Notification System",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "C14",
+    "title": "Support & Grievance Redressal",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S1",
+    "title": "Seller Onboarding & KYC",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S2",
+    "title": "Seller Catalog & Inventory Management",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S3",
+    "title": "Seller Order Operations & Kitchen Display",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S4",
+    "title": "Seller Financials & Payouts",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S5",
+    "title": "Shop-Level Coupons & Offers",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S6",
+    "title": "Seller Review Management",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "S7",
+    "title": "Seller Business Analytics",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "R1",
+    "title": "Rider Onboarding & Duty Toggle",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "R2",
+    "title": "Rider Task Assignment & Dispatch",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "R3",
+    "title": "Rider Fulfillment & Proof of Delivery",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "R4",
+    "title": "Rider Real-Time Location Sharing",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "R5",
+    "title": "Rider COD Cash Ledger & Earnings",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A1",
+    "title": "Admin Commerce KPI Dashboard",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A2",
+    "title": "Admin Seller & KYC Management",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A3",
+    "title": "Admin Catalog Moderation & Categories",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A4",
+    "title": "Admin Order Operations & Interventions",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A5",
+    "title": "Admin Returns & Dispute Queue",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A6",
+    "title": "Admin Payouts & Commission Configuration",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A7",
+    "title": "Admin Promotions, Campaigns & CMS",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A8",
+    "title": "Admin RBAC & Immutable Audit Log",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A9",
+    "title": "Admin Serviceability Zones",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A10",
+    "title": "Admin Delivery Fleet & Cash Reconciliation",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A11",
+    "title": "Admin Grievance & Support Management",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A12",
+    "title": "Admin Feature Flags & Vertical Kill Switches",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A13",
+    "title": "Admin Financial & Tax Report Exports",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "A14",
+    "title": "Admin Broadcast Notifications",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P1",
+    "title": "Canonical Commerce Pipeline",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P2",
+    "title": "Payment Gateway Integration",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P3",
+    "title": "Double-Entry Financial Ledger",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P4",
+    "title": "Cloud Object Storage & Media Pipeline",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P5",
+    "title": "Unified Notification Provider Engine",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P6",
+    "title": "Unified Module Registry & Feature Flag System",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P7",
+    "title": "Web SEO & Metadata Automation",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P8",
+    "title": "Observability & Health Checks",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P9",
+    "title": "Security, Rate Limiting & Input Validation",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P10",
+    "title": "Automated Database Backups",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P11",
+    "title": "Privacy-Friendly Product Analytics",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P12",
+    "title": "Accessibility & Internationalization",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "P13",
+    "title": "Performance Budgets & Low-End Device Optimization",
+    "status": "VERIFIED"
+  }
+]

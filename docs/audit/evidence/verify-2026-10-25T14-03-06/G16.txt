@@ -1,0 +1,15 @@
+=== Accessibility Test Output ===
+✔ P12.1 [a11y]: layout.js declares accessible skip-to-content link targeting main-content (1.2762ms)
+✔ P12.2 [a11y]: root landing page declares main landmark with id="main-content" and tabIndex="-1" (1.3267ms)
+✔ P12.3 [a11y]: Header declares accessible banner and navigation landmarks (0.5295ms)
+✔ P12.4 [a11y]: interactive action buttons carry explicit aria-label attributes (0.467ms)
+✔ P12.5 [a11y]: globals.css defines accessible skip-link styles with focus visibility (0.4632ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11.7751
+

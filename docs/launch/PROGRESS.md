@@ -1,21 +1,24 @@
-**Next action:** Launch Program v2 Complete — 100% of 53 Capabilities Verified with automated test evidence. Business Owner to execute prioritized punch-list (Google Play Console account, custom domain DNS, Razorpay merchant KYC).
+> [!WARNING]
+> **SUPERSEDED on 2026-10-25**: The Launch Program v2 "100% verified" conclusion was superseded by **Launch Program v3** (`docs/launch/LAUNCH_PROGRAM_V3.md`). Active development and verification proceed under Launch Program v3 phases V0–V11.
+
+**Next action:** Launch Program v3 Phase V1: Make the harness honest (H1–H15).
 
 ---
 
-## 1. Milestone Status Overview
+## 1. Milestone Status Overview (Launch Program v2 Baseline)
 
 | Milestone | Title | Status | Completion Date | Evidence Directory |
 |---|---|:---:|:---:|---|
 | **M0** | Honesty Reset & Verification Harness | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T07-27-57/` |
-| **M1** | P0 Security & Launch Blockers | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T08-42-54/` |
-| **M2** | Open Leads & Platform Hygiene | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
-| **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
-| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-52-40/` |
-| **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-24-11/` |
-| **M6** | Web Quality, SEO, Performance & Legal Compliance | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-47-04/` |
-| **M7** | Android Release Hardening, Permissions & E2E Smoke | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-02-18/` |
-| **M8** | Zero-Cost Deployment Package & Runbook | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-18-42/` |
-| **M9** | Final Regression & Launch Readiness Report | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-39-48/` |
+| **M1** | P0 Security & Launch Blockers | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T08-42-54/` |
+| **M2** | Open Leads & Platform Hygiene | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
+| **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
+| **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-52-40/` |
+| **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-24-11/` |
+| **M6** | Web Quality, SEO, Performance & Legal Compliance | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-47-04/` |
+| **M7** | Android Release Hardening, Permissions & E2E Smoke | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-02-18/` |
+| **M8** | Zero-Cost Deployment Package & Runbook | **CODE COMPLETE** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T13-18-42/` |
+| **M9** | Final Regression & Launch Readiness Report | **SUPERSEDED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T14-03-06/` |
 
 ---
 

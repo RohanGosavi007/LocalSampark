@@ -78,3 +78,77 @@ This ledger tracks the eight key decision points (D1-D8) defined in Ground Rules
 - **Question:** Any operation that deletes data, alters user roles, or expends money?
 - **Default (Applied):** Strictly ask the owner before executing any destructive migration, table drop, role removal, or live financial transaction. Never perform these autonomously.
 - **Status:** **ENFORCED (2026-10-25)**.
+
+---
+
+### Decision D9: Canonical Pipeline Plan Approval (D5)
+- **Question:** Approve the D5 canonical-pipeline plan already written in `DECISIONS.md`?
+- **Default (Applied):** Do not start the P1 migration of callers; build everything else. P1 stays `NOT VERIFIED` until approved.
+- **Status:** **AWAITING OWNER CONFIRMATION**. Default applied.
+
+---
+
+### Decision D10: COD Refunds & Rider Earnings While Wallet is Flagged Off (F-103)
+- **Question:** How are customer cash-on-delivery refunds and rider delivery earnings handled while the wallet vertical is disabled at launch?
+- **Default (Applied):**
+  - **COD Refunds:** Handled via manual payout records (UPI/bank transfer) confirmed by admin, accompanied by an explicit ledger audit entry in `payment_ledger`.
+  - **Rider Earnings:** Accrue in the rider balance ledger and are settled via manual admin batch payouts.
+  - Wallet engine and consumer wallet credits remain completely flagged off.
+- **Status:** **DEFAULT ADOPTED (2026-10-25)**.
+
+---
+
+### Decision D11: Statutory Grievance Officer Identity and Contact (F-104)
+- **Question:** What are the exact contact details for the statutory Grievance Officer required by India Consumer Protection (E-Commerce) Rules 2020?
+- **Default (Applied):** Read officer details dynamically from configuration/environment; render on public grievance page with clear label: `"DRAFT — pending owner confirmation"`.
+- **Status:** **DEFAULT ADOPTED (2026-10-25)**.
+
+---
+
+### Decision D12: Dependency Vulnerability Exceptions (Gate G13)
+- **Question:** How should non-fixable sub-dependency vulnerabilities (e.g. Next.js 15 internal postcss, face-api node-fetch, Expo CLI node-forge) be managed?
+- **Default (Applied):** Fix all directly resolvable packages; propose explicit entries in `docs/audit/accepted-exceptions.json` with vulnerability analysis; keep Gate G13 failing until the owner explicitly approves the exceptions.
+- **Status:** **DEFAULT ADOPTED (2026-10-25)**.
+
+---
+
+### Decision D13: Machine Verification Evidence Logging
+- **Question:** How should raw log outputs from verification gates be version-controlled without bloating repository history?
+- **Default (Applied):** Commit scrubbed `.txt` logs alongside `summary.json` reports strictly for each phase's final full run. Do not modify gitignore rules for `.log` files.
+- **Status:** **DEFAULT ADOPTED (2026-10-25)**.
+
+---
+
+### Decision D14: Dedicated Local PostgreSQL Test Database
+- **Question:** What database instance should Gate G3 and G6 execute against locally without interfering with development data?
+- **Default (Applied):** Use a dedicated test database named `localsampark_test`. Store local connection credentials in a gitignored `backend/.env.test.local`. Prompt owner if creation or password alteration is needed.
+- **Status:** **DEFAULT ADOPTED (2026-10-25)**.
+
+---
+
+### Decision D15: System Tooling & Emulator Installs
+- **Question:** May external system-level tooling (Android emulator / AVD, Maestro, Docker / MinIO) be installed on the host machine?
+- **Default (Applied):** Strictly ask the platform owner before installing any system binaries, emulators, or system services. In-repo npm devDependencies (`@axe-core/playwright`, `@lhci/cli`, `autocannon`) are permitted without asking.
+- **Status:** **ENFORCED (2026-10-25)**.
+
+---
+
+### Decision D16: Supabase PostgreSQL Major Version
+- **Question:** What exact PostgreSQL version runs on the remote Supabase production instance?
+- **Default (Applied):** Await owner confirmation. In the interim, execute Gate G3 and local validations against local PostgreSQL 18 and record finding N9.
+- **Status:** **AWAITING OWNER CONFIRMATION**. Local PG 18 used for test harness.
+
+---
+
+### Decision D17: Marathi Language Localization Scope at Launch
+- **Question:** Should Marathi (mr) localization be required for the initial production launch?
+- **Default (Applied):** English (en) and Hindi (hi) are active and fully translated at launch. All UI strings are extracted into localization dictionaries so Marathi can be enabled post-launch without code refactoring.
+- **Status:** **DEFAULT ADOPTED (2026-10-25)**.
+
+---
+
+### Decision D18: Untracking Ephemeral Test Results (F-111)
+- **Question:** Should transient test artifacts (`playwright-report/` and `test-results/`) be committed to git?
+- **Default (Applied):** Untrack from git index via `git rm --cached` while preserving local files on disk. Ensure `.gitignore` ignores all subsequent runs.
+- **Status:** **RESOLVED & APPLIED (2026-10-25)**.
+

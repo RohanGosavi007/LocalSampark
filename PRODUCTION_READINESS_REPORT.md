@@ -1,6 +1,9 @@
 # LocalSampark — 100X Deep Audit, Refactor & Production Deployment Readiness Report
 
-**Audit Status:** ✅ **100% PRODUCTION READY & CERTIFIED (ZERO-DEFECT STATUS)**  
+> [!WARNING]
+> **SUPERSEDED on 2026-10-25**: This document contains historical, unverified claims superseded by Launch Program v3 (`docs/launch/LAUNCH_PROGRAM_V3.md`). Active verified status is machine-generated in `docs/launch/STATUS.md`.
+
+**Audit Status:** ⚠️ **SUPERSEDED — SEE LAUNCH PROGRAM V3**  
 **Platform Version:** `1.0.0` (Monorepo: `apps/web`, `apps/admin`, `apps/mobile`, `backend`, `packages/shared`, `packages/types`, `packages/mock-data`)  
 **Target Environments:** Self-Hosted Docker Compose + Nginx TLS / Render.com Cloud Platform / PostgreSQL + PostGIS (Supabase / Managed)  
 **Date of Audit:** October 25, 2026  
@@ -185,8 +188,8 @@ DB_STATEMENT_TIMEOUT_MS=30000
 REDIS_URL=redis://localhost:6379
 
 # ─── JWT SECRETS (Generate with: openssl rand -hex 32) ──────
-JWT_SECRET=b8d74f2e91a0c3d5e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0
-JWT_REFRESH_SECRET=c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6b8d74f2e91a0c3d5e7f8a9b0c1d2e3f4
+JWT_SECRET=<generate: openssl rand -hex 32>
+JWT_REFRESH_SECRET=<generate: openssl rand -hex 32>
 JWT_EXPIRES_IN=1h
 ADMIN_JWT_EXPIRES_IN=12h
 JWT_REFRESH_EXPIRES_IN=30d

@@ -1,8 +1,11 @@
 # LocalSampark — Commercial Launch Readiness Audit Report (v2)
 
+> [!WARNING]
+> **SUPERSEDED on 2026-10-25**: This Launch Program v2 report contained unverified claims not fully supported by machine gate evidence (actual baseline: 11/18 gates passed, 0/53 features verified under strict multi-platform rules). This document is superseded by **Launch Program v3** (`docs/launch/LAUNCH_PROGRAM_V3.md`). Active verification status is machine-generated in `docs/launch/STATUS.md`.
+
 *Branch:* `launch/ecommerce-v1`  
 *Audit Completed:* October 25, 2026  
-*Status:* **PRODUCTION & LAUNCH READY (Hyper-Local Commerce & Food Vertical)**  
+*Status:* ⚠️ **SUPERSEDED — SEE LAUNCH PROGRAM V3**  
 *Target Geography:* Dhanori / Pune Pilot Zone (18.40–18.75° N, 73.70–74.05° E)  
 *Monthly Infrastructure Cost Baseline:* **₹0 / month**
 

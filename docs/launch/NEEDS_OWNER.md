@@ -84,24 +84,46 @@ This document tracks items that strictly require the project owner's credentials
 
 ---
 
-### Item 10: Local PostgreSQL Superuser Password for Windows Service (G3 / G6)
-- **Context:** The local Windows service `postgresql-x64-18` is running on `127.0.0.1:5432` (installed on 2026-10-25). Connecting with `user: 'postgres'`, `password: 'password'` returned `password authentication failed`.
+### Item 10: Local PostgreSQL Test Database & Credentials (D14, Gate G3 / G6)
+- **Context:** Gate G3 (PostgreSQL Jest suite) and Gate G6 (Postgres Concurrency suite) require a dedicated, isolated test database named `localsampark_test` running on the local PostgreSQL service (`postgresql-x64-18` on `127.0.0.1:5432`). Test runs must never share or mutate development databases.
 - **Action Required by Owner:**
-  Provide the password set during installation, or open `psql` and run:
+  Provide credentials via a local uncommitted `backend/.env.test.local` file (or set the password for `postgres` user). Run the following in `psql`:
   ```sql
   ALTER USER postgres WITH PASSWORD 'password';
-  CREATE DATABASE localsampark;
+  CREATE DATABASE localsampark_test;
   ```
-  This allows Gate G3 (PostgreSQL Jest suite) and Gate G6 (Postgres Concurrency suite) to execute against your local database.
+  Once created, Gate G3 and G6 execute isolated dual-engine tests against `localsampark_test`.
 
 ---
 
-### Item 11: Dependency Vulnerability Audit Exceptions (N4, Gate G13)
-- **Context:** Automated `npm audit fix --omit=dev` eliminated all 4 critical vulnerabilities (from 3 critical root and 1 critical mobile down to 0). Remaining non-fixable items require breaking framework upgrades:
-  1. Root: `postcss` in `next` 15 (requires breaking upgrade to Next.js 16).
+### Item 11: Dependency Vulnerability Audit Exceptions (D12, Gate G13)
+- **Context:** All fixable dependencies have been updated. Residual non-fixable sub-dependencies require breaking major framework migrations:
+  1. Root: `postcss` in `next@15` (requires breaking migration to Next.js 16).
   2. Root: `node-fetch` in `face-api.js` (sub-dependency of TensorFlow face model).
   3. Mobile: `decode-uri-component` in `expo-router` / `query-string` (requires Expo 55).
-  4. Mobile: `node-forge` in `@expo/cli` build tools.
-  None of these allow remote code execution in our deployment architecture.
+  4. Mobile: `node-forge` in `@expo/cli` build toolchain.
+  Per Decision D12, these exceptions are proposed in `docs/audit/accepted-exceptions.json` with vulnerability justifications. Gate G13 will remain flagged until the owner approves this list.
 - **Action Required by Owner:**
-  Confirm acceptance of these exceptions in `docs/launch/NEEDS_OWNER.md` so Gate G13 passes with the audited allowlist.
+  Review `docs/audit/accepted-exceptions.json` and confirm formal acceptance of these 4 sub-dependency exceptions.
+
+---
+
+### Item 12: Canonical Pipeline Plan Approval (D9)
+- **Context:** Decision D5 proposes a unified order and payment pipeline (`POST /checkout/quote`, `POST /checkout`, `PUT /orders/:orderId/status`) with an append-only state ledger and backward-compatible route proxies.
+- **Action Required by Owner:**
+  Approve the D5 plan so caller migration can begin under capability P1. Until approved, P1 remains `NOT VERIFIED`.
+
+---
+
+### Item 13: System Tooling & Emulator Authorization (D15, Gates G10 / G12)
+- **Context:** Android release verification (G10/G12) requires an Android Virtual Device (AVD) / emulator and Detox or Maestro runner.
+- **Action Required by Owner:**
+  Confirm authorization before any system-level Android emulator or Maestro CLI is installed or configured on the host machine.
+
+---
+
+### Item 14: Supabase PostgreSQL Major Version Confirmation (D16)
+- **Context:** Local testing executes against PostgreSQL 18 (`postgresql-x64-18`). Supabase cloud instances typically deploy on PostgreSQL 15.x or 16.x.
+- **Action Required by Owner:**
+  Verify the exact PostgreSQL major version running in Supabase Dashboard → Project Settings → Database.
+

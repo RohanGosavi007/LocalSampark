@@ -80,7 +80,7 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Test:** Full PostgreSQL concurrency suite and Gate G4/G6 executions pass without auto-heal interception.
 - **Evidence:** Clean execution of database.js query handler without retry; `backend/src/config/database.js`.
 - **Commit:** `launch/ecommerce-v1 (M2)`
-- **Status:** CLOSED
+- **Status:** REOPENED (B3 reveals 15 remaining is_active = true/false literals against INTEGER columns on PG; see B3)
 
 ---
 
@@ -447,3 +447,307 @@ This ledger tracks every defect identified across the monorepo. Every entry must
   3. Added `GET /orders/:orderId/invoice` and `GET /orders/:orderId/invoice/pdf` streaming endpoints to `order.routes.js`.
 - **Test:** `variantAndInvoice.test.js` (6/6 pass on both SQLite and PostgreSQL).
 - **Status:** FIXED-VERIFIED
+
+---
+
+## Launch Program v3 Additions (Recorded in V0)
+
+### Finding N6: Fragmented Order/Review/Wishlist/Payout Pipelines & Duplicate Tables
+- **ID:** ARCH-N6
+- **Severity:** P1 (Architecture)
+- **Platform:** Backend (`backend`), Database
+- **Module:** Commerce Pipeline (P1, D5/D9)
+- **Location:** `orders`, `shop_orders`, `universal_orders`, `batch_orders`, `reviews`, `trust_reviews`, `shop_wishlists`, `shop_favorites`, `marketplace_saved`
+- **Symptom:** Redundant duplicate tables and fragmented write endpoints persist across domains.
+- **Direction:** Converge on one canonical pipeline per domain without dropping tables. New writes route to canonical tables.
+- **Status:** OPEN (Scheduled for V3)
+
+---
+
+### Finding N9: Supabase PostgreSQL Major Version Parity
+- **ID:** DB-N9
+- **Severity:** P1 (Database Parity)
+- **Platform:** Database / Deployment
+- **Module:** PostgreSQL Engine
+- **Symptom:** Local environment runs PostgreSQL 18.6 while Supabase hosted cloud production runs PostgreSQL 15/16.
+- **Direction:** Confirm Supabase PG major version with owner (Decision D16).
+- **Status:** OPEN (Awaiting Owner Input)
+
+---
+
+### Finding N15: Web Session Storage & Content Security Policy (CSP)
+- **ID:** SEC-N15
+- **Severity:** P2 (Security)
+- **Platform:** Web (`apps/web`)
+- **Module:** Client Security
+- **Symptom:** Web tokens stored in `localStorage` exposed to XSS without strict Content Security Policy.
+- **Direction:** Implement strict CSP headers in `next.config.mjs` and plan `httpOnly` cookie session migration.
+- **Status:** OPEN (Scheduled for V7)
+
+---
+
+### Finding N17: Push Token Type Alignment
+- **ID:** NOTIF-N17
+- **Severity:** P2 (Mobile / Notifications)
+- **Platform:** Mobile (`apps/mobile`), Backend (`backend`)
+- **Module:** Push Notifications (C13)
+- **Symptom:** Client requests Expo push tokens while backend integrates Firebase Admin SDK.
+- **Direction:** Verify end-to-end token alignment on Android emulator; ensure sender matches token service.
+- **Status:** OPEN (Scheduled for V6)
+
+---
+
+### Defects B1 through B16 (Backend Test Failures on 311659a)
+
+#### B1: Rider Fleet Fixture Coordinate Constraint on SQLite
+- **ID:** DEF-B1
+- **Severity:** P1 (Test Regression)
+- **Location:** `backend/src/__tests__/unit/riderFleet.test.js` (18/18 fail)
+- **Symptom:** `NOT NULL constraint failed: local_shops.coordinate`.
+- **Direction:** Provide `coordinate` in test shop insert fixture matching both SQLite and PG schemas.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B2: SQLite Migration 128 Column Divergence
+- **ID:** DEF-B2
+- **Severity:** P1 (Schema Drift)
+- **Location:** `backend/src/__tests__/concurrency.test.js` [G6.4]
+- **Symptom:** `table coupons has no column named discount_amount`.
+- **Direction:** Forward-only migration aligning the SQLite twin with PostgreSQL.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B3: PostgreSQL Schema Contract & Integer Boolean Literals
+- **ID:** DEF-B3
+- **Severity:** P1 (PostgreSQL Parity)
+- **Location:** `backend/src/__tests__/postgresSchemaContract.test.js`
+- **Symptom:** `trust_reviews.order_id` FK exists on PG only (133); `idx_order_returns_user_id` and `idx_order_returns_verified_by` missing on PG; 15 `is_active = true/false` literals against INTEGER columns on PG.
+- **Direction:** Fix each SQL site to match column type; add missing FK/indexes via forward migration.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B4: DPDP Data Subject Request Column Mismatch
+- **ID:** DEF-B4
+- **Severity:** P1 (Runtime Defect / Statutory Compliance)
+- **Location:** `backend/src/modules/core/routes/privacy.routes.js:117`
+- **Symptom:** Inserts `data_subject_requests.details` which exists on neither engine; runtime 500 error.
+- **Direction:** Fix insert payload or add column via migration; add tagged C1/P11 test.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B5: Missing Foreign Key Indexes
+- **ID:** DEF-B5
+- **Severity:** P1 (Performance / Schema Hygiene)
+- **Location:** `backend/src/__tests__/fkIndexCoverage.test.js`
+- **Symptom:** Unindexed FK columns: `trust_reviews.order_id`, `order_returns.user_id`, `order_returns.verified_by`.
+- **Direction:** Add indexes via forward migration pair.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B6: Missing Environment Variable Documentation
+- **ID:** DEF-B6
+- **Severity:** P2 (Documentation)
+- **Location:** `backend/src/__tests__/envDocumentation.test.js`
+- **Symptom:** `BYPASS_FEATURE_FLAGS`, `ENABLE_ML_JOBS`, `ENABLE_WORKERS` missing from `.env.example`.
+- **Direction:** Document flags; ensure `BYPASS_FEATURE_FLAGS` is refused outside `NODE_ENV=test`.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B7: Unreviewed Public Anonymous Routes
+- **ID:** DEF-B7
+- **Severity:** P1 (Security / Route Audit)
+- **Location:** `backend/src/__tests__/integration/routeSmoke.test.js`
+- **Symptom:** Five routes answer anonymously without public allowlist review: `GET /features`, `GET /support/grievance-officer`, `GET /trust-reviews/shop/:id`, `POST /users/account-deletion-request`, `POST /account-deletion-request`.
+- **Direction:** Review, validate, rate-limit, and explicitly allowlist or protect each route. Deduplicate `/account-deletion-request`.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B8: Admin Pricing Settings Regression
+- **ID:** DEF-B8
+- **Severity:** P1 (Operations)
+- **Location:** `backend/src/__tests__/integration/adminPricing.test.js`
+- **Symptom:** Admin sees 0 pricing settings instead of expected 5 due to S4/A6 commission changes.
+- **Direction:** Reconcile pricing settings queries and restore default configuration rows.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B9: Wishlist Parameter Type Inference on PostgreSQL
+- **ID:** DEF-B9
+- **Severity:** P1 (PostgreSQL Parity)
+- **Location:** `backend/src/__tests__/unit/wishlistEngine.test.js` (6/6 fail on PG)
+- **Symptom:** `inconsistent types deduced for parameter $2` in `wishlist.routes.js`.
+- **Direction:** Cast or split parameter query for PostgreSQL type deduction.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B10: SQLite-Specific DDL in Shared Test Suites
+- **ID:** DEF-B10
+- **Severity:** P1 (Test Parity)
+- **Location:** `setup/testDb.test.js`, `integration/ecommerce.routes.test.js`, `tests/db-introspection.test.js`, `tests/marketplace-zone-scope.test.js`, `tests/spatial-index.test.js`
+- **Symptom:** SQLite-only DDL (`AUTOINCREMENT`, `PRAGMA`, `sqlite_master`, R*Tree) run against PostgreSQL.
+- **Direction:** Make helpers engine-aware or tag suites `@engine sqlite-only` with PG equivalent.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B11: Test Suites Collision with Stale SQLite File
+- **ID:** DEF-B11
+- **Severity:** P1 (Test Harness)
+- **Location:** `services/territoryResolution`, `services/orderAttribution`, `services/mlFeatureStore`, `services/boundaryMonitor`, `integration/franchiseTerritoryIsolation`, `integration/adminPaging`, `seedDefault`, `routeSmoke`
+- **Symptom:** `SQLITE_CONSTRAINT` errors during PostgreSQL gate run because suites ignore `TEST_USE_POSTGRES`.
+- **Direction:** Implement harness fix H14 for strict engine isolation.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B12: PostgreSQL 500 on Unvalidated UUID Parameters
+- **ID:** DEF-B12
+- **Severity:** P1 (Input Validation / Stability)
+- **Location:** `escrow.test.js`, `tests/endpoint-queries.test.js`
+- **Symptom:** Invalid UUID strings (`"900"`, `"nonexistent-region"`) throw PostgreSQL syntax errors causing 500s.
+- **Direction:** Validate UUIDs at route/controller level; return 400 or 404.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B13: PostgreSQL Test Data Leak Between Suites
+- **ID:** DEF-B13
+- **Severity:** P1 (Test Isolation)
+- **Location:** `backend/src/__tests__/integration/adminConsoleData.test.js`
+- **Symptom:** Revenue expected 700, got 2947 due to cross-suite data leakage on PostgreSQL.
+- **Direction:** Isolate test execution via transaction rollbacks or per-suite truncation.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B14: Jest Mock Function Shape on PostgreSQL Path
+- **ID:** DEF-B14
+- **Severity:** P2 (Test Hygiene)
+- **Location:** `backend/src/__tests__/wallet.test.js`
+- **Symptom:** `jest.spyOn(...).mockImplementation is not a function` on PG branch.
+- **Direction:** Fix mock target and module export shape.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B15: Column Verifier Query Timeout on PostgreSQL
+- **ID:** DEF-B15
+- **Severity:** P2 (Performance)
+- **Location:** `backend/tests/column-verifier.test.js`
+- **Symptom:** 10s query timeout on PG introspection.
+- **Direction:** Optimize introspection query indexing.
+- **Status:** OPEN (Scheduled for V2)
+
+#### B16: Missing Primary Keys on Society Tables (PG)
+- **ID:** DEF-B16
+- **Severity:** P1 (Schema Parity)
+- **Location:** `backend/src/__tests__/postgresSchemaContract.test.js`
+- **Symptom:** `society_advance_account`, `society_billing_config`, `society_delivery_preferences`, `society_flat_ledger` lack `id` on PG.
+- **Direction:** Forward migration adding `id` column.
+- **Status:** OPEN (Scheduled for V2)
+
+---
+
+### Findings F-101 through F-115 (Program v3 Gap Audit)
+
+#### F-101: Hardcoded Geofence Bounding Box
+- **ID:** ARCH-F101
+- **Severity:** P1
+- **Location:** `backend/src/modules/services/controllers/delivery.controller.js:801-803`
+- **Symptom:** Hardcoded Pune bounding box (18.40–18.75 / 73.70–74.05) instead of querying admin-managed A9 zones.
+- **Direction:** Query dynamic serviceability zones from database.
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-102: Hardcoded Return Windows & Category Lists
+- **ID:** ARCH-F102
+- **Severity:** P1
+- **Location:** `backend/src/services/return.service.js:35-39`
+- **Symptom:** Hardcodes 48h / 168h windows and perishable categories in code.
+- **Direction:** Move to database configuration (`platform_settings`).
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-103: COD Refunds Credited to Wallet while Wallet is Off
+- **ID:** FIN-F103
+- **Severity:** P1 (Decision D10)
+- **Location:** `backend/src/services/return.service.js:192-204`, rider earnings
+- **Symptom:** COD refunds and rider earnings credited to customer wallet, which is disabled at launch per Decision D1.
+- **Direction:** Implement manual payout tracking records per Decision D10.
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-104: Grievance Officer Details Hardcoded in Source Code
+- **ID:** STAT-F104
+- **Severity:** P1 (Decision D11)
+- **Location:** `support.routes.js`, `order.routes.js`, `apps/web/src/app/legal/grievance/page.js`, `LegalHub.js`, `account-deletion/page.js`
+- **Symptom:** Contact details hardcoded in 5 files.
+- **Direction:** Move to configurable platform settings; mark DRAFT pending owner confirmation.
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-105: Fragmented Order Placement Handlers (N6/P1)
+- **ID:** ARCH-F105
+- **Severity:** P1
+- **Location:** `shop.routes.js:857`, `shop.routes.js:1006`, `checkout.routes.js:28`, `payment.routes.js:34`
+- **Symptom:** Multiple independent order creation routes bypass canonical pipeline.
+- **Direction:** Proxy legacy routes to canonical pipeline or return 410 per D9.
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-106: Untriaged SQL String Interpolations
+- **ID:** SEC-F106
+- **Severity:** P1
+- **Location:** Monorepo backend routes (~196 instances in `static-sweeps.md` §3)
+- **Symptom:** Dynamic SQL string concatenation vulnerable to injection hazards.
+- **Direction:** Parameterize all dynamic SQL; add static policy check to G15.
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-107: Off-Scope Verticals Accessible via Deep Links and Mobile Tabs
+- **ID:** ARCH-F107
+- **Severity:** P1
+- **Location:** `apps/web` (122 `/krishi` pages), `apps/mobile` tabs
+- **Symptom:** Gating only present in web Header; direct deep links and mobile navigation allow access to disabled verticals.
+- **Direction:** Web middleware and mobile routing guards returning "not available" per D1.
+- **Status:** OPEN (Scheduled for V3/V4)
+
+#### F-108: Missing Content Security Policy (CSP)
+- **ID:** SEC-F108
+- **Severity:** P2
+- **Location:** `apps/web/next.config.mjs`
+- **Symptom:** Missing strict CSP headers on web frontend.
+- **Direction:** Configure strict CSP headers.
+- **Status:** OPEN (Scheduled for V7)
+
+#### F-109: Missing Sentry Error Reporting in Admin Console
+- **ID:** OPS-F109
+- **Severity:** P2
+- **Location:** `apps/admin`
+- **Symptom:** Admin app lacks client error tracking.
+- **Direction:** Integrate Sentry error boundary and logger into admin console.
+- **Status:** OPEN (Scheduled for V7)
+
+#### F-110: Paid Service Declarations in render.yaml
+- **ID:** OPS-F110
+- **Severity:** P1
+- **Location:** `render.yaml`
+- **Symptom:** Provisions `localsampark-redis` and `localsampark-db` on paid `starter` plans.
+- **Direction:** Reconcile to zero-cost profile (external Supabase/Neon + in-memory cache).
+- **Status:** OPEN (Scheduled for V9)
+
+#### F-111: Tracked Test Run Artifacts in Repository
+- **ID:** HYG-F111
+- **Severity:** P2
+- **Location:** `playwright-report/index.html`, `test-results/.last-run.json`
+- **Symptom:** Transient test outputs tracked in git.
+- **Direction:** Untrack files and ignore them cleanly (Decision D18).
+- **Status:** OPEN (Scheduled for V0)
+
+#### F-112: Incomplete Statutory Legal Disclosures
+- **ID:** STAT-F112
+- **Severity:** P2
+- **Location:** `apps/web/src/app/legal/`
+- **Symptom:** Legal pages lack "DRAFT — requires legal review" disclaimer; standalone shipping, cancellation, seller-terms pages missing.
+- **Direction:** Add required disclaimers and standalone route pages.
+- **Status:** OPEN (Scheduled for V8)
+
+#### F-113: PostgreSQL 500 Errors on Non-UUID Identifiers
+- **ID:** DB-F113
+- **Severity:** P1
+- **Location:** Backend route parameters
+- **Symptom:** PostgreSQL throws error 22P02 on malformed UUIDs.
+- **Direction:** Validate UUIDs at router level across all `:id` parameters.
+- **Status:** OPEN (Scheduled for V3)
+
+#### F-114: Feature ID Mapping Drift from Launch Brief
+- **ID:** SPEC-F114
+- **Severity:** P2
+- **Location:** `docs/launch/features.json`, `PROGRESS.md`, `LAUNCH_READINESS_REPORT.md`
+- **Symptom:** C10–C14 IDs drifted from `LAUNCH_BRIEF.md` definitions.
+- **Direction:** Reconcile `features.json` to canonical brief definitions.
+- **Status:** CLOSED (Reconciled in V0)
+
+#### F-115: Unreviewed Test Assertion Changes in Session 13
+- **ID:** GOV-F115
+- **Severity:** P1
+- **Location:** `orderPlacementPayments.test.js:154`, `deliveryPricing.test.js:20`
+- **Symptom:** Test expectations altered from 5% to 0% commission without prior FINDINGS entry (violating Rule 2B.6).
+- **Justification:** Aligned test assertions with Decision D1 (0% platform commission at launch per `LAUNCH_BRIEF.md` §4).
+- **Status:** CLOSED (Documented in V0)
+
