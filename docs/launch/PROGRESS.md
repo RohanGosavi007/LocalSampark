@@ -1,4 +1,4 @@
-**Next action:** Milestone M5: After-Order Experience (Returns, Reviews, Support, Invoices).
+**Next action:** Milestone M6: Web Quality, SEO, Performance & Legal Compliance.
 
 ---
 
@@ -11,7 +11,7 @@
 | **M2** | Open Leads & Platform Hygiene | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T09-21-12/` |
 | **M3** | Commerce Core (Catalog, Cart, Coupons, Checkout, Orders) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T10-14-20/` |
 | **M4** | Operations (M4.1 Seller Hub, M4.2 Rider Fleet, M4.3 Admin Hub) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T11-52-40/` |
-| **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | NOT STARTED | — | — |
+| **M5** | After-Order Experience (Returns, Reviews, Support, Invoices) | **VERIFIED** | 2026-10-25 | `docs/audit/evidence/verify-2026-10-25T12-24-11/` |
 | **M6** | Web Quality, SEO, Performance & Legal Compliance | NOT STARTED | — | — |
 | **M7** | Android Release Hardening, Permissions & E2E Smoke | NOT STARTED | — | — |
 | **M8** | Zero-Cost Deployment Package & Runbook | NOT STARTED | — | — |
@@ -98,6 +98,14 @@
 - [x] **A14 (Broadcast Notifications):** Geo-targeted push announcements (`POST /admin/commerce/broadcast`) with zone and recipient role filtering and immutable administrative audit trail.
 - [x] **Verification:** Verified via `adminCommerceOps.test.js` (32/32 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
 
+### Milestone 5: After-Order Experience
+- [x] **C10 / S5 (Real-Time Delivery Tracking & Live Milestones):** Order milestone lifecycle inspection (`GET /orders/:id/tracking` and legacy `/tracking/:orderId`), active rider GPS fix (`latitude`, `longitude`, `speed`, `heading`), distance-based ETA computation, and milestone progression (`confirmed`, `preparing`, `ready_for_pickup`, `out_for_delivery`, `delivered`).
+- [x] **C11 / S6 (Post-Delivery Returns & Multi-Tier Refund Approval):** Delivery status gating, 48h perishable vs 7-day general return window enforcement, multi-tier return review queue (`GET /orders/returns/pending-review`) for Super Admin, Admin, Territory Admin, and Franchise Owner, and hybrid refund routing (`POST /orders/returns/:returnId/verify`) crediting LocalSampark Customer Wallet for COD and triggering gateway refund for online payments with double-entry ledger integration.
+- [x] **C12 / S7 (Verified Buyer Reviews & Seller Reply Workflows):** Enforced verified buyer restriction (`delivered` order required) under Consumer Protection (E-Commerce) Rules 2020, single review per delivered order deduplication, automatic recalculation of shop aggregate rating and review count, and official shop owner reply workflow (`POST /trust-reviews/:reviewId/reply`).
+- [x] **C13 / N7 (Customer Order Tax Invoice Downloads):** GST Section 31 tax invoice JSON endpoint (`GET /orders/:id/invoice`) with shop GSTIN, FSSAI license, buyer details, and itemized tax breakup, and streaming A4 PDF tax invoice generator (`GET /orders/:id/invoice/pdf`) built with `pdfkit` protected by authorization checks.
+- [x] **C14 (In-App Support & Statutory Grievance Redressal):** Public statutory Grievance Officer directory (`GET /support/grievance-officer`), statutory grievance ticket registration (`POST /support/tickets` and `POST /orders/:id/support`), automated 48-hour acknowledgement timestamp recording, and 30-day statutory resolution SLA countdown.
+- [x] **Verification:** Verified via unit test suite `afterOrderExperience.test.js` (26/26 pass on both SQLite and PostgreSQL); Gates G1, G4, G5, G6, G15 all PASS cleanly.
+
 ---
 
 ## 3. Session Log
@@ -163,6 +171,19 @@
   - Verified 100% dual-engine parity: 32/32 passed on SQLite and 32/32 passed on PostgreSQL.
   - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
   - Marked `A1`–`A14` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M4 complete.
+
+- **2026-10-25 (Session 8 — Milestone M5 After-Order Experience):**
+  - Authored comprehensive technical specification `docs/launch/specs/2026-10-25-after-order-experience-design.md`.
+  - Applied migrations `133_after_order_experience.sql` and SQLite twin `133_after_order_experience.sqlite.sql` introducing `order_returns` table and extending `orders` (`return_status`) and `trust_reviews` (`order_id`, `seller_reply_text`, `seller_replied_at`).
+  - Implemented `C10 / S5`: real-time milestone lifecycle payload in `tracking.routes.js` and `order.routes.js` (`GET /orders/:id/tracking`), computing assigned rider GPS fix, distance, and ETA with milestone history.
+  - Implemented `C11 / S6`: return request and refund processing in `return.service.js`, `return.controller.js`, and `return.routes.js` (`POST /orders/:id/returns`, `GET /orders/returns/pending-review`, `POST /orders/returns/:returnId/verify`); enforced perishable (48h) vs retail (7-day) return windows, multi-tier staff queue review, and hybrid refund routing (COD wallet credit vs Online gateway refund with double-entry ledger integration).
+  - Implemented `C12 / S7`: verified purchase reviews and seller replies in `trust-reviews.routes.js` (`POST /trust-reviews`, `POST /trust-reviews/:reviewId/reply`, `GET /shops/:shopId/trust-reviews`), enforcing delivered order requirement under Consumer Protection Rules 2020 and recalculating shop ratings.
+  - Implemented `C13 / N7`: GST Section 31 tax invoice endpoints in `order.routes.js` and `invoice.service.js` (`GET /orders/:id/invoice` and streaming PDF `GET /orders/:id/invoice/pdf`) with user/shop owner authorization checks.
+  - Implemented `C14`: statutory support and grievance redressal in `support.routes.js` and `order.routes.js` (`GET /support/grievance-officer`, `POST /support/tickets`, `GET /support/tickets/:id`, `POST /orders/:id/support`) with automated 48-hour acknowledgement timestamp recording and 30-day statutory resolution SLA tracking.
+  - Authored unit test suite `backend/src/__tests__/unit/afterOrderExperience.test.js` covering 26 comprehensive test cases.
+  - Verified 100% dual-engine parity: 26/26 passed on SQLite and 26/26 passed on PostgreSQL.
+  - Executed verification harness: Gates G1 (ESLint), G4 (migrations/seed verify), G5 (route-auth matrix), G6 (concurrency & idempotency), G15 (launch policy) all PASS cleanly.
+  - Marked `C10`, `C11`, `C14`, and `S6` as `CODE COMPLETE` in `docs/launch/features.json` and verified Milestone M5 complete.
 
 
 

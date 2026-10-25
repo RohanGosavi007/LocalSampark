@@ -7,6 +7,9 @@ const lifecycle = require('../../../services/orderLifecycle.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { sendNewOrderNotification, sendOrderConfirmation } = require('../../core/services/email.service');
 const couponService = require('../../../services/coupon.service');
+const invoiceService = require('../../../services/invoice.service');
+const { getOrderTrackingPayload } = require('../../services/routes/tracking.routes');
+const returnController = require('../controllers/return.controller');
 
 
 // Validate Coupon (Database-backed)
@@ -222,34 +225,7 @@ router.get('/:orderId', authenticate, async (req, res, next) => {
   }
 });
 
-// GET Order Invoice Data (N7, C9, S3)
-router.get('/:orderId/invoice', authenticate, async (req, res, next) => {
-  try {
-    const invoiceService = require('../../../services/invoice.service');
-    const invoice = await invoiceService.generateOrderInvoice(req.params.orderId);
-    res.json({ success: true, invoice });
-  } catch (err) {
-    if (err.message && err.message.includes('not found')) {
-      return res.status(404).json({ success: false, error: err.message });
-    }
-    next(err);
-  }
-});
 
-// GET Order Tax Invoice PDF Stream (N7, C9, S3)
-router.get('/:orderId/invoice/pdf', authenticate, async (req, res, next) => {
-  try {
-    const invoiceService = require('../../../services/invoice.service');
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=invoice-${req.params.orderId}.pdf`);
-    await invoiceService.streamInvoicePdf(req.params.orderId, res);
-  } catch (err) {
-    if (err.message && err.message.includes('not found')) {
-      return res.status(404).json({ success: false, error: err.message });
-    }
-    next(err);
-  }
-});
 
 /**
  * PUT /orders/:orderId/accept
@@ -440,6 +416,138 @@ router.get('/:orderId/packing-slip', authenticate, async (req, res, next) => {
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.send(textSlip);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── AFTER-ORDER EXPERIENCE (C10, C11, C12, C13) ──────────────────────────────
+
+// GET /orders/:id/tracking - Real-time tracking and delivery milestone timeline
+router.get('/:id/tracking', authenticate, async (req, res, next) => {
+  try {
+    const tracking = await getOrderTrackingPayload(req.params.id, req.user);
+    res.json({ success: true, tracking });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ success: false, error: err.message });
+    }
+    next(err);
+  }
+});
+
+// GET /orders/:id/invoice - JSON invoice metadata
+router.get('/:id/invoice', authenticate, async (req, res, next) => {
+  try {
+    const orderId = req.params.id;
+    const order = await queryOne('SELECT user_id, shop_id FROM orders WHERE id = $1', [orderId]);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const requesterId = req.user?.id || req.user?.userId;
+    const isStaff = ['admin', 'super_admin', 'superadmin', 'territory_admin', 'franchise_owner'].includes(String(req.user?.role || '').toLowerCase()) || req.user?.isSuperAdmin;
+
+    if (!isStaff && String(order.user_id) !== String(requesterId)) {
+      // Check if user is the shop owner
+      const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [order.shop_id]);
+      if (!shop || String(shop.owner_id) !== String(requesterId)) {
+        return res.status(403).json({ success: false, error: 'Not authorized to view invoice for this order' });
+      }
+    }
+
+    const invoice = await invoiceService.generateOrderInvoice(orderId);
+    res.json({ success: true, invoice });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /orders/:id/invoice/pdf - Stream GST Section 31 Tax Invoice PDF
+router.get('/:id/invoice/pdf', authenticate, async (req, res, next) => {
+  try {
+    const orderId = req.params.id;
+    const order = await queryOne('SELECT user_id, shop_id FROM orders WHERE id = $1', [orderId]);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const requesterId = req.user?.id || req.user?.userId;
+    const isStaff = ['admin', 'super_admin', 'superadmin', 'territory_admin', 'franchise_owner'].includes(String(req.user?.role || '').toLowerCase()) || req.user?.isSuperAdmin;
+
+    if (!isStaff && String(order.user_id) !== String(requesterId)) {
+      const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [order.shop_id]);
+      if (!shop || String(shop.owner_id) !== String(requesterId)) {
+        return res.status(403).json({ success: false, error: 'Not authorized to download invoice for this order' });
+      }
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Invoice-${orderId}.pdf"`);
+
+    await invoiceService.streamInvoicePdf(orderId, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /orders/:id/returns - Submit customer return / refund request
+router.post('/:id/returns', authenticate, returnController.submitReturn);
+
+// POST /orders/:id/support - Submit support ticket or grievance linked to order
+router.post('/:id/support', authenticate, async (req, res, next) => {
+  try {
+    const orderId = req.params.id;
+    const { subject, description, category = 'order_issue', isStatutory = false } = req.body || {};
+    const userId = req.user.id || req.user.userId;
+
+    if (!subject || !description) {
+      return res.status(400).json({ success: false, error: 'subject and description are required' });
+    }
+
+    const order = await queryOne('SELECT user_id, shop_id FROM orders WHERE id = $1', [orderId]);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    if (String(order.user_id) !== String(userId)) {
+      return res.status(403).json({ success: false, error: 'You can only request support for your own orders' });
+    }
+
+    const ticketId = crypto.randomUUID();
+    const isStatutoryBool = Boolean(isStatutory);
+    const priority = isStatutoryBool ? 'high' : 'medium';
+    const officer = isStatutoryBool ? 'Rohan Gosavi (Grievance Officer)' : null;
+    const isStatutoryParam = process.env.USE_SQLITE === 'true' ? (isStatutoryBool ? 1 : 0) : isStatutoryBool;
+    const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+
+    await query(
+      `INSERT INTO support_tickets
+         (id, user_id, subject, description, category, priority, status, is_statutory, acknowledged_at, grievance_officer, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, ${NOW}, $8, ${NOW}, ${NOW})`,
+      [ticketId, userId, String(subject).trim(), String(description).trim(), String(category).toLowerCase(), priority, isStatutoryParam, officer]
+    );
+
+    const ticket = await queryOne('SELECT * FROM support_tickets WHERE id = $1', [ticketId]);
+    const createdAtTime = new Date(ticket.created_at || Date.now()).getTime();
+    const slaDueAt = new Date(createdAtTime + (30 * 24 * 60 * 60 * 1000)).toISOString();
+
+    res.status(201).json({
+      success: true,
+      ticket: {
+        id: ticket.id,
+        orderId,
+        subject: ticket.subject,
+        category: ticket.category,
+        priority: ticket.priority,
+        status: ticket.status,
+        isStatutory: isStatutoryBool,
+        acknowledgedAt: ticket.acknowledged_at,
+        grievanceOfficer: ticket.grievance_officer,
+        slaDueAt,
+        createdAt: ticket.created_at
+      }
+    });
   } catch (error) {
     next(error);
   }

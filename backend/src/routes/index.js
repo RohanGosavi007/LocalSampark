@@ -38,6 +38,7 @@ router.use('/upload', uploadLimiter, require('../modules/core/routes/upload.rout
 router.use('/settings', require('../modules/core/routes/settings.routes'));
 router.use('/webhooks', require('../modules/core/routes/webhooks.routes'));
 router.use('/token-queue', require('../modules/core/routes/token-queue.routes'));
+router.use('/support', require('../modules/core/routes/support.routes'));
 
 // ─── COMMUNITY DOMAIN ─────────────────────────────────────
 router.use('/feed', requireFeature('townsquare'), apiCache(300), require('../modules/community/routes/feed.routes'));
@@ -90,6 +91,7 @@ router.use('/subscriptions', requireFeature('premium_saas'), require('../modules
 router.use('/bills', require('../modules/ecommerce/routes/bills.routes'));
 router.use('/wallet', paymentLimiter, requireFeature('wallet_coins'), require('../modules/ecommerce/routes/wallet.routes'));
 router.use('/premium', requireFeature('premium_saas'), require('../modules/ecommerce/routes/premium.routes'));
+router.use('/orders/returns', require('../modules/ecommerce/routes/return.routes'));
 router.use('/orders', require('../modules/ecommerce/routes/order.routes'));
 router.use('/cart', require('../modules/ecommerce/routes/cart.routes'));
 router.use('/checkout', paymentLimiter, require('../modules/ecommerce/routes/checkout.routes'));

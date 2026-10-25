@@ -12,7 +12,12 @@ class InvoiceService {
 
     // Check if invoice already exists
     const existing = await queryOne(
-      'SELECT * FROM shop_invoices WHERE order_id = $1 LIMIT 1',
+      `SELECT si.*, s.name AS shop_name, s.address AS shop_address, s.gstin, s.fssai_license_number,
+              u.full_name AS customer_name, u.phone_number AS customer_phone
+         FROM shop_invoices si
+         LEFT JOIN local_shops s ON s.id = si.shop_id
+         LEFT JOIN users u ON u.id = si.user_id
+        WHERE si.order_id = $1 LIMIT 1`,
       [String(orderId)]
     );
     if (existing) {

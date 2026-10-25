@@ -182,9 +182,9 @@
       "End-to-end return status progression"
     ],
     "tests": ["[C10.1] returns: return request validation", "[C10.2] returns: refund ledger integration"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Handles COD refund logging."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/afterOrderExperience.test.js"],
+    "notes": "Handles COD wallet credit and online payment refund routing with double-entry ledger integration."
   },
   {
     "id": "C11",
@@ -198,9 +198,9 @@
       "Consumer Protection (E-Commerce) Rules compliance (no fake/unverified reviews)"
     ],
     "tests": ["[C11.1] reviews: verified purchase enforcement"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "No unverified reviews allowed."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/afterOrderExperience.test.js"],
+    "notes": "Delivered order verified buyer enforcement, duplicate review protection, and shop rating recalculation."
   },
   {
     "id": "C12",
@@ -245,9 +245,9 @@
       "In-app order help workflow"
     ],
     "tests": ["[C14.1] grievance: ticket creation and 48hr sla tracking"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "India e-commerce mandatory requirement."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/afterOrderExperience.test.js"],
+    "notes": "Statutory Grievance Officer public directory, 48-hour acknowledgement SLA, and 30-day statutory resolution countdown."
   },
   {
     "id": "S1",
@@ -357,9 +357,9 @@
       "Seller can flag abusive reviews to admin moderation queue"
     ],
     "tests": ["[S6.1] seller: reply to verified review"],
-    "status": "NOT STARTED",
-    "evidence": [],
-    "notes": "Complies with India e-commerce guidelines."
+    "status": "CODE COMPLETE",
+    "evidence": ["backend/src/__tests__/unit/afterOrderExperience.test.js"],
+    "notes": "Shop owner reply authorization on verified customer reviews."
   },
   {
     "id": "S7",
