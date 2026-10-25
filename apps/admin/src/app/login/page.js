@@ -55,8 +55,10 @@ export default function AdminLoginPage() {
     }
   };
 
-  // Quick preset login for dev
+  // Quick preset login for dev (strictly gated to development environments)
+  const isDev = process.env.NODE_ENV === 'development';
   const handleQuickLogin = async () => {
+    if (!isDev) return;
     setLoading(true);
     try {
       await loginAdmin('+919999999991', '123456', '123456');
@@ -238,24 +240,27 @@ export default function AdminLoginPage() {
           </form>
         )}
 
-        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--line)', paddingTop: '1.25rem' }}>
-          <button
-            onClick={handleQuickLogin}
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              background: 'var(--ground)',
-              color: 'var(--ink-muted)',
-              border: '1px solid var(--line)',
-              borderRadius: '0.35rem',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            ⚡ DEV: Bypass via Quick Login
-          </button>
-        </div>
+        {isDev && (
+          <div style={{ marginTop: '2rem', borderTop: '1px solid var(--line)', paddingTop: '1.25rem' }}>
+            <button
+              type="button"
+              onClick={handleQuickLogin}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: 'var(--ground)',
+                color: 'var(--ink-muted)',
+                border: '1px solid var(--line)',
+                borderRadius: '0.35rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              ⚡ DEV: Bypass via Quick Login
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

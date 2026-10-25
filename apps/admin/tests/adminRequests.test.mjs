@@ -45,3 +45,11 @@ test('no page hard-codes the production API host', () => {
     .map((f) => path.relative(SRC, f));
   assert.deepEqual(offenders, []);
 });
+
+test('quick login bypass in admin login is strictly environment gated', () => {
+  const loginPath = path.join(SRC, 'app', 'login', 'page.js');
+  const code = fs.readFileSync(loginPath, 'utf8');
+  assert.match(code, /process\.env\.NODE_ENV === 'development'/);
+  assert.match(code, /isDev &&/);
+});
+
