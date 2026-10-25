@@ -8,7 +8,7 @@ This document serves as the master matrix driving Phase 2 and Phase 4. Every row
 
 | Module ID | Module Domain | Primary Routes | Web Pages | Admin Tabs | Mobile Screens | Database Tables | Sockets & Jobs | Audit Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **MOD-01** | **Auth & Identity** | `/auth`, `/users`, `/admin-auth` | `/login`, `/register`, `/auth/*` | Auth guards | `/login`, `/register`, `(tabs)/profile` | `users`, `admin_roles`, `used_refresh_tokens`, `wallets` | `auth.socket` | PENDING |
+| **MOD-01** | **Auth & Identity** | `/auth`, `/users`, `/admin-auth` | `/login`, `/register`, `/auth/*` | Auth guards | `/login`, `/register`, `(tabs)/profile` | `users`, `admin_roles`, `used_refresh_tokens`, `wallets` | `auth.socket` | **PASSED** (55/55 unit/int tests pass, L1/L2/L3/L4/L16 resolved) |
 | **MOD-02** | **Location & Territory** | `/zones`, `/territories`, `/user-zones` | `/zones/*`, location picker | Territories tab | Location selector, geofence manager | `regions`, `territory_assignments`, `user_zones` | `territory.socket` | PENDING |
 | **MOD-03** | **Home & Discovery** | `/feed`, `/public`, `/stories` | `/` (homepage), `/feed`, `/search` | Analytics, Feeds | `(tabs)/index`, feed viewer | `posts`, `stories`, `search_index` | `feed.socket` | PENDING |
 | **MOD-04** | **Shops & Catalog** | `/shops`, `/products`, `/categories` | `/shops`, `/shops/[id]`, `/categories` | Shops tab | `(tabs)/shops`, shop details | `local_shops`, `shop_products`, `shop_categories` | `inventory.socket` | PENDING |
