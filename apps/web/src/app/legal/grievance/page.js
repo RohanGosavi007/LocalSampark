@@ -1,9 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { ShieldCheck, Mail, MapPin, Clock, Phone, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
-import { apiPost } from '@/lib/api';
+import { apiPost, apiGet } from '@/lib/api';
 
 export default function GrievanceRedressalPage() {
   const [subject, setSubject] = useState('');
@@ -14,6 +14,12 @@ export default function GrievanceRedressalPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  // The officer's details are configuration on the server (GRIEVANCE_OFFICER_*),
+  // so this page and the API cannot disagree about who the officer is.
+  const [officer, setOfficer] = useState(null);
+  useEffect(() => {
+    apiGet('/support/grievance-officer').then((r) => setOfficer(r.grievanceOfficer)).catch(() => setOfficer(false));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,17 +35,24 @@ export default function GrievanceRedressalPage() {
       const payload = {
         subject: subject.trim(),
         category,
-        description: `${description.trim()}\n\nContact Details: ${contactInfo.trim() || 'Not provided'}${orderId ? `\nAssociated Order ID: ${orderId.trim()}` : ''}`,
+        description: `${description.trim()}\n\nContact Details: ${contactInfo.trim() || 'Not provided'}`,
+        // Sent as the order reference the ticket keeps (it was only pasted
+        // into the description text).
+        ...(orderId.trim() ? { orderId: orderId.trim() } : {}),
         isStatutory: true
       };
 
       const res = await apiPost('/support/tickets', payload);
 
-      if (res && (res.success || res.ticket)) {
+      // Only what the server issued. This used to show a made-up ticket number
+      // ('GRV-' + random digits) and invented acknowledgement and deadline
+      // dates whenever the response lacked them, so a grievance the server
+      // never recorded looked registered.
+      if (res && res.ticket && res.ticket.id) {
         setResult({
-          ticketId: res.ticket?.id || res.data?.id || 'GRV-' + Math.floor(100000 + Math.random() * 900000),
-          acknowledgedAt: res.ticket?.acknowledgedAt || new Date().toISOString(),
-          slaDueAt: res.ticket?.slaDueAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          ticketId: res.ticket.id,
+          acknowledgedAt: res.ticket.acknowledgedAt,
+          slaDueAt: res.ticket.slaDueAt,
         });
       } else {
         setError(res?.error || 'Failed to submit grievance ticket. Please reach out via email.');
@@ -80,17 +93,17 @@ export default function GrievanceRedressalPage() {
             <div className="space-y-3">
               <div>
                 <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Officer Name</p>
-                <p className="text-base font-bold text-text mt-0.5">Rohan Gosavi</p>
+                <p data-testid="grievance-officer-name" className="text-base font-bold text-text mt-0.5">{officer ? officer.name : officer === false ? 'Unavailable — e-mail the address below' : 'Loading…'}</p>
               </div>
               <div>
                 <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Designation</p>
-                <p className="font-medium text-text mt-0.5">Grievance Redressal Officer & Legal Operations Lead</p>
+                <p className="font-medium text-text mt-0.5">{officer ? officer.designation : 'Grievance Redressal Officer'}</p>
               </div>
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Registered Operational Office</p>
-                  <p className="font-medium text-text mt-0.5">LocalSampark Technologies, Dhanori, Pune, Maharashtra — 411015, India</p>
+                  <p className="font-medium text-text mt-0.5">{officer ? officer.address : '—'}</p>
                 </div>
               </div>
             </div>
@@ -100,8 +113,8 @@ export default function GrievanceRedressalPage() {
                 <Mail className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Official Grievance Email</p>
-                  <a href="mailto:grievance@localsampark.com" className="font-bold text-primary hover:underline mt-0.5 block">
-                    grievance@localsampark.com
+                  <a href={`mailto:${officer ? officer.email : 'grievance@localsampark.com'}`} className="font-bold text-primary hover:underline mt-0.5 block">
+                    {officer ? officer.email : 'grievance@localsampark.com'}
                   </a>
                   <a href="mailto:legal@localsampark.com" className="text-xs text-text-muted hover:underline block mt-0.5">
                     legal@localsampark.com

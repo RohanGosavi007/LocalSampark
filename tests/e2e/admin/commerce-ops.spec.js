@@ -11,6 +11,7 @@
  */
 const fs = require('fs');
 const { test, expect } = require('@playwright/test');
+const { apiSession } = require('../helpers/session');
 
 const API = 'http://localhost:5000/api/v1';
 const IDS = {
@@ -283,6 +284,31 @@ test.describe('Commerce Ops console', () => {
     await expect(message()).toContainText('Grievance resolved');
     await expect(ticket).toContainText('resolved');
     await expect(ticket).toContainText('credited to your wallet');
+  });
+
+  test('[C14.21] a ticket a customer raises reaches the console, and the reply reaches the customer', async ({ playwright }) => {
+    const customerApi = await playwright.request.newContext();
+    const session = await apiSession(customerApi);
+    const auth = { Authorization: `Bearer ${session.accessToken}` };
+    const subject = `E2E console round trip ${Date.now()}`;
+    const raised = await customerApi.post(`${API}/support/tickets`, {
+      headers: auth,
+      data: { category: 'delivery', subject, description: 'Rider could not find the gate.' },
+    });
+    expect(raised.status()).toBe(201);
+    const ticketId = (await raised.json()).ticket.id;
+
+    await openSection('grievances');
+    await page.getByLabel('Ticket type').selectOption('support');
+    const row = page.getByTestId(`ticket-row-${ticketId}`);
+    await expect(row).toContainText(subject);
+    await row.getByLabel(/Reply to/).fill('The rider has your gate number now.');
+    await row.getByRole('button', { name: 'Resolve' }).click();
+    await expect(message()).toContainText('Grievance resolved');
+
+    const mine = await (await customerApi.get(`${API}/support/tickets/my`, { headers: auth })).json();
+    expect(mine.tickets.find((t) => t.id === ticketId)).toMatchObject({ status: 'resolved', resolution: 'The rider has your gate number now.' });
+    await customerApi.dispose();
   });
 
   test('[A12.4] a kill switch reaches the public registry and API gating', async () => {

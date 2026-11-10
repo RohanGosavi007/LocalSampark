@@ -24,9 +24,13 @@ test('Legal 1.2: /legal/grievance page exists with Consumer Protection Rules 202
   assert.ok(fs.existsSync(filePath), 'legal/grievance/page.js must exist');
 
   const content = fs.readFileSync(filePath, 'utf8');
-  assert.ok(content.includes('Rohan Gosavi'), 'must publish Grievance Officer name');
+  // The officer's name and address are configuration on the server
+  // (GRIEVANCE_OFFICER_*, F-146), so the page must render them from
+  // GET /support/grievance-officer rather than carry its own copy.
+  // tests/e2e/web/support.spec.js [C14.14] checks the rendered name equals it.
+  assert.ok(content.includes("'/support/grievance-officer'"), 'must load the Grievance Officer from the API');
+  assert.ok(content.includes('officer.name') && content.includes('officer.address'), 'must publish the officer name and address');
   assert.ok(content.includes('grievance@localsampark.com'), 'must publish official grievance email');
-  assert.ok(content.includes('Dhanori, Pune'), 'must publish operational address in Dhanori, Pune');
   assert.ok(content.includes('48 Hours') || content.includes('48 hours'), 'must disclose 48-hour statutory acknowledgement SLA');
   assert.ok(content.includes('30 Days') || content.includes('30 calendar days'), 'must disclose 30-day statutory resolution SLA');
 });

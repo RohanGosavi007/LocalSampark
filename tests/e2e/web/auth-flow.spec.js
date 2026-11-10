@@ -24,6 +24,13 @@ test.describe('Auth Flow', () => {
   });
 
   test('should navigate from login to register', async ({ page }) => {
+    // A visitor answers the cookie banner first; until then it sits over the
+    // bottom of the form (it covered this link on a 720px-high window). This
+    // test is about the link, so consent is recorded up front, as in
+    // layout.spec.js and support.spec.js.
+    await page.addInitScript(() => {
+      try { localStorage.setItem('localsampark_consent', 'accepted'); localStorage.setItem('localsampark_tour_seen', 'true'); } catch { /* storage blocked */ }
+    });
     await page.goto('/login');
     const registerLink = page.locator('a[href*="register"], button:has-text("Register"), a:has-text("Sign up"), a:has-text("Register")').first();
     if (await registerLink.isVisible()) {

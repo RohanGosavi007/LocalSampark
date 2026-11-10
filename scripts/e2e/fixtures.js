@@ -28,6 +28,8 @@ const IDS = {
   consentingCustomer: 'e2e00000-0000-4000-8000-000000000070',
   consent: 'e2e00000-0000-4000-8000-000000000071',
   payout: 'e2e00000-0000-4000-8000-000000000080',
+  shopper: 'e2e00000-0000-4000-8000-0000000000b0',
+  shopperOrder: 'e2e00000-0000-4000-8000-0000000000b1',
 };
 
 const PHONES = {
@@ -35,6 +37,7 @@ const PHONES = {
   vendor: '+919999999992',
   customer: '+919999999993',
   rider: '+919999999994',
+  shopper: '+919000000001',
 };
 
 const HOURS = (h) => new Date(Date.now() - h * 3600 * 1000).toISOString();
@@ -165,6 +168,28 @@ async function seedE2eFixtures() {
                                commission_rate, net_payout, payout_status, created_at)
      VALUES ($1, $2, '2026-11-01', '2026-11-07', 480, 1, 0, 0, 480, 'calculated', CURRENT_TIMESTAMP)`,
     [IDS.payout, shop.id]
+  );
+
+  // The customer the web specs sign in as. +91 9000… numbers are the
+  // backend's development test numbers (fixed OTP, never in production), so
+  // the specs go through the real send-otp / verify-otp flow. One delivered
+  // order to ask for help with (C14).
+  await run(
+    `INSERT INTO users (id, phone_number, full_name, role, is_verified, is_active, region_id)
+     VALUES ($1, $2, 'E2E Shopper', 'user', '1', '1', $3)`,
+    [IDS.shopper, PHONES.shopper, region.id]
+  );
+  await run(
+    `INSERT INTO orders (id, user_id, shop_id, subtotal, total_amount, delivery_fee, delivery_address,
+                         payment_method, payment_status, order_status, status, fulfillment_method,
+                         delivery_lat, delivery_lng, created_at, updated_at, delivered_at)
+     VALUES ($1, $2, $3, 136, 156, 20, 'E2E Flat 3, Prasanna Goldfields, Dhanori', 'cod', 'paid', 'delivered', 'delivered',
+             'delivery', 18.5790, 73.8970, $4, $4, $4)`,
+    [IDS.shopperOrder, IDS.shopper, shop.id, HOURS(26)]
+  );
+  await run(
+    'INSERT INTO order_items (id, order_id, product_id, name, price, quantity, price_at_buy) VALUES ($1, $2, $3, $4, $5, 1, $5)',
+    ['e2e00000-0000-4000-8000-0000000000b2', IDS.shopperOrder, product.id, product.name, product.price]
   );
 
   // A9: a second, inactive zone the console can switch without taking the

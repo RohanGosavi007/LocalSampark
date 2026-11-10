@@ -1134,3 +1134,40 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | Test | Change | Why |
 |---|---|---|
 | `backend/src/__tests__/integration/adminClientRoutes.test.js` `collectRoutes` | a route declared with several paths (`router.put(['/admin/:id/review', '/:id/review'])`) yields one entry per path | It stringified the array to `"/a,/b"`, which matched nothing, so calls to such routes (the KYC queue) were reported missing although they are served. The guard is now accurate for them, and also checks every Commerce Ops call it could not see before |
+
+### F-146: Customer support was a mock-up on the web and absent from the app (C14)
+- **Web `/support`:**
+  - It showed three hard-coded tickets (TKT-1042 …) to every visitor.
+  - Its "Submit Ticket" button only switched tabs, so nothing reached the support queue.
+  - It now lists the signed-in customer's own tickets, with the support team's resolution (A11), and raises real tickets and formal grievances.
+  - `/support?order=<id>` is the order-help entry point, linked from each order on `/order-tracking`.
+- **Web `/legal/grievance`:**
+  - When the response lacked an id, it showed a made-up ticket number (`'GRV-' + random`) and invented acknowledgement and deadline dates, so a grievance the server never recorded looked registered. It now shows only what the server issued.
+  - The order is sent as a field, not pasted into the description.
+  - The officer's details are rendered from the API.
+- **API:**
+  - `POST /support/tickets` and `POST /orders/:id/support` accepted the order and dropped it. Migration 137 adds `support_tickets.order_id`, and only the customer's own order is accepted.
+  - Categories and lengths are validated.
+  - `/tickets/my` returns the resolution.
+  - The Grievance Officer's details are environment configuration (`GRIEVANCE_OFFICER_*`), not code.
+- **App:**
+  - There was no support screen. `app/support` with `src/services/support.js` adds tickets, answers, a ticket form and the officer's details, and each order screen has "Get help with this order".
+  - The order list pushed `/orders/:id`, which matched no route, so tapping an order opened the unmatched-route screen. It now opens `/orders/track/:id`.
+- **Owner action:** confirm the Grievance Officer's name, address, e-mail and phone, and set `GRIEVANCE_OFFICER_*` in production. The phone defaulted to `+91-20-88887777`, which looks like a placeholder; a statutory contact must be real.
+- **Proof:**
+  - `backend/src/__tests__/integration/supportTickets.test.js`: 5 tests, and 34/34 with the existing C14 and A11 suites on SQLite and PostgreSQL.
+  - `tests/e2e/web/support.spec.js` (5).
+  - `apps/mobile/__tests__/support.test.js` (6). This is Android platform evidence as the verifier counts it: unit tests of the app's support module and screen wiring, plus the G12 smoke test. It is not a device UI test.
+- **Status:** CODE COMPLETE.
+
+### F-147: Every web navigation mounted the destination page twice
+- `PageTransition` cross-faded routes with `AnimatePresence`. In the App Router, `children` renders the *current* route, so the exiting wrapper re-rendered with the new page. For the length of the exit animation two copies were mounted: every form field twice (the C14 spec found two "Subject" inputs), every effect and API call run twice, and sockets subscribed twice.
+- **Fix:** only the entering route animates.
+- **Proof:** `tests/e2e/web/support.spec.js` [C14.11] fills the form straight after a client-side navigation.
+- **Status:** CODE COMPLETE.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `apps/web/tests/legalCompliance.test.mjs` "Legal 1.2" | requires the page to load the officer from `/support/grievance-officer` and render `officer.name` / `officer.address`. It used to grep the source for a hard-coded name and address | The officer's details are configuration now (F-146). `tests/e2e/web/support.spec.js` [C14.14] checks that the rendered name equals the configured one, which is stronger than finding a literal in the source |
+
+- **Note (not a defect):** on a development backend, `+91 9000…` numbers are demo logins. `verify-otp` never creates an account for them and hands back a synthetic user when no seeded row exists. Production never takes that branch. E2E specs that need a new customer register an ordinary number through the real path (`tests/e2e/helpers/session.js`).

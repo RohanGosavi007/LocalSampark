@@ -186,12 +186,22 @@ export default function OrderTrackingScreen() {
             </TouchableOpacity>
           </View>
         )}
+        {/* C14: in-app order help; the ticket keeps this order. */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.helpBtn}
+          onPress={() => router.push(`/support?order=${encodeURIComponent(String(id))}`)}
+        >
+          <Text style={styles.helpText}>Get help with this order</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  helpBtn: { marginTop: 16, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#4f46e5' },
+  helpText: { color: '#4f46e5', fontWeight: '800' },
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   errorTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },

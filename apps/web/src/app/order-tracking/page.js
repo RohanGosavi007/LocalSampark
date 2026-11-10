@@ -114,7 +114,11 @@ function OrderDetail({ id }) {
           </ul>
         </div>
       )}
-      <Link href="/order-tracking" className="text-primary font-bold text-sm">← All orders</Link>
+      <div className="flex flex-wrap gap-4 items-center">
+        <Link href="/order-tracking" className="text-primary font-bold text-sm">← All orders</Link>
+        {/* C14: the in-app order help entry point; the ticket keeps this order. */}
+        <Link href={`/support?order=${encodeURIComponent(order.id)}`} className="text-primary font-bold text-sm">Get help with this order</Link>
+      </div>
     </div>
   );
 }

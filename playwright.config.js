@@ -175,6 +175,10 @@ module.exports = defineConfig({
         // repositories loaded a Postgres pool.
         USE_SQLITE: 'true',
         DB_NAME: 'localsampark_test',
+        // send-otp returns the code it issued, so specs can register new
+        // customers through the real verify-otp path. envValidator refuses this
+        // flag in production.
+        ALLOW_FREE_OTP_MODE: 'true',
         JWT_SECRET: 'test-jwt-secret-key-localsampark-2026',
         JWT_REFRESH_SECRET: 'test-jwt-refresh-secret-key-localsampark-2026',
       },

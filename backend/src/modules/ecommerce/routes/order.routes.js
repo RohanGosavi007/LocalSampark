@@ -523,9 +523,10 @@ router.post('/:id/support', authenticate, async (req, res, next) => {
 
     await query(
       `INSERT INTO support_tickets
-         (id, user_id, subject, description, category, priority, status, is_statutory, acknowledged_at, grievance_officer, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, ${NOW}, $8, ${NOW}, ${NOW})`,
-      [ticketId, userId, String(subject).trim(), String(description).trim(), String(category).toLowerCase(), priority, isStatutoryParam, officer]
+         (id, user_id, order_id, subject, description, category, priority, status, is_statutory, acknowledged_at, grievance_officer, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', $8, ${NOW}, $9, ${NOW}, ${NOW})`,
+      // order_id is kept on the ticket now (migration 137); it was only echoed back.
+      [ticketId, userId, String(orderId), String(subject).trim(), String(description).trim(), String(category).toLowerCase(), priority, isStatutoryParam, officer]
     );
 
     const ticket = await queryOne('SELECT * FROM support_tickets WHERE id = $1', [ticketId]);

@@ -30,7 +30,9 @@ export default function OrdersScreen() {
   const renderItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.orderCard}
-      onPress={() => router.push(`/orders/${item.id}`)}
+      // The order screen is /orders/track/:id; /orders/:id matched no route,
+      // so tapping an order opened the "unmatched route" screen.
+      onPress={() => router.push(`/orders/track/${item.id}`)}
     >
       <View style={styles.orderHeader}>
         <Text style={styles.shopName}>{item.shop_name || 'Local Shop'}</Text>
