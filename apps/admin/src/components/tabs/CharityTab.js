@@ -1,66 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import TabError from '../TabError';
-import { fetchJson } from '../../lib/api';
+import React from 'react';
+import EcosystemStatsTab from '../EcosystemStatsTab';
 
+// Real counts from GET /admin/charity/stats (see EcosystemStatsTab).
 export default function CharityTab({ API_BASE, authHeaders }) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    setData([
-      { id: 'c1', module: 'NGO Registrations', count: 14, status: 'Audit Pending' },
-      { id: 'c2', module: 'Local Donation Drives', count: 8, status: 'Active' },
-      { id: 'c3', module: 'Disaster Volunteers', count: 120, status: 'Active' },
-      { id: 'c4', module: 'Health Camp Organizers', count: 3, status: 'Active' },
-    ]);
-    setLoading(false);
-  }, []);
-
-  const cardStyle = { background: 'var(--surface-1)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--line)' };
-  const thStyle = { textAlign: 'left', padding: '0.75rem 1rem', color: 'var(--ink-muted)', fontWeight: 600, borderBottom: '1px solid var(--line)' };
-  const tdStyle = { padding: '0.85rem 1rem', color: 'var(--ink)', borderBottom: '1px solid var(--line)' };
-  const btnPrimary = { padding: '0.4rem 0.8rem', background: 'var(--accent)', border: 'none', color: 'var(--on-solid)', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--ink)' }}>🤝 Charity & NGO Management</h3>
-            <p style={{ color: 'var(--ink-subtle)', fontSize: '0.85rem', margin: '0.2rem 0 0' }}>Audit donations, volunteers, and local NGO registrations.</p>
-          </div>
-          <button style={btnPrimary}>Verify NGO List</button>
-        </div>
-        
-        {loading ? <p style={{ color: 'var(--ink-muted)' }}>Loading charity metrics...</p> : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Sub-Module</th>
-                  <th style={thStyle}>Active Listings / Users</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map(d => (
-                  <tr key={d.id}>
-                    <td style={{ ...tdStyle, fontWeight: 700, color: 'var(--ink)' }}>{d.module}</td>
-                    <td style={tdStyle}>{d.count}</td>
-                    <td style={tdStyle}>
-                      <span style={{ color: d.status === 'Active' ? 'var(--success)' : 'var(--warning)', fontWeight: 700 }}>{d.status}</span>
-                    </td>
-                    <td style={tdStyle}><button style={{ ...btnPrimary, background: 'var(--surface-2)' }}>Manage</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+    <EcosystemStatsTab
+      authHeaders={authHeaders}
+      url={`${API_BASE}/admin/charity/stats`}
+      title="🤝 Charity & NGO Management"
+      subtitle="Donation campaigns, verified NGOs and volunteer tasks."
+    />
   );
 }

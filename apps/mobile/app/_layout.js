@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router';
 import { wrap as sentryWrap, captureException } from '../src/sentry';
 import React, { useEffect } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../src/lib/queryClient';
 
 // ══════════════════════════════════════════════════════════════════════
 // The Event/URL polyfills that used to live here have moved to
@@ -33,7 +35,12 @@ if (__DEV__) {
 function DynamicNavigator() {
   const useAuth = require('../src/context/AuthContext').useAuth;
   const { user } = useAuth();
-  const role = user?.role || 'CUSTOMER';
+  const rawRole = String(user?.role || 'user').toLowerCase();
+  const role = (rawRole === 'shop_owner' || rawRole === 'vendor' || rawRole === 'service_provider') ? 'VENDOR'
+             : (rawRole === 'delivery_agent' || rawRole === 'delivery' || rawRole === 'rider') ? 'DELIVERY'
+             : (rawRole === 'super_admin' || rawRole === 'admin' || rawRole === 'territory_admin' || rawRole === 'franchise_owner') ? 'ADMIN'
+             : (rawRole === 'security_guard' || rawRole === 'guard') ? 'GUARD'
+             : 'CUSTOMER';
 
   if (role.startsWith('VENDOR')) {
     return (
@@ -177,14 +184,8 @@ try {
   useThemeHook = themeModule.useTheme;
 } catch (e) { console.warn('[_layout] ThemeProvider import failed:', e.message); }
 
-let QueryClientProvider = PassthroughProvider;
-let queryClient = null;
-try {
-  QueryClientProvider = require('@tanstack/react-query').QueryClientProvider;
-  queryClient = require('../src/lib/queryClient').queryClient;
-} catch (e) {
-  console.warn('[_layout] React Query import failed:', e.message);
-}
+// React Query is imported statically at top to ensure single-instance context resolution
+
 
 // OfflineQueueService — optional
 let OfflineQueueService = null;

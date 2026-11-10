@@ -12,15 +12,15 @@ export default function VehicleLogScreen() {
 
         try {
             const res = await api.post('/society-guard/vehicle', {
-                societyId: 'dummy-society',
                 vehicleNumber: vehicleNumber.toUpperCase(),
                 vehicleType: 'car',
-                flatNumber: isResident ? 'A-101' : null,
+                // The server resolves a resident vehicle's flat from
+                // society_vehicles; no flat or gate is invented here.
+                flatNumber: null,
                 direction,
-                gateId: 'gate_1'
             });
 
-            if (res.data.success) {
+            if (res?.success || res?.data?.success) {
                 Alert.alert('Success', `Vehicle ${direction.toUpperCase()} logged.`);
                 setVehicleNumber('');
             }

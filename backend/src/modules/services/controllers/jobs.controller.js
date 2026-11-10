@@ -47,7 +47,7 @@ const postJob = async (req, res, next) => {
 
     const jobId = crypto.randomUUID();
     const newJob = await query(`INSERT INTO job_vacancies (id, shop_id, title, description, job_type, salary_range, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, 1) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, '1') RETURNING *`,
       [jobId, shopId, title, description, jobType || 'Full-time', salaryRange || 'Negotiable']
     );
 
@@ -79,7 +79,7 @@ const getJobs = async (req, res, next) => {
       SELECT j.*, ls.name as employer_name, ls.address as location, ls.phone_number as contact_phone
       FROM job_vacancies j 
       LEFT JOIN local_shops ls ON j.shop_id = ls.id 
-      WHERE j.is_active = true
+      WHERE j.is_active = '1'
     `;
     const params = [];
     let paramIdx = 1;

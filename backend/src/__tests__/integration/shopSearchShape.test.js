@@ -5,7 +5,6 @@
  * `success` and `shops`, so neither ever displayed a result.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const express = require('express');
 const request = require('supertest');
@@ -16,7 +15,7 @@ beforeAll(() => {
   app.use(express.json());
   app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 test('search returns success, shops and data, all the same list', async () => {

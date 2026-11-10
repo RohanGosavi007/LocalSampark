@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./territoryTopology": "./territoryTopology.js"
+  },
   "dependencies": {
     "@turf/turf": "^7.4.0"
   }

@@ -91,7 +91,7 @@ async function loadSequences({ limit = 20000, minEvents = MIN_SEQUENCE } = {}) {
               e.created_at   AS created_at,
               COALESCE(c.slug, s.category) AS category
          FROM ml_interaction_events e
-         JOIN local_shops s      ON s.id = e.item_id
+         JOIN local_shops s      ON CAST(s.id AS TEXT) = CAST(e.item_id AS TEXT)
     LEFT JOIN shop_categories c   ON c.id = s.category_id
         WHERE e.item_type = 'shop'
           AND e.weight > 0

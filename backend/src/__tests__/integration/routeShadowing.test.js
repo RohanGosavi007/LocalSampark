@@ -12,24 +12,24 @@
  * should see (email, phone, shift, commission, revenue).
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const OWNER = 'rsh-owner';
-const SHOP = 'rsh-shop';
+const OWNER = fx('rsh-owner');
+const SHOP = fx('rsh-shop');
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM shop_staff WHERE shop_id LIKE 'rsh-%'");
-  await query("DELETE FROM shop_products WHERE shop_id LIKE 'rsh-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'rsh-%'");
-  await query("DELETE FROM users WHERE id LIKE 'rsh-%'");
+  await query(`DELETE FROM shop_staff WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('rsh')}'`);
+  await query(`DELETE FROM shop_products WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('rsh')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('rsh')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('rsh')}'`);
 }
 
 beforeAll(async () => {
@@ -37,12 +37,12 @@ beforeAll(async () => {
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'Owner', '9860800001', 'shop_owner')", [OWNER]);
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude, is_active, is_verified, approval_status)
-     VALUES ($1, $2, 'Shadow Shop', 'Grocery', 'Road 1', 'POINT(73.87 18.53)', 18.53, 73.87, 1, 1, 'approved')`,
+     VALUES ($1, $2, 'Shadow Shop', 'Grocery', 'Road 1', 'POINT(73.87 18.53)', 18.53, 73.87, '1', '1', 'approved')`,
     [SHOP, OWNER]
   );
   await query(
     `INSERT INTO shop_staff (id, shop_id, name, role, email, phone, shift, commission, commission_percent, total_revenue, is_active)
-     VALUES ('rsh-staff-1', $1, 'Asha', 'Stylist', 'asha@example.test', '9000011111', 'morning', 12, 12, 48000, '1')`,
+     VALUES ('${fx('rsh-staff-1')}', $1, 'Asha', 'Stylist', 'asha@example.test', '9000011111', 'morning', 12, 12, 48000, '1')`,
     [SHOP]
   );
 
@@ -51,7 +51,7 @@ beforeAll(async () => {
   app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
   app.use('/marketplace', require('../../modules/ecommerce/routes/marketplace.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -70,7 +70,7 @@ describe('/shops/my-shop is the owner\'s, not a shop called "my-shop"', () => {
     const res = await request(app).get('/shops/my-shop/staff').set(as(OWNER));
     expect(res.status).toBe(200);
     const rows = res.body.data || res.body.staff || res.body;
-    const asha = (Array.isArray(rows) ? rows : []).find((s) => s.id === 'rsh-staff-1');
+    const asha = (Array.isArray(rows) ? rows : []).find((s) => s.id === fx('rsh-staff-1'));
     expect(asha).toBeTruthy();
     expect(asha.email).toBe('asha@example.test');
   });
@@ -81,7 +81,7 @@ describe('the public staff list', () => {
     const res = await request(app).get(`/shops/${SHOP}/staff`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({ id: 'rsh-staff-1', name: 'Asha', role: 'Stylist' });
+    expect(res.body[0]).toMatchObject({ id: fx('rsh-staff-1'), name: 'Asha', role: 'Stylist' });
     for (const secret of ['email', 'phone', 'phone_number', 'shift', 'commission', 'commission_percent', 'total_revenue', 'total_bookings']) {
       expect(res.body[0]).not.toHaveProperty(secret);
     }
@@ -94,8 +94,8 @@ describe('/marketplace/saved and /price-alerts are the user\'s, not listing ids'
   });
 
   test('a signed-in user gets their saved list rather than "listing not found"', async () => {
-    await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ('rsh-buyer', 'Buyer', '9860800002', 'user')");
-    const res = await request(app).get('/marketplace/saved').set(as('rsh-buyer'));
+    await query(`INSERT INTO users (id, full_name, phone_number, role) VALUES ('${fx('rsh-buyer')}', 'Buyer', '9860800002', 'user')`);
+    const res = await request(app).get('/marketplace/saved').set(as(fx('rsh-buyer')));
     expect(res.status).toBe(200);
   });
 

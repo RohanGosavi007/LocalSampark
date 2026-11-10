@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
-import PendingModule from '../../components/admin/PendingModule';
+import AdminConsoleRedirect from '@/components/admin/AdminConsoleRedirect';
 
+// Placeholder retired: this module is implemented in the admin console.
 export default function CommunityPage() {
-  return <PendingModule title="Community Module" moduleKey="community" />;
+  return <AdminConsoleRedirect moduleKey="community" title="Community" />;
 }

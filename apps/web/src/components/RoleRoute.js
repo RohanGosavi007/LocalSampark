@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect } from 'react';
-import { useAuthStore } from '@/store/authStore';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 // Roles are stored lower case ('super_admin'); the checks below compared them with
@@ -13,7 +13,8 @@ const mayEnter = (user, allowedRoles) => {
 };
 
 export default function RoleRoute({ allowedRoles, children }) {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { user, loading: isLoading } = useAuth();
+  const isAuthenticated = Boolean(user);
   const router = useRouter();
 
   useEffect(() => {

@@ -65,7 +65,17 @@ export default function NativeTownsquareScreen() {
 
       <ScrollView style={s.s8}>
         {loading ? (
-          <ActivityIndicator color="#6366f1" />
+          <ActivityIndicator color="#6366f1" style={{ marginTop: 40 }} />
+        ) : posts.length === 0 ? (
+          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 }}>
+            <MessageSquare color="#475569" size={48} />
+            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16, marginTop: 16, marginBottom: 8 }}>
+              No Community Posts Yet
+            </Text>
+            <Text style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+              Be the first to share a local update, safety alert, or recommendation with your neighborhood!
+            </Text>
+          </View>
         ) : (
           posts.map(p => (
             <View key={p.id} style={s.s9}>
@@ -104,7 +114,7 @@ const s = StyleSheet.create({
   s9: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 12 },
   s10: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   s11: { color: '#818cf8', fontWeight: '700', fontSize: 14 },
-  s12: { color: '#e2e8f0', fontSize: 14, marginBottom: 12, lineHeight: 5 },
+  s12: { color: '#e2e8f0', fontSize: 14, marginBottom: 12, lineHeight: 20 },
   s13: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderColor: 'rgba(30,41,59,0.8)', paddingTop: 8 },
   s14: { color: '#64748b', fontSize: 10 },
   s15: { flexDirection: 'row', alignItems: 'center', gap: 4 },

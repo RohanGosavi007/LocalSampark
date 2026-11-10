@@ -16,8 +16,8 @@ export default function MovePassScreen() {
     const fetchPasses = async () => {
         try {
             const res = await api.get('/society-move/pass');
-            if (res.data.success) {
-                setPasses(res.data.data);
+            if (res?.success || res?.data?.success) {
+                setPasses(res?.data?.data || res?.data || []);
             }
         } catch (error) {
             console.error('Error fetching passes:', error);
@@ -29,7 +29,6 @@ export default function MovePassScreen() {
 
         try {
             const res = await api.post('/society-move/pass', {
-                societyId: 'dummy-society',
                 flatNumber: 'A-101',
                 moveType,
                 moveDate,
@@ -37,8 +36,8 @@ export default function MovePassScreen() {
                 moversVehicleNumber
             });
 
-            if (res.data.success) {
-                const { outstandingDues } = res.data.data;
+            if (res?.success || res?.data?.success) {
+                const { outstandingDues } = (res?.data?.data || res?.data || {});
                 if (outstandingDues > 0) {
                     Alert.alert('Request Sent', `Move-Out pass requested, but you have outstanding dues of Rs. ${outstandingDues}. Please clear them to get approval.`);
                 } else {

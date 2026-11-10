@@ -230,8 +230,12 @@ async function storeFiles(files, { userId, purpose = 'general', module = null, r
     await query(
       `INSERT INTO file_uploads
          (id, uploader_id, user_id, file_name, file_path, file_type, mime_type, file_size, purpose, reference_id, module, is_public)
-       VALUES ($1, $2, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10)`,
-      [id, userId || null, cleanName(file.originalname), relative, type, file.size, purpose,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      // One placeholder per column. uploader_id is UUID on PostgreSQL and
+      // user_id is not, so a shared $2 failed every upload there with
+      // "inconsistent types deduced for parameter $2" (found when the upload
+      // suites were ported off their SQLite pin, F-127).
+      [id, userId || null, userId || null, cleanName(file.originalname), relative, type, type, file.size, purpose,
         cleanTag(referenceId, 100), cleanTag(module, 40), kind.private ? '0' : '1']
     );
 
@@ -273,7 +277,7 @@ async function canRead(row, user) {
   if (row.module === 'resume') {
     const applied = await queryOne(
       `SELECT 1 AS ok FROM job_applications a JOIN local_job_postings p ON CAST(p.id AS TEXT) = CAST(a.job_id AS TEXT)
-        WHERE CAST(COALESCE(a.applicant_id, a.user_id) AS TEXT) = $1 AND CAST(p.employer_id AS TEXT) = $2
+        WHERE COALESCE(CAST(a.applicant_id AS TEXT), a.user_id) = $1 AND CAST(p.employer_id AS TEXT) = $2
         LIMIT 1`,
       [String(row.uploader_id), String(user.id)]
     );

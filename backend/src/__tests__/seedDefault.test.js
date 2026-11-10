@@ -10,7 +10,6 @@
  * again changes nothing.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const { query, queryOne, queryMany } = require('../config/database');
 const { runSeed, USERS, SHOP, REGION } = require('../seeds/run');
@@ -99,7 +98,14 @@ test('the vendor has one approved, located shop with its products', async () => 
 
   const [shop] = shops;
   expect(shop.approval_status).toBe('approved');
-  expect(shop.coordinate).toBe(`POINT(${SHOP.longitude} ${SHOP.latitude})`);
+  // PostGIS returns the geography as EWKB; read it back as WKT to compare.
+  const wkt = process.env.USE_SQLITE === 'true'
+    ? shop.coordinate
+    : (await queryMany('SELECT ST_AsText(coordinate) AS wkt FROM local_shops WHERE id = $1', [shop.id]))[0].wkt;
+  // Compared to ~10 m: PostGIS builds the point from REAL columns (float32).
+  const [lng, lat] = String(wkt).replace(/^POINT\(|\)$/g, '').split(' ').map(Number);
+  expect(lng).toBeCloseTo(SHOP.longitude, 4);
+  expect(lat).toBeCloseTo(SHOP.latitude, 4);
   expect(Number(shop.latitude)).toBeCloseTo(SHOP.latitude);
   expect(shop.category).toBe(SHOP.category);
 

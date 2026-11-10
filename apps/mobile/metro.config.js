@@ -14,7 +14,8 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.extraNodeModules = {
   react: path.resolve(projectRoot, 'node_modules/react'),
-  'react-native': path.resolve(projectRoot, 'node_modules/react-native')
+  'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+  '@tanstack/react-query': path.resolve(projectRoot, 'node_modules/@tanstack/react-query')
 };
 
 // ── Inject globalThis.expo shim BEFORE any module loads ────────────────────

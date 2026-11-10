@@ -94,7 +94,7 @@ function MorphingPill({ activeIndex, totalTabs }) {
 }
 
 // ─── Tab Item ─────────────────────────────────────────────────────────────
-function TabItem({ route, index, isFocused, onPress, totalTabs }) {
+function TabItem({ route, options, index, isFocused, onPress, totalTabs }) {
   const progress = useSharedValue(isFocused ? 1 : 0);
   const pressScale = useSharedValue(1);
 
@@ -140,7 +140,7 @@ function TabItem({ route, index, isFocused, onPress, totalTabs }) {
   }, [onPress]);
 
   // Derive label from route name
-  const label = route.name.charAt(0).toUpperCase() + route.name.slice(1);
+  const label = options?.tabBarLabel || options?.title || (route.name.charAt(0).toUpperCase() + route.name.slice(1));
 
   return (
     <TouchableOpacity
@@ -178,11 +178,13 @@ function TabItem({ route, index, isFocused, onPress, totalTabs }) {
 
 // ─── Tab Bar ──────────────────────────────────────────────────────────────
 export default function MorphingBottomTabs({ state, descriptors, navigation }) {
-  const activeIndex = useSharedValue(state.index);
+  const visibleRoutes = state.routes.filter((r) => { const o = descriptors[r.key]?.options; return o?.href !== null && typeof o?.tabBarButton !== 'function'; });
+  const visibleActiveIdx = Math.max(0, visibleRoutes.findIndex((r) => r.key === state.routes[state.index]?.key));
+  const activeIndex = useSharedValue(visibleActiveIdx);
 
   useEffect(() => {
-    activeIndex.value = state.index;
-  }, [state.index]);
+    activeIndex.value = visibleActiveIdx;
+  }, [visibleActiveIdx]);
 
   return (
     <View style={styles.container}>
@@ -196,10 +198,10 @@ export default function MorphingBottomTabs({ state, descriptors, navigation }) {
         <View style={styles.glassEdge} />
 
         {/* Morphing pill that slides under the active tab */}
-        <MorphingPill activeIndex={activeIndex} totalTabs={state.routes.length} />
+        <MorphingPill activeIndex={activeIndex} totalTabs={visibleRoutes.length || 1} />
 
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index;
+        {visibleRoutes.map((route, index) => {
+          const isFocused = state.routes[state.index]?.key === route.key;
           const { options } = descriptors[route.key];
 
           const onPress = () => {
@@ -217,10 +219,11 @@ export default function MorphingBottomTabs({ state, descriptors, navigation }) {
             <TabItem
               key={route.key}
               route={route}
+              options={options}
               index={index}
               isFocused={isFocused}
               onPress={onPress}
-              totalTabs={state.routes.length}
+              totalTabs={visibleRoutes.length || 1}
             />
           );
         })}

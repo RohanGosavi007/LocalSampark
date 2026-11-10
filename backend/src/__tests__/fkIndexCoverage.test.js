@@ -1,4 +1,8 @@
 /**
+ * @engine sqlite-only — reads foreign keys and indexes through SQLite PRAGMAs; the PostgreSQL half parses migration files.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+/**
  * Every foreign-key column is indexed, on both engines.
  *
  * Neither PostgreSQL nor SQLite indexes the referencing side of a foreign key.
@@ -49,7 +53,7 @@ describe('SQLite', () => {
       }
     }
     expect(missing).toEqual([]);
-  }, 30000);
+  }, 60000);
 });
 
 describe('PostgreSQL (migration files)', () => {

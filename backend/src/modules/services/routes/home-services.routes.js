@@ -120,4 +120,136 @@ router.get('/bookings', authenticate, async (req, res, next) => {
   }
 });
 
+// ─── PROVIDER SIDE ──────────────────────────────────────────────────────────
+// The web service dashboard was a static placeholder because a provider had no
+// way to see or act on the bookings made with them. A provider is any user
+// with a home_service_providers profile; bookings reference that profile's id.
+
+async function providerIdsFor(userId) {
+  const rows = await query('SELECT id FROM home_service_providers WHERE user_id = $1', [userId]);
+  return (rows.rows || rows || []).map((r) => r.id);
+}
+
+// Which status a provider may move a booking to from each state.
+const PROVIDER_TRANSITIONS = {
+  pending: ['confirmed', 'rejected'],
+  confirmed: ['in_progress', 'cancelled'],
+  in_progress: ['completed'],
+};
+
+// GET /home-services/provider/me — the caller's provider profile(s).
+router.get('/provider/me', authenticate, async (req, res, next) => {
+  try {
+    const rows = await query(
+      `SELECT p.id, p.name, p.phone, p.category_id, c.name AS category_name, p.hourly_rate, p.rating,
+              p.total_jobs, p.is_verified, p.is_available, p.serviced_pincodes_json
+         FROM home_service_providers p
+         LEFT JOIN home_service_categories c ON c.id = p.category_id
+        WHERE p.user_id = $1`,
+      [req.user.id]
+    );
+    const flag = (v) => v === true || v === 1 || v === '1';
+    const providers = (rows.rows || rows || []).map((p) => {
+      let pincodes = [];
+      try { pincodes = JSON.parse(p.serviced_pincodes_json || '[]'); } catch { pincodes = []; }
+      return {
+        id: p.id, name: p.name, phone: p.phone, categoryId: p.category_id, categoryName: p.category_name,
+        hourlyRate: Number(p.hourly_rate) || 0, rating: Number(p.rating) || 0, totalJobs: Number(p.total_jobs) || 0,
+        verified: flag(p.is_verified), available: flag(p.is_available), servicedPincodes: Array.isArray(pincodes) ? pincodes : [],
+      };
+    });
+    res.json({ success: true, providers });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /home-services/provider/availability { available } — take new bookings or pause.
+router.put('/provider/availability', authenticate, async (req, res, next) => {
+  try {
+    const { available } = req.body || {};
+    if (typeof available !== 'boolean') return res.status(400).json({ error: 'available must be true or false' });
+    const ids = await providerIdsFor(req.user.id);
+    if (!ids.length) return res.status(404).json({ error: 'No service provider profile for this account' });
+    const flag = available ? "'1'" : "'0'";
+    for (const id of ids) await query(`UPDATE home_service_providers SET is_available = ${flag} WHERE id = $1`, [id]);
+    res.json({ success: true, available });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /home-services/provider/bookings?status= — bookings made with the caller.
+router.get('/provider/bookings', authenticate, async (req, res, next) => {
+  try {
+    const ids = await providerIdsFor(req.user.id);
+    if (!ids.length) return res.json({ success: true, bookings: [] });
+    const params = [...ids];
+    const where = [`b.provider_id IN (${ids.map((_, i) => `$${i + 1}`).join(', ')})`];
+    if (typeof req.query.status === 'string' && req.query.status) {
+      if (!/^[a-z_]{1,20}$/.test(req.query.status)) return res.status(400).json({ error: 'Invalid status filter' });
+      params.push(req.query.status);
+      where.push(`b.status = $${params.length}`);
+    }
+    const rows = await query(
+      `SELECT b.id, b.booking_ref, b.booking_date, b.time_slot, b.service_address, b.pincode,
+              b.problem_description, b.status, b.inspection_fee, b.total_amount, b.payment_status, b.created_at,
+              c.name AS category_name, u.full_name AS customer_name
+         FROM home_service_bookings b
+         LEFT JOIN home_service_categories c ON c.id = b.category_id
+         LEFT JOIN users u ON CAST(u.id AS TEXT) = b.customer_id
+        WHERE ${where.join(' AND ')}
+        ORDER BY b.booking_date DESC, b.created_at DESC
+        LIMIT 200`,
+      params
+    );
+    res.json({ success: true, bookings: rows.rows || rows || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /home-services/provider/bookings/:id/status { status, totalAmount? }
+router.put('/provider/bookings/:id/status', authenticate, async (req, res, next) => {
+  try {
+    const { status, totalAmount } = req.body || {};
+    const booking = await queryOne('SELECT id, provider_id, status FROM home_service_bookings WHERE id = $1', [req.params.id]);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const ids = await providerIdsFor(req.user.id);
+    if (!ids.includes(booking.provider_id)) return res.status(403).json({ error: 'This booking is not assigned to you' });
+
+    const allowed = PROVIDER_TRANSITIONS[booking.status] || [];
+    if (!allowed.includes(status)) {
+      return res.status(409).json({ error: `A ${booking.status} booking cannot be moved to ${status}`, allowed });
+    }
+
+    let amount = null;
+    if (status === 'completed') {
+      amount = Number(totalAmount);
+      if (!Number.isFinite(amount) || amount < 0 || amount > 1000000) {
+        return res.status(400).json({ error: 'totalAmount (the final bill) is required to complete a booking' });
+      }
+    }
+
+    // Conditional on the status read above, so two concurrent updates cannot
+    // both apply.
+    const result = await query(
+      `UPDATE home_service_bookings
+          SET status = $1, total_amount = COALESCE($2, total_amount)
+        WHERE id = $3 AND status = $4`,
+      [status, amount, booking.id, booking.status]
+    );
+    const changed = result && (result.rowCount ?? result.changes ?? 1);
+    if (!changed) return res.status(409).json({ error: 'The booking changed while you were updating it. Reload and try again.' });
+
+    if (status === 'completed') {
+      await query('UPDATE home_service_providers SET total_jobs = COALESCE(total_jobs, 0) + 1 WHERE id = $1', [booking.provider_id]);
+    }
+    res.json({ success: true, id: booking.id, status });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

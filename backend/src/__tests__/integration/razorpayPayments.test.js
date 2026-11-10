@@ -14,7 +14,7 @@
  *     the feature being off.
  */
 
-process.env.USE_SQLITE = 'true';
+const { fx, fxLike } = require('../helpers/fixtureIds');
 process.env.RAZORPAY_KEY_ID = 'rzp_test_unitTestKey';
 process.env.RAZORPAY_KEY_SECRET = 'unit-test-key-secret';
 process.env.RAZORPAY_WEBHOOK_SECRET = 'unit-test-webhook-secret';
@@ -27,10 +27,10 @@ const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 const razorpay = require('../../services/razorpay.service');
 
-const BUYER = 'rzp-buyer';
-const OTHER = 'rzp-other';
-const OWNER = 'rzp-owner';
-const SHOP = 'rzp-shop';
+const BUYER = fx('rzp-buyer');
+const OTHER = fx('rzp-other');
+const OWNER = fx('rzp-owner');
+const SHOP = fx('rzp-shop');
 
 const token = (userId) => jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' });
 const as = (userId) => ({ Authorization: `Bearer ${token(userId)}` });
@@ -66,14 +66,14 @@ function installFakeGateway() {
 }
 
 async function cleanup() {
-  await query("DELETE FROM wallet_transactions WHERE wallet_id LIKE 'rzp-%'");
-  await query("DELETE FROM payments WHERE user_id LIKE 'rzp-%'");
+  await query(`DELETE FROM wallet_transactions WHERE CAST(wallet_id AS TEXT) LIKE '${fxLike('rzp')}'`);
+  await query(`DELETE FROM payments WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rzp')}'`);
   await query('DELETE FROM vendor_subscriptions WHERE shop_id = $1', [SHOP]);
-  await query("DELETE FROM saas_plans WHERE id LIKE 'rzp-%'");
-  await query("DELETE FROM shop_orders WHERE id LIKE 'rzp-%'");
-  await query("DELETE FROM wallets WHERE id LIKE 'rzp-%'");
+  await query(`DELETE FROM saas_plans WHERE CAST(id AS TEXT) LIKE '${fxLike('rzp')}'`);
+  await query(`DELETE FROM shop_orders WHERE CAST(id AS TEXT) LIKE '${fxLike('rzp')}'`);
+  await query(`DELETE FROM wallets WHERE CAST(id AS TEXT) LIKE '${fxLike('rzp')}'`);
   await query('DELETE FROM local_shops WHERE id = $1', [SHOP]);
-  await query("DELETE FROM users WHERE id LIKE 'rzp-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('rzp')}'`);
 }
 
 async function newShopOrder(id, userId, total) {
@@ -93,7 +93,7 @@ beforeAll(async () => {
   ]) {
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)', [id, name, phone, role]);
   }
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('rzp-wallet-buyer', $1, 0)", [BUYER]);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('rzp-wallet-buyer')}', $1, '0')`, [BUYER]);
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude)
      VALUES ($1, $2, 'Rzp Test Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87)`,
@@ -113,7 +113,7 @@ beforeAll(async () => {
   app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
   app.use('/saas', require('../../modules/crm/routes/saas.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 beforeEach(installFakeGateway);
@@ -127,9 +127,9 @@ const verifyPayment = (userId, body) => request(app).post('/payments/razorpay/ve
 
 describe('starting a payment', () => {
   test('the amount comes from the order, whatever the client sends', async () => {
-    await newShopOrder('rzp-order-amount', BUYER, 349.5);
+    await newShopOrder(fx('rzp-order-amount'), BUYER, 349.5);
 
-    const res = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-amount', amount: 1 });
+    const res = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-amount'), amount: 1 });
 
     expect(res.status).toBe(201);
     expect(res.body.amount).toBe(34950);
@@ -140,17 +140,17 @@ describe('starting a payment', () => {
 
     const row = await queryOne('SELECT * FROM payments WHERE gateway_order_id = $1', [gatewayOrders[0].id]);
     expect(row.purpose).toBe('shop_order');
-    expect(row.order_id).toBe('rzp-order-amount');
+    expect(row.order_id).toBe(fx('rzp-order-amount'));
     expect(row.user_id).toBe(BUYER);
     expect(Number(row.amount_paise)).toBe(34950);
     expect(row.status).toBe('created');
   });
 
   test("someone else's order cannot be paid for, and is indistinguishable from a missing one", async () => {
-    await newShopOrder('rzp-order-foreign', BUYER, 100);
+    await newShopOrder(fx('rzp-order-foreign'), BUYER, 100);
 
-    const theirs = await startPayment(OTHER, { purpose: 'shop_order', referenceId: 'rzp-order-foreign' });
-    const missing = await startPayment(OTHER, { purpose: 'shop_order', referenceId: 'rzp-order-nope' });
+    const theirs = await startPayment(OTHER, { purpose: 'shop_order', referenceId: fx('rzp-order-foreign') });
+    const missing = await startPayment(OTHER, { purpose: 'shop_order', referenceId: fx('rzp-order-nope') });
 
     expect(theirs.status).toBe(404);
     expect(missing.status).toBe(404);
@@ -159,10 +159,10 @@ describe('starting a payment', () => {
   });
 
   test('pressing Pay again reuses the open gateway order', async () => {
-    await newShopOrder('rzp-order-retry', BUYER, 80);
+    await newShopOrder(fx('rzp-order-retry'), BUYER, 80);
 
-    const first = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-retry' });
-    const second = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-retry' });
+    const first = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-retry') });
+    const second = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-retry') });
 
     expect(second.body.razorpayOrderId).toBe(first.body.razorpayOrderId);
     expect(gatewayOrders).toHaveLength(1);
@@ -176,12 +176,12 @@ describe('starting a payment', () => {
   });
 
   test('the older /checkout/create-order path runs the same rules', async () => {
-    await newShopOrder('rzp-order-alias', BUYER, 120);
+    await newShopOrder(fx('rzp-order-alias'), BUYER, 120);
     const anonymous = await request(app).post('/checkout/create-order').send({ amount: 1 });
     expect(anonymous.status).toBe(401);
 
     const res = await request(app).post('/checkout/create-order').set(as(BUYER))
-      .send({ purpose: 'shop_order', referenceId: 'rzp-order-alias', amount: 1 });
+      .send({ purpose: 'shop_order', referenceId: fx('rzp-order-alias'), amount: 1 });
     expect(res.status).toBe(201);
     expect(res.body.amount).toBe(12000);
   });
@@ -195,7 +195,7 @@ describe('confirming a payment', () => {
   }
 
   test('a genuine result marks that order paid, once', async () => {
-    const rzpOrder = await paid('rzp-order-good', 250);
+    const rzpOrder = await paid(fx('rzp-order-good'), 250);
     const body = {
       razorpay_order_id: rzpOrder,
       razorpay_payment_id: 'pay_good0001',
@@ -206,7 +206,7 @@ describe('confirming a payment', () => {
     expect(first.status).toBe(200);
     expect(first.body.settled).toBe(true);
 
-    const order = await queryOne('SELECT payment_status, payment_gateway_ref FROM shop_orders WHERE id = $1', ['rzp-order-good']);
+    const order = await queryOne('SELECT payment_status, payment_gateway_ref FROM shop_orders WHERE id = $1', [fx('rzp-order-good')]);
     expect(order).toEqual({ payment_status: 'paid', payment_gateway_ref: 'pay_good0001' });
 
     const again = await verifyPayment(BUYER, body);
@@ -215,38 +215,38 @@ describe('confirming a payment', () => {
   });
 
   test('a forged signature settles nothing', async () => {
-    const rzpOrder = await paid('rzp-order-forged', 250);
+    const rzpOrder = await paid(fx('rzp-order-forged'), 250);
 
     const res = await verifyPayment(BUYER, {
       razorpay_order_id: rzpOrder, razorpay_payment_id: 'pay_forged01', razorpay_signature: 'a'.repeat(64),
     });
 
     expect(res.status).toBe(400);
-    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', ['rzp-order-forged']);
+    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', [fx('rzp-order-forged')]);
     expect(order.payment_status).toBe('pending');
   });
 
   test('a genuine payment for one order cannot be replayed onto another', async () => {
     // The hole this closes: verification used to check the signature and then
     // mark paid whichever order_id the request named.
-    const cheap = await paid('rzp-order-cheap', 1);
-    await paid('rzp-order-dear', 9999);
+    const cheap = await paid(fx('rzp-order-cheap'), 1);
+    await paid(fx('rzp-order-dear'), 9999);
     const genuine = {
       razorpay_order_id: cheap,
       razorpay_payment_id: 'pay_cheap001',
       razorpay_signature: checkoutSignature(cheap, 'pay_cheap001'),
     };
 
-    const res = await verifyPayment(BUYER, { ...genuine, order_id: 'rzp-order-dear', referenceId: 'rzp-order-dear' });
+    const res = await verifyPayment(BUYER, { ...genuine, order_id: fx('rzp-order-dear'), referenceId: fx('rzp-order-dear') });
 
     expect(res.status).toBe(200);
-    expect(res.body.referenceId).toBe('rzp-order-cheap');
-    const dear = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', ['rzp-order-dear']);
+    expect(res.body.referenceId).toBe(fx('rzp-order-cheap'));
+    const dear = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', [fx('rzp-order-dear')]);
     expect(dear.payment_status).toBe('pending');
   });
 
   test("another user cannot confirm someone's payment", async () => {
-    const rzpOrder = await paid('rzp-order-notmine', 60);
+    const rzpOrder = await paid(fx('rzp-order-notmine'), 60);
     const res = await verifyPayment(OTHER, {
       razorpay_order_id: rzpOrder, razorpay_payment_id: 'pay_x', razorpay_signature: checkoutSignature(rzpOrder, 'pay_x'),
     });
@@ -254,7 +254,7 @@ describe('confirming a payment', () => {
   });
 
   test('a payment the gateway reports for a different amount is refused', async () => {
-    const rzpOrder = await paid('rzp-order-short', 500);
+    const rzpOrder = await paid(fx('rzp-order-short'), 500);
     gatewayPayments.set('pay_short001', { id: 'pay_short001', order_id: rzpOrder, amount: 100, status: 'captured' });
 
     const res = await verifyPayment(BUYER, {
@@ -262,12 +262,12 @@ describe('confirming a payment', () => {
     });
 
     expect(res.status).toBe(400);
-    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', ['rzp-order-short']);
+    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', [fx('rzp-order-short')]);
     expect(order.payment_status).toBe('pending');
   });
 
   test('camelCase field names from the web client are accepted', async () => {
-    const rzpOrder = await paid('rzp-order-camel', 75);
+    const rzpOrder = await paid(fx('rzp-order-camel'), 75);
     const res = await request(app).post('/checkout/verify').set(as(BUYER)).send({
       razorpayOrderId: rzpOrder,
       razorpayPaymentId: 'pay_camel001',
@@ -322,7 +322,7 @@ describe('wallet top-up', () => {
     expect(await balance()).toBe(before + 200);
 
     const ledger = await queryMany(
-      "SELECT amount, type FROM wallet_transactions WHERE wallet_id = 'rzp-wallet-buyer' AND purpose = 'wallet_topup'"
+      `SELECT amount, type FROM wallet_transactions WHERE wallet_id = '${fx('rzp-wallet-buyer')}' AND purpose = 'wallet_topup'`
     );
     expect(ledger).toEqual([{ amount: 200, type: 'credit' }]);
   });
@@ -364,36 +364,36 @@ describe('the webhook', () => {
   });
 
   test('a signed delivery settles the order, though the body was parsed before the route saw it', async () => {
-    await newShopOrder('rzp-order-hook', BUYER, 150);
-    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-hook' });
+    await newShopOrder(fx('rzp-order-hook'), BUYER, 150);
+    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-hook') });
 
     const res = await deliver(captured(start.body.razorpayOrderId, 'pay_hook0001', 15000));
 
     expect(res.status).toBe(200);
-    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', ['rzp-order-hook']);
+    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', [fx('rzp-order-hook')]);
     expect(order.payment_status).toBe('paid');
   });
 
   test('an unsigned or wrongly signed delivery is refused', async () => {
-    await newShopOrder('rzp-order-hookbad', BUYER, 150);
-    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-hookbad' });
+    await newShopOrder(fx('rzp-order-hookbad'), BUYER, 150);
+    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-hookbad') });
     const event = captured(start.body.razorpayOrderId, 'pay_hookbad1', 15000);
 
     expect((await deliver(event, 'f'.repeat(64))).status).toBe(401);
     expect((await deliver(event, '')).status).toBe(401);
 
-    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', ['rzp-order-hookbad']);
+    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', [fx('rzp-order-hookbad')]);
     expect(order.payment_status).toBe('pending');
   });
 
   test('a delivery for the wrong amount does not settle', async () => {
-    await newShopOrder('rzp-order-hookamt', BUYER, 150);
-    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-hookamt' });
+    await newShopOrder(fx('rzp-order-hookamt'), BUYER, 150);
+    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-hookamt') });
 
     const res = await deliver(captured(start.body.razorpayOrderId, 'pay_hookamt1', 100));
 
     expect(res.status).toBe(200);
-    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', ['rzp-order-hookamt']);
+    const order = await queryOne('SELECT payment_status FROM shop_orders WHERE id = $1', [fx('rzp-order-hookamt')]);
     expect(order.payment_status).toBe('pending');
   });
 
@@ -413,8 +413,8 @@ describe('the webhook', () => {
   });
 
   test('a failed payment is recorded and leaves the order unpaid', async () => {
-    await newShopOrder('rzp-order-hookfail', BUYER, 90);
-    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-hookfail' });
+    await newShopOrder(fx('rzp-order-hookfail'), BUYER, 90);
+    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-hookfail') });
 
     await deliver({
       event: 'payment.failed',
@@ -450,8 +450,8 @@ describe('with no keys configured', () => {
     const config = await request(app).get('/payments/razorpay/config');
     expect(config.body).toEqual(expect.objectContaining({ enabled: false, keyId: null }));
 
-    await newShopOrder('rzp-order-nokeys', BUYER, 100);
-    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: 'rzp-order-nokeys' });
+    await newShopOrder(fx('rzp-order-nokeys'), BUYER, 100);
+    const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-nokeys') });
     expect(start.status).toBe(503);
     expect(start.body.code).toBe('PAYMENTS_UNAVAILABLE');
 
@@ -472,38 +472,38 @@ describe('PUT /shops/orders/:id/status', () => {
   const setStatus = (userId, id, status) => request(app).put(`/shops/orders/${id}/status`).set(as(userId)).send({ status });
 
   test('a stranger cannot move an order; the owner can', async () => {
-    await newShopOrder('rzp-order-status', BUYER, 100);
+    await newShopOrder(fx('rzp-order-status'), BUYER, 100);
 
-    expect((await setStatus(OTHER, 'rzp-order-status', 'delivered')).status).toBe(403);
-    expect((await queryOne('SELECT status FROM shop_orders WHERE id = $1', ['rzp-order-status'])).status).toBe('pending');
+    expect((await setStatus(OTHER, fx('rzp-order-status'), 'delivered')).status).toBe(403);
+    expect((await queryOne('SELECT status FROM shop_orders WHERE id = $1', [fx('rzp-order-status')])).status).toBe('pending');
 
-    const res = await setStatus(OWNER, 'rzp-order-status', 'accepted');
+    const res = await setStatus(OWNER, fx('rzp-order-status'), 'accepted');
     expect(res.status).toBe(200);
     expect(res.body.order.status).toBe('accepted');
   });
 
   test('the customer may cancel a pending order, and nothing else', async () => {
-    await newShopOrder('rzp-order-cancel', BUYER, 100);
+    await newShopOrder(fx('rzp-order-cancel'), BUYER, 100);
 
-    expect((await setStatus(BUYER, 'rzp-order-cancel', 'delivered')).status).toBe(403);
-    expect((await setStatus(BUYER, 'rzp-order-cancel', 'cancelled')).status).toBe(200);
+    expect((await setStatus(BUYER, fx('rzp-order-cancel'), 'delivered')).status).toBe(403);
+    expect((await setStatus(BUYER, fx('rzp-order-cancel'), 'cancelled')).status).toBe(200);
 
-    await newShopOrder('rzp-order-toolate', BUYER, 100);
-    await setStatus(OWNER, 'rzp-order-toolate', 'accepted');
-    expect((await setStatus(BUYER, 'rzp-order-toolate', 'cancelled')).status).toBe(403);
+    await newShopOrder(fx('rzp-order-toolate'), BUYER, 100);
+    await setStatus(OWNER, fx('rzp-order-toolate'), 'accepted');
+    expect((await setStatus(BUYER, fx('rzp-order-toolate'), 'cancelled')).status).toBe(403);
   });
 });
 
 describe('buying a plan (POST /saas/subscribe)', () => {
   beforeAll(async () => {
-    await query("INSERT INTO saas_plans (id, name, price_monthly, is_active) VALUES ('rzp-plan-pro', 'Pro', 499, '1')");
-    await query("INSERT INTO saas_plans (id, name, price_monthly, is_active) VALUES ('rzp-plan-free', 'Free', 0, '1')");
+    await query(`INSERT INTO saas_plans (id, name, price_monthly, is_active) VALUES ('${fx('rzp-plan-pro')}', 'Pro', 499, '1')`);
+    await query(`INSERT INTO saas_plans (id, name, price_monthly, is_active) VALUES ('${fx('rzp-plan-free')}', 'Free', '0', '1')`);
   });
 
   const subscribe = (userId, planId) => request(app).post('/saas/subscribe').set(as(userId)).send({ planId });
 
   test('opens a payment for the plan price; nothing is active until it is paid', async () => {
-    const res = await subscribe(OWNER, 'rzp-plan-pro');
+    const res = await subscribe(OWNER, fx('rzp-plan-pro'));
 
     expect(res.status).toBe(201);
     expect(res.body.payment).toEqual(expect.objectContaining({ amount: 49900, purpose: 'saas_subscription' }));
@@ -513,13 +513,13 @@ describe('buying a plan (POST /saas/subscribe)', () => {
     expect(sub).toEqual({ status: 'pending', current_period_end: null });
 
     // Pressing Subscribe again does not open a second subscription or payment.
-    const again = await subscribe(OWNER, 'rzp-plan-pro');
+    const again = await subscribe(OWNER, fx('rzp-plan-pro'));
     expect(again.body.subscriptionId).toBe(res.body.subscriptionId);
     expect(again.body.payment.razorpayOrderId).toBe(res.body.payment.razorpayOrderId);
   });
 
   test('a verified payment activates it for 30 days and upgrades the shop', async () => {
-    const start = await subscribe(OWNER, 'rzp-plan-pro');
+    const start = await subscribe(OWNER, fx('rzp-plan-pro'));
     const rzpOrder = start.body.payment.razorpayOrderId;
 
     const res = await verifyPayment(OWNER, {
@@ -540,8 +540,8 @@ describe('buying a plan (POST /saas/subscribe)', () => {
   });
 
   test('someone without a shop cannot subscribe, and a free plan is not sold', async () => {
-    expect((await subscribe(BUYER, 'rzp-plan-pro')).status).toBe(403);
-    expect((await subscribe(OWNER, 'rzp-plan-free')).status).toBe(400);
-    expect((await subscribe(OWNER, 'rzp-plan-nope')).status).toBe(404);
+    expect((await subscribe(BUYER, fx('rzp-plan-pro'))).status).toBe(403);
+    expect((await subscribe(OWNER, fx('rzp-plan-free'))).status).toBe(400);
+    expect((await subscribe(OWNER, fx('rzp-plan-nope'))).status).toBe(404);
   });
 });

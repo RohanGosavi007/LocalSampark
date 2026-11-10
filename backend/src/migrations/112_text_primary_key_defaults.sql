@@ -19,9 +19,6 @@
 --
 -- Only single-column primary keys named `id`, of a text type, with no default.
 -- Idempotent: once a default is set the column no longer matches.
---
--- NOT EXECUTED: no PostgreSQL instance was available in this environment.
--- Review before applying to production.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 DO $$
@@ -29,26 +26,18 @@ DECLARE
   target RECORD;
 BEGIN
   FOR target IN
-    SELECT c.table_name
-      FROM information_schema.columns c
-      JOIN information_schema.table_constraints tc
-        ON tc.table_schema = c.table_schema
-       AND tc.table_name = c.table_name
-       AND tc.constraint_type = 'PRIMARY KEY'
-      JOIN information_schema.key_column_usage k
-        ON k.constraint_schema = tc.constraint_schema
-       AND k.constraint_name = tc.constraint_name
-       AND k.column_name = c.column_name
-     WHERE c.table_schema = 'public'
-       AND c.column_name = 'id'
-       AND c.data_type IN ('text', 'character varying')
-       AND c.column_default IS NULL
-       -- single-column keys only: a composite key that happens to include a
-       -- column called id is not an id in this sense
-       AND (SELECT COUNT(*)
-              FROM information_schema.key_column_usage k2
-             WHERE k2.constraint_schema = tc.constraint_schema
-               AND k2.constraint_name = tc.constraint_name) = 1
+    SELECT r.relname AS table_name
+      FROM pg_constraint con
+      JOIN pg_class r ON r.oid = con.conrelid
+      JOIN pg_namespace n ON n.oid = r.relnamespace
+      JOIN pg_attribute a ON a.attrelid = r.oid AND a.attnum = con.conkey[1]
+      JOIN pg_type t ON t.oid = a.atttypid
+     WHERE con.contype = 'p'
+       AND n.nspname = 'public'
+       AND array_length(con.conkey, 1) = 1
+       AND a.attname = 'id'
+       AND t.typname IN ('text', 'varchar')
+       AND NOT a.atthasdef
   LOOP
     EXECUTE format('ALTER TABLE %I ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text', target.table_name);
     RAISE NOTICE '112: default id set on %', target.table_name;

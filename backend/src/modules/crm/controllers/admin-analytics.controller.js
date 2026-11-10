@@ -112,7 +112,7 @@ exports.getOverview = async (req, res, next) => {
 
     const users = await queryOne('SELECT COUNT(*) AS count FROM users');
     const shops = await queryOne(
-      'SELECT COUNT(*) AS count FROM local_shops WHERE COALESCE(is_active, 1) = 1'
+      `SELECT COUNT(*) AS count FROM local_shops WHERE (is_active = '1' OR is_active IS NULL)`
     );
     const volume = await queryOne(
       `SELECT COALESCE(SUM(total_amount), 0) AS total

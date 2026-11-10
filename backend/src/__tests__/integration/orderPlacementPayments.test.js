@@ -21,7 +21,7 @@
  * from razorpay.service's test hook.
  */
 
-process.env.USE_SQLITE = 'true';
+const { fx, fxLike } = require('../helpers/fixtureIds');
 process.env.RAZORPAY_KEY_ID = 'rzp_test_unitTestKey';
 process.env.RAZORPAY_KEY_SECRET = 'unit-test-key-secret';
 
@@ -33,10 +33,10 @@ const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 const razorpay = require('../../services/razorpay.service');
 
-const BUYER = 'opp-buyer';
-const OWNER = 'opp-owner';
-const SHOP = 'opp-shop';
-const SHOP_B = 'opp-shop-b';
+const BUYER = fx('opp-buyer');
+const OWNER = fx('opp-owner');
+const SHOP = fx('opp-shop');
+const SHOP_B = fx('opp-shop-b');
 
 // The shops are at 18.53, 73.87.
 const NEAR = { lat: 18.535, lng: 73.875 }; // 1 km by road: the base charge, ₹20
@@ -58,42 +58,42 @@ const stock = async (id) => Number((await queryOne('SELECT inventory_count FROM 
 const orderCount = async () => (await queryMany('SELECT id FROM orders WHERE user_id = $1', [BUYER])).length;
 
 async function cleanup() {
-  await query("DELETE FROM loyalty_transactions WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM loyalty_accounts WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM wallet_transactions WHERE wallet_id LIKE 'opp-%'");
-  await query("DELETE FROM payments WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM shop_commissions WHERE shop_id LIKE 'opp-%'");
-  await query("DELETE FROM shop_appointments WHERE shop_id LIKE 'opp-%'");
-  await query("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE user_id LIKE 'opp-%')");
-  await query("DELETE FROM orders WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM batch_orders WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM universal_order_items WHERE order_id IN (SELECT id FROM universal_orders WHERE user_id LIKE 'opp-%')");
-  await query("DELETE FROM universal_orders WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM universal_catalog_items WHERE shop_id LIKE 'opp-%'");
-  await query("DELETE FROM user_addresses WHERE user_id LIKE 'opp-%'");
-  await query("DELETE FROM shop_products WHERE id LIKE 'opp-%'");
-  await query("DELETE FROM wallets WHERE id LIKE 'opp-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'opp-%'");
-  await query("DELETE FROM users WHERE id LIKE 'opp-%'");
+  await query(`DELETE FROM loyalty_transactions WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM loyalty_accounts WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM wallet_transactions WHERE CAST(wallet_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM payments WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM shop_commissions WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM shop_appointments WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}')`);
+  await query(`DELETE FROM orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM batch_orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM universal_order_items WHERE order_id IN (SELECT id FROM universal_orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}')`);
+  await query(`DELETE FROM universal_orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM universal_catalog_items WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM user_addresses WHERE CAST(user_id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM shop_products WHERE CAST(id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM wallets WHERE CAST(id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('opp')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('opp')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'Opp Buyer', '9833777001', 'user')", [BUYER]);
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'Opp Owner', '9833777002', 'shop_owner')", [OWNER]);
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('opp-wallet', $1, 0)", [BUYER]);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('opp-wallet')}', $1, '0')`, [BUYER]);
   for (const id of [SHOP, SHOP_B]) {
     await query(
       `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude, delivery_available)
-       VALUES ($1, $2, 'Opp Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87, 1)`,
+       VALUES ($1, $2, 'Opp Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
       [id, OWNER]
     );
   }
   for (const [id, shop, price, inventory, tracked] of [
-    ['opp-rice', SHOP, 120, 50, 1],
-    ['opp-dal', SHOP, 80, 1, 1],
-    ['opp-tv', SHOP, 2500, 0, 0],
-    ['opp-soap', SHOP_B, 45, 0, 0],
+    [fx('opp-rice'), SHOP, 120, 50, 1],
+    [fx('opp-dal'), SHOP, 80, 1, 1],
+    [fx('opp-tv'), SHOP, 2500, 0, 0],
+    [fx('opp-soap'), SHOP_B, 45, 0, 0],
   ]) {
     await query(
       `INSERT INTO shop_products (id, shop_id, name, price, inventory_count, stock_quantity, track_inventory)
@@ -108,7 +108,7 @@ beforeAll(async () => {
   app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
   app.use('/universal-orders', require('../../routes/universal-order.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 beforeEach(async () => {
@@ -123,7 +123,7 @@ beforeEach(async () => {
     },
     payments: { fetch: async () => { throw new Error('not used'); } },
   });
-  await query("UPDATE shop_products SET inventory_count = 50, stock_quantity = 50 WHERE id = 'opp-rice'");
+  await query(`UPDATE shop_products SET inventory_count = 50, stock_quantity = 50 WHERE id = '${fx('opp-rice')}'`);
 });
 
 afterAll(async () => {
@@ -136,12 +136,12 @@ describe('POST /checkout', () => {
   const deliverNear = { deliveryAddress: 'Flat 4, Test Society', deliveryCoordinate: NEAR };
 
   test('needs a session', async () => {
-    const res = await request(app).post('/checkout').send({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }] });
+    const res = await request(app).post('/checkout').send({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }] });
     expect(res.status).toBe(401);
   });
 
   test('cash on delivery: items from the catalogue, delivery by distance, stock taken, commission fixed', async () => {
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1, price: 1 }], paymentMethod: 'cod', ...deliverNear });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1, price: 1 }], paymentMethod: 'cod', ...deliverNear });
 
     expect(res.status).toBe(201);
     expect(res.body.bill).toMatchObject({ subtotal: 120, deliveryFee: 20, smallOrderFee: 0, platformFee: 5, total: 145, distanceKm: 1 });
@@ -153,7 +153,7 @@ describe('POST /checkout', () => {
       delivery_distance_km: 1, payment_method: 'cod', payment_status: 'pending', order_status: 'pending',
       fulfillment_method: 'delivery', commission_percent: 0,
     });
-    expect(await stock('opp-rice')).toBe(49);
+    expect(await stock(fx('opp-rice'))).toBe(49);
 
     // The terms the shop will be settled on: 0% launch commission, not of the fees.
     const terms = await queryOne('SELECT gross_amount, commission_percent, commission_amount, net_to_shop FROM shop_commissions WHERE order_id = $1', [order.id]);
@@ -161,7 +161,7 @@ describe('POST /checkout', () => {
   });
 
   test('a farther address costs more to deliver, and pays its rider more', async () => {
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], deliveryAddress: 'Far side', deliveryCoordinate: MID });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], deliveryAddress: 'Far side', deliveryCoordinate: MID });
 
     expect(res.status).toBe(201);
     expect(res.body.bill).toMatchObject({ deliveryFee: 48, distanceKm: 5.1, total: 173 });
@@ -173,7 +173,7 @@ describe('POST /checkout', () => {
 
   test('a delivery that cannot be priced or made is refused, and nothing is written', async () => {
     const before = await orderCount();
-    const line = { shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }] };
+    const line = { shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }] };
 
     const noLocation = await checkout({ ...line, deliveryAddress: 'Somewhere' });
     expect(noLocation.status).toBe(400);
@@ -188,17 +188,17 @@ describe('POST /checkout', () => {
     expect(noAddress.status).toBe(400);
     expect(noAddress.body.code).toBe('ADDRESS_REQUIRED');
 
-    await query("UPDATE local_shops SET delivery_available = 0 WHERE id = 'opp-shop'");
+    await query(`UPDATE local_shops SET delivery_available = '0' WHERE id = '${fx('opp-shop')}'`);
     try {
       const noDelivery = await checkout({ ...line, ...deliverNear });
       expect(noDelivery.status).toBe(400);
       expect(noDelivery.body.code).toBe('DELIVERY_NOT_OFFERED');
     } finally {
-      await query("UPDATE local_shops SET delivery_available = 1 WHERE id = 'opp-shop'");
+      await query(`UPDATE local_shops SET delivery_available = '1' WHERE id = '${fx('opp-shop')}'`);
     }
 
     expect(await orderCount()).toBe(before);
-    expect(await stock('opp-rice')).toBe(50);
+    expect(await stock(fx('opp-rice'))).toBe(50);
   });
 
   test('a saved address supplies the location', async () => {
@@ -207,19 +207,19 @@ describe('POST /checkout', () => {
        VALUES ($1, '12 Test Road', 'Pune', 'MH', '411001', $2, $3) RETURNING id`,
       [BUYER, MID.lat, MID.lng]
     );
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], addressId: address.id });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], addressId: address.id });
 
     expect(res.status).toBe(201);
     expect(res.body.bill.deliveryFee).toBe(48);
     expect(res.body.order.delivery_address).toContain('12 Test Road');
 
     // Someone else's saved address is not found.
-    await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ('opp-other', 'Opp Other', '9833777009', 'user')");
+    await query(`INSERT INTO users (id, full_name, phone_number, role) VALUES ('${fx('opp-other')}', 'Opp Other', '9833777009', 'user')`);
     const theirs = await queryOne(
       `INSERT INTO user_addresses (user_id, street_address, city, state, postal_code, latitude, longitude)
-       VALUES ('opp-other', 'Their Road', 'Pune', 'MH', '411001', 18.54, 73.88) RETURNING id`
+       VALUES ('${fx('opp-other')}', 'Their Road', 'Pune', 'MH', '411001', 18.54, 73.88) RETURNING id`
     );
-    const refused = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], addressId: theirs.id });
+    const refused = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], addressId: theirs.id });
     expect(refused.status).toBe(404);
     expect(refused.body.code).toBe('ADDRESS_NOT_FOUND');
   });
@@ -227,7 +227,7 @@ describe('POST /checkout', () => {
   test("the mobile app's field names are understood, and 'online' means Razorpay", async () => {
     const res = await checkout({
       shop_id: SHOP,
-      items: [{ product_id: 'opp-rice', quantity: 1, price: 120 }],
+      items: [{ product_id: fx('opp-rice'), quantity: 1, price: 120 }],
       delivery_mode: 'pickup',
       total: 1,
       payment_method: 'online',
@@ -249,7 +249,7 @@ describe('POST /checkout', () => {
     delete process.env.RAZORPAY_KEY_SECRET;
     const before = await orderCount();
     try {
-      const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], paymentMethod: 'razorpay', deliveryMode: 'pickup' });
+      const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], paymentMethod: 'razorpay', deliveryMode: 'pickup' });
       expect(res.status).toBe(503);
       expect(res.body.code).toBe('PAYMENTS_UNAVAILABLE');
     } finally {
@@ -261,14 +261,14 @@ describe('POST /checkout', () => {
 
   test('a wallet order debits the wallet and is paid', async () => {
     await setBalance(500);
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], paymentMethod: 'wallet', ...deliverNear });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], paymentMethod: 'wallet', ...deliverNear });
 
     expect(res.status).toBe(201);
     expect(res.body.order.payment_status).toBe('paid');
     expect(await balance()).toBe(500 - 145);
 
     const ledger = await queryOne(
-      "SELECT amount, type FROM wallet_transactions WHERE wallet_id = 'opp-wallet' AND reference_id = $1", [res.body.order.id]
+      `SELECT amount, type FROM wallet_transactions WHERE wallet_id = '${fx('opp-wallet')}' AND reference_id = $1`, [res.body.order.id]
     );
     expect(ledger).toEqual({ amount: 145, type: 'debit' });
   });
@@ -277,42 +277,42 @@ describe('POST /checkout', () => {
     await setBalance(10);
     const before = await orderCount();
 
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], paymentMethod: 'wallet', deliveryMode: 'pickup' });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], paymentMethod: 'wallet', deliveryMode: 'pickup' });
 
     expect(res.status).toBe(402);
     expect(await balance()).toBe(10);
-    expect(await stock('opp-rice')).toBe(50);
+    expect(await stock(fx('opp-rice'))).toBe(50);
     expect(await orderCount()).toBe(before);
   });
 
   test('cash is not taken on an order above the cash limit', async () => {
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-tv', quantity: 1 }], paymentMethod: 'cod', deliveryMode: 'pickup' });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-tv'), quantity: 1 }], paymentMethod: 'cod', deliveryMode: 'pickup' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('COD_NOT_AVAILABLE');
 
     await setBalance(5000);
-    const wallet = await checkout({ shopId: SHOP, items: [{ productId: 'opp-tv', quantity: 1 }], paymentMethod: 'wallet', deliveryMode: 'pickup' });
+    const wallet = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-tv'), quantity: 1 }], paymentMethod: 'wallet', deliveryMode: 'pickup' });
     expect(wallet.status).toBe(201);
   });
 
   test('more than is in stock is refused, and a paid wallet is not charged for it', async () => {
     await setBalance(1000);
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-dal', quantity: 2 }], paymentMethod: 'wallet', deliveryMode: 'pickup' });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-dal'), quantity: 2 }], paymentMethod: 'wallet', deliveryMode: 'pickup' });
 
     expect(res.status).toBe(400);
     expect(await balance()).toBe(1000);
-    expect(await stock('opp-dal')).toBe(1);
+    expect(await stock(fx('opp-dal'))).toBe(1);
   });
 
   test('an unknown payment method, a foreign product and a bad quantity are refused', async () => {
     const pickup = { deliveryMode: 'pickup' };
-    expect((await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], paymentMethod: 'iou', ...pickup })).status).toBe(400);
-    expect((await checkout({ shopId: SHOP, items: [{ productId: 'opp-soap', quantity: 1 }], ...pickup })).status).toBe(400);
-    expect((await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: -3 }], ...pickup })).status).toBe(400);
+    expect((await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], paymentMethod: 'iou', ...pickup })).status).toBe(400);
+    expect((await checkout({ shopId: SHOP, items: [{ productId: fx('opp-soap'), quantity: 1 }], ...pickup })).status).toBe(400);
+    expect((await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: -3 }], ...pickup })).status).toBe(400);
   });
 
   test('a delivery location is stored as a point and as numbers', async () => {
-    const res = await checkout({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], ...deliverNear });
+    const res = await checkout({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], ...deliverNear });
 
     expect(res.status).toBe(201);
     expect(res.body.order.delivery_lat).toBe(NEAR.lat);
@@ -323,7 +323,7 @@ describe('POST /checkout', () => {
 
 describe('POST /shops/:id/orders', () => {
   const place = (body) => request(app).post(`/shops/${SHOP}/orders`).set(as(BUYER)).send(body);
-  const rice = { id: 'opp-rice', name: 'opp-rice', price: 120, quantity: 1 };
+  const rice = { id: fx('opp-rice'), name: fx('opp-rice'), price: 120, quantity: 1 };
 
   test('lands in the orders table the shop works from, charged to the wallet', async () => {
     await setBalance(300);
@@ -382,7 +382,7 @@ describe('POST /shops/:id/orders', () => {
 
   test('a line the server has no price for cannot be ordered, however it is paid', async () => {
     await setBalance(500);
-    const invented = { id: 'opp-not-in-any-catalogue', name: '10 kg rice', price: 1, quantity: 1 };
+    const invented = { id: fx('opp-not-in-any-catalogue'), name: '10 kg rice', price: 1, quantity: 1 };
 
     for (const paymentMethod of ['WALLET', 'RAZORPAY', 'COD']) {
       const res = await place({ items: [invented], paymentMethod, deliveryType: 'pickup' });
@@ -406,7 +406,7 @@ describe('POST /shops/:id/orders', () => {
 
   test('an order for a shop that does not exist writes nothing', async () => {
     const before = await orderCount();
-    const res = await request(app).post('/shops/opp-no-such-shop/orders').set(as(BUYER)).send({ items: [rice] });
+    const res = await request(app).post(`/shops/${fx('opp-no-such-shop')}/orders`).set(as(BUYER)).send({ items: [rice] });
     expect(res.status).toBe(404);
     expect(await orderCount()).toBe(before);
   });
@@ -415,8 +415,8 @@ describe('POST /shops/:id/orders', () => {
 describe('POST /shops/cart/batch-checkout', () => {
   const batch = (body) => request(app).post('/shops/cart/batch-checkout').set(as(BUYER)).send(body);
   const cart = [
-    { shop_id: SHOP, product_id: 'opp-rice', quantity: 2 },
-    { shop_id: SHOP_B, product_id: 'opp-soap', quantity: 1 },
+    { shop_id: SHOP, product_id: fx('opp-rice'), quantity: 2 },
+    { shop_id: SHOP_B, product_id: fx('opp-soap'), quantity: 1 },
   ];
   const where = { address: 'Flat 4', coordinate: NEAR };
   // Items 2 × 120 + 45 = 285. Delivery once: the dearest leg (₹20) plus ₹10
@@ -499,11 +499,11 @@ describe('POST /shops/cart/batch-checkout', () => {
   test('lines that are not real products of the shop, or not whole positive quantities, are refused', async () => {
     await setBalance(1000);
     const bad = [
-      [{ shop_id: SHOP, product_id: 'opp-rice', quantity: -5 }],
-      [{ shop_id: SHOP, product_id: 'opp-rice', quantity: 1.5 }],
-      [{ shop_id: SHOP, product_id: 'opp-no-such-product', quantity: 1 }],
-      [{ shop_id: SHOP, product_id: 'opp-soap', quantity: 1 }],
-      [{ product_id: 'opp-rice', quantity: 1 }],
+      [{ shop_id: SHOP, product_id: fx('opp-rice'), quantity: -5 }],
+      [{ shop_id: SHOP, product_id: fx('opp-rice'), quantity: 1.5 }],
+      [{ shop_id: SHOP, product_id: fx('opp-no-such-product'), quantity: 1 }],
+      [{ shop_id: SHOP, product_id: fx('opp-soap'), quantity: 1 }],
+      [{ product_id: fx('opp-rice'), quantity: 1 }],
     ];
     for (const items of bad) {
       const res = await batch({ items, ...where });
@@ -570,7 +570,7 @@ describe('POST /checkout/quote', () => {
   test('shows the bill the checkout will charge, without a session and without ordering', async () => {
     const before = await orderCount();
 
-    const res = await quote({ shopId: SHOP, fulfillmentMethod: 'SELF_PICKUP', items: [{ productId: 'opp-rice', quantity: 2 }] });
+    const res = await quote({ shopId: SHOP, fulfillmentMethod: 'SELF_PICKUP', items: [{ productId: fx('opp-rice'), quantity: 2 }] });
 
     expect(res.status).toBe(200);
     expect(res.body.bill).toMatchObject({ subtotal: 240, deliveryFee: 0, platformFee: 5, total: 245 });
@@ -578,26 +578,26 @@ describe('POST /checkout/quote', () => {
     expect(await orderCount()).toBe(before);
 
     const placed = await request(app).post('/checkout').set(as(BUYER))
-      .send({ shopId: SHOP, fulfillmentMethod: 'SELF_PICKUP', items: [{ productId: 'opp-rice', quantity: 2 }] });
+      .send({ shopId: SHOP, fulfillmentMethod: 'SELF_PICKUP', items: [{ productId: fx('opp-rice'), quantity: 2 }] });
     expect(placed.status).toBe(201);
     expect(placed.body.bill).toEqual(res.body.bill);
   });
 
   test('a delivery quote is priced by distance and says how', async () => {
-    const res = await quote({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }], deliveryCoordinate: MID });
+    const res = await quote({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }], deliveryCoordinate: MID });
 
     expect(res.status).toBe(200);
     expect(res.body.bill).toMatchObject({ deliveryFee: 48, distanceKm: 5.1, total: 173 });
     expect(res.body.bill.etaMinutes).toBeGreaterThan(0);
 
-    const noLocation = await quote({ shopId: SHOP, items: [{ productId: 'opp-rice', quantity: 1 }] });
+    const noLocation = await quote({ shopId: SHOP, items: [{ productId: fx('opp-rice'), quantity: 1 }] });
     expect(noLocation.status).toBe(400);
     expect(noLocation.body.code).toBe('LOCATION_REQUIRED');
   });
 
   test('a cart that cannot be ordered cannot be quoted', async () => {
-    expect((await quote({ shopId: SHOP, deliveryMode: 'pickup', items: [{ productId: 'opp-soap', quantity: 1 }] })).status).toBe(400);
-    expect((await quote({ shopId: 'opp-nope', deliveryMode: 'pickup', items: [{ productId: 'opp-rice', quantity: 1 }] })).status).toBe(404);
+    expect((await quote({ shopId: SHOP, deliveryMode: 'pickup', items: [{ productId: fx('opp-soap'), quantity: 1 }] })).status).toBe(400);
+    expect((await quote({ shopId: fx('opp-nope'), deliveryMode: 'pickup', items: [{ productId: fx('opp-rice'), quantity: 1 }] })).status).toBe(404);
     expect((await quote({ items: [] })).status).toBe(400);
   });
 });

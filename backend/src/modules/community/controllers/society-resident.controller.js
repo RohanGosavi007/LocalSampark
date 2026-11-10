@@ -160,7 +160,7 @@ const addMember = wrap(async (req, res) => {
   );
   if (existing) {
     await query(
-      `UPDATE society_members SET flat_number = $1, role = $2, is_active = true, status = 'approved'
+      `UPDATE society_members SET flat_number = $1, role = $2, is_active = '1', status = 'approved'
         WHERE id = $3 AND society_id = $4`,
       [flatNumber, role, existing.id, req.societyId]
     );
@@ -193,7 +193,7 @@ const updateMember = wrap(async (req, res) => {
 // gate register, and those records must keep pointing at someone.
 const removeMember = wrap(async (req, res) => {
   const result = await query(
-    `UPDATE society_members SET is_active = false, status = 'removed' WHERE id = $1 AND society_id = $2`,
+    `UPDATE society_members SET is_active = '0', status = 'removed' WHERE id = $1 AND society_id = $2`,
     [req.params.id, req.societyId]
   );
   if (!result.rowCount) return bad(res, 'Member not found in this society', 404);
@@ -877,7 +877,7 @@ const rsvpEvent = wrap(async (req, res) => {
 });
 
 const deleteEvent = wrap(async (req, res) => {
-  const result = await query('UPDATE society_events SET is_active = false WHERE id = $1 AND society_id = $2', [req.params.id, req.societyId]);
+  const result = await query("UPDATE society_events SET is_active = '0' WHERE id = $1 AND society_id = $2", [req.params.id, req.societyId]);
   if (!result.rowCount) return bad(res, 'Event not found', 404);
   ok(res, { id: req.params.id });
 });

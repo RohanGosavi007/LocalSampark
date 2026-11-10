@@ -23,7 +23,7 @@ const getRoster = async (req, res, next) => {
         let sql = `
             SELECT sgs.*, u.full_name as guard_name, u.phone_number 
             FROM society_guard_shifts sgs 
-            JOIN users u ON sgs.guard_id = u.id 
+            JOIN users u ON CAST(sgs.guard_id AS TEXT) = CAST(u.id AS TEXT) 
             WHERE sgs.society_id = $1
         `;
         const params = [societyId];

@@ -25,15 +25,15 @@
  *     properties of undefined".
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../config/database');
 
-const SHOP_A = 'jc-shop-a';
-const SHOP_B = 'jc-shop-b';
-const OWNER_A = 'jc-owner-a';
-const OWNER_B = 'jc-owner-b';
+const SHOP_A = fx('jc-shop-a');
+const SHOP_B = fx('jc-shop-b');
+const OWNER_A = fx('jc-owner-a');
+const OWNER_B = fx('jc-owner-b');
 
 // The flow the route enforces, restated here so a change to it has to be
 // deliberate in two places.
@@ -51,10 +51,10 @@ const FLOW = {
 const canMove = (from, to) => from === to || (FLOW[from] || []).includes(to);
 
 async function cleanup() {
-  await query("DELETE FROM job_card_milestones WHERE job_card_id LIKE 'jc-%'");
-  await query("DELETE FROM job_cards WHERE id LIKE 'jc-%' OR shop_id LIKE 'jc-shop-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'jc-shop-%'");
-  await query("DELETE FROM users WHERE id LIKE 'jc-owner-%'");
+  await query(`DELETE FROM job_card_milestones WHERE CAST(job_card_id AS TEXT) LIKE '${fxLike('jc')}'`);
+  await query(`DELETE FROM job_cards WHERE CAST(id AS TEXT) LIKE '${fxLike('jc')}' OR CAST(shop_id AS TEXT) LIKE '${fxLike('jc')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('jc')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('jc')}'`);
 }
 
 beforeAll(async () => {
@@ -69,7 +69,7 @@ beforeAll(async () => {
     await query(
       `INSERT INTO local_shops (id, owner_id, category, name, description, address, coordinate,
                                 latitude, longitude, is_active)
-       VALUES ($1, $2, 'automotive-mechanic', $3, 'Fixture', '1 Test Road', '18.53,73.87', 18.53, 73.87, 1)`,
+       VALUES ($1, $2, 'automotive-mechanic', $3, 'Fixture', '1 Test Road', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
       [sid, owner, `JC ${sid}`]
     );
   }
@@ -78,15 +78,15 @@ beforeAll(async () => {
 afterAll(cleanup);
 
 beforeEach(async () => {
-  await query("DELETE FROM job_card_milestones WHERE job_card_id LIKE 'jc-card%'");
-  await query("DELETE FROM job_cards WHERE id LIKE 'jc-card%'");
+  await query(`DELETE FROM job_card_milestones WHERE CAST(job_card_id AS TEXT) LIKE '${fxLike('jc')}'`);
+  await query(`DELETE FROM job_cards WHERE CAST(id AS TEXT) LIKE '${fxLike('jc')}'`);
 });
 
 async function makeCard(id, shopId = SHOP_A, status = 'received') {
   await query(
     // `title` is NOT NULL — the defect that made the create route fail outright.
     `INSERT INTO job_cards (id, shop_id, job_number, title, customer_name, description, status, created_at)
-     VALUES ($1, $2, $3, 'Brake noise', 'JC Customer', 'Brake noise', $4, datetime('now'))`,
+     VALUES ($1, $2, $3, 'Brake noise', 'JC Customer', 'Brake noise', $4, CURRENT_TIMESTAMP)`,
     [id, shopId, `JOB-${id.toUpperCase()}`, status]
   );
   return queryOne('SELECT * FROM job_cards WHERE id = $1', [id]);
@@ -141,15 +141,15 @@ describe('the status flow', () => {
 
 describe('shop scoping', () => {
   test("a card is only found under the shop that owns it", async () => {
-    await makeCard('jc-card-1', SHOP_A);
+    await makeCard(fx('jc-card-1'), SHOP_A);
 
     // The guard the routes now apply: cardId paired with shopId. Without the
     // pairing the shop segment of the URL was decoration and any card id
     // worked under any shop id.
     const underOwner = await queryOne('SELECT * FROM job_cards WHERE id = $1 AND shop_id = $2',
-      ['jc-card-1', SHOP_A]);
+      [fx('jc-card-1'), SHOP_A]);
     const underOther = await queryOne('SELECT * FROM job_cards WHERE id = $1 AND shop_id = $2',
-      ['jc-card-1', SHOP_B]);
+      [fx('jc-card-1'), SHOP_B]);
 
     expect(underOwner).toBeTruthy();
     expect(underOther).toBeFalsy();
@@ -162,28 +162,28 @@ describe('shop scoping', () => {
   });
 
   test('a milestone belongs to one card', async () => {
-    await makeCard('jc-card-2', SHOP_A);
+    await makeCard(fx('jc-card-2'), SHOP_A);
     const milestoneId = crypto.randomUUID();
     await query(
       `INSERT INTO job_card_milestones (id, job_card_id, step_order, title, status)
-       VALUES ($1, $2, 1, 'Received', 'pending')`,
-      [milestoneId, 'jc-card-2']
+       VALUES ($1, $2, '1', 'Received', 'pending')`,
+      [milestoneId, fx('jc-card-2')]
     ).catch(async () => {
       await query(
         `INSERT INTO job_card_milestones (job_card_id, step_order, title, status)
-         VALUES ($1, 1, 'Received', 'pending')`,
-        ['jc-card-2']
+         VALUES ($1, '1', 'Received', 'pending')`,
+        [fx('jc-card-2')]
       );
     });
 
-    const own = await queryOne('SELECT id FROM job_card_milestones WHERE job_card_id = $1', ['jc-card-2']);
+    const own = await queryOne('SELECT id FROM job_card_milestones WHERE job_card_id = $1', [fx('jc-card-2')]);
     expect(own).toBeTruthy();
 
     // Updating by milestone id alone let any milestone on the platform be
     // edited through any shop's URL.
     const foreign = await queryOne(
       'SELECT id FROM job_card_milestones WHERE id = $1 AND job_card_id = $2',
-      [own.id, 'jc-card-does-not-exist']
+      [own.id, fx('jc-card-does-not-exist')]
     );
     expect(foreign).toBeFalsy();
   });
@@ -191,7 +191,7 @@ describe('shop scoping', () => {
 
 describe('public tracking is scoped to its shop', () => {
   test('a job number resolves only under its own shop', async () => {
-    const card = await makeCard('jc-card-3', SHOP_A);
+    const card = await makeCard(fx('jc-card-3'), SHOP_A);
 
     const correct = await query(
       'SELECT id FROM job_cards WHERE job_number = $1 AND shop_id = $2',
@@ -211,7 +211,7 @@ describe('public tracking is scoped to its shop', () => {
 
 describe('row shape', () => {
   test('a listing returns rows on this driver', async () => {
-    await makeCard('jc-card-4', SHOP_A);
+    await makeCard(fx('jc-card-4'), SHOP_A);
     const result = await query('SELECT * FROM job_cards WHERE shop_id = $1', [SHOP_A]);
 
     // The defect: `result.rows || []` gave [] on SQLite, so job cards silently
@@ -228,8 +228,8 @@ describe('row shape', () => {
   test('a RETURNING insert yields a usable row', async () => {
     const result = await query(
       `INSERT INTO job_cards (id, shop_id, job_number, title, customer_name, description, status, created_at)
-       VALUES ($1, $2, $3, 'Test job', 'JC Customer', 'Test', 'received', datetime('now')) RETURNING *`,
-      ['jc-card-5', SHOP_A, 'JOB-JC-CARD-5']
+       VALUES ($1, $2, $3, 'Test job', 'JC Customer', 'Test', 'received', CURRENT_TIMESTAMP) RETURNING *`,
+      [fx('jc-card-5'), SHOP_A, 'JOB-JC-CARD-5']
     );
 
     const rows = Array.isArray(result) ? result : (result.rows || []);
@@ -238,6 +238,6 @@ describe('row shape', () => {
     // `result.rows[0]` threw "Cannot read properties of undefined" here, which
     // is the exact TypeError class the audit brief named.
     expect(created).toBeTruthy();
-    expect(created.id).toBe('jc-card-5');
+    expect(created.id).toBe(fx('jc-card-5'));
   });
 });

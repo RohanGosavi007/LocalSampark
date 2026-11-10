@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../../../config/database');
-const { authenticate, requireAdmin } = require('../../../middleware/auth.middleware');
+const { authenticate, requireAdmin, optionalAuth } = require('../../../middleware/auth.middleware');
+const { publicFormLimiter } = require('../../../middleware/rateLimit.middleware');
 const FeatureFlagService = require('../../../services/FeatureFlagService');
 
 // GET /api/v1/gtm/features - Public evaluation for mobile app / frontend
@@ -73,19 +74,47 @@ router.put('/admin/features/:key', authenticate, requireAdmin, async (req, res, 
   }
 });
 
-// POST /api/v1/gtm/interest-lead - Log user interest from ComingSoonModal
-router.post('/interest-lead', async (req, res, next) => {
+// POST /api/v1/gtm/interest-lead - Log interest in a module that is not live
+// yet (ComingSoon waitlist) or a franchise application.
+//
+// Anonymous, so rate limited per IP and every field is shape-checked. The
+// contact fields are optional; when a phone is given it must look like one.
+const FEATURE_KEY_RE = /^[a-z0-9_.:-]{1,80}$/i;
+const PINCODE_RE = /^[1-9][0-9]{5}$/;
+const PHONE_RE = /^\+?[0-9]{10,15}$/;
+
+router.post('/interest-lead', publicFormLimiter, optionalAuth, async (req, res, next) => {
   try {
-    const { feature_key, pincode } = req.body;
+    const { feature_key, pincode, name, phone, details } = req.body || {};
     // feature_key is NOT NULL; a missing one was a 500 from the constraint.
-    if (typeof feature_key !== 'string' || !feature_key.trim() || feature_key.length > 80) {
+    if (typeof feature_key !== 'string' || !FEATURE_KEY_RE.test(feature_key.trim())) {
       return res.status(400).json({ success: false, error: 'feature_key is required' });
     }
+    const pin = pincode === undefined || pincode === null || pincode === '' ? null : String(pincode).trim();
+    if (pin !== null && !PINCODE_RE.test(pin)) {
+      return res.status(400).json({ success: false, error: 'pincode must be a 6-digit Indian pincode' });
+    }
+    const phoneClean = phone ? String(phone).replace(/[\s-]/g, '') : null;
+    if (phoneClean && !PHONE_RE.test(phoneClean)) {
+      return res.status(400).json({ success: false, error: 'phone must be a valid mobile number' });
+    }
+    if (name !== undefined && name !== null && (typeof name !== 'string' || name.length > 120)) {
+      return res.status(400).json({ success: false, error: 'name must be at most 120 characters' });
+    }
+    let detailsText = null;
+    if (details !== undefined && details !== null) {
+      detailsText = typeof details === 'string' ? details : JSON.stringify(details);
+      if (detailsText.length > 2000) {
+        return res.status(400).json({ success: false, error: 'details must be at most 2000 characters' });
+      }
+    }
+
     const crypto = require('crypto');
     await query(`
-      INSERT INTO feature_interest_leads (id, feature_key, pincode, user_id) 
-      VALUES ($1, $2, $3, $4)
-    `, [crypto.randomUUID(), feature_key, pincode || null, req.user?.id || null]);
+      INSERT INTO feature_interest_leads (id, feature_key, pincode, user_id, contact_name, contact_phone, details)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [crypto.randomUUID(), feature_key.trim(), pin, req.user?.id || null,
+        name ? name.trim() : null, phoneClean, detailsText]);
 
     res.json({ success: true, message: 'Interest recorded successfully' });
   } catch (err) {

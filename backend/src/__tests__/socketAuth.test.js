@@ -29,7 +29,6 @@ const PORT = 45871; // fixed, well away from the app's own ports
 
 // The handshake verifies against config/secrets, which reads JWT_SECRET.
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-localsampark-2026';
-process.env.USE_SQLITE = 'true';
 
 const { initSocketIO } = require('../sockets');
 const ioClient = require('socket.io-client');

@@ -124,7 +124,7 @@ const s = StyleSheet.create({
   s13: { width: 48, height: 48, backgroundColor: '#020617', borderRadius: 9999, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#1e293b' },
   s14: { flex: 1 },
   s15: { color: '#ffffff', fontWeight: '700', fontSize: 16, marginBottom: 4 },
-  s16: { color: '#94a3b8', fontSize: 12, lineHeight: 5 },
+  s16: { color: '#94a3b8', fontSize: 12, lineHeight: 18 },
   s17: { color: '#64748b', fontSize: 10, marginTop: 4 },
   s18: { marginRight: 8 },
   s19: { marginRight: 8 },

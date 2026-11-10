@@ -1,0 +1,40 @@
+=== Backend Jest on PostgreSQL Execution ===
+Database: localsampark_test on 127.0.0.1:5432
+Exit Code: 0
+Summary: 1622 passed, 0 failed in 137 suites on PostgreSQL (localsampark_test); 9 @engine sqlite-only suite(s) excluded
+
+STDOUT:
+07:28:51 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 56.792 ms - 294[0m
+[0mGET /ready [32m200[0m 12.893 ms - 137[0m
+[0mGET /metrics [32m200[0m 0.757 ms - 392[0m
+
+
+STDERR:
+❌ SQLite Run Query Error: CREATE TABLE "carpool_rides__rebuild_114" (
+    id TEXT PRIMARY KEY,
+    driver_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    from_location TEXT NOT NULL,
+    from_coordinate TEXT,
+    to_location TEXT NOT NULL,
+    to_coordinate TEXT,
+    departure_date TEXT NOT NULL,
+    departure_time TEXT NOT NULL,
+    total_seats INTEGER NOT NULL,
+    available_seats INTEGER NOT NULL,
+    price_per_seat REAL,
+    vehicle_type TEXT,
+    vehicle_number TEXT,
+    is_recurring INTEGER DEFAULT 0,
+    recurring_days TEXT, -- 'Mon,Tue,Wed,Thu,Fri'
+    status TEXT DEFAULT 'active', -- active, full, completed, cancelled
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+, vehicle_id TEXT, ride_type TEXT DEFAULT 'car', gender_preference TEXT DEFAULT 'any', is_intercity INTEGER DEFAULT 0, luggage_space INTEGER DEFAULT 0, route_polyline TEXT, corporate_only INTEGER DEFAULT 0, max_detour_km REAL DEFAULT 5, estimated_distance_km REAL, from_lat REAL, from_lng REAL, to_lat REAL, to_lng REAL, ride_date TEXT, recurring_id TEXT, fare_type TEXT DEFAULT 'fixed', origin TEXT, destination TEXT, estimated_arrival TEXT, seats_available INTEGER, car_model TEXT, updated_at DATETIME) SQLITE_BUSY: database is locked
+
+Test Suites: 137 passed, 137 total
+Tests:       1622 passed, 1622 total
+Snapshots:   0 total
+Time:        281.067 s, estimated 390 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-10T01-49-58\jest-postgres.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

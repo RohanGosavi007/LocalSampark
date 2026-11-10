@@ -1,40 +1,78 @@
 'use client';
 import React from 'react';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { Search, Filter, AlertCircle } from 'lucide-react';
+import FranchiseShell, { useFranchiseData, when } from '../components/FranchiseShell';
 
+// Demand signals in the territory: merchant leads (GET /franchise/leads) and
+// "notify me" waitlist sign-ups for modules not live yet (GET /franchise/waitlist).
 export default function FranchiseMarketing() {
-  return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-slate-950 pt-24 pb-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-800 pb-6">
-            <div>
-              <h1 className="text-3xl font-black text-white mb-2">Territory Marketing</h1>
-              <p className="text-slate-400">Manage marketing for your assigned hyper-local territory.</p>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 w-64" />
-              </div>
-              <button className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-300 hover:bg-slate-800 transition">
-                <Filter className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+  const leads = useFranchiseData('/franchise/leads?limit=50');
+  const waitlist = useFranchiseData('/franchise/waitlist');
+  const leadRows = (leads.data && leads.data.leads) || [];
+  const waitRows = (waitlist.data && waitlist.data.waitlist) || [];
 
-          <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-3xl">
-            <AlertCircle className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl text-white font-bold mb-2">No Data Available</h3>
-            <p className="text-slate-400">No records found for marketing in your territory yet.</p>
+  return (
+    <FranchiseShell
+      title="Marketing & Demand"
+      subtitle="Merchant leads and customer waitlists in your pincodes."
+      active="/franchise-dashboard/marketing"
+      loading={leads.loading || waitlist.loading}
+      error={leads.error || waitlist.error}
+      onRetry={() => { leads.reload(); waitlist.reload(); }}
+    >
+      <section aria-labelledby="leads-h" className="mb-8">
+        <h2 id="leads-h" className="text-xl font-bold text-text mb-3">Merchant leads</h2>
+        {leadRows.length === 0 ? (
+          <p className="text-text-muted bg-card-bg border border-border rounded-3xl p-6">No leads in your territory yet.</p>
+        ) : (
+          <div className="overflow-x-auto bg-card-bg border border-border rounded-3xl">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-text-muted border-b border-border">
+                  <th className="p-4">Lead</th><th className="p-4">Source</th><th className="p-4">Status</th><th className="p-4">PIN</th><th className="p-4">Added</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leadRows.map((l) => (
+                  <tr key={l.id} className="border-b border-border last:border-0">
+                    <td className="p-4 font-semibold text-text">{l.business_name}</td>
+                    <td className="p-4">{l.category}</td>
+                    <td className="p-4 capitalize">{l.status || '—'}</td>
+                    <td className="p-4">{l.pincode || '—'}</td>
+                    <td className="p-4 text-text-muted">{when(l.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </main>
-      <Footer />
-    </>
+        )}
+      </section>
+
+      <section aria-labelledby="wait-h">
+        <h2 id="wait-h" className="text-xl font-bold text-text mb-3">Waitlist sign-ups</h2>
+        {waitRows.length === 0 ? (
+          <p className="text-text-muted bg-card-bg border border-border rounded-3xl p-6">No waitlist sign-ups in your territory yet.</p>
+        ) : (
+          <div className="overflow-x-auto bg-card-bg border border-border rounded-3xl">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-text-muted border-b border-border">
+                  <th className="p-4">Module</th><th className="p-4">PIN</th><th className="p-4">Sign-ups</th><th className="p-4">Latest</th>
+                </tr>
+              </thead>
+              <tbody>
+                {waitRows.map((w) => (
+                  <tr key={`${w.feature}-${w.pincode}`} className="border-b border-border last:border-0">
+                    <td className="p-4 font-semibold text-text capitalize">{String(w.feature).replace(/_/g, ' ')}</td>
+                    <td className="p-4">{w.pincode}</td>
+                    <td className="p-4">{w.count}</td>
+                    <td className="p-4 text-text-muted">{when(w.latest)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </FranchiseShell>
   );
 }

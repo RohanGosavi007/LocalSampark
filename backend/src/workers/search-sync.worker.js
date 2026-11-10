@@ -1,7 +1,7 @@
 const logger = require('../config/logger.js');
 const { Worker } = require('bullmq');
 const SearchEngine = require('../services/search.engine');
-const { queryOne } = require('../../../config/database');
+const { queryOne } = require('../config/database');
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = process.env.REDIS_PORT || 6379;

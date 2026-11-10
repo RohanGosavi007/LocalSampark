@@ -88,12 +88,23 @@ cron.schedule('0 1 * * *', async () => {
         const newCust = newCustomers ? parseInt(newCustomers.cnt || 0) : 0;
 
         await query(
-          `INSERT OR REPLACE INTO shop_analytics_daily
+          // Upsert on UNIQUE(shop_id, date), which both engines declare.
+          // `INSERT OR REPLACE` is SQLite-only syntax, so on PostgreSQL the
+          // nightly snapshot failed for every shop.
+          `INSERT INTO shop_analytics_daily
            (id, shop_id, date, total_orders, completed_orders, cancelled_orders, avg_order_value,
             gross_revenue, unique_customers, new_customers, repeat_customers,
             reviews_received, avg_rating,
             total_appointments, completed_appointments, no_shows)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+           ON CONFLICT (shop_id, date) DO UPDATE SET
+             total_orders = excluded.total_orders, completed_orders = excluded.completed_orders,
+             cancelled_orders = excluded.cancelled_orders, avg_order_value = excluded.avg_order_value,
+             gross_revenue = excluded.gross_revenue, unique_customers = excluded.unique_customers,
+             new_customers = excluded.new_customers, repeat_customers = excluded.repeat_customers,
+             reviews_received = excluded.reviews_received, avg_rating = excluded.avg_rating,
+             total_appointments = excluded.total_appointments,
+             completed_appointments = excluded.completed_appointments, no_shows = excluded.no_shows`,
           [id, shop.id, dateStr,
            orderStats?.total_orders || 0, orderStats?.completed || 0, orderStats?.cancelled || 0,
            parseFloat(orderStats?.avg_value || 0).toFixed(2),

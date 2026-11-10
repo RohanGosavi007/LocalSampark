@@ -447,9 +447,9 @@ router.get('/phase2/admin/fairness/simulate', ...adminOnly, async (req, res, nex
     const res1 = await query(
       regionId
         ? `SELECT id, rating, (SELECT COUNT(*) FROM shop_reviews r WHERE r.shop_id = s.id) AS review_count
-             FROM local_shops s WHERE COALESCE(is_active,1)=1 AND region_id = $1 LIMIT 100`
+             FROM local_shops s WHERE (is_active = '1' OR is_active IS NULL) AND region_id = $1 LIMIT 100`
         : `SELECT id, rating, (SELECT COUNT(*) FROM shop_reviews r WHERE r.shop_id = s.id) AS review_count
-             FROM local_shops s WHERE COALESCE(is_active,1)=1 LIMIT 100`,
+             FROM local_shops s WHERE (is_active = '1' OR is_active IS NULL) LIMIT 100`,
       regionId ? [regionId] : []
     );
     const rows = res1.rows || res1 || [];

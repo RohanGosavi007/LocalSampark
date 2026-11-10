@@ -23,7 +23,7 @@ export default function BillsTab({ API_BASE, authHeaders }) {
       const data = await fetchJson(`${API_BASE}/admin/bills`, {
         headers: authHeaders()
       });
-      if (data.bills) setBills(data.bills);
+      setBills(data.bills || data.data || []);
     } catch (error) {
       console.error('Failed to fetch bill transactions:', error);
       setError(error);
@@ -33,7 +33,7 @@ export default function BillsTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
+      <TabError error={error} onRetry={fetchBills} />
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
@@ -70,7 +70,7 @@ export default function BillsTab({ API_BASE, authHeaders }) {
                         <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{b.id}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--ink-subtle)' }}>{b.created_at}</div>
                       </td>
-                      <td style={tdStyle}>{b.biller_name}</td>
+                      <td style={tdStyle}>{b.biller_name || b.provider_type || b.biller_category || 'Utility'} ({b.customer_name || b.user_name || b.consumer_number || '—'})</td>
                       <td style={tdStyle}>₹{b.amount}</td>
                       <td style={tdStyle}>
                         <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 600 }}>

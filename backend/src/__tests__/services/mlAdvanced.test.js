@@ -9,7 +9,6 @@
  * pins the property whose violation would be silent.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const multiTask = require('../../modules/ml/ranking/multiTaskRanker');
 const bandit = require('../../modules/ml/bandits/contextualBandit');

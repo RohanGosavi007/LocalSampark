@@ -1,0 +1,1 @@
+Android emulator smoke tests (Maestro/Detox) pending M7/V6 execution on host

@@ -12,7 +12,6 @@
 const fs = require('fs');
 const path = require('path');
 
-process.env.USE_SQLITE = 'true';
 
 const REPO = path.join(__dirname, '..', '..', '..');
 const MOBILE_TABS = path.join(REPO, 'apps', 'mobile', 'app', 'modules', 'society', 'tabs');

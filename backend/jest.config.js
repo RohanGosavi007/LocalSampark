@@ -1,3 +1,26 @@
+const fs = require('fs');
+const path = require('path');
+
+// Engine selection is explicit (H14). A suite that only makes sense on SQLite
+// carries an `@engine sqlite-only` docblock tag; the PostgreSQL run leaves it
+// out instead of letting it pin itself to SQLite and be counted as a
+// PostgreSQL pass, which is how 84 suites quietly ran on SQLite in the
+// "PostgreSQL" gate (F-127). engineSelection.test.js keeps tags and pins in step.
+const usePg = process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true';
+function sqliteOnlySuites() {
+  const out = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); }
+      else if (/\.test\.js$/.test(e.name) && /^\s*\*\s*@engine sqlite-only/m.test(fs.readFileSync(p, 'utf8'))) out.push(p);
+    }
+  };
+  for (const d of ['src', 'tests']) if (fs.existsSync(path.join(__dirname, d))) walk(path.join(__dirname, d));
+  return out;
+}
+const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 module.exports = {
   testEnvironment: 'node',
   // Without an explicit testMatch, Jest's default sweeps every .js file under
@@ -22,5 +45,10 @@ module.exports = {
   // Serial execution prevents SQLite write collisions (UNIQUE constraints on pincode/phone)
   // across parallel worker processes.
   maxWorkers: 1,
+  testPathIgnorePatterns: ['/node_modules/', ...(usePg ? sqliteOnlySuites().map((p) => escape(p)) : [])],
+  moduleNameMapper: {
+    '^@localsampark/shared$': '<rootDir>/../packages/shared/index.js',
+    '^@localsampark/shared/(.*)$': '<rootDir>/../packages/shared/$1',
+  },
 };
 

@@ -1,0 +1,20 @@
+=== Backend Jest on SQLite Execution ===
+Exit Code: 0
+Summary: 1666 passed, 0 failed across 146 test suites
+
+STDOUT:
+19:39:06 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 16.884 ms - 294[0m
+[0mGET /ready [32m200[0m 19.536 ms - 137[0m
+[0mGET /metrics [32m200[0m 0.680 ms - 392[0m
+
+
+STDERR:
+
+Test Suites: 146 passed, 146 total
+Tests:       1666 passed, 1666 total
+Snapshots:   0 total
+Time:        336.887 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-10T14-08-43\jest-sqlite.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

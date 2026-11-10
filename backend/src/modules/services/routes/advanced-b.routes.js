@@ -53,12 +53,12 @@ router.get('/marketplace/auctions/:auctionId', async (req, res, next) => {
   try {
     const auction = await queryOne(
       `SELECT a.*, l.title, l.category, l.condition, l.photo_urls, u.full_name as seller_name
-       FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON a.listing_id = l.id LEFT JOIN users u ON l.seller_id = u.id WHERE a.id = $1`, [req.params.auctionId]
+       FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON CAST(a.listing_id AS TEXT) = CAST(l.id AS TEXT) LEFT JOIN users u ON l.seller_id = u.id WHERE a.id = $1`, [req.params.auctionId]
     );
     if (!auction) return res.status(404).json({ success: false, error: 'Auction not found' });
 
     const bids = await queryMany(
-      `SELECT ab.*, u.full_name as bidder_name FROM marketplace_auction_bids ab LEFT JOIN users u ON ab.bidder_id = u.id WHERE ab.auction_id = $1 ORDER BY ab.bid_amount DESC LIMIT 20`,
+      `SELECT ab.*, u.full_name as bidder_name FROM marketplace_auction_bids ab LEFT JOIN users u ON CAST(ab.bidder_id AS TEXT) = CAST(u.id AS TEXT) WHERE ab.auction_id = $1 ORDER BY ab.bid_amount DESC LIMIT 20`,
       [req.params.auctionId]
     );
 
@@ -91,7 +91,7 @@ router.post('/marketplace/auctions/:auctionId/bid', authenticate, async (req, re
       return res.status(400).json({ success: false, error: 'bid_amount must be a number of rupees' });
     }
     const auction = await queryOne(
-      `SELECT a.*, l.seller_id FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON l.id = a.listing_id WHERE a.id = $1`,
+      `SELECT a.*, l.seller_id FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON CAST(l.id AS TEXT) = CAST(a.listing_id AS TEXT) WHERE a.id = $1`,
       [req.params.auctionId]
     );
     if (!auction) return res.status(404).json({ success: false, error: 'Auction not found' });
@@ -145,7 +145,7 @@ router.get('/marketplace/auctions', async (req, res, next) => {
   try {
     const auctions = await queryMany(
       `SELECT a.*, l.title, l.category, l.condition, l.photo_urls, u.full_name as seller_name
-       FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON a.listing_id = l.id LEFT JOIN users u ON l.seller_id = u.id
+       FROM marketplace_auctions a LEFT JOIN marketplace_listings l ON CAST(a.listing_id AS TEXT) = CAST(l.id AS TEXT) LEFT JOIN users u ON l.seller_id = u.id
        WHERE a.status = 'active' ORDER BY a.ends_at ASC LIMIT 30`
     );
     const enriched = auctions.map(a => {
@@ -174,7 +174,7 @@ router.post('/marketplace/price-alerts', authenticate, async (req, res, next) =>
 router.get('/marketplace/price-alerts', authenticate, async (req, res, next) => {
   try {
     const alerts = await queryMany(
-      `SELECT pa.*, l.title, l.price as current_price FROM marketplace_price_alerts pa LEFT JOIN marketplace_listings l ON pa.listing_id = l.id WHERE pa.user_id = $1 AND pa.is_active = true ORDER BY pa.created_at DESC`,
+      `SELECT pa.*, l.title, l.price as current_price FROM marketplace_price_alerts pa LEFT JOIN marketplace_listings l ON CAST(pa.listing_id AS TEXT) = CAST(l.id AS TEXT) WHERE pa.user_id = $1 AND pa.is_active = '1' ORDER BY pa.created_at DESC`,
       [req.user.id]
     );
     res.json({ success: true, alerts });
@@ -208,7 +208,7 @@ router.post('/jobs/video-resume', authenticate, async (req, res, next) => {
 // Get available assessments
 router.get('/jobs/assessments', async (req, res, next) => {
   try {
-    let assessments = await queryMany('SELECT * FROM job_skill_assessments WHERE is_active = true ORDER BY skill_name');
+    let assessments = await queryMany("SELECT * FROM job_skill_assessments WHERE is_active = '1' ORDER BY skill_name");
     if (assessments.length === 0) {
       // Seed some default assessments
       const defaults = [
@@ -255,7 +255,7 @@ router.get('/jobs/assessments', async (req, res, next) => {
             [id, d.skill, d.questions]);
         } catch (e) {}
       }
-      assessments = await queryMany('SELECT * FROM job_skill_assessments WHERE is_active = true');
+      assessments = await queryMany("SELECT * FROM job_skill_assessments WHERE is_active = '1'");
     }
     // Don't send answers to client
     const safe = assessments.map(a => {
@@ -376,6 +376,9 @@ router.post('/carpool/recurring/publish', authenticate, async (req, res, next) =
 router.post('/carpool/groups', authenticate, async (req, res, next) => {
   try {
     const { name, description, group_type = 'commute', from_location, to_location, from_lat, from_lng, to_lat, to_lng, departure_time, days_active, max_members = 20 } = req.body;
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'name is required' });
+    }
     const id = crypto.randomUUID();
 
     await query(
@@ -397,7 +400,7 @@ router.get('/carpool/groups', async (req, res, next) => {
     const groups = await queryMany(
       `SELECT g.*, u.full_name as creator_name,
        (SELECT COUNT(*) FROM carpool_group_members WHERE group_id = g.id) as member_count
-       FROM carpool_groups g LEFT JOIN users u ON g.created_by = u.id WHERE g.is_active = true ORDER BY g.created_at DESC LIMIT 30`
+       FROM carpool_groups g LEFT JOIN users u ON CAST(g.created_by AS TEXT) = CAST(u.id AS TEXT) WHERE g.is_active = '1' ORDER BY g.created_at DESC LIMIT 30`
     );
     res.json({ success: true, groups });
   } catch (error) { next(error); }
@@ -406,7 +409,7 @@ router.get('/carpool/groups', async (req, res, next) => {
 // Join group
 router.post('/carpool/groups/:groupId/join', authenticate, async (req, res, next) => {
   try {
-    const group = await queryOne('SELECT * FROM carpool_groups WHERE id = $1 AND is_active = true', [req.params.groupId]);
+    const group = await queryOne("SELECT * FROM carpool_groups WHERE id = $1 AND is_active = '1'", [req.params.groupId]);
     if (!group) return res.status(404).json({ success: false, error: 'Group not found' });
 
     const memberCount = await queryOne('SELECT COUNT(*) as cnt FROM carpool_group_members WHERE group_id = $1', [req.params.groupId]);
@@ -488,10 +491,10 @@ router.get('/gamification/leaderboard', async (req, res, next) => {
   try {
     // Calculate top users by activity count
     const topDrivers = await queryMany(
-      `SELECT u.id, u.full_name, COUNT(*) as ride_count FROM carpool_rides cr LEFT JOIN users u ON cr.driver_id = u.id GROUP BY cr.driver_id ORDER BY ride_count DESC LIMIT 10`
+      `SELECT u.id, u.full_name, COUNT(*) as ride_count FROM carpool_rides cr JOIN users u ON CAST(cr.driver_id AS TEXT) = CAST(u.id AS TEXT) GROUP BY u.id, u.full_name ORDER BY ride_count DESC LIMIT 10`
     );
     const topSellers = await queryMany(
-      `SELECT u.id, u.full_name, COUNT(*) as sold_count FROM marketplace_listings ml LEFT JOIN users u ON ml.seller_id = u.id WHERE ml.status = 'sold' GROUP BY ml.seller_id ORDER BY sold_count DESC LIMIT 10`
+      `SELECT u.id, u.full_name, COUNT(*) as sold_count FROM marketplace_listings ml JOIN users u ON CAST(ml.seller_id AS TEXT) = CAST(u.id AS TEXT) WHERE ml.status = 'sold' GROUP BY u.id, u.full_name ORDER BY sold_count DESC LIMIT 10`
     );
 
     res.json({

@@ -44,12 +44,12 @@ describe('franchise intelligence', () => {
        FROM local_shops s
        LEFT JOIN shop_categories c ON c.id = s.category_id
        WHERE s.region_id = $1`;
-    await expect(db.query(sql, ['nonexistent-region'])).resolves.toBeDefined();
+    await expect(db.query(sql, ['00000000-0000-0000-0000-000000000000'])).resolves.toBeDefined();
   });
 
   it('reads leads from franchise_lead_crm scoped by region', async () => {
     const sql = 'SELECT * FROM franchise_lead_crm WHERE region_id = $1 ORDER BY created_at DESC';
-    await expect(db.query(sql, ['nonexistent-region'])).resolves.toBeDefined();
+    await expect(db.query(sql, ['00000000-0000-0000-0000-000000000000'])).resolves.toBeDefined();
   });
 
   it('has somewhere to record an outreach attempt', async () => {

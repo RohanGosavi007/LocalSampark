@@ -204,8 +204,11 @@ function isFeatureEnabled(featureKey, customEnv = process.env) {
   if (!featureKey) return false;
   const normalizedKey = String(featureKey).toLowerCase();
 
-  // Test bypass flag: allows existing automated test suites to run unaltered
-  if (customEnv && (customEnv.BYPASS_FEATURE_FLAGS === 'true' || customEnv.BYPASS_FEATURE_FLAGS === '1')) {
+  // Test bypass flag: allows existing automated test suites to run unaltered.
+  // Honoured only under NODE_ENV=test, so a stray BYPASS_FEATURE_FLAGS in a
+  // production environment cannot switch every off-scope vertical on.
+  if (customEnv && customEnv.NODE_ENV === 'test'
+      && (customEnv.BYPASS_FEATURE_FLAGS === 'true' || customEnv.BYPASS_FEATURE_FLAGS === '1')) {
     return true;
   }
 

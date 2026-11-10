@@ -8,7 +8,6 @@
  * stayed green throughout.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const fs = require('fs');
 const { queryOne } = require('../config/database');

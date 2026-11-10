@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
-import PendingModule from '../../components/admin/PendingModule';
+import AdminConsoleRedirect from '@/components/admin/AdminConsoleRedirect';
 
+// Placeholder retired: this module is implemented in the admin console.
 export default function FinancePage() {
-  return <PendingModule title="Finance Module" moduleKey="finance" />;
+  return <AdminConsoleRedirect moduleKey="finance" title="Finance Overview" />;
 }

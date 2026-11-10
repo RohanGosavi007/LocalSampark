@@ -751,3 +751,245 @@ This ledger tracks every defect identified across the monorepo. Every entry must
 - **Justification:** Aligned test assertions with Decision D1 (0% platform commission at launch per `LAUNCH_BRIEF.md` §4).
 - **Status:** CLOSED (Documented in V0)
 
+## Second-pass verification sweep (2026-11-09)
+
+Statuses below are **CODE COMPLETE**. None is FIXED-VERIFIED until a full
+`node scripts/verify/verify-all.mjs` run on the commit that contains it is
+committed (rule 2B.3). Targeted suite results from this sweep are reported in
+the sweep summary, not here.
+
+### F-116: `/auth/firebase-login` returned `passwordHash` to the client
+- **Severity:** P0 (credential exposure)
+- **Location:** `backend/src/modules/core/routes/auth.routes.js` (`/firebase-login` response)
+- **Symptom:** `presentUser()` keeps `passwordHash` so `/login-email` can verify passwords. Three routes stripped it inline; `/firebase-login` sent `user` as-is, leaking the bcrypt hash of any email-registered account that later signed in with Firebase.
+- **Fix:** `toClientUser()` strips `passwordHash`/`password_hash`; all four user-returning auth responses use it.
+- **Status:** CODE COMPLETE
+
+### F-117: Admin KYC / rider rejection broke on PostgreSQL; rider approvals updated nothing
+- **Severity:** P1
+- **Location:** `backend/src/modules/crm/controllers/admin-approvals.controller.js`
+- **Symptom:** (a) Rejecting `userKyc`/`deliveryAgent` wrote `is_verified = -1`; `users.is_verified` is BOOLEAN on PG, so the update raised an invalid-boolean error. (b) The pending rider list returns `delivery_agents.id`, but approve/reject updated `users WHERE id = <delivery_agents.id>`, which matched no row on either engine.
+- **Fix:** Users are never deleted. The flag is written as quoted `'1'`/`'0'` (valid on BOOLEAN and INTEGER). Rider decisions resolve the agent's `user_id` and record `delivery_agents.kyc_status`; rejected riders leave the pending list.
+- **Status:** CODE COMPLETE
+
+### F-118: Client-chosen lead unlock fee
+- **Severity:** P1 (financial)
+- **Location:** `backend/src/modules/ecommerce/routes/wallet.routes.js` `POST /wallet/unlock-lead`
+- **Symptom:** The fee was read from `req.body.fee_amount`. The earlier positivity check stopped NaN and negative values, but any caller could still unlock a lead for Rs 0.01. `lead_type` was unvalidated (`.toUpperCase()` on a non-string gave a 500), and the double-unlock check read `.rows`, which is undefined for the SQLite driver's array result.
+- **Fix:** Server-defined fee (Rs 49); a different `fee_amount` is rejected with 400; `lead_type` is validated; the rows check accepts both result shapes.
+- **Status:** CODE COMPLETE
+
+### F-119: Negative volunteer bounties
+- **Severity:** P1 (financial)
+- **Location:** `backend/src/modules/community/controllers/volunteer.controller.js` `postTask`
+- **Symptom:** `Number(bountyCoins) || 0` accepted negative and fractional values. Nothing was escrowed (the debit is gated on `> 0`), and the completion payout then moved a negative amount.
+- **Fix:** Whole numbers 0 to 100000 only; otherwise 400.
+- **Status:** CODE COMPLETE
+
+### F-120: Fabricated admin metrics (backend and admin console)
+- **Severity:** P1 (misleading operational data)
+- **Location:** `admin-revenue.controller.js` (revenue `completedOrders * 1500`, payouts `* 1200`, franchises `0`, growth `+12.5%`); `admin-ecosystems.controller.js` (all seven `/admin/*/stats` endpoints returned literal counts); `apps/admin` `DashboardTab.js` (fallback KPIs) and seven ecosystem tabs (hard-coded rows in `useEffect`).
+- **Fix:** Revenue = `COALESCE(SUM(total_amount),0)` over delivered/completed orders; payouts = paid `shop_payouts.net_payout`; franchises counted; growth computed month over month, or `null`. Ecosystem stats are `COUNT`s over each module's tables. The admin tabs fetch them through the shared `EcosystemStatsTab` with loading, empty and error states. KPI tiles show real zeros or a loading dash.
+- **Status:** CODE COMPLETE
+
+### F-121: Migration 133 edited in place (forward-only violation)
+- **Severity:** P1 (governance / schema drift)
+- **Location:** `backend/src/migrations/133_after_order_experience.sql` and `.sqlite.sql`
+- **Symptom:** The previous pass added the B3/B5 indexes and the SQLite `trust_reviews.order_id` foreign key by editing 133, so a database that had already applied 133 would never receive them.
+- **Fix:** 133 restored to its committed content. New `134_after_order_fk_index_parity.sql` / `.sqlite.sql` (three FK indexes) and `134_trust_reviews_order_fk.js` (SQLite table rebuild through `lib/sqliteRebuild`; idempotent; nulls dangling ids first). `112` was also edited in place, swapping `information_schema` for `pg_constraint`/`pg_class`; that change preserves semantics and is idempotent, so it is a no-op wherever 112 already ran.
+- **Status:** CODE COMPLETE
+
+### F-122: Placeholder society id sent by the mobile society screens
+- **Severity:** P1
+- **Location:** `apps/mobile/app/society-guard/{guard-patrol,vehicle-log,visitor-entry}.js`, `apps/mobile/app/society-resident/{move-pass,pre-approve}.js`; community controllers
+- **Symptom:** The screens sent `societyId: 'dummy-society'` (plus a fixed flat `A-101` and gate `gate_1`). The capability middleware checks membership of the named society, so every call answered 403. Several controllers read `societyId` straight from the body instead of the membership-verified `req.societyId`.
+- **Fix:** Clients send no society id; the middleware resolves it from the caller's single active membership. 22 body destructures across 10 community controllers now prefer `req.societyId`.
+- **Status:** CODE COMPLETE
+
+### F-123: Anonymous public form endpoints lacked rate limits and validation (B7 follow-up)
+- **Severity:** P1
+- **Location:** `POST /users/account-deletion-request`, `POST /account-deletion-request`, `POST /gtm/interest-lead`
+- **Symptom:** B7 added these routes to the reviewed public list in `routeSmoke.test.js` without the rate limit and validation that list requires. The deletion request also logged the raw phone or email.
+- **Fix:** `publicFormLimiter` (5 per hour per IP in production); identifier, pincode, phone, name and free-text validation; masked logging; `optionalAuth` on interest-lead so `user_id` is recorded.
+- **Follow-up (B7, 2026-11-09):** The deletion request is now two-step. `POST /account-deletion-request` sends a 6-digit code to the account's phone (SMS) or email and answers identically whether or not an account exists; nothing is queued. `POST /account-deletion-request/verify` checks the code (shared OTP store: single use, attempt-limited, 10 minutes) and only then inserts the `data_subject_requests` row. The web `/account-deletion` page has the code step. Tests: `integration/accountDeletionRequest.test.js` [C1.1]-[C1.5], passing on SQLite and PostgreSQL.
+- **Status:** CODE COMPLETE
+
+### F-124: `BYPASS_FEATURE_FLAGS` honoured outside tests by the shared registry
+- **Severity:** P1
+- **Location:** `packages/shared/src/features.js` `isFeatureEnabled`
+- **Symptom:** The API middleware checked `NODE_ENV === 'test'`, but the shared function it calls did not, so a stray `BYPASS_FEATURE_FLAGS=true` in production switched every off-scope vertical on (B6).
+- **Fix:** The bypass is honoured only when `NODE_ENV === 'test'`.
+- **Status:** CODE COMPLETE
+
+### F-125: Off-scope web routes, admin and franchise placeholders (F-107 follow-up)
+- **Severity:** P1
+- **Location:** `apps/web`
+- **Fix:** `src/middleware.js` rewrites 28 off-scope route prefixes (Krishi and the other `scope: "later"` modules) to `/coming-soon` with a pincode waitlist (`POST /gtm/interest-lead`) while their flag is off. 18 `/admin-dashboard/*` placeholder pages redirect (on the server, with a client fallback) to the matching tab of `apps/admin`, which gained a `?tab=` deep link. 9 `/franchise/*` placeholders redirect to the wired `/franchise-dashboard` pages. The `/franchise` application form posts to `/gtm/interest-lead` with contact details (migration `135_interest_lead_contact`). `/krishi` reads the new flag-gated `GET /krishi/listings`. The 8 Seller Studio archetype managers render only the shared, API-backed panels (`shared/ArchetypeStudio.js`). `supabaseAdmin` and the service-role key were removed from `apps/web`.
+- **Follow-up (2026-11-09):** The pages left static are now wired (see F-128, F-129). The 121 `/krishi/<module>` pages, which each claimed the module "has been successfully integrated", render one shared `KrishiModulePage`: the module's real title and description from `data/rural-services.js`, a plain "not available yet" notice, a per-module waitlist (`feature_key` `krishi:<slug>`) and the live `GET /krishi/listings`.
+- **Status:** CODE COMPLETE
+
+### F-126: Workspace links pointed at a deleted checkout
+- **Severity:** P0 (environment; admin build and backend runtime)
+- **Location:** root `node_modules/@localsampark/*` (not tracked)
+- **Symptom:** All five workspace junctions targeted `localsampark 04-10-2026`, a folder that no longer exists. `apps/admin` failed to build (`Can't resolve '@localsampark/shared/territoryTopology'`), and `backend/src/middleware/auth.middleware.js` could not resolve `@localsampark/shared` outside Jest. The `moduleNameMapper` added to `backend/jest.config.js` in the previous pass hid this in tests.
+- **Fix:** Junctions repointed at this checkout. A fresh `npm install` at the repo root produces the same links. The Jest mapper is now redundant but harmless.
+- **Status:** FIXED (local environment)
+
+### Test assertion changes made in the previous pass (rule 2B.6)
+Each is a fixture or expectation change; none loosens what the test checks. The requirement each one cites is listed.
+
+| File | Change | Why the old expectation was wrong |
+|---|---|---|
+| `integration/adminPricing.test.js` | `default_commission_percent` 5 to 0 | D1: 0% commission at launch; the `platformConfig.service.js` default is 0 (same basis as F-115) |
+| `concurrency.test.js` | `discount_amount` to `discount_value`, `TRUE` to `'1'` | Migration 128 defines `coupons.discount_value` on both engines; `discount_amount` exists on neither (B2). The quoted flag is valid on BOOLEAN and INTEGER |
+| `escrow.test.js` | integer ids 900 and 101-103 replaced by UUID users inserted first | `users.id` is UUID on PG; integers cannot reference it (B12 fixture, not route behaviour) |
+| `tests/endpoint-queries.test.js` | `nonexistent-region` replaced by the nil UUID | `region_id` is UUID on PG; this test checks SQL validity, not id validation (route-level validation is F-113) |
+| `unit/riderFleet.test.js` | fixture adds `coordinate` | `local_shops.coordinate` is NOT NULL (B1) |
+| `unit/wishlistEngine.test.js` | UUID fixture ids, quoted flags, POINT coordinate | PG UUID and type strictness (B9) |
+| `integration/routeSmoke.test.js` | 5 routes added to the public list | B7 review; rate limit and validation added in F-123 |
+| `fkIndexCoverage`, `insertSchemaContract`, `postgresSchemaContract` | timeout raised to 60 s | Schema build time on Windows; assertions unchanged. B15 says never just raise a timeout, so the slow setup still needs profiling |
+| `scripts/verify/__tests__/harness.test.mjs` | planted secret built with `.repeat(2)` | The literal 32-hex value in the test source tripped G14 itself; the planted file content is unchanged |
+| `tests/e2e/web/auth-flow.spec.js` | login locator also accepts email inputs | D3 changed the login page to email sign-in (H4) |
+
+### F-127: The G3 "PostgreSQL" Jest run is mostly SQLite (H14 still open)
+- **Severity:** P1 (verification gap)
+- **Location:** `backend/src/__tests__/**`, `backend/tests/**`
+- **Symptom:** 83 test files set `process.env.USE_SQLITE = 'true'` at the top (79 since before V0; the previous pass added `setup/testDb.js`, `db-introspection`, `marketplace-zone-scope`, `spatial-index`). In the 2026-11-09 run with `TEST_USE_POSTGRES=1`, all 142 suites passed, but only **58 suites / 614 tests ran on PostgreSQL**; **84 suites / 1031 tests ran on SQLite**. "142/142 on PG" therefore overstates PG coverage.
+- **Direction:** H14: make engine selection explicit per suite (`@engine sqlite-only` docblock or a separate Jest project), have G3 report the PG-only count, and port suites that are not inherently SQLite-specific.
+- **Status:** OPEN (follow-up below)
+
+### F-128: Franchise dashboard showed unscoped and invented data
+- **Severity:** P1 (cross-territory data, misleading figures)
+- **Location:** `apps/web/src/app/franchise-dashboard/*`; `backend/src/modules/crm/routes/franchise.routes.js`
+- **Symptom:** `/franchise-dashboard/shops` listed the first ten shops on the whole platform (a "mock filter" in the code). The overview showed invented trends (`+15%`, `+4`), two counts hard-coded to 0 and two chart placeholders. Revenue showed `+12% this week`, a pending payout hard-coded to Rs 0, an invented settlement day and a dead Export button. Users, Zones, Reports, Marketing and Settings were static "No Data Available" pages.
+- **Fix:** New territory-scoped endpoints (all through `attachFranchiseScope` / `scopeClause` / `requireFranchise`): `GET /franchise/shops`, `/territory-customers` (phones masked), `/zones`, `/reports` (monthly, engine-neutral bucketing), `/waitlist` and `/profile`. Every page now uses the shared `FranchiseShell` with loading, error, forbidden and empty states. Reports and Revenue export real CSVs. Settings is read-only because no partner-editable settings exist; it links to the profile page for contact changes.
+- **Tests:** `integration/franchiseDashboardData.test.js` (7, written as cross-partner attacks; passing on SQLite and PostgreSQL).
+- **Status:** CODE COMPLETE
+
+### F-129: Service provider dashboard counted the wrong id and had no booking workflow
+- **Severity:** P1
+- **Location:** `backend/src/modules/core/routes/dashboards.routes.js` `GET /services/dashboard`; `apps/web/src/app/service-dashboard/page.js`
+- **Symptom:** Bookings reference `home_service_providers.id`, but the dashboard filtered on `provider_id = <user id>`, so every provider read 0. `avgRating` was hard-coded to 0. Providers had no endpoint to see or act on their bookings, and the web page was a static card grid.
+- **Fix:** The dashboard resolves the caller's provider profiles and reads the real rating. New `GET /home-services/provider/me`, `PUT /provider/availability`, `GET /provider/bookings` and `PUT /provider/bookings/:id/status`. The status endpoint enforces ownership, an explicit transition map (pending to confirmed/rejected, confirmed to in_progress/cancelled, in_progress to completed with a final bill) and a conditional update against concurrent changes. `/service-dashboard` shows stats, an availability toggle and a filterable booking list with those actions.
+- **Tests:** `integration/serviceProviderBookings.test.js` (5; passing on SQLite and PostgreSQL).
+- **Status:** CODE COMPLETE
+
+### F-127 follow-up (2026-11-10): suites ported to PostgreSQL; engine selection explicit
+- **Tests:** 75 suites that pinned SQLite were ported. Readable fixture ids now go through `src/__tests__/helpers/fixtureIds.js` (deterministic UUIDs, with cleanup by prefix via `CAST(id AS TEXT) LIKE`). Fixture flags are quoted `'1'`/`'0'`, shared placeholders are split, and geometry is WKT. Nine suites are SQLite-only by nature (they introspect SQLite, test its R*Tree index or driver, or are built on `setup/testDb.js`). Each carries an `@engine sqlite-only` docblock tag. `jest.config.js` leaves tagged suites out of PostgreSQL runs, and `engineSelection.test.js` fails on any pin without the tag.
+- **Harness (scripts/verify):** G3 reports how many suites ran on PostgreSQL and how many tagged suites were excluded, and fails if any suite pins SQLite without the tag (`engine-selection.mjs`; self-test Harness 6). The G2/G3 timeout went from 240 s to 900 s because the full suite takes 3-6 minutes and the old limit killed healthy runs. The pass condition is unchanged.
+- **H11:** `jest.globalSetup.js` drops and recreates the `public` schema of the local `*_test` database for every PostgreSQL run, migrates it and seeds the same fixtures as SQLite. It refuses any database that is not local or not named `*_test` (L6).
+- **Result before the full verify-all run** (targeted, 2026-11-10): SQLite 146/146 suites, 1666/1666 tests. PostgreSQL 137 suites (9 excluded as SQLite-only), with the last 6 failing suites fixed and rerun green.
+- **Status:** CODE COMPLETE (the verify-all evidence decides FIXED-VERIFIED)
+
+### F-130: Production SQL that PostgreSQL rejected (found by porting the suites and by PREPARE-checking every static statement)
+- **Severity:** P0/P1 (each statement fails on every call on PostgreSQL)
+- **Method:** Every static SQL string in `backend/src` (2,138 statements) was `PREPARE`d against the local test database (parse and type-check only; nothing executes). 115 were rejected. After the fixes below, the remaining rejections are SQL fragments concatenated at runtime, SQLite-only branches (`sqlite_master`, FTS `MATCH`), dead modules (`dispatch.engine`, `logistics.batching`, `catalog.master`, `graph.routing`) and one-off `scripts/`.
+- **Fixed, with what was broken:**
+  - **Account creation:** `createUser` (`auth.routes.js`) had one placeholder for `phone_number` (VARCHAR) and `phone` (TEXT): "inconsistent types deduced", so no account could be created on PostgreSQL.
+  - **Shared placeholders:** file uploads (`upload.service.js`, uploader_id UUID vs user_id TEXT), job applications (`jobs.routes.js`), medical requests (`medical.routes.js`) and volunteer task claims had the same defect.
+  - **UUID/TEXT comparisons:** 31 joins and comparisons such as `ON o.buyer_id = u.id` (marketplace, carpool, auctions, disputes, equipment, guard shifts, ML jobs, payouts, the admin impersonation lookup and the territory-dashboard filters) now cast both sides to TEXT.
+  - **Flag literals:** integer/boolean mismatches (`COALESCE(bool_col, 1)`, `int_col = true`, `VALUES (..., 1)` into BOOLEAN) now use engine-neutral comparisons on the column (`col = '1'`, NULL handling preserved).
+  - **Dialect and missing columns:** SQLite-only SQL in jobs that run on production (`INSERT OR REPLACE` in the analytics snapshot, `date("now")`, `datetime('now')`, text columns compared with `NOW()`/`CURRENT_DATE`) now uses bound UTC values or a standard upsert. Admin global search read `shop_name`/`business_category`, which do not exist. The franchise payout claim selected a row id beside an aggregate (rejected) and would then have used a transaction id as the wallet id. The invoice read `items` and `delivery_fee` from `universal_orders`, which has neither on either engine. GROUP BY errors were fixed in the leaderboards, salary insights and uplift model.
+  - **Behaviour differences:** keyword search answered partial words in exact mode on PostgreSQL only, and the admin router's own error handler turned every error into 500.
+- **Status:** CODE COMPLETE
+
+### F-131: Database-layer differences between the engines (API answered differently on PostgreSQL)
+- **Severity:** P1
+- **Location:** `backend/src/config/database.js`, `middleware/error.middleware.js`, `sockets/index.js`, `modules/core/routes/zone.routes.js`
+- **Symptom and fix:**
+  - **Numbers:** NUMERIC and BIGINT came back as strings (`delivery_fee: "20.00"`, `COUNT(*)` as `"3"`); summing them concatenated (`"0240.0055.00"` instead of 295). Both are now parsed as numbers.
+  - **Timestamps:** `timestamp without time zone` was parsed as a Date in the server's LOCAL zone, shifting every value by the zone offset (5 h 30 on the development machine). It now returns the stored UTC text, as SQLite does. timestamptz returns ISO 8601 with `Z`, and dates `YYYY-MM-DD`. Every connection runs `SET TIME ZONE 'UTC'`, so `DEFAULT CURRENT_TIMESTAMP` agrees with the UTC values the app writes (local PostgreSQL inherits the OS zone; Supabase is already UTC). The connect-time `SET` triggers pg's one-time deprecation notice about queued queries; switch to the `options` startup parameter once the Supabase pooler is confirmed to accept it.
+  - **Booleans:** they came back as `true`/`false` where SQLite gives `1`/`0`; they are now parsed as `1`/`0`.
+  - **Unparseable ids:** a lookup by an id PostgreSQL cannot parse (`WHERE id = 'x'` against a UUID or integer key) raised 22P02 and about a hundred routes answered 500. A SELECT, DELETE, or UPDATE whose rejected value is only in its WHERE now returns no rows and logs a warning; writes of the value and statements inside transactions still fail. The error middleware answers 404 for an unparseable UUID the caller sent (path, query or body); other unparseable values stay 400. The socket order-room join and `/zones/:id/stats` handle an unknown id.
+  - **Settings:** they are read through the same normalisers as writes (config_value is JSONB on PostgreSQL).
+- **Status:** CODE COMPLETE
+
+### F-132: Seeded shop coordinates lose precision on PostgreSQL
+- **Severity:** P3
+- **Symptom:** The geography point is built from REAL (float32) latitude/longitude columns, so a stored point reads back as 73.89669799804688 for 73.8967 (under 1 m). Tests compare to 4 decimals.
+- **Direction:** Build the point from the request's double values, or migrate latitude/longitude to DOUBLE PRECISION.
+- **Status:** OPEN
+
+### Test assertion changes made while porting (rule 2B.6)
+| File | Change | Why |
+|---|---|---|
+| 75 ported suites | text fixture ids replaced by `fx('label')`; flags quoted; WKT points | Fixtures only; PostgreSQL types (UUID, BOOLEAN, PostGIS) refused the old values. No expected value changed except as listed below |
+| `adminHealth.test.js` | engine name and connection count by engine | `sqlite`/1 connection on SQLite; `postgresql`/>=1 on a pool |
+| `territoryResolution`, `geoDataTrust` source-regex tests | also accept `col = '1'` | The filter is now written engine-neutrally; the check still fails if the filter is removed |
+| `seedDefault`, `shopOrderingIntegrity` | coordinate compared numerically (4 dp), read through ST_AsText on PostgreSQL | PostGIS returns EWKB, and float32 storage (F-132) |
+| `campaignSchedule.test.js` | stored times compared as instants | SQLite returns UTC text, PostgreSQL ISO; both must be 04:30/06:30 UTC |
+| `auctions.test.js` | the losing concurrent bid may be 400 or 409 | On PostgreSQL the loser can read after the winner commits and is refused by the minimum check (400 "Minimum bid") instead of the guarded UPDATE (409); exactly one still wins, and the bid count and price are unchanged |
+| `fraudAnalysis`, `shopPayouts` | expected rows sorted the way the query sorts | UUIDs do not sort like the old text ids |
+| `coins.test.js` | runs the migration file for the engine under test | It ran the SQLite twin on PostgreSQL |
+| `concurrency.test.js` | own table renamed and dropped | It left `idempotency_keys` in the shared database (schema contract pollution) |
+| 31 suites | inline `500` error handlers replaced by the app's `errorHandler` | Tests now see production's status mapping |
+
+### F-133: G4 verified a hand-seeded development database; the demo seed could not run on PostgreSQL (H10)
+- **Severity:** P1 (gate measured the wrong thing; demo unusable on the production engine)
+- **Symptom:** G4's SQLite half ran `--verify` against the persistent development database, which passed only because it had been seeded by hand; nothing was seeded, and nothing checked idempotency. On PostgreSQL the seeder used text ids (`demo-user-01`) and `id LIKE 'demo-%'` on UUID columns, so every table failed. Its society data was attached to whatever society already existed (none on an empty database), and guard shifts wrote a bare '06:00' into TIMESTAMP columns.
+- **Fix:** G4 now starts from an EMPTY database on each engine (a new SQLite file, and the local `*_test` schema reset by `resetLocalPostgres`, which refuses anything not local/`*_test`). It then migrates, seeds twice (idempotency) and verifies. The seeder maps every `demo-…` label to a deterministic UUID (`utils/fixtureIds.seedId`, whose leading segments encode `demo` and the kind, so teardown and verify still select by prefix through `CAST(id AS TEXT) LIKE`). It owns a demo society and writes full shift timestamps. Result: G4 passes on both engines (partial run 2026-11-10).
+- **Owner note:** a development database seeded before this change holds demo rows under the old text ids. Re-seeding removes demo users by phone number before inserting; leftover demo shops/jobs under old ids are harmless but can be deleted with `DELETE ... WHERE id LIKE 'demo-%'` on that SQLite file.
+- **Status:** CODE COMPLETE
+
+### Full verify-all run, 2026-11-10 (evidence: docs/audit/evidence/verify-2026-11-09T19-27-12/, not yet committed)
+- G2 SQLite: 1666 passed / 0 failed, 146 suites. G3 PostgreSQL: 1622 passed / 0 failed, 137 suites, all on PostgreSQL; 9 `@engine sqlite-only` suites excluded and reported. G4: both engines empty -> migrate -> seed x2 -> verify. G6 and G11 pass. Gate pass rate 13/18.
+- Still failing, outside this work: G9 (expo-doctor: duplicate/direct dependencies, config sync), G10 (Android assembleRelease), G12 (emulator smoke not implemented), G13 (16 high advisories awaiting fixes or owner acceptance), G18 (0/53 features computed VERIFIED: needs ID-tagged UI and Android tests).
+- F-127 and F-133 become FIXED-VERIFIED once this evidence folder is committed (rule 2B.4).
+
+## Third-pass sweep: mobile gates, dependencies, harness (2026-11-10)
+
+### F-134: Android release APK permissions were never actually trimmed (N12), and app.json could drift from android/ unnoticed
+- **Severity:** P1 (Play Store policy: restricted permissions in the shipped artifact)
+- **Symptom:** `plugins/withTrimmedPermissions.js` deleted the N12 permissions from the *app* manifest. Most of them come from *library* manifests (expo-audio: RECORD_AUDIO, MODIFY_AUDIO_SETTINGS; expo-image-picker: READ/WRITE_EXTERNAL_STORAGE; react-native-callkeep: CALL_PHONE, READ_PHONE_STATE, READ_PHONE_NUMBERS, MANAGE_OWN_CALLS), which Gradle's manifest merger copies into the APK unless the app manifest marks them `tools:node="remove"`. The committed manifest had no such markers, and the plugin also deleted the markers that `android.blockedPermissions` would have written. `expo config --type introspect` additionally showed expo-camera adding RECORD_AUDIO (default `recordAudioAndroid: true`) after the plugin ran. expo-doctor reported "app config fields not synced" (G9) but nothing checked what that meant.
+- **Fix:** The plugin now writes `tools:node="remove"` for each blocked permission via Expo's own `AndroidConfig.Permissions.withBlockedPermissions`, and the list adds CallKeep's four phone permissions (CallKeep is optional in WebRTCIntercomMobile and its ConnectionService is not declared, so it cannot run on Android). expo-camera is configured `recordAudioAndroid: false`. The committed AndroidManifest.xml carries the same markers. New `apps/mobile/__tests__/nativeConfigSync.test.js` asks Expo what prebuild would generate from app.json and its plugins and compares it with the committed android/ (permissions including remove markers, application and activity attributes, meta-data, intent filters, scheme and App Links, strings, colours, package name, default version). Removing one marker fails 2 of its 8 tests (checked). The doctor's sync check is switched off in favour of that suite, and G9 now fails if any doctor check is switched off without a mapped suite that passed in the same run (`scripts/verify/doctor-checks.mjs`, Harness 7). `aapt dump permissions` on the release APK built 2026-11-10 lists none of the 12 blocked permissions.
+- **Also (G9):** `react-dom@19.1.0` (the SDK 54 pin) added to apps/mobile. Expo Router's web modal pieces (vaul, @radix-ui/*) declare it as a peer, it was not installed, and Node resolution fell through to the monorepo root's react-dom@18, which pulled react@18 into autolinking's view: the "duplicate react" doctor failure. `@expo/config-plugins` removed from direct dependencies (still provided by expo). expo-doctor: 17/17 checks pass.
+- **Product note:** with RECORD_AUDIO removed, voice search and the gate intercom have no microphone on Android in v1. That was already the N12 decision; this makes it true of the shipped APK.
+- **Status:** CODE COMPLETE
+
+### F-135: High-severity dependency advisories (G13)
+- **Severity:** P1 (16 unaccepted highs)
+- **Fixed (root):** nodemailer ^9.0.3 -> ^10.4.0 in backend (10.0.0's only breaking change is Node >= 20, already required; usage is createTransport/sendMail). Overrides in the root package.json: `@firebase/firestore -> @grpc/grpc-js ^1.14.7` (the web app imports Firebase for auth only, never Firestore), `@tensorflow/tfjs-core -> node-fetch ^2.7.0` (face-api.js loads models from disk), `next -> postcss ^8.5.32`. `npm audit fix` (in-range) for brace-expansion and follow-redirects. Root `npm audit --omit=dev`: 0 critical, 0 high (was 9 high).
+- **Fixed (mobile):** override `postcss ^8.5.32`; `npm audit fix` (in-range) for brace-expansion and node-forge. Mobile: 4 high (was 7).
+- **Not fixable without an Expo SDK upgrade, recorded for owner decision in `docs/launch/accepted-exceptions.json` (`ownerApproved: null`):** decode-uri-component -> query-string -> expo-router (one advisory that npm lists three times; the vulnerable decode path is not reachable: expo-router only calls `stringify`, and the app imports neither package), and image-size (Metro build tool only; no fixed 1.x and 2.x changed the API Metro calls). Entries this work fixed are marked `resolved`, not deleted; G13's "pending owner approval" count skips them.
+- **Status:** CODE COMPLETE (G13 stays red until the owner accepts or the Expo upgrade lands)
+
+### F-136: Verification harness could not run or count three gates (G10, G12, G18)
+- **Severity:** P1 (gates reported failures that were harness faults, or could never pass)
+- **G10:** `runCmd` quoted arguments containing spaces but not the command. The repo lives under `C:\localsampark 04-09-2026\`, so cmd.exe ran `C:\localsampark` and G10 failed in 0.0 s without starting Gradle ("'C:\localsampark' is not recognized"). The command is now quoted too. `gradlew assembleRelease` itself succeeds (BUILD SUCCESSFUL, 180 MB app-release.apk).
+- **G12:** was a hard-coded failure ("pending V6"). It now runs `scripts/verify/android-smoke.mjs` on an emulator (a running one, or the AVD booted headless). The script installs the G10 release APK with runtime permissions granted, and fails on any of: a blocked permission requested by the installed package; launch failure; the process dead 25 s after launch or after a `localsampark://` deep link; the app not in the foreground; fewer than 3 labelled UI elements (blank screen or system dialog); a crash/ANR dialog; or a fatal Java or JavaScript exception in logcat. It saves logcat, the UI hierarchy, a screenshot and the requested permissions as evidence. It refuses to run when G10 failed in the same invocation (no stale APK). The verdict is a pure function covered by Harness 8, which caught an attribute-order bug in the crash-dialog check.
+- **G18:** the verifier reads `playwright.json` and `jest-mobile.json` from the evidence folder, but no gate wrote either, and the Playwright file would have gone through the Jest parser, which cannot read Playwright's nested suites. So no web, admin or Android feature could ever reach VERIFIED. G11 now copies a fresh Playwright report (deleted before the run), G9 writes the mobile Jest report, and `parsePlaywrightReport` maps web-*/admin-* projects to platforms; flaky counts as failed (Harness 9). This does not verify anything by itself: no Playwright test carries a feature tag yet (the V3–V10 work).
+- **Status:** CODE COMPLETE
+
+### F-137: PostgreSQL session time zone set by a query queued behind the caller's
+- **Severity:** P2 (DeprecationWarning in every PostgreSQL run; breaks under pg 9)
+- **Symptom:** `SET TIME ZONE 'UTC'` was sent from a `pool.on('connect')` listener without waiting, so the caller's first query was queued on a client that was still busy. pg 8 deprecates this ("Calling client.query() when the client is already executing a query"), and pg 9 removes it.
+- **Fix:** the SET runs in pg-pool's `onConnect` option, which the pool awaits before handing the client out. It is not a startup `options` parameter, because poolers such as PgBouncer reject unknown startup parameters.
+- **Status:** CODE COMPLETE
+
+### F-138: Mobile landing screen showed invented user, shop and gig counts
+- **Severity:** P1 (fabricated volume claim on the first screen of the pilot app; the noFabricatedData standard forbids it)
+- **Symptom:** Found in the first G12 screenshot of the release APK. `app/index.js` animated up to hard-coded 12,450 "neighbors", 347 "local shops" and 78 "gigs" whatever the database held. The web landing page had already been moved to the real `GET /public/stats` counts (whose route comment names these same numbers); mobile had not.
+- **Fix:** The screen reads `/public/stats` (approved, active shops; active, unbanned users) and shows the bar only once real counts arrive. "Gigs" is gone (nothing counts it), and so is the "+" suffix (an exact count is not a floor). `noFabricatedData.test.js` now fails if the screen stops calling `/public/stats` or passes a numeric literal as a count (it failed when 347 was put back), and the file is added to its parse check.
+- **Status:** CODE COMPLETE
+
+### F-136 addendum: first G12 run (evidence `verify-2026-11-10T02-05-44`)
+- The release APK installed, cold-launched in 7.5 s, and rendered the landing screen (screenshot in evidence), but the gate failed for two reasons, both in the smoke script: (1) after `adb uninstall` and reinstall, Android started broadcast receivers for the *removed* install's uid (u0a192), which died in `handleBindApplication` and were counted as app crashes; (2) `uiautomator dump` produced no file, because the landing screen's endless Reanimated loop never goes idle. The script now counts fatal exceptions only from processes ActivityManager started for the installed uid (plus the live pid), settles and force-stops after install, sets the system animation scales to 0 for the run (restored afterwards), dumps to /data/local/tmp with three attempts, and logs the dump output. Harness 8 now covers the uid cases using the real log lines.
+
+### F-136 addendum: interrupted full run of 2026-11-10 (evidence `verify-2026-11-10T02-13-13`, 13/18; not a sign-off run)
+- **The machine slept** from 07:49 to 18:54 during G3. `spawnSync` timeouts count wall-clock time, so G3 "failed" after 39,891 s with no test output, and its orphaned Jest process lived on until it exited by itself. The run is recorded but signs nothing off.
+- **G9 and G10 pass** inside the harness for the first time (G10: `assembleRelease` in 153 s, app-release.apk 172.25 MB, SHA-256 9ec43381…).
+- **G11 was killed by its own 300 s limit** at test 33 of 46 (all passing so far), so no Playwright report was written. A normal run is ~260 s; the limit is now 900 s, matching G2/G3. Per-test timeouts are unchanged.
+- **G12** found the app rendered, but under a "System UI isn't responding" dialog that a cold-booted emulator raised for its own process. The uiautomator dump captured only that dialog, and the old crash-dialog check matched any process. Now only a dialog naming the app (`LocalSampark …`) fails the gate; another process's ANR dialog is answered with "Wait" and the screen is dumped again (Harness 8, with the real dialog). The installed uid is now read from Android 14's `appId=` as well as `userId=`. The emulator's own output is saved as `G12-emulator.log`, and the boot wait is 10 minutes: two later attempts to boot the AVD from the script exited during cold boot (netsim connection reset) and left nothing to diagnose. Started by hand, the same AVD boots in 50 s, and the script uses an already-running emulator.
+- **G12 on its own** (`verify-2026-11-10T14-06-02`) passes against that run's APK: installed (uid 10195), cold launch 7.5 s, alive after 25 s and after the deep link, 14 labelled elements of the real landing screen, no blocked permission, no fatal exception.
+
+### Test assertion changes in this pass (rule 2B.6)
+| File | Change | Why |
+|---|---|---|
+| `apps/mobile/__tests__/permissionsAudit.test.js` [N12.3] | "the manifest text never names a forbidden permission" became "no forbidden permission is requested without `tools:node="remove"`, and each one has a remove marker"; the BIND_TELECOM check now looks for a `<service>` using it | The old assertion forbade the very markers that keep library-declared permissions out of the APK (F-134). The new one is stricter: it also fails when a marker is missing |
+| `backend/src/__tests__/services/boundaryMonitor.test.js` "one alert per cooldown" | explicit 60 s timeout (no assertion changed) | In the G1–G3 run of 2026-11-10 (evidence `verify-2026-11-10T01-49-58`, G2 1663/3) it overran the default 10 s while npm installs and the mobile Jest suite ran alongside. Jest does not stop a timed-out test, so its loop corrupted the next two tests. Run alone it passes 17/17, three times out of three |
+
+### Full verify-all run, 2026-11-10 evening (evidence: docs/audit/evidence/verify-2026-11-10T14-08-43/, not yet committed)
+- **16/18 gates pass:** G1–G12 and G14–G17. G2 SQLite 1666/0 (146 suites); G3 PostgreSQL 1622/0 (137 suites, 9 sqlite-only excluded), with no pg DeprecationWarning (F-137). G9 has expo-doctor 17/17 and mobile Jest 249/249. G10 is the release APK, 172.25 MB. G11 runs 46 Playwright tests, and its report is now kept as `playwright.json`. G12 runs the release APK on an Android 14 emulator (that run's AVD was started beforehand; the harness uses a running emulator when there is one).
+- **G13 fails:** 4 mobile highs (the decode-uri-component -> query-string -> expo-router chain, and image-size), each recorded in accepted-exceptions.json with `ownerApproved: null`. They need an owner decision or the Expo SDK 58 upgrade (F-135).
+- **G18 fails:** 0/53 VERIFIED (39 CODE COMPLETE, 14 IN PROGRESS). The verifier can now read web/admin/android reports (F-136), but no Playwright or mobile test carries a feature tag yet; that is the V3–V10 work.
+- F-127, F-133, F-134, F-136, F-137 and F-138 become FIXED-VERIFIED once this evidence folder is committed (rule 2B.4).

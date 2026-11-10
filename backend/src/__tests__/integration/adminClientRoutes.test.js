@@ -7,7 +7,6 @@
  * several config tabs had called routes that were never written).
  */
 
-process.env.USE_SQLITE = 'true';
 
 const fs = require('fs');
 const path = require('path');

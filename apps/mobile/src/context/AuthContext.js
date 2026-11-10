@@ -42,6 +42,7 @@ export function AuthProvider({ children }) {
       try {
         const token = await registerForPushNotificationsAsync();
         if (!token || cancelled) return;
+        pushTokenRef.current = token;
         const notifBase = API_URL.replace(/\/api\/v\d+$/, '');
         await fetch(`${notifBase}/api/v1/notifications/register-token`, {
           method: 'POST',

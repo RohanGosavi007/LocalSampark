@@ -6,7 +6,6 @@
  * delivery order. They now take a short-lived row in job_locks first.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const { query, queryOne } = require('../config/database');
 const { acquireLock, locked } = require('../utils/jobLock');

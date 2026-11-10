@@ -13,18 +13,18 @@
  *     called, without limit.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query, queryOne } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const OWNER = 'camp-owner';
-const STRANGER = 'camp-stranger';
-const ADMIN = 'camp-admin';
-const SHOP = 'camp-shop';
+const OWNER = fx('camp-owner');
+const STRANGER = fx('camp-stranger');
+const ADMIN = fx('camp-admin');
+const SHOP = fx('camp-shop');
 
 let app;
 const token = (userId) => jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' });
@@ -33,10 +33,10 @@ const as = (userId) => ({ Authorization: `Bearer ${token(userId)}` });
 async function cleanup() {
   await query('DELETE FROM ad_campaigns WHERE shop_id = $1', [SHOP]);
   await query('DELETE FROM shop_campaigns WHERE shop_id = $1', [SHOP]);
-  await query("DELETE FROM wallet_transactions WHERE wallet_id LIKE 'camp-%'");
-  await query("DELETE FROM wallets WHERE id LIKE 'camp-%'");
+  await query(`DELETE FROM wallet_transactions WHERE CAST(wallet_id AS TEXT) LIKE '${fxLike('camp')}'`);
+  await query(`DELETE FROM wallets WHERE CAST(id AS TEXT) LIKE '${fxLike('camp')}'`);
   await query('DELETE FROM local_shops WHERE id = $1', [SHOP]);
-  await query("DELETE FROM users WHERE id LIKE 'camp-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('camp')}'`);
 }
 
 beforeAll(async () => {
@@ -48,8 +48,8 @@ beforeAll(async () => {
   ]) {
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)', [id, name, phone, role]);
   }
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('camp-wallet-owner', $1, 1000)", [OWNER]);
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('camp-wallet-stranger', $1, 1000)", [STRANGER]);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('camp-wallet-owner')}', $1, 1000)`, [OWNER]);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('camp-wallet-stranger')}', $1, 1000)`, [STRANGER]);
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude)
      VALUES ($1, $2, 'Campaign Test Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87)`,
@@ -81,7 +81,7 @@ describe('POST /campaigns/purchase', () => {
 
     expect(await balanceOf(OWNER)).toBe(700);
     const ledger = await queryOne(
-      "SELECT amount, type, purpose FROM wallet_transactions WHERE wallet_id = 'camp-wallet-owner'"
+      `SELECT amount, type, purpose FROM wallet_transactions WHERE wallet_id = '${fx('camp-wallet-owner')}'`
     );
     expect(ledger).toEqual({ amount: 300, type: 'debit', purpose: 'ad_campaign' });
   });
@@ -117,17 +117,17 @@ describe('POST /campaigns/purchase', () => {
   test('a nonsense budget and a missing shop are client errors', async () => {
     const bad = await request(app).post('/campaigns/purchase').set(as(OWNER)).send({ shop_id: SHOP, budget_amount: -5 });
     expect(bad.status).toBe(400);
-    const none = await request(app).post('/campaigns/purchase').set(as(OWNER)).send({ shop_id: 'camp-no-such-shop' });
+    const none = await request(app).post('/campaigns/purchase').set(as(OWNER)).send({ shop_id: fx('camp-no-such-shop') });
     expect(none.status).toBe(404);
   });
 });
 
 describe('POST /campaigns/:id/click', () => {
   test('stops charging at the budget and ends the campaign', async () => {
-    const id = 'camp-click-test';
+    const id = fx('camp-click-test');
     await query(
       `INSERT INTO ad_campaigns (id, shop_id, ad_type, budget, spent, start_date, end_date, status)
-       VALUES ($1, $2, 'promoted_listing', 12, 0, '2026-01-01', '2099-01-01', 'active')`,
+       VALUES ($1, $2, 'promoted_listing', 12, '0', '2026-01-01', '2099-01-01', 'active')`,
       [id, SHOP]
     );
 

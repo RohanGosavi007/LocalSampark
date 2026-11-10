@@ -32,7 +32,7 @@ const LISTING_SELECT = `
            l.owner_id,
            COALESCE(u.full_name, 'LocalSampark User') AS owner_name
       FROM equipment_listings l
-      LEFT JOIN users u ON u.id = CAST(l.owner_id AS TEXT)`;
+      LEFT JOIN users u ON CAST(u.id AS TEXT) = CAST(l.owner_id AS TEXT)`;
 
 // ─── Catalogue ──────────────────────────────────────────────────────────────
 
@@ -242,7 +242,7 @@ router.get('/rentals/owner', authenticate, async (req, res, next) => {
                     l.item_name, COALESCE(u.full_name, 'Renter') AS renter_name
                FROM equipment_rentals r
                JOIN equipment_listings l ON l.id = r.listing_id
-               LEFT JOIN users u ON u.id = r.renter_id
+               LEFT JOIN users u ON CAST(u.id AS TEXT) = CAST(r.renter_id AS TEXT)
               WHERE CAST(l.owner_id AS TEXT) = $1
               ORDER BY r.rented_at DESC`,
             [String(req.user.id)]

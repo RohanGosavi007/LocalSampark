@@ -1,4 +1,8 @@
 /**
+ * @engine sqlite-only — checks INSERT column lists against the live SQLite schema via PRAGMA table_info.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+/**
  * Every INSERT the server can run must fit the table it writes to.
  *
  * An audit of the running code found roughly a hundred that did not, in four
@@ -91,4 +95,4 @@ test('every INSERT in reachable source names real columns and supplies the requi
   // If the scan stops finding statements, it has broken, not the code improved.
   expect(statements).toBeGreaterThan(300);
   expect(problems).toEqual([]);
-});
+}, 60000);

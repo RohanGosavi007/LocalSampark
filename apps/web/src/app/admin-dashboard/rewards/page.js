@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
-import PendingModule from '../../components/admin/PendingModule';
+import AdminConsoleRedirect from '@/components/admin/AdminConsoleRedirect';
 
+// Placeholder retired: this module is implemented in the admin console.
 export default function RewardsPage() {
-  return <PendingModule title="Rewards Module" moduleKey="rewards" />;
+  return <AdminConsoleRedirect moduleKey="rewards" title="Earn & Rewards" />;
 }

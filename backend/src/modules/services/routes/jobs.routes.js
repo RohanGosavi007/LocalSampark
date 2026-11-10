@@ -275,8 +275,10 @@ router.post('/apply', authenticate, validate({
     const appId = crypto.randomUUID();
     await query(`INSERT INTO job_applications (id, job_id, applicant_id, user_id, applicant_name, applicant_phone,
       experience_summary, status, resume_id, match_score, stage, voice_intro_url, applied_at)
-      VALUES ($1,$2,$3,$3,$4,$5,$6,'applied',$7,$8,'applied',$9,CURRENT_TIMESTAMP)`,
-      [appId, jobId, req.user.id, name, phone, experienceSummary||cover_note||null,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,'applied',$8,$9,'applied',$10,CURRENT_TIMESTAMP)`,
+      // applicant_id is UUID and user_id TEXT on PostgreSQL: one shared
+      // placeholder failed every application there (F-130).
+      [appId, jobId, req.user.id, req.user.id, name, phone, experienceSummary||cover_note||null,
        resume_id||null, matchScore, voice_intro_url||null]);
 
     // The employer's pipeline updates without a refresh (jobsSocket rooms).
@@ -510,7 +512,7 @@ router.get('/salary-insights', async (req, res, next) => {
     const params = [];
     if (job_title) { params.push(`%${job_title}%`); sql += ` AND job_title LIKE $${params.length}`; }
     if (company_id) { params.push(company_id); sql += ` AND company_id = $${params.length}`; }
-    sql += ` GROUP BY job_title ORDER BY avg_salary DESC LIMIT 50`;
+    sql += ` GROUP BY job_title, company_name ORDER BY avg_salary DESC LIMIT 50`;
 
     const insights = await queryMany(sql, params);
     res.json({ success: true, insights });

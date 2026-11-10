@@ -19,7 +19,6 @@
  * tier that most needs to be correct.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const cache = require('../../services/spatialCache.service');
 

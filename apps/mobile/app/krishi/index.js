@@ -134,7 +134,7 @@ const s = StyleSheet.create({
   s11: { color: '#ffffff', fontWeight: '700', fontSize: 12, marginRight: 8 },
   s12: { padding: 24, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b', paddingBottom: 40 },
   s13: { color: '#34d399', fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', fontSize: 12, marginBottom: 8, textAlign: 'center' },
-  s14: { color: '#ffffff', fontSize: 30, fontWeight: '900', textAlign: 'center', marginBottom: 16, lineHeight: 1.25 },
+  s14: { color: '#ffffff', fontSize: 30, fontWeight: '900', textAlign: 'center', marginBottom: 16, lineHeight: 38 },
   s15: { color: '#94a3b8', textAlign: 'center', marginBottom: 24, fontSize: 14 },
   s16: { flexDirection: 'row', justifyContent: 'center', gap: 16 },
   s17: { backgroundColor: '#059669', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },

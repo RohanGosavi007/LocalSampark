@@ -1,10 +1,3 @@
 module.exports = {
-  dependencies: {
-    'react-native-nitro-image': {
-      platforms: {
-        android: null,
-        ios: null,
-      },
-    },
-  },
+  // Dependencies autolinked normally. Short-path build avoids CMake path length limits.
 };

@@ -7,7 +7,7 @@ const path = require('path');
 
 const generateBills = async (req, res, next) => {
     try {
-        const { societyId, month, year } = req.body;
+        const { societyId, month, year } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // In reality, this requires Admin/Treasurer role
         
         const generated = await billingService.generateMonthlyInvoices(societyId, month, year);
@@ -92,7 +92,7 @@ const recordPayment = async (req, res, next) => {
 
 const syncToTally = async (req, res, next) => {
     try {
-        const { societyId, billId } = req.body;
+        const { societyId, billId } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // Build mock invoice data for Tally
         const bill = await queryOne('SELECT * FROM society_maintenance_bills WHERE id = $1', [billId]);
         const items = await queryMany('SELECT * FROM society_invoice_items WHERE bill_id = $1', [billId]);

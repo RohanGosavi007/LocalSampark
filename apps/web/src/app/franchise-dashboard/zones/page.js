@@ -1,40 +1,41 @@
 'use client';
 import React from 'react';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { Search, Filter, AlertCircle } from 'lucide-react';
+import FranchiseShell, { useFranchiseData, when } from '../components/FranchiseShell';
 
+// The territories this partner holds, with live shop and waitlist counts (GET /franchise/zones).
 export default function FranchiseZones() {
+  const { data, loading, error, reload } = useFranchiseData('/franchise/zones');
+  const zones = (data && data.zones) || [];
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-24 pb-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-border pb-6">
-            <div>
-              <h1 className="text-3xl font-black text-text mb-2">Territory Zones</h1>
-              <p className="text-text-muted">Manage zones for your assigned hyper-local territory.</p>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="w-5 h-5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 bg-card-bg border border-border rounded-xl text-text outline-none focus:border-blue-500 w-64" />
+    <FranchiseShell
+      title="My Zones"
+      subtitle="The pincodes assigned to your franchise."
+      active="/franchise-dashboard/zones"
+      loading={loading}
+      error={error}
+      onRetry={reload}
+      empty={zones.length === 0}
+      emptyText="No territories are assigned to your franchise yet. Contact the LocalSampark team to have one assigned."
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {zones.map((z) => (
+          <article key={z.id} className="bg-card-bg border border-border rounded-3xl p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-text">{z.name}</h3>
+                <p className="text-sm text-text-muted">PIN {z.pincode}</p>
               </div>
-              <button className="p-2 bg-card-bg border border-border rounded-xl text-text-muted hover:bg-background-alt transition">
-                <Filter className="w-5 h-5" />
-              </button>
+              <span className="text-xs font-bold px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600">{z.status}</span>
             </div>
-          </div>
-
-          <div className="text-center py-16 bg-card-bg border border-border rounded-3xl">
-            <AlertCircle className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl text-text font-bold mb-2">No Data Available</h3>
-            <p className="text-text-muted">No records found for zones in your territory yet.</p>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </>
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div><dt className="text-text-muted">Shops</dt><dd className="text-xl font-black text-text">{z.shops}</dd></div>
+              <div><dt className="text-text-muted">Waitlist</dt><dd className="text-xl font-black text-text">{z.waitlist}</dd></div>
+              <div><dt className="text-text-muted">Commission</dt><dd className="font-semibold text-text">{z.commissionRate === null ? 'Partner rate' : `${z.commissionRate}%`}</dd></div>
+              <div><dt className="text-text-muted">Assigned</dt><dd className="font-semibold text-text">{when(z.assignedAt)}</dd></div>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </FranchiseShell>
   );
 }

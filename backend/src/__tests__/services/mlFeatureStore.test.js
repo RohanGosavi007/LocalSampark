@@ -11,16 +11,16 @@
  * "optimises" the training path to read the online cache, these fail.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query } = require('../../config/database');
 const store = require('../../modules/ml/featurestore');
 const registry = require('../../modules/ml/featurestore/registry');
 
-const SHOP = 'fs-test-shop-1';
-const OTHER_SHOP = 'fs-test-shop-2';
-const USER = 'fs-test-user-primary';
+const SHOP = fx('fs-test-shop-1');
+const OTHER_SHOP = fx('fs-test-shop-2');
+const USER = fx('fs-test-user-primary');
 
 /** Midpoint of the fixture: events exist on both sides of it. */
 const T0 = Date.parse('2026-01-10T12:00:00Z');
@@ -47,8 +47,8 @@ async function ensureUser(id) {
   const phone = `+9190${String(fixtureUserSeq).padStart(8, '0')}`;
   await query(
     `INSERT INTO users (id, phone_number, phone, full_name, role, is_active)
-     VALUES ($1, $2, $2, $3, 'user', 1)`,
-    [id, phone, `Feature store fixture ${id}`]
+     VALUES ($1, $2, $4, $3, 'user', '1')`,
+    [id, phone, `Feature store fixture ${id}`, phone]
   );
 }
 
@@ -57,21 +57,21 @@ async function insertEvent({ itemId, eventType, weight, at, userId = USER }) {
     `INSERT INTO ml_interaction_events
        (user_id, session_id, item_type, item_id, event_type, weight, surface, created_at)
      VALUES ($1, $2, 'shop', $3, $4, $5, 'test', $6)`,
-    [userId, 'fs-test-session', itemId, eventType, weight, ts(at)]
+    [userId, fx('fs-test-session'), itemId, eventType, weight, ts(at)]
   );
 }
 
 beforeAll(async () => {
-  await query('DELETE FROM ml_interaction_events WHERE session_id = $1', ['fs-test-session']);
+  await query('DELETE FROM ml_interaction_events WHERE session_id = $1', [fx('fs-test-session')]);
   await query('DELETE FROM ml_feature_values WHERE entity_id IN ($1, $2)', [SHOP, OTHER_SHOP]);
   // An interrupted earlier run can leave these behind, and the insert below is
   // not an upsert.
-  await query("DELETE FROM users WHERE id LIKE 'fs-test-user-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('fs')}'`);
 
   await ensureUser(USER);
   // The distinct-user fixture below attributes the post-T0 purchase intents to
   // thirty different people, so each needs a row.
-  for (let i = 0; i < 30; i += 1) await ensureUser(`fs-test-user-${i}`);
+  for (let i = 0; i < 30; i += 1) await ensureUser(fx(`fs-test-user-${i}`));
 
   // Before T0: 4 impressions, 1 click, 1 booking.
   for (let i = 0; i < 4; i += 1) {
@@ -94,7 +94,7 @@ beforeAll(async () => {
       eventType: 'PURCHASE_INTENT',
       weight: 8,
       at: T0 + DAY + i * 1000,
-      userId: `fs-test-user-${i}`,
+      userId: fx(`fs-test-user-${i}`),
     });
   }
 
@@ -103,9 +103,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await query('DELETE FROM ml_interaction_events WHERE session_id = $1', ['fs-test-session']);
+  await query('DELETE FROM ml_interaction_events WHERE session_id = $1', [fx('fs-test-session')]);
   await query('DELETE FROM ml_feature_values WHERE entity_id IN ($1, $2)', [SHOP, OTHER_SHOP]);
-  await query("DELETE FROM users WHERE id LIKE 'fs-test-user-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('fs')}'`);
 });
 
 describe('as-of reads cannot see the future', () => {

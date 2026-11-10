@@ -8,7 +8,8 @@
     "description": "PostCSS line return parsing vulnerability",
     "exposureAnalysis": "Sub-dependency of Next.js 15 SSR compiler. In LocalSampark, CSS parsing occurs at build time via Next.js Webpack/Turbopack; no user-supplied CSS strings are compiled at runtime.",
     "mitigation": "Requires upgrade to Next.js 16 (breaking framework upgrade with major router changes). Planned for post-launch milestone.",
-    "ownerApproved": null
+    "ownerApproved": null,
+    "resolved": "2026-11-10 (F-135): fixed without a Next.js upgrade. Root package.json overrides next -> postcss ^8.5.32; npm audit reports no postcss advisory."
   },
   {
     "id": "GHSA-m6fv-jmc8-4pc4",
@@ -19,17 +20,18 @@
     "description": "node-fetch denial of service / header leakage",
     "exposureAnalysis": "Sub-dependency of TensorFlow.js face-api model used strictly within isolated face verification worker; does not handle arbitrary outbound URLs.",
     "mitigation": "Upstream face-api.js maintainers have not released a v3 update. Replacing face-api requires vendor model migration.",
-    "ownerApproved": null
+    "ownerApproved": null,
+    "resolved": "2026-11-10 (F-135): fixed. Root package.json overrides @tensorflow/tfjs-core -> node-fetch ^2.7.0 (same major API; face-api.js loads models from disk and never fetches)."
   },
   {
     "id": "GHSA-w596-hm35-5959",
     "gate": "G13",
     "package": "decode-uri-component",
-    "scope": "apps/mobile (expo-router dependency)",
+    "scope": "apps/mobile: expo-router@6 -> query-string@7.1.3 -> decode-uri-component@0.2.x (npm audit reports decode-uri-component, query-string and expo-router as three high entries)",
     "severity": "high",
-    "description": "decode-uri-component regex denial of service",
-    "exposureAnalysis": "Deep-link path parsing within client Android application. Deep link URLs are constrained to the LocalSampark URI scheme.",
-    "mitigation": "Requires upgrade to Expo 55 / React Native 0.77+ which requires extensive mobile refactoring.",
+    "description": "decode-uri-component <=0.5.0: exponential/quadratic-time decoding of malformed percent-encoded input (DoS)",
+    "exposureAnalysis": "The vulnerable function is only reached through query-string parse()/decode(). expo-router 6 calls only queryString.stringify (build/fork/getPathFromState*.js); its one parse() call is commented out (getStateFromPath.js:538). The app code imports neither package (grep app/ src/). Worst case if reached: a crafted deep link hangs the JS thread on the device that opened it; no data exposure and no server impact.",
+    "mitigation": "No CommonJS release of query-string or decode-uri-component contains the fix (both moved to ESM-only), so an override would break expo-router at runtime. The fix is Expo SDK 58 (expo-router 58.0.30+), a major framework upgrade. Re-check at every Expo upgrade.",
     "ownerApproved": null
   },
   {
@@ -41,7 +43,8 @@
     "description": "node-forge ASN.1 signature verification issue",
     "exposureAnalysis": "Development and build-time CLI toolchain dependency for local Expo metro bundler SSL certificates. Never packaged into release APK or runtime bundle.",
     "mitigation": "Bundled internally with @expo/cli v52.",
-    "ownerApproved": null
+    "ownerApproved": null,
+    "resolved": "2026-11-10 (F-135): fixed. npm audit fix moved apps/mobile node-forge to a patched release within range."
   },
   {
     "id": "DOCTOR-DEPENDENCIES",
@@ -52,7 +55,8 @@
     "description": "Check dependencies for packages that should not be installed directly",
     "exposureAnalysis": "expo-doctor flags packages installed directly that are transitive Expo dependencies.",
     "mitigation": "Review dependency tree in Phase V6.",
-    "ownerApproved": null
+    "ownerApproved": null,
+    "resolved": "2026-11-10 (F-134): fixed. @expo/config-plugins removed from apps/mobile dependencies (still provided by expo); expo-doctor passes this check."
   },
   {
     "id": "DOCTOR-CONFIG-SYNC",
@@ -63,6 +67,40 @@
     "description": "Check for app config fields that may not be synced in a non-CNG project",
     "exposureAnalysis": "Native Android project uses prebuild / bare workflow (`apps/mobile/android`), where some fields in `app.json` are synced manually to native gradle files.",
     "mitigation": "Audited in N12 and N16.",
+    "ownerApproved": null,
+    "resolved": "2026-11-10 (F-134): replaced. The doctor check is switched off in apps/mobile/package.json and replaced by __tests__/nativeConfigSync.test.js, which compares the committed android/ project with `expo config --type introspect`. G9 fails unless that suite passes in the same run (scripts/verify/doctor-checks.mjs)."
+  },
+  {
+    "id": "MOBILE-QUERY-STRING-CHAIN",
+    "gate": "G13",
+    "package": "query-string",
+    "scope": "apps/mobile: same chain as GHSA-w596-hm35-5959 (expo-router -> query-string)",
+    "severity": "high",
+    "description": "query-string 5.0.0-9.4.1 flagged only because it depends on decode-uri-component",
+    "exposureAnalysis": "See GHSA-w596-hm35-5959. npm audit lists the dependent packages as separate high entries; approving that advisory needs these two entries approved with it.",
+    "mitigation": "Expo SDK 58 upgrade.",
+    "ownerApproved": null
+  },
+  {
+    "id": "MOBILE-EXPO-ROUTER-CHAIN",
+    "gate": "G13",
+    "package": "expo-router",
+    "scope": "apps/mobile: same chain as GHSA-w596-hm35-5959",
+    "severity": "high",
+    "description": "expo-router 6 flagged only because it depends on query-string",
+    "exposureAnalysis": "See GHSA-w596-hm35-5959.",
+    "mitigation": "Expo SDK 58 upgrade.",
+    "ownerApproved": null
+  },
+  {
+    "id": "MOBILE-IMAGE-SIZE",
+    "gate": "G13",
+    "package": "image-size",
+    "scope": "apps/mobile: expo -> @expo/metro -> metro@0.83 -> image-size@1.2.1 (build tool only)",
+    "severity": "high",
+    "description": "image-size 0.6.3-2.0.2: infinite loop (DoS) in the JXL/HEIF/ICNS parsers",
+    "exposureAnalysis": "Used only by the Metro bundler at build time, to read the dimensions of the image files in this repository. It is not in the APK and never sees user-supplied images. Worst case: a crafted image committed to the repo hangs a build.",
+    "mitigation": "No 1.x release is fixed. 2.x changed the API Metro calls (default export of a path -> named imageSize(buffer)), so an override breaks bundling. Fixed by the Metro release in a later Expo SDK.",
     "ownerApproved": null
   }
 ]

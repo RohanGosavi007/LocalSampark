@@ -108,9 +108,11 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
   test('[G6.2] Idempotency-Key deduplication: concurrent duplicate orders create only 1 order row', async () => {
     const idempotencyKey = `idemp-${crypto.randomUUID()}`;
 
-    // Schema check / creation for idempotency table if needed
+    // A table owned by this test (the schema has no idempotency_keys table).
+    // It is dropped at the end so the shared worker database, which
+    // postgresSchemaContract.test.js later reads, is left as migrated.
     await query(`
-      CREATE TABLE IF NOT EXISTS idempotency_keys (
+      CREATE TABLE IF NOT EXISTS g6_test_idempotency_keys (
         key         TEXT PRIMARY KEY,
         user_id     TEXT NOT NULL,
         resource_id TEXT,
@@ -123,7 +125,7 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
       return withTransaction(async (tx) => {
         // Atomic insert: fails if key already exists
         const claimed = await tx.query(
-          `INSERT INTO idempotency_keys (key, user_id)
+          `INSERT INTO g6_test_idempotency_keys (key, user_id)
            VALUES ($1, $2)
            ON CONFLICT (key) DO NOTHING`,
           [reqKey, testUserId1]
@@ -132,7 +134,7 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
         if (!claimed.rowCount) {
           // Key already claimed: load existing order
           const existing = await tx.query(
-            'SELECT resource_id FROM idempotency_keys WHERE key = $1',
+            'SELECT resource_id FROM g6_test_idempotency_keys WHERE key = $1',
             [reqKey]
           );
           return { deduplicated: true, orderId: existing.rows[0]?.resource_id };
@@ -147,7 +149,7 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
         );
 
         await tx.query(
-          'UPDATE idempotency_keys SET resource_id = $1 WHERE key = $2',
+          'UPDATE g6_test_idempotency_keys SET resource_id = $1 WHERE key = $2',
           [orderId, reqKey]
         );
 
@@ -175,7 +177,8 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
     expect(Number(count.cnt)).toBe(1);
 
     await query('DELETE FROM orders WHERE id = $1', [created[0].orderId]);
-    await query('DELETE FROM idempotency_keys WHERE key = $1', [idempotencyKey]);
+    await query('DELETE FROM g6_test_idempotency_keys WHERE key = $1', [idempotencyKey]);
+    await query('DROP TABLE IF EXISTS g6_test_idempotency_keys');
   });
 
   test('[G6.3] Duplicate payment capture webhook settles exactly once', async () => {
@@ -226,7 +229,7 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
       CREATE TABLE IF NOT EXISTS coupons (
         id               TEXT PRIMARY KEY,
         code             TEXT UNIQUE NOT NULL,
-        discount_amount  NUMERIC(10,2) NOT NULL,
+        discount_value   NUMERIC(10,2) NOT NULL DEFAULT 0,
         max_uses         INTEGER NOT NULL,
         current_uses     INTEGER NOT NULL DEFAULT 0,
         is_active        BOOLEAN DEFAULT TRUE
@@ -238,8 +241,8 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
 
     // Coupon with max_uses = 1
     await query(
-      `INSERT INTO coupons (id, code, discount_amount, max_uses, current_uses, is_active)
-       VALUES ($1, $2, 50.00, 1, 0, TRUE)`,
+      `INSERT INTO coupons (id, code, discount_value, max_uses, current_uses, is_active)
+       VALUES ($1, $2, 50.00, 1, 0, '1')`,
       [couponId, couponCode]
     );
 
@@ -249,7 +252,7 @@ describe('PostgreSQL Concurrency & Idempotency Suite [G6]', () => {
         const claimed = await tx.query(
           `UPDATE coupons
               SET current_uses = current_uses + 1
-            WHERE code = $1 AND is_active = TRUE AND current_uses < max_uses`,
+            WHERE code = $1 AND is_active = '1' AND current_uses < max_uses`,
           [couponCode]
         );
 

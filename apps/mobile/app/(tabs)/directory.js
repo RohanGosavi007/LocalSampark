@@ -199,7 +199,7 @@ export default function DirectoryScreen() {
     },
   });
   
-  const AnimatedFlashList = Animated.createAnimatedComponent(FlashList);
+  const AnimatedFlashList = React.useMemo(() => Animated.createAnimatedComponent(FlashList), []);
 
   const [filteredShops, setFilteredShops] = useState([]);
   const [isFiltering, setIsFiltering] = useState(false);

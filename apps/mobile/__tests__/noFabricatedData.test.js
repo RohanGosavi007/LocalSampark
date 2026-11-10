@@ -336,6 +336,15 @@ describe('screens that used to fall back to invented records', () => {
     expect(src).toMatch(/latitude/);
   });
 
+  it('the landing screen counts come from /public/stats, not literals', () => {
+    // It animated up to 12,450 neighbours / 347 shops / 78 gigs regardless of
+    // the database (found by the G12 emulator screenshot, 2026-11-10).
+    const src = read('app/index.js');
+    expect(src).toMatch(/apiGet\('\/public\/stats'\)/);
+    expect(src).not.toMatch(/targetValue=\{\d/);
+    expect(src).not.toMatch(/12,?450|label="Gigs"/);
+  });
+
   it('the module field dashboard is the live dashboard, not a copy with figures', () => {
     const src = read('app/modules/field-dashboard/index.js');
     expect(src).toMatch(/dashboards\/FieldDashboard/);
@@ -348,7 +357,7 @@ describe('every screen edited for production still parses', () => {
   it.each([
     'app/modules/register-shop/index.js', 'app/modules/subscriptions/index.js', 'app/modules/bills/index.js',
     'app/modules/pets/index.js', 'app/modules/promotions/index.js', 'app/search.js', 'app/crm/index.js',
-    'app/modules/field-dashboard/index.js',
+    'app/modules/field-dashboard/index.js', 'app/index.js',
   ])('%s', (rel) => {
     expect(() => babel.transformFileSync(path.join(MOBILE, rel), { presets: ['babel-preset-expo'], babelrc: false, configFile: false })).not.toThrow();
   });

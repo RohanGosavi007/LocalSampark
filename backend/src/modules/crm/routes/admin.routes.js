@@ -132,7 +132,7 @@ router.get('/community/posts', authenticate, requireAdmin, async (req, res, next
       `SELECT cp.id, cp.author_id, u.full_name as author_name, cp.type as category, cp.content, NULL as media_url, cp.pincode,
               cp.likes as likes_count, cp.comments as comments_count, cp.created_at
          FROM community_posts cp
-         LEFT JOIN users u ON cp.author_id = u.id
+         LEFT JOIN users u ON CAST(cp.author_id AS TEXT) = CAST(u.id AS TEXT)
          ${where}
         ORDER BY cp.created_at DESC
         LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -420,9 +420,9 @@ router.get('/search', authenticate, requireAdmin, async (req, res, next) => {
     `, [searchTerm]);
 
     const shops = await query(`
-      SELECT id, shop_name as title, 'Shop' as type, business_category as subtitle 
+      SELECT id, name as title, 'Shop' as type, category as subtitle 
       FROM local_shops 
-      WHERE shop_name LIKE $1 OR owner_id IN (SELECT id FROM users WHERE phone_number LIKE $1)
+      WHERE name LIKE $1 OR owner_id IN (SELECT id FROM users WHERE phone_number LIKE $1)
       LIMIT 5
     `, [searchTerm]);
 
@@ -562,7 +562,7 @@ router.post('/impersonate', authenticate, requireAdmin, async (req, res, next) =
       return res.status(403).json({ error: 'Only Super Admins can use Impersonation Engine.' });
     }
 
-    let targetUser = await queryOne('SELECT * FROM users WHERE id = $1 OR phone_number = $1', [targetIdOrPhone]);
+    let targetUser = await queryOne('SELECT * FROM users WHERE CAST(id AS TEXT) = CAST($1 AS TEXT) OR CAST(phone_number AS TEXT) = CAST($1 AS TEXT)', [targetIdOrPhone]);
     if (!targetUser) {
       return res.status(404).json({ error: 'Target user not found.' });
     }
@@ -647,7 +647,7 @@ router.get('/societies', authenticate, requireAdmin, async (req, res, next) => {
 
     const societies = await query(
       `SELECT s.* FROM societies s
-         JOIN society_admin_roles sar ON sar.society_id = s.id
+         JOIN society_admin_roles sar ON CAST(sar.society_id AS TEXT) = CAST(s.id AS TEXT)
         WHERE sar.user_id = $1 AND sar.is_active = '1'
         ORDER BY s.created_at DESC
         LIMIT $2`,
@@ -1058,19 +1058,19 @@ function listRoute(path, { count, select, searchColumns = [], filters = {}, orde
       if (req.query.search && searchColumns.length) {
         params.push(likePattern(req.query.search));
         const n = params.length;
-        where.push('(' + searchColumns.map((c) => `LOWER(COALESCE(${c}, '')) LIKE LOWER(${n}) ESCAPE '\\'`).join(' OR ') + ')');
+        where.push('(' + searchColumns.map((c) => `LOWER(COALESCE(${c}, '')) LIKE LOWER($${n}) ESCAPE '\\'`).join(' OR ') + ')');
       }
       for (const [param, column] of Object.entries(filters)) {
         if (req.query[param]) {
           params.push(req.query[param]);
-          where.push(`${column} = ${params.length}`);
+          where.push(`${column} = $${params.length}`);
         }
       }
       const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
       const total = Number((await queryOne(`SELECT count(*) AS n FROM ${count} ${clause}`, params)).n);
       params.push(limit, offset);
       const result = await query(
-        `SELECT ${select} FROM ${count} ${clause} ORDER BY ${orderBy} LIMIT ${params.length - 1} OFFSET ${params.length}`,
+        `SELECT ${select} FROM ${count} ${clause} ORDER BY ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`,
         params
       );
       let rows = result.rows || result;
@@ -1640,12 +1640,17 @@ router.use((err, req, res, next) => {
   if (process.env.NODE_ENV !== 'production') {
     console.error(err.stack);
   }
-  
-  res.status(err.status || 500).json({
+
+  // The same status mapping as the app-wide handler: an unknown id is a 404,
+  // a constraint violation a 400/409. This handler answered every error 500,
+  // so a mistyped shop id in the admin console read as a server crash.
+  const { statusOf } = require('../../../middleware/error.middleware');
+  const { statusCode, message } = statusOf(err, req);
+  res.status(statusCode).json({
     success: false,
-    error: process.env.NODE_ENV === 'production' 
-      ? 'An internal admin system error occurred.' 
-      : err.message
+    error: message || (process.env.NODE_ENV === 'production' && statusCode >= 500
+      ? 'An internal admin system error occurred.'
+      : err.message)
   });
 });
 

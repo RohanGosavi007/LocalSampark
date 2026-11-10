@@ -133,7 +133,7 @@ export default function DeliveryDashboard({ user }) {
             <View style={s.listItem}><ActivityIndicator color="#3b82f6" /></View>
           ) : history.length === 0 ? (
             <View style={s.listItem}>
-              <Text style={s.listMeta}>{error || 'Payments for completed runs will show up here.'}</Text>
+              <Text style={s.listMeta}>Payments for completed runs will show up here.</Text>
             </View>
           ) : history.map((h, idx) => (
             <View key={h.id} style={[s.listItem, idx !== history.length - 1 && s.listBorder]}>

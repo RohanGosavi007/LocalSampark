@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { LocationContext } from '../../context/LocationContext';
+import { apiPost } from '../../lib/api';
 
 const TIER_BENEFITS = [
   { tier: 'Sub-Agent', icon: '🧑', invest: '₹10,000', commission: '10%', support: 'WhatsApp support', manage: 'Up to 20 shops', monthly: '₹8,000–25,000', color: '#94a3b8' },
@@ -26,9 +27,42 @@ export default function FranchisePage() {
   const [mapDistrictFilter, setMapDistrictFilter] = useState('Pune');
   const up = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
-  const handleSubmit = (e) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  // Recorded as a franchise interest lead (POST /gtm/interest-lead), which the
+  // admin console's Lead Pipeline reads. The success screen only appears once
+  // the API has accepted it.
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitError('');
+    const territory = TERRITORIES.find((t) => t.zone === form.zone);
+    const pincode = (form.pincode || (territory && territory.pin) || '').toString().trim();
+    if (pincode && !/^[1-9][0-9]{5}$/.test(pincode)) {
+      setSubmitError('Please enter a valid 6-digit pincode.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await apiPost('/gtm/interest-lead', {
+        feature_key: 'franchise_application',
+        pincode: pincode || undefined,
+        name: form.name.trim(),
+        phone: form.phone,
+        details: {
+          state: form.state,
+          district: form.district,
+          zone: form.zone,
+          tier: form.tier,
+          message: form.message.slice(0, 1000),
+        },
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err && err.message ? err.message : 'Could not submit your application. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -240,8 +274,11 @@ export default function FranchisePage() {
                       <label className="form-label">Why do you want to be a LocalSampark partner?</label>
                       <textarea className="form-input" rows={3} placeholder="Tell us about your background and motivation..." value={form.message} onChange={e => up('message', e.target.value)} style={{ resize: 'vertical' }} />
                     </div>
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '1.05rem', padding: '1rem' }}>
-                      🚀 Submit Franchise Application
+                    {submitError && (
+                      <p role="alert" style={{ color: 'var(--danger, #dc2626)', margin: 0, fontSize: '0.9rem' }}>{submitError}</p>
+                    )}
+                    <button type="submit" disabled={submitting} className="btn btn-primary" style={{ width: '100%', fontSize: '1.05rem', padding: '1rem', opacity: submitting ? 0.7 : 1 }}>
+                      {submitting ? 'Submitting…' : '🚀 Submit Franchise Application'}
                     </button>
                   </form>
                 </div>

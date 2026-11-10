@@ -155,6 +155,17 @@ const handoverCodeLimiter = rateLimit({
   store: getStore('rl:handover:'),
 });
 
+// Anonymous form endpoints that create a record for staff to act on (the
+// public account-deletion request). Per IP, an hour window: legitimate users
+// submit once, and a flood would fill the DSR queue with junk.
+const publicFormLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
+  message: { success: false, error: 'Too many requests. Please try again later.' },
+  keyGenerator: (req, res) => ipKeyGenerator(req, res),
+  store: getStore('rl:pubform:'),
+});
+
 // Strict limiter for upload endpoints
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -194,6 +205,7 @@ module.exports = {
     orderPlacementLimiter,
   handoverCodeLimiter,
   uploadLimiter,
+  publicFormLimiter,
   adminLimiter,
   ddosProtector
 };

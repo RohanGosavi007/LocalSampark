@@ -44,9 +44,10 @@ describe('schema reality check', () => {
   // Guards against the failure mode that invalidated the earlier attempt:
   // tests green, production broken, because the mock invented the schema.
   it('marketplace_listings really has region_id, latitude and longitude', async () => {
-    const r = await realDb.query(
-      "SELECT sql FROM sqlite_master WHERE type='table' AND name='marketplace_listings'"
-    );
+    // SQLite keeps the DDL text; PostgreSQL lists the columns.
+    const r = await realDb.query(process.env.USE_SQLITE === 'true'
+      ? "SELECT sql FROM sqlite_master WHERE type='table' AND name='marketplace_listings'"
+      : "SELECT string_agg(column_name, ',') AS sql FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'marketplace_listings'");
     const rows = r.rows || r;
     const ddl = (rows[0] && rows[0].sql) || '';
     expect(ddl).toContain('region_id');

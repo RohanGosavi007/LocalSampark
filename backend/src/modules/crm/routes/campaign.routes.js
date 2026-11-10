@@ -24,7 +24,7 @@ router.post('/purchase', authenticate, async (req, res, next) => {
     const startDate = new Date();
     const endDate = new Date(startDate.getTime() + duration_days * 24 * 60 * 60 * 1000);
 
-    await query('UPDATE local_shops SET is_featured = TRUE WHERE id = $1', [shop_id]);
+    await query(`UPDATE local_shops SET is_featured = '1' WHERE id = $1`, [shop_id]);
 
     const campaign = await queryOne(`INSERT INTO shop_campaigns 
        (shop_id, title, discount_type, discount_value, start_datetime, end_datetime, radius_km, is_flash_sale, status) 
@@ -52,7 +52,7 @@ router.get('/featured-shops', async (req, res, next) => {
     // Query featured shops
     const result = await query(`SELECT id, name, category, address, phone_number, is_featured, rating, latitude, longitude
        FROM local_shops 
-       WHERE is_featured = TRUE AND is_active = TRUE LIMIT 20`
+       WHERE is_featured = '1' AND is_active = '1' LIMIT 20`
     );
 
     const shops = result.rows || result || [];

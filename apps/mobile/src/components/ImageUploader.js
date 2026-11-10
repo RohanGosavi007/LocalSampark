@@ -57,7 +57,7 @@ export default function ImageUploader({ onUploadSuccess, label = "Upload Image",
 
     try {
       if (!authToken) throw new Error('Please sign in again to upload.');
-      const response = await fetch(`${API_URL}/api/v1/upload`, {
+      const response = await fetch(`${API_URL.replace(/\/api\/v1\/?$/, '')}/api/v1/upload`, {
         method: 'POST',
         body: formData,
         // No Content-Type: fetch sets multipart/form-data with its boundary.

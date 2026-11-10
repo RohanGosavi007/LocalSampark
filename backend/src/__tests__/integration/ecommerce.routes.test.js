@@ -1,4 +1,9 @@
 /**
+ * @engine sqlite-only — built on setup/testDb.js, which creates its own SQLite tables (AUTOINCREMENT, PRAGMA).
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+process.env.USE_SQLITE = 'true';
+/**
  * E-Commerce Domain API Integration Tests
  * Tests shop listing, shop creation (RBAC), product management, cart operations,
  * checkout flow, payment webhooks, group buying, and trust reviews.

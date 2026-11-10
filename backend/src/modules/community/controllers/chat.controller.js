@@ -65,8 +65,8 @@ const getChatHistory = async (req, res, next) => {
 
     // Mark as read
     await query(`
-      UPDATE messages SET is_read = 1 
-      WHERE receiver_id = $1 AND sender_id = $2 AND is_read = 0
+      UPDATE messages SET is_read = '1' 
+      WHERE receiver_id = $1 AND sender_id = $2 AND is_read = '0'
     `, [userId, contactId]);
 
     res.json({ success: true, data: history.rows });

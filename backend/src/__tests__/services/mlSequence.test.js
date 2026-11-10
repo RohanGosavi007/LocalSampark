@@ -16,7 +16,6 @@
  * and dropping either is the classic tying bug.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const {
   SequenceModel,

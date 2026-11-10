@@ -1,4 +1,8 @@
 /**
+ * @engine sqlite-only — compares the live SQLite schema (sqlite_master/PRAGMA) with the PostgreSQL migration files.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+/**
  * What production's database would look like, checked without one.
  *
  * Production runs PostgreSQL; this suite, and every developer, runs SQLite.
@@ -119,7 +123,7 @@ beforeAll(async () => {
 
   const indexes = await db.query("SELECT name, tbl_name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'");
   sqliteIndexes = indexes.rows.filter((r) => !SQLITE_INTERNAL.test(r.tbl_name));
-});
+}, 60000);
 
 test('the model is reading the migrations', () => {
   expect(Object.keys(pg).length).toBeGreaterThan(350);

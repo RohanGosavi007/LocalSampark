@@ -9,23 +9,23 @@
  * minimal stand-in for the socket to check they honour it.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('./helpers/fixtureIds');
 const { query, queryOne, queryMany } = require('../config/database');
 const marketplaceSocket = require('../sockets/marketplaceSocket');
 
 const { resolveChat } = marketplaceSocket;
 
-const SELLER = 'mkt-sock-seller';
-const BUYER = 'mkt-sock-buyer';
-const OTHER = 'mkt-sock-other';
-const LISTING = 'mkt-sock-listing';
+const SELLER = fx('mkt-sock-seller');
+const BUYER = fx('mkt-sock-buyer');
+const OTHER = fx('mkt-sock-other');
+const LISTING = fx('mkt-sock-listing');
 
 async function cleanup() {
   await query('DELETE FROM marketplace_chat_messages WHERE listing_id = $1', [LISTING]);
   await query('DELETE FROM marketplace_chats WHERE listing_id = $1', [LISTING]);
   await query('DELETE FROM marketplace_listings WHERE id = $1', [LISTING]);
-  await query("DELETE FROM users WHERE id LIKE 'mkt-sock-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('mkt')}'`);
 }
 
 beforeAll(async () => {

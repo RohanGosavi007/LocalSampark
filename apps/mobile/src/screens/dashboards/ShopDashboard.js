@@ -39,7 +39,8 @@ export default function ShopDashboard({ user }) {
   // `shop` is what CatalogManagerView needs (shop?.id / shop?.ownerToken) to
   // call the catalog API — it was previously referenced below without ever
   // being defined, crashing the moment a shop owner opened Catalog view.
-  const shop = { id: user?.shop_id || user?.id, ownerToken: user?.token };
+  const { authToken } = (function() { try { return require('../../context/AuthContext').useAuth(); } catch { return {}; } })();
+  const shop = { id: user?.shop_id || user?.id, ownerToken: user?.token || authToken };
 
   const fetchShopData = () => {
     setLoading(true);

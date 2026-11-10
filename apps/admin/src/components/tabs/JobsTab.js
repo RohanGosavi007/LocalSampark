@@ -41,7 +41,7 @@ export default function JobsTab({ API_BASE, authHeaders }) {
     let firstFailure = null;
     for (const id of selected) {
       try {
-        await fetchJson(`${API_BASE}/admin/approvals/job/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status }) });
+        await fetchJson(`${API_BASE}/admin/approvals/job/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status, action: status === 'approved' || status === 'approve' ? 'approve' : 'reject' }) });
         done += 1;
       } catch (e) {
         if (!firstFailure) firstFailure = e.message || 'failed';

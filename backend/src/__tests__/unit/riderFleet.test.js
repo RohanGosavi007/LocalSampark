@@ -99,15 +99,15 @@ describe('Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5)', () =
     // Seed shops in Dhanori area
     // Near shop: Dhanori center (18.5833, 73.8833)
     await query(
-      `INSERT INTO local_shops (id, name, owner_id, phone, category, address, latitude, longitude, pincode, is_active, is_verified)
-       VALUES ($1, 'Dhanori Fresh Bakers', $2, '+919876543210', 'bakery', 'Dhanori Road, Pune', 18.5833, 73.8833, '411015', true, true)`,
+      `INSERT INTO local_shops (id, name, owner_id, phone, category, address, latitude, longitude, coordinate, pincode, is_active, is_verified)
+       VALUES ($1, 'Dhanori Fresh Bakers', $2, '+919876543210', 'bakery', 'Dhanori Road, Pune', 18.5833, 73.8833, 'POINT(73.8833 18.5833)', '411015', true, true)`,
       [TEST_SHOP_NEAR_ID, TEST_ADMIN_ID]
     );
 
     // Far shop: Viman Nagar / outskirts (18.5679, 73.9143) ~4.5 km away
     await query(
-      `INSERT INTO local_shops (id, name, owner_id, phone, category, address, latitude, longitude, pincode, is_active, is_verified)
-       VALUES ($1, 'Viman Nagar Gourmet', $2, '+919876543211', 'restaurant', 'Viman Nagar, Pune', 18.5679, 73.9143, '411014', true, true)`,
+      `INSERT INTO local_shops (id, name, owner_id, phone, category, address, latitude, longitude, coordinate, pincode, is_active, is_verified)
+       VALUES ($1, 'Viman Nagar Gourmet', $2, '+919876543211', 'restaurant', 'Viman Nagar, Pune', 18.5679, 73.9143, 'POINT(73.9143 18.5679)', '411014', true, true)`,
       [TEST_SHOP_FAR_ID, TEST_ADMIN_ID]
     );
 

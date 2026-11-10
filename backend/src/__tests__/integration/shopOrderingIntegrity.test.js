@@ -23,25 +23,26 @@
  * failures of what the database will accept.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../config/database');
 
-const SHOP = 'soi-shop';
-const OWNER = 'soi-owner';
-const CUSTOMER = 'soi-customer';
-const STAFF = 'soi-staff';
-const PRODUCT = 'soi-product';
+const SHOP = fx('soi-shop');
+const OWNER = fx('soi-owner');
+const CUSTOMER = fx('soi-customer');
+const STAFF = fx('soi-staff');
+const PRODUCT = fx('soi-product');
 
 async function cleanup() {
-  await query("DELETE FROM shop_appointments WHERE id LIKE 'soi-%' OR shop_id = 'soi-shop'");
-  await query("DELETE FROM shop_commissions WHERE shop_id = 'soi-shop'");
-  await query("DELETE FROM shop_orders WHERE shop_id = 'soi-shop'");
-  await query("DELETE FROM shop_products WHERE id LIKE 'soi-%'");
-  await query("DELETE FROM shop_staff WHERE id LIKE 'soi-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'soi-%'");
-  await query("DELETE FROM users WHERE id LIKE 'soi-%'");
+  await query(`DELETE FROM shop_appointments WHERE CAST(id AS TEXT) LIKE '${fxLike('soi')}' OR shop_id = '${fx('soi-shop')}'`);
+  await query(`DELETE FROM shop_commissions WHERE shop_id = '${fx('soi-shop')}'`);
+  await query(`DELETE FROM shop_orders WHERE shop_id = '${fx('soi-shop')}'`);
+  await query(`DELETE FROM shop_products WHERE CAST(id AS TEXT) LIKE '${fxLike('soi')}'`);
+  await query(`DELETE FROM shop_staff WHERE CAST(id AS TEXT) LIKE '${fxLike('soi')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('soi')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('soi')}'`);
+  await query(`DELETE FROM regions WHERE CAST(id AS TEXT) LIKE '${fxLike('soi')}'`);
 }
 
 beforeAll(async () => {
@@ -55,7 +56,7 @@ beforeAll(async () => {
       [id, name, phone, role]);
   }
 
-  const category = await queryOne('SELECT id FROM shop_categories WHERE is_active = true LIMIT 1');
+  const category = await queryOne(`SELECT id FROM shop_categories WHERE is_active = '1' LIMIT 1`);
 
   await query(
     // local_shops carries legacy NOT NULL columns alongside the modern ones:
@@ -65,7 +66,7 @@ beforeAll(async () => {
        (id, owner_id, category_id, category, name, description, address, coordinate,
         latitude, longitude, is_active)
      VALUES ($1, $2, $3, 'general-retail', 'SOI Test Shop', 'Fixture',
-             '1 Test Street, Pune', '18.53,73.87', 18.53, 73.87, 1)`,
+             '1 Test Street, Pune', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
     [SHOP, OWNER, category ? category.id : null]
   );
 
@@ -76,7 +77,7 @@ beforeAll(async () => {
 
   await query(
     `INSERT INTO shop_products (id, shop_id, name, price, stock, is_active)
-     VALUES ($1, $2, 'SOI Rice 5kg', 250, 100, 1)`,
+     VALUES ($1, $2, 'SOI Rice 5kg', 250, 100, '1')`,
     [PRODUCT, SHOP]
   );
 });
@@ -84,7 +85,7 @@ beforeAll(async () => {
 afterAll(cleanup);
 
 beforeEach(async () => {
-  await query("DELETE FROM shop_appointments WHERE shop_id = 'soi-shop'");
+  await query(`DELETE FROM shop_appointments WHERE shop_id = '${fx('soi-shop')}'`);
 });
 
 const bookSlot = (id, { staffId = STAFF, date = '2026-10-01', slot = '18:00', status = 'pending' } = {}) =>
@@ -96,55 +97,55 @@ const bookSlot = (id, { staffId = STAFF, date = '2026-10-01', slot = '18:00', st
 
 describe('double-booking', () => {
   test('the same staff member cannot be booked twice for one slot', async () => {
-    await bookSlot('soi-appt-1');
+    await bookSlot(fx('soi-appt-1'));
 
     // The defect: this used to succeed, and both customers were told their
     // booking was confirmed.
-    await expect(bookSlot('soi-appt-2')).rejects.toThrow(/unique|constraint/i);
+    await expect(bookSlot(fx('soi-appt-2'))).rejects.toThrow(/unique|constraint/i);
   });
 
   test('a different staff member at the same time is fine', async () => {
     // A salon with four chairs genuinely takes four bookings at 6pm. They are
     // only a clash if they name the same person.
-    const otherStaff = 'soi-staff-2';
+    const otherStaff = fx('soi-staff-2');
     await query('INSERT INTO shop_staff (id, shop_id, name, role) VALUES ($1, $2, $3, $4)',
       [otherStaff, SHOP, 'SOI Stylist 2', 'stylist']);
 
-    await bookSlot('soi-appt-3');
-    await expect(bookSlot('soi-appt-4', { staffId: otherStaff })).resolves.toBeDefined();
+    await bookSlot(fx('soi-appt-3'));
+    await expect(bookSlot(fx('soi-appt-4'), { staffId: otherStaff })).resolves.toBeDefined();
 
     await query('DELETE FROM shop_staff WHERE id = $1', [otherStaff]);
   });
 
   test('a different time for the same staff member is fine', async () => {
-    await bookSlot('soi-appt-5', { slot: '18:00' });
-    await expect(bookSlot('soi-appt-6', { slot: '19:00' })).resolves.toBeDefined();
+    await bookSlot(fx('soi-appt-5'), { slot: '18:00' });
+    await expect(bookSlot(fx('soi-appt-6'), { slot: '19:00' })).resolves.toBeDefined();
   });
 
   test('cancelling frees the slot', async () => {
     // The whole point of cancelling is that the slot becomes bookable again.
-    await bookSlot('soi-appt-7', { status: 'cancelled' });
-    await expect(bookSlot('soi-appt-8')).resolves.toBeDefined();
+    await bookSlot(fx('soi-appt-7'), { status: 'cancelled' });
+    await expect(bookSlot(fx('soi-appt-8'))).resolves.toBeDefined();
   });
 
   test('a no-show frees the slot too', async () => {
-    await bookSlot('soi-appt-9', { status: 'no_show' });
-    await expect(bookSlot('soi-appt-10')).resolves.toBeDefined();
+    await bookSlot(fx('soi-appt-9'), { status: 'no_show' });
+    await expect(bookSlot(fx('soi-appt-10'))).resolves.toBeDefined();
   });
 
   test('unassigned bookings cannot stack up on one slot', async () => {
     // NULL is not equal to itself in SQL, so a single index keyed on staff_id
     // would let unlimited staff-less bookings pile onto the same slot — the
     // same defect wearing a NULL. A second index covers this case.
-    await bookSlot('soi-appt-11', { staffId: null });
-    await expect(bookSlot('soi-appt-12', { staffId: null })).rejects.toThrow(/unique|constraint/i);
+    await bookSlot(fx('soi-appt-11'), { staffId: null });
+    await expect(bookSlot(fx('soi-appt-12'), { staffId: null })).rejects.toThrow(/unique|constraint/i);
   });
 
   test('concurrent attempts on the last slot: exactly one wins', async () => {
     // The race the database constraint exists for. A check in the route loses
     // here; the index does not.
     const attempts = Array.from({ length: 8 }, (_, i) =>
-      bookSlot(`soi-race-${i}`, { slot: '20:00' }).then(() => 'ok').catch(() => 'rejected')
+      bookSlot(fx(`soi-race-${i}`), { slot: '20:00' }).then(() => 'ok').catch(() => 'rejected')
     );
 
     const outcomes = await Promise.all(attempts);
@@ -200,7 +201,7 @@ describe('order total verification', () => {
   test('an item with no catalogue row falls back to the stated price', async () => {
     // Services and ad-hoc lines have no catalogue price to check against, and
     // refusing them would break every hybrid cart.
-    const items = [{ id: 'soi-not-a-product', price: 99, quantity: 1 }];
+    const items = [{ id: fx('soi-not-a-product'), price: 99, quantity: 1 }];
     expect(await minimumOrderTotal(SHOP, items)).toBe(99);
   });
 
@@ -208,7 +209,7 @@ describe('order total verification', () => {
     // The lookup is scoped by shop_id. Without that, a cheap product from
     // another shop could be cited to justify a low total here.
     const items = [{ id: PRODUCT, price: 10, quantity: 1 }];
-    const floorElsewhere = await minimumOrderTotal('soi-other-shop', items);
+    const floorElsewhere = await minimumOrderTotal(fx('soi-other-shop'), items);
     expect(floorElsewhere).toBe(10); // unresolved against the wrong shop
     expect(await minimumOrderTotal(SHOP, items)).toBe(250);
   });
@@ -218,13 +219,13 @@ describe('checkout null-safety', () => {
   test('a shop with no category still has a resolvable commission basis', async () => {
     // A category row that has gone — deactivated, merged or deleted — used to
     // throw on `cat.commission_percent` after the order had been written.
-    const orphan = 'soi-shop-nocat';
+    const orphan = fx('soi-shop-nocat');
     await query(
       `INSERT INTO local_shops
          (id, owner_id, category_id, category, name, description, address, coordinate,
           latitude, longitude, is_active)
        VALUES ($1, $2, NULL, 'general-retail', 'SOI No Category', 'Fixture',
-               '2 Test Street, Pune', '18.53,73.87', 18.53, 73.87, 1)`,
+               '2 Test Street, Pune', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
       [orphan, OWNER]
     );
 
@@ -246,7 +247,7 @@ describe('checkout null-safety', () => {
   });
 
   test('a missing shop is a 404 condition, not a dereference', async () => {
-    const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', ['soi-does-not-exist']);
+    const shop = await queryOne('SELECT * FROM local_shops WHERE id = $1', [fx('soi-does-not-exist')]);
     expect(shop).toBeFalsy();
     // The route checks for this before reading shop.category_id.
   });
@@ -362,7 +363,8 @@ describe('POST /shops/register, through the route', () => {
   const jwt = require('jsonwebtoken');
   const { getJwtSecret } = require('../../config/secrets');
 
-  const REGION = 'test-region-0001'; // seeded by jest.globalSetup.js
+  // The suite's own region: the shared SQLite seed does not exist on PostgreSQL.
+  const REGION = fx('soi-region');
 
   const valid = {
     name: 'SOI Route Kirana',
@@ -377,17 +379,23 @@ describe('POST /shops/register, through the route', () => {
 
   const removeRegisteredShops = async () => {
     await query('DELETE FROM shop_qr_codes WHERE shop_id IN (SELECT id FROM local_shops WHERE owner_id = $1)', [OWNER]);
-    await query("DELETE FROM local_shops WHERE owner_id = $1 AND id NOT LIKE 'soi-%'", [OWNER]);
+    await query(`DELETE FROM local_shops WHERE owner_id = $1 AND CAST(id AS TEXT) NOT LIKE '${fxLike('soi')}'`, [OWNER]);
   };
 
   beforeAll(async () => {
+    await query(
+      `INSERT INTO regions (id, name, state, country, latitude, longitude, pincode, is_active)
+       VALUES ($1, 'SOI Region', 'Maharashtra', 'India', 18.53, 73.87, '411099', '1')
+       ON CONFLICT (id) DO NOTHING`,
+      [REGION]
+    );
     await query('UPDATE users SET region_id = $1 WHERE id = $2', [REGION, OWNER]);
 
     app = express();
     app.use(express.json());
     app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
     // eslint-disable-next-line no-unused-vars
-    app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+    app.use(require('../../middleware/error.middleware').errorHandler);
 
     token = jwt.sign({ userId: OWNER }, getJwtSecret(), { expiresIn: '5m' });
   });
@@ -418,7 +426,7 @@ describe('POST /shops/register, through the route', () => {
   });
 
   test('a category that names no row is refused', async () => {
-    const res = await register({ ...valid, category_id: 'soi-no-such-category' });
+    const res = await register({ ...valid, category_id: fx('soi-no-such-category') });
 
     expect(res.status).toBe(400);
     expect(res.body.problems).toEqual([
@@ -438,7 +446,7 @@ describe('POST /shops/register, through the route', () => {
   });
 
   test('a valid payload creates a pending shop in the owner\'s region', async () => {
-    const category = await queryOne('SELECT id, name FROM shop_categories WHERE is_active = true LIMIT 1');
+    const category = await queryOne(`SELECT id, name FROM shop_categories WHERE is_active = '1' LIMIT 1`);
     const res = await register({ ...valid, category_id: category.id });
 
     expect(res.body.error).toBeUndefined();
@@ -456,7 +464,13 @@ describe('POST /shops/register, through the route', () => {
     expect(Number(row.longitude)).toBeCloseTo(valid.longitude);
     // The two NOT NULL columns the INSERT used to leave out.
     expect(row.category).toBe(category.name);
-    expect(row.coordinate).toBe(`POINT(${valid.longitude} ${valid.latitude})`);
+    // SQLite stores the WKT text; PostGIS returns EWKB, so read it back as WKT.
+    const wkt = process.env.USE_SQLITE === 'true'
+      ? row.coordinate
+      : (await queryOne('SELECT ST_AsText(coordinate) AS wkt FROM local_shops WHERE id = $1', [row.id])).wkt;
+    const [lng, lat] = String(wkt).replace(/^POINT\(|\)$/g, '').split(' ').map(Number);
+    expect(lng).toBeCloseTo(valid.longitude, 4);
+    expect(lat).toBeCloseTo(valid.latitude, 4);
 
     const qr = await queryOne('SELECT qr_data FROM shop_qr_codes WHERE shop_id = $1', [res.body.id]);
     expect(qr.qr_data).toContain(res.body.id);
@@ -482,7 +496,7 @@ describe('writing to a shop that is not yours', () => {
 
   const removeWritten = async () => {
     await query('DELETE FROM shop_services WHERE shop_id = $1', [SHOP]);
-    await query("DELETE FROM shop_staff WHERE shop_id = $1 AND id NOT LIKE 'soi-%'", [SHOP]);
+    await query(`DELETE FROM shop_staff WHERE shop_id = $1 AND CAST(id AS TEXT) NOT LIKE '${fxLike('soi')}'`, [SHOP]);
   };
 
   beforeAll(async () => {
@@ -491,7 +505,7 @@ describe('writing to a shop that is not yours', () => {
     app.use(express.json());
     app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
     // eslint-disable-next-line no-unused-vars
-    app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+    app.use(require('../../middleware/error.middleware').errorHandler);
   });
 
   afterAll(removeWritten);
@@ -521,7 +535,7 @@ describe('writing to a shop that is not yours', () => {
   });
 
   test('a shop that does not exist is a 404, not an insert', async () => {
-    const res = await post('/shops/soi-no-such-shop/services', OWNER, { name: 'Ghost service', price: 1 });
+    const res = await post(`/shops/${fx('soi-no-such-shop')}/services`, OWNER, { name: 'Ghost service', price: 1 });
     expect(res.status).toBe(404);
   });
 });

@@ -176,7 +176,7 @@ const getDashboardStats = async (req, res, next) => {
         // platform.
         query('SELECT COUNT(*) AS count FROM local_shops')
           .then((r) => Number((r.rows || r)[0]?.count || 0)),
-        count('SELECT COUNT(*) AS count FROM regions WHERE is_active = true'),
+        count("SELECT COUNT(*) AS count FROM regions WHERE is_active = '1'"),
         count('SELECT COUNT(*) AS count FROM regions'),
         count('SELECT COUNT(*) AS count FROM users'),
         count('SELECT COUNT(*) AS count FROM orders'),
@@ -189,12 +189,34 @@ const getDashboardStats = async (req, res, next) => {
       ]);
     }
 
-    // Financial stats (mocked since tables don't exist yet in Phase 3 schema)
-    const totalRevenue = completedOrders * 1500; // Fake metric for dashboard demo
-    const totalPayouts = completedOrders * 1200; // Fake metric for dashboard demo
-    const totalFranchises = 0;
-    const activeFranchises = 0;
-    const growthVal = '+12.5%';
+    // Financial stats, aggregated from the real tables on both engines.
+    //
+    // These were `completedOrders * 1500` / `* 1200`, zero franchises and a
+    // fixed '+12.5%' growth figure: invented numbers presented on the admin
+    // dashboard as the platform's revenue.
+    const { sqlTimestamp, DAY_MS } = require('../../../utils/sqlTime');
+    const scalar = (sql, params = []) =>
+      query(sql, params).then((r) => Number((r.rows || r)[0]?.value || 0));
+    const DELIVERED = "LOWER(COALESCE(order_status, status, '')) IN ('delivered', 'completed')";
+
+    const [totalRevenue, totalPayouts, totalFranchises, activeFranchises, revenueLast30, revenuePrev30] = await Promise.all([
+      scalar(`SELECT COALESCE(SUM(total_amount), 0) AS value FROM orders WHERE ${DELIVERED}`),
+      scalar(`SELECT COALESCE(SUM(net_payout), 0) AS value FROM shop_payouts
+               WHERE LOWER(COALESCE(payout_status, '')) IN ('paid', 'completed')`),
+      scalar('SELECT COUNT(*) AS value FROM franchise_partners'),
+      scalar("SELECT COUNT(*) AS value FROM franchise_partners WHERE LOWER(COALESCE(status, '')) = 'active'"),
+      scalar(`SELECT COALESCE(SUM(total_amount), 0) AS value FROM orders
+               WHERE ${DELIVERED} AND created_at >= $1`, [sqlTimestamp(-30 * DAY_MS)]),
+      scalar(`SELECT COALESCE(SUM(total_amount), 0) AS value FROM orders
+               WHERE ${DELIVERED} AND created_at >= $1 AND created_at < $2`,
+             [sqlTimestamp(-60 * DAY_MS), sqlTimestamp(-30 * DAY_MS)]),
+    ]);
+
+    // Month-over-month change in delivered revenue; null when there is no
+    // previous month to compare with, rather than an invented percentage.
+    const growthVal = revenuePrev30 > 0
+      ? `${revenueLast30 >= revenuePrev30 ? '+' : ''}${(((revenueLast30 - revenuePrev30) / revenuePrev30) * 100).toFixed(1)}%`
+      : null;
 
     res.json({
       success: true,

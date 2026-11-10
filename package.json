@@ -46,5 +46,16 @@
   },
   "dependencies": {
     "next-sitemap": "^4.2.3"
+  },
+  "overrides": {
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "^1.14.7"
+    },
+    "@tensorflow/tfjs-core": {
+      "node-fetch": "^2.7.0"
+    },
+    "next": {
+      "postcss": "^8.5.32"
+    }
   }
 }

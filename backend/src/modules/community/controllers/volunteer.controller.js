@@ -9,7 +9,15 @@ const postTask = async (req, res, next) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    let finalBounty = Number(bountyCoins) || 0;
+    // Whole, non-negative coins only. `Number(x) || 0` let a negative bounty
+    // through: nothing was escrowed (the debit is gated on > 0) and the
+    // completion payout then moved a negative amount, i.e. took coins from
+    // the volunteer.
+    const MAX_BOUNTY_COINS = 100000;
+    const finalBounty = bountyCoins === undefined || bountyCoins === null || bountyCoins === '' ? 0 : Number(bountyCoins);
+    if (!Number.isInteger(finalBounty) || finalBounty < 0 || finalBounty > MAX_BOUNTY_COINS) {
+      return res.status(400).json({ error: `bountyCoins must be a whole number between 0 and ${MAX_BOUNTY_COINS}` });
+    }
 
     await withTransaction(async (client) => {
       // If Resident is attaching a bounty, deduct from their wallet (escrow) safely

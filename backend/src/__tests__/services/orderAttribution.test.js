@@ -17,40 +17,40 @@
  *    business never chose.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../config/database');
 const svc = require('../../services/territoryResolution.service');
 const attribution = require('../../services/orderAttribution.service');
 
-const T_A = 'oa-territory-a';
-const T_B = 'oa-territory-b';
-const MASTER = 'oa-partner-master';
-const SUB_A = 'oa-partner-sub-a';
-const SUB_B = 'oa-partner-sub-b';
+const T_A = fx('oa-territory-a');
+const T_B = fx('oa-territory-b');
+const MASTER = fx('oa-partner-master');
+const SUB_A = fx('oa-partner-sub-a');
+const SUB_B = fx('oa-partner-sub-b');
 
 let talukaId;
 let masterAssignmentA;
 let masterAssignmentB;
 
 async function cleanup() {
-  await query("DELETE FROM order_territory_attribution WHERE order_id LIKE 'oa-order-%'");
-  await query("DELETE FROM attribution_policies WHERE id LIKE 'oa-policy-%'");
-  await query("DELETE FROM orders WHERE id LIKE 'oa-order-%'");
-  await query("DELETE FROM territory_assignment_log WHERE territory_id LIKE 'oa-territory-%'");
-  await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'oa-territory-%'");
-  await query("DELETE FROM franchise_partners WHERE id LIKE 'oa-partner-%'");
-  await query("DELETE FROM territories WHERE id LIKE 'oa-territory-%'");
-  await query("DELETE FROM users WHERE id LIKE 'oa-user-%'");
-  await query("DELETE FROM location_talukas WHERE id LIKE 'oa-%'");
-  await query("DELETE FROM location_districts WHERE id LIKE 'oa-%'");
-  await query("DELETE FROM location_states WHERE id LIKE 'oa-%'");
+  await query(`DELETE FROM order_territory_attribution WHERE CAST(order_id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM attribution_policies WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM orders WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM territory_assignment_log WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM franchise_partners WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM territories WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM location_talukas WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM location_districts WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM location_states WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
 }
 
 /** Replaces the platform default policy for the duration of one test. */
 async function setPolicy({ pickup, delivery, master = 0, signedOff = true, territoryId = null }) {
-  const id = `oa-policy-${crypto.randomUUID()}`;
+  const id = fx(`oa-policy-${crypto.randomUUID()}`);
   await query(
     `INSERT INTO attribution_policies
        (id, territory_id, pickup_share_percent, delivery_share_percent, master_override_percent,
@@ -79,27 +79,27 @@ beforeAll(async () => {
   if (existing) {
     talukaId = existing.id;
   } else {
-    talukaId = 'oa-taluka';
+    talukaId = fx('oa-taluka');
     await query('INSERT INTO location_states (id, name, code) VALUES ($1, $2, $3)',
-      ['oa-state', 'OA State', 'OAS']);
+      [fx('oa-state'), 'OA State', 'OAS']);
     await query('INSERT INTO location_districts (id, state_id, name) VALUES ($1, $2, $3)',
-      ['oa-district', 'oa-state', 'OA District']);
+      [fx('oa-district'), fx('oa-state'), 'OA District']);
     await query('INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, $3)',
-      [talukaId, 'oa-district', 'OA Taluka']);
+      [talukaId, fx('oa-district'), 'OA Taluka']);
   }
 
   for (const [tid, pin] of [[T_A, '414001'], [T_B, '414002']]) {
     await query(
       `INSERT INTO territories (id, taluka_id, name, pincode, centroid_lat, centroid_lng, is_active)
-       VALUES ($1, $2, $3, $4, 18.53, 73.87, 1)`,
+       VALUES ($1, $2, $3, $4, 18.53, 73.87, '1')`,
       [tid, talukaId, `OA ${pin}`, pin]
     );
   }
 
   const partners = [
-    [MASTER, 'oa-user-master', 'OA Master', '9822000001'],
-    [SUB_A, 'oa-user-sub-a', 'OA Sub A', '9822000002'],
-    [SUB_B, 'oa-user-sub-b', 'OA Sub B', '9822000003'],
+    [MASTER, fx('oa-user-master'), 'OA Master', '9822000001'],
+    [SUB_A, fx('oa-user-sub-a'), 'OA Sub A', '9822000002'],
+    [SUB_B, fx('oa-user-sub-b'), 'OA Sub B', '9822000003'],
   ];
   for (const [pid, uid, name, phone] of partners) {
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)',
@@ -117,9 +117,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await query("DELETE FROM order_territory_attribution WHERE order_id LIKE 'oa-order-%'");
-  await query("DELETE FROM attribution_policies WHERE id LIKE 'oa-policy-%'");
-  await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'oa-territory-%'");
+  await query(`DELETE FROM order_territory_attribution WHERE CAST(order_id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM attribution_policies WHERE CAST(id AS TEXT) LIKE '${fxLike('oa')}'`);
+  await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('oa')}'`);
   svc.invalidate();
 
   // A master over each territory, which the sub-franchise tests then nest under.
@@ -392,16 +392,16 @@ describe('the ledger', () => {
   async function makeOrder(id) {
     await query(
       `INSERT INTO orders (id, total_amount, delivery_fee, payment_method, delivery_address, delivery_coordinate)
-       VALUES ($1, 500, 30, 'cod', 'Test address', '18.53,73.87')`,
+       VALUES ($1, 500, 30, 'cod', 'Test address', 'POINT(73.87 18.53)')`,
       [id]
     );
   }
 
   test('records one row per side, naming the policy applied', async () => {
-    await makeOrder('oa-order-1');
+    await makeOrder(fx('oa-order-1'));
 
     const result = await attribution.attributeOrder({
-      orderId: 'oa-order-1',
+      orderId: fx('oa-order-1'),
       pickupPoint: { pincode: '414001' },
       deliveryPoint: { pincode: '414002' },
       commissionBase: 100,
@@ -409,7 +409,7 @@ describe('the ledger', () => {
 
     expect(result.recorded).toBe(true);
 
-    const rows = await attribution.attributionFor('oa-order-1');
+    const rows = await attribution.attributionFor(fx('oa-order-1'));
     expect(rows).toHaveLength(2);
     // The policy is recorded so "why was this split like that" has an answer
     // that does not depend on today's policy.
@@ -417,10 +417,10 @@ describe('the ledger', () => {
   });
 
   test('recomputing corrects the ledger rather than appending a second split', async () => {
-    await makeOrder('oa-order-2');
+    await makeOrder(fx('oa-order-2'));
 
     const args = {
-      orderId: 'oa-order-2',
+      orderId: fx('oa-order-2'),
       pickupPoint: { pincode: '414001' },
       deliveryPoint: { pincode: '414002' },
       commissionBase: 100,
@@ -429,7 +429,7 @@ describe('the ledger', () => {
     await attribution.attributeOrder(args);
     await attribution.attributeOrder({ ...args, commissionBase: 200 });
 
-    const rows = await attribution.attributionFor('oa-order-2');
+    const rows = await attribution.attributionFor(fx('oa-order-2'));
     expect(rows).toHaveLength(2);
 
     const total = rows.reduce((acc, r) => acc + Number(r.commission_amount), 0);
@@ -437,9 +437,9 @@ describe('the ledger', () => {
   });
 
   test('earnings read from the ledger, so a policy change does not restate history', async () => {
-    await makeOrder('oa-order-3');
+    await makeOrder(fx('oa-order-3'));
     await attribution.attributeOrder({
-      orderId: 'oa-order-3',
+      orderId: fx('oa-order-3'),
       pickupPoint: { pincode: '414001' },
       deliveryPoint: { pincode: '414002' },
       commissionBase: 100,

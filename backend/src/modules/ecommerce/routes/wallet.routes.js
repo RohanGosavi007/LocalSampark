@@ -157,11 +157,24 @@ router.post('/topup', authenticate, async (req, res, next) => {
 });
 
 // POST unlock high-ticket lead (Pay-Per-Lead Engine)
+// The unlock fee is set by the server. It used to be read from the request
+// body (`fee_amount`, default 49), so any caller could unlock a lead for ₹0.01;
+// a positivity check on that value did not change who chose the price.
+const LEAD_UNLOCK_FEE_RUPEES = 49;
+const LEAD_TYPE_RE = /^[a-z_]{1,32}$/;
+
 router.post('/unlock-lead', authenticate, async (req, res, next) => {
     try {
-        const { lead_id, lead_type = 'job', fee_amount = 49 } = req.body;
-        if (!lead_id) {
+        const { lead_id, lead_type = 'job' } = req.body || {};
+        const fee_amount = LEAD_UNLOCK_FEE_RUPEES;
+        if (!lead_id || (typeof lead_id !== 'string' && typeof lead_id !== 'number')) {
             return res.status(400).json({ error: 'lead_id is required' });
+        }
+        if (typeof lead_type !== 'string' || !LEAD_TYPE_RE.test(lead_type)) {
+            return res.status(400).json({ error: 'lead_type must be a short lowercase identifier' });
+        }
+        if (req.body && req.body.fee_amount !== undefined && Number(req.body.fee_amount) !== fee_amount) {
+            return res.status(400).json({ error: `The unlock fee is ₹${fee_amount}; a different amount cannot be supplied` });
         }
 
         // Verify lead exists and get details
@@ -178,7 +191,7 @@ router.post('/unlock-lead', authenticate, async (req, res, next) => {
         const existingUnlock = await query('SELECT id FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1) AND purpose LIKE $2',
             [req.user.id, `%Lead Unlock Fee (${lead_type.toUpperCase()} #${lead_id})%`]
         );
-        if (existingUnlock.rows && existingUnlock.rows.length > 0) {
+        if ((existingUnlock.rows || existingUnlock || []).length > 0) {
             return res.json({
                 success: true,
                 message: 'Lead already unlocked previously.',

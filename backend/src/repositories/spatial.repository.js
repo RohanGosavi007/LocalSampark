@@ -75,7 +75,7 @@ class SpatialRepository {
       JOIN location_states ls ON ld.state_id = ls.id
       WHERE t.is_active = '1'
         AND t.boundary_geojson IS NOT NULL
-        AND COALESCE(t.boundary_verified, 0) = 1
+        AND t.boundary_verified = '1'
     `);
 
     const territories = result.rows || result;
@@ -181,7 +181,7 @@ class SpatialRepository {
       JOIN location_districts ld ON lt.district_id = ld.id
       JOIN location_states ls ON ld.state_id = ls.id
       WHERE t.is_active = '1'
-        AND COALESCE(t.centroid_verified, 0) = 1
+        AND t.centroid_verified = '1'
     `);
 
     const territories = result.rows || result;
@@ -239,7 +239,7 @@ class SpatialRepository {
       JOIN location_talukas lt ON t.taluka_id = lt.id
       JOIN location_districts ld ON lt.district_id = ld.id
       WHERE t.is_active = '1'
-        AND COALESCE(t.centroid_verified, 0) = 1
+        AND t.centroid_verified = '1'
     `);
 
     const territories = result.rows || result;
@@ -348,7 +348,7 @@ class SpatialRepository {
     // territory or asked us to find it.
     const territory = await queryOne(
       `SELECT boundary_geojson FROM territories
-        WHERE id = $1 AND COALESCE(boundary_verified, 0) = 1`,
+        WHERE id = $1 AND boundary_verified = '1'`,
       [territoryId]
     );
 

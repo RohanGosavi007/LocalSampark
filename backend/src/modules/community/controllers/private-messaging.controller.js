@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const sendMessage = async (req, res, next) => {
     try {
         const senderId = req.user.id;
-        const { receiverId, messageText, societyId } = req.body;
+        const { receiverId, messageText, societyId } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         
                 if (!receiverId || !messageText) {
             return res.status(400).json({ error: 'Receiver ID and message text are required' });

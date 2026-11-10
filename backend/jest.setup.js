@@ -41,7 +41,7 @@ if (usePg) {
   }
 }
 
-if (!usePg) {
+if (true) { // Always prepare worker SQLite DB so suites that set USE_SQLITE='true' never touch localsampark.db
   // One database per jest worker.
   //
   // Jest runs suites in parallel across workers, and they all pointed at the

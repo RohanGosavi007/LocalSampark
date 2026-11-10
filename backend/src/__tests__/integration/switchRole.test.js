@@ -7,17 +7,17 @@
  * super administrator.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query, queryOne } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const CITIZEN = 'swr-citizen';
-const OWNER = 'swr-owner';
-const STAFF = 'swr-staff';
+const CITIZEN = fx('swr-citizen');
+const OWNER = fx('swr-owner');
+const STAFF = fx('swr-staff');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 const roleOf = async (id) => (await queryOne('SELECT role FROM users WHERE id = $1', [id])).role;
@@ -25,8 +25,8 @@ const roleOf = async (id) => (await queryOne('SELECT role FROM users WHERE id = 
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM local_shops WHERE id = 'swr-shop'");
-  await query("DELETE FROM users WHERE id LIKE 'swr-%'");
+  await query(`DELETE FROM local_shops WHERE id = '${fx('swr-shop')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('swr')}'`);
 }
 
 beforeAll(async () => {
@@ -36,7 +36,7 @@ beforeAll(async () => {
   }
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude)
-     VALUES ('swr-shop', $1, 'SWR Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87)`,
+     VALUES ('${fx('swr-shop')}', $1, 'SWR Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87)`,
     [OWNER]
   );
 
@@ -44,7 +44,7 @@ beforeAll(async () => {
   app.use(express.json());
   app.use('/auth', require('../../modules/core/routes/auth.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);

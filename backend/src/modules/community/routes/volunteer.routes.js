@@ -29,7 +29,7 @@ const TASK_SELECT = `
            COALESCE(u.full_name, 'Resident') AS poster_name,
            COALESCE(u.role, 'CUSTOMER') AS poster_role
       FROM volunteer_tasks t
-      LEFT JOIN users u ON u.id = CAST(t.poster_id AS TEXT)`;
+      LEFT JOIN users u ON CAST(u.id AS TEXT) = CAST(t.poster_id AS TEXT)`;
 
 // Completing this many tasks earns the "Community Hero" badge the screen
 // celebrates when data.badgeEarned comes back true.
@@ -100,8 +100,10 @@ router.post('/:id/volunteer', authenticate, async (req, res, next) => {
         const claimed = await query(
             `UPDATE volunteer_tasks
                 SET status = 'claimed', volunteer_id = $1
-              WHERE id = $2 AND status = 'open' AND CAST(poster_id AS TEXT) <> CAST($1 AS TEXT)`,
-            [req.user.id, req.params.id]
+              WHERE id = $2 AND status = 'open' AND CAST(poster_id AS TEXT) <> CAST($3 AS TEXT)`,
+            // $3 repeats the volunteer: PostgreSQL deduces one type per
+            // placeholder, and volunteer_id (uuid) cannot share one with a cast.
+            [req.user.id, req.params.id, String(req.user.id)]
         );
 
         if (!claimed.rowCount) {
@@ -231,8 +233,8 @@ router.post('/register', authenticate, async (req, res, next) => {
         }
         const claimed = await query(
                         `UPDATE volunteer_tasks SET status = 'claimed', volunteer_id = $1
-              WHERE id = $2 AND status = 'open' AND CAST(poster_id AS TEXT) <> CAST($1 AS TEXT)`,
-            [req.user.id, taskId]
+              WHERE id = $2 AND status = 'open' AND CAST(poster_id AS TEXT) <> CAST($3 AS TEXT)`,
+            [req.user.id, taskId, String(req.user.id)]
         );
         if (!claimed.rowCount) {
             return res.status(409).json({ success: false, error: 'This task has already been claimed' });

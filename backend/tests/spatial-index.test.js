@@ -1,4 +1,8 @@
 /**
+ * @engine sqlite-only — tests SQLite's R*Tree spatial index triggers (PostgreSQL uses a PostGIS GiST index).
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+/**
  * Spatial dual representation.
  *
  * latitude/longitude are the writable source of truth on both engines; the
@@ -14,6 +18,7 @@
  * These run against the real database: a trigger that does not fire is exactly
  * the failure being guarded against, and a mock cannot show that.
  */
+process.env.USE_SQLITE = 'true';
 const db = require('../src/config/database');
 const crypto = require('crypto');
 

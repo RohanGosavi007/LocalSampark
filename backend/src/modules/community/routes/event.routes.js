@@ -132,7 +132,7 @@ router.get('/pending', authenticate, async (req, res, next) => {
       `SELECT e.*, u.full_name AS organizer_name
          FROM events e
          LEFT JOIN users u ON u.id = e.organizer_id
-        WHERE COALESCE(e.is_approved, 0) = 0
+        WHERE (e.is_approved = '0' OR e.is_approved IS NULL)
         ORDER BY e.created_at DESC`
     );
     res.json({ success: true, data: events.rows || events || [] });

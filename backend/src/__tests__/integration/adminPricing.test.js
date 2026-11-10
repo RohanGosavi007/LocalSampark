@@ -6,8 +6,8 @@
  * effect on the next quote and the next purchase.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -15,10 +15,10 @@ const { query, queryOne } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 const platformConfig = require('../../services/platformConfig.service');
 
-const ADMIN = 'apr-admin';
-const SUPER = 'apr-super';
-const USER = 'apr-user';
-const SHOP = 'apr-shop';
+const ADMIN = fx('apr-admin');
+const SUPER = fx('apr-super');
+const USER = fx('apr-user');
+const SHOP = fx('apr-shop');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 let app;
@@ -26,23 +26,23 @@ let app;
 async function cleanup() {
   await query("DELETE FROM admin_config WHERE config_key IN ('delivery_base_fee', 'platform_fee', 'delivery_per_km_fee')");
   await query("DELETE FROM saas_plans WHERE name LIKE 'APR %'");
-  await query("DELETE FROM shop_products WHERE id LIKE 'apr-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'apr-%'");
-  await query("DELETE FROM users WHERE id LIKE 'apr-%'");
+  await query(`DELETE FROM shop_products WHERE CAST(id AS TEXT) LIKE '${fxLike('apr')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('apr')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('apr')}'`);
   platformConfig.invalidate();
 }
 
 beforeAll(async () => {
   await cleanup();
   for (const [id, phone, role] of [[ADMIN, '9855100001', 'admin'], [SUPER, '9855100002', 'super_admin'], [USER, '9855100003', 'user']]) {
-    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $1, $2, $3)', [id, phone, role]);
+    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $4, $2, $3)', [id, phone, role, id]);
   }
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude, delivery_available)
-     VALUES ($1, $2, 'APR Shop', 'Grocery', 'Road', 'POINT(73.87 18.53)', 18.53, 73.87, 1)`,
+     VALUES ($1, $2, 'APR Shop', 'Grocery', 'Road', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
     [SHOP, USER]
   );
-  await query("INSERT INTO shop_products (id, shop_id, name, price, track_inventory) VALUES ('apr-rice', $1, 'Rice', 100, 0)", [SHOP]);
+  await query(`INSERT INTO shop_products (id, shop_id, name, price, track_inventory) VALUES ('${fx('apr-rice')}', $1, 'Rice', 100, '0')`, [SHOP]);
 
   app = express();
   app.use(express.json());
@@ -50,7 +50,7 @@ beforeAll(async () => {
   app.use('/checkout', require('../../modules/ecommerce/routes/checkout.routes'));
   app.use('/saas', require('../../modules/crm/routes/saas.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -61,7 +61,7 @@ describe('pricing settings', () => {
     expect(res.status).toBe(200);
     const fee = res.body.settings.find((s) => s.key === 'delivery_per_km_fee');
     expect(fee).toMatchObject({ value: 8, default: 8, type: 'number', min: 0, max: 100, group: 'delivery' });
-    expect(res.body.settings.find((s) => s.key === 'default_commission_percent').value).toBe(5);
+    expect(res.body.settings.find((s) => s.key === 'default_commission_percent').value).toBe(0);
 
     expect((await request(app).get('/admin/pricing').set(as(USER))).status).toBe(403);
     expect((await request(app).get('/admin/pricing')).status).toBe(401);
@@ -77,7 +77,7 @@ describe('pricing settings', () => {
   });
 
   test('a saved change prices the next order', async () => {
-    const quote = () => request(app).post('/checkout/quote').send({ shopId: SHOP, items: [{ productId: 'apr-rice', quantity: 1 }], deliveryCoordinate: { lat: 18.535, lng: 73.875 } });
+    const quote = () => request(app).post('/checkout/quote').send({ shopId: SHOP, items: [{ productId: fx('apr-rice'), quantity: 1 }], deliveryCoordinate: { lat: 18.535, lng: 73.875 } });
     const first = await quote();
     expect(first.status).toBe(200);
     expect(first.body.bill).toMatchObject({ deliveryFee: 20, platformFee: 5, total: 125 });

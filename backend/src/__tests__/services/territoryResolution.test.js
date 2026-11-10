@@ -20,8 +20,8 @@
  *     filter is one character in a query and every row on the platform.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../config/database');
 const svc = require('../../services/territoryResolution.service');
@@ -71,26 +71,26 @@ const OVERLAPPING_SQUARE = {
   ]],
 };
 
-const T_VERIFIED = 'tr-test-territory-verified';
-const T_ADJACENT = 'tr-test-territory-adjacent';
-const T_UNVERIFIED = 'tr-test-territory-unverified';
-const PARTNER_A = 'tr-test-partner-a';
-const PARTNER_B = 'tr-test-partner-b';
-const USER_A = 'tr-test-user-a';
-const USER_B = 'tr-test-user-b';
+const T_VERIFIED = fx('tr-test-territory-verified');
+const T_ADJACENT = fx('tr-test-territory-adjacent');
+const T_UNVERIFIED = fx('tr-test-territory-unverified');
+const PARTNER_A = fx('tr-test-partner-a');
+const PARTNER_B = fx('tr-test-partner-b');
+const USER_A = fx('tr-test-user-a');
+const USER_B = fx('tr-test-user-b');
 
 let talukaId = null;
 
 async function cleanup() {
-  await query("DELETE FROM territory_assignment_log WHERE territory_id LIKE 'tr-test-%'");
-  await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+  await query(`DELETE FROM territory_assignment_log WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
+  await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
   await query("DELETE FROM territory_coverage_gaps WHERE pincode IN ('414001','999999','560001')");
-  await query("DELETE FROM franchise_partners WHERE id LIKE 'tr-test-%'");
-  await query("DELETE FROM territories WHERE id LIKE 'tr-test-%'");
-  await query("DELETE FROM users WHERE id LIKE 'tr-test-user-%'");
-  await query("DELETE FROM location_talukas WHERE id LIKE 'tr-test-%'");
-  await query("DELETE FROM location_districts WHERE id LIKE 'tr-test-%'");
-  await query("DELETE FROM location_states WHERE id LIKE 'tr-test-%'");
+  await query(`DELETE FROM franchise_partners WHERE CAST(id AS TEXT) LIKE '${fxLike('tr')}'`);
+  await query(`DELETE FROM territories WHERE CAST(id AS TEXT) LIKE '${fxLike('tr')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('tr')}'`);
+  await query(`DELETE FROM location_talukas WHERE CAST(id AS TEXT) LIKE '${fxLike('tr')}'`);
+  await query(`DELETE FROM location_districts WHERE CAST(id AS TEXT) LIKE '${fxLike('tr')}'`);
+  await query(`DELETE FROM location_states WHERE CAST(id AS TEXT) LIKE '${fxLike('tr')}'`);
 }
 
 beforeAll(async () => {
@@ -105,18 +105,18 @@ beforeAll(async () => {
   if (existing) {
     talukaId = existing.id;
   } else {
-    talukaId = 'tr-test-taluka';
+    talukaId = fx('tr-test-taluka');
     await query(
       `INSERT INTO location_states (id, name, code) VALUES ($1, $2, $3)`,
-      ['tr-test-state', 'TR Test State', 'TRT']
+      [fx('tr-test-state'), 'TR Test State', 'TRT']
     );
     await query(
       `INSERT INTO location_districts (id, state_id, name) VALUES ($1, $2, $3)`,
-      ['tr-test-district', 'tr-test-state', 'TR Test District']
+      [fx('tr-test-district'), fx('tr-test-state'), 'TR Test District']
     );
     await query(
       `INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, $3)`,
-      [talukaId, 'tr-test-district', 'TR Test Taluka']
+      [talukaId, fx('tr-test-district'), 'TR Test Taluka']
     );
   }
 
@@ -125,7 +125,7 @@ beforeAll(async () => {
       `INSERT INTO territories
          (id, taluka_id, name, pincode, centroid_lat, centroid_lng, boundary_geojson,
           radius_km, is_active, centroid_verified, boundary_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 5, 1, 0, $8)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 5, '1', '0', $8)`,
       [id, talukaId, name, pincode, 18.53, 73.87, JSON.stringify(boundary), verified]
     );
   };
@@ -137,8 +137,8 @@ beforeAll(async () => {
   for (const [userId, partnerId, n] of [[USER_A, PARTNER_A, 1], [USER_B, PARTNER_B, 2]]) {
     await query(
       `INSERT INTO users (id, phone_number, phone, full_name, role, is_active)
-       VALUES ($1, $2, $2, $3, 'franchise_owner', 1)`,
-      [userId, `+9198000000${n}`, `TR Test Partner ${n}`]
+       VALUES ($1, $2, $4, $3, 'franchise_owner', '1')`,
+      [userId, `+9198000000${n}`, `TR Test Partner ${n}`, `+9198000000${n}`]
     );
     await query(
       `INSERT INTO franchise_partners (id, user_id, territory_name, territory_pincode, status, commission_rate)
@@ -236,7 +236,8 @@ describe('the boundary quarantine', () => {
       path.join(__dirname, '..', '..', 'repositories', 'spatial.repository.js'),
       'utf8'
     );
-    const matches = src.match(/COALESCE\(\s*t?\.?boundary_verified,\s*0\s*\)\s*=\s*1/g) || [];
+    // The flag may be written as 0/1 or as the engine-neutral '0'/'1'.
+    const matches = src.match(/COALESCE\(\s*t?\.?boundary_verified,\s*'?0'?\s*\)\s*=\s*'?1'?|\b(?:t\.)?boundary_verified = '1'/g) || [];
     expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -360,8 +361,8 @@ describe('overlap validation', () => {
 
 describe('franchise exclusivity', () => {
   beforeEach(async () => {
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
-    await query("DELETE FROM territory_assignment_log WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
+    await query(`DELETE FROM territory_assignment_log WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
   });
 
   test('a territory can be assigned to a franchise', async () => {
@@ -520,7 +521,7 @@ describe('franchise scoping', () => {
   });
 
   test('a partner is scoped to the pincodes they actually hold', async () => {
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
     await svc.assignTerritory({ franchisePartnerId: PARTNER_A, territoryId: T_VERIFIED });
 
     const req = requestFor({});
@@ -533,7 +534,7 @@ describe('franchise scoping', () => {
   test('a partner with no territories is denied everything, not granted everything', async () => {
     // The failure that leaks the whole platform: treating an empty scope as
     // "no restriction".
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
 
     const req = requestFor({});
     await scope.attachFranchiseScope(req, {}, () => {});
@@ -543,7 +544,7 @@ describe('franchise scoping', () => {
   });
 
   test('scopeClause numbers its parameters from the given offset', async () => {
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
     await svc.assignTerritory({ franchisePartnerId: PARTNER_A, territoryId: T_VERIFIED });
 
     const req = requestFor({});
@@ -556,7 +557,7 @@ describe('franchise scoping', () => {
 
   test('cross-franchise access is refused', async () => {
     // Partner A holds 411001. Partner B's territory must be invisible to them.
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
     await svc.assignTerritory({ franchisePartnerId: PARTNER_A, territoryId: T_VERIFIED });
     await svc.assignTerritory({ franchisePartnerId: PARTNER_B, territoryId: T_ADJACENT });
 
@@ -568,7 +569,7 @@ describe('franchise scoping', () => {
   });
 
   test('coverage checks normalise before comparing', async () => {
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
     await svc.assignTerritory({ franchisePartnerId: PARTNER_A, territoryId: T_VERIFIED });
 
     const req = requestFor({});
@@ -581,7 +582,7 @@ describe('franchise scoping', () => {
   });
 
   test('a non-partner account gets an empty scope with a stated reason', async () => {
-    const req = { user: { id: 'tr-test-not-a-partner', role: 'user' } };
+    const req = { user: { id: fx('tr-test-not-a-partner'), role: 'user' } };
     await scope.attachFranchiseScope(req, {}, () => {});
     expect(req.franchiseScope.pincodes).toEqual([]);
     expect(req.franchiseScope.reason).toBe('not_a_franchise_partner');
@@ -595,7 +596,7 @@ describe('franchise scoping', () => {
   });
 
   test('requireFranchise rejects a partner with no territories', async () => {
-    await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'tr-test-%'");
+    await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('tr')}'`);
     const req = requestFor({});
     await scope.attachFranchiseScope(req, {}, () => {});
 

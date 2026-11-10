@@ -1,4 +1,9 @@
 /**
+ * @engine sqlite-only — tests the SQLite fixture helper setup/testDb.js, which issues SQLite DDL.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+process.env.USE_SQLITE = 'true';
+/**
  * Test DB Setup Verification Tests
  * Verifies that the test database lifecycle, seeding, and cleanup functions work properly.
  */

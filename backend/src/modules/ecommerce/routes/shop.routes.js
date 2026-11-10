@@ -160,6 +160,8 @@ const publicShop = (row) => {
   if (!row) return row;
   const out = {};
   for (const key of PUBLIC_SHOP_COLUMNS) if (row[key] !== undefined) out[key] = row[key];
+  // local_shops stores the number as `phone`; clients read `phone_number`.
+  if (out.phone_number === undefined && row.phone !== undefined) out.phone_number = row.phone;
   return out;
 };
 const truthyFlag = (v) => v === 1 || v === true || v === '1';
@@ -533,7 +535,7 @@ router.get('/:id/products', async (req, res, next) => {
       const category = shopRow ? shopRow.slug : 'default';
       return res.json(generateMockProducts(category));
     }
-    const products = await query('SELECT * FROM shop_products WHERE shop_id = $1 AND is_available = true', [req.params.id]);
+    const products = await query(`SELECT * FROM shop_products WHERE shop_id = $1 AND is_available = '1'`, [req.params.id]);
     res.json(products.rows || products);
   } catch (error) {
     next(error);
@@ -1394,9 +1396,10 @@ router.get('/:id/offers', async (req, res, next) => {
     const { id } = req.params;
     const result = await query(`SELECT id, title, description, discount_percentage, valid_until, is_active, created_at
        FROM shop_offers
-       WHERE shop_id = $1 AND is_active = '1' AND (valid_until IS NULL OR valid_until > NOW())
+       WHERE shop_id = $1 AND is_active = '1' AND (valid_until IS NULL OR valid_until > $2)
        ORDER BY created_at DESC`,
-      [id]
+      // valid_until is TEXT on PostgreSQL: compared with now as a value, not NOW().
+      [id, require('../../../utils/sqlTime').sqlTimestamp()]
     );
     const offers = result.rows || result || [];
     res.json({ success: true, data: offers });
@@ -1648,6 +1651,12 @@ router.put('/:id/orders/:orderId/assign-rider', authenticate, async (req, res, n
     );
     if (!order) return res.status(404).json({ error: 'Order not found for this shop' });
 
+    // orders.assigned_agent_id references users(id) on both engines, so the
+    // rider must be an existing user; an unknown id would otherwise surface as a
+    // foreign-key 500 after order_tracking had already been written.
+    const rider = await queryOne('SELECT id FROM users WHERE id = $1', [riderId]);
+    if (!rider) return res.status(404).json({ error: 'Rider not found' });
+
     // order_tracking holds one row per order, created at checkout.
     await query(
       `INSERT INTO order_tracking (order_id, runner_id)
@@ -1657,8 +1666,8 @@ router.put('/:id/orders/:orderId/assign-rider', authenticate, async (req, res, n
     );
 
     await query(
-      `UPDATE orders SET order_status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      [req.params.orderId]
+      `UPDATE orders SET order_status = 'assigned', assigned_agent_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [req.params.orderId, riderId]
     );
 
     const io = req.app.get('io');
@@ -1769,12 +1778,12 @@ router.put('/:id/loyalty/program', authenticate, async (req, res, next) => {
 router.get('/:id/settings', authenticate, async (req, res, next) => {
   try {
     const shop = await queryOne(
-      `SELECT id, owner_id, description, address, phone_number, opening_hours,
+      `SELECT id, owner_id, description, address, phone AS phone_number, opening_hours,
               delivery_available AS is_delivery_available,
               pickup_available   AS is_pickup_available,
               dine_in_available, self_delivery_available, accepts_walkin,
               busy_status, estimated_delivery_time,
-              COALESCE(is_active, 1) AS is_live
+              CASE WHEN is_active = '0' THEN 0 ELSE 1 END AS is_live
          FROM local_shops
         WHERE id = $1`,
       [req.params.id]
@@ -1995,7 +2004,7 @@ router.get('/:shopId/products/low-stock', authenticate, async (req, res, next) =
          FROM shop_products
         WHERE shop_id = $1
           AND inventory_count <= $2
-          AND (is_active = 1 OR is_active IS NULL)
+          AND (is_active = '1' OR is_active IS NULL)
         ORDER BY inventory_count ASC`,
       [shopId, threshold]
     );
@@ -2035,7 +2044,7 @@ router.get('/:shopId/products/low-stock', authenticate, async (req, res, next) =
 router.get('/:id', async (req, res, next) => {
   try {
     const shop = await queryOne(
-      "SELECT * FROM local_shops WHERE CAST(id AS TEXT) = $1 AND (is_active = true OR is_active IS NULL)",
+      "SELECT * FROM local_shops WHERE CAST(id AS TEXT) = $1 AND (is_active = '1' OR is_active IS NULL)",
       [String(req.params.id)]
     );
     if (!shop) return res.status(404).json({ error: 'Shop not found' });

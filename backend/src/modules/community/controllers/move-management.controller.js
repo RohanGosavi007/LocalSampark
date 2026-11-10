@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const requestMovePass = async (req, res, next) => {
     try {
         const residentId = req.user.id;
-        const { societyId, moveType, moveDate, moversCompany, moversVehicleNumber, flatNumber } = req.body;
+        const { societyId, moveType, moveDate, moversCompany, moversVehicleNumber, flatNumber } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // moveType: 'move_in' or 'move_out'
 
         if (!societyId || !flatNumber || !moveType || !moveDate) {
@@ -63,7 +63,7 @@ const adminApproveMovePass = async (req, res, next) => {
 const initiatePoliceVerification = async (req, res, next) => {
     try {
         const residentId = req.user.id;
-        const { societyId, flatNumber, personType, personName, personPhone, idProofType, idProofNumber, idProofUrl } = req.body;
+        const { societyId, flatNumber, personType, personName, personPhone, idProofType, idProofNumber, idProofUrl } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // personType: 'tenant', 'staff'
 
         if (!societyId || !personName || !idProofUrl) {

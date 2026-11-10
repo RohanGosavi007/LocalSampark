@@ -3,16 +3,16 @@
  * when the owner confirms the item is back — not when the renter says so.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query, queryOne } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const OWNER = 'eqp-owner';
-const RENTER = 'eqp-renter';
+const OWNER = fx('eqp-owner');
+const RENTER = fx('eqp-renter');
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 const wallet = async (userId) => Number((await queryOne('SELECT balance FROM wallets WHERE user_id = $1', [userId]))?.balance || 0);
 
@@ -20,18 +20,18 @@ let app;
 let listingId;
 
 async function cleanup() {
-  await query("DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id LIKE 'eqp-%')");
-  await query("DELETE FROM wallets WHERE user_id LIKE 'eqp-%'");
-  await query("DELETE FROM equipment_rentals WHERE renter_id LIKE 'eqp-%'");
+  await query(`DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('eqp')}')`);
+  await query(`DELETE FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('eqp')}'`);
+  await query(`DELETE FROM equipment_rentals WHERE CAST(renter_id AS TEXT) LIKE '${fxLike('eqp')}'`);
   await query("DELETE FROM equipment_listings WHERE CAST(owner_id AS TEXT) LIKE 'eqp-%'");
-  await query("DELETE FROM users WHERE id LIKE 'eqp-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('eqp')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'Owner', '9820300001', 'user')", [OWNER]);
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'Renter', '9820300002', 'user')", [RENTER]);
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('eqp-w-renter', $1, 1000)", [RENTER]);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('eqp-w-renter')}', $1, 1000)`, [RENTER]);
   const listing = await queryOne(
     `INSERT INTO equipment_listings (owner_id, item_name, category, description, daily_price, security_deposit, status)
      VALUES ($1, 'Drill', 'Tools', 'Cordless', 100, 500, 'available') RETURNING id`,
@@ -43,7 +43,7 @@ beforeAll(async () => {
   app.use(express.json());
   app.use('/equipment', require('../../modules/services/routes/equipment.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);

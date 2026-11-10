@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const createTopic = async (req, res, next) => {
     try {
         const authorId = req.user.id;
-        const { societyId, title, content, category } = req.body;
+        const { societyId, title, content, category } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
 
         const id = uuidv4();
         await query(`INSERT INTO society_forum_topics 

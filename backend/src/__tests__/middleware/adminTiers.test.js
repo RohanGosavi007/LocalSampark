@@ -8,8 +8,8 @@
  * grant lists.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -22,20 +22,20 @@ const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSe
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM admin_roles WHERE user_id LIKE 'tier-%'");
-  await query("DELETE FROM users WHERE id LIKE 'tier-%'");
+  await query(`DELETE FROM admin_roles WHERE CAST(user_id AS TEXT) LIKE '${fxLike('tier')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('tier')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
   for (const [id, phone, role] of [
-    ['tier-admin', '9850600001', 'admin'], ['tier-super', '9850600002', 'super_admin'],
-    ['tier-mod', '9850600003', 'user'], ['tier-finance', '9850600004', 'user'], ['tier-user', '9850600005', 'user'],
+    [fx('tier-admin'), '9850600001', 'admin'], [fx('tier-super'), '9850600002', 'super_admin'],
+    [fx('tier-mod'), '9850600003', 'user'], [fx('tier-finance'), '9850600004', 'user'], [fx('tier-user'), '9850600005', 'user'],
   ]) {
-    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $1, $2, $3)', [id, phone, role]);
+    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $4, $2, $3)', [id, phone, role, id]);
   }
-  await query("INSERT INTO admin_roles (id, user_id, role) VALUES ('tier-g1', 'tier-mod', 'moderator')");
-  await query("INSERT INTO admin_roles (id, user_id, role, permissions) VALUES ('tier-g2', 'tier-finance', 'finance', '{\"finance\": [\"read\"]}')");
+  await query(`INSERT INTO admin_roles (id, user_id, role) VALUES ('${fx('tier-g1')}', '${fx('tier-mod')}', 'moderator')`);
+  await query(`INSERT INTO admin_roles (id, user_id, role, permissions) VALUES ('${fx('tier-g2')}', '${fx('tier-finance')}', 'finance', '{"finance": ["read"]}')`);
 
   app = express();
   app.get('/admin-only', authenticate, requireAdmin, (req, res) => res.json({ ok: true }));
@@ -49,24 +49,24 @@ afterAll(cleanup);
 const status = async (path, who) => (await request(app).get(path).set(as(who))).status;
 
 test('administrators are admins; a moderator grant is not', async () => {
-  expect(await status('/admin-only', 'tier-admin')).toBe(200);
-  expect(await status('/admin-only', 'tier-super')).toBe(200);
-  expect(await status('/admin-only', 'tier-mod')).toBe(403);
-  expect(await status('/admin-only', 'tier-finance')).toBe(403);
-  expect(await status('/admin-only', 'tier-user')).toBe(403);
+  expect(await status('/admin-only', fx('tier-admin'))).toBe(200);
+  expect(await status('/admin-only', fx('tier-super'))).toBe(200);
+  expect(await status('/admin-only', fx('tier-mod'))).toBe(403);
+  expect(await status('/admin-only', fx('tier-finance'))).toBe(403);
+  expect(await status('/admin-only', fx('tier-user'))).toBe(403);
 });
 
 test('only a super admin passes the super-admin gate', async () => {
-  expect(await status('/super-only', 'tier-super')).toBe(200);
-  expect(await status('/super-only', 'tier-admin')).toBe(403);
+  expect(await status('/super-only', fx('tier-super'))).toBe(200);
+  expect(await status('/super-only', fx('tier-admin'))).toBe(403);
 });
 
 test('scoped staff can do exactly what their grant lists', async () => {
-  expect(await status('/finance-read', 'tier-finance')).toBe(200);
-  expect(await status('/finance-write', 'tier-finance')).toBe(403);
+  expect(await status('/finance-read', fx('tier-finance'))).toBe(200);
+  expect(await status('/finance-write', fx('tier-finance'))).toBe(403);
   // A grant with no permissions has none.
-  expect(await status('/finance-read', 'tier-mod')).toBe(403);
-  expect(await status('/finance-read', 'tier-user')).toBe(403);
+  expect(await status('/finance-read', fx('tier-mod'))).toBe(403);
+  expect(await status('/finance-read', fx('tier-user'))).toBe(403);
   // Administrators keep everything.
-  expect(await status('/finance-write', 'tier-admin')).toBe(200);
+  expect(await status('/finance-write', fx('tier-admin'))).toBe(200);
 });

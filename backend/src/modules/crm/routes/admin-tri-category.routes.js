@@ -97,9 +97,9 @@ router.get('/marketplace/escrows', authenticate, requireAdmin, async (req, res, 
              s.full_name as seller_name, s.phone_number as seller_phone,
              ml.title as listing_title
       FROM marketplace_escrow me
-      LEFT JOIN users b ON me.buyer_id = b.id
-      LEFT JOIN users s ON me.seller_id = s.id
-      LEFT JOIN marketplace_listings ml ON me.listing_id = ml.id
+      LEFT JOIN users b ON CAST(me.buyer_id AS TEXT) = CAST(b.id AS TEXT)
+      LEFT JOIN users s ON CAST(me.seller_id AS TEXT) = CAST(s.id AS TEXT)
+      LEFT JOIN marketplace_listings ml ON CAST(me.listing_id AS TEXT) = CAST(ml.id AS TEXT)
       ORDER BY me.created_at DESC
       LIMIT 100
     `);

@@ -1,40 +1,48 @@
 'use client';
 import React from 'react';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { Search, Filter, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import FranchiseShell, { useFranchiseData, when } from '../components/FranchiseShell';
 
+// The partnership as recorded (GET /franchise/profile). Commission, territories
+// and status are set by LocalSampark administrators, so this page shows them
+// rather than offering controls that would save nothing.
 export default function FranchiseSettings() {
-  return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-24 pb-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-border pb-6">
-            <div>
-              <h1 className="text-3xl font-black text-text mb-2">Territory Settings</h1>
-              <p className="text-text-muted">Manage settings for your assigned hyper-local territory.</p>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="w-5 h-5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 bg-card-bg border border-border rounded-xl text-text outline-none focus:border-blue-500 w-64" />
-              </div>
-              <button className="p-2 bg-card-bg border border-border rounded-xl text-text-muted hover:bg-background-alt transition">
-                <Filter className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+  const { data, loading, error, reload } = useFranchiseData('/franchise/profile');
+  const p = data && data.profile;
+  const rows = p ? [
+    ['Territory', p.territoryName],
+    ['Registered pincode', p.registeredPincode],
+    ['Assigned pincodes', p.territoryPincodes && p.territoryPincodes.length ? p.territoryPincodes.join(', ') : 'None assigned yet'],
+    ['Status', p.status],
+    ['Commission rate', p.commissionRate === null ? null : `${p.commissionRate}%`],
+    ['Agreement signed', when(p.agreementSignedAt)],
+    ['Partner since', when(p.partnerSince)],
+    ['Contact name', p.contact && p.contact.name],
+    ['Contact email', p.contact && p.contact.email],
+    ['Contact phone', p.contact && p.contact.phone],
+  ] : [];
 
-          <div className="text-center py-16 bg-card-bg border border-border rounded-3xl">
-            <AlertCircle className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl text-text font-bold mb-2">No Data Available</h3>
-            <p className="text-text-muted">No records found for settings in your territory yet.</p>
+  return (
+    <FranchiseShell
+      title="Partnership Settings"
+      subtitle="Your franchise agreement as LocalSampark has it on record."
+      active="/franchise-dashboard/settings"
+      loading={loading}
+      error={error}
+      onRetry={reload}
+    >
+      <dl className="bg-card-bg border border-border rounded-3xl divide-y divide-border">
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-4">
+            <dt className="text-text-muted text-sm">{label}</dt>
+            <dd className="sm:col-span-2 font-semibold text-text break-words">{value || '—'}</dd>
           </div>
-        </div>
-      </main>
-      <Footer />
-    </>
+        ))}
+      </dl>
+      <p className="text-sm text-text-muted mt-4">
+        Contact details can be changed on your <Link href="/profile" className="underline">profile</Link>. To change
+        your territory or commission, contact the LocalSampark partner team.
+      </p>
+    </FranchiseShell>
   );
 }

@@ -1,0 +1,11 @@
+=== Backend ESLint Execution ===
+Exit Code: 0
+
+STDOUT:
+
+> localsampark-backend@1.0.0 lint
+> eslint src --ext .js --quiet
+
+
+
+STDERR:

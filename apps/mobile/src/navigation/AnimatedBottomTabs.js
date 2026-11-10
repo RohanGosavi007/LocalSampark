@@ -157,8 +157,8 @@ export default function AnimatedBottomTabs({ state, descriptors, navigation }) {
         {/* Glass shine top edge */}
         <View style={styles.glassEdge} />
         
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index;
+        {state.routes.filter((r) => { const o = descriptors[r.key]?.options; return o?.href !== null && typeof o?.tabBarButton !== 'function'; }).map((route, index, visibleRoutes) => {
+          const isFocused = state.routes[state.index]?.key === route.key;
           const { options } = descriptors[route.key];
 
           const onPress = () => {
@@ -179,7 +179,7 @@ export default function AnimatedBottomTabs({ state, descriptors, navigation }) {
               index={index}
               isFocused={isFocused}
               onPress={onPress}
-              totalTabs={state.routes.length}
+              totalTabs={visibleRoutes.length || 1}
             />
           );
         })}

@@ -144,7 +144,7 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
 
     stats.pending = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'pending'`);
     stats.critical = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE severity = 'critical' AND status = 'pending'`);
-    stats.today = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE created_at >= CURRENT_DATE`);
+    stats.today = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE created_at >= $1`, [require('../../../utils/sqlTime').sqlDate()]);
     stats.confirmed = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'confirmed'`);
     stats.falsePositive = await queryOne(`SELECT COUNT(*) as cnt FROM fraud_signals WHERE status = 'false_positive'`);
 
@@ -194,7 +194,7 @@ router.post('/blocklist', authenticate, requireAdmin, async (req, res, next) => 
     await query(`INSERT INTO fraud_blocklist (id, entity_type, entity_value, reason, blocked_by, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (entity_type, entity_value)
-       DO UPDATE SET reason = $4, blocked_by = $5, expires_at = $6, is_active = true`,
+       DO UPDATE SET reason = $4, blocked_by = $5, expires_at = $6, is_active = '1'`,
       [id, entity_type, entity_value, reason, adminId, expires_at || null]
     );
 

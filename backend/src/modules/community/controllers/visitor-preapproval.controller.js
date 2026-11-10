@@ -6,7 +6,7 @@ const qrcode = require('qrcode');
 const createPreApproval = async (req, res, next) => {
     try {
         const residentId = req.user.id;
-        const { societyId, flatNumber, visitorName, visitorPhone, purpose, vehicleNumber, validFrom, validUntil, maxUses, leaveAtGate } = req.body;
+        const { societyId, flatNumber, visitorName, visitorPhone, purpose, vehicleNumber, validFrom, validUntil, maxUses, leaveAtGate } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
 
         if (!societyId || !flatNumber || !visitorName || !validFrom || !validUntil) {
             return res.status(400).json({ error: 'Missing required fields for pre-approval' });
@@ -62,7 +62,7 @@ const sharePasscode = async (req, res, next) => {
 
 const verifyPasscode = async (req, res, next) => {
     try {
-        const { societyId, passcode } = req.body;
+        const { societyId, passcode } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // In a real scenario, check if the req.user is a guard for this society
 
         const preApproval = await queryOne(`SELECT * FROM society_visitor_preapprovals 
@@ -146,7 +146,7 @@ const toggleLeaveAtGate = async (req, res, next) => {
 const blacklistVisitor = async (req, res, next) => {
     try {
         const adminId = req.user.id;
-        const { societyId, personName, personPhone, reason } = req.body;
+        const { societyId, personName, personPhone, reason } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         
         if (!societyId || !personName || !reason) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -174,7 +174,7 @@ const getBlacklist = async (req, res, next) => {
 const createCabPass = async (req, res, next) => {
     try {
         const residentId = req.user.id;
-        const { societyId, flatNumber, cabService, driverName, vehicleNumber, estimatedArrival } = req.body;
+        const { societyId, flatNumber, cabService, driverName, vehicleNumber, estimatedArrival } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
 
         const passcode = crypto.randomInt(100000, 999999).toString();
         const id = uuidv4();
@@ -191,7 +191,7 @@ const createCabPass = async (req, res, next) => {
 
 const verifyCabPass = async (req, res, next) => {
     try {
-        const { societyId, passcode } = req.body;
+        const { societyId, passcode } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         
         const cabPass = await queryOne(`SELECT * FROM society_cab_preapprovals WHERE society_id = $1 AND passcode = $2 AND status = 'active'`,
             [societyId, passcode]

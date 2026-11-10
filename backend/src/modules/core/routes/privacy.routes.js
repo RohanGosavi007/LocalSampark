@@ -9,6 +9,7 @@ const router = express.Router();
 const DPDPComplianceService = require('../../../services/dpdpCompliance.service');
 const { authenticate, optionalAuth } = require('../../../middleware/auth.middleware');
 const logger = require('../../../config/logger');
+const { publicFormLimiter } = require('../../../middleware/rateLimit.middleware');
 
 /**
  * POST /api/v1/users/me/consent
@@ -88,46 +89,164 @@ router.post('/me/delete-account', authenticate, async (req, res, next) => {
 });
 
 /**
- * POST /api/v1/users/account-deletion-request
- * Public account deletion request (Google Play Store compliance)
- * Allows users who cannot sign in to request deletion of their account & data.
+ * POST /api/v1/users/account-deletion-request   { identifier, reason? }
+ * POST /api/v1/users/account-deletion-request/verify   { requestId, code }
+ *
+ * Public account deletion (Google Play "delete your account" requirement) for
+ * people who cannot sign in.
+ *
+ * Step 1 queues nothing. If the phone number or email belongs to an account, a
+ * six-digit code is sent to that phone or address; the response is identical
+ * whether or not an account exists, so the endpoint cannot be used to find out
+ * who has one. Step 2 takes the code and only then records the erasure request
+ * in data_subject_requests for staff to process. Before this, anyone who knew
+ * someone's phone number could queue their account for deletion.
+ *
+ * Codes live in the shared OTP store (single use, five-minute life, attempts
+ * capped by verifyAndConsume), keyed by the requestId returned from step 1.
  */
-router.post('/account-deletion-request', async (req, res, next) => {
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
+const PHONE_RE = /^\+?[0-9]{10,15}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DSR_TTL_SECONDS = 10 * 60;
+
+const otpStore = require('../services/otpStore.service');
+const { generateOTP, sendOTP } = require('../services/sms.service');
+const { sendEmail } = require('../services/email.service');
+
+const UNIFORM_MESSAGE =
+  'If an account is registered with this phone number or email, we have sent it a 6-digit code. ' +
+  'Enter the code to confirm the deletion request. The code expires in 10 minutes.';
+
+const mask = (value) => (value.length > 4 ? `***${value.slice(-4)}` : '***');
+
+router.post('/account-deletion-request', publicFormLimiter, async (req, res, next) => {
   try {
     const { identifier, reason } = req.body || {};
     if (!identifier || !String(identifier).trim()) {
       return res.status(400).json({ success: false, error: 'Phone number or email is required' });
     }
+    // Validate shape before touching the database: this route is anonymous, so
+    // the identifier must look like a phone number or an email address and the
+    // free-text reason is capped.
+    const trimmed = String(identifier).trim();
+    const compactPhone = trimmed.replace(/[\s-]/g, '');
+    const isEmail = EMAIL_RE.test(trimmed);
+    if (trimmed.length > 254 || !(isEmail || PHONE_RE.test(compactPhone))) {
+      return res.status(400).json({ success: false, error: 'Enter a valid phone number or email address' });
+    }
+    if (reason !== undefined && (typeof reason !== 'string' || reason.length > 1000)) {
+      return res.status(400).json({ success: false, error: 'Reason must be text of at most 1000 characters' });
+    }
 
-    const { queryOne, query } = require('../../../config/database');
+    // Checked before the account lookup so the answer does not depend on
+    // whether the account exists.
+    if (!otpStore.isAvailable()) {
+      logger.error(`[Privacy] Deletion verification unavailable: ${otpStore.unavailableReason()}`);
+      return res.status(503).json({ success: false, error: 'Verification is temporarily unavailable. Please try again shortly.' });
+    }
+
+    const { queryOne } = require('../../../config/database');
     const crypto = require('crypto');
-    const cleanId = String(identifier).trim().toLowerCase();
+    const cleanId = isEmail ? trimmed.toLowerCase() : compactPhone;
+    const plus91 = /^[0-9]{10}$/.test(cleanId) ? `+91${cleanId}` : cleanId;
 
-    // Lookup user by phone or email
     const user = await queryOne(
-      'SELECT id, phone_number, email FROM users WHERE phone_number = $1 OR LOWER(email) = $1 LIMIT 1',
-      [cleanId]
+      'SELECT id, phone_number, email FROM users WHERE phone_number = $1 OR phone_number = $2 OR LOWER(email) = $1 LIMIT 1',
+      [cleanId, plus91]
     );
 
     const requestId = crypto.randomUUID();
-    const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
     if (user) {
-      await query(
-        `INSERT INTO data_subject_requests (id, user_id, request_type, status, details, created_at, updated_at)
-         VALUES ($1, $2, 'erasure', 'pending', $3, ${NOW}, ${NOW})`,
-        [requestId, user.id, JSON.stringify({ reason: reason || 'Public web deletion request', requested_at: new Date().toISOString() })]
-      );
+      // Sent to the contact the caller typed, which belongs to this account.
+      const destination = isEmail ? cleanId : (user.phone_number || plus91);
+      if (await otpStore.allowSend(`dsr:${destination}`)) {
+        const code = generateOTP();
+        await otpStore.setOtp(`dsr_otp:${requestId}`, code, DSR_TTL_SECONDS);
+        await otpStore.setOtp(`dsr_pending:${requestId}`, JSON.stringify({
+          userId: user.id,
+          reason: reason || 'Public web deletion request',
+          channel: isEmail ? 'email' : 'phone',
+        }), DSR_TTL_SECONDS);
+
+        let sent;
+        if (isEmail) {
+          sent = await sendEmail(
+            destination,
+            'Confirm your LocalSampark account deletion request',
+            `<p>We received a request to delete the LocalSampark account linked to this email address.</p>
+             <p>Your confirmation code is <strong>${code}</strong>. It expires in 10 minutes.</p>
+             <p>If you did not ask for this, ignore this email; nothing will be deleted.</p>`
+          );
+        } else {
+          sent = await sendOTP(destination, code);
+        }
+        if (!sent || !sent.success) {
+          // Not reported to the caller: a different answer here would reveal
+          // that the account exists.
+          logger.error(`[Privacy] Deletion code could not be sent to ${mask(destination)} (request ${requestId})`);
+        }
+      } else {
+        logger.warn(`[Privacy] Deletion code send limit reached for ${mask(destination)}`);
+      }
     }
 
-    logger.info(`[Privacy] Public account deletion request received: ${cleanId} (Request ID: ${requestId})`);
+    logger.info(`[Privacy] Public account deletion verification started: ${mask(cleanId)} (Request ID: ${requestId})`);
 
-    // Return uniform response to prevent user enumeration
     res.json({
       success: true,
-      message: 'Account deletion request received. If an account is associated with this contact, personal data will be purged within statutory timelines.',
+      verificationRequired: true,
+      message: UNIFORM_MESSAGE,
       requestId,
-      note: 'Financial tax transaction records will be retained in anonymized form as required by Indian tax law (GST Act).'
+    });
+  } catch (error) { next(error); }
+});
+
+router.post('/account-deletion-request/verify', publicFormLimiter, async (req, res, next) => {
+  try {
+    const { requestId, code } = req.body || {};
+    if (typeof requestId !== 'string' || !UUID_RE.test(requestId)) {
+      return res.status(400).json({ success: false, error: 'requestId is required' });
+    }
+    if (typeof code !== 'string' || !/^[0-9]{6}$/.test(code)) {
+      return res.status(400).json({ success: false, error: 'Enter the 6-digit code' });
+    }
+    if (!otpStore.isAvailable()) {
+      return res.status(503).json({ success: false, error: 'Verification is temporarily unavailable. Please try again shortly.' });
+    }
+
+    // The same answer for an unknown request, an expired code and a wrong one.
+    const valid = await otpStore.verifyAndConsume(`dsr_otp:${requestId}`, code);
+    const pendingRaw = valid ? await otpStore.getOtp(`dsr_pending:${requestId}`) : null;
+    if (!valid || !pendingRaw) {
+      return res.status(400).json({ success: false, error: 'The code is invalid or has expired. Please request a new one.' });
+    }
+    await otpStore.deleteOtp(`dsr_pending:${requestId}`);
+
+    let pending;
+    try { pending = JSON.parse(pendingRaw); } catch { pending = null; }
+    if (!pending || !pending.userId) {
+      return res.status(400).json({ success: false, error: 'The code is invalid or has expired. Please request a new one.' });
+    }
+
+    const { query } = require('../../../config/database');
+    const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+    await query(
+      `INSERT INTO data_subject_requests (id, user_id, request_type, status, reason, ip_address, created_at, updated_at)
+       VALUES ($1, $2, 'erasure', 'pending', $3, $4, ${NOW}, ${NOW})`,
+      [requestId, pending.userId,
+       JSON.stringify({ reason: pending.reason, verified_via: pending.channel, requested_at: new Date().toISOString() }),
+       req.ip || null]
+    );
+
+    logger.info(`[Privacy] Verified account deletion request queued (Request ID: ${requestId})`);
+
+    res.json({
+      success: true,
+      message: 'Your deletion request is confirmed. Personal data will be erased within the statutory timeline.',
+      requestId,
+      note: 'Financial tax transaction records will be retained in anonymized form as required by Indian tax law (GST Act).',
     });
   } catch (error) { next(error); }
 });

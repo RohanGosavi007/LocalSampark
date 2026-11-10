@@ -18,8 +18,8 @@ export default function PreApproveVisitorScreen() {
     const fetchHistory = async () => {
         try {
             const res = await api.get('/society-preapproval/pre-approve/my');
-            if (res.data.success) {
-                setHistory(res.data.data);
+            if (res?.success || res?.data?.success) {
+                setHistory(res?.data?.data || res?.data || []);
             }
         } catch (error) {
             console.error(error);
@@ -33,7 +33,6 @@ export default function PreApproveVisitorScreen() {
             const validUntil = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
 
             const res = await api.post('/society-preapproval/pre-approve', {
-                societyId: 'dummy-society', // fetch from context
                 flatNumber: 'A-101', // fetch from context
                 visitorName,
                 visitorPhone,
@@ -43,8 +42,8 @@ export default function PreApproveVisitorScreen() {
                 leaveAtGate
             });
 
-            if (res.data.success) {
-                setPasscodeData(res.data.data);
+            if (res?.success || res?.data?.success) {
+                setPasscodeData(res?.data?.data || res?.data);
                 fetchHistory();
             }
         } catch (error) {

@@ -149,7 +149,7 @@ const s = StyleSheet.create({
   s2: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
   s3: { flex: 1, paddingRight: 16 },
   s4: { color: '#ffffff', fontWeight: '500', fontSize: 16, marginBottom: 4 },
-  s5: { color: '#64748b', fontSize: 12, lineHeight: 1.25 },
+  s5: { color: '#64748b', fontSize: 12, lineHeight: 16 },
   s6: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#0f172a', borderBottomWidth: 1, borderColor: '#1e293b' },
   s7: { color: '#ffffff', fontWeight: '500', fontSize: 16 },
   s8: { flexDirection: 'row', alignItems: 'center' },

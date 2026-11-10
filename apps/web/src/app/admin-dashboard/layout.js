@@ -123,7 +123,7 @@ function AdminLayoutInner({ children }) {
   const [omniResults, setOmniResults] = useState([]);
 
   const effectiveUser = user || adminUser;
-  const isSuperAdmin = activeRole === 'super_admin' || user?.role === 'super_admin' || adminRole === 'super_admin' || adminUser?.role === 'super_admin';
+  const isSuperAdmin = [activeRole, user?.role, adminRole, adminUser?.role].some((r) => String(r || '').toLowerCase() === 'super_admin' || String(r || '').toLowerCase() === 'admin');
   const loading = authLoading || adminLoading;
 
   // Enforce RBAC

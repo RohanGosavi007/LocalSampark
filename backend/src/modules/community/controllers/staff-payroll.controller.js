@@ -24,7 +24,7 @@ const { v4: uuidv4 } = require('uuid');
 const generateMonthlyPayroll = async (req, res, next) => {
     try {
         const adminId = req.user.id;
-        const { societyId, perDayRate, rates } = req.body;
+        const { societyId, perDayRate, rates } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         const month = Number(req.body.month);
         const year = Number(req.body.year);
 

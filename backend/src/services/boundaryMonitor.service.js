@@ -112,7 +112,7 @@ async function outsideAssigned(territoryId, lat, lng) {
   const row = await queryOne(
     `SELECT id, name, pincode, boundary_geojson
        FROM territories
-      WHERE id = $1 AND COALESCE(boundary_verified, 0) = 1`,
+      WHERE id = $1 AND boundary_verified = '1'`,
     [territoryId]
   );
 

@@ -10,8 +10,8 @@
  *   - a refresh token ignored every form of sign-out, and logout did nothing.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -21,7 +21,7 @@ const otpStore = require('../../modules/core/services/otpStore.service');
 const { sendOTP } = require('../../modules/core/services/sms.service');
 
 const PHONE = '+919812345001';
-const USER = 'otp-user-1';
+const USER = fx('otp-user-1');
 
 let app;
 
@@ -43,7 +43,7 @@ beforeAll(async () => {
   app.use(express.json());
   app.use('/auth', require('../../modules/core/routes/auth.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 beforeEach(() => otpStore.__memoryStore.clear());

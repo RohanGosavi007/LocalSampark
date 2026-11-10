@@ -7,7 +7,7 @@ const getPendingApprovals = async (req, res, next) => {
   try {
     // Fetch pending shops
     const shops = await query(`
-      SELECT s.id, s.name, c.name as category, s.address, s.phone_number, s.region_id, s.created_at
+      SELECT s.id, s.name, c.name as category, s.address, s.phone as phone_number, s.region_id, s.created_at
       FROM local_shops s
       LEFT JOIN shop_categories c ON s.category_id = c.id
       WHERE s.approval_status = 'pending'
@@ -125,6 +125,7 @@ const getPendingApprovals = async (req, res, next) => {
       FROM delivery_agents d
       JOIN users u ON d.user_id = u.id
       WHERE u.is_verified = false
+        AND COALESCE(d.kyc_status, 'pending') <> 'rejected'
       ORDER BY d.created_at ASC
     `);
 
@@ -158,7 +159,8 @@ const getPendingApprovals = async (req, res, next) => {
 const updateApprovalStatus = async (req, res, next) => {
   try {
     const { type, id } = req.params;
-    const { action } = req.body; // 'approve' or 'reject'
+    const rawAction = (req.body && (req.body.action || req.body.status)) || 'approve';
+    const action = (rawAction === 'approved' || rawAction === 'approve' || rawAction === 'active') ? 'approve' : (rawAction === 'rejected' || rawAction === 'reject') ? 'reject' : rawAction;
 
     let tableName, idColumn, statusColumn, approvedValue, rejectedValue;
 
@@ -267,6 +269,32 @@ const updateApprovalStatus = async (req, res, next) => {
         break;
       default:
         return res.status(400).json({ success: false, error: 'Invalid approval type' });
+    }
+
+    // Users are never deleted from this endpoint. A rejected KYC or rider
+    // application leaves the account in place, unverified: deleting the row
+    // would cascade into the person's orders, addresses and ledger.
+    //
+    // users.is_verified is BOOLEAN on Postgres and INTEGER on SQLite, so the
+    // value is written as a quoted literal both engines coerce ('1' / '0'),
+    // never as -1, which Postgres rejects for a boolean.
+    if (tableName === 'users') {
+      if (action !== 'approve' && action !== 'reject') {
+        return res.status(400).json({ success: false, error: 'Invalid action' });
+      }
+      let userId = id;
+      if (type === 'deliveryAgent') {
+        // The pending list returns delivery_agents.id; the flag lives on the
+        // agent's user row.
+        const agent = await query('SELECT user_id FROM delivery_agents WHERE id = $1', [id]);
+        const agentRow = (agent.rows || agent)[0];
+        if (!agentRow) return res.status(404).json({ success: false, error: 'Delivery agent not found' });
+        userId = agentRow.user_id;
+        await query('UPDATE delivery_agents SET kyc_status = $1 WHERE id = $2', [action === 'approve' ? 'approved' : 'rejected', id]);
+      }
+      const flag = action === 'approve' ? "'1'" : "'0'";
+      await query(`UPDATE users SET is_verified = ${flag} WHERE id = $1`, [userId]);
+      return res.json({ success: true, message: `Successfully ${action}d ${type}` });
     }
 
     if (action === 'approve') {

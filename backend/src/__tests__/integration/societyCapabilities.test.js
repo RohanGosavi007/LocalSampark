@@ -20,30 +20,30 @@
  *     the fact. This log is the record of who was inside the society and when.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../config/database');
 const caps = require('../../modules/community/middleware/society-capability');
 
-const SOC_A = 'sc-society-a';
-const SOC_B = 'sc-society-b';
+const SOC_A = fx('sc-society-a');
+const SOC_B = fx('sc-society-b');
 
-const RESIDENT_101 = 'sc-resident-101';
-const RESIDENT_102 = 'sc-resident-102';
-const GUARD_A = 'sc-guard-a';
-const GUARD_B = 'sc-guard-b';
-const ADMIN_A = 'sc-admin-a';
-const OUTSIDER = 'sc-outsider';
+const RESIDENT_101 = fx('sc-resident-101');
+const RESIDENT_102 = fx('sc-resident-102');
+const GUARD_A = fx('sc-guard-a');
+const GUARD_B = fx('sc-guard-b');
+const ADMIN_A = fx('sc-admin-a');
+const OUTSIDER = fx('sc-outsider');
 
 const reqFor = (userId, role = 'user') => ({ user: { id: userId, role } });
 
 async function cleanup() {
-  await query("DELETE FROM society_visitors WHERE id LIKE 'sc-%'");
-  await query("DELETE FROM society_admin_roles WHERE user_id LIKE 'sc-%'");
-  await query("DELETE FROM society_members WHERE user_id LIKE 'sc-%'");
-  await query("DELETE FROM societies WHERE id LIKE 'sc-society-%'");
-  await query("DELETE FROM users WHERE id LIKE 'sc-%'");
+  await query(`DELETE FROM society_visitors WHERE CAST(id AS TEXT) LIKE '${fxLike('sc')}'`);
+  await query(`DELETE FROM society_admin_roles WHERE CAST(user_id AS TEXT) LIKE '${fxLike('sc')}'`);
+  await query(`DELETE FROM society_members WHERE CAST(user_id AS TEXT) LIKE '${fxLike('sc')}'`);
+  await query(`DELETE FROM societies WHERE CAST(id AS TEXT) LIKE '${fxLike('sc')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('sc')}'`);
 }
 
 beforeAll(async () => {
@@ -64,7 +64,7 @@ beforeAll(async () => {
   for (const [id, name] of [[SOC_A, 'Green Acres'], [SOC_B, 'Blue Meadows']]) {
     await query(
       // societies carries name/address/coordinate, not city/state/pincode.
-      `INSERT INTO societies (id, name, address, is_active) VALUES ($1, $2, '1 Society Road, Pune', 1)`,
+      `INSERT INTO societies (id, name, address, is_active) VALUES ($1, $2, '1 Society Road, Pune', '1')`,
       [id, name]
     );
   }
@@ -83,7 +83,7 @@ beforeAll(async () => {
   for (const [userId, societyId, role, flat] of members) {
     await query(
       `INSERT INTO society_members (id, society_id, user_id, flat_number, role, is_active, status)
-       VALUES ($1, $2, $3, $4, $5, 1, 'active')`,
+       VALUES ($1, $2, $3, $4, $5, '1', 'active')`,
       [crypto.randomUUID(), societyId, userId, flat, role]
     );
   }
@@ -118,16 +118,16 @@ describe('capabilities are scoped to one society', () => {
   });
 
   test('platform staff are unscoped by design', async () => {
-    expect(await caps.hasSocietyCapability(reqFor('sc-platform', 'super_admin'), SOC_A, caps.CAPABILITIES.MANAGE_SOCIETY)).toBe(true);
+    expect(await caps.hasSocietyCapability(reqFor(fx('sc-platform'), 'super_admin'), SOC_A, caps.CAPABILITIES.MANAGE_SOCIETY)).toBe(true);
   });
 
   test('a removed member keeps their history and loses their capability', async () => {
-    const former = 'sc-former';
+    const former = fx('sc-former');
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)',
       [former, 'SC Former', '9855000099', 'user']);
     await query(
       `INSERT INTO society_members (id, society_id, user_id, flat_number, role, is_active, status)
-       VALUES ($1, $2, $3, '103', 'resident', 0, 'removed')`,
+       VALUES ($1, $2, $3, '103', 'resident', '0', 'removed')`,
       [crypto.randomUUID(), SOC_A, former]
     );
 
@@ -210,10 +210,10 @@ describe('the visitor lifecycle', () => {
 });
 
 describe('concurrent check-out', () => {
-  const VISITOR = 'sc-visitor-race';
+  const VISITOR = fx('sc-visitor-race');
 
   beforeEach(async () => {
-    await query("DELETE FROM society_visitors WHERE id LIKE 'sc-visitor-%'");
+    await query(`DELETE FROM society_visitors WHERE CAST(id AS TEXT) LIKE '${fxLike('sc')}'`);
     await query(
       `INSERT INTO society_visitors
          (id, society_id, guard_id, visitor_name, purpose, flat_number, status, checked_in_at, created_at)
@@ -281,7 +281,7 @@ describe('society context for the client', () => {
 });
 
 describe('member approval queue', () => {
-  const APPLICANT = 'sc-applicant';
+  const APPLICANT = fx('sc-applicant');
   let applicationId;
 
   beforeEach(async () => {
@@ -293,7 +293,7 @@ describe('member approval queue', () => {
     applicationId = crypto.randomUUID();
     await query(
       `INSERT INTO society_members (id, society_id, user_id, flat_number, role, is_active, status)
-       VALUES ($1, $2, $3, '204', 'resident', 0, 'pending')`,
+       VALUES ($1, $2, $3, '204', 'resident', '0', 'pending')`,
       [applicationId, SOC_A, APPLICANT]
     );
   });
@@ -319,7 +319,7 @@ describe('member approval queue', () => {
 
   test('approving activates the membership', async () => {
     const result = await query(
-      `UPDATE society_members SET status = 'approved', is_active = true
+      `UPDATE society_members SET status = 'approved', is_active = '1'
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );
@@ -331,7 +331,7 @@ describe('member approval queue', () => {
 
   test('a rejection deactivates rather than deleting', async () => {
     await query(
-      `UPDATE society_members SET status = 'rejected', is_active = false
+      `UPDATE society_members SET status = 'rejected', is_active = '0'
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );
@@ -349,7 +349,7 @@ describe('member approval queue', () => {
     // Scoped by society as well as by member id: the id alone would let a
     // committee member of one society decide an application to another.
     const result = await query(
-      `UPDATE society_members SET status = 'approved', is_active = true
+      `UPDATE society_members SET status = 'approved', is_active = '1'
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_B]
     );
@@ -358,12 +358,12 @@ describe('member approval queue', () => {
 
   test('deciding twice is refused rather than silently repeated', async () => {
     const first = await query(
-      `UPDATE society_members SET status = 'approved', is_active = true
+      `UPDATE society_members SET status = 'approved', is_active = '1'
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );
     const second = await query(
-      `UPDATE society_members SET status = 'rejected', is_active = false
+      `UPDATE society_members SET status = 'rejected', is_active = '0'
         WHERE id = $1 AND society_id = $2 AND LOWER(COALESCE(status,'')) = 'pending'`,
       [applicationId, SOC_A]
     );

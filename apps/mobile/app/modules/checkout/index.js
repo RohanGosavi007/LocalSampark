@@ -155,7 +155,7 @@ export default function CheckoutScreen() {
       paid
         ? `Order ${String(order.id).slice(0, 8)} is confirmed.`
         : `Order ${String(order.id).slice(0, 8)} is placed. ${deliveryMode === 'pickup' ? 'Pay at the shop.' : 'Pay on delivery.'}`,
-      [{ text: 'Track Order', onPress: () => router.push({ pathname: '/modules/tracking', params: { orderId: String(order.id) } }) }]
+      [{ text: 'Track Order', onPress: () => router.push(`/orders/track/${order.id}`) }]
     );
   };
 

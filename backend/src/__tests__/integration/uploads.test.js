@@ -4,8 +4,8 @@
  * See modules/core/services/upload.service.js for what was wrong before.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const fs = require('fs');
 const express = require('express');
 const request = require('supertest');
@@ -14,11 +14,11 @@ const { query, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 const uploads = require('../../modules/core/services/upload.service');
 
-const OWNER = 'upl-owner';
-const STRANGER = 'upl-stranger';
-const ADMIN = 'upl-admin';
-const SHOPKEEPER = 'upl-shopkeeper';
-const EMPLOYER = 'upl-employer';
+const OWNER = fx('upl-owner');
+const STRANGER = fx('upl-stranger');
+const ADMIN = fx('upl-admin');
+const SHOPKEEPER = fx('upl-shopkeeper');
+const EMPLOYER = fx('upl-employer');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 
@@ -30,15 +30,15 @@ const HTML = Buffer.from('<html><body><script>alert(document.cookie)</script></b
 let app;
 
 async function cleanup() {
-  const rows = await queryMany("SELECT id FROM file_uploads WHERE uploader_id LIKE 'upl-%'");
+  const rows = await queryMany(`SELECT id FROM file_uploads WHERE CAST(uploader_id AS TEXT) LIKE '${fxLike('upl')}'`);
   for (const row of rows) await uploads.deleteUpload(row.id);
-  await query("DELETE FROM job_skills WHERE user_id LIKE 'upl-%'");
-  await query("DELETE FROM job_resumes WHERE user_id LIKE 'upl-%'");
-  await query("DELETE FROM job_applications WHERE applicant_id LIKE 'upl-%'");
-  await query("DELETE FROM local_job_postings WHERE id LIKE 'upl-%'");
-  await query("DELETE FROM orders WHERE id LIKE 'upl-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'upl-%'");
-  await query("DELETE FROM users WHERE id LIKE 'upl-%'");
+  await query(`DELETE FROM job_skills WHERE CAST(user_id AS TEXT) LIKE '${fxLike('upl')}'`);
+  await query(`DELETE FROM job_resumes WHERE CAST(user_id AS TEXT) LIKE '${fxLike('upl')}'`);
+  await query(`DELETE FROM job_applications WHERE CAST(applicant_id AS TEXT) LIKE '${fxLike('upl')}'`);
+  await query(`DELETE FROM local_job_postings WHERE CAST(id AS TEXT) LIKE '${fxLike('upl')}'`);
+  await query(`DELETE FROM orders WHERE CAST(id AS TEXT) LIKE '${fxLike('upl')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('upl')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('upl')}'`);
 }
 
 beforeAll(async () => {
@@ -47,15 +47,15 @@ beforeAll(async () => {
     [OWNER, '9866100001', 'user'], [STRANGER, '9866100002', 'user'], [ADMIN, '9866100003', 'admin'],
     [SHOPKEEPER, '9866100004', 'shop_owner'], [EMPLOYER, '9866100005', 'user'],
   ]) {
-    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $1, $2, $3)', [id, phone, role]);
+    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $4, $2, $3)', [id, phone, role, id]);
   }
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude)
-     VALUES ('upl-pharmacy', $1, 'UPL Pharmacy', 'Pharmacy', 'Road', 'POINT(73.87 18.53)', 18.53, 73.87)`,
+     VALUES ('${fx('upl-pharmacy')}', $1, 'UPL Pharmacy', 'Pharmacy', 'Road', 'POINT(73.87 18.53)', 18.53, 73.87)`,
     [SHOPKEEPER]
   );
   await query(
-    "INSERT INTO orders (id, user_id, shop_id, total_amount, delivery_fee, payment_method) VALUES ('upl-order', $1, 'upl-pharmacy', 100, 0, 'cod')",
+    `INSERT INTO orders (id, user_id, shop_id, total_amount, delivery_fee, payment_method) VALUES ('${fx('upl-order')}', $1, '${fx('upl-pharmacy')}', 100, '0', 'cod')`,
     [OWNER]
   );
 
@@ -65,7 +65,7 @@ beforeAll(async () => {
   app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
   app.use('/', require('../../modules/services/routes/advanced.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -89,13 +89,13 @@ describe('what is accepted', () => {
   });
 
   test('a page labelled as an image is refused, whatever it is called, and nothing is written', async () => {
-    const before = (await queryMany("SELECT id FROM file_uploads WHERE uploader_id = 'upl-owner'")).length;
+    const before = (await queryMany(`SELECT id FROM file_uploads WHERE uploader_id = '${fx('upl-owner')}'`)).length;
     for (const name of ['photo.png', 'photo.html', 'photo.svg']) {
       const res = await send(OWNER, HTML, name);
       expect(res.status).toBe(415);
       expect(res.body.code).toBe('UNSUPPORTED_TYPE');
     }
-    expect((await queryMany("SELECT id FROM file_uploads WHERE uploader_id = 'upl-owner'")).length).toBe(before);
+    expect((await queryMany(`SELECT id FROM file_uploads WHERE uploader_id = '${fx('upl-owner')}'`)).length).toBe(before);
   });
 
   test('a real image named .html is stored as an image', async () => {
@@ -170,7 +170,7 @@ describe('private documents', () => {
   });
 
   test('a prescription is readable by the shop it was sent to', async () => {
-    const res = await send(OWNER, JPEG, 'rx.jpg', { purpose: 'prescription', referenceId: 'upl-order' }, 'file', 'image/jpeg');
+    const res = await send(OWNER, JPEG, 'rx.jpg', { purpose: 'prescription', referenceId: fx('upl-order') }, 'file', 'image/jpeg');
     expect(res.status).toBe(201);
     const id = res.body.files[0].id;
     expect((await request(app).get(`/upload/files/${id}`).set(as(SHOPKEEPER))).status).toBe(200);
@@ -198,10 +198,10 @@ describe('résumés', () => {
     expect((await request(app).get(`/upload/files/${id}`).set(as(EMPLOYER))).status).toBe(404);
 
     await query(
-      `INSERT INTO local_job_postings (id, employer_id, title, category, status) VALUES ('upl-job', $1, 'Developer', 'IT', 'active')`,
+      `INSERT INTO local_job_postings (id, employer_id, title, category, status) VALUES ('${fx('upl-job')}', $1, 'Developer', 'IT', 'active')`,
       [EMPLOYER]
     );
-    await query("INSERT INTO job_applications (id, job_id, applicant_id, status) VALUES ('upl-app', 'upl-job', $1, 'applied')", [OWNER]);
+    await query(`INSERT INTO job_applications (id, job_id, applicant_id, status) VALUES ('${fx('upl-app')}', '${fx('upl-job')}', $1, 'applied')`, [OWNER]);
     expect((await request(app).get(`/upload/files/${id}`).set(as(EMPLOYER))).status).toBe(200);
   });
 

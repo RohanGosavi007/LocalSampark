@@ -274,7 +274,7 @@ export function apiDelete(endpoint) {
  * @returns {Object} Headers object with Authorization and Content-Type
  */
 export function getAdminAuthHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('auth_token')) : '';
   return {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',

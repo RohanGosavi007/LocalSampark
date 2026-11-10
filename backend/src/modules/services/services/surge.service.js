@@ -48,8 +48,10 @@ class SurgePricingService {
       // 3. Recent Demand Factor (orders/appointments in the last 2 hours)
       let recentOrdersCount = 0;
       try {
-        const orderRes = await queryOne(`SELECT COUNT(*) as recent_count FROM shop_orders WHERE shop_id = $1 AND (created_at >= NOW() - INTERVAL '2 hours' OR created_at >= datetime('now', '-2 hours'))`,
-          [shopId]
+        const orderRes = await queryOne(`SELECT COUNT(*) as recent_count FROM shop_orders WHERE shop_id = $1 AND created_at >= $2`,
+          // One engine-neutral bound value. The statement mixed PostgreSQL's NOW()
+          // and SQLite's datetime(), so it failed on both and demand never counted.
+          [shopId, require('../../../utils/sqlTime').sqlTimestamp(-2 * 60 * 60 * 1000)]
         );
         recentOrdersCount = parseInt(orderRes?.recent_count || 0, 10);
       } catch (e) {

@@ -3,8 +3,8 @@
  * administrators can send arbitrary pushes.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -13,9 +13,9 @@ const { getJwtSecret } = require('../../config/secrets');
 const push = require('../../services/push.service');
 const notificationService = require('../../modules/core/services/notification.service');
 
-const ALICE = 'psh-alice';
-const BOB = 'psh-bob';
-const ADMIN = 'psh-admin';
+const ALICE = fx('psh-alice');
+const BOB = fx('psh-bob');
+const ADMIN = fx('psh-admin');
 const TOKEN_A = 'ExponentPushToken[aaaaaaaaaaaaaaaaaaaaaa]';
 const TOKEN_GONE = 'ExponentPushToken[uninstalledxxxxxxxxxxx]';
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
@@ -24,15 +24,15 @@ let app;
 let delivered;
 
 async function cleanup() {
-  await query("DELETE FROM user_fcm_tokens WHERE user_id LIKE 'psh-%'");
-  await query("DELETE FROM shop_notifications WHERE recipient_id LIKE 'psh-%'");
-  await query("DELETE FROM users WHERE id LIKE 'psh-%'");
+  await query(`DELETE FROM user_fcm_tokens WHERE CAST(user_id AS TEXT) LIKE '${fxLike('psh')}'`);
+  await query(`DELETE FROM shop_notifications WHERE CAST(recipient_id AS TEXT) LIKE '${fxLike('psh')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('psh')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
   for (const [id, phone, role] of [[ALICE, '9840500001', 'user'], [BOB, '9840500002', 'user'], [ADMIN, '9840500003', 'admin']]) {
-    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $1, $2, $3)', [id, phone, role]);
+    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $4, $2, $3)', [id, phone, role, id]);
   }
   app = express();
   app.use(express.json());

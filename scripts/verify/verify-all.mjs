@@ -20,6 +20,13 @@ import { runLaunchPolicyTests } from './launch-policy.mjs';
 import { verifyFeatures } from './feature-verifier.mjs';
 import { scanTrackedFiles } from './secret-scanner.mjs';
 import { renderStatusMarkdown } from './render-report.mjs';
+import { backendEngineSelection } from './engine-selection.mjs';
+import { disabledDoctorChecks } from './doctor-checks.mjs';
+import { runAndroidSmoke } from './android-smoke.mjs';
+import os from 'node:os';
+
+// null = G10 not run in this invocation; true/false = its result (read by G12).
+let g10Outcome = null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,8 +63,14 @@ function runCmd(cmd, cmdArgs, { cwd = ROOT, env = process.env, timeout = 300000 
     ? cmdArgs.map((a) => (typeof a === 'string' && a.includes(' ') && !a.startsWith('"') ? `"${a}"` : a))
     : cmdArgs;
 
+  // With shell: true the command is joined into one cmd.exe line, so a command
+  // path containing spaces (the repo lives under "C:\localsampark 04-09-2026\")
+  // must be quoted too, or cmd.exe runs "C:\localsampark" and G10 fails before
+  // Gradle starts.
+  const formattedCmd = isWindows && cmd.includes(' ') && !cmd.startsWith('"') ? `"${cmd}"` : cmd;
+
   try {
-    const res = spawnSync(cmd, formattedArgs, {
+    const res = spawnSync(formattedCmd, formattedArgs, {
       cwd,
       env: { ...env, FORCE_COLOR: '0', CI: 'true' },
       encoding: 'utf8',
@@ -170,10 +183,12 @@ const gates = [
         SUPABASE_URL: '',
         NODE_ENV: 'test'
       };
+      // The full suite takes 4-6 minutes on a laptop; a 4-minute limit killed
+      // healthy runs and reported them as failures.
       const res = runCmd('npx', ['jest', '--forceExit', '--json', `--outputFile=${jsonReportPath}`], {
         cwd: path.join(ROOT, 'backend'),
         env,
-        timeout: 240000
+        timeout: 900000
       });
 
       let summary = 'Backend Jest on SQLite failed';
@@ -203,17 +218,25 @@ const gates = [
       const res = runCmd('npx', ['jest', '--forceExit', '--json', `--outputFile=${jsonReportPath}`], {
         cwd: path.join(ROOT, 'backend'),
         env,
-        timeout: 240000
+        timeout: 900000
       });
 
       let summary = 'Postgres Jest execution failed or local DB unreachable';
       let passed = false;
 
+      // H14: a suite may be SQLite-only only by an `@engine sqlite-only` tag,
+      // which jest.config.js leaves out of this run. A suite that pins SQLite
+      // without the tag would run on SQLite here and be counted as a
+      // PostgreSQL pass, so it fails the gate.
+      const engines = backendEngineSelection(ROOT);
+
       if (fs.existsSync(jsonReportPath)) {
         try {
           const report = JSON.parse(fs.readFileSync(jsonReportPath, 'utf8'));
-          passed = report.numFailedTests === 0 && report.numPassedTests > 0;
-          summary = `${report.numPassedTests} passed, ${report.numFailedTests} failed on PostgreSQL (${env.DB_NAME})`;
+          passed = report.numFailedTests === 0 && report.numPassedTests > 0 && engines.untaggedPins.length === 0;
+          summary = `${report.numPassedTests} passed, ${report.numFailedTests} failed in ${report.numTotalTestSuites} suites on PostgreSQL (${env.DB_NAME}); `
+            + `${engines.sqliteOnly.length} @engine sqlite-only suite(s) excluded`
+            + (engines.untaggedPins.length ? `; FAIL: ${engines.untaggedPins.length} suite(s) pin SQLite without the tag: ${engines.untaggedPins.join(', ')}` : '');
         } catch {
           passed = false;
         }
@@ -228,23 +251,48 @@ const gates = [
     name: 'Database Migrations & Seed Idempotency',
     category: 'Database Integrity',
     run: () => {
-      // 1. Run sqlite migration and verify seed
-      const resMigrateSqlite = runCmd('node', ['src/migrations/run.js'], { cwd: path.join(ROOT, 'backend'), env: { ...process.env, USE_SQLITE: 'true', NODE_ENV: 'test' } });
-      const resSeedSqlite = runCmd('node', ['src/seeds/seed-investor-demo.js', '--verify'], { cwd: path.join(ROOT, 'backend'), env: { ...process.env, USE_SQLITE: 'true', NODE_ENV: 'test' } });
-      const sqlitePassed = resMigrateSqlite.code === 0 && resSeedSqlite.code === 0;
+      // H10: each engine starts EMPTY, is migrated, is seeded twice (the second
+      // run proves the seed is idempotent) and is then verified. The SQLite
+      // half used to verify the persistent development database, which passed
+      // only because someone had seeded it by hand.
+      const backend = path.join(ROOT, 'backend');
+      const steps = [];
+      const step = (engine, label, args, env) => {
+        const res = runCmd('node', args, { cwd: backend, env, timeout: 600000 });
+        steps.push({ engine, label, res });
+        return res.code === 0;
+      };
+      const seedTwiceAndVerify = (engine, env) =>
+        step(engine, 'migrate', ['src/migrations/run.js'], env)
+        && step(engine, 'seed (1st run)', ['src/seeds/seed-investor-demo.js'], env)
+        && step(engine, 'seed (2nd run, idempotency)', ['src/seeds/seed-investor-demo.js'], env)
+        && step(engine, 'verify', ['src/seeds/seed-investor-demo.js', '--verify'], env);
 
-      // 2. Run PG migration and seed verify
+      // 1. SQLite: a new, empty database file.
+      const sqlitePath = path.join(os.tmpdir(), `localsampark-g4-${Date.now()}.db`);
+      const sqliteEnv = { ...process.env, USE_SQLITE: 'true', NODE_ENV: 'test', SQLITE_DB_PATH: sqlitePath, DATABASE_URL: '' };
+      const sqlitePassed = seedTwiceAndVerify('SQLite', sqliteEnv);
+      for (const suffix of ['', '-wal', '-shm']) {
+        try { fs.rmSync(sqlitePath + suffix, { force: true }); } catch { /* best effort */ }
+      }
+
+      // 2. PostgreSQL: the local *_test database, reset to an empty schema
+      //    (resetLocalPostgres refuses anything not local or not named *_test).
       const pgEnv = getTestPostgresEnv();
-      const resMigratePg = runCmd('node', ['src/migrations/run.js'], { cwd: path.join(ROOT, 'backend'), env: pgEnv });
-      const resSeedPg = runCmd('node', ['src/seeds/seed-investor-demo.js', '--verify'], { cwd: path.join(ROOT, 'backend'), env: pgEnv });
-      const pgPassed = resMigratePg.code === 0 && resSeedPg.code === 0;
+      const resetScript = [
+        "require('./jest.globalSetup.js').resetLocalPostgres(process.env.DATABASE_URL, { withFixtures: false })",
+        "  .then(() => process.exit(0)).catch((e) => { console.error(e.message); process.exit(1); });",
+      ].join('\n');
+      const pgPassed = step('PostgreSQL', 'reset to empty schema', ['-e', resetScript], pgEnv)
+        && seedTwiceAndVerify('PostgreSQL', pgEnv);
 
       const passed = sqlitePassed && pgPassed;
       const summary = passed
-        ? 'Dual-engine migrations and demo seed verify succeeded'
-        : `Migration/Seed failure: SQLite=${sqlitePassed ? 'PASS' : 'FAIL'}, Postgres=${pgPassed ? 'PASS' : 'FAIL'}`;
+        ? 'Both engines: empty -> migrate -> seed x2 (idempotent) -> verify passed'
+        : `Migration/Seed failure: SQLite=${sqlitePassed ? 'PASS' : 'FAIL'}, Postgres=${pgPassed ? 'PASS' : 'FAIL'}`
+          + ` (failed step: ${steps.filter((s) => s.res.code !== 0).map((s) => `${s.engine} ${s.label}`).join(', ') || 'none'})`;
 
-      const log = writeLog('G4', `=== SQLite Migration Output ===\n${resMigrateSqlite.stdout}\n${resMigrateSqlite.stderr}\n\n=== SQLite Seed Verify ===\n${resSeedSqlite.stdout}\n${resSeedSqlite.stderr}\n\n=== Postgres Migration ===\n${resMigratePg.stdout}\n${resMigratePg.stderr}\n\n=== Postgres Seed Verify ===\n${resSeedPg.stdout}\n${resSeedPg.stderr}`);
+      const log = writeLog('G4', steps.map((s) => `=== ${s.engine}: ${s.label} (exit ${s.res.code}) ===\n${s.res.stdout}\n${s.res.stderr}`).join('\n\n'));
       return { passed, summary, log };
     }
   },
@@ -320,7 +368,9 @@ const gates = [
 
       const resDoctor = runCmd('npx', ['expo-doctor'], { cwd: path.join(ROOT, 'apps', 'mobile') });
       const resLint = runCmd('npx', ['eslint', '.', '--quiet'], { cwd: path.join(ROOT, 'apps', 'mobile') });
-      const resTest = runCmd('npx', ['jest', '--runInBand'], { cwd: path.join(ROOT, 'apps', 'mobile'), timeout: 120000 });
+      // JSON report for G18 (evidence/jest-mobile.json), which reads it but no
+      // gate used to write it.
+      const resTest = runCmd('npx', ['jest', '--runInBand', '--json', `--outputFile=${path.join(evidenceDir, 'jest-mobile.json')}`], { cwd: path.join(ROOT, 'apps', 'mobile'), timeout: 300000 });
       const resExport = runCmd('npx', ['expo', 'export', '--platform', 'android'], { cwd: path.join(ROOT, 'apps', 'mobile'), timeout: 180000 });
 
       // Read owner-approved exceptions from docs/launch/accepted-exceptions.json
@@ -336,12 +386,17 @@ const gates = [
 
       const failedChecks = (resDoctor.stdout.match(/✖\s+([^\r\n]+)/g) || []).map(m => m.replace(/✖\s+/, '').trim());
       const unacceptedFails = failedChecks.filter(c => !approvedDoctorChecks.some(a => c.includes(a)));
-      const doctorOk = resDoctor.code === 0 || (failedChecks.length > 0 && unacceptedFails.length === 0);
+      // A doctor check switched off in package.json counts only if the Jest
+      // suite that replaces it ran and passed in this run (doctor-checks.mjs).
+      const doctorConfig = disabledDoctorChecks(path.join(ROOT, 'apps', 'mobile'), `${resTest.stdout}\n${resTest.stderr}`);
+      const doctorOk = (resDoctor.code === 0 || (failedChecks.length > 0 && unacceptedFails.length === 0))
+        && doctorConfig.unreplaced.length === 0;
 
       const passed = doctorOk && resLint.code === 0 && resTest.code === 0 && resExport.code === 0;
-      const summary = passed 
-        ? `Mobile Jest, ESLint, expo-doctor${approvedDoctorChecks.length > 0 ? ' (with owner-approved exceptions)' : ''}, and export passed`
-        : `Doctor=${resDoctor.code} (unaccepted: ${unacceptedFails.join('; ') || 'none'}), Lint=${resLint.code}, Test=${resTest.code}, Export=${resExport.code}`;
+      const replacedNote = doctorConfig.disabled.length > 0 ? `; doctor check(s) ${doctorConfig.disabled.join(', ')} replaced by passing Jest suites` : '';
+      const summary = passed
+        ? `Mobile Jest, ESLint, expo-doctor${approvedDoctorChecks.length > 0 ? ' (with owner-approved exceptions)' : ''}, and export passed${replacedNote}`
+        : `Doctor=${resDoctor.code} (unaccepted: ${unacceptedFails.join('; ') || 'none'}${doctorConfig.unreplaced.length ? `; disabled without a passing replacement suite: ${doctorConfig.unreplaced.join(', ')}` : ''}), Lint=${resLint.code}, Test=${resTest.code}, Export=${resExport.code}`;
       const log = writeLog('G9', `=== expo-doctor Output ===\n${resDoctor.stdout}\n${resDoctor.stderr}\n\n=== ESLint Output ===\n${resLint.stdout}\n${resLint.stderr}\n\n=== Jest Output ===\n${resTest.stdout}\n${resTest.stderr}\n\n=== Expo Export Output ===\n${resExport.stdout}\n${resExport.stderr}`);
       return { passed, summary, log };
     }
@@ -381,6 +436,7 @@ const gates = [
       }
 
       const passed = res.code === 0;
+      g10Outcome = passed;
       const summary = passed ? `Release APK generated (${artifactProof})` : 'assembleRelease failed';
       const log = writeLog('G10', `=== gradlew assembleRelease Output ===\nExit Code: ${res.code}\n${artifactProof}\n\nSTDOUT:\n${res.stdout}\n\nSTDERR:\n${res.stderr}`);
       return { passed, summary, log };
@@ -391,7 +447,17 @@ const gates = [
     name: 'Playwright E2E Commerce Persona Journeys',
     category: 'End-to-End Testing',
     run: () => {
-      const res = runCmd('npx', ['playwright', 'test', '--project=web-chromium'], { cwd: ROOT, timeout: 300000 });
+      // playwright.config.js writes its JSON report to test-results/results.json.
+      // G18 reads it from the evidence folder as playwright.json; it is removed
+      // first so a report from an earlier run can never be picked up.
+      const pwReport = path.join(ROOT, 'test-results', 'results.json');
+      fs.rmSync(pwReport, { force: true });
+      // The whole-run limit was 300 s against a normal run of ~260 s (46 tests,
+      // first-hit compiles on the dev server). On 2026-11-10 a slower compile
+      // got the run killed at test 33 with every test so far passing, and a
+      // killed run writes no JSON report. Per-test timeouts are unchanged.
+      const res = runCmd('npx', ['playwright', 'test', '--project=web-chromium'], { cwd: ROOT, timeout: 900000 });
+      if (fs.existsSync(pwReport)) fs.copyFileSync(pwReport, path.join(evidenceDir, 'playwright.json'));
       const log = writeLog('G11', `=== Playwright E2E Output ===\n${res.stdout}\n${res.stderr}`);
       return { passed: res.code === 0, summary: res.code === 0 ? 'Playwright E2E commerce flows passed' : 'E2E tests failed or not executed', log };
     }
@@ -406,8 +472,14 @@ const gates = [
         const log = writeLog('G12', 'Gate skipped due to --skip-android flag');
         return { passed: false, skipped: true, summary: 'Skipped (--skip-android)', log };
       }
-      const log = writeLog('G12', 'Android emulator smoke tests (Maestro/Detox) pending M7/V6 execution on host');
-      return { passed: false, summary: 'Android release smoke test pending (V6)', log };
+      // Never smoke-test a stale APK left over from an earlier build.
+      if (g10Outcome === false) {
+        const log = writeLog('G12', 'G10 failed in this run, so there is no fresh release APK to install.');
+        return { passed: false, summary: 'Not run: G10 did not build a release APK in this run', log };
+      }
+      const smoke = runAndroidSmoke({ root: ROOT, evidenceDir });
+      const log = writeLog('G12', `=== Android release smoke test ===\n${g10Outcome === null ? 'NOTE: G10 not run in this invocation; using the existing release APK.\n' : ''}${smoke.log}`);
+      return { passed: smoke.passed, summary: smoke.summary, log };
     }
   },
   {
@@ -464,7 +536,8 @@ const gates = [
 
       const passed = rootVulns.critical === 0 && rootVulns.high === 0 && mobileVulns.critical === 0 && mobileVulns.high === 0;
       const unapprovedCount = rootVulns.critical + rootVulns.high + mobileVulns.critical + mobileVulns.high;
-      const pendingApprovalCount = exceptions.length - approvedExceptions.length;
+      // Entries marked `resolved` (fixed, kept for the record) are not waiting on anyone.
+      const pendingApprovalCount = exceptions.filter(e => !e.resolved).length - approvedExceptions.length;
 
       const summary = passed
         ? `0 critical, 0 high unaccepted vulnerabilities (${approvedExceptions.length} approved exceptions)`

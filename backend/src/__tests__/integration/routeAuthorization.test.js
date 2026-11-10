@@ -8,8 +8,8 @@
  * case below is a request that used to succeed.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const express = require('express');
 const request = require('supertest');
@@ -17,31 +17,31 @@ const jwt = require('jsonwebtoken');
 const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const OWNER = 'rauth-owner';
-const RIVAL = 'rauth-rival';
-const CUSTOMER = 'rauth-customer';
-const RIDER = 'rauth-rider';
-const ADMIN = 'rauth-admin';
-const SHOP = 'rauth-shop';
-const RIVAL_SHOP = 'rauth-shop-rival';
+const OWNER = fx('rauth-owner');
+const RIVAL = fx('rauth-rival');
+const CUSTOMER = fx('rauth-customer');
+const RIDER = fx('rauth-rider');
+const ADMIN = fx('rauth-admin');
+const SHOP = fx('rauth-shop');
+const RIVAL_SHOP = fx('rauth-shop-rival');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM job_applications WHERE id LIKE 'rauth-%' OR applicant_id LIKE 'rauth-%'");
-  await query("DELETE FROM local_job_postings WHERE employer_id LIKE 'rauth-%'");
-  await query("DELETE FROM local_job_postings WHERE id LIKE 'rauth-%'");
-  await query("DELETE FROM medical_doctors WHERE id LIKE 'rauth-%'");
-  await query("DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id LIKE 'rauth-%')");
-  await query("DELETE FROM wallets WHERE user_id LIKE 'rauth-%'");
-  await query("DELETE FROM orders WHERE id LIKE 'rauth-%'");
-  await query("DELETE FROM delivery_agents WHERE user_id LIKE 'rauth-%'");
-  await query("DELETE FROM universal_catalog_items WHERE shop_id LIKE 'rauth-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'rauth-%'");
-  await query("DELETE FROM admin_roles WHERE user_id LIKE 'rauth-%'");
-  await query("DELETE FROM users WHERE id LIKE 'rauth-%'");
+  await query(`DELETE FROM job_applications WHERE CAST(id AS TEXT) LIKE '${fxLike('rauth')}' OR CAST(applicant_id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM local_job_postings WHERE CAST(employer_id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM local_job_postings WHERE CAST(id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM medical_doctors WHERE CAST(id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rauth')}')`);
+  await query(`DELETE FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM orders WHERE CAST(id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM delivery_agents WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM universal_catalog_items WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM admin_roles WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rauth')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('rauth')}'`);
 }
 
 beforeAll(async () => {
@@ -63,7 +63,7 @@ beforeAll(async () => {
 
   // An approved rider: an application an administrator has set to 'active'.
   await query(
-    "INSERT INTO delivery_agents (id, user_id, vehicle_type, kyc_status, status) VALUES ('rauth-agent', $1, 'motorcycle', 'active', 'offline')",
+    `INSERT INTO delivery_agents (id, user_id, vehicle_type, kyc_status, status) VALUES ('${fx('rauth-agent')}', $1, 'motorcycle', 'active', 'offline')`,
     [RIDER]
   );
 
@@ -77,7 +77,7 @@ beforeAll(async () => {
   app.use('/shops', require('../../modules/ecommerce/routes/vendor-kyc.routes'));
   app.use('/group-buy', require('../../modules/ecommerce/routes/group-buying.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(err.statusCode || 500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -91,7 +91,7 @@ describe("a shop's catalogue", () => {
     expect((await add(CUSTOMER, SHOP, { title: 'Planted', price: 1 })).status).toBe(403);
     expect((await add(OWNER, SHOP, { title: 'Kettle' })).status).toBe(400);
     expect((await add(OWNER, SHOP, { title: 'Kettle', price: -10 })).status).toBe(400);
-    expect((await add(OWNER, 'rauth-no-such-shop', { title: 'Kettle', price: 900 })).status).toBe(404);
+    expect((await add(OWNER, fx('rauth-no-such-shop'), { title: 'Kettle', price: 900 })).status).toBe(404);
 
     const ok = await add(OWNER, SHOP, { title: 'Kettle', price: 900, inventory_count: 4 });
     expect(ok.status).toBe(200);
@@ -148,20 +148,20 @@ describe('delivery jobs', () => {
   test('are listed and accepted by approved riders, not by any signed-in account', async () => {
     await query(
       `INSERT INTO orders (id, user_id, shop_id, total_amount, delivery_fee, payment_method, order_status, otp_code)
-       VALUES ('rauth-order-ready', $1, $2, 200, 30, 'cod', 'ready', '1234')`,
+       VALUES ('${fx('rauth-order-ready')}', $1, $2, 200, 30, 'cod', 'ready', '1234')`,
       [CUSTOMER, SHOP]
     );
 
     // The list carries each customer's name, phone and address.
     expect((await request(app).get('/delivery/jobs').set(as(RIVAL))).status).toBe(403);
-    const taken = await request(app).post('/delivery/jobs/rauth-order-ready/accept').set(as(RIVAL));
+    const taken = await request(app).post(`/delivery/jobs/${fx('rauth-order-ready')}/accept`).set(as(RIVAL));
     expect(taken.status).toBe(403);
-    expect((await queryOne("SELECT assigned_agent_id FROM orders WHERE id = 'rauth-order-ready'")).assigned_agent_id).toBeNull();
+    expect((await queryOne(`SELECT assigned_agent_id FROM orders WHERE id = '${fx('rauth-order-ready')}'`)).assigned_agent_id).toBeNull();
 
     const jobs = await request(app).get('/delivery/jobs').set(as(RIDER));
     expect(jobs.status).toBe(200);
-    expect(jobs.body.data.map((j) => j.id)).toContain('rauth-order-ready');
-    expect((await request(app).post('/delivery/jobs/rauth-order-ready/accept').set(as(RIDER))).status).toBe(200);
+    expect(jobs.body.data.map((j) => j.id)).toContain(fx('rauth-order-ready'));
+    expect((await request(app).post(`/delivery/jobs/${fx('rauth-order-ready')}/accept`).set(as(RIDER))).status).toBe(200);
   });
 
   test('applying to be a rider grants nothing until it is approved, and changes no role', async () => {
@@ -195,27 +195,27 @@ describe('completing a delivery', () => {
   };
 
   test('needs the right code, from the assigned rider — on the old path too', async () => {
-    await order('rauth-order-1');
+    await order(fx('rauth-order-1'));
 
     // What used to work: any account, any four digits.
-    expect((await complete(CUSTOMER, 'rauth-order-1', '0000')).status).toBe(403);
-    expect((await complete(RIDER, 'rauth-order-1', '0000')).status).toBe(403);
-    expect(await statusOf('rauth-order-1')).toBe('out_for_delivery');
+    expect((await complete(CUSTOMER, fx('rauth-order-1'), '0000')).status).toBe(403);
+    expect((await complete(RIDER, fx('rauth-order-1'), '0000')).status).toBe(403);
+    expect(await statusOf(fx('rauth-order-1'))).toBe('out_for_delivery');
 
-    const ok = await complete(RIDER, 'rauth-order-1', '4821');
+    const ok = await complete(RIDER, fx('rauth-order-1'), '4821');
     expect(ok.status).toBe(200);
     expect(ok.body.status).toBe('DELIVERED');
-    expect(await statusOf('rauth-order-1')).toBe('delivered');
+    expect(await statusOf(fx('rauth-order-1'))).toBe('delivered');
   });
 
   test('pays the delivery fee once, however many times it is sent', async () => {
-    await order('rauth-order-2', { fee: 45 });
+    await order(fx('rauth-order-2'), { fee: 45 });
     const before = await riderBalance();
 
     const results = await Promise.all([
-      complete(RIDER, 'rauth-order-2', '4821', 'complete'),
-      complete(RIDER, 'rauth-order-2', '4821', 'complete'),
-      complete(RIDER, 'rauth-order-2', '4821'),
+      complete(RIDER, fx('rauth-order-2'), '4821', 'complete'),
+      complete(RIDER, fx('rauth-order-2'), '4821', 'complete'),
+      complete(RIDER, fx('rauth-order-2'), '4821'),
     ]);
 
     expect(results.filter((r) => r.status === 200)).toHaveLength(1);
@@ -226,19 +226,19 @@ describe('completing a delivery', () => {
 describe('administrative actions', () => {
   test('verifying a doctor, and listing them all, is for administrators', async () => {
     await query(
-      "INSERT INTO medical_doctors (id, name, specialization, hospital_name, phone, is_verified) VALUES ('rauth-doctor', 'Dr Test', 'General', 'Test Clinic', '9877000099', 0)"
+      `INSERT INTO medical_doctors (id, name, specialization, hospital_name, phone, is_verified) VALUES ('${fx('rauth-doctor')}', 'Dr Test', 'General', 'Test Clinic', '9877000099', '0')`
     );
 
-    const self = await request(app).put('/medical/admin/doctors/rauth-doctor/verify').set(as(CUSTOMER)).send({ is_verified: true });
+    const self = await request(app).put(`/medical/admin/doctors/${fx('rauth-doctor')}/verify`).set(as(CUSTOMER)).send({ is_verified: true });
     expect(self.status).toBe(403);
-    expect((await queryOne("SELECT is_verified FROM medical_doctors WHERE id = 'rauth-doctor'")).is_verified).toBe(0);
+    expect((await queryOne(`SELECT is_verified FROM medical_doctors WHERE id = '${fx('rauth-doctor')}'`)).is_verified).toBe(0);
 
     expect((await request(app).get('/medical/admin/records')).status).toBe(401);
     expect((await request(app).get('/medical/admin/records').set(as(CUSTOMER))).status).toBe(403);
 
-    const admin = await request(app).put('/medical/admin/doctors/rauth-doctor/verify').set(as(ADMIN)).send({ is_verified: true });
+    const admin = await request(app).put(`/medical/admin/doctors/${fx('rauth-doctor')}/verify`).set(as(ADMIN)).send({ is_verified: true });
     expect(admin.status).toBe(200);
-    expect((await queryOne("SELECT is_verified FROM medical_doctors WHERE id = 'rauth-doctor'")).is_verified).toBe(1);
+    expect((await queryOne(`SELECT is_verified FROM medical_doctors WHERE id = '${fx('rauth-doctor')}'`)).is_verified).toBe(1);
   });
 
   test("a shop's KYC record is for its owner, and an administrator can review", async () => {
@@ -262,26 +262,26 @@ describe('administrative actions', () => {
 
 describe('job applications', () => {
   test('an employer moves applications to their own postings only', async () => {
-    for (const [id, employer] of [['rauth-job-mine', OWNER], ['rauth-job-theirs', RIVAL]]) {
+    for (const [id, employer] of [[fx('rauth-job-mine'), OWNER], [fx('rauth-job-theirs'), RIVAL]]) {
       await query(
         `INSERT INTO local_job_postings (id, employer_id, title, category, job_type, status)
          VALUES ($1, $2, 'Helper', 'retail', 'full_time', 'active')`,
         [id, employer]
       );
     }
-    await query("INSERT INTO job_applications (id, job_id, applicant_id, stage) VALUES ('rauth-app-mine', 'rauth-job-mine', $1, 'applied')", [CUSTOMER]);
-    await query("INSERT INTO job_applications (id, job_id, applicant_id, stage) VALUES ('rauth-app-theirs', 'rauth-job-theirs', $1, 'applied')", [CUSTOMER]);
+    await query(`INSERT INTO job_applications (id, job_id, applicant_id, stage) VALUES ('${fx('rauth-app-mine')}', '${fx('rauth-job-mine')}', $1, 'applied')`, [CUSTOMER]);
+    await query(`INSERT INTO job_applications (id, job_id, applicant_id, stage) VALUES ('${fx('rauth-app-theirs')}', '${fx('rauth-job-theirs')}', $1, 'applied')`, [CUSTOMER]);
 
     const res = await request(app).post('/advanced/jobs/employer/bulk-action').set(as(OWNER))
-      .send({ application_ids: ['rauth-app-mine', 'rauth-app-theirs'], action: 'reject' });
+      .send({ application_ids: [fx('rauth-app-mine'), fx('rauth-app-theirs')], action: 'reject' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ updated: 1, skipped: 1 }));
-    expect((await queryOne("SELECT stage FROM job_applications WHERE id = 'rauth-app-mine'")).stage).toBe('rejected');
-    expect((await queryOne("SELECT stage FROM job_applications WHERE id = 'rauth-app-theirs'")).stage).toBe('applied');
+    expect((await queryOne(`SELECT stage FROM job_applications WHERE id = '${fx('rauth-app-mine')}'`)).stage).toBe('rejected');
+    expect((await queryOne(`SELECT stage FROM job_applications WHERE id = '${fx('rauth-app-theirs')}'`)).stage).toBe('applied');
 
     const bogus = await request(app).post('/advanced/jobs/employer/bulk-action').set(as(OWNER))
-      .send({ application_ids: ['rauth-app-mine'], action: 'promote-to-ceo' });
+      .send({ application_ids: [fx('rauth-app-mine')], action: 'promote-to-ceo' });
     expect(bogus.status).toBe(400);
   });
 });

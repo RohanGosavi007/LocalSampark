@@ -45,7 +45,26 @@ function constraintFault(err) {
   return CONSTRAINT_FAULTS.find((c) => err.code === c.pg || (typeof err.message === 'string' && c.sqlite.test(err.message))) || null;
 }
 
-function statusOf(err) {
+/**
+ * An id PostgreSQL could not even parse as a UUID names no row, so the answer
+ * is 404, the one SQLite gives when the same lookup simply finds nothing. The
+ * rejected value is quoted in the error message; when it is one the caller sent
+ * (a path parameter, or a top-level query or body field) they referred to
+ * something that does not exist. Other unparseable values (numbers, dates) and
+ * values the request did not supply stay 400.
+ */
+function isUnknownUuidReference(err, req) {
+  if (!err || err.code !== '22P02' || !req) return false;
+  const m = /invalid input syntax for type uuid: "(.*)"$/.exec(String(err.message || ''));
+  if (!m) return false;
+  const sent = [req.params, req.query, req.body]
+    .filter((o) => o && typeof o === 'object' && !Array.isArray(o))
+    .flatMap((o) => Object.values(o));
+  return sent.some((v) => (typeof v === 'string' || typeof v === 'number') && String(v) === m[1]);
+}
+
+function statusOf(err, req) {
+  if (isUnknownUuidReference(err, req)) return { statusCode: 404, message: 'Not found.' };
   if (err && CLIENT_FAULTS[err.code]) return { statusCode: 400, message: CLIENT_FAULTS[err.code] };
   const constraint = constraintFault(err);
   // An explicit status set by the route wins over the inferred one.
@@ -57,7 +76,7 @@ function statusOf(err) {
 
 // Error handler middleware — production-safe with structured logging
 function errorHandler(err, req, res, next) {
-  const { statusCode, message } = statusOf(err);
+  const { statusCode, message } = statusOf(err, req);
 
   // Log full error details using winston
   logger[statusCode >= 500 ? 'error' : 'warn'](`[${req.method}] ${req.originalUrl} — ${err.message}`, {
@@ -117,4 +136,4 @@ class ValidationError extends AppError {
   }
 }
 
-module.exports = { errorHandler, notFound, AppError, ValidationError };
+module.exports = { errorHandler, notFound, AppError, ValidationError, statusOf };

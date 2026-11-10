@@ -35,7 +35,6 @@
  * same table as the writes.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const fs = require('fs');
 const path = require('path');
@@ -201,9 +200,10 @@ describe('shop table split', () => {
   });
 
   test('only local_shops exists in the SQL-layer database', async () => {
-    const result = await query(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shops', 'local_shops')"
-    );
+    // The catalogue of tables, read the way each engine exposes it.
+    const result = await query(process.env.USE_SQLITE === 'true'
+      ? "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shops', 'local_shops')"
+      : "SELECT table_name AS name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('shops', 'local_shops')");
     const tables = (result.rows || result).map((r) => r.name);
 
     expect(tables).toContain('local_shops');

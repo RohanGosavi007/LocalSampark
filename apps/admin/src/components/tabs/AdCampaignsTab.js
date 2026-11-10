@@ -47,7 +47,7 @@ export default function AdCampaignsTab({ API_BASE, authHeaders }) {
         headers: { 'Content-Type': 'application/json', ...(typeof authHeaders === 'function' ? authHeaders() : authHeaders) },
         body: JSON.stringify(formData)
       });
-      if (res.ok) {
+      if (data && !data.error) {
         alert(data.message || 'Ad Campaign Purchased!');
         setShowModal(false);
         fetchFeaturedShops();

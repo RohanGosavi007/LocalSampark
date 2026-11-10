@@ -183,6 +183,14 @@ class CacheService {
     }
   }
 
+  static async del(keyPattern) {
+    return this.invalidate(keyPattern);
+  }
+
+  static async clear() {
+    return this.clearAll();
+  }
+
   /**
    * Drop everything that is a cached copy of something else.
    *

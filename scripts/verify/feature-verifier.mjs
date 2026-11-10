@@ -99,6 +99,48 @@ export function parseJestReport(reportPath, platform, engine) {
 }
 
 /**
+ * Parses a Playwright JSON report (written by G11 to evidence/playwright.json).
+ *
+ * Its shape is nested suites -> specs -> tests (one per project), not Jest's
+ * testResults/assertionResults, so it needs its own parser: run through
+ * parseJestReport it yielded nothing and no web/admin feature could ever verify.
+ * The platform comes from the project: web-* -> web, admin-* -> admin; other
+ * projects (visual, api, a11y, mobile web emulation) are not platform proof.
+ * Only a test whose outcome is "expected" counts as passed. "flaky" (passed on a
+ * retry) and "unexpected" count as failed; "skipped" counts as neither.
+ */
+export function parsePlaywrightReport(reportPath) {
+  const results = [];
+  if (!fs.existsSync(reportPath)) return results;
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  } catch {
+    return results;
+  }
+  const platformOf = (project) => (/^web-/.test(project) ? 'web' : /^admin-/.test(project) ? 'admin' : null);
+  const walk = (suite, titles) => {
+    const here = suite.title && !/\.(spec|test)\.[jt]s$/.test(suite.title) ? [...titles, suite.title] : titles;
+    for (const spec of suite.specs || []) {
+      const title = [...here, spec.title].join(' > ');
+      const featureIds = extractFeatureIds(title);
+      if (featureIds.size === 0) continue;
+      for (const t of spec.tests || []) {
+        const platform = platformOf(t.projectName || '');
+        if (!platform) continue;
+        const status = t.status === 'expected' ? 'passed' : t.status === 'skipped' ? 'skipped' : 'failed';
+        for (const fid of featureIds) {
+          results.push({ featureId: fid, title, platform, engine: 'playwright', status });
+        }
+      }
+    }
+    for (const child of suite.suites || []) walk(child, here);
+  };
+  for (const s of data.suites || []) walk(s, []);
+  return results;
+}
+
+/**
  * Parses node --test text output from G7 (web) or G8 (admin) log files.
  */
 export function parseNodeTestLog(logPath, platform) {
@@ -173,7 +215,7 @@ export function verifyFeatures({ evidenceDir, writeStatus = false, featuresPath 
   // Playwright E2E report if available
   const playwrightJson = evidenceDir ? path.join(evidenceDir, 'playwright.json') : null;
   if (playwrightJson && fs.existsSync(playwrightJson)) {
-    testResults.push(...parseJestReport(playwrightJson, 'web', 'playwright'));
+    testResults.push(...parsePlaywrightReport(playwrightJson));
   }
 
   // Mobile Jest report if available

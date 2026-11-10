@@ -11,7 +11,6 @@
  * neighbour heuristic replaced with a nearest-M truncation, say — does not.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const { HNSWIndex, Heap, seededRandom } = require('../../modules/ml/vector/hnsw');
 

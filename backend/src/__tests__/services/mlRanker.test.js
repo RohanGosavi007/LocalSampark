@@ -7,7 +7,6 @@
  * behaviour it exists to prevent.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const ranker = require('../../modules/ml/services/ranker.service');
 const embeddings = require('../../modules/ml/services/embedding.service');

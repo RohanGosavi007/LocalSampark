@@ -16,7 +16,6 @@
  * have. The route reads it per request, so it can be changed between cases.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const express = require('express');
 const request = require('supertest');
@@ -42,7 +41,7 @@ beforeAll(async () => {
   app.use(express.json());
   app.use('/admin-auth', require('../../modules/crm/routes/admin-auth.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterEach(() => {

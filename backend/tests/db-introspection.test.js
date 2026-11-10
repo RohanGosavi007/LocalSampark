@@ -1,4 +1,8 @@
 /**
+ * @engine sqlite-only — tests the SQLite driver's row-returning statement dispatch.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+/**
  * Database wrapper: row-returning statements and schema introspection.
  *
  * The SQLite wrapper routed a statement to db.all() only when it began with
@@ -11,6 +15,7 @@
  * These tests run against the real SQLite database, not a mock: the whole point
  * is that introspection reflects the engine.
  */
+process.env.USE_SQLITE = 'true';
 const db = require('../src/config/database');
 
 describe('row-returning statement dispatch', () => {

@@ -241,7 +241,7 @@ async function pincodeProfiles({ windowDays = 90 } = {}) {
               SUM(CASE WHEN e.event_type = 'CARD_CLICK' THEN 1 ELSE 0 END) AS clicks,
               COUNT(*) AS events
          FROM ml_interaction_events e
-         JOIN local_shops s ON s.id = e.item_id
+         JOIN local_shops s ON CAST(s.id AS TEXT) = CAST(e.item_id AS TEXT)
     LEFT JOIN shop_categories c ON c.id = s.category_id
         WHERE e.item_type = 'shop' AND e.created_at >= $1 AND s.pincode IS NOT NULL
         GROUP BY s.pincode, COALESCE(c.slug, s.category)`,
@@ -579,7 +579,7 @@ async function cohortConversion({ windowDays = 90 } = {}) {
               MIN(e.created_at) AS first_booking
          FROM local_shops s
     LEFT JOIN ml_interaction_events e
-           ON e.item_id = s.id
+           ON CAST(e.item_id AS TEXT) = CAST(s.id AS TEXT)
           AND e.item_type = 'shop'
           AND e.event_type IN ('CALL_VENDOR', 'PURCHASE_INTENT')
         WHERE s.created_at >= $1

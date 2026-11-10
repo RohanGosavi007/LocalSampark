@@ -113,7 +113,7 @@ router.get('/home-services/bookings', authenticate, async (req, res, next) => {
     const rows = await query(
       `SELECT b.*, u.full_name AS customer_name, u.phone_number AS customer_phone
          FROM home_service_bookings b
-         LEFT JOIN users u ON b.user_id = u.id
+         LEFT JOIN users u ON b.user_id = CAST(u.id AS TEXT)
          ${where}
         ORDER BY b.created_at DESC
         LIMIT $${params.length}`,

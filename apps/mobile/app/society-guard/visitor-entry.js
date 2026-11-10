@@ -11,7 +11,6 @@ export default function VisitorEntryScreen() {
         
         try {
             const res = await apiPost('/society-preapproval/pre-approve/verify', {
-                societyId: 'dummy-society',
                 passcode
             });
 

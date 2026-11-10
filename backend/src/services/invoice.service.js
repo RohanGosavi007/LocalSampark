@@ -40,7 +40,9 @@ class InvoiceService {
     if (!order) {
       // Check universal_orders
       order = await queryOne(
-        `SELECT uo.id, uo.user_id, uo.shop_id, uo.total_amount, uo.items, uo.delivery_fee,
+        // universal_orders has no items or delivery_fee column on either engine; the
+        // line items are read from order_items below.
+        `SELECT uo.id, uo.user_id, uo.shop_id, uo.total_amount, NULL AS items, 0 AS delivery_fee,
                 uo.payment_method, uo.payment_status,
                 s.name AS shop_name, s.address AS shop_address, s.gstin, s.fssai_license_number,
                 u.full_name AS customer_name, u.phone_number AS customer_phone

@@ -13,8 +13,8 @@
  * sees A's rows" passes just as happily against an unfiltered query.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 
@@ -45,12 +45,12 @@ jest.mock('../../middleware/auth.middleware', () => ({
 const { query, queryOne } = require('../../config/database');
 const svc = require('../../services/territoryResolution.service');
 
-const T_A = 'iso-territory-a';
-const T_B = 'iso-territory-b';
-const PARTNER_A = 'iso-partner-a';
-const PARTNER_B = 'iso-partner-b';
-const USER_A = 'iso-user-a';
-const USER_B = 'iso-user-b';
+const T_A = fx('iso-territory-a');
+const T_B = fx('iso-territory-b');
+const PARTNER_A = fx('iso-partner-a');
+const PARTNER_B = fx('iso-partner-b');
+const USER_A = fx('iso-user-a');
+const USER_B = fx('iso-user-b');
 // Distinct from the pincodes territoryResolution.test.js uses. territories.pincode
 // is UNIQUE and jest runs suites concurrently against one SQLite file, so two
 // suites claiming 411001 collide — and only in a full run, which is the worst
@@ -62,16 +62,16 @@ let app;
 let talukaId;
 
 async function cleanup() {
-  await query("DELETE FROM crm_leads WHERE id LIKE 'iso-lead-%'");
-  await query("DELETE FROM territory_assignment_log WHERE territory_id LIKE 'iso-territory-%'");
-  await query("DELETE FROM franchise_territories WHERE territory_id LIKE 'iso-territory-%'");
-  await query("DELETE FROM franchise_partners WHERE id LIKE 'iso-partner-%'");
-  await query("DELETE FROM territories WHERE id LIKE 'iso-territory-%'");
-  await query("DELETE FROM users WHERE id LIKE 'iso-user-%'");
-  await query("DELETE FROM regions WHERE id LIKE 'iso-zone-%'");
-  await query("DELETE FROM location_talukas WHERE id LIKE 'iso-%'");
-  await query("DELETE FROM location_districts WHERE id LIKE 'iso-%'");
-  await query("DELETE FROM location_states WHERE id LIKE 'iso-%'");
+  await query(`DELETE FROM crm_leads WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM territory_assignment_log WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM franchise_territories WHERE CAST(territory_id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM franchise_partners WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM territories WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM regions WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM location_talukas WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM location_districts WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
+  await query(`DELETE FROM location_states WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
 }
 
 beforeAll(async () => {
@@ -85,20 +85,20 @@ beforeAll(async () => {
   if (taluka) {
     talukaId = taluka.id;
   } else {
-    talukaId = 'iso-taluka';
+    talukaId = fx('iso-taluka');
     await query('INSERT INTO location_states (id, name, code) VALUES ($1, $2, $3)', [
-      'iso-state',
+      fx('iso-state'),
       'Isolation State',
       'ISO',
     ]);
     await query('INSERT INTO location_districts (id, state_id, name) VALUES ($1, $2, $3)', [
-      'iso-district',
-      'iso-state',
+      fx('iso-district'),
+      fx('iso-state'),
       'Isolation District',
     ]);
     await query('INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, $3)', [
       talukaId,
-      'iso-district',
+      fx('iso-district'),
       'Isolation Taluka',
     ]);
   }
@@ -129,9 +129,9 @@ beforeAll(async () => {
 
   // One lead in each partner's area, plus one belonging to nobody.
   const leads = [
-    ['iso-lead-a', 'Anita', PIN_A, T_A, PARTNER_A],
-    ['iso-lead-b', 'Bhaskar', PIN_B, T_B, PARTNER_B],
-    ['iso-lead-orphan', 'Orphan', null, null, null],
+    [fx('iso-lead-a'), 'Anita', PIN_A, T_A, PARTNER_A],
+    [fx('iso-lead-b'), 'Bhaskar', PIN_B, T_B, PARTNER_B],
+    [fx('iso-lead-orphan'), 'Orphan', null, null, null],
   ];
   for (const [id, name, pin, tid, pid] of leads) {
     await query(
@@ -148,15 +148,15 @@ beforeAll(async () => {
   app.use('/franchise-intelligence', require('../../modules/crm/routes/franchise-intelligence.routes'));
 
   // Zones are regions, and a region carries the pincode the scope is keyed on.
-  await query("DELETE FROM regions WHERE id LIKE 'iso-zone-%'");
+  await query(`DELETE FROM regions WHERE CAST(id AS TEXT) LIKE '${fxLike('iso')}'`);
   const insertZone = (id, name, pin) =>
     query(
       `INSERT INTO regions (id, name, state, country, latitude, longitude, pincode, is_active)
-       VALUES ($1, $2, 'Maharashtra', 'India', 18.53, 73.87, $3, 1)`,
+       VALUES ($1, $2, 'Maharashtra', 'India', 18.53, 73.87, $3, '1')`,
       [id, name, pin]
     );
-  await insertZone('iso-zone-a', 'Isolation Zone A', PIN_A);
-  await insertZone('iso-zone-b', 'Isolation Zone B', PIN_B);
+  await insertZone(fx('iso-zone-a'), 'Isolation Zone A', PIN_A);
+  await insertZone(fx('iso-zone-b'), 'Isolation Zone B', PIN_B);
 });
 
 afterAll(async () => {
@@ -174,8 +174,8 @@ describe('GET /franchise/leads cross-franchise isolation', () => {
 
     expect(res.status).toBe(200);
     const ids = res.body.leads.map((l) => l.id);
-    expect(ids).toContain('iso-lead-a');
-    expect(ids).not.toContain('iso-lead-b');
+    expect(ids).toContain(fx('iso-lead-a'));
+    expect(ids).not.toContain(fx('iso-lead-b'));
   });
 
   test("partner B cannot see partner A's lead contact details", async () => {
@@ -183,7 +183,7 @@ describe('GET /franchise/leads cross-franchise isolation', () => {
     const res = await request(app).get('/franchise/leads');
 
     expect(res.status).toBe(200);
-    expect(res.body.leads.map((l) => l.id)).toEqual(['iso-lead-b']);
+    expect(res.body.leads.map((l) => l.id)).toEqual([fx('iso-lead-b')]);
   });
 
   test('an unattributed lead is invisible to every partner', async () => {
@@ -192,22 +192,22 @@ describe('GET /franchise/leads cross-franchise isolation', () => {
     for (const user of [USER_A, USER_B]) {
       mockCurrentUser = { id: user, role: 'franchise_owner' };
       const res = await request(app).get('/franchise/leads');
-      expect(res.body.leads.map((l) => l.id)).not.toContain('iso-lead-orphan');
+      expect(res.body.leads.map((l) => l.id)).not.toContain(fx('iso-lead-orphan'));
     }
   });
 
   test('an administrator still sees every lead, including unattributed ones', async () => {
-    mockCurrentUser = { id: 'iso-admin', role: 'super_admin' };
+    mockCurrentUser = { id: fx('iso-admin'), role: 'super_admin' };
     const res = await request(app).get('/franchise/leads');
 
     expect(res.status).toBe(200);
     expect(res.body.leads.map((l) => l.id)).toEqual(
-      expect.arrayContaining(['iso-lead-a', 'iso-lead-b', 'iso-lead-orphan'])
+      expect.arrayContaining([fx('iso-lead-a'), fx('iso-lead-b'), fx('iso-lead-orphan')])
     );
   });
 
   test('a user who is not a franchise partner is refused, not given everything', async () => {
-    mockCurrentUser = { id: 'iso-user-nobody', role: 'user' };
+    mockCurrentUser = { id: fx('iso-user-nobody'), role: 'user' };
     const res = await request(app).get('/franchise/leads');
 
     expect(res.status).toBe(403);
@@ -272,7 +272,7 @@ describe('lead attribution on creation', () => {
 describe('GET /franchise/dashboard', () => {
   test('counts shops across every pincode held, not just the registration one', async () => {
     // Give partner A a second territory; the dashboard must widen with it.
-    const extra = 'iso-territory-a2';
+    const extra = fx('iso-territory-a2');
     await query('DELETE FROM territories WHERE id = $1', [extra]);
     await query(
       `INSERT INTO territories (id, name, pincode, taluka_id, centroid_lat, centroid_lng, is_active)
@@ -309,40 +309,40 @@ describe('franchise-intelligence zone ownership', () => {
 
   test("a partner cannot read another partner's merchant health scores", async () => {
     mockCurrentUser = { id: USER_B, role: 'franchise_owner' };
-    const res = await request(app).get('/franchise-intelligence/iso-zone-a/health-scores');
+    const res = await request(app).get(`/franchise-intelligence/${fx('iso-zone-a')}/health-scores`);
     expect(res.status).toBe(403);
   });
 
   test("a partner cannot read another partner's prospect list", async () => {
     mockCurrentUser = { id: USER_B, role: 'franchise_owner' };
-    const res = await request(app).get('/franchise-intelligence/iso-zone-a/leads');
+    const res = await request(app).get(`/franchise-intelligence/${fx('iso-zone-a')}/leads`);
     expect(res.status).toBe(403);
   });
 
   test("a partner cannot write outreach into another partner's log", async () => {
     mockCurrentUser = { id: USER_B, role: 'franchise_owner' };
     const res = await request(app)
-      .post('/franchise-intelligence/iso-zone-a/outreach')
+      .post(`/franchise-intelligence/${fx('iso-zone-a')}/outreach`)
       .send({ method: 'call', notes: 'should never be recorded' });
 
     expect(res.status).toBe(403);
 
     const written = await queryOne(
       'SELECT COUNT(*) AS c FROM franchise_outreach_log WHERE region_id = $1',
-      ['iso-zone-a']
+      [fx('iso-zone-a')]
     );
     expect(Number(written.c)).toBe(0);
   });
 
   test('a partner reaches their own zone', async () => {
     mockCurrentUser = { id: USER_B, role: 'franchise_owner' };
-    const res = await request(app).get('/franchise-intelligence/iso-zone-b/leads');
+    const res = await request(app).get(`/franchise-intelligence/${fx('iso-zone-b')}/leads`);
     expect(res.status).toBe(200);
   });
 
   test('an unknown zone is a 404, not a silent pass', async () => {
     mockCurrentUser = { id: USER_B, role: 'franchise_owner' };
-    const res = await request(app).get('/franchise-intelligence/iso-zone-missing/leads');
+    const res = await request(app).get(`/franchise-intelligence/${fx('iso-zone-missing')}/leads`);
     expect(res.status).toBe(404);
   });
 });

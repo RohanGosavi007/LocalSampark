@@ -332,7 +332,8 @@ export default function TerritoryTab({ API_BASE, authHeaders }) {
                 // existing one by eye leaves either a sliver of overlap or — far
                 // worse — a sliver of gap: a black hole with no franchise
                 // assigned, where orders resolve to nothing and nothing errors.
-                const snapped = snapPoint(point, neighbours, { excludeId: selected?.id || null });
+                const inputPt = Array.isArray(point) ? { lat: point[0], lng: point[1] } : point;
+                const snapped = snapPoint(inputPt, neighbours, { excludeId: selected?.id || null });
                 setDrawPoints((points) => [...points, { lng: snapped.lng, lat: snapped.lat }]);
                 if (snapped.snapped) {
                   setNotice(`Snapped to an existing ${snapped.to.kind} (${Math.round(snapped.distanceMetres)} m away).`);

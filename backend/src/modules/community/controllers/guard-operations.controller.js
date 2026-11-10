@@ -12,7 +12,7 @@ const getPatrolRoutes = async (req, res, next) => {
 const startPatrol = async (req, res, next) => {
     try {
         const guardId = req.user.id;
-        const { routeId, societyId } = req.body;
+        const { routeId, societyId } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
 
         const route = await queryOne('SELECT * FROM society_patrol_routes WHERE id = $1', [routeId]);
         if (!route) return res.status(404).json({ error: 'Route not found' });
@@ -73,7 +73,7 @@ const endPatrol = async (req, res, next) => {
 const logVehicle = async (req, res, next) => {
     try {
         const guardId = req.user.id;
-        const { societyId, vehicleNumber, vehicleType, flatNumber, direction, gateId, photo_url, ocr_confidence } = req.body;
+        const { societyId, vehicleNumber, vehicleType, flatNumber, direction, gateId, photo_url, ocr_confidence } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // Direction: 'in' or 'out'
 
         // Check if it's a resident vehicle
@@ -95,7 +95,7 @@ const logVehicle = async (req, res, next) => {
 const logUtilityDelivery = async (req, res, next) => {
     try {
         const guardId = req.user.id;
-        const { societyId, vehicleType, vehicleNumber, vendorName, quantity, challanNumber, notes } = req.body;
+        const { societyId, vehicleType, vehicleNumber, vendorName, quantity, challanNumber, notes } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         // vehicleType e.g., 'water_tanker', 'diesel', 'lpg'
 
         const id = uuidv4();
@@ -112,7 +112,7 @@ const logUtilityDelivery = async (req, res, next) => {
 const rateTarget = async (req, res, next) => {
     try {
         const residentId = req.user.id;
-        const { societyId, targetId, targetType, rating, feedback } = req.body;
+        const { societyId, targetId, targetType, rating, feedback } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         
         if (!rating || rating < 1 || rating > 5) {
             return res.status(400).json({ error: 'Rating must be between 1 and 5' });
@@ -132,7 +132,7 @@ const rateTarget = async (req, res, next) => {
 const triggerIntercom = async (req, res, next) => {
     try {
         const callerId = req.user.id;
-        const { societyId, receiverId, flatNumber } = req.body;
+        const { societyId, receiverId, flatNumber } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
 
         const id = uuidv4();
         await query(`INSERT INTO society_intercom_logs 

@@ -55,7 +55,11 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "NSCameraUsageDescription": "LocalSampark uses the camera to scan QR codes and to photograph products, delivery proof and documents you choose to upload.",
+        "NSPhotoLibraryUsageDescription": "LocalSampark needs access to your photos so you can attach product images, review photos and documents.",
+        "NSMicrophoneUsageDescription": "LocalSampark uses the microphone for voice search and gate intercom calls.",
+        "NSLocationWhenInUseUsageDescription": "LocalSampark uses your location to show nearby shops, check delivery availability and track your order."
       }
     },
     "plugins": [
@@ -78,7 +82,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow LocalSampark to use the camera to scan QR codes and upload photos."
+          "cameraPermission": "Allow LocalSampark to use the camera to scan QR codes and upload photos.",
+          "recordAudioAndroid": false
         }
       ],
       "@sentry/react-native",

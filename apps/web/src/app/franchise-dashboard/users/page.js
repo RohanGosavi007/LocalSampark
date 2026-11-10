@@ -1,40 +1,56 @@
 'use client';
-import React from 'react';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { Search, Filter, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import FranchiseShell, { useFranchiseData, inr, when } from '../components/FranchiseShell';
 
+// Customers who have ordered from shops in this partner's pincodes
+// (GET /franchise/territory-customers). Phone numbers arrive masked.
 export default function FranchiseUsers() {
-  return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-24 pb-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-border pb-6">
-            <div>
-              <h1 className="text-3xl font-black text-text mb-2">Territory Users</h1>
-              <p className="text-text-muted">Manage users for your assigned hyper-local territory.</p>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="w-5 h-5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 bg-card-bg border border-border rounded-xl text-text outline-none focus:border-blue-500 w-64" />
-              </div>
-              <button className="p-2 bg-card-bg border border-border rounded-xl text-text-muted hover:bg-background-alt transition">
-                <Filter className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+  const [search, setSearch] = useState('');
+  const [applied, setApplied] = useState('');
+  const { data, loading, error, reload } = useFranchiseData(
+    `/franchise/territory-customers${applied ? `?search=${encodeURIComponent(applied)}` : ''}`
+  );
+  const customers = (data && data.customers) || [];
 
-          <div className="text-center py-16 bg-card-bg border border-border rounded-3xl">
-            <AlertCircle className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl text-text font-bold mb-2">No Data Available</h3>
-            <p className="text-text-muted">No records found for users in your territory yet.</p>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </>
+  return (
+    <FranchiseShell
+      title="Territory Customers"
+      subtitle="People who have ordered from shops in your pincodes."
+      active="/franchise-dashboard/users"
+      loading={loading}
+      error={error}
+      onRetry={reload}
+      empty={customers.length === 0}
+      emptyText={applied ? `No customers match "${applied}".` : 'No orders have been placed in your territory yet.'}
+      actions={(
+        <form onSubmit={(e) => { e.preventDefault(); setApplied(search.trim()); }} className="flex gap-2">
+          <label htmlFor="cust-search" className="sr-only">Search customers by name</label>
+          <input id="cust-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name" className="px-4 py-2 bg-card-bg border border-border rounded-xl text-text w-56" />
+          <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold">Search</button>
+        </form>
+      )}
+    >
+      <div className="overflow-x-auto bg-card-bg border border-border rounded-3xl">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-text-muted border-b border-border">
+              <th className="p-4">Customer</th><th className="p-4">Phone</th><th className="p-4">Orders</th>
+              <th className="p-4">Delivered value</th><th className="p-4">Last order</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customers.map((c) => (
+              <tr key={c.id} className="border-b border-border last:border-0">
+                <td className="p-4 font-semibold text-text">{c.name}</td>
+                <td className="p-4 text-text-muted">{c.phone || '—'}</td>
+                <td className="p-4">{c.orders}</td>
+                <td className="p-4">{inr(c.deliveredValue)}</td>
+                <td className="p-4 text-text-muted">{when(c.lastOrderAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </FranchiseShell>
   );
 }

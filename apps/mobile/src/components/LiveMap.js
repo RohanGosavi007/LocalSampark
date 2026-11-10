@@ -32,40 +32,43 @@ export default function LiveMap({ destinationCoords, onLocationUpdate }) {
       return;
     }
 
+    let subscription = null;
+    let unmounted = false;
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+      if (status !== 'granted' || unmounted) {
+        if (!unmounted) setErrorMsg('Permission to access location was denied');
         return;
       }
 
       let loc = await Location.getCurrentPositionAsync({});
+      if (unmounted) return;
       setLocation(loc.coords);
       if (onLocationUpdate) {
         onLocationUpdate(loc.coords);
       }
 
       // Subscribe to location updates
-      const subscription = await Location.watchPositionAsync(
+      subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
           timeInterval: 5000,
           distanceInterval: 10,
         },
         (newLoc) => {
+          if (unmounted) return;
           setLocation(newLoc.coords);
           if (onLocationUpdate) {
             onLocationUpdate(newLoc.coords);
           }
         }
       );
-
-      return () => {
-        if (subscription) {
-          subscription.remove();
-        }
-      };
+      if (unmounted && subscription) subscription.remove();
     })();
+    return () => {
+      unmounted = true;
+      if (subscription) subscription.remove();
+    };
   }, [onLocationUpdate]);
 
   if (errorMsg) {

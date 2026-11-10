@@ -5,16 +5,16 @@
  * statements. Two requests sent together both passed the check and both paid.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const REFERRER = 'rfc-referrer';
-const NEWCOMER = 'rfc-newcomer';
+const REFERRER = fx('rfc-referrer');
+const NEWCOMER = fx('rfc-newcomer');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 // The one coin balance (services/coins.service.js), which the apps show.
@@ -23,16 +23,16 @@ const coins = async (id) => Number((await queryOne('SELECT sampark_coins_balance
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM loyalty_transactions WHERE user_id LIKE 'rfc-%'");
-  await query("DELETE FROM loyalty_accounts WHERE user_id LIKE 'rfc-%'");
-  await query("DELETE FROM referrals WHERE referee_id LIKE 'rfc-%' OR referrer_id LIKE 'rfc-%'");
-  await query("DELETE FROM users WHERE id LIKE 'rfc-%'");
+  await query(`DELETE FROM loyalty_transactions WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rfc')}'`);
+  await query(`DELETE FROM loyalty_accounts WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rfc')}'`);
+  await query(`DELETE FROM referrals WHERE CAST(referee_id AS TEXT) LIKE '${fxLike('rfc')}' OR CAST(referrer_id AS TEXT) LIKE '${fxLike('rfc')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('rfc')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
-  await query("INSERT INTO users (id, full_name, phone_number, role, my_referral_code, total_coins) VALUES ($1, 'RFC Referrer', '9811300001', 'user', 'RFCCODE1', 0)", [REFERRER]);
-  await query("INSERT INTO users (id, full_name, phone_number, role, my_referral_code, total_coins) VALUES ($1, 'RFC Newcomer', '9811300002', 'user', 'RFCCODE2', 0)", [NEWCOMER]);
+  await query("INSERT INTO users (id, full_name, phone_number, role, my_referral_code, total_coins) VALUES ($1, 'RFC Referrer', '9811300001', 'user', 'RFCCODE1', '0')", [REFERRER]);
+  await query("INSERT INTO users (id, full_name, phone_number, role, my_referral_code, total_coins) VALUES ($1, 'RFC Newcomer', '9811300002', 'user', 'RFCCODE2', '0')", [NEWCOMER]);
 
   app = express();
   app.use(express.json());
@@ -52,7 +52,7 @@ test('a code is claimed once, however the requests arrive', async () => {
   expect(await coins(REFERRER)).toBe(500);
   expect(await coins(NEWCOMER)).toBe(200);
   expect(await queryMany('SELECT id FROM referrals WHERE referee_id = $1', [NEWCOMER])).toHaveLength(1);
-  expect(await queryMany("SELECT id FROM loyalty_transactions WHERE user_id LIKE 'rfc-%'")).toHaveLength(2);
+  expect(await queryMany(`SELECT id FROM loyalty_transactions WHERE CAST(user_id AS TEXT) LIKE '${fxLike('rfc')}'`)).toHaveLength(2);
 
   // And not again later, with this code or another.
   expect((await claim(NEWCOMER, 'RFCCODE1')).status).toBe(400);
@@ -70,7 +70,7 @@ test('the table itself allows one claim per account', async () => {
   let message = null;
   try {
     await query(
-      "INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ('rfc-second', $1, $2, 'RFCCODE1', 'completed', 1)",
+      `INSERT INTO referrals (id, referrer_id, referee_id, referral_code, status, reward_issued) VALUES ('${fx('rfc-second')}', $1, $2, 'RFCCODE1', 'completed', '1')`,
       [REFERRER, NEWCOMER]
     );
   } catch (err) {

@@ -9,7 +9,6 @@
  * and orderings where the NDCG can be computed exactly.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const fairness = require('../../modules/ml/fairness/exposureFairness');
 const uplift = require('../../modules/ml/causal/upliftModel');

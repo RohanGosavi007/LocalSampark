@@ -13,8 +13,8 @@ export default function MyBillsScreen() {
     const fetchBills = async () => {
         try {
             const res = await api.get('/society-billing/my-bills');
-            if (res.data.success) {
-                setBills(res.data.data);
+            if (res?.success || res?.data?.success) {
+                setBills(res?.data?.data || res?.data || []);
             }
         } catch (error) {
             console.error(error);
@@ -34,7 +34,7 @@ export default function MyBillsScreen() {
                 transactionId: 'TXN' + Date.now()
             });
 
-            if (res.data.success) {
+            if (res?.success || res?.data?.success) {
                 Alert.alert('Success', 'Payment successful! Receipt generated.');
                 fetchBills();
             }

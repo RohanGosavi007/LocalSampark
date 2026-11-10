@@ -11,14 +11,14 @@
  * written out, so the suite does not start failing on a particular date.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const { query } = require('../../config/database');
 const analytics = require('../../services/shopAnalytics.service');
 
-const SHOP = 'analytics-test-shop';
-const ALICE = 'analytics-user-alice';
-const BILAL = 'analytics-user-bilal';
+const SHOP = fx('analytics-test-shop');
+const ALICE = fx('analytics-user-alice');
+const BILAL = fx('analytics-user-bilal');
 
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
@@ -32,15 +32,16 @@ const t3 = new Date(Date.now() - 5 * DAY);
 const old = new Date(Date.now() - 90 * DAY);
 
 const ORDERS = [
-  { id: 'analytics-order-1', user: ALICE, amount: 100, status: 'delivered', at: t1 },
-  { id: 'analytics-order-2', user: ALICE, amount: 300, status: 'delivered', at: t2 },
-  { id: 'analytics-order-3', user: BILAL, amount: 50, status: 'cancelled', at: t3 },
-  { id: 'analytics-order-4', user: BILAL, amount: 999, status: 'delivered', at: old },
+  { id: fx('analytics-order-1'), user: ALICE, amount: 100, status: 'delivered', at: t1 },
+  { id: fx('analytics-order-2'), user: ALICE, amount: 300, status: 'delivered', at: t2 },
+  { id: fx('analytics-order-3'), user: BILAL, amount: 50, status: 'cancelled', at: t3 },
+  { id: fx('analytics-order-4'), user: BILAL, amount: 999, status: 'delivered', at: old },
 ];
 
 async function cleanup() {
-  await query("DELETE FROM orders WHERE id LIKE 'analytics-order-%'");
-  await query("DELETE FROM users WHERE id LIKE 'analytics-user-%'");
+  await query(`DELETE FROM orders WHERE CAST(id AS TEXT) LIKE '${fxLike('analytics')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('analytics')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('analytics')}'`);
 }
 
 beforeAll(async () => {
@@ -48,17 +49,20 @@ beforeAll(async () => {
   for (const [id, name, phone] of [[ALICE, 'Alice Analytics', '9833222001'], [BILAL, 'Bilal Analytics', '9833222002']]) {
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)', [id, name, phone, 'user']);
   }
+  // A real shop row: PostgreSQL enforces orders.shop_id's foreign key, and
+  // switching enforcement off (PRAGMA foreign_keys) is SQLite-only.
+  await query(
+    `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude, is_active)
+     VALUES ($1, $2, 'Analytics Test Shop', 'grocery', 'Test address', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
+    [SHOP, ALICE]
+  );
   for (const o of ORDERS) {
-    // shop_id carries no row behind it on purpose: these reports read orders
-    // alone, and a shop fixture would only add cleanup.
-    await query('PRAGMA foreign_keys = OFF');
     await query(
       `INSERT INTO orders (id, user_id, shop_id, total_amount, delivery_fee, payment_method, order_status,
                            delivery_address, delivery_coordinate, created_at)
-       VALUES ($1, $2, $3, $4, 0, 'cod', $5, 'Test address', '18.53,73.87', $6)`,
+       VALUES ($1, $2, $3, $4, '0', 'cod', $5, 'Test address', 'POINT(73.87 18.53)', $6)`,
       [o.id, o.user, SHOP, o.amount, o.status, stored(o.at)]
     );
-    await query('PRAGMA foreign_keys = ON');
   }
 });
 

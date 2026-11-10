@@ -16,8 +16,8 @@
  * answer 429 to most of the probe, and the admin surface has its own tests.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const path = require('path');
 const Router = require('router');
 
@@ -40,7 +40,7 @@ const { getJwtSecret } = require('../../config/secrets');
 const { errorHandler } = require('../../middleware/error.middleware');
 const apiRouter = require('../../routes');
 
-const CITIZEN = 'rsm-citizen';
+const CITIZEN = fx('rsm-citizen');
 
 /** Collects every route with the path it is served at. */
 function collectRoutes(router, prefix = '') {
@@ -82,7 +82,10 @@ const PUBLIC = [
   'GET /cart', 'POST /cart', 'PUT /cart', 'DELETE /cart',
   // read-only lookups behind /carpool, /jobs, /marketplace sharing one router
   'GET /marketplace/', 'GET /carpool/', 'GET /jobs/', 'POST /jobs/', 'POST /marketplace/', 'POST /carpool/',
-  'GET /shops/', 'GET /job-cards/', 'GET /upload/files/', 'POST /admin-auth/logout',
+  'GET /shops/', 'GET /job-cards/', 'GET /upload/files/', 'POST /admin-auth/logout', 'GET /features', 'GET /support/grievance-officer', 'GET /trust-reviews/shop/', 'POST /users/account-deletion-request', 'POST /account-deletion-request',
+  // Krishi catalogue read (reviewed 2026-11-09): read-only, visitor columns only, LIMIT <= 100,
+  // behind requireFeature('krishi') (403 while off) and the global rate limiter.
+  'GET /krishi/listings',
 ];
 
 const isPublic = (r) => PUBLIC.some((p) => `${r.method} ${r.path}`.startsWith(p));
@@ -103,7 +106,7 @@ async function citizenToken() {
 
 beforeAll(async () => {
   await query("DELETE FROM users WHERE id = $1", [CITIZEN]);
-  await query("INSERT INTO users (id, full_name, phone_number, role, token_version) VALUES ($1, 'Smoke Citizen', '9863000001', 'user', 0)", [CITIZEN]);
+  await query("INSERT INTO users (id, full_name, phone_number, role, token_version) VALUES ($1, 'Smoke Citizen', '9863000001', 'user', '0')", [CITIZEN]);
 
   routes = collectRoutes(apiRouter).filter((r) => !r.path.startsWith('/admin/'));
   app = express();

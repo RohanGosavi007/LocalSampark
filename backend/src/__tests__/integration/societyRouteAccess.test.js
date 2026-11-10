@@ -11,8 +11,8 @@
  * Each case here is a request that used to succeed.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const express = require('express');
 const request = require('supertest');
@@ -20,14 +20,14 @@ const jwt = require('jsonwebtoken');
 const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const SOC_A = 'sra-society-a';
-const SOC_B = 'sra-society-b';
-const RESIDENT = 'sra-resident-101';
-const NEIGHBOUR = 'sra-resident-102';
-const GUARD = 'sra-guard-a';
-const COMMITTEE = 'sra-admin-a';
-const OUTSIDER = 'sra-outsider-b';
-const STAFF = 'sra-platform-admin';
+const SOC_A = fx('sra-society-a');
+const SOC_B = fx('sra-society-b');
+const RESIDENT = fx('sra-resident-101');
+const NEIGHBOUR = fx('sra-resident-102');
+const GUARD = fx('sra-guard-a');
+const COMMITTEE = fx('sra-admin-a');
+const OUTSIDER = fx('sra-outsider-b');
+const STAFF = fx('sra-platform-admin');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 
@@ -36,12 +36,12 @@ let app;
 async function cleanup() {
   for (const table of ['ai_cctv_alerts', 'utility_meters', 'maintenance_bills', 'visitor_logs', 'intercom_logs',
     'society_visitors', 'society_bookings', 'society_complaints', 'society_notices', 'society_vault', 'resident_directory']) {
-    await query(`DELETE FROM ${table} WHERE society_id LIKE 'sra-society-%'`);
+    await query(`DELETE FROM ${table} WHERE CAST(society_id AS TEXT) LIKE '${fxLike('sra')}'`);
   }
-  await query("DELETE FROM society_admin_roles WHERE user_id LIKE 'sra-%'");
-  await query("DELETE FROM society_members WHERE user_id LIKE 'sra-%'");
-  await query("DELETE FROM societies WHERE id LIKE 'sra-society-%' OR name = 'SRA Staff Created'");
-  await query("DELETE FROM users WHERE id LIKE 'sra-%'");
+  await query(`DELETE FROM society_admin_roles WHERE CAST(user_id AS TEXT) LIKE '${fxLike('sra')}'`);
+  await query(`DELETE FROM society_members WHERE CAST(user_id AS TEXT) LIKE '${fxLike('sra')}'`);
+  await query(`DELETE FROM societies WHERE CAST(id AS TEXT) LIKE '${fxLike('sra')}' OR name = 'SRA Staff Created'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('sra')}'`);
 }
 
 beforeAll(async () => {
@@ -55,7 +55,7 @@ beforeAll(async () => {
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)', [id, `SRA ${id}`, phone, role]);
   }
   for (const [id, name] of [[SOC_A, 'SRA Green Acres'], [SOC_B, 'SRA Blue Meadows']]) {
-    await query("INSERT INTO societies (id, name, address, is_active) VALUES ($1, $2, '1 Society Road, Pune', 1)", [id, name]);
+    await query("INSERT INTO societies (id, name, address, is_active) VALUES ($1, $2, '1 Society Road, Pune', '1')", [id, name]);
   }
   const members = [
     [RESIDENT, SOC_A, 'resident', '101'], [NEIGHBOUR, SOC_A, 'resident', '102'], [GUARD, SOC_A, 'guard', null],
@@ -64,16 +64,16 @@ beforeAll(async () => {
   for (const [userId, societyId, role, flat] of members) {
     await query(
       `INSERT INTO society_members (id, society_id, user_id, flat_number, role, is_active, status)
-       VALUES ($1, $2, $3, $4, $5, 1, 'active')`,
+       VALUES ($1, $2, $3, $4, $5, '1', 'active')`,
       [crypto.randomUUID(), societyId, userId, flat, role]
     );
   }
 
-  await query("INSERT INTO utility_meters (id, society_id, flat_number, meter_type, current_balance) VALUES ('sra-meter-a101', $1, '101', 'electricity', 420)", [SOC_A]);
-  await query("INSERT INTO utility_meters (id, society_id, flat_number, meter_type, current_balance) VALUES ('sra-meter-b101', $1, '101', 'electricity', 77)", [SOC_B]);
-  await query("INSERT INTO society_notices (id, society_id, posted_by, title, content) VALUES ('sra-notice-1', $1, $2, 'Water tank cleaning', 'Saturday, 10 am')", [SOC_A, COMMITTEE]);
-  await query("INSERT INTO society_vault (id, society_id, document_name, file_url) VALUES ('sra-vault-1', $1, 'Audit report', 'https://example.org/audit.pdf')", [SOC_A]);
-  await query("INSERT INTO resident_directory (id, society_id, user_id, profession) VALUES ('sra-dir-1', $1, $2, 'Doctor')", [SOC_A, RESIDENT]);
+  await query(`INSERT INTO utility_meters (id, society_id, flat_number, meter_type, current_balance) VALUES ('${fx('sra-meter-a101')}', $1, '101', 'electricity', 420)`, [SOC_A]);
+  await query(`INSERT INTO utility_meters (id, society_id, flat_number, meter_type, current_balance) VALUES ('${fx('sra-meter-b101')}', $1, '101', 'electricity', 77)`, [SOC_B]);
+  await query(`INSERT INTO society_notices (id, society_id, posted_by, title, content) VALUES ('${fx('sra-notice-1')}', $1, $2, 'Water tank cleaning', 'Saturday, 10 am')`, [SOC_A, COMMITTEE]);
+  await query(`INSERT INTO society_vault (id, society_id, document_name, file_url) VALUES ('${fx('sra-vault-1')}', $1, 'Audit report', 'https://example.org/audit.pdf')`, [SOC_A]);
+  await query(`INSERT INTO resident_directory (id, society_id, user_id, profession) VALUES ('${fx('sra-dir-1')}', $1, $2, 'Doctor')`, [SOC_A, RESIDENT]);
 
   app = express();
   app.use(express.json({
@@ -82,7 +82,7 @@ beforeAll(async () => {
   app.use('/societies', require('../../modules/community/routes/society.routes'));
   app.use('/society-admin', require('../../modules/community/routes/society-admin.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -140,7 +140,7 @@ describe('meters', () => {
     const own = await meters(RESIDENT, '101');
     expect(own.status).toBe(200);
     // Flat 101 exists in both societies; only this society's meter comes back.
-    expect(own.body.meters.map((m) => m.id)).toEqual(['sra-meter-a101']);
+    expect(own.body.meters.map((m) => m.id)).toEqual([fx('sra-meter-a101')]);
 
     expect((await meters(NEIGHBOUR, '101')).status).toBe(403);
     expect((await meters(OUTSIDER, '101', SOC_A)).status).toBe(403);
@@ -161,7 +161,7 @@ describe('the module reader', () => {
   test('members read the notice board and directory; the vault is for the office and the desk', async () => {
     const notices = await read(RESIDENT, 'society_notices');
     expect(notices.status).toBe(200);
-    expect(notices.body.data.map((n) => n.id)).toEqual(['sra-notice-1']);
+    expect(notices.body.data.map((n) => n.id)).toEqual([fx('sra-notice-1')]);
 
     // No created_at on this table; it used to answer "Server error".
     const directory = await read(RESIDENT, 'resident_directory');
@@ -209,7 +209,7 @@ describe('the CCTV webhook', () => {
     const row = await queryOne("SELECT snapshot_url FROM ai_cctv_alerts WHERE society_id = $1 AND camera_id = 'gate-2'", [SOC_A]);
     expect(row.snapshot_url).toBeNull();
 
-    const nowhere = { ...body, society_id: 'sra-society-nope' };
+    const nowhere = { ...body, society_id: fx('sra-society-nope') };
     expect((await deliver(nowhere, sign(nowhere, 'camera-secret'))).status).toBe(404);
   });
 });

@@ -166,6 +166,8 @@ router.use('/franchise-intelligence', require('../modules/crm/routes/franchise-i
 router.use('/campaigns', require('../modules/crm/routes/campaigns.routes'));
 router.use('/saas', require('../modules/crm/routes/saas.routes'));
 router.use('/gtm', require('../modules/crm/routes/gtm.routes'));
+// Krishi rural marketplace: public read-only listings, off at launch (403 until FEATURE_KRISHI=true).
+router.use('/krishi', requireFeature('krishi'), require('../modules/services/routes/krishi.routes'));
 router.use('/analytics', require('../modules/crm/routes/ai-analytics.routes'));
 
 // ─── 10x NEW: FRAUD ADMIN PANEL ──────────────────────────

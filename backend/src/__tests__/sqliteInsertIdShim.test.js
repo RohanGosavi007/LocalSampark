@@ -1,4 +1,9 @@
 /**
+ * @engine sqlite-only — tests the SQLite driver's lastID shim for INSERT ... RETURNING.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+process.env.USE_SQLITE = 'true';
+/**
  * The SQLite driver gives an INSERT a generated id when it names none, the way
  * a PostgreSQL column default would. It did so with two regular expressions,
  * and each case below is a live statement that came out wrong:
@@ -12,12 +17,12 @@
  * success, which is why they need tests rather than a look at the logs.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('./helpers/fixtureIds');
 const { query, queryOne } = require('../config/database');
 
-const USER = 'shim-user-0001';
-const WALLET = 'shim-wallet-0001';
+const USER = fx('shim-user-0001');
+const WALLET = fx('shim-wallet-0001');
 
 async function cleanup() {
   await query('DELETE FROM wallet_transactions WHERE wallet_id = $1', [WALLET]);
@@ -41,7 +46,7 @@ afterAll(cleanup);
 test('a table keyed on something other than id is inserted into as written', async () => {
   // loyalty_accounts is keyed on user_id and has no id column.
   await query(
-    'INSERT INTO loyalty_accounts (user_id, sampark_coins_balance) VALUES ($1, 0) ON CONFLICT (user_id) DO NOTHING',
+    `INSERT INTO loyalty_accounts (user_id, sampark_coins_balance) VALUES ($1, '0') ON CONFLICT (user_id) DO NOTHING`,
     [USER]
   );
   const row = await queryOne('SELECT * FROM loyalty_accounts WHERE user_id = $1', [USER]);

@@ -1,9 +1,10 @@
 const { query, queryOne, queryMany } = require('../../../config/database');
 const { v4: uuidv4 } = require('uuid');
+const { sqlDate, dayOf } = require('../../../utils/sqlTime');
 
 const configureGate = async (req, res, next) => {
     try {
-        const { societyId, gateName, gateType, locationDescription } = req.body;
+        const { societyId, gateName, gateType, locationDescription } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         if (!societyId || !gateName || !String(gateName).trim()) {
             return res.status(400).json({ success: false, error: 'societyId and gateName are required' });
         }
@@ -61,8 +62,8 @@ const getGateDashboard = async (req, res, next) => {
         const gates = await queryMany('SELECT * FROM society_gates WHERE society_id = $1 AND is_active = \'1\'', [societyId]);
         
         for (const gate of gates) {
-            gate.todayVehicles = (await queryOne('SELECT COUNT(*) as cnt FROM society_vehicle_log WHERE gate_id = $1 AND date(created_at) = date("now")', [gate.id])).cnt;
-            gate.todayUtilities = (await queryOne('SELECT COUNT(*) as cnt FROM society_utility_deliveries WHERE society_id = $1 AND date(created_at) = date("now")', [societyId])).cnt; // usually utilities aren't strictly by gate, just for the society, but we can aggregate here
+            gate.todayVehicles = (await queryOne(`SELECT COUNT(*) as cnt FROM society_vehicle_log WHERE gate_id = $1 AND ${dayOf('created_at')} = $2`, [gate.id, sqlDate()])).cnt;
+            gate.todayUtilities = (await queryOne(`SELECT COUNT(*) as cnt FROM society_utility_deliveries WHERE society_id = $1 AND ${dayOf('created_at')} = $2`, [societyId, sqlDate()])).cnt; // usually utilities aren't strictly by gate, just for the society, but we can aggregate here
         }
         
         res.json({ success: true, data: gates });

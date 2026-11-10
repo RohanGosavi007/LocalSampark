@@ -1,4 +1,9 @@
 /**
+ * @engine sqlite-only — built on setup/testDb.js and reads the SQLite schema.
+ * Excluded from the PostgreSQL run (jest.config.js); runs in the SQLite gate.
+ */
+process.env.USE_SQLITE = 'true';
+/**
  * shop_products schema contract.
  *
  * The cart's stock check ran `SELECT stock_qty FROM shop_products` — a column

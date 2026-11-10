@@ -1,6 +1,7 @@
 // From '@sentry/nextjs/config', not '@sentry/nextjs': the root re-export is
 // deprecated in v10 and stops working in v11.
 import { withSentryConfig } from '@sentry/nextjs/config';
+import { ADMIN_CONSOLE_TABS, adminConsoleUrl, FRANCHISE_REDIRECTS } from './src/lib/adminConsole.mjs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -30,6 +31,27 @@ const nextConfig = {
       'react-leaflet',
       'leaflet',
     ]
+  },
+  // /admin-dashboard modules that only had placeholder pages here are served
+  // by the dedicated admin console. Exact paths only: nested real pages such as
+  // /admin-dashboard/logistics/map stay in this app.
+  //
+  // /franchise/* sub-pages were static "Module Provisioned" placeholders that
+  // duplicated /franchise-dashboard/*, which reads /api/v1/franchise/*. Each is
+  // sent to the wired page closest to it. /franchise itself (the public
+  // partner application) and /franchise/territory (live map) are real.
+  async redirects() {
+    const adminConsole = Object.keys(ADMIN_CONSOLE_TABS).map((key) => ({
+      source: `/admin-dashboard/${key}`,
+      destination: adminConsoleUrl(key),
+      permanent: false,
+    }));
+    const franchise = Object.entries(FRANCHISE_REDIRECTS).map(([key, destination]) => ({
+      source: `/franchise/${key}`,
+      destination,
+      permanent: false,
+    }));
+    return [...adminConsole, ...franchise];
   },
   // Increase chunk loading timeout to prevent ChunkLoadError on slow dev compilations
   webpack: (config, { isServer }) => {

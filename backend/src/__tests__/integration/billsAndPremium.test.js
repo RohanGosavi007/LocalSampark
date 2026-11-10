@@ -15,8 +15,8 @@
  * recording anything, and records the bill as 'processing'.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const express = require('express');
 const request = require('supertest');
@@ -24,8 +24,8 @@ const jwt = require('jsonwebtoken');
 const { query, queryOne } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const USER = 'bp-user';
-const PARTNER_USER = 'bp-partner';
+const USER = fx('bp-user');
+const PARTNER_USER = fx('bp-partner');
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 let app;
 
@@ -33,23 +33,23 @@ const balance = async () => Number((await queryOne('SELECT balance FROM wallets 
 const bills = async () => (await query('SELECT * FROM utility_bills WHERE user_id = $1', [USER])).rows;
 
 async function cleanup() {
-  await query("DELETE FROM franchise_earnings WHERE franchise_id LIKE 'bp-%'");
-  await query("DELETE FROM franchise_partners WHERE id LIKE 'bp-%'");
-  await query("DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id LIKE 'bp-%')");
-  await query("DELETE FROM wallets WHERE user_id LIKE 'bp-%'");
-  await query("DELETE FROM utility_bills WHERE user_id LIKE 'bp-%'");
-  await query("DELETE FROM user_subscriptions WHERE user_id LIKE 'bp-%'");
-  await query("DELETE FROM payments WHERE user_id LIKE 'bp-%'");
-  await query("DELETE FROM users WHERE id LIKE 'bp-%'");
-  await query("DELETE FROM regions WHERE id LIKE 'bp-%'");
+  await query(`DELETE FROM franchise_earnings WHERE CAST(franchise_id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM franchise_partners WHERE CAST(id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('bp')}')`);
+  await query(`DELETE FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM utility_bills WHERE CAST(user_id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM user_subscriptions WHERE CAST(user_id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM payments WHERE CAST(user_id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('bp')}'`);
+  await query(`DELETE FROM regions WHERE CAST(id AS TEXT) LIKE '${fxLike('bp')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
   await query(
-    `INSERT INTO regions (id, name, state, country, latitude, longitude, pincode) VALUES ('bp-region', 'BP Region', 'MH', 'India', 18.5, 73.8, '411999')`
+    `INSERT INTO regions (id, name, state, country, latitude, longitude, pincode) VALUES ('${fx('bp-region')}', 'BP Region', 'MH', 'India', 18.5, 73.8, '411999')`
   );
-  await query("INSERT INTO users (id, full_name, phone_number, role, region_id) VALUES ($1, 'Payer', '9860900001', 'user', 'bp-region')", [USER]);
+  await query(`INSERT INTO users (id, full_name, phone_number, role, region_id) VALUES ($1, 'Payer', '9860900001', 'user', '${fx('bp-region')}')`, [USER]);
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'Partner', '9860900002', 'user')", [PARTNER_USER]);
 
   app = express();
@@ -58,7 +58,7 @@ beforeAll(async () => {
   app.use('/bills', require('../../modules/ecommerce/routes/bills.routes'));
   app.use('/payments', require('../../modules/ecommerce/routes/payment.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(async () => { delete process.env.BILL_PAY_ENABLED; await cleanup(); });
@@ -182,10 +182,10 @@ describe('bill payment', () => {
   describe('when open (the default)', () => {
     beforeAll(async () => {
       delete process.env.BILL_PAY_ENABLED;
-      await query("INSERT INTO wallets (id, user_id, balance) VALUES ('bp-wallet', $1, 1000)", [USER]);
+      await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('bp-wallet')}', $1, 1000)`, [USER]);
       await query(
         `INSERT INTO franchise_partners (id, user_id, region_id, territory_name, territory_pincode, status)
-         VALUES ('bp-partner', $1, 'bp-region', 'BP Territory', '411999', 'active')`,
+         VALUES ('${fx('bp-partner')}', $1, '${fx('bp-region')}', 'BP Territory', '411999', 'active')`,
         [PARTNER_USER]
       );
     });
@@ -203,7 +203,7 @@ describe('bill payment', () => {
       expect(res.status).toBe(400);
       expect(await balance()).toBe(before);
       expect(await bills()).toHaveLength(0);
-      expect((await query("SELECT * FROM franchise_earnings WHERE franchise_id = 'bp-partner'")).rows).toHaveLength(0);
+      expect((await query(`SELECT * FROM franchise_earnings WHERE franchise_id = '${fx('bp-partner')}'`)).rows).toHaveLength(0);
     });
 
     test('refuses when the wallet cannot cover it, and records nothing', async () => {
@@ -212,7 +212,7 @@ describe('bill payment', () => {
       expect(res.body.code).toBe('INSUFFICIENT_BALANCE');
       expect(await balance()).toBe(1000);
       expect(await bills()).toHaveLength(0);
-      expect((await query("SELECT * FROM franchise_earnings WHERE franchise_id = 'bp-partner'")).rows).toHaveLength(0);
+      expect((await query(`SELECT * FROM franchise_earnings WHERE franchise_id = '${fx('bp-partner')}'`)).rows).toHaveLength(0);
     });
 
     test('takes the money, records a bill in progress (not completed), and credits the commission on the validated amount', async () => {
@@ -225,7 +225,7 @@ describe('bill payment', () => {
       expect(bill).toMatchObject({ provider: 'tata', status: 'processing' });
       expect(Number(bill.amount)).toBeCloseTo(333.34, 2);
 
-      const earning = await queryOne("SELECT * FROM franchise_earnings WHERE franchise_id = 'bp-partner'");
+      const earning = await queryOne(`SELECT * FROM franchise_earnings WHERE franchise_id = '${fx('bp-partner')}'`);
       expect(Number(earning.amount)).toBeCloseTo(3.33, 2); // 1% of 333.34, not of what the client typed
       expect(earning.reference_id).toBe(bill.id);
 

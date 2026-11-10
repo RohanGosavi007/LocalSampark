@@ -208,7 +208,7 @@ router.get('/mine', authenticate, attachFranchiseScope, requireFranchise, async 
       `SELECT ft.id AS assignment_id, ft.territory_id, ft.pincode, ft.status,
               ft.commission_rate, ft.buffer_radius_km, ft.assigned_at,
               t.name AS territory_name, t.centroid_lat, t.centroid_lng,
-              COALESCE(t.boundary_verified, 0) AS boundary_verified
+              CASE WHEN t.boundary_verified = '1' THEN 1 ELSE 0 END AS boundary_verified
          FROM franchise_territories ft
          JOIN territories t ON t.id = ft.territory_id
         WHERE ft.franchise_partner_id = $1 AND ft.status = 'ACTIVE'
@@ -282,8 +282,8 @@ router.get('/admin/list', ...adminOnly, async (req, res, next) => {
     const res1 = await query(
       `SELECT t.id, t.name, t.pincode, t.centroid_lat, t.centroid_lng,
               ${boundarySelect}
-              COALESCE(t.boundary_verified, 0) AS boundary_verified,
-              COALESCE(t.centroid_verified, 0) AS centroid_verified,
+              CASE WHEN t.boundary_verified = '1' THEN 1 ELSE 0 END AS boundary_verified,
+              CASE WHEN t.centroid_verified = '1' THEN 1 ELSE 0 END AS centroid_verified,
               ft.franchise_partner_id,
               fp.territory_name AS franchise_name
          FROM territories t

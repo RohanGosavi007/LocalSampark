@@ -96,6 +96,7 @@ if (typeof window !== 'undefined' && !window.__fetch_patched) {
 
     const response = await originalFetch(...args);
 
+    if (response.ok && isOurApiRequest(args[0])) { sessionEndHandled = false; }
     if (response.status === 401 && !sessionEndHandled && isOurApiRequest(args[0])) {
       sessionEndHandled = true;
       try {

@@ -1,0 +1,56 @@
+=== Playwright E2E Output ===
+
+Running 46 tests using 1 worker
+
+  ok  1 [web-chromium] › tests\e2e\web\auth-flow.spec.js:11:3 › Auth Flow › should show login page with phone input (12.6s)
+  ok  2 [web-chromium] › tests\e2e\web\auth-flow.spec.js:17:3 › Auth Flow › should show register page with form fields (3.9s)
+  ok  3 [web-chromium] › tests\e2e\web\auth-flow.spec.js:26:3 › Auth Flow › should navigate from login to register (2.9s)
+  ok  4 [web-chromium] › tests\e2e\web\auth-flow.spec.js:36:3 › Auth Flow › should show forgot password page (3.7s)
+  ok  5 [web-chromium] › tests\e2e\web\auth-flow.spec.js:42:3 › Auth Flow › should prevent empty form submission on login (2.7s)
+  ok  6 [web-chromium] › tests\e2e\web\auth-flow.spec.js:63:3 › Auth Flow › should reject invalid phone number format (1.6s)
+  ok  7 [web-chromium] › tests\e2e\web\homepage.spec.js:11:3 › Homepage › should load without errors and return 200 (2.4s)
+  ok  8 [web-chromium] › tests\e2e\web\homepage.spec.js:16:3 › Homepage › should display the main title and tagline (2.3s)
+  ok  9 [web-chromium] › tests\e2e\web\homepage.spec.js:23:3 › Homepage › should have correct SEO meta tags (2.3s)
+  ok 10 [web-chromium] › tests\e2e\web\homepage.spec.js:40:3 › Homepage › should have working navigation links (2.5s)
+  ok 11 [web-chromium] › tests\e2e\web\homepage.spec.js:50:3 › Homepage › should display platform service pillars (2.4s)
+  ok 12 [web-chromium] › tests\e2e\web\homepage.spec.js:62:3 › Homepage › should be responsive on mobile viewport (1.8s)
+  ok 13 [web-chromium] › tests\e2e\web\homepage.spec.js:72:3 › Homepage › should not have any console errors (2.7s)
+  ok 14 [web-chromium] › tests\e2e\web\homepage.spec.js:90:3 › Homepage › should load within 5 seconds (performance check) (2.2s)
+  ok 15 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › / does not overflow a 1280px screen (5.4s)
+  ok 16 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /community does not overflow a 1280px screen (7.6s)
+  ok 17 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /shops does not overflow a 1280px screen (8.0s)
+  ok 18 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /login does not overflow a 1280px screen (4.7s)
+  ok 19 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /services does not overflow a 1280px screen (6.7s)
+  ok 20 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › / does not overflow a 375px screen (5.1s)
+  ok 21 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /community does not overflow a 375px screen (4.8s)
+  ok 22 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /shops does not overflow a 375px screen (4.8s)
+  ok 23 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /login does not overflow a 375px screen (4.6s)
+  ok 24 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /services does not overflow a 375px screen (4.8s)
+  ok 25 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:11:3 › Shop Browsing › should load shops listing page (2.2s)
+  x  26 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:16:3 › Shop Browsing › should display shop cards or empty state (30.3s)
+  ok 27 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:16:3 › Shop Browsing › should display shop cards or empty state (retry #1) (10.4s)
+  ok 28 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:24:3 › Shop Browsing › should have search/filter functionality (3.3s)
+  ok 29 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:37:3 › Services Page › should load services page (1.5s)
+  ok 30 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:42:3 › Services Page › should display service categories (2.2s)
+  ok 31 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:53:3 › Community Pages › should load community page (1.4s)
+  ok 32 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:58:3 › Community Pages › should load townsquare page (9.0s)
+  ok 33 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:63:3 › Community Pages › should load events page (1.9s)
+  ok 34 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:71:3 › Dashboard Pages › should load delivery dashboard (6.5s)
+  ok 35 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:76:3 › Dashboard Pages › should load shop dashboard (4.7s)
+  ok 36 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:81:3 › Dashboard Pages › should load franchise dashboard (5.0s)
+  ok 37 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:88:3 › Dashboard Pages › should load the order tracking page (4.4s)
+  ok 38 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:96:3 › Static Pages › should load about page (3.7s)
+  ok 39 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:101:3 › Static Pages › should load download page (4.6s)
+  ok 40 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:106:3 › Static Pages › should load premium page (2.2s)
+  ok 41 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:111:3 › Static Pages › should show 404 page for unknown routes (3.5s)
+  ok 42 [web-chromium] › tests\e2e\web\theme.spec.js:76:5 › theme system › a stored "light" preference survives hydration (9.4s)
+  ok 43 [web-chromium] › tests\e2e\web\theme.spec.js:76:5 › theme system › a stored "dark" preference survives hydration (9.5s)
+
+[WebServer] ⚠️  Running in non-production mode. Strict validation skipped.
+[WebServer]    13 optional service keys not configured (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, FIREBASE_PROJECT_ID...)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-09T19:19:01.330Z","requestId":"req-1794251941329-27ujtp","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-09T19:19:30.905Z","requestId":"req-1794251970905-5xjcco","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-09T19:20:42.914Z","requestId":"req-1794252042914-ac29wr","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/orders/my-orders from ::1 {"timestamp":"2026-11-09T19:21:14.577Z","requestId":"req-1794252074576-fzx5xv","method":"GET","path":"/api/v1/orders/my-orders","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (132kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+[WebServer] <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (139kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)

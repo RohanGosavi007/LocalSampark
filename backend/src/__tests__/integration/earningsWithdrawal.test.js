@@ -6,17 +6,17 @@
  * "processed successfully" with no payout of any kind behind it.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const EARNER = 'wdr-earner';
-const VICTIM = 'wdr-victim';
-const ADMIN = 'wdr-admin';
+const EARNER = fx('wdr-earner');
+const VICTIM = fx('wdr-victim');
+const ADMIN = fx('wdr-admin');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 const balance = async (userId) => Number((await queryOne('SELECT balance FROM wallets WHERE user_id = $1', [userId])).balance);
@@ -24,27 +24,27 @@ const balance = async (userId) => Number((await queryOne('SELECT balance FROM wa
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM payout_requests WHERE requested_by LIKE 'wdr-%'");
-  await query("DELETE FROM user_earnings WHERE user_id LIKE 'wdr-%'");
-  await query("DELETE FROM delivery_agents WHERE user_id LIKE 'wdr-%'");
-  await query("DELETE FROM wallet_transactions WHERE wallet_id LIKE 'wdr-%'");
-  await query("DELETE FROM wallets WHERE id LIKE 'wdr-%'");
-  await query("DELETE FROM users WHERE id LIKE 'wdr-%'");
+  await query(`DELETE FROM payout_requests WHERE CAST(requested_by AS TEXT) LIKE '${fxLike('wdr')}'`);
+  await query(`DELETE FROM user_earnings WHERE CAST(user_id AS TEXT) LIKE '${fxLike('wdr')}'`);
+  await query(`DELETE FROM delivery_agents WHERE CAST(user_id AS TEXT) LIKE '${fxLike('wdr')}'`);
+  await query(`DELETE FROM wallet_transactions WHERE CAST(wallet_id AS TEXT) LIKE '${fxLike('wdr')}'`);
+  await query(`DELETE FROM wallets WHERE CAST(id AS TEXT) LIKE '${fxLike('wdr')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('wdr')}'`);
 }
 
 beforeAll(async () => {
   await cleanup();
   for (const [id, phone, role] of [[EARNER, '9811400001', 'user'], [VICTIM, '9811400002', 'user'], [ADMIN, '9811400003', 'super_admin']]) {
     await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $2, $3, $4)', [id, `WDR ${id}`, phone, role]);
-    await query('INSERT INTO wallets (id, user_id, balance) VALUES ($1, $2, 1000)', [`wdr-wallet-${id}`, id]);
+    await query('INSERT INTO wallets (id, user_id, balance) VALUES ($1, $2, 1000)', [fx(`wdr-wallet-${id}`), id]);
   }
-  await query("INSERT INTO user_earnings (id, user_id, earning_type, amount) VALUES ('wdr-earning-1', $1, 'referral', 250)", [VICTIM]);
+  await query(`INSERT INTO user_earnings (id, user_id, earning_type, amount) VALUES ('${fx('wdr-earning-1')}', $1, 'referral', 250)`, [VICTIM]);
 
   app = express();
   app.use(express.json());
   app.use('/earnings', require('../../modules/crm/routes/earnings.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -120,15 +120,15 @@ test('earnings are read by the person who earned them', async () => {
 });
 
 test('a rider holding cash from deliveries can withdraw only what is left over it', async () => {
-  await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ('wdr-rider', 'WDR Rider', '9811400004', 'delivery_agent')");
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('wdr-wallet-rider', 'wdr-rider', 500)");
-  await query("INSERT INTO delivery_agents (id, user_id, vehicle_type, kyc_status, cash_in_hand) VALUES ('wdr-agent', 'wdr-rider', 'motorcycle', 'active', 350)");
+  await query(`INSERT INTO users (id, full_name, phone_number, role) VALUES ('${fx('wdr-rider')}', 'WDR Rider', '9811400004', 'delivery_agent')`);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('wdr-wallet-rider')}', '${fx('wdr-rider')}', 500)`);
+  await query(`INSERT INTO delivery_agents (id, user_id, vehicle_type, kyc_status, cash_in_hand) VALUES ('${fx('wdr-agent')}', '${fx('wdr-rider')}', 'motorcycle', 'active', 350)`);
 
-  const refused = await withdraw('wdr-rider', { amount: 200, upiId: 'rider@upi' });
+  const refused = await withdraw(fx('wdr-rider'), { amount: 200, upiId: 'rider@upi' });
   expect(refused.status).toBe(409);
   expect(refused.body).toMatchObject({ code: 'CASH_TO_DEPOSIT', cashInHand: 350, withdrawable: 150 });
-  expect(await balance('wdr-rider')).toBe(500);
+  expect(await balance(fx('wdr-rider'))).toBe(500);
 
-  expect((await withdraw('wdr-rider', { amount: 150, upiId: 'rider@upi' })).status).toBe(201);
-  expect(await balance('wdr-rider')).toBe(350);
+  expect((await withdraw(fx('wdr-rider'), { amount: 150, upiId: 'rider@upi' })).status).toBe(201);
+  expect(await balance(fx('wdr-rider'))).toBe(350);
 });

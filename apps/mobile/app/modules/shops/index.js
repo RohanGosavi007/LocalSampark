@@ -62,7 +62,8 @@ export default function ShopsScreen() {
       const matchesSearch = (shop.name || '').toLowerCase().includes((searchTerm || '').toLowerCase());
       const matchesDelivery = filterDelivery ? shop.delivery_available === 1 : true;
       const matchesTopRated = filterTopRated ? (shop.rating >= 4.0) : true;
-      return matchesSearch && matchesDelivery && matchesTopRated;
+      const matchesOpen = filterOpen ? (shop.is_active === 1 || shop.is_active === true || shop.busy_status !== 'closed') : true;
+      return matchesSearch && matchesDelivery && matchesTopRated && matchesOpen;
     });
   }, [shops, searchTerm, filterDelivery, filterTopRated]);
 
@@ -111,7 +112,7 @@ export default function ShopsScreen() {
     const shopCategory = categories.find(c => c.id === shop.category_id);
     const isRestaurant = shopCategory?.slug?.includes('restaurant') || shopCategory?.slug?.includes('food') || shopCategory?.slug?.includes('cafe');
     return (
-      <TouchableOpacity style={[styles.masonryCard, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => router.push(/shops/ + shop.id)}>
+      <TouchableOpacity style={[styles.masonryCard, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => router.push(`/shops/${shop.id}`)}>
         {shop.is_premium === 1 && <View style={styles.premiumBadge}><Text style={styles.premiumText}>? PRO</Text></View>}
         
         <View style={[styles.shopImageContainer, { backgroundColor: theme.bg }]}>

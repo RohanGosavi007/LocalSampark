@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert, Image as RNImage, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { apiGet } from '../src/lib/api';
 import Animated, { 
   useSharedValue, useAnimatedStyle, withSpring, withTiming, withDelay,
   withRepeat, withSequence, interpolate, Extrapolation, FadeIn, FadeInDown, FadeInUp,
@@ -128,7 +129,7 @@ function AnimatedStat({ icon, targetValue, label, delay = 0 }) {
   return (
     <Animated.View entering={FadeInDown.delay(delay).springify()} style={styles.statItem}>
       <Text style={styles.statIcon}>{icon}</Text>
-      <Text style={styles.statValue}>{value.toLocaleString()}+</Text>
+      <Text style={styles.statValue}>{value.toLocaleString()}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </Animated.View>
   );
@@ -136,6 +137,23 @@ function AnimatedStat({ icon, targetValue, label, delay = 0 }) {
 
 export default function WelcomeScreen() {
   const heroFloat = useSharedValue(0);
+  // Counted by the backend (GET /public/stats), the same source as the web
+  // landing page. This screen used to animate up to hard-coded 12,450
+  // neighbours, 347 shops and 78 gigs whatever the real numbers were. Until the
+  // counts arrive, or if they cannot be fetched, the bar is not shown at all.
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet('/public/stats')
+      .then((body) => {
+        if (!cancelled && body && Number.isInteger(body.neighbors) && Number.isInteger(body.shops)) {
+          setStats({ neighbors: body.neighbors, shops: body.shops });
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     heroFloat.value = withRepeat(
@@ -226,13 +244,13 @@ export default function WelcomeScreen() {
         </Animated.View>
 
         {/* ── STATS BAR ── */}
-        <View style={styles.statsBar}>
-          <AnimatedStat icon="👥" targetValue={12450} label="Neighbors" delay={200} />
-          <View style={styles.statDivider} />
-          <AnimatedStat icon="🏪" targetValue={347} label="Local Shops" delay={400} />
-          <View style={styles.statDivider} />
-          <AnimatedStat icon="⚡" targetValue={78} label="Gigs" delay={600} />
-        </View>
+        {stats && (
+          <View style={styles.statsBar}>
+            <AnimatedStat icon="👥" targetValue={stats.neighbors} label="Neighbors" delay={200} />
+            <View style={styles.statDivider} />
+            <AnimatedStat icon="🏪" targetValue={stats.shops} label="Local Shops" delay={400} />
+          </View>
+        )}
 
         {/* ── PILLARS GRID ── */}
         <View style={styles.pillarsSection}>

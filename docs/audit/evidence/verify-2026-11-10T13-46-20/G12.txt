@@ -1,0 +1,4 @@
+=== Android release smoke test ===
+NOTE: G10 not run in this invocation; using the existing release APK.
+APK: C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\mobile\android\app\build\outputs\apk\release\app-release.apk (2026-11-10T13:35:31.981Z)
+Booting AVD LocalSampark_AVD headless

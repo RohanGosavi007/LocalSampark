@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
-import PendingModule from '../../components/admin/PendingModule';
+import AdminConsoleRedirect from '@/components/admin/AdminConsoleRedirect';
 
+// Placeholder retired: this module is implemented in the admin console.
 export default function GtmPage() {
-  return <PendingModule title="Gtm Module" moduleKey="gtm" />;
+  return <AdminConsoleRedirect moduleKey="gtm" title="Go-to-Market" />;
 }

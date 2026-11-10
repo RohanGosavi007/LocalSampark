@@ -21,7 +21,6 @@
  *     an epsilon of 10 would make the feed random with no error anywhere.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const telemetry = require('../../modules/ml/services/telemetry.service');
 const mlconfig = require('../../modules/ml/services/mlconfig.service');

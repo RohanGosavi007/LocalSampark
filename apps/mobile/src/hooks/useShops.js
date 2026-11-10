@@ -55,9 +55,9 @@ export const useShops = ({ zoneId, category, lat, lng, pincode }) => {
         const topImageUrls = data.shops
           .slice(0, 5)
           .map(shop => {
-            if (shop.photo_urls && shop.photo_urls !== '[]' && !shop.photo_urls.includes('[')) {
-              return JSON.parse(shop.photo_urls)[0];
-            }
+            if (shop.photo_urls && shop.photo_urls !== '[]') { try { return Array.isArray(shop.photo_urls) ? shop.photo_urls[0] : (String(shop.photo_urls).includes('[') ? JSON.parse(shop.photo_urls)[0] : shop.photo_urls); } catch { return null; } }
+            // handled above
+            // end photo_urls parse
             return null;
           })
           .filter(Boolean);

@@ -14,9 +14,9 @@ export default function GuardPatrolScreen() {
 
     const fetchRoutes = async () => {
         try {
-            const res = await api.get('/society-guard/patrol/routes?societyId=dummy-society');
-            if (res.data.success) {
-                setRoutes(res.data.data);
+            const res = await api.get('/society-guard/patrol/routes');
+            if (res?.success || res?.data?.success) {
+                setRoutes(res?.data?.data || res?.data || []);
             }
         } catch (error) {
             console.error('Error fetching routes:', error);
@@ -25,9 +25,9 @@ export default function GuardPatrolScreen() {
 
     const startPatrol = async (routeId) => {
         try {
-            const res = await api.post('/society-guard/patrol/start', { societyId: 'dummy-society', routeId });
-            if (res.data.success) {
-                setActiveLogId(res.data.data.logId);
+            const res = await api.post('/society-guard/patrol/start', { routeId });
+            if (res?.success || res?.data?.success) {
+                setActiveLogId((res?.data?.data || res?.data)?.logId);
                 setScannedCheckpoints([]);
                 Alert.alert('Patrol Started', 'Please proceed to the first checkpoint and scan the QR.');
             }
@@ -41,8 +41,8 @@ export default function GuardPatrolScreen() {
         const mockCheckpointId = 'cp_1';
         try {
             const res = await api.post('/society-guard/patrol/scan', { logId: activeLogId, checkpointId: mockCheckpointId });
-            if (res.data.success) {
-                setScannedCheckpoints(res.data.data);
+            if (res?.success || res?.data?.success) {
+                setScannedCheckpoints(res?.data?.data || res?.data || []);
                 Alert.alert('Success', 'Checkpoint scanned!');
             }
         } catch (error) {

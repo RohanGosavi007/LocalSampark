@@ -213,9 +213,13 @@ router.post('/payouts/claim', authenticate, async (req, res, next) => {
             // threw before it could check the balance, so a payout claim always
             // failed with "Insufficient balance" regardless of what was owed.
             const walletData = await dbClient.query(
-                `SELECT id, COALESCE(SUM(amount), 0) as balance
-                   FROM wallet_transactions
-                  WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1 LIMIT 1)`,
+                // The wallet's own id (the debit below is written against it) and
+                // the sum of its transactions. This selected wallet_transactions.id
+                // beside an aggregate, which PostgreSQL rejects outright.
+                `SELECT w.id, COALESCE((SELECT SUM(t.amount) FROM wallet_transactions t WHERE t.wallet_id = w.id), 0) AS balance
+                   FROM wallets w
+                  WHERE w.user_id = $1
+                  LIMIT 1`,
                 [franchise.user_id]
             );
             const walletBalance = (walletData.rows || walletData)[0]?.balance || 0;
@@ -296,6 +300,269 @@ router.get('/leads', authenticate, attachFranchiseScope, requireFranchise, async
   } catch (error) {
     next(error);
   }
+});
+
+// ─── FRANCHISE DASHBOARD DATA (users, zones, reports, marketing, settings) ───
+//
+// /franchise-dashboard/{users,zones,reports,marketing,settings} were static
+// "No Data Available" pages because none of these existed. Every read below is
+// limited to the caller's territory pincodes through scopeClause(); an
+// administrator (unscoped) sees the whole platform, a partner with no
+// territories is refused by requireFranchise.
+
+const scoped = [authenticate, attachFranchiseScope, requireFranchise];
+
+/** "+919876543210" -> "+91******3210": a partner sees who their customers are, not how to reach them. */
+const maskPhone = (p) => {
+    const s = String(p || '');
+    return s.length > 4 ? `${s.slice(0, Math.min(3, s.length - 4))}${'*'.repeat(Math.max(s.length - 7, 0))}${s.slice(-4)}` : s ? '****' : null;
+};
+
+const DELIVERED = "LOWER(COALESCE(o.order_status, o.status, '')) IN ('delivered', 'completed')";
+
+// GET /franchise/territory-customers — customers who have ordered from shops in the territory.
+router.get('/territory-customers', ...scoped, async (req, res, next) => {
+    try {
+        const params = [];
+        const scope = scopeClause(req, 's.pincode', 0);
+        params.push(...scope.params);
+        const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 60) : '';
+        let searchSql = '';
+        if (search) {
+            params.push(`%${search.toLowerCase().replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+            searchSql = ` AND LOWER(COALESCE(u.full_name, '')) LIKE $${params.length} ESCAPE '\\'`;
+        }
+        params.push(Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 200));
+
+        const rows = await queryMany(
+            `SELECT u.id, u.full_name, u.phone_number,
+                    COUNT(o.id) AS orders,
+                    COALESCE(SUM(CASE WHEN ${DELIVERED} THEN o.total_amount ELSE 0 END), 0) AS delivered_value,
+                    MAX(o.created_at) AS last_order_at
+               FROM orders o
+               JOIN local_shops s ON s.id = o.shop_id
+               JOIN users u ON u.id = o.user_id
+              WHERE ${scope.sql}${searchSql}
+              GROUP BY u.id, u.full_name, u.phone_number
+              ORDER BY MAX(o.created_at) DESC
+              LIMIT $${params.length}`,
+            params
+        );
+
+        res.json({
+            success: true,
+            customers: rows.map((r) => ({
+                id: r.id,
+                name: r.full_name || 'Customer',
+                phone: maskPhone(r.phone_number),
+                orders: Number(r.orders) || 0,
+                deliveredValue: Number(r.delivered_value) || 0,
+                lastOrderAt: r.last_order_at,
+            })),
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET /franchise/shops — shops registered in the partner's pincodes.
+router.get('/shops', ...scoped, async (req, res, next) => {
+    try {
+        const scope = scopeClause(req, 'pincode', 0);
+        const params = [...scope.params];
+        let searchSql = '';
+        const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 60) : '';
+        if (search) {
+            params.push(`%${search.toLowerCase().replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+            searchSql = ` AND LOWER(COALESCE(name, '')) LIKE $${params.length} ESCAPE '\\'`;
+        }
+        params.push(Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 200));
+        const rows = await queryMany(
+            `SELECT id, name, category, address, pincode, approval_status, is_active, created_at
+               FROM local_shops
+              WHERE ${scope.sql}${searchSql}
+              ORDER BY created_at DESC
+              LIMIT $${params.length}`,
+            params
+        );
+        res.json({
+            success: true,
+            shops: rows.map((r) => ({
+                id: r.id,
+                name: r.name,
+                category: r.category,
+                address: r.address,
+                pincode: r.pincode,
+                approvalStatus: r.approval_status || 'pending',
+                active: r.is_active === true || r.is_active === 1 || r.is_active === '1',
+                createdAt: r.created_at,
+            })),
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET /franchise/zones — the territories (pincodes) this partner holds, with live counts.
+router.get('/zones', ...scoped, async (req, res, next) => {
+    try {
+        const params = [];
+        let where = "UPPER(COALESCE(ft.status, 'ACTIVE')) = 'ACTIVE'";
+        if (req.franchiseScope.scoped) {
+            params.push(req.franchiseScope.franchisePartnerId);
+            where += ` AND ft.franchise_partner_id = $${params.length}`;
+        }
+        const territories = await queryMany(
+            `SELECT ft.id, ft.pincode, ft.status, ft.commission_rate, ft.assigned_at, t.name AS territory_name
+               FROM franchise_territories ft
+               LEFT JOIN territories t ON t.id = ft.territory_id
+              WHERE ${where}
+              ORDER BY ft.pincode
+              LIMIT 500`,
+            params
+        );
+
+        const pincodes = [...new Set(territories.map((t) => t.pincode).filter(Boolean))];
+        const shopCounts = {};
+        const waitlistCounts = {};
+        if (pincodes.length) {
+            const ph = pincodes.map((_, i) => `$${i + 1}`).join(', ');
+            for (const r of await queryMany(`SELECT pincode, COUNT(*) AS n FROM local_shops WHERE pincode IN (${ph}) GROUP BY pincode`, pincodes)) {
+                shopCounts[r.pincode] = Number(r.n) || 0;
+            }
+            for (const r of await queryMany(`SELECT pincode, COUNT(*) AS n FROM feature_interest_leads WHERE pincode IN (${ph}) GROUP BY pincode`, pincodes)) {
+                waitlistCounts[r.pincode] = Number(r.n) || 0;
+            }
+        }
+
+        res.json({
+            success: true,
+            zones: territories.map((t) => ({
+                id: t.id,
+                pincode: t.pincode,
+                name: t.territory_name || `PIN ${t.pincode}`,
+                status: t.status,
+                commissionRate: t.commission_rate === null || t.commission_rate === undefined ? null : Number(t.commission_rate),
+                assignedAt: t.assigned_at,
+                shops: shopCounts[t.pincode] || 0,
+                waitlist: waitlistCounts[t.pincode] || 0,
+            })),
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET /franchise/reports?months=6 — month-by-month orders, delivered value and new shops.
+router.get('/reports', ...scoped, async (req, res, next) => {
+    try {
+        const months = Math.min(Math.max(parseInt(req.query.months, 10) || 6, 1), 12);
+        const now = new Date();
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+        const keyOf = (d) => {
+            const dt = d instanceof Date ? d : new Date(String(d).replace(' ', 'T'));
+            return Number.isNaN(dt.getTime()) ? null : `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+        };
+        const buckets = [];
+        for (let i = 0; i < months; i += 1) {
+            const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i, 1));
+            buckets.push({ month: keyOf(d), orders: 0, deliveredOrders: 0, deliveredValue: 0, newShops: 0 });
+        }
+        const byMonth = Object.fromEntries(buckets.map((b) => [b.month, b]));
+        // 'YYYY-MM-DD HH:MM:SS': SQLite compares timestamps as text (see utils/sqlTime).
+        const cutoff = start.toISOString().slice(0, 19).replace('T', ' ');
+
+        // Bucketed here rather than with a date function in SQL, so the same
+        // query runs on SQLite and PostgreSQL.
+        const orderScope = scopeClause(req, 's.pincode', 1);
+        const orders = await queryMany(
+            `SELECT o.created_at, o.total_amount, ${DELIVERED} AS delivered
+               FROM orders o JOIN local_shops s ON s.id = o.shop_id
+              WHERE o.created_at >= $1 AND ${orderScope.sql}
+              LIMIT 50000`,
+            [cutoff, ...orderScope.params]
+        );
+        for (const o of orders) {
+            const b = byMonth[keyOf(o.created_at)];
+            if (!b) continue;
+            b.orders += 1;
+            if (o.delivered === true || o.delivered === 1 || o.delivered === '1' || o.delivered === 't') {
+                b.deliveredOrders += 1;
+                b.deliveredValue += Number(o.total_amount) || 0;
+            }
+        }
+
+        const shopScope = scopeClause(req, 'pincode', 1);
+        const shops = await queryMany(
+            `SELECT created_at FROM local_shops WHERE created_at >= $1 AND ${shopScope.sql} LIMIT 50000`,
+            [cutoff, ...shopScope.params]
+        );
+        for (const s of shops) {
+            const b = byMonth[keyOf(s.created_at)];
+            if (b) b.newShops += 1;
+        }
+
+        for (const b of buckets) b.deliveredValue = Math.round(b.deliveredValue * 100) / 100;
+        res.json({ success: true, months: buckets });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET /franchise/waitlist — "notify me" sign-ups in the territory, by module.
+router.get('/waitlist', ...scoped, async (req, res, next) => {
+    try {
+        const scope = scopeClause(req, 'pincode', 0);
+        const rows = await queryMany(
+            `SELECT feature_key, pincode, COUNT(*) AS n, MAX(created_at) AS latest
+               FROM feature_interest_leads
+              WHERE ${scope.sql}
+              GROUP BY feature_key, pincode
+              ORDER BY COUNT(*) DESC
+              LIMIT 200`,
+            scope.params
+        );
+        res.json({
+            success: true,
+            waitlist: rows.map((r) => ({ feature: r.feature_key, pincode: r.pincode, count: Number(r.n) || 0, latest: r.latest })),
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET /franchise/profile — the partner's agreement as recorded (read-only).
+router.get('/profile', authenticate, async (req, res, next) => {
+    try {
+        const partner = await queryOne(
+            `SELECT fp.id, fp.territory_name, fp.territory_pincode, fp.status, fp.commission_rate,
+                    fp.agreement_signed_at, fp.created_at,
+                    u.full_name, u.email, u.phone_number
+               FROM franchise_partners fp
+               LEFT JOIN users u ON u.id = fp.user_id
+              WHERE fp.user_id = $1
+              LIMIT 1`,
+            [req.user.id]
+        );
+        if (!partner) return res.status(404).json({ success: false, error: 'No franchise found for this user.' });
+        const pincodes = await territoryService.pincodesForFranchise(partner.id);
+        res.json({
+            success: true,
+            profile: {
+                id: partner.id,
+                territoryName: partner.territory_name,
+                registeredPincode: partner.territory_pincode,
+                status: partner.status,
+                commissionRate: partner.commission_rate === null ? null : Number(partner.commission_rate),
+                agreementSignedAt: partner.agreement_signed_at,
+                partnerSince: partner.created_at,
+                contact: { name: partner.full_name, email: partner.email, phone: partner.phone_number },
+                territoryPincodes: pincodes,
+            },
+        });
+    } catch (err) {
+        next(err);
+    }
 });
 
 module.exports = router;

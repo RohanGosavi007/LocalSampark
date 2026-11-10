@@ -84,7 +84,7 @@ async function verifiedBoundaries() {
       SELECT id, name, pincode, boundary_geojson, centroid_lat, centroid_lng
         FROM territories
        WHERE is_active = '1'
-         AND COALESCE(boundary_verified, 0) = 1
+         AND boundary_verified = '1'
          AND boundary_geojson IS NOT NULL
     `);
     rows = res.rows || res || [];
@@ -340,7 +340,7 @@ async function resolveByCoordinates(lat, lng) {
     const marginKm = spatial.distanceToBoundaryKm(decision.row, latitude, longitude);
     const nearEdge = marginKm !== null && marginKm * 1000 <= BOUNDARY_EDGE_METRES;
 
-    const result = shape(decision.row, 'boundary', {
+    const result = await shape(decision.row, 'boundary', {
       borderline: decision.ambiguous || nearEdge || false,
       borderline_candidates: decision.candidates || undefined,
       boundary_margin_km: marginKm,
@@ -391,7 +391,7 @@ async function resolveByPincode(pincode) {
     return shape(null, 'unresolved', { reason: 'no_territory_for_pincode', pincode: normalized });
   }
 
-  const result = shape(territory, 'pincode', { pincode: normalized });
+  const result = await shape(territory, 'pincode', { pincode: normalized });
   spatialCache.setPincode(normalized, result).catch(() => {});
   return result;
 }
@@ -467,7 +467,7 @@ async function validateNoOverlap(geojson, { excludeTerritoryId = null } = {}) {
   }
 
   const params = [];
-  let clause = 'is_active = true AND boundary_geojson IS NOT NULL';
+  let clause = "is_active = '1' AND boundary_geojson IS NOT NULL";
   if (excludeTerritoryId) {
     params.push(excludeTerritoryId);
     clause += ` AND id <> $${params.length}`;
@@ -657,6 +657,9 @@ async function assignTerritory({
     reason,
     actorId,
   });
+
+  // Cached resolutions may now name the wrong franchise.
+  invalidate();
 
   return {
     assigned: true,
@@ -909,8 +912,8 @@ async function coverageStats() {
   try {
     const t = await queryOne(`
       SELECT COUNT(*) AS total,
-             SUM(CASE WHEN COALESCE(boundary_verified, 0) = 1 THEN 1 ELSE 0 END) AS boundaries,
-             SUM(CASE WHEN COALESCE(centroid_verified, 0) = 1 THEN 1 ELSE 0 END) AS centroids
+             SUM(CASE WHEN boundary_verified = '1' THEN 1 ELSE 0 END) AS boundaries,
+             SUM(CASE WHEN centroid_verified = '1' THEN 1 ELSE 0 END) AS centroids
         FROM territories WHERE is_active = '1'
     `);
     stats.territories = Number(t?.total) || 0;

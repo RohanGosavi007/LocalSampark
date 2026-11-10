@@ -8,8 +8,8 @@
  * GOOD request, so a schema that is stricter than the clients cannot ship quietly.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -18,7 +18,7 @@ const { getJwtSecret } = require('../../config/secrets');
 const apiRouter = require('../../routes');
 const { errorHandler } = require('../../middleware/error.middleware');
 
-const USER = 'rv-user';
+const USER = fx('rv-user');
 let app;
 
 const token = async () => {
@@ -41,7 +41,7 @@ const passedValidation = (res) => !(res.status === 400 && Array.isArray(res.body
 
 beforeAll(async () => {
   await query('DELETE FROM users WHERE id = $1', [USER]);
-  await query("INSERT INTO users (id, full_name, phone_number, role, token_version) VALUES ($1, 'RV', '9867000001', 'user', 0)", [USER]);
+  await query("INSERT INTO users (id, full_name, phone_number, role, token_version) VALUES ($1, 'RV', '9867000001', 'user', '0')", [USER]);
   app = express();
   app.use(express.json());
   app.use(require('cookie-parser')());

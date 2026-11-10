@@ -8,7 +8,6 @@
  * than a bounded nudge?
  */
 
-process.env.USE_SQLITE = 'true';
 
 const sessionBoost = require('../../modules/ml/ranking/sessionBoost');
 const mlconfig = require('../../modules/ml/services/mlconfig.service');

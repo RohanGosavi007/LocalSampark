@@ -1,4 +1,5 @@
 const { queryOne, queryMany } = require('../../../config/database');
+const { sqlDate, dayOf } = require('../../../utils/sqlTime');
 
 const getDashboardOverview = async (req, res, next) => {
     try {
@@ -12,8 +13,8 @@ const getDashboardOverview = async (req, res, next) => {
         const visitorsTodayResult = await queryOne(`
             SELECT COUNT(*) as count 
             FROM society_visitors 
-            WHERE society_id = $1 AND date(expected_date) = CURRENT_DATE
-        `, [societyId]);
+            WHERE society_id = $1 AND ${dayOf('expected_at')} = $2
+        `, [societyId, sqlDate()]);
         const visitorsToday = visitorsTodayResult ? visitorsTodayResult.count : 0;
 
         // 2. Open Complaints

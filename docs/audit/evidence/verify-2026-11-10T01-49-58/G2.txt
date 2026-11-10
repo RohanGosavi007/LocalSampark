@@ -1,0 +1,130 @@
+=== Backend Jest on SQLite Execution ===
+Exit Code: 1
+Summary: 1663 passed, 3 failed across 146 test suites
+
+STDOUT:
+07:20:26 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 17.276 ms - 294[0m
+[0mGET /ready [32m200[0m 3.525 ms - 137[0m
+[0mGET /metrics [32m200[0m 0.757 ms - 392[0m
+
+
+STDERR:
+FAIL src/__tests__/services/boundaryMonitor.test.js (21.901 s)
+  ● hysteresis › one alert per cooldown, not one per ping
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 10000 ms for a test.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          184 |   });
+          185 |
+        > 186 |   test('one alert per cooldown, not one per ping', async () => {
+              |   ^
+          187 |     let t = 1_700_000_000_000;
+          188 |     const events = [];
+          189 |
+
+          at test (src/__tests__/services/boundaryMonitor.test.js:186:3)
+          at Object.describe (src/__tests__/services/boundaryMonitor.test.js:137:1)
+
+  ● hysteresis › a return is announced only when the departure was
+
+    TypeError: Cannot read properties of null (reading 'type')
+
+      205 |     await ping(FAR_OUTSIDE, { now: t0 });
+      206 |     const exit = await ping(FAR_OUTSIDE, { now: t0 + monitor.MIN_DWELL_MS + 1000 });
+    > 207 |     expect(exit.type).toBe('BOUNDARY_EXIT');
+          |                 ^
+      208 |
+      209 |     const ret = await ping(INSIDE, { now: t0 + monitor.MIN_DWELL_MS + 30_000 });
+      210 |     expect(ret.type).toBe('BOUNDARY_RETURN');
+
+      at Object.type (src/__tests__/services/boundaryMonitor.test.js:207:17)
+
+  ● spoofed fixes › a mocked fix cannot clear a real departure
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      238 |     // The genuine departure still completes.
+      239 |     const event = await ping(FAR_OUTSIDE, { now: t0 + monitor.MIN_DWELL_MS + 1000 });
+    > 240 |     expect(event).not.toBeNull();
+          |                       ^
+      241 |     expect(event.type).toBe('BOUNDARY_EXIT');
+      242 |   });
+      243 | });
+
+      at Object.toBeNull (src/__tests__/services/boundaryMonitor.test.js:240:23)
+
+
+Summary of all failing tests
+FAIL src/__tests__/services/boundaryMonitor.test.js (21.901 s)
+  ● hysteresis › one alert per cooldown, not one per ping
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 10000 ms for a test.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          184 |   });
+          185 |
+        > 186 |   test('one alert per cooldown, not one per ping', async () => {
+              |   ^
+          187 |     let t = 1_700_000_000_000;
+          188 |     const events = [];
+          189 |
+
+          at test (src/__tests__/services/boundaryMonitor.test.js:186:3)
+          at Object.describe (src/__tests__/services/boundaryMonitor.test.js:137:1)
+
+  ● hysteresis › a return is announced only when the departure was
+
+    TypeError: Cannot read properties of null (reading 'type')
+
+      205 |     await ping(FAR_OUTSIDE, { now: t0 });
+      206 |     const exit = await ping(FAR_OUTSIDE, { now: t0 + monitor.MIN_DWELL_MS + 1000 });
+    > 207 |     expect(exit.type).toBe('BOUNDARY_EXIT');
+          |                 ^
+      208 |
+      209 |     const ret = await ping(INSIDE, { now: t0 + monitor.MIN_DWELL_MS + 30_000 });
+      210 |     expect(ret.type).toBe('BOUNDARY_RETURN');
+
+      at Object.type (src/__tests__/services/boundaryMonitor.test.js:207:17)
+
+  ● spoofed fixes › a mocked fix cannot clear a real departure
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      238 |     // The genuine departure still completes.
+      239 |     const event = await ping(FAR_OUTSIDE, { now: t0 + monitor.MIN_DWELL_MS + 1000 });
+    > 240 |     expect(event).not.toBeNull();
+          |                       ^
+      241 |     expect(event.type).toBe('BOUNDARY_EXIT');
+      242 |   });
+      243 | });
+
+      at Object.toBeNull (src/__tests__/services/boundaryMonitor.test.js:240:23)
+
+
+Test Suites: 1 failed, 145 passed, 146 total
+Tests:       3 failed, 1663 passed, 1666 total
+Snapshots:   0 total
+Time:        465.012 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-10T01-49-58\jest-sqlite.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

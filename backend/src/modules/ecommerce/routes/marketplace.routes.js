@@ -85,7 +85,7 @@ router.get('/', async (req, res, next) => {
 // GET /categories — DB-driven categories
 router.get('/categories', async (req, res, next) => {
   try {
-    const cats = await queryMany('SELECT * FROM marketplace_categories WHERE is_active = true ORDER BY display_order ASC');
+    const cats = await queryMany("SELECT * FROM marketplace_categories WHERE is_active = '1' ORDER BY display_order ASC");
     res.json({ success: true, categories: cats });
   } catch (error) { next(error); }
 });
@@ -239,9 +239,9 @@ router.get('/:id/offers', authenticate, async (req, res, next) => {
 
     const offers = isSeller
       ? await queryMany(`SELECT o.*, u.full_name as buyer_name FROM marketplace_offers o
-          LEFT JOIN users u ON o.buyer_id = u.id WHERE o.listing_id = $1 ORDER BY o.created_at DESC`, [req.params.id])
+          LEFT JOIN users u ON CAST(o.buyer_id AS TEXT) = CAST(u.id AS TEXT) WHERE o.listing_id = $1 ORDER BY o.created_at DESC`, [req.params.id])
       : await queryMany(`SELECT o.*, u.full_name as buyer_name FROM marketplace_offers o
-          LEFT JOIN users u ON o.buyer_id = u.id WHERE o.listing_id = $1 AND o.buyer_id = $2 ORDER BY o.created_at DESC`, [req.params.id, req.user.id]);
+          LEFT JOIN users u ON CAST(o.buyer_id AS TEXT) = CAST(u.id AS TEXT) WHERE o.listing_id = $1 AND o.buyer_id = $2 ORDER BY o.created_at DESC`, [req.params.id, req.user.id]);
     res.json({ success: true, offers });
   } catch (error) { next(error); }
 });
@@ -293,7 +293,7 @@ router.get('/saved', authenticate, async (req, res, next) => {
   try {
     const saved = await queryMany(`SELECT l.*, u.full_name as seller_name, ms.created_at as saved_at
       FROM marketplace_saved ms
-      INNER JOIN marketplace_listings l ON ms.listing_id = l.id
+      INNER JOIN marketplace_listings l ON CAST(ms.listing_id AS TEXT) = CAST(l.id AS TEXT)
       LEFT JOIN users u ON l.seller_id = u.id
       WHERE ms.user_id = $1 ORDER BY ms.created_at DESC`, [req.user.id]);
     res.json({ success: true, saved: saved.map(s => ({ ...s, photo_urls: (() => { try { return JSON.parse(s.photo_urls || '[]'); } catch { return []; } })() })) });
@@ -327,7 +327,7 @@ router.get('/:id/chat', authenticate, async (req, res, next) => {
     // The seller, not naming a conversation: the list of them.
     if (isSeller && !chatId) {
       const chats = await queryMany(`SELECT c.*, u.full_name as buyer_name FROM marketplace_chats c
-        LEFT JOIN users u ON c.buyer_id = u.id WHERE c.listing_id = $1 ORDER BY c.last_message_at DESC`, [req.params.id]);
+        LEFT JOIN users u ON CAST(c.buyer_id AS TEXT) = CAST(u.id AS TEXT) WHERE c.listing_id = $1 ORDER BY c.last_message_at DESC`, [req.params.id]);
       return res.json({ success: true, chats });
     }
 
@@ -339,7 +339,7 @@ router.get('/:id/chat', authenticate, async (req, res, next) => {
     }
 
     const messages = await queryMany(`SELECT m.*, u.full_name as sender_name FROM marketplace_chat_messages m
-      LEFT JOIN users u ON m.sender_id = u.id WHERE m.chat_id = $1 ORDER BY m.created_at ASC`, [chat.id]);
+      LEFT JOIN users u ON CAST(m.sender_id AS TEXT) = CAST(u.id AS TEXT) WHERE m.chat_id = $1 ORDER BY m.created_at ASC`, [chat.id]);
     res.json({ success: true, chatId: chat.id, messages });
   } catch (error) { next(error); }
 });

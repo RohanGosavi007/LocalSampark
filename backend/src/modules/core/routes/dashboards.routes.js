@@ -72,6 +72,11 @@ router.get('/crm/dashboard', authenticate, async (req, res, next) => {
 
 // ─── Service provider ───────────────────────────────────────────────────────
 
+// provider_id holds home_service_providers.id (the provider profile), not the
+// user id; this filtered on provider_id = <user id>, so every provider's
+// dashboard read zero. The user-id form is kept for rows written that way.
+const MY_PROVIDER = '(provider_id IN (SELECT id FROM home_service_providers WHERE user_id = $1) OR provider_id = $1)';
+
 router.get('/services/dashboard', authenticate, async (req, res, next) => {
     try {
         // home_service_bookings is the provider-facing booking table
@@ -84,17 +89,22 @@ router.get('/services/dashboard', authenticate, async (req, res, next) => {
                     SUM(CASE WHEN status IN ('pending', 'confirmed') THEN 1 ELSE 0 END) AS upcoming,
                     COALESCE(SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END), 0) AS earnings
                FROM home_service_bookings
-              WHERE provider_id = $1`,
+              WHERE ${MY_PROVIDER}`,
             [req.user.id, new Date().toISOString().slice(0, 10)]
         ));
 
         const trend = rowsOf(await query(
             `SELECT ${DAY_KEY} AS day, COUNT(*) AS value
                FROM home_service_bookings
-              WHERE provider_id = $1
+              WHERE ${MY_PROVIDER}
               GROUP BY ${DAY_KEY}
               ORDER BY day DESC
               LIMIT 7`,
+            [req.user.id]
+        ));
+
+        const rating = firstOf(await query(
+            'SELECT AVG(rating) AS avg FROM home_service_providers WHERE user_id = $1',
             [req.user.id]
         ));
 
@@ -106,7 +116,7 @@ router.get('/services/dashboard', authenticate, async (req, res, next) => {
                 upcomingBookings: asNumber(bookings.upcoming),
                 activeServices: asNumber(bookings.total),
                 totalEarnings: asNumber(bookings.earnings),
-                avgRating: 0,
+                avgRating: asNumber(rating && rating.avg),
             },
             trend: trend.reverse(),
         });
@@ -122,7 +132,7 @@ router.get('/society/dashboard', authenticate, async (req, res, next) => {
         // The caller's society comes from their membership row; a user with no
         // membership gets an explicit 404 rather than another app's data.
         const membership = await queryOne(
-            'SELECT society_id FROM society_members WHERE user_id = $1 AND COALESCE(is_active, 1) = 1',
+            `SELECT society_id FROM society_members WHERE user_id = $1 AND (is_active = '1' OR is_active IS NULL)`,
             [req.user.id]
         );
         if (!membership) {
@@ -133,7 +143,7 @@ router.get('/society/dashboard', authenticate, async (req, res, next) => {
         const society = await queryOne('SELECT id, name FROM societies WHERE id = $1', [societyId]);
 
         const counts = firstOf(await query(
-            `SELECT (SELECT COUNT(*) FROM society_members WHERE society_id = $1 AND COALESCE(is_active, 1) = 1) AS active_residents,
+            `SELECT (SELECT COUNT(*) FROM society_members WHERE society_id = $1 AND (is_active = '1' OR is_active IS NULL)) AS active_residents,
                     (SELECT COUNT(DISTINCT flat_number) FROM society_members WHERE society_id = $1) AS total_flats,
                     (SELECT COUNT(*) FROM society_complaints WHERE society_id = $1 AND status NOT IN ('resolved', 'closed')) AS pending_complaints,
                     (SELECT COUNT(*) FROM society_visitors WHERE society_id = $1 AND ${DAY_KEY} = $2) AS visitors_today`,
@@ -142,9 +152,9 @@ router.get('/society/dashboard', authenticate, async (req, res, next) => {
 
         const notices = rowsOf(await query(
             `SELECT id, title, created_at AS date,
-                    CASE WHEN COALESCE(is_urgent, 0) = 1 THEN 'HIGH' ELSE 'NORMAL' END AS urgency
+                    CASE WHEN is_urgent = '1' THEN 'HIGH' ELSE 'NORMAL' END AS urgency
                FROM society_notices
-              WHERE society_id = $1 AND COALESCE(is_active, 1) = 1
+              WHERE society_id = $1 AND (is_active = '1' OR is_active IS NULL)
               ORDER BY created_at DESC
               LIMIT 5`,
             [societyId]
@@ -204,7 +214,7 @@ router.post('/society/register', authenticate, async (req, res, next) => {
 router.get('/territory/dashboard', authenticate, async (req, res, next) => {
     try {
         const assignment = await queryOne(
-            'SELECT territory_id FROM admin_territory_assignments WHERE user_id = $1 AND COALESCE(is_active, 1) = 1',
+            `SELECT territory_id FROM admin_territory_assignments WHERE user_id = $1 AND (is_active = '1' OR is_active IS NULL)`,
             [req.user.id]
         );
         const territoryId = assignment?.territory_id || req.user.region_id || null;
@@ -213,7 +223,7 @@ router.get('/territory/dashboard', authenticate, async (req, res, next) => {
             `SELECT COUNT(*) AS total_shops,
                     SUM(CASE WHEN approval_status = 'pending' THEN 1 ELSE 0 END) AS pending_approvals
                FROM local_shops
-              WHERE ($1 IS NULL OR region_id = $1)`,
+              WHERE (CAST($1 AS TEXT) IS NULL OR CAST(region_id AS TEXT) = CAST($1 AS TEXT))`,
             [territoryId]
         ));
 
@@ -222,7 +232,7 @@ router.get('/territory/dashboard', authenticate, async (req, res, next) => {
                     COALESCE(SUM(o.total_amount), 0) AS revenue
                FROM orders o
                JOIN local_shops s ON s.id = o.shop_id
-              WHERE ($1 IS NULL OR s.region_id = $1)`,
+              WHERE (CAST($1 AS TEXT) IS NULL OR CAST(s.region_id AS TEXT) = CAST($1 AS TEXT))`,
             [territoryId]
         ));
 
@@ -231,7 +241,7 @@ router.get('/territory/dashboard', authenticate, async (req, res, next) => {
                     COALESCE(SUM(o.total_amount), 0) AS value
                FROM orders o
                JOIN local_shops s ON s.id = o.shop_id
-              WHERE ($1 IS NULL OR s.region_id = $1)
+              WHERE (CAST($1 AS TEXT) IS NULL OR CAST(s.region_id AS TEXT) = CAST($1 AS TEXT))
               GROUP BY month
               ORDER BY month DESC
               LIMIT 6`,
@@ -252,7 +262,7 @@ router.get('/territory/dashboard', authenticate, async (req, res, next) => {
                 commissionEarned: Math.round(revenue * 0.10),
                 activeAgents: asNumber(firstOf(await query(
                     `SELECT COUNT(*) AS c FROM admin_territory_assignments
-                      WHERE COALESCE(is_active, 1) = 1 AND ($1 IS NULL OR territory_id = $1)`,
+                      WHERE (is_active = '1' OR is_active IS NULL) AND (CAST($1 AS TEXT) IS NULL OR CAST(territory_id AS TEXT) = CAST($1 AS TEXT))`,
                     [territoryId]
                 )).c),
             },
@@ -319,7 +329,7 @@ router.get('/territory/field-dashboard', authenticate, async (req, res, next) =>
 router.get('/territory/agents', authenticate, async (req, res, next) => {
     try {
         const assignment = await queryOne(
-            'SELECT territory_id FROM admin_territory_assignments WHERE user_id = $1 AND COALESCE(is_active, 1) = 1',
+            `SELECT territory_id FROM admin_territory_assignments WHERE user_id = $1 AND (is_active = '1' OR is_active IS NULL)`,
             [req.user.id]
         );
         const territoryId = assignment?.territory_id || req.user.region_id || null;
@@ -328,8 +338,8 @@ router.get('/territory/agents', authenticate, async (req, res, next) => {
             `SELECT u.id, u.full_name, u.phone_number, u.role, u.is_active, a.created_at AS assigned_at
                FROM admin_territory_assignments a
                JOIN users u ON u.id = a.user_id
-              WHERE COALESCE(a.is_active, 1) = 1
-                AND ($1 IS NULL OR a.territory_id = $1)
+              WHERE (a.is_active = '1' OR a.is_active IS NULL)
+                AND (CAST($1 AS TEXT) IS NULL OR CAST(a.territory_id AS TEXT) = CAST($1 AS TEXT))
                 AND u.id <> $2
               ORDER BY u.full_name ASC
               LIMIT 100`,

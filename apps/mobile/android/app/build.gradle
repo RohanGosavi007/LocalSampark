@@ -189,14 +189,8 @@ android {
         versionCode appVersionCode
         versionName appVersionName
         ndk {
-            // armeabi-v7a covers 32-bit handsets, which remain a meaningful
-            // share of the low-end Android base this app targets. Dropping it
-            // makes the app uninstallable on those devices rather than merely
-            // slower. Keep this list in sync with reactNativeArchitectures in
-            // gradle.properties — that property controls which ABIs the native
-            // libraries are actually compiled for, and an ABI listed here but
-            // not built there yields an APK with no .so files for it.
-            abiFilters "arm64-v8a", "armeabi-v7a"
+            def archs = (findProperty('reactNativeArchitectures') ?: "arm64-v8a,armeabi-v7a,x86_64").split(',')
+            abiFilters (*archs)
         }
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""

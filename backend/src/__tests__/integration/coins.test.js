@@ -9,8 +9,8 @@
  * burst of daily-wheel spins.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -20,10 +20,10 @@ const { query, queryOne, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 const coins = require('../../services/coins.service');
 
-const ANNA = 'coin-anna';
-const BEN = 'coin-ben';
-const CARA = 'coin-cara';
-const ADMIN = 'coin-admin';
+const ANNA = fx('coin-anna');
+const BEN = fx('coin-ben');
+const CARA = fx('coin-cara');
+const ADMIN = fx('coin-admin');
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 
 let app;
@@ -33,19 +33,19 @@ const setCoins = async (userId, n) => {
 };
 
 async function cleanup() {
-  await query("DELETE FROM user_badges WHERE user_id LIKE 'coin-%'");
+  await query(`DELETE FROM user_badges WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
   await query("DELETE FROM volunteer_tasks WHERE CAST(poster_id AS TEXT) LIKE 'coin-%'");
-  await query("DELETE FROM scrap_pickups WHERE user_id LIKE 'coin-%'");
-  await query("DELETE FROM garage_sale_items WHERE seller_id LIKE 'coin-%'");
-  await query("DELETE FROM lost_found_alerts WHERE user_id LIKE 'coin-%'");
-  await query("DELETE FROM referrals WHERE referee_id LIKE 'coin-%'");
-  await query("DELETE FROM reward_coins_ledger WHERE user_id LIKE 'coin-%'");
+  await query(`DELETE FROM scrap_pickups WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM garage_sale_items WHERE CAST(seller_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM lost_found_alerts WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM referrals WHERE CAST(referee_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM reward_coins_ledger WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
   await query("DELETE FROM loyalty_wallets WHERE CAST(user_id AS TEXT) LIKE 'coin-%'");
-  await query("DELETE FROM loyalty_transactions WHERE user_id LIKE 'coin-%'");
-  await query("DELETE FROM loyalty_accounts WHERE user_id LIKE 'coin-%'");
-  await query("DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id LIKE 'coin-%')");
-  await query("DELETE FROM wallets WHERE user_id LIKE 'coin-%'");
-  await query("DELETE FROM users WHERE id LIKE 'coin-%'");
+  await query(`DELETE FROM loyalty_transactions WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM loyalty_accounts WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}')`);
+  await query(`DELETE FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('coin')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('coin')}'`);
 }
 
 beforeAll(async () => {
@@ -54,7 +54,7 @@ beforeAll(async () => {
     [ANNA, '9810200001', 'user', 'COINANNA'], [BEN, '9810200002', 'user', null],
     [CARA, '9810200003', 'user', null], [ADMIN, '9810200004', 'admin', null],
   ]) {
-    await query('INSERT INTO users (id, full_name, phone_number, role, my_referral_code) VALUES ($1, $1, $2, $3, $4)', [id, phone, role, code]);
+    await query('INSERT INTO users (id, full_name, phone_number, role, my_referral_code) VALUES ($1, $5, $2, $3, $4)', [id, phone, role, code, id]);
   }
 
   app = express();
@@ -65,7 +65,7 @@ beforeAll(async () => {
   app.use('/engagement', require('../../modules/crm/routes/engagement.routes'));
   app.use('/scrap', require('../../modules/community/routes/scrap.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -228,11 +228,11 @@ describe('referrals', () => {
 describe('migration 123', () => {
   test('carries old rewards and community-wallet coins across, once', async () => {
     await setCoins(BEN, 10);
-    await query("INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description) VALUES ('coin-r1', $1, 150, 'credit', 'old reward')", [BEN]);
-    await query("INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description) VALUES ('coin-r2', $1, 50, 'credit', 'old reward')", [BEN]);
+    await query(`INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description) VALUES ('${fx('coin-r1')}', $1, 150, 'credit', 'old reward')`, [BEN]);
+    await query(`INSERT INTO reward_coins_ledger (id, user_id, amount, transaction_type, description) VALUES ('${fx('coin-r2')}', $1, 50, 'credit', 'old reward')`, [BEN]);
     await query('INSERT INTO loyalty_wallets (user_id, total_coins) VALUES ($1, 40)', [BEN]);
 
-    const sql = fs.readFileSync(path.join(__dirname, '../../migrations/123_merge_coin_ledgers.sqlite.sql'), 'utf8')
+    const sql = fs.readFileSync(path.join(__dirname, `../../migrations/123_merge_coin_ledgers${process.env.USE_SQLITE === 'true' ? '.sqlite' : ''}.sql`), 'utf8')
       .replace(/--.*$/gm, '')
       .split(';')
       .map((s) => s.trim())

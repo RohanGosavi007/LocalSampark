@@ -89,7 +89,7 @@ class FraudDetectionService {
     if (ipAddress) {
       const recentFromIP = await queryOne(
         `SELECT COUNT(*) as cnt FROM shop_reviews sr
-         JOIN fraud_signals fs ON fs.entity_id = sr.id
+         JOIN fraud_signals fs ON CAST(fs.entity_id AS TEXT) = CAST(sr.id AS TEXT)
          WHERE fs.details LIKE $1
          AND sr.created_at > $2`,
         [`%${ipAddress}%`, sqlTimestamp(-DAY_MS)]

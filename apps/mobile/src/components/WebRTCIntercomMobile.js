@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, PermissionsAndroid, Platform } from 'react-native';
 import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, mediaDevices, RTCView } from 'react-native-webrtc';
 import RNCallKeep from 'react-native-callkeep';
-import { supabase } from '../lib/supabase'; // assuming this exists in mobile too
+import { supabase } from '../lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; // or standard react-native-vector-icons
 
 const WebRTCIntercomMobile = ({ flatNumber, isGuard }) => {
@@ -14,47 +14,56 @@ const WebRTCIntercomMobile = ({ flatNumber, isGuard }) => {
   const localStream = useRef(null);
   const channelRef = useRef(null);
   const currentCallId = useRef(null);
+  // True only once CallKeep's native setup has succeeded. Every CallKeep call
+  // is gated on it: without the phone-account permission (or in a build where
+  // the native module is absent) the intercom still works in-app, with no
+  // system call UI, instead of crashing.
+  const callKeepReady = useRef(false);
+  const safeCallKeep = (fn) => {
+    if (!callKeepReady.current) return;
+    try { fn(); } catch (err) { console.warn('CallKeep call failed:', err?.message || err); }
+  };
   
   const isResident = !!flatNumber;
   const roomName = isResident ? `intercom:flat:${flatNumber}` : `intercom:guard`;
 
   useEffect(() => {
-    // 1. Setup CallKeep for Background VOIP
-    if (Platform.OS === 'android' || Platform.OS === 'ios') {
-      const options = {
-        ios: { appName: 'LocalSampark', includesCallsInRecents: false },
-        // `PermissionsAndroid.PERMISSIONS.example` was carried over from
-        // CallKeep's README sample and does not exist, so this passed
-        // [undefined] down to the native setup call.
-        android: { alertTitle: 'Permissions required', alertDescription: 'This application needs to access your phone accounts', cancelButton: 'Cancel', okButton: 'ok', imageMargin: 0, additionalPermissions: [] }
-      };
-      
+    // 1. Setup CallKeep for Background VOIP — optional, never fatal.
+    let cancelled = false;
+    const onAnswer = ({ callUUID }) => {
+      acceptCall();
+      safeCallKeep(() => RNCallKeep.setCurrentCallActive(callUUID));
+    };
+    const onEnd = () => { endCall(); };
+
+    const initCallKeep = async () => {
+      if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+      if (!RNCallKeep || typeof RNCallKeep.setup !== 'function') return; // native module not linked
       try {
-        // setup() registers a system telecom PhoneAccount. That can be
-        // rejected by the platform (a missing/unguarded ConnectionService, or
-        // an OEM telecom stack that refuses third-party accounts), and the
-        // rejection arrives asynchronously — the surrounding try/catch cannot
-        // see it, so an unhandled rejection was left behind. The intercom is
-        // optional, so a refusal must degrade quietly.
-        const setupResult = RNCallKeep.setup(options);
-        if (setupResult && typeof setupResult.then === 'function') {
-          setupResult
-            .then((accepted) => console.log('CallKeep setup:', accepted))
-            .catch((err) => console.warn('CallKeep setup rejected (intercom disabled):', err?.message || err));
+        if (Platform.OS === 'android') {
+          // setup() registers a telecom PhoneAccount, which needs the phone
+          // permission. Opening the intercom without it used to crash on some
+          // devices, so CallKeep is only initialised once it has been granted.
+          const perm = PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS || PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE;
+          const granted = perm ? await PermissionsAndroid.check(perm) : false;
+          if (!granted) return;
         }
-
-        RNCallKeep.addEventListener('answerCall', ({ callUUID }) => {
-          acceptCall();
-          RNCallKeep.setCurrentCallActive(callUUID);
-        });
-
-        RNCallKeep.addEventListener('endCall', ({ callUUID }) => {
-          endCall();
-        });
+        const options = {
+          ios: { appName: 'LocalSampark', includesCallsInRecents: false },
+          android: { alertTitle: 'Permissions required', alertDescription: 'This application needs to access your phone accounts', cancelButton: 'Cancel', okButton: 'ok', imageMargin: 0, additionalPermissions: [] },
+        };
+        // The rejection can arrive asynchronously (a platform or OEM telecom
+        // stack refusing third-party accounts), so it is awaited here.
+        const accepted = await RNCallKeep.setup(options);
+        if (cancelled || accepted === false) return;
+        RNCallKeep.addEventListener('answerCall', onAnswer);
+        RNCallKeep.addEventListener('endCall', onEnd);
+        callKeepReady.current = true;
       } catch (err) {
-        console.warn('CallKeep setup failed (intercom disabled):', err?.message || err);
+        console.warn('CallKeep unavailable (intercom continues without system call UI):', err?.message || err);
       }
-    }
+    };
+    initCallKeep();
 
     // 2. Setup Supabase Realtime
     if (!supabase) return;
@@ -67,8 +76,8 @@ const WebRTCIntercomMobile = ({ flatNumber, isGuard }) => {
           setCallState('ringing');
           currentCallId.current = payload.payload.callId || 'call-uuid';
           
-          // Trigger native ringing via CallKeep
-          RNCallKeep.displayIncomingCall(currentCallId.current, "Security Gate", payload.payload.callerName || "Gate", 'generic', true);
+          // Trigger native ringing via CallKeep, when it is available.
+          safeCallKeep(() => RNCallKeep.displayIncomingCall(currentCallId.current, "Security Gate", payload.payload.callerName || "Gate", 'generic', true));
           
           await setupPeerConnection();
           await peerConnection.current.setRemoteDescription(new RTCSessionDescription(payload.payload.offer));
@@ -95,10 +104,14 @@ const WebRTCIntercomMobile = ({ flatNumber, isGuard }) => {
     channelRef.current = channel;
 
     return () => {
+      cancelled = true;
       channel.unsubscribe();
       cleanupCall();
-      RNCallKeep.removeEventListener('answerCall');
-      RNCallKeep.removeEventListener('endCall');
+      if (callKeepReady.current) {
+        safeCallKeep(() => RNCallKeep.removeEventListener('answerCall'));
+        safeCallKeep(() => RNCallKeep.removeEventListener('endCall'));
+        callKeepReady.current = false;
+      }
     };
   }, [flatNumber, isResident]);
 
@@ -144,7 +157,7 @@ const WebRTCIntercomMobile = ({ flatNumber, isGuard }) => {
   const cleanupCall = () => {
     if (localStream.current) localStream.current.getTracks().forEach(t => t.stop());
     if (peerConnection.current) peerConnection.current.close();
-    if (currentCallId.current) RNCallKeep.endCall(currentCallId.current);
+    if (currentCallId.current) safeCallKeep(() => RNCallKeep.endCall(currentCallId.current));
     peerConnection.current = null;
     localStream.current = null;
     currentCallId.current = null;

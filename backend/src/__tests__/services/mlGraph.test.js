@@ -13,7 +13,6 @@
  * and that a popular node cannot dominate purely by degree.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const lightgcn = require('../../modules/ml/graph/lightgcn');
 

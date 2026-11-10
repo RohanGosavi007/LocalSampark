@@ -63,9 +63,12 @@ exports.getSettings = async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        maintenance_mode: stored.maintenance_mode || 'false',
-        pause_registrations: stored.pause_registrations || 'false',
-        default_language: stored.default_language || 'en',
+        // Through the same readers the update path uses: config_value is JSONB
+        // on PostgreSQL (a stored 'true' reads back as the boolean true) and
+        // TEXT on SQLite, and the console expects the string either way.
+        maintenance_mode: SETTINGS.maintenance_mode.read(stored.maintenance_mode),
+        pause_registrations: SETTINGS.pause_registrations.read(stored.pause_registrations),
+        default_language: SETTINGS.default_language.read(stored.default_language) || 'en',
         integrations: integrationStatus(),
       },
     });

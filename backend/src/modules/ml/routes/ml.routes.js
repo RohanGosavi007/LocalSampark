@@ -389,7 +389,7 @@ router.get('/admin/overrides', ...adminOnly, async (req, res, next) => {
 
     const rows = await query(
       'SELECT o.*, s.name AS item_name FROM ml_item_overrides o ' +
-      'LEFT JOIN local_shops s ON s.id = o.item_id ' +
+      'LEFT JOIN local_shops s ON CAST(s.id AS TEXT) = o.item_id ' +
       where + ' ORDER BY o.override_type, o.pinned_position',
       params
     );

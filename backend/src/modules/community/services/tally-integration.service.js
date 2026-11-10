@@ -67,7 +67,7 @@ class TallyIntegrationService {
     async exportToCSV(societyId, dateRange) {
         const bills = await queryMany(`SELECT b.*, f.tenant_name, f.member_id 
              FROM society_maintenance_bills b
-             JOIN society_flat_ledger f ON b.flat_number = f.flat_number AND b.society_id = f.society_id
+             JOIN society_flat_ledger f ON b.flat_number = f.flat_number AND CAST(b.society_id AS TEXT) = CAST(f.society_id AS TEXT)
              WHERE b.society_id = $1`, // add date range logic here
             [societyId]
         );

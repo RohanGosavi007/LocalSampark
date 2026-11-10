@@ -1,0 +1,10 @@
+=== Android release smoke test ===
+NOTE: G10 not run in this invocation; using the existing release APK.
+APK: C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\mobile\android\app\build\outputs\apk\release\app-release.apk (2026-11-10T13:35:31.981Z)
+Booting AVD LocalSampark_AVD headless
+emulator log (errors/warnings):
+  [0;39m[33mWARNING      | The emulator now requires a signed jwt token for gRPC access! Use the -grpc flag if you really want an open unprotected grpc port
+  [0;39m[33mWARNING      | Device 'cache' does not have the requested snapshot 'default_boot'
+  [0;39m[33mWARNING      | Failed to load snapshot 'default_boot'
+  [33mWARNING      | Netsim Wifi ipv6:%5B::1%5D:51354 is gone due to Stream removed (WSAGetOverlappedResult: Connection reset (An existing connection was forcibly closed by the remote host.
+  [0;39m[33mWARNING      | Not saving state: RAM not mapped as shared

@@ -10,7 +10,7 @@ test.describe('Auth Flow', () => {
 
   test('should show login page with phone input', async ({ page }) => {
     await page.goto('/login');
-    const phoneInput = page.locator('input[type="tel"], input[name="phone"], input[placeholder*="phone" i], input[placeholder*="mobile" i]').first();
+    const phoneInput = page.locator('input[type="email"], input[type="tel"], input[name="email"], input[name="phone"], input[placeholder*="email" i], input[placeholder*="phone" i], input[placeholder*="mobile" i]').first();
     await expect(phoneInput).toBeVisible();
   });
 

@@ -43,7 +43,7 @@ router.get('/search-users', authenticate, async (req, res, next) => {
         if (q.length < 3) return res.json({ success: true, data: [] });
         const result = await query(`
             SELECT id, full_name, role FROM users 
-            WHERE (full_name LIKE $1 OR id LIKE $1) AND id != $2 
+            WHERE (full_name LIKE $1 OR CAST(id AS TEXT) LIKE $1) AND id != $2 
             LIMIT 10
         `, [`%${q}%`, req.user.id]);
         res.json({ success: true, data: result.rows || result });

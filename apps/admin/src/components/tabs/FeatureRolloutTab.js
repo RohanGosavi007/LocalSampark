@@ -11,6 +11,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [savingKey, setSavingKey] = useState(null);
+  const [error, setError] = useState(null);
 
   const fetchFeatures = async () => {
     setLoading(true);
@@ -90,7 +91,7 @@ export default function FeatureRolloutTab({ API_BASE, authHeaders }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <TabError error={error} onRetry={typeof fetchData === 'function' ? fetchData : undefined} />
+      <TabError error={error} onRetry={fetchFeatures} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>🚀 10x Go-To-Market Launch Control Center</h2>

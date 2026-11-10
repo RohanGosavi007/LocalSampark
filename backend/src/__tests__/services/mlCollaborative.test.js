@@ -8,7 +8,6 @@
  * worth pinning down.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const ranker = require('../../modules/ml/services/ranker.service');
 const matrixBuilder = require('../../modules/ml/jobs/matrix-builder.job');

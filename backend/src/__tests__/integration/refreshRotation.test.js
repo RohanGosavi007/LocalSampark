@@ -8,8 +8,8 @@
  * the one legitimate repeat, and get "try again" instead.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -17,7 +17,7 @@ const { query, queryOne } = require('../../config/database');
 const { getJwtRefreshSecret } = require('../../config/secrets');
 const { generateTokens } = require('../../middleware/auth.middleware');
 
-const USER = 'rr-user';
+const USER = fx('rr-user');
 let app;
 
 const refresh = (refreshToken) => request(app).post('/auth/refresh-token').send({ refreshToken });
@@ -30,12 +30,12 @@ async function fresh() {
 beforeAll(async () => {
   await query("DELETE FROM used_refresh_tokens WHERE user_id = $1", [USER]);
   await query("DELETE FROM users WHERE id = $1", [USER]);
-  await query("INSERT INTO users (id, full_name, phone_number, role, token_version, is_active) VALUES ($1, 'RR', '9865000001', 'user', 0, 1)", [USER]);
+  await query("INSERT INTO users (id, full_name, phone_number, role, token_version, is_active) VALUES ($1, 'RR', '9865000001', 'user', '0', '1')", [USER]);
   app = express();
   app.use(express.json());
   app.use('/auth', require('../../modules/core/routes/auth.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 afterAll(async () => {
   await query("DELETE FROM used_refresh_tokens WHERE user_id = $1", [USER]);
@@ -125,11 +125,11 @@ describe('POST /auth/refresh-token', () => {
 describe('cleanup', () => {
   test('only expired records are pruned', async () => {
     const { cleanUpTokens } = require('../../jobs/token-cleanup.job');
-    await query("INSERT INTO used_refresh_tokens (jti, user_id, expires_at) VALUES ('rr-old', $1, '2000-01-01 00:00:00')", [USER]);
-    await query("INSERT INTO used_refresh_tokens (jti, user_id, expires_at) VALUES ('rr-live', $1, '2999-01-01 00:00:00')", [USER]);
+    await query(`INSERT INTO used_refresh_tokens (jti, user_id, expires_at) VALUES ('${fx('rr-old')}', $1, '2000-01-01 00:00:00')`, [USER]);
+    await query(`INSERT INTO used_refresh_tokens (jti, user_id, expires_at) VALUES ('${fx('rr-live')}', $1, '2999-01-01 00:00:00')`, [USER]);
     const result = await cleanUpTokens();
     expect(result.usedRefreshTokens).toBeGreaterThanOrEqual(1);
-    expect(await queryOne("SELECT jti FROM used_refresh_tokens WHERE jti = 'rr-old'")).toBeNull();
-    expect(await queryOne("SELECT jti FROM used_refresh_tokens WHERE jti = 'rr-live'")).toBeTruthy();
+    expect(await queryOne(`SELECT jti FROM used_refresh_tokens WHERE jti = '${fx('rr-old')}'`)).toBeNull();
+    expect(await queryOne(`SELECT jti FROM used_refresh_tokens WHERE jti = '${fx('rr-live')}'`)).toBeTruthy();
   });
 });

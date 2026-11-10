@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
-import PendingModule from '../../components/admin/PendingModule';
+import AdminConsoleRedirect from '@/components/admin/AdminConsoleRedirect';
 
+// Placeholder retired: this module is implemented in the admin console.
 export default function AiAnalyticsPage() {
-  return <PendingModule title="Ai Analytics Module" moduleKey="ai-analytics" />;
+  return <AdminConsoleRedirect moduleKey="ai-analytics" title="AI Analytics" />;
 }

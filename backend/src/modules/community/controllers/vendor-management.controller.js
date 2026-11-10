@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const createVendor = async (req, res, next) => {
     try {
-        const { societyId, vendorName, vendorType, contactPerson, contactPhone, gstNumber, monthlyCost } = req.body;
+        const { societyId, vendorName, vendorType, contactPerson, contactPhone, gstNumber, monthlyCost } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         if (!societyId || !vendorName || !String(vendorName).trim()) {
             return res.status(400).json({ success: false, error: 'societyId and vendorName are required' });
         }
@@ -31,7 +31,7 @@ const listVendors = async (req, res, next) => {
 
 const createVendorInvoice = async (req, res, next) => {
     try {
-        const { societyId, vendorId, invoiceNumber, amount, gstAmount, tdsAmount, invoiceDate, dueDate } = req.body;
+        const { societyId, vendorId, invoiceNumber, amount, gstAmount, tdsAmount, invoiceDate, dueDate } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         const id = uuidv4();
         
         const total = amount + gstAmount - tdsAmount;

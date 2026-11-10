@@ -14,7 +14,6 @@
  * into a territory 400 km away.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const { query } = require('../../config/database');
 
@@ -84,7 +83,7 @@ describe('the stored coordinates are not real', () => {
     // Migration 097 flags every existing row. A row claiming verification
     // without an import having happened is the failure mode worth catching.
     const res = await query(
-      'SELECT COUNT(*) AS n FROM territories WHERE COALESCE(centroid_verified, 0) = 1'
+      "SELECT COUNT(*) AS n FROM territories WHERE centroid_verified = '1'"
     );
     const verified = Number((res.rows || res || [])[0]?.n || 0);
     expect(verified).toBe(0);
@@ -116,7 +115,8 @@ describe('spatial lookups refuse unverified coordinates', () => {
       path.join(__dirname, '..', '..', 'repositories', 'spatial.repository.js'),
       'utf8'
     );
-    const matches = src.match(/COALESCE\(t\.centroid_verified, 0\) = 1/g) || [];
+    // Either COALESCE(t.centroid_verified, 0) = 1 or the engine-neutral t.centroid_verified = '1'.
+    const matches = src.match(/COALESCE\(t\.centroid_verified, 0\) = 1|\bt\.centroid_verified = '1'/g) || [];
     expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 });

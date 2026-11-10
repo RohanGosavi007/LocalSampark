@@ -50,11 +50,13 @@ describe('Escrow & Race Condition Tests', () => {
       const userB = 102;
       
       // Seed a dummy equipment
+      const ownerUuid = '00000000-0000-4000-8000-000000000900';
+      await pool.query(`INSERT INTO users (id, phone_number, full_name, role, is_active, is_verified) VALUES ($1, '+919000000900', 'Escrow Owner', 'user', true, true) ON CONFLICT (id) DO NOTHING`, [ownerUuid]);
       await pool.query(
         `INSERT INTO equipment_listings (id, owner_id, item_name, category, daily_price, security_deposit, status) 
          VALUES ($1, $2, 'Drill', 'Tools', 100, 500, 'available') 
          ON CONFLICT (id) DO UPDATE SET status = 'available'`,
-        [mockEquipmentId, 900]
+        [mockEquipmentId, ownerUuid]
       );
 
       // We will simulate the internal transaction flow to test row-level locking
@@ -106,11 +108,12 @@ describe('Escrow & Race Condition Tests', () => {
     it('should only allow one volunteer to claim an open task', async () => {
       const mockTaskId = 888;
       
+      const ownerUuid = '00000000-0000-4000-8000-000000000900';
       await pool.query(
         `INSERT INTO volunteer_tasks (id, poster_id, title, bounty_coins, type, status) 
          VALUES ($1, $2, 'Clean Park', 100, 'civic_issue', 'open') 
          ON CONFLICT (id) DO UPDATE SET status = 'open'`,
-        [mockTaskId, 900]
+        [mockTaskId, ownerUuid]
       );
 
       const claimLogic = async (userId) => {
@@ -137,10 +140,20 @@ describe('Escrow & Race Condition Tests', () => {
         }
       };
 
+      const vol1 = '00000000-0000-4000-8000-000000000101';
+      const vol2 = '00000000-0000-4000-8000-000000000102';
+      const vol3 = '00000000-0000-4000-8000-000000000103';
+      for (const [idx, uid] of [[1, vol1], [2, vol2], [3, vol3]]) {
+        await pool.query(
+          `INSERT INTO users (id, phone_number, full_name, role) VALUES ($1, $2, $3, 'resident') ON CONFLICT DO NOTHING`,
+          [uid, `+91999999010${idx}`, `Volunteer ${idx}`]
+        );
+      }
+
       const [res1, res2, res3] = await Promise.all([
-        claimLogic(101),
-        claimLogic(102),
-        claimLogic(103)
+        claimLogic(vol1),
+        claimLogic(vol2),
+        claimLogic(vol3)
       ]);
 
       const successCount = [res1, res2, res3].filter(r => r.success).length;

@@ -35,10 +35,10 @@ export default function ShopLedger({ token, shopId }) {
     const headers = ['Date', 'Order ID', 'Gross Amount', 'Commission', 'Net Earnings'];
     const rows = ledgerData.transactions.map(t => [
       new Date(t.created_at).toLocaleDateString(),
-      t.id,
-      t.total_amount,
-      (t.total_amount * 0.10).toFixed(2),
-      (t.total_amount * 0.90).toFixed(2)
+      t.order_id || t.id,
+      t.gross_amount ?? t.total_amount ?? 0,
+      t.commission ?? ((Number(t.gross_amount ?? t.total_amount ?? 0) * 0).toFixed(2)),
+      t.net_amount ?? t.gross_amount ?? t.total_amount ?? 0
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);

@@ -184,7 +184,7 @@ async function build({ dim = DEFAULT_DIM, M = 16, efConstruction = 200, persist 
   const pincodes = new Map();
   try {
     const res = await query(
-      'SELECT id, pincode FROM local_shops WHERE COALESCE(is_active, 1) = 1'
+      `SELECT id, pincode FROM local_shops WHERE (is_active = '1' OR is_active IS NULL)`
     );
     for (const row of res.rows || res || []) pincodes.set(String(row.id), row.pincode);
   } catch (err) {

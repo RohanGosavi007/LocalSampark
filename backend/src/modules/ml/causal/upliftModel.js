@@ -460,9 +460,9 @@ async function loadTrainingLog({ windowDays = 90, limit = 50000 } = {}) {
               s.created_at   AS created_at,
               (SELECT COUNT(*) FROM shop_reviews r WHERE r.shop_id = s.id) AS review_count
          FROM ml_interaction_events e
-         JOIN local_shops s ON s.id = e.item_id
+         JOIN local_shops s ON CAST(s.id AS TEXT) = CAST(e.item_id AS TEXT)
         WHERE e.item_type = 'shop' AND e.created_at >= $1
-        GROUP BY e.item_id
+        GROUP BY e.item_id, s.id, s.rating, s.is_verified, s.is_promoted, s.created_at
         LIMIT $2`,
       [cutoff, limit]
     );

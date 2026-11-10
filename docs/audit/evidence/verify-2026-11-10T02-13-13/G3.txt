@@ -1,0 +1,11 @@
+=== Backend Jest on PostgreSQL Execution ===
+Database: localsampark_test on 127.0.0.1:5432
+Exit Code: 1
+Summary: Postgres Jest execution failed or local DB unreachable
+
+STDOUT:
+07:49:24 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+
+
+STDERR:
+spawnSync C:\WINDOWS\system32\cmd.exe ETIMEDOUT

@@ -368,7 +368,7 @@ const s = StyleSheet.create({
   s40: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', padding: 24, borderRadius: 16, alignItems: 'center', textAlign: 'center' },
   s41: { marginBottom: 12 },
   s42: { color: '#ffffff', fontWeight: '900', fontSize: 18, marginBottom: 8 },
-  s43: { color: '#94a3b8', fontSize: 12, textAlign: 'center', marginBottom: 16, lineHeight: 5 },
+  s43: { color: '#94a3b8', fontSize: 12, textAlign: 'center', marginBottom: 16, lineHeight: 18 },
   s44: { backgroundColor: '#9333ea', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,132,252,0.3)' },
   s45: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
   s46: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },

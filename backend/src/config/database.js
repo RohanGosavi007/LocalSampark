@@ -11,8 +11,53 @@ if (process.env.USE_SQLITE === 'true') {
   }
   module.exports = sqlite;
 } else {
-  const { Pool } = require('pg');
+  const { Pool, types } = require('pg');
   const logger = require('./logger');
+
+  // Numbers come back as numbers, as they do from SQLite.
+  //
+  // node-postgres returns NUMERIC/DECIMAL (OID 1700) and BIGINT (OID 20, the
+  // type of COUNT(*)) as strings, to avoid losing precision. Every amount in
+  // this schema is a rupee value with two decimals and every BIGINT is a count
+  // or an id far below 2^53, so a JavaScript number is exact for all of them.
+  // Left as strings, the same API answered `delivery_fee: 20` on SQLite and
+  // `"20.00"` on PostgreSQL, and code that summed amounts concatenated them
+  // ("0240.0055.00" instead of 295) — found when the suites were run on
+  // PostgreSQL (F-127).
+  types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v)));
+  types.setTypeParser(20, (v) => (v === null ? null : parseInt(v, 10)));
+
+  // Dates and times come back as text, as they do from SQLite:
+  //   timestamp (no zone)  -> the stored UTC text, 'YYYY-MM-DD HH:MM:SS'
+  //   timestamptz          -> ISO 8601 in UTC with its 'Z', e.g. '2026-11-10T02:00:00.000Z'
+  //   date                 -> 'YYYY-MM-DD'
+  // The timestamptz form carries its zone so `new Date(value)` is the right
+  // instant on any server; a bare 'YYYY-MM-DD HH:MM:SS' is read by JavaScript
+  // as LOCAL time, which made a live auction read as already ended on a
+  // machine five and a half hours ahead of UTC.
+  //
+  // node-postgres turns `timestamp without time zone` (OID 1114) into a Date
+  // in the server process's LOCAL zone. The app stores UTC (utils/sqlTime), so
+  // on any machine not set to UTC every such value moved by the zone offset
+  // (5h30 here: a campaign stored for 04:30 read back as 23:00 the day before),
+  // and code written for the text SQLite returns (`.replace(' ', 'T')`, string
+  // comparison against sqlTimestamp()) got a Date and produced NaN or wrong
+  // answers. Found when the suites were run on PostgreSQL (F-127).
+  const pgUtcText = (v) => {
+    if (v === null) return null;
+    // '2026-12-09 16:02:47.123+05:30' / '+05' -> an instant -> ISO in UTC.
+    const d = new Date(String(v).replace(' ', 'T').replace(/([+-]\d\d)$/, '$1:00'));
+    return Number.isNaN(d.getTime()) ? v : d.toISOString();
+  };
+  types.setTypeParser(1114, (v) => (v === null ? null : String(v).slice(0, 19)));  // stored UTC text, as written
+  types.setTypeParser(1184, pgUtcText);                                            // timestamptz -> ISO, UTC
+  types.setTypeParser(1082, (v) => v);                                             // date -> 'YYYY-MM-DD'
+
+  // Booleans as 1 / 0, which is what SQLite stores and what the code compares
+  // against (`=== 1`, `? 1 : 0`). A PostgreSQL boolean column answered
+  // true/false instead, so the same flag read 1 in development and `true` in
+  // production. Written back, 1/0 is accepted by a boolean column.
+  types.setTypeParser(16, (v) => (v === null ? null : (v === 't' || v === 'true' ? 1 : 0)));
 
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -108,7 +153,26 @@ if (process.env.USE_SQLITE === 'true') {
     };
   }
 
-  let activePool = new Pool(buildPoolConfig());
+  // Every session in UTC, so CURRENT_TIMESTAMP / NOW() defaults agree with the
+  // UTC values the app writes. A local PostgreSQL install inherits the OS zone
+  // (Asia/Calcutta on the development machine); Supabase is already UTC.
+  //
+  // Passed as pg-pool's `onConnect` option, which the pool awaits before it
+  // hands the client to anyone. It used to be a pool.on('connect') listener
+  // that fired the SET without waiting, so the caller's first query was queued
+  // behind it on a busy client: deprecated in pg 8 (the DeprecationWarning in
+  // every PostgreSQL run) and removed in pg 9. Not a startup `options` param,
+  // because poolers such as PgBouncer reject unknown startup parameters.
+  const setSessionUtc = async (client) => {
+    try {
+      await client.query("SET TIME ZONE 'UTC'");
+    } catch (err) {
+      logger.warn('Could not set session time zone: ' + err.message);
+    }
+  };
+  const withSessionSetup = (config) => ({ ...config, onConnect: setSessionUtc });
+
+  let activePool = new Pool(withSessionSetup(buildPoolConfig()));
 
   activePool.on('error', (err) => {
     logger.error('Unexpected PostgreSQL pool error: ' + err);
@@ -118,7 +182,7 @@ if (process.env.USE_SQLITE === 'true') {
     try {
       activePool.end().catch(() => {});
     } catch {}
-    activePool = new Pool(newConfig);
+    activePool = new Pool(withSessionSetup(newConfig));
     activePool.on('error', (err) => {
       logger.error('Unexpected PostgreSQL pool error: ' + err);
     });
@@ -127,14 +191,22 @@ if (process.env.USE_SQLITE === 'true') {
   // Proxy pool so callers that imported { pool } invoke methods on the current activePool
   const pool = new Proxy({}, {
     get(target, prop) {
+      if (Object.prototype.hasOwnProperty.call(target, prop)) {
+        return target[prop];
+      }
       const val = activePool[prop];
-      if (typeof val === 'function') {
+      if (typeof val === 'function' && !val._isMockFunction) {
         return val.bind(activePool);
       }
       return val;
     },
     set(target, prop, value) {
-      activePool[prop] = value;
+      if (value && value._isMockFunction) {
+        target[prop] = value;
+      } else {
+        delete target[prop];
+        activePool[prop] = value;
+      }
       return true;
     }
   });
@@ -204,9 +276,49 @@ if (process.env.USE_SQLITE === 'true') {
     throw lastError;
   }
 
+  // A lookup by an id PostgreSQL cannot parse as a UUID matches no row.
+  //
+  // SQLite compares any text with any column, so `WHERE id = 'x'` simply finds
+  // nothing there; PostgreSQL refuses the statement (22P02) before reading a
+  // row. Around a hundred routes look a record up by a path parameter and
+  // answered a mistyped or probing id with 500 on PostgreSQL alone (F-113,
+  // found when the suites were ported off their SQLite pin, F-127). For a
+  // read (SELECT/WITH) or a DELETE the honest result is "no rows", which is
+  // what this returns, and it is logged. An UPDATE qualifies only when the
+  // rejected value was a filter (every placeholder bound to it sits after the
+  // WHERE); one being written still fails, as does any INSERT. Integer ids
+  // (cart_items.id) get the same treatment. Statements inside withTransaction()
+  // are untouched: PostgreSQL aborts the transaction on the error.
+  const LEADING = /^\s*(?:\/\*[\s\S]*?\*\/\s*|--[^\n]*\n\s*)*(SELECT|WITH|DELETE|UPDATE)\b/i;
+  const UNPARSEABLE = /invalid input syntax for type (uuid|integer|bigint|smallint): "(.*)"$/i;
+  function isUnparseableIdLookup(err, text, params) {
+    if (!err || err.code !== '22P02' || typeof text !== 'string') return false;
+    const m = UNPARSEABLE.exec(err.message || '');
+    const lead = LEADING.exec(text);
+    if (!m || !lead) return false;
+    if (lead[1].toUpperCase() !== 'UPDATE') return true;
+    const where = text.search(/\bWHERE\b/i);
+    if (where < 0 || !Array.isArray(params)) return false;
+    const slots = params
+      .map((p, i) => (p !== null && p !== undefined && String(p) === m[2] ? i + 1 : 0))
+      .filter(Boolean);
+    if (!slots.length) return false;
+    return slots.every((n) => {
+      const uses = [...text.matchAll(new RegExp(`\\$${n}(?!\\d)`, 'g'))].map((x) => x.index);
+      return uses.length > 0 && uses.every((i) => i > where);
+    });
+  }
+
   async function query(text, params) {
     const start = Date.now();
-    const result = await activePool.query(text, params);
+    let result;
+    try {
+      result = await activePool.query(text, params);
+    } catch (err) {
+      if (!isUnparseableIdLookup(err, text, params)) throw err;
+      logger.warn(`[db] ${err.message} — treated as no rows: ${String(text).replace(/\s+/g, ' ').slice(0, 120)}`);
+      return { rows: [], rowCount: 0, command: LEADING.exec(text)[1].toUpperCase(), fields: [] };
+    }
     const duration = Date.now() - start;
     if (duration > 1000) {
       logger.warn(`⚠️ Slow query (${duration}ms): ` + text.substring(0, 100));

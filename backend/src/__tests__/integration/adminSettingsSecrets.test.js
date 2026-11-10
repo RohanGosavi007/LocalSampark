@@ -3,8 +3,8 @@
  * update binds its values instead of splicing them into SQL.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -13,21 +13,21 @@ const jwt = require('jsonwebtoken');
 const { query, queryOne } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const SUPER = 'ass-super';
-const TIER = 'ass-territory';
-const OWNER = 'ass-owner';
-const SHOP = 'ass-shop';
+const SUPER = fx('ass-super');
+const TIER = fx('ass-territory');
+const OWNER = fx('ass-owner');
+const SHOP = fx('ass-shop');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM restaurant_tables WHERE shop_id = 'ass-shop'");
-  await query("DELETE FROM local_shops WHERE id = 'ass-shop'");
-  await query("DELETE FROM admin_roles WHERE user_id LIKE 'ass-%'");
+  await query(`DELETE FROM restaurant_tables WHERE shop_id = '${fx('ass-shop')}'`);
+  await query(`DELETE FROM local_shops WHERE id = '${fx('ass-shop')}'`);
+  await query(`DELETE FROM admin_roles WHERE CAST(user_id AS TEXT) LIKE '${fxLike('ass')}'`);
   await query("DELETE FROM admin_config WHERE config_key LIKE 'api_key_%'");
-  await query("DELETE FROM users WHERE id LIKE 'ass-%'");
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('ass')}'`);
 }
 
 beforeAll(async () => {
@@ -37,7 +37,7 @@ beforeAll(async () => {
   }
   // An administrative tier below super admin.
   await query(
-    "INSERT INTO admin_roles (id, user_id, role, permissions, is_active) VALUES ('ass-role', $1, 'territory_admin', '{}', '1')",
+    `INSERT INTO admin_roles (id, user_id, role, permissions, is_active) VALUES ('${fx('ass-role')}', $1, 'territory_admin', '{}', '1')`,
     [TIER]
   );
   await query(
@@ -45,15 +45,15 @@ beforeAll(async () => {
      VALUES ($1, $2, 'ASS Cafe', 'Restaurant', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87, '1')`,
     [SHOP, OWNER]
   );
-  await query("INSERT INTO restaurant_tables (id, shop_id, table_number, status) VALUES ('ass-table-1', $1, '1', 'available')", [SHOP]);
-  await query("INSERT INTO restaurant_tables (id, shop_id, table_number, status) VALUES ('ass-table-2', $1, '2', 'available')", [SHOP]);
+  await query(`INSERT INTO restaurant_tables (id, shop_id, table_number, status) VALUES ('${fx('ass-table-1')}', $1, '1', 'available')`, [SHOP]);
+  await query(`INSERT INTO restaurant_tables (id, shop_id, table_number, status) VALUES ('${fx('ass-table-2')}', $1, '2', 'available')`, [SHOP]);
 
   app = express();
   app.use(express.json());
   app.use('/admin', require('../../modules/crm/routes/admin.routes'));
   app.use('/shops', require('../../modules/ecommerce/routes/shop.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(err.statusCode || 500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);
@@ -102,21 +102,21 @@ describe('admin settings', () => {
 });
 
 describe('restaurant table status', () => {
-  const setStatus = (body, table = 'ass-table-1') => request(app).put(`/shops/my-shop/tables/${table}`).set(as(OWNER)).send(body);
+  const setStatus = (body, table = fx('ass-table-1')) => request(app).put(`/shops/my-shop/tables/${table}`).set(as(OWNER)).send(body);
 
   test('a status is one of the table states, and nothing else reaches the statement', async () => {
     // The value used to be placed between quotes in the SQL text.
     const injected = await setStatus({ status: "available', table_number = 'pwned" });
     expect(injected.status).toBe(400);
-    expect((await queryOne("SELECT table_number FROM restaurant_tables WHERE id = 'ass-table-1'")).table_number).toBe('1');
+    expect((await queryOne(`SELECT table_number FROM restaurant_tables WHERE id = '${fx('ass-table-1')}'`)).table_number).toBe('1');
 
     const viaOrder = await setStatus({ status: 'occupied', currentOrderId: "x', status = 'reserved" });
     expect(viaOrder.status).toBe(200);
-    const row = await queryOne("SELECT status, current_order_id FROM restaurant_tables WHERE id = 'ass-table-1'");
+    const row = await queryOne(`SELECT status, current_order_id FROM restaurant_tables WHERE id = '${fx('ass-table-1')}'`);
     expect(row.status).toBe('occupied');
     expect(row.current_order_id).toBe("x', status = 'reserved");
     // And the other table was not touched.
-    expect((await queryOne("SELECT status FROM restaurant_tables WHERE id = 'ass-table-2'")).status).toBe('available');
+    expect((await queryOne(`SELECT status FROM restaurant_tables WHERE id = '${fx('ass-table-2')}'`)).status).toBe('available');
   });
 
   test('freeing a table clears its order', async () => {

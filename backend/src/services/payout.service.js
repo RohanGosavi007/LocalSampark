@@ -159,7 +159,7 @@ class PayoutService {
               o.payment_method, o.cash_collected_by, o.assigned_agent_id, o.fulfillment_method, o.commission_percent,
               sc.commission_percent AS locked_percent, sc.convenience_fee AS locked_convenience_fee
          FROM orders o
-         LEFT JOIN shop_commissions sc ON sc.order_id = o.id AND sc.order_type = 'product_order'
+         LEFT JOIN shop_commissions sc ON CAST(sc.order_id AS TEXT) = CAST(o.id AS TEXT) AND sc.order_type = 'product_order'
         WHERE o.shop_id = $1
           AND ${SETTLEABLE}
           AND o.delivered_at >= $2 AND o.delivered_at < $3`,

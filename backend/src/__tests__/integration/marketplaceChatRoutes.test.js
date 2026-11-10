@@ -5,28 +5,28 @@
  * seller was the buyer of their own listing. The buyer never saw the reply.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { query, queryMany } = require('../../config/database');
 const { getJwtSecret } = require('../../config/secrets');
 
-const SELLER = 'mcr-seller';
-const BUYER = 'mcr-buyer';
-const OTHER = 'mcr-other';
-const LISTING = 'mcr-listing';
+const SELLER = fx('mcr-seller');
+const BUYER = fx('mcr-buyer');
+const OTHER = fx('mcr-other');
+const LISTING = fx('mcr-listing');
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
 
 let app;
 
 async function cleanup() {
-  await query("DELETE FROM marketplace_chat_messages WHERE chat_id IN (SELECT id FROM marketplace_chats WHERE listing_id = 'mcr-listing')");
-  await query("DELETE FROM marketplace_chats WHERE listing_id = 'mcr-listing'");
-  await query("DELETE FROM marketplace_listings WHERE id = 'mcr-listing'");
-  await query("DELETE FROM users WHERE id LIKE 'mcr-%'");
+  await query(`DELETE FROM marketplace_chat_messages WHERE chat_id IN (SELECT id FROM marketplace_chats WHERE listing_id = '${fx('mcr-listing')}')`);
+  await query(`DELETE FROM marketplace_chats WHERE listing_id = '${fx('mcr-listing')}'`);
+  await query(`DELETE FROM marketplace_listings WHERE id = '${fx('mcr-listing')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('mcr')}'`);
 }
 
 beforeAll(async () => {
@@ -44,7 +44,7 @@ beforeAll(async () => {
   app.use(express.json());
   app.use('/marketplace', require('../../modules/ecommerce/routes/marketplace.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 afterAll(cleanup);

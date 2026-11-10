@@ -6,8 +6,8 @@
  * and the check that it is only for members whose paid period is running.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query } = require('../../config/database');
 const platformConfig = require('../../services/platformConfig.service');
@@ -61,7 +61,7 @@ describe('deliveryCharges', () => {
 });
 
 describe('isMember', () => {
-  const U = 'mb-user';
+  const U = fx('mb-user');
   const add = (fields) => query(
     `INSERT INTO user_subscriptions (id, user_id, tier, status, tier_expires_at) VALUES ($1, $2, $3, $4, $5)`,
     [crypto.randomUUID(), U, 'tier' in fields ? fields.tier : 'SamparkPlus', fields.status ?? 'active', fields.expires]
@@ -94,6 +94,6 @@ describe('isMember', () => {
 
   test('no user, no membership', async () => {
     expect(await isMember(null)).toBe(false);
-    expect(await isMember('nobody')).toBe(false);
+    expect(await isMember(fx('mb-nobody'))).toBe(false);
   });
 });

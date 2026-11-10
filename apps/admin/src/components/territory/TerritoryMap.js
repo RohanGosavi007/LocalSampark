@@ -76,7 +76,7 @@ function toLeafletPositions(geojson) {
 /** Leaflet positions back to a GeoJSON Polygon, closing the ring. */
 export function toGeoJsonPolygon(positions) {
   if (!Array.isArray(positions) || positions.length < 3) return null;
-  const ring = positions.map(([lat, lng]) => [lng, lat]);
+  const ring = positions.map((p) => (Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]));
   const [firstLng, firstLat] = ring[0];
   const [lastLng, lastLat] = ring[ring.length - 1];
   // GeoJSON requires the ring to be explicitly closed. Omitting this produces
@@ -170,14 +170,14 @@ export default function TerritoryMap({
         ))}
 
         {drawPoints.length >= 3 ? (
-          <Polygon positions={drawPoints} pathOptions={STYLES.drawing} />
+          <Polygon positions={drawPoints.map((p) => (Array.isArray(p) ? p : [p.lat, p.lng]))} pathOptions={STYLES.drawing} />
         ) : null}
 
         {drawPoints.map((point, i) => (
           // Vertices are rendered as markers so a half-finished shape with
           // fewer than three points is still visible; a two-point polygon draws
           // nothing at all and looks like the clicks were not registered.
-          <Marker key={`${point[0]}-${point[1]}-${i}`} position={point} />
+          <Marker key={`${Array.isArray(point) ? point[0] : point.lat}-${Array.isArray(point) ? point[1] : point.lng}-${i}`} position={Array.isArray(point) ? point : [point.lat, point.lng]} />
         ))}
       </MapContainer>
 

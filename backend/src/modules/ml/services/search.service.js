@@ -75,15 +75,21 @@ async function keywordSearch(text, limit, { prefix = false } = {}) {
   if (!isSqlite()) {
     try {
       const like = `%${String(text).toLowerCase()}%`;
-      // PostgreSQL Full-Text Search with ranking and substring fallback
+      // PostgreSQL full-text search with ranking. Substring matching is the
+      // prefix (autocomplete) behaviour only: exact mode matches whole words,
+      // as SQLite's FTS does, so "groc" answers nothing until prefix is asked
+      // for. The substring clause used to apply in both modes.
+      const substring = prefix
+        ? `OR LOWER(name) LIKE $2
+              OR LOWER(COALESCE(description, '')) LIKE $2
+              OR LOWER(COALESCE(category, '')) LIKE $2`
+        : 'OR (CAST($2 AS TEXT) IS NULL AND 1 = 0)';  // keeps $2 bound in exact mode
       const res = await query(
         `SELECT id FROM local_shops
           WHERE (is_active = true OR is_active IS NULL)
             AND (
               to_tsvector('english', name || ' ' || COALESCE(description, '') || ' ' || COALESCE(category, '')) @@ plainto_tsquery('english', $1)
-              OR LOWER(name) LIKE $2 
-              OR LOWER(COALESCE(description, '')) LIKE $2
-              OR LOWER(COALESCE(category, '')) LIKE $2
+              ${substring}
             )
           ORDER BY 
             ts_rank(to_tsvector('english', name || ' ' || COALESCE(description, '') || ' ' || COALESCE(category, '')), plainto_tsquery('english', $1)) DESC
@@ -223,7 +229,7 @@ async function search(text, { limit = 20, lat = null, lng = null, categorySlug =
   const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
   const params = [...ids];
 
-  const activeCondition = isPostgres() ? '(s.is_active = true OR s.is_active IS NULL)' : 'COALESCE(s.is_active, 1) = 1';
+  const activeCondition = isPostgres() ? '(s.is_active = true OR s.is_active IS NULL)' : "(s.is_active = '1' OR s.is_active IS NULL)";
   let sql = `
     SELECT s.*, c.name AS category_name, c.slug AS category_slug
       FROM local_shops s

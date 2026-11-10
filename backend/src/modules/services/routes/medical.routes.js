@@ -171,8 +171,10 @@ router.post('/requests', authenticate, async (req, res, next) => {
       `INSERT INTO medical_requests
            (id, requester_id, created_by, patient_name, phone, request_type,
             required_item, blood_group, description, location, urgency, status, dispatched)
-       VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'open', '0')`,
-      [id, req.user.id, req.user.full_name || req.user.name || 'Anonymous',
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open', '0')`,
+      // requester_id (UUID) and created_by (VARCHAR) need separate placeholders
+      // on PostgreSQL (F-130).
+      [id, req.user.id, req.user.id, req.user.full_name || req.user.name || 'Anonymous',
        req.user.phone || null, requestType || 'Blood', requiredItem,
        // For a blood request the required item IS the blood group; keeping
        // both columns populated lets the admin console filter on either.
@@ -198,8 +200,8 @@ router.get('/donors', authenticate, async (req, res, next) => {
              COALESCE(u.full_name, 'Donor') AS full_name,
              u.phone
         FROM blood_donors d
-        LEFT JOIN users u ON u.id = d.user_id
-       WHERE COALESCE(d.is_available, 1) = 1`;
+        LEFT JOIN users u ON CAST(u.id AS TEXT) = CAST(d.user_id AS TEXT)
+       WHERE (d.is_available = '1' OR d.is_available IS NULL)`;
 
     if (bloodGroup) {
       params.push(bloodGroup);

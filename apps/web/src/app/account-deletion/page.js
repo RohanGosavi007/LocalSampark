@@ -14,6 +14,11 @@ export default function AccountDeletionPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  // Public flow, step 2: the server sends a code to the account's phone or
+  // email and only queues the request once it is entered.
+  const [pendingRequestId, setPendingRequestId] = useState(null);
+  const [code, setCode] = useState('');
+  const [notice, setNotice] = useState('');
 
   // Handle direct authenticated deletion
   const handleAuthenticatedDeletion = async () => {
@@ -68,18 +73,35 @@ export default function AccountDeletionPage() {
         identifier: identifier.trim(),
         reason: reason || 'Public web portal request'
       });
-
-      if (res && (res.success || res.data?.success)) {
-        setResult({
-          success: true,
-          message: res.message || res.data?.message || 'Deletion request received. Personal data associated with this account will be purged.',
-          requestId: res.requestId || res.data?.requestId
-        });
-      } else {
-        setError(res?.error || res?.data?.error || 'Failed to submit deletion request.');
-      }
+      // The server answers the same way whether or not an account exists, and
+      // nothing is queued until the code is confirmed.
+      setPendingRequestId(res.requestId);
+      setNotice(res.message || 'If an account matches, we have sent it a 6-digit code.');
+      setCode('');
     } catch (err) {
       setError(err?.message || 'Failed to submit deletion request.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    if (!/^[0-9]{6}$/.test(code)) {
+      setError('Enter the 6-digit code we sent you.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiPost('/users/account-deletion-request/verify', { requestId: pendingRequestId, code });
+      setResult({
+        success: true,
+        message: res.message || 'Your deletion request is confirmed.',
+        requestId: res.requestId,
+      });
+    } catch (err) {
+      setError(err?.message || 'The code could not be verified.');
     } finally {
       setLoading(false);
     }
@@ -174,6 +196,41 @@ export default function AccountDeletionPage() {
                 </div>
               ) : (
                 /* Public unauthenticated request view for Google Play / non-logged-in users */
+                pendingRequestId ? (
+                <form onSubmit={handleVerifyCode} className="space-y-6">
+                  <p className="text-sm text-text-muted" role="status">{notice}</p>
+                  <div>
+                    <label htmlFor="dsr-code" className="block text-sm font-medium mb-2 text-text">
+                      Confirmation code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="dsr-code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                      placeholder="6-digit code"
+                      className="form-input w-full p-3.5 text-sm rounded-xl tracking-widest"
+                    />
+                  </div>
+                  {error && <p className="text-sm text-red-500 font-medium" role="alert">{error}</p>}
+                  <button
+                    type="submit"
+                    disabled={loading || code.length !== 6}
+                    className="w-full btn bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
+                  >
+                    {loading ? 'Confirming…' : 'Confirm Deletion Request'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPendingRequestId(null); setCode(''); setError(''); }}
+                    className="w-full text-sm text-text-muted underline"
+                  >
+                    Use a different phone number or email
+                  </button>
+                </form>
+                ) : (
                 <form onSubmit={handlePublicDeletion} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-text">
@@ -220,9 +277,10 @@ export default function AccountDeletionPage() {
                     disabled={loading || !confirmed || !identifier.trim()}
                     className="w-full btn bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
                   >
-                    {loading ? 'Submitting Request...' : 'Submit Account Deletion Request'}
+                    {loading ? 'Sending code…' : 'Send Confirmation Code'}
                   </button>
                 </form>
+                )
               )}
             </div>
           )}

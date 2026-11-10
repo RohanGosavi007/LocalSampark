@@ -574,7 +574,7 @@ router.post('/jobs/alerts', authenticate, async (req, res, next) => {
 // J6: Get my alerts
 router.get('/jobs/alerts', authenticate, async (req, res, next) => {
   try {
-    const alerts = await queryMany('SELECT * FROM job_alerts WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC', [req.user.id]);
+    const alerts = await queryMany("SELECT * FROM job_alerts WHERE user_id = $1 AND is_active = '1' ORDER BY created_at DESC", [req.user.id]);
     res.json({ success: true, alerts });
   } catch (error) { next(error); }
 });
@@ -582,7 +582,7 @@ router.get('/jobs/alerts', authenticate, async (req, res, next) => {
 // J6: Delete alert
 router.delete('/jobs/alerts/:alertId', authenticate, async (req, res, next) => {
   try {
-    await query('UPDATE job_alerts SET is_active = false WHERE id = $1 AND user_id = $2', [req.params.alertId, req.user.id]);
+    await query("UPDATE job_alerts SET is_active = '0' WHERE id = $1 AND user_id = $2", [req.params.alertId, req.user.id]);
     res.json({ success: true, message: 'Alert deactivated' });
   } catch (error) { next(error); }
 });

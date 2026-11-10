@@ -112,6 +112,9 @@ export function AuthProvider({ children }) {
 
   const saveAuthSession = (data) => {
     localStorage.setItem(SESSION_KEYS.token, data.accessToken);
+    if (data.user && (String(data.user.role).toLowerCase() === 'super_admin' || String(data.user.role).toLowerCase() === 'admin')) {
+      localStorage.setItem('admin_token', data.accessToken);
+    }
     if (data.refreshToken) localStorage.setItem(SESSION_KEYS.refreshToken, data.refreshToken);
     localStorage.setItem(SESSION_KEYS.user, JSON.stringify(data.user));
 
@@ -136,6 +139,9 @@ export function AuthProvider({ children }) {
       const data = await apiFetch('/auth/switch-role', { method: 'PUT', body: JSON.stringify({ targetRole: newRole }) });
       if (data.accessToken) {
         localStorage.setItem(SESSION_KEYS.token, data.accessToken);
+    if (data.user && (String(data.user.role).toLowerCase() === 'super_admin' || String(data.user.role).toLowerCase() === 'admin')) {
+      localStorage.setItem('admin_token', data.accessToken);
+    }
         setToken(data.accessToken);
       }
       localStorage.setItem(SESSION_KEYS.role, newRole);
@@ -242,6 +248,7 @@ export function AuthProvider({ children }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
+      if (data.accessToken && data.user) { saveAuthSession(data); }
       return data;
     } catch (err) {
       setError(err.message);

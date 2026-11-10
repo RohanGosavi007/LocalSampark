@@ -55,7 +55,7 @@ router.get('/admin', authenticate, async (req, res, next) => {
             FROM disputes d
             LEFT JOIN users u ON d.user_id = u.id
             LEFT JOIN local_shops s ON d.shop_id = s.id
-            LEFT JOIN orders o ON d.order_id = o.id
+            LEFT JOIN orders o ON CAST(d.order_id AS TEXT) = CAST(o.id AS TEXT)
             ORDER BY d.created_at DESC
         `);
         res.json(disputes.rows || disputes);

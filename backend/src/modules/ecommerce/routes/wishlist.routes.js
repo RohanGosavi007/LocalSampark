@@ -113,7 +113,7 @@ router.delete('/:productId', authenticate, async (req, res, next) => {
     const { productId } = req.params;
 
     await query(
-      'DELETE FROM shop_wishlists WHERE user_id = $1 AND (product_id = $2 OR id = $2)',
+      'DELETE FROM shop_wishlists WHERE user_id = $1 AND (CAST(product_id AS TEXT) = $2 OR CAST(id AS TEXT) = $2)',
       [userId, productId]
     );
 
@@ -139,7 +139,7 @@ router.post('/:productId/move-to-cart', authenticate, async (req, res, next) => 
     const { productId } = req.params;
 
     const wishlistItem = await queryOne(
-      'SELECT id, product_id FROM shop_wishlists WHERE user_id = $1 AND (product_id = $2 OR id = $2)',
+      'SELECT id, product_id FROM shop_wishlists WHERE user_id = $1 AND (CAST(product_id AS TEXT) = $2 OR CAST(id AS TEXT) = $2)',
       [userId, productId]
     );
 
@@ -175,11 +175,18 @@ router.post('/:productId/move-to-cart', authenticate, async (req, res, next) => 
         [existingCartItem.id]
       );
     } else {
-      const cartItemId = crypto.randomUUID();
-      await query(
-        'INSERT INTO cart_items (id, user_id, product_id, quantity) VALUES ($1, $2, $3, 1)',
-        [cartItemId, userId, actualProductId]
-      );
+      if (process.env.USE_SQLITE === 'true') {
+        const cartItemId = crypto.randomUUID();
+        await query(
+          'INSERT INTO cart_items (id, user_id, product_id, quantity) VALUES ($1, $2, $3, 1)',
+          [cartItemId, userId, actualProductId]
+        );
+      } else {
+        await query(
+          'INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1, $2, 1)',
+          [userId, actualProductId]
+        );
+      }
     }
 
     // Remove from wishlist

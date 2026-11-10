@@ -210,7 +210,7 @@ async function detectPriceAnomalies({ cfg = {}, regionId = null } = {}) {
          FROM shop_products p
          JOIN local_shops s ON s.id = p.shop_id
         WHERE p.price IS NOT NULL AND p.price > 0
-          AND COALESCE(p.is_active, 1) = 1`
+          AND (p.is_active = '1' OR p.is_active IS NULL)`
     );
     rows = res.rows || res || [];
   } catch (err) {
@@ -279,7 +279,7 @@ async function detectDuplicateListings({ regionId = null } = {}) {
   try {
     const res = await query(
       `SELECT id, name, owner_id, region_id FROM local_shops
-        WHERE owner_id IS NOT NULL AND COALESCE(is_active, 1) = 1`
+        WHERE owner_id IS NOT NULL AND (is_active = '1' OR is_active IS NULL)`
     );
     rows = res.rows || res || [];
   } catch (err) {
@@ -351,15 +351,15 @@ async function aggregateDemand({ windowHours = 24 } = {}) {
     const res = await query(
       `SELECT e.region_id,
               s.category AS category,
-              SUBSTR(e.created_at, 1, 13) AS bucket_hour,
+              SUBSTR(CAST(e.created_at AS TEXT), 1, 13) AS bucket_hour,
               SUM(CASE WHEN e.event_type = 'IMPRESSION' THEN 1 ELSE 0 END) AS impressions,
               SUM(CASE WHEN e.event_type = 'CARD_CLICK' THEN 1 ELSE 0 END) AS clicks,
               SUM(CASE WHEN e.event_type IN ('CALL_VENDOR','PURCHASE_INTENT') THEN 1 ELSE 0 END) AS conversions,
-              COUNT(DISTINCT COALESCE(e.user_id, e.session_id)) AS actors
+              COUNT(DISTINCT COALESCE(CAST(e.user_id AS TEXT), e.session_id)) AS actors
          FROM ml_interaction_events e
-         LEFT JOIN local_shops s ON s.id = e.item_id
+         LEFT JOIN local_shops s ON CAST(s.id AS TEXT) = CAST(e.item_id AS TEXT)
         WHERE e.created_at >= $1 AND e.item_type = 'shop'
-        GROUP BY e.region_id, s.category, SUBSTR(e.created_at, 1, 13)`,
+        GROUP BY e.region_id, s.category, SUBSTR(CAST(e.created_at AS TEXT), 1, 13)`,
       [cutoff]
     );
     rows = res.rows || res || [];
@@ -375,7 +375,7 @@ async function aggregateDemand({ windowHours = 24 } = {}) {
     try {
       const existing = await query(
         `SELECT id FROM ml_demand_buckets
-          WHERE COALESCE(region_id, '') = COALESCE($1, '')
+          WHERE COALESCE(CAST(region_id AS TEXT), '') = COALESCE(CAST($1 AS TEXT), '')
             AND COALESCE(category, '') = COALESCE($2, '')
             AND bucket_start = $3`,
         [row.region_id || null, row.category || null, bucketStart]

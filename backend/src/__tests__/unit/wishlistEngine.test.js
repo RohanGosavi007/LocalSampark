@@ -9,10 +9,10 @@ const wishlistRouter = require('../../modules/ecommerce/routes/wishlist.routes')
 describe('Milestone M3/M4 Core — C12: Wishlist & Saved Items Engine', () => {
   let app;
   let userToken;
-  const testUserId = 'test-user-wishlist-' + Date.now();
-  const testShopId = 'test-shop-wishlist-' + Date.now();
-  const testProductId = 'test-prod-wishlist-' + Date.now();
-  const testProduct2Id = 'test-prod2-wishlist-' + Date.now();
+  const testUserId = crypto.randomUUID();
+  const testShopId = crypto.randomUUID();
+  const testProductId = crypto.randomUUID();
+  const testProduct2Id = crypto.randomUUID();
 
   beforeAll(async () => {
     app = express();
@@ -28,30 +28,30 @@ describe('Milestone M3/M4 Core — C12: Wishlist & Saved Items Engine', () => {
     // Setup test user
     await query(
       `INSERT INTO users (id, phone, phone_number, full_name, role, is_active, token_version)
-       VALUES ($1, $2, $2, $3, $4, true, 0)
+       VALUES ($1, $2, $3, $4, $5, true, 0)
        ON CONFLICT (id) DO NOTHING`,
-      [testUserId, '+919988776655', 'Wishlist Test User', 'customer']
+      [testUserId, '+919988776655', '+919988776655', 'Wishlist Test User', 'customer']
     );
 
     // Setup test shop
     await query(
       `INSERT INTO local_shops (id, name, owner_id, phone, category, address, coordinate, latitude, longitude, is_verified, is_active, delivery_fee)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1, 1, 25)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '1', '1', 25)
        ON CONFLICT (id) DO NOTHING`,
-      [testShopId, 'Dhanori Gourmet Groceries', testUserId, '+919988776655', 'Grocery', 'Main Road, Dhanori, Pune', '18.58,73.89', 18.58, 73.89]
+      [testShopId, 'Dhanori Gourmet Groceries', testUserId, '+919988776655', 'Grocery', 'Main Road, Dhanori, Pune', 'POINT(73.89 18.58)', 18.58, 73.89]
     );
 
     // Setup test products
     await query(
       `INSERT INTO shop_products (id, shop_id, name, price, mrp, stock, inventory_count, track_inventory, is_available)
-       VALUES ($1, $2, $3, $4, $5, 50, 50, 1, 1)
+       VALUES ($1, $2, $3, $4, $5, 50, 50, '1', '1')
        ON CONFLICT (id) DO NOTHING`,
       [testProductId, testShopId, 'Organic Basmati Rice 5kg', 450, 550]
     );
 
     await query(
       `INSERT INTO shop_products (id, shop_id, name, price, mrp, stock, inventory_count, track_inventory, is_available)
-       VALUES ($1, $2, $3, $4, $5, 20, 20, 1, 1)
+       VALUES ($1, $2, $3, $4, $5, 20, 20, '1', '1')
        ON CONFLICT (id) DO NOTHING`,
       [testProduct2Id, testShopId, 'Cold Pressed Mustard Oil 1L', 190, 220]
     );

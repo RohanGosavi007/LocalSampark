@@ -223,8 +223,8 @@ export default function ShopDetailPage() {
             )}
             
             <div className="w-32 h-32 lg:w-40 lg:h-40 bg-background-alt rounded-2xl flex items-center justify-center overflow-hidden border border-border shrink-0 shadow-sm">
-              {shop.photo_urls && JSON.parse(shop.photo_urls).length > 0 ? (
-                  <img src={JSON.parse(shop.photo_urls)[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="" />
+              {(() => { try { const u = Array.isArray(shop.photo_urls) ? shop.photo_urls : (typeof shop.photo_urls === 'string' && shop.photo_urls.trim().startsWith('[') ? JSON.parse(shop.photo_urls) : (shop.photo_urls ? [shop.photo_urls] : [])); return u.length > 0; } catch { return false; } })() ? (
+                  <img src={(() => { try { const u = Array.isArray(shop.photo_urls) ? shop.photo_urls : (typeof shop.photo_urls === 'string' && shop.photo_urls.trim().startsWith('[') ? JSON.parse(shop.photo_urls) : [shop.photo_urls]); return u[0]; } catch { return ''; } })()} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="" />
               ) : (
                   <Store className="w-16 h-16 text-text-muted" />
               )}

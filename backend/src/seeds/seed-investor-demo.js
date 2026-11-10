@@ -34,6 +34,12 @@
 
 const crypto = require('crypto');
 const { query, queryOne, connectDB } = require('../config/database');
+const { seedId, seedLike } = require('../utils/fixtureIds');
+
+// Every 'demo-…' label below is stored as its deterministic UUID (seedId), so
+// the same demo seeds SQLite and PostgreSQL (whose id columns are mostly UUID),
+// and teardown/verify select the seeder's rows by the UUID's leading segments.
+const asId = (v) => (typeof v === 'string' && /^demo-[A-Za-z0-9_-]+$/.test(v) ? seedId(v) : v);
 
 const VERIFY_ONLY = process.argv.includes('--verify');
 
@@ -455,7 +461,7 @@ async function insert(table, row) {
   const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
   const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`;
   try {
-    await query(sql, Object.values(row));
+    await query(sql, Object.values(row).map(asId));
     inserted += 1;
     return true;
   } catch (e) {
@@ -476,7 +482,7 @@ async function insert(table, row) {
 async function clearOwned(table, column, prefix) {
   if (!(await tableExists(table))) return;
   try {
-    await query(`DELETE FROM ${table} WHERE ${column} LIKE $1`, [`${prefix}%`]);
+    await query(`DELETE FROM ${table} WHERE CAST(${column} AS TEXT) LIKE $1`, [seedLike(prefix)]);
   } catch (e) {
     skipped.push(`${table} (teardown): ${e.message.split('\n')[0]}`);
   }
@@ -528,6 +534,7 @@ const TEARDOWN_ORDER = [
   ['job_vacancies', 'id', 'demo-job-'],
   ['admin_jobs', 'id', 'demo-job-'],
   ['local_shops', 'id', 'demo-shop-'],
+  ['societies', 'id', 'demo-society-'],
   ['users', 'id', 'demo-user-'],
 ];
 
@@ -740,7 +747,7 @@ async function seedRider() {
     region_id: 'zone_kothrud', rating: 4.8,
   });
   // The name a customer sees on the tracking screen is the user's.
-  await query('UPDATE delivery_agents SET full_name = (SELECT full_name FROM users WHERE id = $1) WHERE id = $2', [userId(7), 'demo-agent-07']).catch(() => {});
+  await query('UPDATE delivery_agents SET full_name = (SELECT full_name FROM users WHERE id = $1) WHERE id = $2', [asId(userId(7)), asId('demo-agent-07')]).catch(() => {});
   return ok ? 1 : 0;
 }
 
@@ -860,9 +867,21 @@ async function seedCarpool() {
 }
 
 async function seedSociety() {
-  const society = await queryOne('SELECT id FROM societies LIMIT 1');
+  // The demo owns its society, so an empty database (a fresh migration, which
+  // the dual-engine seed check starts from) gets one too. It used to borrow
+  // whichever society already existed and seeded no society data without one.
+  const demoSociety = asId('demo-society-1');
+  if (!(await queryOne('SELECT id FROM societies WHERE id = $1', [demoSociety]))) {
+    await insert('societies', {
+      id: 'demo-society-1',
+      name: 'Green Valley Residency',
+      address: 'Dhanori, Pune 411015',
+      is_active: '1',
+    });
+  }
+  const society = await queryOne('SELECT id FROM societies WHERE id = $1', [demoSociety]);
   if (!society) {
-    skipped.push('societies: no society row to attach demo data to');
+    skipped.push('societies: the demo society could not be created');
     return {};
   }
   const sid = society.id;
@@ -949,7 +968,11 @@ async function seedSociety() {
     if (await insert('society_guard_shifts', {
       id: `demo-shift-${i + 1}`, society_id: sid, guard_id: gid, gate_id: gate,
       shift_type: shift, shift_name: `${shift[0].toUpperCase()}${shift.slice(1)} shift`, shift_date: today,
-      start_time: start, end_time: end, status: onNow ? 'active' : 'scheduled',
+      // Full timestamps: start_time/end_time are TIMESTAMP on PostgreSQL, which
+      // refused a bare '06:00'. A shift that ends before it starts ends tomorrow.
+      start_time: `${today} ${start}:00`,
+      end_time: `${end <= start ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : today} ${end}:00`,
+      status: onNow ? 'active' : 'scheduled',
       actual_start: onNow ? new Date().toISOString() : null, created_by: userId(3),
     })) shifts += 1;
   }
@@ -1190,23 +1213,23 @@ async function seedSociety() {
 
 async function verify() {
   const checks = [
-    ['users (demo personas)', "SELECT COUNT(*) AS c FROM users WHERE id LIKE 'demo-user-%'", PERSONAS.length],
-    ['local_shops', "SELECT COUNT(*) AS c FROM local_shops WHERE id LIKE 'demo-shop-%'", SHOPS.length],
-    ['shop_products', "SELECT COUNT(*) AS c FROM shop_products WHERE id LIKE 'demo-prod-%'", SHOPS.reduce((n, s) => n + s.products.length, 0)],
-    ['shops in a category', "SELECT COUNT(*) AS c FROM local_shops WHERE id LIKE 'demo-shop-%' AND category_id IS NOT NULL", SHOPS.length],
-    ['admin_jobs', "SELECT COUNT(*) AS c FROM admin_jobs WHERE id LIKE 'demo-job-%'", JOBS.length],
-    ['job_vacancies', "SELECT COUNT(*) AS c FROM job_vacancies WHERE id LIKE 'demo-job-%'", JOBS.length],
-    ['job board postings', "SELECT COUNT(*) AS c FROM local_job_postings WHERE id LIKE 'demo-job-%'", JOBS.length],
-    ['job_applications', "SELECT COUNT(*) AS c FROM job_applications WHERE id LIKE 'demo-app-%'", JOBS.length * 3],
-    ['properties', "SELECT COUNT(*) AS c FROM properties WHERE id LIKE 'demo-prop-%'", PROPERTIES.length],
-    ['carpool_rides', "SELECT COUNT(*) AS c FROM carpool_rides WHERE id LIKE 'demo-ride-%'", RIDES.length],
-    ['orders', "SELECT COUNT(*) AS c FROM orders WHERE id LIKE 'demo-order-%'", 6],
-    ['approved rider', "SELECT COUNT(*) AS c FROM delivery_agents WHERE id = 'demo-agent-07' AND kyc_status = 'active'", 1],
-    ['society members', "SELECT COUNT(*) AS c FROM society_members WHERE id LIKE 'demo-member-%'", 6 + RESIDENTS.length + GUARDS.length],
-    ['guards on today\'s roster', "SELECT COUNT(*) AS c FROM society_guard_shifts WHERE id LIKE 'demo-shift-%'", GUARDS.length + 1],
-    ['gate passes', "SELECT COUNT(*) AS c FROM society_visitor_preapprovals WHERE id LIKE 'demo-preapproval-%'", 10],
-    ['gate register', "SELECT COUNT(*) AS c FROM society_visitors WHERE id LIKE 'demo-visitor-%'", 8],
-    ['society events', "SELECT COUNT(*) AS c FROM society_events WHERE id LIKE 'demo-event-%'", 3],
+    ['users (demo personas)', `SELECT COUNT(*) AS c FROM users WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-user-')}'`, PERSONAS.length],
+    ['local_shops', `SELECT COUNT(*) AS c FROM local_shops WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-shop-')}'`, SHOPS.length],
+    ['shop_products', `SELECT COUNT(*) AS c FROM shop_products WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-prod-')}'`, SHOPS.reduce((n, s) => n + s.products.length, 0)],
+    ['shops in a category', `SELECT COUNT(*) AS c FROM local_shops WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-shop-')}' AND category_id IS NOT NULL`, SHOPS.length],
+    ['admin_jobs', `SELECT COUNT(*) AS c FROM admin_jobs WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-job-')}'`, JOBS.length],
+    ['job_vacancies', `SELECT COUNT(*) AS c FROM job_vacancies WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-job-')}'`, JOBS.length],
+    ['job board postings', `SELECT COUNT(*) AS c FROM local_job_postings WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-job-')}'`, JOBS.length],
+    ['job_applications', `SELECT COUNT(*) AS c FROM job_applications WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-app-')}'`, JOBS.length * 3],
+    ['properties', `SELECT COUNT(*) AS c FROM properties WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-prop-')}'`, PROPERTIES.length],
+    ['carpool_rides', `SELECT COUNT(*) AS c FROM carpool_rides WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-ride-')}'`, RIDES.length],
+    ['orders', `SELECT COUNT(*) AS c FROM orders WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-order-')}'`, 6],
+    ['approved rider', `SELECT COUNT(*) AS c FROM delivery_agents WHERE id = '${seedId('demo-agent-07')}' AND kyc_status = 'active'`, 1],
+    ['society members', `SELECT COUNT(*) AS c FROM society_members WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-member-')}'`, 6 + RESIDENTS.length + GUARDS.length],
+    ['guards on today\'s roster', `SELECT COUNT(*) AS c FROM society_guard_shifts WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-shift-')}'`, GUARDS.length + 1],
+    ['gate passes', `SELECT COUNT(*) AS c FROM society_visitor_preapprovals WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-preapproval-')}'`, 10],
+    ['gate register', `SELECT COUNT(*) AS c FROM society_visitors WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-visitor-')}'`, 8],
+    ['society events', `SELECT COUNT(*) AS c FROM society_events WHERE CAST(id AS TEXT) LIKE '${seedLike('demo-event-')}'`, 3],
   ];
 
   let ok = true;

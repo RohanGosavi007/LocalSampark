@@ -21,8 +21,8 @@ async function processExpiredEvents() {
     await query(`
       UPDATE event_tickets 
       SET status = 'expired' 
-      WHERE status = 'confirmed' AND event_id IN (
-        SELECT id FROM local_events WHERE event_date < $1
+      WHERE status = 'confirmed' AND CAST(event_id AS TEXT) IN (
+        SELECT CAST(id AS TEXT) FROM local_events WHERE event_date < $1
       )
     `, [todayStr]);
 

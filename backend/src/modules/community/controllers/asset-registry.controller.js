@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const registerAsset = async (req, res, next) => {
     try {
-        const { societyId, assetName, assetType, location, purchaseCost, amcVendorId, amcEndDate } = req.body;
+        const { societyId, assetName, assetType, location, purchaseCost, amcVendorId, amcEndDate } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         if (!societyId || !assetName || !String(assetName).trim()) {
             return res.status(400).json({ success: false, error: 'societyId and assetName are required' });
         }
@@ -24,7 +24,7 @@ const registerAsset = async (req, res, next) => {
 
 const logMaintenance = async (req, res, next) => {
     try {
-        const { assetId, societyId, maintenanceType, description, cost, nextDue } = req.body;
+        const { assetId, societyId, maintenanceType, description, cost, nextDue } = { ...req.body, societyId: req.societyId || (req.body || {}).societyId };
         const adminId = req.user.id;
         const id = uuidv4();
 

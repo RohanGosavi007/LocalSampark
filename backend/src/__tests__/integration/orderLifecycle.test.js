@@ -16,7 +16,7 @@
  *   - A parcel is priced from its two locations.
  */
 
-process.env.USE_SQLITE = 'true';
+const { fx, fxLike } = require('../helpers/fixtureIds');
 process.env.RAZORPAY_KEY_ID = 'rzp_test_unitTestKey';
 process.env.RAZORPAY_KEY_SECRET = 'unit-test-key-secret';
 
@@ -30,12 +30,12 @@ const razorpay = require('../../services/razorpay.service');
 const payments = require('../../services/payments.service');
 const lifecycle = require('../../services/orderLifecycle.service');
 
-const BUYER = 'olc-buyer';
-const OWNER = 'olc-owner';
-const RIDER = 'olc-rider';
-const ADMIN = 'olc-admin';
-const STRANGER = 'olc-stranger';
-const SHOP = 'olc-shop';
+const BUYER = fx('olc-buyer');
+const OWNER = fx('olc-owner');
+const RIDER = fx('olc-rider');
+const ADMIN = fx('olc-admin');
+const STRANGER = fx('olc-stranger');
+const SHOP = fx('olc-shop');
 const NEAR = { lat: 18.535, lng: 73.875 }; // 1 km: ₹20 to the customer, ₹20 to the rider
 
 const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSecret(), { expiresIn: '5m' })}` });
@@ -49,21 +49,21 @@ const walletOf = async (userId) => {
   const row = await queryOne('SELECT balance FROM wallets WHERE user_id = $1', [userId]);
   return row ? Number(row.balance) : 0;
 };
-const stock = async () => Number((await queryOne("SELECT inventory_count FROM shop_products WHERE id = 'olc-rice'")).inventory_count);
+const stock = async () => Number((await queryOne(`SELECT inventory_count FROM shop_products WHERE id = '${fx('olc-rice')}'`)).inventory_count);
 const cashInHand = async () => Number((await queryOne('SELECT cash_in_hand FROM delivery_agents WHERE user_id = $1', [RIDER])).cash_in_hand);
 
 async function cleanup() {
-  await query("DELETE FROM rider_cash_ledger WHERE rider_user_id LIKE 'olc-%'");
-  await query("DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id LIKE 'olc-%')");
-  await query("DELETE FROM wallets WHERE user_id LIKE 'olc-%'");
-  await query("DELETE FROM payments WHERE user_id LIKE 'olc-%'");
-  await query("DELETE FROM shop_commissions WHERE shop_id LIKE 'olc-%'");
-  await query("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE user_id LIKE 'olc-%')");
-  await query("DELETE FROM orders WHERE user_id LIKE 'olc-%'");
-  await query("DELETE FROM shop_products WHERE id LIKE 'olc-%'");
-  await query("DELETE FROM delivery_agents WHERE user_id LIKE 'olc-%'");
-  await query("DELETE FROM local_shops WHERE id LIKE 'olc-%'");
-  await query("DELETE FROM users WHERE id LIKE 'olc-%'");
+  await query(`DELETE FROM rider_cash_ledger WHERE CAST(rider_user_id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('olc')}')`);
+  await query(`DELETE FROM wallets WHERE CAST(user_id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM payments WHERE CAST(user_id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM shop_commissions WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('olc')}')`);
+  await query(`DELETE FROM orders WHERE CAST(user_id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM shop_products WHERE CAST(id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM delivery_agents WHERE CAST(user_id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM local_shops WHERE CAST(id AS TEXT) LIKE '${fxLike('olc')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('olc')}'`);
 }
 
 beforeAll(async () => {
@@ -72,23 +72,23 @@ beforeAll(async () => {
     [BUYER, '9844100001', 'user'], [OWNER, '9844100002', 'shop_owner'], [RIDER, '9844100003', 'delivery_agent'],
     [ADMIN, '9844100004', 'admin'], [STRANGER, '9844100005', 'user'],
   ]) {
-    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $1, $2, $3)', [id, phone, role]);
+    await query('INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, $4, $2, $3)', [id, phone, role, id]);
   }
   await query(
-    "INSERT INTO delivery_agents (id, user_id, vehicle_type, kyc_status, cash_in_hand) VALUES ('olc-agent', $1, 'motorcycle', 'active', 0)",
+    `INSERT INTO delivery_agents (id, user_id, vehicle_type, kyc_status, cash_in_hand) VALUES ('${fx('olc-agent')}', $1, 'motorcycle', 'active', '0')`,
     [RIDER]
   );
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude, delivery_available, is_verified)
-     VALUES ($1, $2, 'OLC Shop', 'Grocery', 'Shop Road', 'POINT(73.87 18.53)', 18.53, 73.87, 1, 1)`,
+     VALUES ($1, $2, 'OLC Shop', 'Grocery', 'Shop Road', 'POINT(73.87 18.53)', 18.53, 73.87, '1', '1')`,
     [SHOP, OWNER]
   );
   await query(
     `INSERT INTO shop_products (id, shop_id, name, price, inventory_count, stock_quantity, track_inventory)
-     VALUES ('olc-rice', $1, 'Rice', 120, 100, 100, 1)`,
+     VALUES ('${fx('olc-rice')}', $1, 'Rice', 120, 100, 100, '1')`,
     [SHOP]
   );
-  await query("INSERT INTO wallets (id, user_id, balance) VALUES ('olc-wallet', $1, 0)", [BUYER]);
+  await query(`INSERT INTO wallets (id, user_id, balance) VALUES ('${fx('olc-wallet')}', $1, '0')`, [BUYER]);
 
   app = express();
   app.use(express.json());
@@ -99,7 +99,7 @@ beforeAll(async () => {
   app.use('/admin', require('../../modules/crm/routes/admin-pricing.routes'));
   app.use('/', require('../../modules/ecommerce/routes/unified-superapp.routes'));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use(require('../../middleware/error.middleware').errorHandler);
 });
 
 beforeEach(() => {
@@ -128,7 +128,7 @@ afterAll(async () => {
 async function place({ method = 'cod', pickup = false, quantity = 1 } = {}) {
   const res = await request(app).post('/checkout').set(as(BUYER)).send({
     shopId: SHOP,
-    items: [{ productId: 'olc-rice', quantity }],
+    items: [{ productId: fx('olc-rice'), quantity }],
     paymentMethod: method,
     ...(pickup ? { deliveryMode: 'pickup' } : { deliveryAddress: 'Flat 9', deliveryCoordinate: NEAR }),
   });
@@ -316,15 +316,15 @@ describe('a cash order delivered by a platform rider', () => {
   });
 
   test('an administrator records a deposit, never more than is held', async () => {
-    const over = await request(app).post('/admin/delivery/agents/olc-agent/cash-deposit').set(as(ADMIN)).send({ amount: 1000 });
+    const over = await request(app).post(`/admin/delivery/agents/${fx('olc-agent')}/cash-deposit`).set(as(ADMIN)).send({ amount: 1000 });
     expect(over.status).toBe(409);
-    expect((await request(app).post('/admin/delivery/agents/olc-agent/cash-deposit').set(as(BUYER)).send({ amount: 5 })).status).toBe(403);
+    expect((await request(app).post(`/admin/delivery/agents/${fx('olc-agent')}/cash-deposit`).set(as(BUYER)).send({ amount: 5 })).status).toBe(403);
 
     const res = await request(app).post(`/admin/delivery/agents/${RIDER}/cash-deposit`).set(as(ADMIN)).send({ amount: 125, note: 'Counter' });
     expect(res.status).toBe(200);
     expect(res.body.cashInHand).toBe(0);
 
-    const ledger = await request(app).get('/admin/delivery/agents/olc-agent/cash').set(as(ADMIN));
+    const ledger = await request(app).get(`/admin/delivery/agents/${fx('olc-agent')}/cash`).set(as(ADMIN));
     expect(ledger.body.ledger.map((e) => e.entry_type)).toEqual(expect.arrayContaining(['collected', 'deposited']));
   });
 

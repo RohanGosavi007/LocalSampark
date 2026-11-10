@@ -8,7 +8,7 @@ const { width } = Dimensions.get('window');
 const colWidth = (width - 48) / 3; // 3 columns with padding
 
 export default function MoreScreen() {
-  const { user, activeRole } = useAuth();
+  const { user, activeRole, logout } = useAuth();
 
   const MODULES = [
     { title: 'Wallet & Pay', icon: Wallet, route: '/modules/wallet', bg: '#e0e7ff', color: '#4f46e5' },
@@ -78,7 +78,7 @@ export default function MoreScreen() {
             })}
             
             {/* Logout */}
-            <TouchableOpacity style={styles.listItem} onPress={() => { /* Implement Logout */ }}>
+            <TouchableOpacity style={styles.listItem} onPress={async () => { if (logout) await logout(); router.replace('/login'); }}>
               <View style={[styles.listIconBox, { backgroundColor: '#fee2e2' }]}>
                 <LogOut size={20} color="#ef4444" />
               </View>

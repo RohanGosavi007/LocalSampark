@@ -12,14 +12,14 @@
  * corner-cut, the cooldown and the spoofed fix.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
 const { query, queryOne } = require('../../config/database');
 const monitor = require('../../services/boundaryMonitor.service');
 
-const TERRITORY = 'bm-territory';
-const RIDER = 'bm-rider';
+const TERRITORY = fx('bm-territory');
+const RIDER = fx('bm-rider');
 
 /** A square over central Pune. Roughly 6.3 km x 6.7 km. */
 const SQUARE = {
@@ -45,22 +45,22 @@ const JUST_OUTSIDE = { lat: 18.53, lng: 73.90047 };
 let talukaId;
 
 beforeAll(async () => {
-  await query("DELETE FROM territories WHERE id LIKE 'bm-%'");
-  await query("DELETE FROM location_talukas WHERE id LIKE 'bm-%'");
-  await query("DELETE FROM location_districts WHERE id LIKE 'bm-%'");
-  await query("DELETE FROM location_states WHERE id LIKE 'bm-%'");
+  await query(`DELETE FROM territories WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
+  await query(`DELETE FROM location_talukas WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
+  await query(`DELETE FROM location_districts WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
+  await query(`DELETE FROM location_states WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
 
   const existing = await queryOne('SELECT id FROM location_talukas LIMIT 1');
   if (existing) {
     talukaId = existing.id;
   } else {
-    talukaId = 'bm-taluka';
+    talukaId = fx('bm-taluka');
     await query('INSERT INTO location_states (id, name, code) VALUES ($1, $2, $3)',
-      ['bm-state', 'BM State', 'BMS']);
+      [fx('bm-state'), 'BM State', 'BMS']);
     await query('INSERT INTO location_districts (id, state_id, name) VALUES ($1, $2, $3)',
-      ['bm-district', 'bm-state', 'BM District']);
+      [fx('bm-district'), fx('bm-state'), 'BM District']);
     await query('INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, $3)',
-      [talukaId, 'bm-district', 'BM Taluka']);
+      [talukaId, fx('bm-district'), 'BM Taluka']);
   }
 
   // A VERIFIED boundary. The monitor refuses to evaluate quarantined ones, so
@@ -69,16 +69,16 @@ beforeAll(async () => {
     `INSERT INTO territories
        (id, taluka_id, name, pincode, centroid_lat, centroid_lng, boundary_geojson,
         is_active, boundary_verified)
-     VALUES ($1, $2, 'BM Territory', '415001', 18.53, 73.87, $3, 1, 1)`,
+     VALUES ($1, $2, 'BM Territory', '415001', 18.53, 73.87, $3, '1', '1')`,
     [TERRITORY, talukaId, JSON.stringify(SQUARE)]
   );
 });
 
 afterAll(async () => {
-  await query("DELETE FROM territories WHERE id LIKE 'bm-%'");
-  await query("DELETE FROM location_talukas WHERE id LIKE 'bm-%'");
-  await query("DELETE FROM location_districts WHERE id LIKE 'bm-%'");
-  await query("DELETE FROM location_states WHERE id LIKE 'bm-%'");
+  await query(`DELETE FROM territories WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
+  await query(`DELETE FROM location_talukas WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
+  await query(`DELETE FROM location_districts WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
+  await query(`DELETE FROM location_states WHERE CAST(id AS TEXT) LIKE '${fxLike('bm')}'`);
 });
 
 beforeEach(() => {
@@ -116,12 +116,12 @@ describe('geometry', () => {
   test('an unverified boundary yields no verdict at all', async () => {
     // Accusing a rider of leaving a zone whose shape is one of the fabricated
     // circles would be an alert generated entirely by missing data.
-    const unverified = 'bm-territory-unverified';
+    const unverified = fx('bm-territory-unverified');
     await query(
       `INSERT INTO territories
          (id, taluka_id, name, pincode, centroid_lat, centroid_lng, boundary_geojson,
           is_active, boundary_verified)
-       VALUES ($1, $2, 'BM Unverified', '415002', 18.53, 73.87, $3, 1, 0)`,
+       VALUES ($1, $2, 'BM Unverified', '415002', 18.53, 73.87, $3, '1', '0')`,
       [unverified, talukaId, JSON.stringify(SQUARE)]
     );
 
@@ -197,7 +197,11 @@ describe('hysteresis', () => {
     // Twenty minutes at a ten-minute cooldown is two alerts, not 240.
     expect(events.length).toBeGreaterThanOrEqual(1);
     expect(events.length).toBeLessThanOrEqual(2);
-  });
+    // 240 database round trips. Under a loaded machine they overran Jest's
+    // default 10 s, and because Jest does not stop a timed-out test, the loop
+    // kept writing monitor state into the next two tests, which then failed too
+    // (G2, 2026-11-10). The budget is for the round trips, not the logic.
+  }, 60000);
 
   test('a return is announced only when the departure was', async () => {
     const t0 = 1_700_000_000_000;
@@ -257,7 +261,7 @@ describe('input handling', () => {
     // exist, which is the same shape as a lookup that failed.
     const event = await monitor.observe({
       riderId: RIDER,
-      assignedTerritoryId: `bm-missing-${crypto.randomUUID()}`,
+      assignedTerritoryId: fx(`bm-missing-${crypto.randomUUID()}`),
       lat: FAR_OUTSIDE.lat,
       lng: FAR_OUTSIDE.lng,
     });

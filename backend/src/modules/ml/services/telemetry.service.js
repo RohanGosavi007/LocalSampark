@@ -241,7 +241,7 @@ async function getMetrics({ surface = null, sinceHours = 24, regionId = null } =
   // only surface with a populated catalogue.
   let catalogueSize = 0;
   try {
-    const c = await query('SELECT COUNT(*) AS c FROM local_shops WHERE COALESCE(is_active, 1) = 1');
+    const c = await query(`SELECT COUNT(*) AS c FROM local_shops WHERE (is_active = '1' OR is_active IS NULL)`);
     catalogueSize = Number((c.rows || c || [])[0]?.c || 0);
   } catch {
     catalogueSize = 0;

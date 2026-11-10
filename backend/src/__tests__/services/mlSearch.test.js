@@ -6,7 +6,6 @@
  * behaviour it prevents.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const search = require('../../modules/ml/services/search.service');
 const embeddings = require('../../modules/ml/services/embedding.service');

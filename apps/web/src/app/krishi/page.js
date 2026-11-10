@@ -8,10 +8,24 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Leaf, Sprout, Tractor } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { apiGet } from '@/lib/api';
 
 export default function KrishiPage() {
   const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState(null);
+  // Live listings from GET /api/v1/krishi/listings. This page is only served
+  // while the krishi feature is on (src/middleware.js shows Coming Soon
+  // otherwise), so the API is expected to answer.
+  const [listings, setListings] = useState([]);
+  const [listingsState, setListingsState] = useState('loading'); // loading | ready | error
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet('/krishi/listings?limit=12')
+      .then((data) => { if (!cancelled) { setListings(data.listings || []); setListingsState('ready'); } })
+      .catch(() => { if (!cancelled) setListingsState('error'); });
+    return () => { cancelled = true; };
+  }, []);
 
   const scrollToCategory = (id) => {
     setActiveCategory(id);
@@ -56,6 +70,41 @@ export default function KrishiPage() {
                 </Button>
               </div>
             </motion.div>
+          </div>
+        </section>
+
+        {/* Live listings */}
+        <section className="py-16 bg-background" aria-labelledby="krishi-listings-heading">
+          <div className="container">
+            <h2 id="krishi-listings-heading" className="text-3xl font-heading font-black mb-8 text-text">Latest listings</h2>
+            {listingsState === 'loading' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true">
+                {[0, 1, 2].map((i) => <div key={i} className="h-28 rounded-2xl bg-card-bg border border-border animate-pulse" />)}
+              </div>
+            )}
+            {listingsState === 'error' && (
+              <p role="alert" className="text-text-muted">Listings could not be loaded right now. Please try again later.</p>
+            )}
+            {listingsState === 'ready' && listings.length === 0 && (
+              <p className="text-text-muted">No listings yet. Check back soon.</p>
+            )}
+            {listingsState === 'ready' && listings.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {listings.map((item) => (
+                  <article key={item.id} className="p-5 rounded-2xl bg-card-bg border border-border">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <h3 className="font-bold text-text">{item.title}</h3>
+                      {item.verified_farmer && <Badge variant="success">Verified farmer</Badge>}
+                    </div>
+                    {item.description && <p className="text-sm text-text-muted mb-3">{item.description}</p>}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-text-muted capitalize">{item.type || 'listing'}</span>
+                      {item.price !== null && item.price !== undefined && item.price !== '' && <strong className="text-text">₹{item.price}</strong>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

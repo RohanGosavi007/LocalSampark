@@ -241,14 +241,17 @@ router.get('/:id', async (req, res, next) => {
 // GET /api/v1/zones/:id/stats - Get zone stats
 router.get('/:id/stats', async (req, res, next) => {
   try {
+    // An unknown zone is a 404, not a pair of zero counts (or a crash).
+    const zone = await queryOne('SELECT id FROM regions WHERE id = $1', [req.params.id]);
+    if (!zone) return res.status(404).json({ success: false, error: 'Zone not found' });
     const usersCount = await queryOne(`SELECT COUNT(*) as count FROM users WHERE region_id = $1`, [req.params.id]);
     const shopsCount = await queryOne(`SELECT COUNT(*) as count FROM local_shops WHERE region_id = $1`, [req.params.id]);
-    res.json({ 
-        success: true, 
-        data: { 
-            users: usersCount.count, 
-            shops: shopsCount.count 
-        } 
+    res.json({
+        success: true,
+        data: {
+            users: Number((usersCount && usersCount.count) || 0),
+            shops: Number((shopsCount && shopsCount.count) || 0)
+        }
     });
   } catch (error) { next(error); }
 });

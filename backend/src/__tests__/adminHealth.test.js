@@ -6,7 +6,6 @@
  * cache" action that purged nothing and answered success.
  */
 
-process.env.USE_SQLITE = 'true';
 
 const express = require('express');
 const request = require('supertest');
@@ -60,10 +59,13 @@ describe('GET /admin/health', () => {
   test('database figures are read from the database', async () => {
     const stats = await health.databaseStats();
 
-    expect(stats.engine).toBe('sqlite');
+    const sqlite = process.env.USE_SQLITE === 'true';
+    expect(stats.engine).toBe(sqlite ? 'sqlite' : 'postgresql');
     expect(typeof stats.sizeMB).toBe('number');
     expect(stats.sizeMB).toBeGreaterThan(0);
-    expect(stats.activeConnections).toBe(1);
+    // SQLite has one connection; a PostgreSQL pool has at least this one.
+    if (sqlite) expect(stats.activeConnections).toBe(1);
+    else expect(stats.activeConnections).toBeGreaterThanOrEqual(1);
     expect(stats.pingMs).toBeGreaterThanOrEqual(0);
   });
 

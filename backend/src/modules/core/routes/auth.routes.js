@@ -51,6 +51,17 @@ function presentUser(row) {
   };
 }
 
+/**
+ * The client-facing view of a presented user. presentUser() keeps
+ * passwordHash so /login-email can verify the password; every response that
+ * carries a user must go through this instead so the hash never leaves the API.
+ */
+function toClientUser(user) {
+  if (!user) return null;
+  const { passwordHash: _pw, password_hash: _ph, ...safe } = user;
+  return safe;
+}
+
 /** Single-use token helpers, shared by the email-verify and reset flows. */
 async function createSingleUseToken(table, userId, token, ttlMs) {
   await query(
@@ -95,8 +106,11 @@ async function createUser({ phoneNumber, fullName, email, role, regionId, passwo
     `INSERT INTO users
        (id, phone_number, phone, full_name, email, role, region_id,
         password_hash, is_active, is_verified, token_version)
-     VALUES ($1, $2, $2, $3, $4, $5, $6, $7, '1', '0', 0)`,
-    [id, phoneNumber || null, fullName || null, email || null, role || 'CUSTOMER',
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '1', '0', 0)`,
+    // phone_number (VARCHAR) and phone (TEXT) get separate placeholders: one
+    // shared $2 made PostgreSQL refuse every insert with "inconsistent types
+    // deduced for parameter $2", so no account could be created there (F-130).
+    [id, phoneNumber || null, phoneNumber || null, fullName || null, email || null, role || 'CUSTOMER',
      regionId || null, passwordHash || null]
   );
   return findUserById(id);
@@ -475,7 +489,7 @@ router.post('/verify-otp', authLimiter, validate({
 
     res.json({
       registered: true,
-      user,
+      user: toClientUser(user),
       accessToken,
       refreshToken
     });
@@ -530,7 +544,7 @@ router.post('/firebase-login', authLimiter, async (req, res, next) => {
       { regionId: user.regionId }
     );
 
-    res.json({ registered: true, user, accessToken, refreshToken });
+    res.json({ registered: true, user: toClientUser(user), accessToken, refreshToken });
   } catch (error) {
     next(error);
   }
@@ -757,10 +771,10 @@ router.post('/register-email',
     res.status(201).json({
       success: true,
       message: 'Registration successful.',
-      user,
+      user: toClientUser(user),
       accessToken,
       refreshToken,
-      verifyToken: token
+      ...((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') ? { verifyToken: token } : {})
     });
   } catch (error) {
     next(error);
@@ -829,7 +843,7 @@ router.post('/login-email',
 
     res.json({
       success: true,
-      user,
+      user: toClientUser(user),
       accessToken,
       refreshToken
     });
@@ -866,7 +880,7 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
     res.json({
       success: true,
       message: 'Password reset link sent to email',
-      resetToken: token
+      ...((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') ? { resetToken: token } : {})
     });
   } catch (error) {
     next(error);

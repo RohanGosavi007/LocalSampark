@@ -55,18 +55,24 @@ describe('Security Regression Suite — N12: Android Permission Audit & Hardenin
     expect(stringPlugins).not.toContain('expo-audio');
   });
 
-  test('[N12.3] AndroidManifest.xml contains no forbidden permissions or telecom services', () => {
+  test('[N12.3] AndroidManifest.xml requests no forbidden permission and strips each one from merged library manifests', () => {
     expect(fs.existsSync(manifestPath)).toBe(true);
     const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+    const entries = manifestContent.match(/<uses-permission\b[^>]*>/g) || [];
 
+    // Libraries (expo-audio, expo-image-picker, react-native-callkeep) declare
+    // several of these in their own manifests; the merger copies them into the
+    // APK unless the app manifest carries tools:node="remove" for each (F-134).
+    // So: no plain request, and a remove marker for every one.
     for (const forbidden of FORBIDDEN_PERMISSIONS) {
-      const permRegex = new RegExp(`android:name="android\\.permission\\.${forbidden}"`, 'i');
-      expect(manifestContent).not.toMatch(permRegex);
+      const named = entries.filter((e) => e.includes(`android:name="android.permission.${forbidden}"`));
+      expect(named.filter((e) => !/tools:node="remove"/.test(e))).toEqual([]);
+      expect(named.some((e) => /tools:node="remove"/.test(e))).toBe(true);
     }
 
     // Ensure telecom connection service is not registered
     expect(manifestContent).not.toContain('VoiceConnectionService');
-    expect(manifestContent).not.toContain('BIND_TELECOM_CONNECTION_SERVICE');
+    expect(manifestContent).not.toMatch(/<service\b[^>]*BIND_TELECOM_CONNECTION_SERVICE/);
   });
 
   test('[N12.4] withTrimmedPermissions plugin file exists and exports a valid config plugin', () => {

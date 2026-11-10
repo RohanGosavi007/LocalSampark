@@ -214,6 +214,11 @@ const initSockets = (server) => {
           [orderId]
         );
       } catch (e) {
+        // An order id PostgreSQL cannot parse as a UUID (22P02) names no
+        // order: the same answer SQLite gives when the lookup finds nothing.
+        if (e && e.code === '22P02') {
+          return socket.emit('socket_error', { event: 'join_order_room', reason: 'not_found' });
+        }
         console.warn('[Socket.io] join_order_room lookup failed:', e.message);
         return socket.emit('socket_error', { event: 'join_order_room', reason: 'lookup_failed' });
       }

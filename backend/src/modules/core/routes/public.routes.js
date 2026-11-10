@@ -13,8 +13,8 @@ router.get('/stats', async (req, res, next) => {
   try {
     if (cached && Date.now() - cached.at < TTL_MS) return res.json(cached.body);
 
-    const users = await queryOne("SELECT COUNT(*) AS n FROM users WHERE COALESCE(is_banned, 0) = 0 AND COALESCE(is_active, 1) = 1");
-    const shops = await queryOne("SELECT COUNT(*) AS n FROM local_shops WHERE approval_status = 'approved' AND COALESCE(is_active, 1) = 1");
+    const users = await queryOne("SELECT COUNT(*) AS n FROM users WHERE (is_banned = '0' OR is_banned IS NULL) AND (is_active = '1' OR is_active IS NULL)");
+    const shops = await queryOne("SELECT COUNT(*) AS n FROM local_shops WHERE approval_status = 'approved' AND (is_active = '1' OR is_active IS NULL)");
     const zones = await query("SELECT name FROM regions WHERE is_active = '1' ORDER BY name ASC LIMIT 50");
 
     const body = {

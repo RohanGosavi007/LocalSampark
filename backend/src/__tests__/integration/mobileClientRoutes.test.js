@@ -6,7 +6,6 @@
  * like "no data".
  */
 
-process.env.USE_SQLITE = 'true';
 
 const fs = require('fs');
 const path = require('path');

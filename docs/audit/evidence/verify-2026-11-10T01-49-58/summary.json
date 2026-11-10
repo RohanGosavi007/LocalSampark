@@ -1,0 +1,173 @@
+{
+  "timestamp": "2026-11-10T02:03:50.545Z",
+  "evidenceDirectory": "docs/audit/evidence/verify-2026-11-10T01-49-58",
+  "partial": true,
+  "gatesPassed": 2,
+  "totalGates": 18,
+  "gatePassPercentage": "11.1%",
+  "featureCompletion": "0 / 0 (0.0%)",
+  "results": [
+    {
+      "id": "G1",
+      "name": "Backend ESLint",
+      "category": "Code Quality",
+      "passed": true,
+      "skipped": false,
+      "summary": "Backend ESLint reported 0 errors",
+      "log": "docs/audit/evidence/verify-2026-11-10T01-49-58/G1.txt"
+    },
+    {
+      "id": "G2",
+      "name": "Backend Jest on SQLite",
+      "category": "Unit & Integration Tests",
+      "passed": false,
+      "skipped": false,
+      "summary": "1663 passed, 3 failed across 146 test suites",
+      "log": "docs/audit/evidence/verify-2026-11-10T01-49-58/G2.txt"
+    },
+    {
+      "id": "G3",
+      "name": "Backend Jest on local PostgreSQL + PostGIS",
+      "category": "PostgreSQL Verification",
+      "passed": true,
+      "skipped": false,
+      "summary": "1622 passed, 0 failed in 137 suites on PostgreSQL (localsampark_test); 9 @engine sqlite-only suite(s) excluded",
+      "log": "docs/audit/evidence/verify-2026-11-10T01-49-58/G3.txt"
+    },
+    {
+      "id": "G4",
+      "name": "Database Migrations & Seed Idempotency",
+      "category": "Database Integrity",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G5",
+      "name": "Route-Auth Matrix Test (N11)",
+      "category": "Security & Access Control",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G6",
+      "name": "Concurrency & Idempotency Suite on Postgres (L7)",
+      "category": "Data Integrity & Concurrency",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G7",
+      "name": "Web Unit Tests & Production Build",
+      "category": "Web App",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G8",
+      "name": "Admin Tests & Production Build",
+      "category": "Admin Console",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G9",
+      "name": "Mobile Jest, ESLint, expo-doctor & export",
+      "category": "Mobile App",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G10",
+      "name": "Android assembleRelease Build & Artifact Proof",
+      "category": "Mobile Build Artifacts",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G11",
+      "name": "Playwright E2E Commerce Persona Journeys",
+      "category": "End-to-End Testing",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G12",
+      "name": "Android Release Smoke Test on Emulator",
+      "category": "Mobile Runtime Smoke",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G13",
+      "name": "Dependency Vulnerability Audit (N4)",
+      "category": "Security & Dependencies",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G14",
+      "name": "Secret Scan of Tracked Files",
+      "category": "Security & Credentials",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G15",
+      "name": "Launch Policy & Harness Self-Tests (G15 Suite)",
+      "category": "Launch Policy Compliance",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G16",
+      "name": "Accessibility Audits (axe Core & WCAG 2.1 AA)",
+      "category": "Accessibility",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G17",
+      "name": "Performance Budgets & Asset Optimization",
+      "category": "Performance",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    },
+    {
+      "id": "G18",
+      "name": "Target Feature Verification (features.json)",
+      "category": "Feature Verification",
+      "passed": false,
+      "skipped": true,
+      "summary": "Skipped (--only filter)",
+      "log": null
+    }
+  ]
+}

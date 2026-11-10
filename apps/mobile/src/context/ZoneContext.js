@@ -32,12 +32,13 @@ export function ZoneProvider({ children }) {
     const fetchAllZones = async () => {
       try {
         const res = await fetch(`${API_URL}/zones`);
+        if (!res.ok) return;
         const data = await res.json();
         if (data.success) {
           setAllZones(data.data);
         }
       } catch (err) {
-        console.warn('Failed to fetch zones:', err);
+        console.warn('Failed to fetch zones:', err.message);
       }
     };
     
@@ -58,9 +59,11 @@ export function ZoneProvider({ children }) {
       const res = await fetch(`${API_URL}/user-zones/saved-zones`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const data = await res.json();
-      if (data.success) {
-        setSavedZones(data.data);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setSavedZones(data.data);
+        }
       }
 
       if (user.active_zone_id || user.region_id) {
@@ -79,6 +82,7 @@ export function ZoneProvider({ children }) {
   const fetchZoneDetails = async (zoneId) => {
     try {
       const res = await fetch(`${API_URL}/zones/${zoneId}`);
+      if (!res.ok) return;
       const data = await res.json();
       if (data.success) {
         await lockTerritory({

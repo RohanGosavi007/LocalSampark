@@ -423,6 +423,16 @@ export default function AdminDashboardPage() {
     { id: 'home-services', label: 'Home Services', icon: '🔧' },
     { id: 'leads-crm', label: 'Lead Pipeline', icon: '📇' }
   ];
+
+  // Deep link: /?tab=<id> opens that tab. The web app's retired
+  // /admin-dashboard/* placeholders redirect here with the matching tab.
+  useEffect(() => {
+    try {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab && navItems.some((n) => n.id === tab)) setActiveTab(tab);
+    } catch { /* no window during prerender */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const visibleNav = navItems.filter(n => !n.superOnly || isSuper);
   const activeItem = navItems.find(n => n.id === activeTab);
   const blocked = Boolean(activeItem && activeItem.superOnly && !isSuper);

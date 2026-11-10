@@ -12,11 +12,18 @@ export default function DashboardTab({ summaryStats, pendingShops, API_BASE, aut
   const btnSuccess = { background: 'var(--success)', color: 'var(--on-solid)', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 };
   const btnDanger = { background: 'var(--danger)', color: 'var(--on-solid)', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 };
 
+  // Real values only. These tiles used to fall back to invented figures
+  // (hard-coded revenue, shop, approval and franchise counts) whenever a value was missing or zero,
+  // so an empty platform looked busy. Zero now reads 0, and a value that has
+  // not loaded yet reads as a placeholder dash with aria-busy.
+  const loaded = summaryStats !== null && summaryStats !== undefined;
+  const num = (v) => Number(v || 0);
+  const fmt = (v) => num(v).toLocaleString('en-IN');
   const stats = [
-    { label: 'Total Revenue', value: summaryStats?.totalRevenue ? `₹${summaryStats.totalRevenue.toLocaleString()}` : '₹14,82,900', color: 'var(--success)', icon: '💰' },
-    { label: 'Active Shops', value: summaryStats?.totalShops ? summaryStats.totalShops.toLocaleString() : '1,248', color: 'var(--info)', icon: '🏪' },
-    { label: 'Pending Approvals', value: (pendingShops || []).length || '12', color: 'var(--warning)', icon: '⏳' },
-    { label: 'Franchise Partners', value: summaryStats?.franchisePartners ? summaryStats.franchisePartners : '42', color: 'var(--accent-text)', icon: '🏢' }
+    { label: 'Total Revenue', value: loaded ? `₹${fmt(summaryStats.totalRevenue)}` : null, color: 'var(--success)', icon: '💰' },
+    { label: 'Active Shops', value: loaded ? fmt(summaryStats.totalShops ?? summaryStats.activeShops) : null, color: 'var(--info)', icon: '🏪' },
+    { label: 'Pending Approvals', value: Array.isArray(pendingShops) ? fmt(pendingShops.length) : null, color: 'var(--warning)', icon: '⏳' },
+    { label: 'Franchise Partners', value: loaded ? fmt(summaryStats.totalFranchises ?? summaryStats.franchisePartners) : null, color: 'var(--accent-text)', icon: '🏢' }
   ];
 
   return (
@@ -27,7 +34,7 @@ export default function DashboardTab({ summaryStats, pendingShops, API_BASE, aut
           <div key={idx} style={{ ...cardStyle, borderLeft: `4px solid ${s.color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <p style={{ color: 'var(--ink-muted)', fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>{s.label}</p>
-              <h3 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0.25rem 0 0', color: 'var(--ink)' }}>{s.value}</h3>
+              <h3 aria-busy={s.value === null} style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0.25rem 0 0', color: s.value === null ? 'var(--ink-subtle)' : 'var(--ink)' }}>{s.value === null ? '—' : s.value}</h3>
             </div>
             <span style={{ fontSize: '2rem', opacity: 0.8 }}>{s.icon}</span>
           </div>

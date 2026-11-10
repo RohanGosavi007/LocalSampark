@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
-import PendingModule from '../../components/admin/PendingModule';
+import AdminConsoleRedirect from '@/components/admin/AdminConsoleRedirect';
 
+// Placeholder retired: this module is implemented in the admin console.
 export default function FleetAssetsPage() {
-  return <PendingModule title="Fleet Assets Module" moduleKey="fleet-assets" />;
+  return <AdminConsoleRedirect moduleKey="fleet-assets" title="Fleet & Assets" />;
 }

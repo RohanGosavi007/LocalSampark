@@ -275,9 +275,9 @@ router.get('/rides/:id/bids', authenticate, async (req, res, next) => {
 
     const bids = isDriver
       ? await queryMany(`SELECT b.*, u.full_name as bidder_name, u.avatar_url FROM carpool_bids b
-          LEFT JOIN users u ON b.bidder_id = u.id WHERE b.ride_id = $1 ORDER BY b.created_at DESC`, [req.params.id])
+          LEFT JOIN users u ON CAST(b.bidder_id AS TEXT) = CAST(u.id AS TEXT) WHERE b.ride_id = $1 ORDER BY b.created_at DESC`, [req.params.id])
       : await queryMany(`SELECT b.*, u.full_name as bidder_name, u.avatar_url FROM carpool_bids b
-          LEFT JOIN users u ON b.bidder_id = u.id WHERE b.ride_id = $1 AND b.bidder_id = $2 ORDER BY b.created_at DESC`, [req.params.id, req.user.id]);
+          LEFT JOIN users u ON CAST(b.bidder_id AS TEXT) = CAST(u.id AS TEXT) WHERE b.ride_id = $1 AND b.bidder_id = $2 ORDER BY b.created_at DESC`, [req.params.id, req.user.id]);
     res.json({ success: true, bids });
   } catch (err) { next(err); }
 });
@@ -387,7 +387,7 @@ router.get('/rides/:id/chat', authenticate, async (req, res, next) => {
     if (!member) return res.status(403).json({ error: 'Only the driver and booked passengers can use this chat.' });
 
     const messages = await queryMany(`SELECT m.*, u.full_name as sender_name FROM carpool_chat_messages m
-      LEFT JOIN users u ON m.sender_id = u.id WHERE m.ride_id = $1 ORDER BY m.created_at ASC`, [req.params.id]);
+      LEFT JOIN users u ON CAST(m.sender_id AS TEXT) = CAST(u.id AS TEXT) WHERE m.ride_id = $1 ORDER BY m.created_at ASC`, [req.params.id]);
     res.json({ success: true, messages });
   } catch (err) { next(err); }
 });
@@ -475,7 +475,7 @@ router.put('/vehicles/:id', authenticate, async (req, res, next) => {
 
 router.get('/recurring', authenticate, async (req, res, next) => {
   try {
-    const schedules = await queryMany('SELECT * FROM carpool_recurring_rides WHERE driver_id = $1 AND is_active = true ORDER BY created_at DESC', [req.user.id]);
+    const schedules = await queryMany("SELECT * FROM carpool_recurring_rides WHERE driver_id = $1 AND is_active = '1' ORDER BY created_at DESC", [req.user.id]);
     res.json({ success: true, schedules });
   } catch (err) { next(err); }
 });

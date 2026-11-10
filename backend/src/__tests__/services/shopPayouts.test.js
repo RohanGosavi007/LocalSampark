@@ -8,26 +8,26 @@
  * The per-order arithmetic is tested case by case in tests/payout-math.test.js.
  */
 
-process.env.USE_SQLITE = 'true';
 
+const { fx, fxLike } = require('../helpers/fixtureIds');
 const { query, queryOne, queryMany } = require('../../config/database');
 const PayoutService = require('../../services/payout.service');
 
-const OWNER = 'spo-owner';
-const BUYER = 'spo-buyer';
-const SHOP = 'spo-shop';
+const OWNER = fx('spo-owner');
+const BUYER = fx('spo-buyer');
+const SHOP = fx('spo-shop');
 const DAY = '2026-09-10';
 const START = `${DAY}T00:00:00.000Z`;
 const END = '2026-09-11T00:00:00.000Z';
 const NEXT_END = '2026-09-12T00:00:00.000Z';
 
 async function cleanup() {
-  await query("DELETE FROM payout_line_items WHERE order_id LIKE 'spo-%'");
-  await query("DELETE FROM shop_payouts WHERE shop_id = 'spo-shop'");
-  await query("DELETE FROM shop_commissions WHERE shop_id = 'spo-shop'");
-  await query("DELETE FROM orders WHERE id LIKE 'spo-%'");
-  await query("DELETE FROM local_shops WHERE id = 'spo-shop'");
-  await query("DELETE FROM users WHERE id LIKE 'spo-%'");
+  await query(`DELETE FROM payout_line_items WHERE CAST(order_id AS TEXT) LIKE '${fxLike('spo')}'`);
+  await query(`DELETE FROM shop_payouts WHERE shop_id = '${fx('spo-shop')}'`);
+  await query(`DELETE FROM shop_commissions WHERE shop_id = '${fx('spo-shop')}'`);
+  await query(`DELETE FROM orders WHERE CAST(id AS TEXT) LIKE '${fxLike('spo')}'`);
+  await query(`DELETE FROM local_shops WHERE id = '${fx('spo-shop')}'`);
+  await query(`DELETE FROM users WHERE CAST(id AS TEXT) LIKE '${fxLike('spo')}'`);
 }
 
 /**
@@ -35,7 +35,7 @@ async function cleanup() {
  * rider unless `rider: null`; collected at the counter when `pickup`.
  */
 async function order(id, {
-  items, method, paid = true, status = 'delivered', collectedBy = null, rider = 'spo-rider', pickup = false,
+  items, method, paid = true, status = 'delivered', collectedBy = null, rider = fx('spo-rider'), pickup = false,
   deliveredAt = `${DAY}T12:00:00.000Z`, createdAt = `${DAY}T10:00:00.000Z`, commission = null,
 }) {
   const deliveryFee = pickup ? 0 : 30;
@@ -52,7 +52,7 @@ beforeAll(async () => {
   await cleanup();
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'SPO Owner', '9811600001', 'shop_owner')", [OWNER]);
   await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ($1, 'SPO Buyer', '9811600002', 'user')", [BUYER]);
-  await query("INSERT INTO users (id, full_name, phone_number, role) VALUES ('spo-rider', 'SPO Rider', '9811600003', 'delivery_agent')");
+  await query(`INSERT INTO users (id, full_name, phone_number, role) VALUES ('${fx('spo-rider')}', 'SPO Rider', '9811600003', 'delivery_agent')`);
   await query(
     `INSERT INTO local_shops (id, owner_id, name, category, address, coordinate, latitude, longitude, commission_override_percent)
      VALUES ($1, $2, 'SPO Shop', 'Grocery', 'Test Address', 'POINT(73.87 18.53)', 18.53, 73.87, 10)`,
@@ -60,19 +60,19 @@ beforeAll(async () => {
   );
 
   // Day one.
-  await order('spo-online', { items: 1000, method: 'razorpay' });
-  await order('spo-wallet', { items: 500, method: 'wallet', commission: 5 });
+  await order(fx('spo-online'), { items: 1000, method: 'razorpay' });
+  await order(fx('spo-wallet'), { items: 500, method: 'wallet', commission: 5 });
   // Cash a platform rider collected: the platform holds it, as for a prepaid order.
-  await order('spo-rider-cash', { items: 200, method: 'cod', collectedBy: 'rider' });
+  await order(fx('spo-rider-cash'), { items: 200, method: 'cod', collectedBy: 'rider' });
   // Cash the customer has not paid yet.
-  await order('spo-unpaid-cash', { items: 800, method: 'cod', paid: false });
+  await order(fx('spo-unpaid-cash'), { items: 800, method: 'cod', paid: false });
   // Paid, but not delivered yet.
-  await order('spo-undelivered', { items: 300, method: 'razorpay', status: 'assigned' });
+  await order(fx('spo-undelivered'), { items: 300, method: 'razorpay', status: 'assigned' });
   // Placed the day before, delivered on the day.
-  await order('spo-overnight', { items: 100, method: 'wallet', createdAt: '2026-09-09T23:50:00.000Z' });
+  await order(fx('spo-overnight'), { items: 100, method: 'wallet', createdAt: '2026-09-09T23:50:00.000Z' });
 
   // Day two: a counter sale in cash, and nothing else.
-  await order('spo-counter', { items: 400, method: 'cod', collectedBy: 'shop', pickup: true, deliveredAt: '2026-09-11T09:00:00.000Z' });
+  await order(fx('spo-counter'), { items: 400, method: 'cod', collectedBy: 'shop', pickup: true, deliveredAt: '2026-09-11T09:00:00.000Z' });
 });
 
 afterAll(cleanup);
@@ -99,18 +99,19 @@ test('a payout covers what was delivered and paid in the period, at each order\'
   const lines = await queryMany(
     'SELECT order_id, collected_by FROM payout_line_items WHERE payout_id = $1 ORDER BY order_id', [mine.payoutId]
   );
+  // Expected rows in the query's own order (order_id).
   expect(lines).toEqual([
-    { order_id: 'spo-online', collected_by: 'platform' },
-    { order_id: 'spo-overnight', collected_by: 'platform' },
-    { order_id: 'spo-rider-cash', collected_by: 'rider' },
-    { order_id: 'spo-wallet', collected_by: 'platform' },
-  ]);
+    { order_id: fx('spo-online'), collected_by: 'platform' },
+    { order_id: fx('spo-overnight'), collected_by: 'platform' },
+    { order_id: fx('spo-rider-cash'), collected_by: 'rider' },
+    { order_id: fx('spo-wallet'), collected_by: 'platform' },
+  ].sort((a, b) => (a.order_id < b.order_id ? -1 : a.order_id > b.order_id ? 1 : 0)));
 });
 
 test('running it again counts nothing twice', async () => {
   const again = (await PayoutService.calculatePayouts(START, END)).filter(Boolean);
   expect(again.find((p) => p.shopId === SHOP)).toBeUndefined();
-  expect(await queryMany("SELECT id FROM shop_payouts WHERE shop_id = 'spo-shop'")).toHaveLength(1);
+  expect(await queryMany(`SELECT id FROM shop_payouts WHERE shop_id = '${fx('spo-shop')}'`)).toHaveLength(1);
 });
 
 test('a period in which the shop took the cash comes out owing, and is carried forward', async () => {
@@ -125,15 +126,15 @@ test('a period in which the shop took the cash comes out owing, and is carried f
   expect(mine.status).toBe('dues');
 
   // Unpaid cash and undelivered orders are in no payout at all.
-  const settled = (await queryMany("SELECT order_id FROM payout_line_items WHERE order_id LIKE 'spo-%'")).map((l) => l.order_id);
-  expect(settled).not.toContain('spo-unpaid-cash');
-  expect(settled).not.toContain('spo-undelivered');
+  const settled = (await queryMany(`SELECT order_id FROM payout_line_items WHERE CAST(order_id AS TEXT) LIKE '${fxLike('spo')}'`)).map((l) => l.order_id);
+  expect(settled).not.toContain(fx('spo-unpaid-cash'));
+  expect(settled).not.toContain(fx('spo-undelivered'));
 
   // Dues are not something to approve and send.
-  await expect(PayoutService.approvePayout(mine.payoutId, 'spo-admin')).rejects.toThrow(/dues/);
+  await expect(PayoutService.approvePayout(mine.payoutId, fx('spo-admin'))).rejects.toThrow(/dues/);
 
   // The next payout deducts them, once.
-  await order('spo-later', { items: 1000, method: 'wallet', deliveredAt: '2026-09-12T10:00:00.000Z' });
+  await order(fx('spo-later'), { items: 1000, method: 'wallet', deliveredAt: '2026-09-12T10:00:00.000Z' });
   const later = (await PayoutService.calculatePayouts(NEXT_END, '2026-09-13T00:00:00.000Z')).filter(Boolean).find((p) => p.shopId === SHOP);
   expect(later.carriedDues).toBe(52.6);
   expect(later.netPayout).toBe(1000 - 100 - 18 - 1 - 52.6);

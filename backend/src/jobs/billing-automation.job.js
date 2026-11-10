@@ -2,6 +2,7 @@ const logger = require('../config/logger.js');
 const cron = require('../utils/cron');
 const { query, queryMany } = require('../config/database');
 const billingService = require('../modules/community/services/billing-engine.service');
+const { sqlDate } = require('../utils/sqlTime');
 
 // Run daily at midnight to check for overdue bills and apply penalties
 cron.schedule('0 0 * * *', async () => {
@@ -11,10 +12,11 @@ cron.schedule('0 0 * * *', async () => {
             SELECT id, society_id, flat_number 
             FROM society_maintenance_bills 
             WHERE payment_status != 'paid' 
-            AND due_date < CURRENT_TIMESTAMP
+            AND due_date < $1
         `;
         
-        const overdueBills = await queryMany(queryStr);
+        // due_date is TEXT on PostgreSQL; compared with today's date as a value.
+        const overdueBills = await queryMany(queryStr, [sqlDate()]);
 
         for (const bill of overdueBills) {
             // Apply simple interest penalty

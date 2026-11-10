@@ -75,35 +75,45 @@ async function seedFixtures(db) {
     }
   };
 
-  const regionId = 'test-region-0001';
+  // Engine-neutral: the same fixtures seed SQLite and the PostgreSQL test
+  // database (resetLocalPostgres). Ids are deterministic UUIDs (fx), flags are
+  // quoted '1', and `ON CONFLICT DO NOTHING` replaces SQLite's OR IGNORE.
+  const { fx } = require('./src/__tests__/helpers/fixtureIds');
+
+  const regionId = fx('seed-region');
   await insert('region',
-    `INSERT OR IGNORE INTO regions (id, name, state, country, latitude, longitude, radius_km, pincode, is_active)
-     VALUES ($1, 'Test Region', 'Maharashtra', 'India', 18.5786, 73.8967, 10, '411019', 1)`,
+    `INSERT INTO regions (id, name, state, country, latitude, longitude, radius_km, pincode, is_active)
+     VALUES ($1, 'Test Region', 'Maharashtra', 'India', 18.5786, 73.8967, 10, '411019', '1')
+     ON CONFLICT DO NOTHING`,
     [regionId]
   );
 
-  const ownerId = 'test-owner-0001';
+  const ownerId = fx('seed-owner');
   await insert('owner',
-    `INSERT OR IGNORE INTO users (id, phone_number, full_name, role, is_verified, is_active, region_id)
-     VALUES ($1, '+919000000000', 'Test Shop Owner', 'shop_owner', 1, 1, $2)`,
+    `INSERT INTO users (id, phone_number, full_name, role, is_verified, is_active, region_id)
+     VALUES ($1, '+919000000000', 'Test Shop Owner', 'shop_owner', '1', '1', $2)
+     ON CONFLICT DO NOTHING`,
     [ownerId, regionId]
   );
 
   const categoryIds = new Map();
   for (const name of [...new Set(FIXTURE_SHOPS.map((s) => s.category))]) {
-    const id = `test-cat-${name.toLowerCase()}`;
-    categoryIds.set(name, id);
+    const slug = name.toLowerCase();
     await insert(`category ${name}`,
-      `INSERT OR IGNORE INTO shop_categories (id, name, slug, is_active)
-       VALUES ($1, $2, $3, 1)`,
-      [id, name, name.toLowerCase()]
+      `INSERT INTO shop_categories (id, name, slug, is_active)
+       VALUES ($1, $2, $3, '1')
+       ON CONFLICT DO NOTHING`,
+      [fx(`seed-cat-${slug}`), name, slug]
     );
+    // A migration may already have seeded this slug; use whichever row exists.
+    const row = await db.queryOne('SELECT id FROM shop_categories WHERE slug = $1', [slug]);
+    categoryIds.set(name, row ? row.id : fx(`seed-cat-${slug}`));
   }
 
   for (const shop of FIXTURE_SHOPS) {
     // Deterministic ids so a test can reference a fixture by name without
     // querying for it first, and so a re-run overwrites rather than duplicates.
-    const id = `test-shop-${crypto.createHash('sha1').update(shop.name).digest('hex').slice(0, 12)}`;
+    const id = fx(`seed-shop-${crypto.createHash('sha1').update(shop.name).digest('hex').slice(0, 12)}`);
     // `coordinate` is NOT NULL and is the column the seeder fills with
     // ST_GeomFromText. Omitting it is why the first version of this file seeded
     // nothing: INSERT OR IGNORE suppresses a constraint violation rather than
@@ -116,7 +126,7 @@ async function seedFixtures(db) {
       `INSERT INTO local_shops
          (id, owner_id, region_id, category_id, name, description, category, address,
           coordinate, latitude, longitude, opening_hours, rating, is_verified, is_active, approval_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'Test Address, Pune', $8, $9, $10, $11, $12, 1, 1, 'approved')`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'Test Address, Pune', $8, $9, $10, $11, $12, '1', '1', 'approved')`,
       [id, ownerId, regionId, categoryIds.get(shop.category), shop.name,
         `A ${shop.category} fixture for tests.`, shop.category, coordinate,
         shop.lat, shop.lng, JSON.stringify(shop.hours), shop.rating]
@@ -151,12 +161,67 @@ function removeWorkerDbs() {
   }
 }
 
+/**
+ * Drops and recreates the public schema of the LOCAL test database, then runs
+ * the PostgreSQL migrations into it. Refuses anything that is not a database
+ * named *_test on localhost / 127.0.0.1 (rule L6): a wrong DATABASE_URL must
+ * never be able to wipe a real database.
+ */
+async function resetLocalPostgres(dbUrl, { withFixtures = true } = {}) {
+  if (!dbUrl) {
+    throw new Error('TEST_USE_POSTGRES is set but DATABASE_URL is not: refusing to guess which database to reset (L6).');
+  }
+  const parsed = new URL(dbUrl);
+  const dbName = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+  if (!['localhost', '127.0.0.1'].includes(parsed.hostname) || !/_test$/.test(dbName)) {
+    throw new Error(`Refusing to reset '${dbName}' on '${parsed.hostname}': only a local database whose name ends in _test is reset (L6).`);
+  }
+
+  const { Client } = require('pg');
+  const client = new Client({ connectionString: dbUrl, ssl: false });
+  await client.connect();
+  try {
+    await client.query('DROP SCHEMA IF EXISTS public CASCADE');
+    await client.query('CREATE SCHEMA public');
+    await client.query('GRANT ALL ON SCHEMA public TO public');
+  } finally {
+    await client.end();
+  }
+
+  // A child process: the migration runner and config/database pick their
+  // engine at module load, and this process is about to load them for SQLite.
+  const { execFileSync } = require('child_process');
+  execFileSync(process.execPath, [path.join(__dirname, 'src', 'migrations', 'run.js')], {
+    cwd: __dirname,
+    env: { ...process.env, USE_SQLITE: 'false', DATABASE_URL: dbUrl, DB_SSL: 'false', NODE_ENV: 'test' },
+    stdio: 'ignore',
+    timeout: 300000,
+  });
+
+  // The same catalogue fixtures the SQLite database gets, so suites that read
+  // the live catalogue (ranking, search) have something to read on PostgreSQL.
+  // G4 asks for an empty migrated database instead (withFixtures: false).
+  if (!withFixtures) return;
+  const seed = [
+    "const db = require('./src/config/database');",
+    "require('./jest.globalSetup.js').seedFixtures(db)",
+    "  .then(() => process.exit(0))",
+    "  .catch((e) => { console.error(e.message); process.exit(1); });",
+  ].join('\n');
+  execFileSync(process.execPath, ['-e', seed], {
+    cwd: __dirname,
+    env: { ...process.env, USE_SQLITE: 'false', DATABASE_URL: dbUrl, DB_SSL: 'false', NODE_ENV: 'test' },
+    stdio: ['ignore', 'ignore', 'inherit'],
+    timeout: 120000,
+  });
+}
+
 module.exports = async function globalSetup() {
   // Must be set before config/database is first required, which the migration
   // runner does transitively.
   process.env.NODE_ENV = 'test';
   const usePg = process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true';
-  process.env.USE_SQLITE = usePg ? 'false' : 'true';
+  process.env.USE_SQLITE = 'true';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-not-used-in-production';
 
   // L6 Safety Guard: Ensure test environment NEVER touches remote databases
@@ -172,7 +237,12 @@ module.exports = async function globalSetup() {
         if (err.message.includes('CRITICAL TEST SAFETY VIOLATION')) throw err;
       }
     }
-    return;
+    // A fresh PostgreSQL schema every run (H11). The suites used to share
+    // whatever earlier runs left behind, so a fixture that a crashed run never
+    // cleaned up failed the next run on a unique constraint, and figures read
+    // across suites (revenue, counts) depended on run order.
+    await resetLocalPostgres(dbUrl);
+    // Continue to also prepare test.db so suites with explicit USE_SQLITE='true' have a clean SQLite fixture DB.
   }
 
   process.env.SQLITE_DB_PATH = TEST_DB_PATH;
@@ -218,3 +288,4 @@ module.exports.FIXTURE_SHOPS = FIXTURE_SHOPS;
  * it in whichever suite happened to notice.
  */
 module.exports.seedFixtures = seedFixtures;
+module.exports.resetLocalPostgres = resetLocalPostgres;
