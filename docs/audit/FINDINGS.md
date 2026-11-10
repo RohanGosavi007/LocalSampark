@@ -1118,3 +1118,19 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
   - Static files take precedence over the app routes, so they shadowed `app/sitemap.js` and `app/robots.js`. The committed sitemap listed off-scope routes (`/care`, `/bills`, `/chat`, …) and no shops.
   - Both files are removed and git-ignored.
   - The committed robots.txt blocked more private areas than `app/robots.js` did: every dashboard, `/payouts/`, `/login/`, `/register/` and `/unauthorized/`. Those disallows are merged into `app/robots.js`, so nothing becomes crawlable.
+
+### Full verify-all run, 2026-11-10 night (evidence: `docs/audit/evidence/verify-2026-11-10T18-05-46/`)
+- **14/18 gates pass:** G1, G4–G7 and G9–G17.
+  - G13 passes for the first time: 0 high (F-139).
+  - G11 runs web and admin E2E on production builds and passes.
+  - G12 passes on the rebuilt APK, with the query-string deep link.
+- **G18: 14/53 VERIFIED** (A1–A11, A13, A14, P7), up from 0, with 26 CODE COMPLETE and 13 IN PROGRESS. A12 also lists web and android, which have no tagged proof yet.
+- **G2, G3 and G8 failed, on two guard tests that caught the new Commerce Ops tab:**
+  - `adminClientRoutes.test.js` (every console API call must match a served route) could not see the tab's calls at all: they went through a `${C}` shorthand, and the method sat inside a helper.
+  - `apps/admin` "no console page or tab calls fetch directly" caught the CSV download helper.
+  - **Fix:** the tab now writes full `${API_BASE}/...` URLs with a literal `method:` beside each, and downloads through `fetchJson`. The guard now checks all of its calls. Admin E2E reran 24/24 on a production build afterwards.
+- F-139 to F-145 become FIXED-VERIFIED with the next full run that includes these fixes.
+
+| Test | Change | Why |
+|---|---|---|
+| `backend/src/__tests__/integration/adminClientRoutes.test.js` `collectRoutes` | a route declared with several paths (`router.put(['/admin/:id/review', '/:id/review'])`) yields one entry per path | It stringified the array to `"/a,/b"`, which matched nothing, so calls to such routes (the KYC queue) were reported missing although they are served. The guard is now accurate for them, and also checks every Commerce Ops call it could not see before |

@@ -27,8 +27,13 @@ function collectRoutes(router, prefix = '') {
   const out = [];
   for (const layer of router.stack) {
     if (layer.route) {
+      // A route may be declared with several paths (router.put(['/a', '/b'], ...));
+      // stringifying the array produced "/a,/b", which matched nothing.
+      const paths = Array.isArray(layer.route.path) ? layer.route.path : [layer.route.path];
       for (const method of Object.keys(layer.route.methods).filter((m) => layer.route.methods[m])) {
-        out.push({ method: method.toUpperCase(), path: `${prefix}${layer.route.path}`.replace(/\/+/g, '/') });
+        for (const p of paths) {
+          out.push({ method: method.toUpperCase(), path: `${prefix}${p}`.replace(/\/+/g, '/') });
+        }
       }
     } else if (layer.handle && layer.handle.stack) {
       out.push(...collectRoutes(layer.handle, prefix + (layer.__mount && layer.__mount !== '/' ? layer.__mount : '')));

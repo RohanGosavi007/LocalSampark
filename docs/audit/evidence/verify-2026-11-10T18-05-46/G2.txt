@@ -1,0 +1,95 @@
+=== Backend Jest on SQLite Execution ===
+Exit Code: 1
+Summary: 1686 passed, 1 failed across 148 test suites
+
+STDOUT:
+23:35:57 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 12.813 ms - 293[0m
+[0mGET /ready [32m200[0m 1.833 ms - 136[0m
+[0mGET /metrics [32m200[0m 0.775 ms - 391[0m
+
+
+STDERR:
+FAIL src/__tests__/integration/adminClientRoutes.test.js
+  ● Console
+
+    console.log
+      23:37:16 [32minfo[39m: [Firebase] Admin SDK initialized via individual env vars
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      23:37:16 [32minfo[39m: ✅ Firebase Admin SDK initialized successfully
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      23:37:18 [32minfo[39m: [CacheService] Using in-memory LRU backend (development).
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+  ● every console API call matches a served route
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 9
+
+    - Array []
+    + Array [
+    +   "GET /admin/commerce  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/kyc/pending  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/kyc/x/review  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /orders/returns/x/verify  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/payouts/calculate  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/payouts/x/approve  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/delivery/agents/x/cash-deposit  <-  components\\tabs\\CommerceOpsTab.js",
+    + ]
+
+      85 |     if (!hit) missing.push(`${c.method} ${c.url}  <-  ${c.file}`);
+      86 |   }
+    > 87 |   expect([...new Set(missing)]).toEqual([]);
+         |                                 ^
+      88 | });
+      89 |
+
+      at Object.toEqual (src/__tests__/integration/adminClientRoutes.test.js:87:33)
+
+
+Summary of all failing tests
+FAIL src/__tests__/integration/adminClientRoutes.test.js
+  ● every console API call matches a served route
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 9
+
+    - Array []
+    + Array [
+    +   "GET /admin/commerce  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/kyc/pending  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/kyc/x/review  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /orders/returns/x/verify  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/payouts/calculate  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/payouts/x/approve  <-  components\\tabs\\CommerceOpsTab.js",
+    +   "GET /admin/delivery/agents/x/cash-deposit  <-  components\\tabs\\CommerceOpsTab.js",
+    + ]
+
+      85 |     if (!hit) missing.push(`${c.method} ${c.url}  <-  ${c.file}`);
+      86 |   }
+    > 87 |   expect([...new Set(missing)]).toEqual([]);
+         |                                 ^
+      88 | });
+      89 |
+
+      at Object.toEqual (src/__tests__/integration/adminClientRoutes.test.js:87:33)
+
+
+Test Suites: 1 failed, 147 passed, 148 total
+Tests:       1 failed, 1686 passed, 1687 total
+Snapshots:   0 total
+Time:        318.65 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-10T18-05-46\jest-sqlite.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

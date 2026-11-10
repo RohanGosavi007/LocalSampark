@@ -11,8 +11,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { API_BASE, fetchJson, getAuthHeaders } from '../../lib/api';
 
-const C = `${API_BASE}/admin/commerce`;
-const json = (method, body) => ({ method, headers: getAuthHeaders(), body: body === undefined ? undefined : JSON.stringify(body) });
+// Headers and JSON body for a write. The method stays a literal beside each
+// URL: backend/src/__tests__/integration/adminClientRoutes.test.js reads both
+// from this file to check every call against the served routes.
+const opts = (body) => ({ headers: getAuthHeaders(), body: body === undefined ? undefined : JSON.stringify(body) });
 const get = (url) => fetchJson(url, { headers: getAuthHeaders() });
 const inr = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const when = (d) => (d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
@@ -74,13 +76,10 @@ const Empty = ({ children }) => <p style={S.muted}>{children}</p>;
 
 /** Fetches a CSV with the admin session and hands it to the browser as a download. */
 async function download(url, filename) {
-  const res = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
-  if (!res.ok) {
-    let message = `Export failed (HTTP ${res.status})`;
-    try { message = (await res.json()).error || message; } catch { /* not JSON */ }
-    throw new Error(message);
-  }
-  const blob = await res.blob();
+  // fetchJson returns a non-JSON body as text and throws with the server's
+  // message on failure, like every other console call.
+  const text = await fetchJson(url, { headers: getAuthHeaders() });
+  const blob = new Blob([typeof text === 'string' ? text : JSON.stringify(text)], { type: 'text/csv' });
   const href = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = href;
@@ -94,7 +93,7 @@ async function download(url, filename) {
 
 // ── A1 ─────────────────────────────────────────────────────────────────────
 function KpiSection() {
-  const { data, error } = useResource(() => get(`${C}/kpis`).then((r) => r.data));
+  const { data, error } = useResource(() => get(`${API_BASE}/admin/commerce/kpis`).then((r) => r.data));
   const items = data ? [
     ['GMV', inr(data.gmv)], ['Orders', data.totalOrders], ['Delivered', data.completedOrders],
     ['In flight', data.inFlightOrders], ['AOV', inr(data.aov)], ['Cancellation rate', `${data.cancellationRate}%`],
@@ -120,20 +119,20 @@ function KpiSection() {
 // ── A2 ─────────────────────────────────────────────────────────────────────
 function SellersSection() {
   const kyc = useResource(() => get(`${API_BASE}/admin/kyc/pending`).then((r) => r.submissions || []));
-  const shops = useResource(() => get(`${C}/shops`).then((r) => r.data));
+  const shops = useResource(() => get(`${API_BASE}/admin/commerce/shops`).then((r) => r.data));
   const [reasons, setReasons] = useState({});
   const [run, msg] = useAction();
   const docLinks = (k) => [['Aadhaar (front)', k.aadhaar_front_url], ['Aadhaar (back)', k.aadhaar_back_url], ['PAN', k.pan_url], ['FSSAI', k.fssai_url], ['Drug licence', k.drug_license_url]].filter(([, u]) => u);
   const review = (k, action) => run(
-    () => fetchJson(`${API_BASE}/admin/kyc/${k.id}/review`, json('PUT', { action, rejection_reason: reasons[k.id] || undefined })).then(() => { kyc.reload(); shops.reload(); }),
+    () => fetchJson(`${API_BASE}/admin/kyc/${k.id}/review`, { method: 'PUT', ...opts({ action, rejection_reason: reasons[k.id] || undefined }) }).then(() => { kyc.reload(); shops.reload(); }),
     `KYC for ${k.shop_name}: ${action}`
   );
   const suspend = (s) => run(
-    () => fetchJson(`${C}/shops/${s.id}/suspend`, json('PUT', { reason: reasons[s.id] })).then(() => shops.reload()),
+    () => fetchJson(`${API_BASE}/admin/commerce/shops/${s.id}/suspend`, { method: 'PUT', ...opts({ reason: reasons[s.id] }) }).then(() => shops.reload()),
     `${s.name} suspended`
   );
   const reinstate = (s) => run(
-    () => fetchJson(`${C}/shops/${s.id}/status`, json('PUT', { approvalStatus: 'approved', isActive: true, reason: reasons[s.id] || 'Reinstated' })).then(() => shops.reload()),
+    () => fetchJson(`${API_BASE}/admin/commerce/shops/${s.id}/status`, { method: 'PUT', ...opts({ approvalStatus: 'approved', isActive: true, reason: reasons[s.id] || 'Reinstated' }) }).then(() => shops.reload()),
     `${s.name} reinstated`
   );
   return (
@@ -203,16 +202,16 @@ function SellersSection() {
 
 // ── A3 ─────────────────────────────────────────────────────────────────────
 function CatalogSection() {
-  const cats = useResource(() => get(`${C}/categories`).then((r) => r.data));
-  const products = useResource(() => get(`${C}/products/moderation`).then((r) => r.data));
+  const cats = useResource(() => get(`${API_BASE}/admin/commerce/categories`).then((r) => r.data));
+  const products = useResource(() => get(`${API_BASE}/admin/commerce/products/moderation`).then((r) => r.data));
   const [form, setForm] = useState({ name: '', slug: '', icon: '' });
   const [onlyRestricted, setOnlyRestricted] = useState(true);
   const [run, msg] = useAction();
   const create = (e) => {
     e.preventDefault();
-    run(() => fetchJson(`${C}/categories`, json('POST', form)).then(() => { setForm({ name: '', slug: '', icon: '' }); cats.reload(); }), `Category ${form.name} created`);
+    run(() => fetchJson(`${API_BASE}/admin/commerce/categories`, { method: 'POST', ...opts(form) }).then(() => { setForm({ name: '', slug: '', icon: '' }); cats.reload(); }), `Category ${form.name} created`);
   };
-  const moderate = (p, action) => run(() => fetchJson(`${C}/products/${p.id}/moderation`, json('PUT', { action, reason: p.restrictedKeyword ? `Restricted goods: ${p.restrictedKeyword}` : 'Moderated' })).then(() => products.reload()), `${p.name}: ${action}`);
+  const moderate = (p, action) => run(() => fetchJson(`${API_BASE}/admin/commerce/products/${p.id}/moderation`, { method: 'PUT', ...opts({ action, reason: p.restrictedKeyword ? `Restricted goods: ${p.restrictedKeyword}` : 'Moderated' }) }).then(() => products.reload()), `${p.name}: ${action}`);
   const shown = (products.data || []).filter((p) => !onlyRestricted || p.isRestricted);
   return (
     <section data-testid="ops-catalog" style={S.card}>
@@ -234,7 +233,7 @@ function CatalogSection() {
                 <td style={S.td}>{c.icon} {c.name}</td>
                 <td style={S.td}>{c.slug}</td>
                 <td style={S.td}>{truthy(c.is_active) ? 'Yes' : 'No'}</td>
-                <td style={S.td}>{truthy(c.is_active) && <button style={S.ghost} onClick={() => run(() => fetchJson(`${C}/categories/${c.id}`, json('DELETE')).then(() => cats.reload()), `${c.name} deactivated`)}>Deactivate</button>}</td>
+                <td style={S.td}>{truthy(c.is_active) && <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/categories/${c.id}`, { method: 'DELETE', ...opts() }).then(() => cats.reload()), `${c.name} deactivated`)}>Deactivate</button>}</td>
               </tr>
             ))}
           </tbody>
@@ -275,9 +274,9 @@ function OrdersSection() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState({ q: '', status: '' });
-  const orders = useResource(() => get(`${C}/orders?q=${encodeURIComponent(query.q)}&status=${encodeURIComponent(query.status)}`).then((r) => r.data), [query]);
-  const sla = useResource(() => get(`${C}/orders/sla-breaches`).then((r) => r.data));
-  const fleet = useResource(() => get(`${C}/fleet/live`).then((r) => r.data));
+  const orders = useResource(() => get(`${API_BASE}/admin/commerce/orders?q=${encodeURIComponent(query.q)}&status=${encodeURIComponent(query.status)}`).then((r) => r.data), [query]);
+  const sla = useResource(() => get(`${API_BASE}/admin/commerce/orders/sla-breaches`).then((r) => r.data));
+  const fleet = useResource(() => get(`${API_BASE}/admin/commerce/fleet/live`).then((r) => r.data));
   const [open, setOpen] = useState(null);
   const [detail, setDetail] = useState(null);
   const [form, setForm] = useState({ reason: '', amount: '', rider: '' });
@@ -286,7 +285,7 @@ function OrdersSection() {
   const show = async (id) => {
     setOpen(id);
     setDetail(null);
-    try { setDetail((await get(`${C}/orders/${id}/timeline`)).data); } catch (e) { setDetail({ error: e.message }); }
+    try { setDetail((await get(`${API_BASE}/admin/commerce/orders/${id}/timeline`)).data); } catch (e) { setDetail({ error: e.message }); }
   };
   const after = () => { orders.reload(); sla.reload(); if (open) show(open); };
 
@@ -341,15 +340,15 @@ function OrdersSection() {
               <div style={{ ...S.row, marginTop: '0.8rem' }}>
                 <input aria-label="Intervention reason" placeholder="Reason (required)" style={{ ...S.input, minWidth: '16rem' }} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
                 <input aria-label="Refund amount" placeholder="Refund ₹ (blank = all remaining)" style={S.input} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-                <button style={S.ghost} onClick={() => run(() => fetchJson(`${C}/orders/${open}/refund`, json('POST', { amount: form.amount ? Number(form.amount) : undefined, reason: form.reason })).then((r) => { after(); return r; }), (r) => r.message)}>Refund to wallet</button>
-                <button style={S.danger} onClick={() => run(() => fetchJson(`${C}/orders/${open}/cancel`, json('POST', { reason: form.reason })).then(after), 'Order cancelled')}>Force cancel</button>
+                <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/orders/${open}/refund`, { method: 'POST', ...opts({ amount: form.amount ? Number(form.amount) : undefined, reason: form.reason }) }).then((r) => { after(); return r; }), (r) => r.message)}>Refund to wallet</button>
+                <button style={S.danger} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/orders/${open}/cancel`, { method: 'POST', ...opts({ reason: form.reason }) }).then(after), 'Order cancelled')}>Force cancel</button>
               </div>
               <div style={{ ...S.row, marginTop: '0.6rem' }}>
                 <select aria-label="Reassign to rider" style={S.input} value={form.rider} onChange={(e) => setForm({ ...form, rider: e.target.value })}>
                   <option value="">Return to ready queue</option>
                   {(fleet.data || []).filter((r) => truthy(r.is_online)).map((r) => <option key={r.user_id} value={r.user_id}>{r.full_name} ({r.status})</option>)}
                 </select>
-                <button style={S.ghost} onClick={() => run(() => fetchJson(`${C}/orders/${open}/reassign`, json('POST', { riderUserId: form.rider || null })).then(after), (r) => (r && r.message) || 'Reassigned')}>Reassign</button>
+                <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/orders/${open}/reassign`, { method: 'POST', ...opts({ riderUserId: form.rider || null }) }).then(after), (r) => (r && r.message) || 'Reassigned')}>Reassign</button>
               </div>
             </>
           )}
@@ -370,13 +369,13 @@ function OrdersSection() {
 
 // ── A5 ─────────────────────────────────────────────────────────────────────
 function DisputesSection() {
-  const disputes = useResource(() => get(`${C}/disputes?status=open`).then((r) => r.data));
+  const disputes = useResource(() => get(`${API_BASE}/admin/commerce/disputes?status=open`).then((r) => r.data));
   const returns = useResource(() => get(`${API_BASE}/orders/returns/pending-review`).then((r) => r.data));
   const [form, setForm] = useState({});
   const [notes, setNotes] = useState({});
   const [run, msg] = useAction();
   const resolve = (d, resolution) => run(
-    () => fetchJson(`${C}/disputes/${d.id}/resolve`, json('PUT', { resolution, refundAmount: Number((form[d.id] || {}).amount) || 0 })).then(() => disputes.reload()),
+    () => fetchJson(`${API_BASE}/admin/commerce/disputes/${d.id}/resolve`, { method: 'PUT', ...opts({ resolution, refundAmount: Number((form[d.id] || {}).amount) || 0 }) }).then(() => disputes.reload()),
     resolution === 'refund_customer' ? 'Dispute resolved with a refund' : 'Dispute resolved'
   );
   return (
@@ -427,8 +426,8 @@ function DisputesSection() {
                   <input aria-label={`Return decision note for ${r.id}`} placeholder="Reason (required to reject)" style={{ ...S.input, width: '100%', marginBottom: '0.4rem' }}
                     value={notes[r.id] || ''} onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })} />
                   <div style={S.row}>
-                    <button style={S.btn} onClick={() => run(() => fetchJson(`${API_BASE}/orders/returns/${r.id}/verify`, json('PUT', { action: 'approve', notes: notes[r.id] || '' })).then(() => returns.reload()), 'Return approved and refunded')}>Approve refund</button>
-                    <button style={S.danger} onClick={() => run(() => fetchJson(`${API_BASE}/orders/returns/${r.id}/verify`, json('PUT', { action: 'reject', rejectionReason: notes[r.id] || '' })).then(() => returns.reload()), 'Return rejected')}>Reject</button>
+                    <button style={S.btn} onClick={() => run(() => fetchJson(`${API_BASE}/orders/returns/${r.id}/verify`, { method: 'PUT', ...opts({ action: 'approve', notes: notes[r.id] || '' }) }).then(() => returns.reload()), 'Return approved and refunded')}>Approve refund</button>
+                    <button style={S.danger} onClick={() => run(() => fetchJson(`${API_BASE}/orders/returns/${r.id}/verify`, { method: 'PUT', ...opts({ action: 'reject', rejectionReason: notes[r.id] || '' }) }).then(() => returns.reload()), 'Return rejected')}>Reject</button>
                   </div>
                 </td>
               </tr>
@@ -442,9 +441,9 @@ function DisputesSection() {
 
 // ── A6 ─────────────────────────────────────────────────────────────────────
 function PayoutsSection() {
-  const commission = useResource(() => get(`${C}/commission`));
-  const payouts = useResource(() => get(`${C}/payouts`).then((r) => r.data));
-  const cash = useResource(() => get(`${C}/fleet/cash-summary`).then((r) => r.data));
+  const commission = useResource(() => get(`${API_BASE}/admin/commerce/commission`));
+  const payouts = useResource(() => get(`${API_BASE}/admin/commerce/payouts`).then((r) => r.data));
+  const cash = useResource(() => get(`${API_BASE}/admin/commerce/fleet/cash-summary`).then((r) => r.data));
   const [rate, setRate] = useState('');
   const [period, setPeriod] = useState({ start: '', end: '' });
   const [run, msg] = useAction();
@@ -456,14 +455,14 @@ function PayoutsSection() {
       {commission.data && <p data-testid="default-commission">Default platform commission: <strong>{commission.data.defaultCommissionPercent}%</strong></p>}
       <div style={S.row}>
         <input aria-label="Default commission percent" placeholder="0–50" style={{ ...S.input, width: '6rem' }} value={rate} onChange={(e) => setRate(e.target.value)} />
-        <button style={S.btn} onClick={() => run(() => fetchJson(`${C}/commission`, json('PUT', { defaultCommissionPercent: Number(rate) })).then(() => commission.reload()), 'Commission updated')}>Save commission</button>
+        <button style={S.btn} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/commission`, { method: 'PUT', ...opts({ defaultCommissionPercent: Number(rate) }) }).then(() => commission.reload()), 'Commission updated')}>Save commission</button>
       </div>
 
       <h3 style={{ ...S.h3, marginTop: '1.5rem' }}>Seller payout batches</h3>
       <div style={{ ...S.row, marginBottom: '0.6rem' }}>
         <input aria-label="Payout period start" type="date" style={S.input} value={period.start} onChange={(e) => setPeriod({ ...period, start: e.target.value })} />
         <input aria-label="Payout period end" type="date" style={S.input} value={period.end} onChange={(e) => setPeriod({ ...period, end: e.target.value })} />
-        <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/payouts/calculate`, json('POST', { period_start: period.start, period_end: period.end })).then((r) => { payouts.reload(); return r; }), (r) => (r && r.message) || 'Calculated')}>Calculate payouts</button>
+        <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/payouts/calculate`, { method: 'POST', ...opts({ period_start: period.start, period_end: period.end }) }).then((r) => { payouts.reload(); return r; }), (r) => (r && r.message) || 'Calculated')}>Calculate payouts</button>
       </div>
       <Err error={payouts.error} />
       {payouts.data && payouts.data.length === 0 && <Empty>No payout batches yet.</Empty>}
@@ -480,7 +479,7 @@ function PayoutsSection() {
                 <td style={S.td}>{inr(p.net_payout)}</td>
                 <td style={S.td}>{p.payout_status}</td>
                 <td style={S.td}>{String(p.payout_status) === 'calculated' && (
-                  <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/payouts/${p.id}/approve`, json('PUT')).then(() => payouts.reload()), 'Payout approved')}>Approve</button>
+                  <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/payouts/${p.id}/approve`, { method: 'PUT', ...opts() }).then(() => payouts.reload()), 'Payout approved')}>Approve</button>
                 )}</td>
               </tr>
             ))}
@@ -502,8 +501,8 @@ function PayoutsSection() {
 
 // ── A7 ─────────────────────────────────────────────────────────────────────
 function PromotionsSection() {
-  const coupons = useResource(() => get(`${C}/coupons`).then((r) => r.data));
-  const banners = useResource(() => get(`${C}/banners`).then((r) => r.data));
+  const coupons = useResource(() => get(`${API_BASE}/admin/commerce/coupons`).then((r) => r.data));
+  const banners = useResource(() => get(`${API_BASE}/admin/commerce/banners`).then((r) => r.data));
   const [cp, setCp] = useState({ code: '', discountType: 'percentage', discountValue: '', minOrderAmount: '', maxDiscountAmount: '', usageLimit: '' });
   const [bn, setBn] = useState({ title: '', imageUrl: '', actionUrl: '', priority: '' });
   const [run, msg] = useAction();
@@ -511,7 +510,7 @@ function PromotionsSection() {
     <section data-testid="ops-promotions" style={S.card}>
       <h3 style={S.h3}>Platform coupons</h3>
       {msg}
-      <form style={{ ...S.row, marginBottom: '0.8rem' }} onSubmit={(e) => { e.preventDefault(); run(() => fetchJson(`${C}/coupons`, json('POST', cp)).then(() => coupons.reload()), `Coupon ${cp.code.toUpperCase()} created`); }}>
+      <form style={{ ...S.row, marginBottom: '0.8rem' }} onSubmit={(e) => { e.preventDefault(); run(() => fetchJson(`${API_BASE}/admin/commerce/coupons`, { method: 'POST', ...opts(cp) }).then(() => coupons.reload()), `Coupon ${cp.code.toUpperCase()} created`); }}>
         <input aria-label="Coupon code" placeholder="CODE" style={{ ...S.input, width: '8rem' }} value={cp.code} onChange={(e) => setCp({ ...cp, code: e.target.value })} />
         <select aria-label="Discount type" style={S.input} value={cp.discountType} onChange={(e) => setCp({ ...cp, discountType: e.target.value })}>
           <option value="percentage">% off</option><option value="flat">₹ off</option>
@@ -541,7 +540,7 @@ function PromotionsSection() {
       )}
 
       <h3 style={{ ...S.h3, marginTop: '1.5rem' }}>Homepage banners</h3>
-      <form style={{ ...S.row, marginBottom: '0.8rem' }} onSubmit={(e) => { e.preventDefault(); run(() => fetchJson(`${C}/banners`, json('POST', bn)).then(() => banners.reload()), `Banner ${bn.title} published`); }}>
+      <form style={{ ...S.row, marginBottom: '0.8rem' }} onSubmit={(e) => { e.preventDefault(); run(() => fetchJson(`${API_BASE}/admin/commerce/banners`, { method: 'POST', ...opts(bn) }).then(() => banners.reload()), `Banner ${bn.title} published`); }}>
         <input aria-label="Banner title" placeholder="Title" style={S.input} value={bn.title} onChange={(e) => setBn({ ...bn, title: e.target.value })} />
         <input aria-label="Banner image URL" placeholder="https://…/image.jpg" style={S.input} value={bn.imageUrl} onChange={(e) => setBn({ ...bn, imageUrl: e.target.value })} />
         <input aria-label="Banner target URL" placeholder="/shops?category=…" style={S.input} value={bn.actionUrl} onChange={(e) => setBn({ ...bn, actionUrl: e.target.value })} />
@@ -559,7 +558,7 @@ function PromotionsSection() {
                 <td style={S.td}>{b.title}</td>
                 <td style={S.td}>{b.action_url || '—'}</td>
                 <td style={S.td}>{b.priority}</td>
-                <td style={S.td}><button style={S.ghost} onClick={() => run(() => fetchJson(`${C}/banners/${b.id}`, json('DELETE')).then(() => banners.reload()), `Banner ${b.title} removed`)}>Remove</button></td>
+                <td style={S.td}><button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/banners/${b.id}`, { method: 'DELETE', ...opts() }).then(() => banners.reload()), `Banner ${b.title} removed`)}>Remove</button></td>
               </tr>
             ))}
           </tbody>
@@ -571,7 +570,7 @@ function PromotionsSection() {
 
 // ── A8 ─────────────────────────────────────────────────────────────────────
 function AuditSection() {
-  const logs = useResource(() => get(`${C}/audit-logs?limit=100`).then((r) => r.data));
+  const logs = useResource(() => get(`${API_BASE}/admin/commerce/audit-logs?limit=100`).then((r) => r.data));
   return (
     <section data-testid="ops-audit" style={S.card}>
       <div style={{ ...S.row, justifyContent: 'space-between' }}>
@@ -603,8 +602,8 @@ function AuditSection() {
 
 // ── A9 ─────────────────────────────────────────────────────────────────────
 function ZonesSection() {
-  const zones = useResource(() => get(`${C}/zones`).then((r) => r.data));
-  const waitlist = useResource(() => get(`${C}/zones/waitlist`).then((r) => r.data));
+  const zones = useResource(() => get(`${API_BASE}/admin/commerce/zones`).then((r) => r.data));
+  const waitlist = useResource(() => get(`${API_BASE}/admin/commerce/zones/waitlist`).then((r) => r.data));
   const [run, msg] = useAction();
   return (
     <section data-testid="ops-zones" style={S.card}>
@@ -624,7 +623,7 @@ function ZonesSection() {
                 <td style={S.td}>{truthy(z.is_active) ? 'Active' : 'Inactive'}</td>
                 <td style={S.td}>
                   <button style={truthy(z.is_active) ? S.danger : S.btn}
-                    onClick={() => run(() => fetchJson(`${C}/zones/${z.id}/toggle`, json('PUT', { isActive: !truthy(z.is_active) })).then(() => zones.reload()), `${z.name} ${truthy(z.is_active) ? 'deactivated' : 'activated'}`)}>
+                    onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/zones/${z.id}/toggle`, { method: 'PUT', ...opts({ isActive: !truthy(z.is_active) }) }).then(() => zones.reload()), `${z.name} ${truthy(z.is_active) ? 'deactivated' : 'activated'}`)}>
                     {truthy(z.is_active) ? 'Deactivate' : 'Activate'}
                   </button>
                 </td>
@@ -635,7 +634,7 @@ function ZonesSection() {
       )}
       <div style={{ ...S.row, justifyContent: 'space-between', marginTop: '1.5rem' }}>
         <h3 style={S.h3}>Unserviceable waitlist</h3>
-        <button style={S.ghost} onClick={() => run(() => download(`${C}/zones/waitlist?format=csv`, 'unserviceable_waitlist.csv'), 'Waitlist exported')}>Export CSV</button>
+        <button style={S.ghost} onClick={() => run(() => download(`${API_BASE}/admin/commerce/zones/waitlist?format=csv`, 'unserviceable_waitlist.csv'), 'Waitlist exported')}>Export CSV</button>
       </div>
       <Err error={waitlist.error} />
       {waitlist.data && waitlist.data.length === 0 && <Empty>Nobody is waiting.</Empty>}
@@ -660,7 +659,7 @@ function ZonesSection() {
 
 // ── A10 ────────────────────────────────────────────────────────────────────
 function FleetSection() {
-  const fleet = useResource(() => get(`${C}/fleet/live`).then((r) => r.data));
+  const fleet = useResource(() => get(`${API_BASE}/admin/commerce/fleet/live`).then((r) => r.data));
   const cash = useResource(() => get(`${API_BASE}/admin/delivery/cash`));
   const [amounts, setAmounts] = useState({});
   const [ledger, setLedger] = useState(null);
@@ -708,7 +707,7 @@ function FleetSection() {
                     <td style={S.td}>{inr(r.cashInHand)}</td>
                     <td style={S.td}><div style={S.row}>
                       <input aria-label={`Deposit amount for ${r.name}`} placeholder="₹" style={{ ...S.input, width: '6rem' }} value={amounts[r.id] || ''} onChange={(e) => setAmounts({ ...amounts, [r.id]: e.target.value })} />
-                      <button style={S.btn} onClick={() => run(() => fetchJson(`${API_BASE}/admin/delivery/agents/${r.id}/cash-deposit`, json('POST', { amount: Number(amounts[r.id]), note: 'Deposited at counter' })).then(() => { cash.reload(); fleet.reload(); if (ledger) openLedger(r); }), `Deposit recorded for ${r.name}`)}>Record deposit</button>
+                      <button style={S.btn} onClick={() => run(() => fetchJson(`${API_BASE}/admin/delivery/agents/${r.id}/cash-deposit`, { method: 'POST', ...opts({ amount: Number(amounts[r.id]), note: 'Deposited at counter' }) }).then(() => { cash.reload(); fleet.reload(); if (ledger) openLedger(r); }), `Deposit recorded for ${r.name}`)}>Record deposit</button>
                     </div></td>
                     <td style={S.td}><button style={S.ghost} onClick={() => openLedger(r)}>Ledger</button></td>
                   </tr>
@@ -736,10 +735,10 @@ function FleetSection() {
 // ── A11 ────────────────────────────────────────────────────────────────────
 function GrievanceSection() {
   const [type, setType] = useState('statutory_grievance');
-  const tickets = useResource(() => get(`${C}/grievances?type=${type}`).then((r) => r.data), [type]);
+  const tickets = useResource(() => get(`${API_BASE}/admin/commerce/grievances?type=${type}`).then((r) => r.data), [type]);
   const [replies, setReplies] = useState({});
   const [run, msg] = useAction();
-  const update = (t, body, label) => run(() => fetchJson(`${C}/grievances/${t.id}`, json('PUT', body)).then(() => tickets.reload()), label);
+  const update = (t, body, label) => run(() => fetchJson(`${API_BASE}/admin/commerce/grievances/${t.id}`, { method: 'PUT', ...opts(body) }).then(() => tickets.reload()), label);
   const breached = (tickets.data || []).filter((t) => t.isBreached48h).length;
   return (
     <section data-testid="ops-grievances" style={S.card}>
@@ -783,7 +782,7 @@ function GrievanceSection() {
 
 // ── A12 ────────────────────────────────────────────────────────────────────
 function FlagsSection() {
-  const flags = useResource(() => get(`${C}/feature-flags`).then((r) => r.data.registry));
+  const flags = useResource(() => get(`${API_BASE}/admin/commerce/feature-flags`).then((r) => r.data.registry));
   const [run, msg] = useAction();
   const groups = {};
   for (const f of flags.data || []) (groups[f.scope] = groups[f.scope] || []).push(f);
@@ -805,7 +804,7 @@ function FlagsSection() {
                   <td style={S.td}>
                     {f.switchable
                       ? <button aria-label={`${f.enabled ? 'Switch off' : 'Switch on'} ${f.name}`} style={f.enabled ? S.danger : S.btn}
-                          onClick={() => run(() => fetchJson(`${C}/feature-flags`, json('PUT', { features: { [f.key]: !f.enabled } })).then(() => flags.reload()), `${f.name} switched ${f.enabled ? 'off' : 'on'}`)}>
+                          onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/feature-flags`, { method: 'PUT', ...opts({ features: { [f.key]: !f.enabled } }) }).then(() => flags.reload()), `${f.name} switched ${f.enabled ? 'off' : 'on'}`)}>
                           {f.enabled ? 'Switch off' : 'Switch on'}
                         </button>
                       : <span style={S.muted}>Always on</span>}
@@ -834,7 +833,7 @@ function ReportsSection() {
       {msg}
       <div style={S.row}>
         {reports.map(([format, label, file]) => (
-          <button key={format} style={S.ghost} onClick={() => run(() => download(`${C}/reports/export?format=${format}`, file), `${label} downloaded`)}>{label}</button>
+          <button key={format} style={S.ghost} onClick={() => run(() => download(`${API_BASE}/admin/commerce/reports/export?format=${format}`, file), `${label} downloaded`)}>{label}</button>
         ))}
       </div>
     </section>
@@ -843,13 +842,13 @@ function ReportsSection() {
 
 // ── A14 ────────────────────────────────────────────────────────────────────
 function BroadcastSection() {
-  const zones = useResource(() => get(`${C}/zones`).then((r) => r.data));
-  const history = useResource(() => get(`${C}/broadcasts`).then((r) => r.data));
+  const zones = useResource(() => get(`${API_BASE}/admin/commerce/zones`).then((r) => r.data));
+  const history = useResource(() => get(`${API_BASE}/admin/commerce/broadcasts`).then((r) => r.data));
   const [form, setForm] = useState({ title: '', body: '', targetZoneId: '', targetRole: 'customer', deepLink: '' });
   const [run, msg] = useAction();
   const send = (e) => {
     e.preventDefault();
-    run(() => fetchJson(`${C}/broadcasts`, json('POST', { ...form, targetZoneId: form.targetZoneId || undefined })).then((r) => { history.reload(); return r; }), (r) => (r && r.message) || 'Sent');
+    run(() => fetchJson(`${API_BASE}/admin/commerce/broadcasts`, { method: 'POST', ...opts({ ...form, targetZoneId: form.targetZoneId || undefined }) }).then((r) => { history.reload(); return r; }), (r) => (r && r.message) || 'Sent');
   };
   return (
     <section data-testid="ops-broadcasts" style={S.card}>
