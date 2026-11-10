@@ -52,6 +52,8 @@ import MLInsightsTab from '../components/tabs/MLInsightsTab';
 import FeatureRolloutTab from '../components/tabs/FeatureRolloutTab';
 import HomeServicesTab from '../components/tabs/HomeServicesTab';
 import LeadsCRMTab from '../components/tabs/LeadsCRMTab';
+// A1–A14: the launch commerce operations, each backed by /admin/commerce.
+import CommerceOpsTab from '../components/tabs/CommerceOpsTab';
 
 const authHeaders = getAuthHeaders;
 
@@ -88,6 +90,12 @@ const Stat = ({ label, value, diff, icon, color }) => (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
+  // Read first: the data loads below wait for a signed-in admin. They used to
+  // fire for anyone who opened the console, so a signed-out visit sent seven
+  // API calls that could only fail and logged each as an error before the
+  // redirect to /login.
+  const { admin, loading } = useAdminAuth();
+  const signedIn = Boolean(admin);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [platformShare, setPlatformShare] = useState(50);
   const [franchiseShare, setFranchiseShare] = useState(25);
@@ -230,10 +238,17 @@ export default function AdminDashboardPage() {
         zone: p.region_name || p.zone || '—',
         status: p.is_active ? 'Active' : 'Audit Pending'
       })));
-    } catch(e) { failed('Could not load properties')(e); }
+    } catch(e) {
+      // Properties is off at launch, so this answered 403 FEATURE_DISABLED on
+      // every console load and put a red "Could not load properties" banner
+      // over whatever the admin opened. A switched-off vertical is not an error.
+      if (e && e.status === 403 && e.body && e.body.error === 'FEATURE_DISABLED') { setProperties([]); return; }
+      failed('Could not load properties')(e);
+    }
   }, []);
 
   useEffect(() => {
+    if (!signedIn) return;
     fetchTerritories();
     fetchFranchisePartners();
     fetchSummary();
@@ -241,7 +256,7 @@ export default function AdminDashboardPage() {
     fetchUsers(1);
     fetchShops();
     fetchProperties();
-  }, [fetchTerritories, fetchFranchisePartners, fetchSummary, fetchRevenueChart, fetchUsers, fetchShops]);
+  }, [signedIn, fetchTerritories, fetchFranchisePartners, fetchSummary, fetchRevenueChart, fetchUsers, fetchShops]);
 
 
   // Toggle territory ON/OFF
@@ -376,10 +391,10 @@ export default function AdminDashboardPage() {
   const [adminSkilledBookings, setAdminSkilledBookings] = useState([]);
 
 
-  const { admin, loading } = useAdminAuth();
   const isSuper = String((admin && admin.role) || '').toUpperCase() === 'SUPER_ADMIN';
   const navItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: '📊' },
+    { id: 'commerce', label: 'Commerce Ops', icon: '🛍️' },
     { id: 'users', label: 'Users Management', icon: '👤' },
     { id: 'shops', label: 'Shop Approvals', icon: '🏪' },
     { id: 'franchise', label: 'Franchise Partners', icon: '🤝' },
@@ -561,6 +576,8 @@ export default function AdminDashboardPage() {
 
         {/* ─── DASHBOARD TAB ──────────────────────────────── */}
         {activeTab === 'dashboard' && <DashboardTab {...props} />}
+        {/* ─── COMMERCE OPS (A1–A14) ─────────────────────── */}
+        {activeTab === 'commerce' && <CommerceOpsTab />}
         {/* ─── USERS TAB ──────────────────────────────── */}
         {activeTab === 'users' && <UsersTab {...props} />}
         {/* ─── SHOPS TAB ──────────────────────────────── */}

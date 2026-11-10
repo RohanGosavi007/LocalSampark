@@ -1,124 +1,25 @@
 import React from 'react';
+import { SITE_URL, organizationSchema, shopSchema, productOffer } from '../../lib/seo.js';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localsampark.com';
-
-/**
- * Returns raw Organization Schema object
+/*
+ * These builders used to fill missing data with invented values: a placeholder
+ * phone number (+91-9876543210) on every business, opening hours nobody gave,
+ * default coordinates and a generic merchant name. JSON-LD is published to
+ * search engines as fact, so they now delegate to lib/seo.js, which emits only
+ * what the record holds.
  */
 export function getOrganizationSchema() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'LocalSampark',
-    alternateName: 'लोकल संपर्क',
-    url: SITE_URL,
-    applicationCategory: 'LifestyleApplication',
-    operatingSystem: 'Web, Android',
-    description: 'Hyperlocal marketplace connecting Dhanori & Pune residents with neighbourhood shops, local services, verified ratings, and lightning-fast delivery.',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'INR'
-    },
-    author: {
-      '@type': 'Organization',
-      name: 'LocalSampark Technologies',
-      url: SITE_URL,
-      logo: `${SITE_URL}/logo.png`,
-      contactPoint: {
-        '@type': 'ContactPoint',
-        telephone: '+91-9876543210',
-        contactType: 'customer service',
-        areaServed: 'IN',
-        availableLanguage: ['en', 'hi', 'mr']
-      }
-    },
-    areaServed: {
-      '@type': 'City',
-      name: 'Pune',
-      '@id': 'https://www.wikidata.org/wiki/Q1538'
-    }
-  };
+  return organizationSchema();
 }
 
-/**
- * Returns raw LocalBusiness Schema object
- */
 export function getLocalBusinessSchema(shop) {
-  if (!shop) return null;
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: shop.name,
-    image: shop.banner_url || shop.logo_url || `${SITE_URL}/og-image.jpg`,
-    '@id': `${SITE_URL}/shop/${shop.slug || shop.id}`,
-    url: `${SITE_URL}/shop/${shop.slug || shop.id}`,
-    telephone: shop.phone || '+91-9876543210',
-    priceRange: '₹₹',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: shop.address || 'Dhanori',
-      addressLocality: 'Pune',
-      addressRegion: 'Maharashtra',
-      postalCode: shop.pincode || '411015',
-      addressCountry: 'IN'
-    },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: Number(shop.latitude || 18.5857),
-      longitude: Number(shop.longitude || 73.8913)
-    },
-    openingHoursSpecification: [
-      {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: [
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday',
-          'Saturday',
-          'Sunday'
-        ],
-        opens: shop.opening_time || '08:00',
-        closes: shop.closing_time || '22:00'
-      }
-    ],
-    aggregateRating: shop.rating ? {
-      '@type': 'AggregateRating',
-      ratingValue: Number(shop.rating),
-      reviewCount: Number(shop.review_count || 1)
-    } : undefined
-  };
+  return shopSchema(shop);
 }
 
-/**
- * Returns raw Product Schema object
- */
 export function getProductSchema(product, shop) {
   if (!product) return null;
-  const price = Number(product.price || 0);
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    image: product.image_url ? [product.image_url] : [`${SITE_URL}/og-image.jpg`],
-    description: product.description || `${product.name} available at ${shop?.name || 'Local Store'}`,
-    sku: String(product.id || 'PROD'),
-    offers: {
-      '@type': 'Offer',
-      url: `${SITE_URL}/shop/${shop?.slug || shop?.id || 'store'}#p-${product.id}`,
-      priceCurrency: 'INR',
-      price: price.toFixed(2),
-      availability: Number(product.stock_quantity ?? 1) > 0
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      seller: {
-        '@type': 'Organization',
-        name: shop?.name || 'LocalSampark Verified Merchant'
-      }
-    }
-  };
+  const offer = productOffer(product, shop);
+  return { '@context': 'https://schema.org', ...offer.itemOffered, offers: { ...offer, itemOffered: undefined } };
 }
 
 /**

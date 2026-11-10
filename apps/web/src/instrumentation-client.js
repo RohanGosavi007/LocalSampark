@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { sentryDsn } from './lib/sentryDsn';
 
 /**
  * Browser-side Sentry initialisation.
@@ -24,8 +25,12 @@ const tracesSampleRate = (() => {
   return process.env.NODE_ENV === 'production' ? 0.1 : 1.0;
 })();
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+// Only with a real DSN: an unedited template value (YOUR_FRONTEND_SENTRY_DSN)
+// made Sentry log an error on every page. See lib/sentryDsn.js.
+const dsn = sentryDsn();
+
+if (dsn) Sentry.init({
+  dsn,
   tracesSampleRate,
   debug: false,
   environment: process.env.NODE_ENV,

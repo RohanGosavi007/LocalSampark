@@ -15,7 +15,8 @@ import ConsentBanner from '../components/ConsentBanner';
 import WelcomeTour from '../components/WelcomeTour';
 import PageTransition from '../components/motion/PageTransition';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localsampark.in';
+import { headers } from 'next/headers';
+import { SITE_URL } from '../lib/seo.js';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -31,9 +32,8 @@ const jsonLd = {
   areaServed: { '@type': 'City', name: 'Pune', '@id': 'https://www.wikidata.org/wiki/Q1538' },
 };
 
-export const metadata = {
+const baseMetadata = {
   metadataBase: new URL(SITE_URL),
-  alternates: { canonical: '/' },
   title: 'LocalSampark — Your Neighborhood, Connected',
   description: 'LocalSampark (लोकल संपर्क) brings neighborhood discussions, local shops, gig jobs, properties, and community events directly into your hands. Pilot running in Dhanori, Pune.',
   keywords: 'hyperlocal, pune, dhanori, local delivery, neighborhood, community, society management, carpool',
@@ -65,6 +65,30 @@ export const metadata = {
     follow: true,
   }
 };
+
+/**
+ * Site-wide metadata with a self-referencing canonical URL (P7).
+ *
+ * This used to be a static `metadata` export with `alternates: { canonical:
+ * '/' }`. Next applies a layout's metadata to every page beneath it, so each
+ * page that did not override it (nearly all of them: most are client
+ * components and cannot export metadata) told search engines it was a
+ * duplicate of the homepage. middleware.js passes the request path in
+ * x-ls-pathname; pages with their own metadata (e.g. /shops/[id]) still
+ * override this.
+ */
+export async function generateMetadata() {
+  let pathname = '/';
+  try {
+    const value = (await headers()).get('x-ls-pathname');
+    if (value && value.startsWith('/')) pathname = value;
+  } catch { /* no request (static generation): keep '/' */ }
+  return {
+    ...baseMetadata,
+    alternates: { canonical: pathname },
+    openGraph: { ...baseMetadata.openGraph, url: `${SITE_URL}${pathname === '/' ? '' : pathname}` },
+  };
+}
 
 export const viewport = {
   width: 'device-width',

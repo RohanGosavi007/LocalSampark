@@ -700,7 +700,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Real DB data only."
   },
@@ -722,7 +724,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Statutory KYC compliance."
   },
@@ -744,7 +748,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Blocks prohibited categories at launch."
   },
@@ -767,7 +773,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Commerce operational control."
   },
@@ -789,7 +797,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Resolves customer complaints."
   },
@@ -811,7 +821,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Enforces 0% commission at launch."
   },
@@ -833,7 +845,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Directly controls C3 and C7."
   },
@@ -856,7 +870,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Enforces L1 and L4."
   },
@@ -878,7 +894,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Directly manages C2."
   },
@@ -900,7 +918,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Ensures COD funds reach the platform/shop."
   },
@@ -922,7 +942,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "India e-commerce statutory requirement."
   },
@@ -946,7 +968,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Central to launch scoping (D1)."
   },
@@ -968,7 +992,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Statutory tax compliance."
   },
@@ -990,7 +1016,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js"
     ],
     "notes": "Complies with DPDP consent requirements."
   },
@@ -1165,7 +1193,9 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "apps/web/tests/seo.test.mjs"
+      "apps/web/tests/seo.test.mjs",
+      "tests/e2e/web/seo.spec.js",
+      "apps/web/src/lib/seo.js"
     ],
     "notes": "Dynamic API-backed sitemap, robots.txt, and Schema.org JSON-LD structured schemas."
   },

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { sentryDsn } from './lib/sentryDsn';
 
 /**
  * Server- and edge-runtime Sentry initialisation.
@@ -27,7 +28,7 @@ import * as Sentry from '@sentry/nextjs';
  * Tune without a code change via SENTRY_TRACES_SAMPLE_RATE (e.g. "0" to switch
  * tracing off entirely while keeping error capture).
  */
-const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const dsn = sentryDsn();
 
 const tracesSampleRate = (() => {
   const configured = Number.parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE ?? '');

@@ -456,7 +456,11 @@ const gates = [
       // first-hit compiles on the dev server). On 2026-11-10 a slower compile
       // got the run killed at test 33 with every test so far passing, and a
       // killed run writes no JSON report. Per-test timeouts are unchanged.
-      const res = runCmd('npx', ['playwright', 'test', '--project=web-chromium'], { cwd: ROOT, timeout: 900000 });
+      // admin-chromium was never run, so no admin feature could ever count as
+      // proven (G18) and the console's E2E specs were dead code. Both projects
+      // now run; the admin spec drives the console against the fixture DB that
+      // scripts/e2e/prepare-db.js builds for the E2E backend.
+      const res = runCmd('npx', ['playwright', 'test', '--project=web-chromium', '--project=admin-chromium'], { cwd: ROOT, timeout: 1800000 });
       if (fs.existsSync(pwReport)) fs.copyFileSync(pwReport, path.join(evidenceDir, 'playwright.json'));
       const log = writeLog('G11', `=== Playwright E2E Output ===\n${res.stdout}\n${res.stderr}`);
       return { passed: res.code === 0, summary: res.code === 0 ? 'Playwright E2E commerce flows passed' : 'E2E tests failed or not executed', log };

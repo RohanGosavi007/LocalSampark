@@ -1,12 +1,20 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 
+const DEV = process.env.E2E_DEV === '1';
+
 /**
  * LocalSampark - Playwright E2E Test Configuration
  * Covers: Web App, Admin Panel, Visual Regression, API Testing
  */
 module.exports = defineConfig({
   testDir: './tests/e2e',
+  // Budgets for the Next dev servers, which compile a route on its first hit.
+  // With web and admin specs running in parallel, several workers can wait on
+  // the same cold compile of / at once; on 2026-11-10 that took longer than
+  // the 30 s defaults and failed the homepage specs (each loads in ~3 s warm).
+  // These are time budgets, not assertions.
+  timeout: 120000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -24,7 +32,7 @@ module.exports = defineConfig({
     video: 'on-first-retry',
     screenshot: 'only-on-failure',
     actionTimeout: 15000,
-    navigationTimeout: 30000,
+    navigationTimeout: 90000,
   },
 
   /* Configure projects for major browsers and test types */
@@ -119,11 +127,31 @@ module.exports = defineConfig({
   /* Web server configuration - auto-start backend and frontend servers before tests */
   webServer: [
     {
-      command: 'node backend/src/server.js',
+      // prepare-db builds backend/src/data/e2e.db from scratch (migrations,
+      // seed, fixtures in scripts/e2e/fixtures.js) right before the server
+      // starts, so every run sees the same data and never a developer's DB.
+      command: 'node scripts/e2e/prepare-db.js && node backend/src/server.js',
       url: 'http://localhost:5000/health',
-      reuseExistingServer: true,
-      timeout: 30000,
+      // Never attach to a server that is already running: it could be a dev
+      // backend pointed at the remote database (rule L6), and its data would
+      // not be the fixtures the specs expect. A busy port fails the run.
+      reuseExistingServer: false,
+      timeout: 180000,
       env: {
+        SQLITE_DB_PATH: 'backend/src/data/e2e.db',
+        // dotenv (backend/src/server.js) fills in anything not already set
+        // from backend/.env, which holds live credentials. Setting each to ''
+        // keeps the E2E backend off the remote database and off every real
+        // SMS, e-mail, WhatsApp, push, payment and storage provider.
+        ...Object.fromEntries([
+          'DATABASE_URL', 'DIRECT_URL', 'PRISMA_DATABASE_URL', 'SUPABASE_URL', 'SUPABASE_ANON_KEY',
+          'SUPABASE_SERVICE_ROLE_KEY', 'REDIS_HOST', 'REDIS_PASSWORD', 'FIREBASE_PROJECT_ID',
+          'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_SERVICE_ACCOUNT_JSON',
+          'MSG91_AUTH_KEY', 'MSG91_TEMPLATE_ID', 'MSG91_SENDER_ID', 'FAST2SMS_API_KEY',
+          'WHATSAPP_API_KEY', 'WHATSAPP_SENDER_NUMBER', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS',
+          'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'MINIO_ENDPOINT', 'MINIO_ACCESS_KEY',
+          'MINIO_SECRET_KEY', 'OPENAI_API_KEY', 'GOOGLE_MAPS_API_KEY', 'SENTRY_DSN',
+        ].map((k) => [k, ''])),
         // NOT 'test'. server.js ends with
         //     if (process.env.NODE_ENV !== 'test') { startServer()... }
         // — the usual guard so Jest/Supertest can import `app` without
@@ -152,10 +180,15 @@ module.exports = defineConfig({
       },
     },
     {
-      command: 'npm run dev --workspace=apps/web',
+      // A production build by default: what ships, and fast per request.
+      // Under `next dev` every first visit to a route compiled it, and with
+      // parallel workers the compiles queued behind each other: plain page
+      // loads took 15-18 s and request timeouts failed specs that pass in
+      // ~3 s (2026-11-10). E2E_DEV=1 keeps dev mode for local iteration.
+      command: DEV ? 'npm run dev --workspace=apps/web' : 'npm run build --workspace=apps/web && npm run start --workspace=apps/web',
       url: 'http://localhost:3000',
-      reuseExistingServer: true,
-      timeout: 240000,
+      reuseExistingServer: false,
+      timeout: 600000,
       env: {
         // `next dev` manages NODE_ENV itself; pinning it to 'test' here made
         // Next warn about a non-standard value on every boot.
@@ -169,10 +202,10 @@ module.exports = defineConfig({
       // nothing ever started the admin app — tests/e2e/admin could only fail
       // with ERR_CONNECTION_REFUSED. apps/admin's dev script already binds
       // 3001.
-      command: 'npm run dev --workspace=apps/admin',
+      command: DEV ? 'npm run dev --workspace=apps/admin' : 'npm run build --workspace=apps/admin && npm run start --workspace=apps/admin',
       url: 'http://localhost:3001',
-      reuseExistingServer: true,
-      timeout: 240000,
+      reuseExistingServer: false,
+      timeout: 600000,
       env: {
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
       },

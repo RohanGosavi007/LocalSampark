@@ -86,8 +86,8 @@ export default function HealthPage() {
             <div style={{ position: 'relative', display: 'inline-block' }}>
               {sosActive && (
                 <>
-                  <div style={{ position: 'absolute', inset: '-20px', borderRadius: '50%', background: 'rgba(239,68,68,0.2)', animation: 'pulse 1s ease-out infinite' }} />
-                  <div style={{ position: 'absolute', inset: '-40px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', animation: 'pulse 1s ease-out infinite 0.3s' }} />
+                  <div style={{ position: 'absolute', inset: '-20px', borderRadius: '50%', background: 'rgba(239,68,68,0.2)', animation: 'ripple 1s ease-out infinite' }} />
+                  <div style={{ position: 'absolute', inset: '-40px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', animation: 'ripple 1s ease-out infinite 0.3s' }} />
                 </>
               )}
               <button onClick={handleSOS} style={{

@@ -1037,3 +1037,84 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | Test | Assertion change | Why |
 |---|---|---|
 | `backend/src/__tests__/unit/adminCommerceOps.test.js` [A14.2] | targets a zone it creates (was the invented id `'pune_dhanori'`), and also asserts the audit row is tied to the broadcast id | A broadcast to a zone that does not exist now returns 400. The old assertion passed only because the handler never looked anything up (F-140) |
+
+### F-141: The global API rate limit ignored who was signed in
+- **Was:**
+  - `server.js` mounts the role-based limiter before any route authenticates, and the limiter read `req.user`, which is never set at that point.
+  - So every caller got the anonymous budget keyed by IP: 300/min in development and **60/min in production**. That included a signed-in super admin.
+  - The admin console fires about 8 API calls per page load. The first full admin E2E run hit `429 Too many requests` after about 24 page views. A production admin, or an office of customers behind one NAT address, would hit it sooner.
+- **Fix:** `rateLimitIdentity()` verifies the bearer token or `admin_token` cookie with the server secret, then picks the role's budget and keys by user. A forged or expired token stays anonymous. Authorisation is unchanged, because `authenticate()` still decides it per route.
+- **Proof:** `backend/src/__tests__/middleware/rateLimitIdentity.test.js` (5 tests). The 24-test admin E2E run (`tests/e2e/admin/`) is the original failure.
+- **Status:** CODE COMPLETE.
+
+### F-142: The admin console's commerce operations had no screens, and admin E2E never ran
+- **Was:**
+  - The A1–A14 API existed, but no console screen called `/admin/commerce`.
+  - G11 ran only `--project=web-chromium`, so `tests/e2e/admin` never executed.
+  - The Playwright backend reused any server already on port 5000 (which could be a dev backend on the remote DB, rule L6). It ran on the developer's own SQLite file, and dotenv loaded the live SMS, e-mail, WhatsApp, push, payment and storage credentials from `backend/.env`.
+  - Every console load also showed a red "Could not load properties" banner, because that vertical is off at launch.
+- **Fix:**
+  - `apps/admin/src/components/tabs/CommerceOpsTab.js`: one section per feature, each calling only the real endpoints and showing the server's own refusal messages.
+  - `scripts/e2e/prepare-db.js`: fresh `backend/src/data/e2e.db` with migrations, seed and `scripts/e2e/fixtures.js`. It refuses anything but a local `e2e*.db`.
+  - `playwright.config.js`: never reuses a running server, and blanks every remote and provider variable.
+  - G11 runs `admin-chromium` as well.
+  - Payout approval is now audited.
+  - FEATURE_DISABLED is handled quietly in the console.
+- **Proof:** `tests/e2e/admin/commerce-ops.spec.js` signs in through the real form and exercises A1–A14 against the fixtures, checking the screen and the API or downloaded file.
+- **Status:** CODE COMPLETE. The next full verify-all run decides FIXED-VERIFIED.
+
+### F-143: Every loading skeleton on the web grew to 1.6x and vanished on a loop
+- **Was:** `apps/web/src/app/globals.css` defined `@keyframes pulse` as a ripple (scale 1 -> 1.6, fading to transparent). That name belongs to Tailwind, so it replaced `animate-pulse`.
+  - All 75 skeleton and loading placeholders ballooned and disappeared every cycle.
+  - `/shops` and `/services` scrolled sideways (20–90 px) whenever the shop list was slow to load.
+  - The fixed full-screen society emergency overlay scaled up and faded out.
+  - `layout.spec.js` therefore passed or failed depending on machine load. Using the fixture DB with real data (F-142) exposed it.
+- **Fix:** `pulse` is Tailwind's opacity pulse again, and the ripple is `ripple`. Its two real users (the live status dot and the health page alarm rings) use it by that name. `ShopCardSkeleton` also gets `min-w-0` as a grid item.
+- **Proof:** `tests/e2e/web/layout.spec.js` gains four "while loading" cases. They hold every API response so the skeletons stay up, then sample the scroll width across a full pulse cycle.
+- **Status:** CODE COMPLETE.
+
+| Test | Change | Why |
+|---|---|---|
+| `playwright.config.js` (all specs) | test timeout 30 s -> 120 s; navigation timeout 30 s -> 90 s | Time budgets, not assertions. With the web and admin projects running together, several workers wait on the same cold Next dev compile of `/`, which exceeded 30 s on 2026-11-10. The homepage loads in about 3 s once compiled |
+| `tests/e2e/web/homepage.spec.js` "should load within 5 seconds" | the same 5 s limit, measured on a second load after one warm-up navigation | The E2E server is `next dev`, which compiles `/` on its first request. Under parallel workers that compile alone took 15 s, so the test measured the compiler rather than the page. Production performance budgets belong to P13 |
+
+### F-144: Every web page told search engines it was the homepage; no shop was in the sitemap (P7)
+- **Canonical:**
+  - The root layout's static metadata set `alternates.canonical: '/'`. Next applies a layout's metadata to every page that does not override it, and most pages are client components that cannot. So `/shops`, `/search`, `/support` and the rest declared themselves duplicates of `/`, and search engines drop such pages from the index.
+  - Now `middleware.js` passes the request path (`x-ls-pathname`), and the root `generateMetadata` gives every page a self-referencing canonical.
+- **Sitemap:**
+  - It read `data.shops` from `GET /shops`, which answers `{ data: [...] }`, so it never listed a shop. It also addressed shops as `/shop/:id`, which is a redirect.
+  - It now pages through `/shops` and lists `/shops/:id`.
+- **Shop pages:**
+  - As client components, they had no title, description, Open Graph or structured data of their own.
+  - The new `app/shops/[id]/layout.js` renders on the server: the shop's own metadata, plus LocalBusiness JSON-LD with its catalogue as Product/Offer, and a BreadcrumbList. An unknown shop is `noindex`.
+- **Fabricated structured data:**
+  - `components/seo/JsonLd.js` filled gaps with a placeholder phone (+91-9876543210) on every business, opening hours nobody supplied, default coordinates and a made-up merchant name. It now delegates to `lib/seo.js`, which emits only what the record holds.
+  - The site URL defaulted to `.in` in the layout but `.com` in the sitemap, robots.txt and JsonLd. All four now use one `SITE_URL`, defaulting to the production domain `localsampark.in`.
+- **E2E servers:** Playwright now runs the web and admin apps as production builds (`next build && next start`). Under `next dev`, first-visit compiles queued behind each other across workers: page loads took 15–18 s and request timeouts failed specs that pass in about 3 s. `E2E_DEV=1` keeps dev mode for local use.
+- **Proof:** `tests/e2e/web/seo.spec.js` fetches raw HTML, as a crawler would. `apps/web/tests/seo.test.mjs` 44/44.
+- **Status:** CODE COMPLETE.
+
+### F-145: Production-build defects that `next dev` hid (found by running E2E on `next build && next start`)
+- **The sitemap shipped by every build listed only itself.**
+  - `postbuild: next-sitemap` wrote `public/sitemap.xml` and `public/robots.txt` after each build. Static files win over `app/sitemap.js` and `app/robots.js`, and the generated sitemap held two URLs: `/robots.txt` and `/sitemap.xml`.
+  - **Fix:** the postbuild hook is removed and the generated files are git-ignored. The app router files are the sitemap and robots.txt (F-144).
+- **Sentry broke on a template DSN.**
+  - `.env.production.example` ships `NEXT_PUBLIC_SENTRY_DSN=YOUR_FRONTEND_SENTRY_DSN`, and a build made from an unedited copy logged "Invalid Sentry Dsn" on every page.
+  - **Fix:** `lib/sentryDsn.js` accepts only a real DSN (https, key, numeric project id), and both the client and server init are skipped otherwise.
+- **/shops never went network-idle.**
+  - It spawned a new Web Worker on every change to the list, search or category (one per keystroke) to filter at most 100 shops. When the list loaded twice, the first worker was terminated mid-download and its request never completed.
+  - **Fix:** `lib/filterItems.js` uses the same rules synchronously in a `useMemo`.
+- **The admin console requested data before knowing who was signed in.**
+  - It sent seven authenticated calls for any visitor and logged each "Access denied" as an error before redirecting to /login.
+  - **Fix:** the loads wait for a signed-in admin.
+- **Proof:** `tests/e2e/web/homepage.spec.js` (console errors), `tests/e2e/web/seo.spec.js` [P7.4] (sitemap), `tests/e2e/web/shop-checkout.spec.js` (network idle) and `tests/e2e/admin/dashboard.spec.js` (console errors), all against production builds.
+- **Status:** CODE COMPLETE.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `tests/e2e/web/theme.spec.js` "the header toggle changes the page, without a reload" | waits for the page's first `load` before listening for one, and also asserts that a `window` marker survives the toggle | Navigation waits only for DOMContentLoaded, so the page's own first `load` could arrive after the listener and count as a reload (it did on the production build). The marker is stricter: only a real reload clears it |
+- **F-145 addendum (generated files removed):** `apps/web/public/sitemap.xml` and `public/robots.txt` were `next-sitemap` build outputs that had been committed. The last copy came from the 2026-11-10 G7 build and went in with commit 48389cb.
+  - Static files take precedence over the app routes, so they shadowed `app/sitemap.js` and `app/robots.js`. The committed sitemap listed off-scope routes (`/care`, `/bills`, `/chat`, …) and no shops.
+  - Both files are removed and git-ignored.
+  - The committed robots.txt blocked more private areas than `app/robots.js` did: every dashboard, `/payouts/`, `/login/`, `/register/` and `/unauthorized/`. Those disallows are merged into `app/robots.js`, so nothing becomes crawlable.

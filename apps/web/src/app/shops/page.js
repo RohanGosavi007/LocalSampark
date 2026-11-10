@@ -13,6 +13,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ShopCardSkeleton } from '../../components/ui/Skeleton';
+import { filterItems } from '../../lib/filterItems';
 import EmptyState from '../components/ui/EmptyState';
 import { ShopCard } from '../../components/ShopCard';
 import TrackedItem from '../../components/TrackedItem';
@@ -49,7 +50,6 @@ export default function ShopsPage() {
   const [quickViewShop, setQuickViewShop] = useState(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [activeStory, setActiveStory] = useState(null);
-  const [workerFilteredShops, setWorkerFilteredShops] = useState(null);
   const [categoryCounts, setCategoryCounts] = useState({});
 
   // Server-side search. Matches category and description as well as the name,
@@ -74,30 +74,12 @@ export default function ShopsPage() {
     resetImpressions('shops_directory');
   }, [selectedCategory, searchTerm, filterDelivery, filterTopRated]);
 
-  // 10x Scale: Web Worker Engine for Off-Thread Filtering
-  useEffect(() => {
-    if (typeof window !== 'undefined' && shops.length > 0) {
-      setWorkerFilteredShops(null);
-      const worker = new Worker(new URL('../../workers/search.worker.js', import.meta.url));
-      
-      worker.onmessage = (e) => {
-        if (e.data.type === 'FILTER_COMPLETE') {
-          setWorkerFilteredShops(e.data.filtered);
-        }
-      };
-
-      worker.postMessage({
-        type: 'FILTER_ITEMS',
-        items: shops,
-        query: searchTerm,
-        category: selectedCategory
-      });
-
-      return () => worker.terminate();
-    } else {
-      setWorkerFilteredShops(null);
-    }
-  }, [shops, searchTerm, selectedCategory]);
+  // Text and category filter, on the main thread (see lib/filterItems.js for
+  // why this is no longer a Web Worker per keystroke).
+  const workerFilteredShops = useMemo(
+    () => (shops.length > 0 ? filterItems(shops, searchTerm, selectedCategory) : null),
+    [shops, searchTerm, selectedCategory]
+  );
 
   const fetchShops = useCallback((lat, lng, pincode, catSlug, catId) => {
     setLoading(true);

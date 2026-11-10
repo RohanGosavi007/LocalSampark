@@ -3,10 +3,47 @@ const RedisStore = require('rate-limit-redis').default;
 const { redisClient } = require('../config/redis');
 const logger = require('../config/logger');
 
+const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/secrets');
+
+/**
+ * The caller's verified identity, for rate limiting only.
+ *
+ * The global limiter is mounted in server.js before any route authenticates,
+ * so req.user was never set when it ran: every caller, a signed-in super
+ * admin included, got the anonymous budget (60/min in production) keyed by
+ * IP. One admin opening a few console pages (each fires ~8 API calls), or an
+ * office of users behind one NAT address, hit 429s. The token is verified
+ * with the same secret authenticate() uses, so a forged one gains nothing;
+ * an invalid or missing token keeps the anonymous budget. Authorisation
+ * itself is still decided by authenticate() on each route.
+ */
+function rateLimitIdentity(req) {
+  if (req.user) return req.user;
+  if (req._rateLimitIdentity !== undefined) return req._rateLimitIdentity;
+  let identity = null;
+  try {
+    const header = req.headers && req.headers.authorization;
+    const token = header && header.startsWith('Bearer ')
+      ? header.slice(7)
+      : (req.cookies && req.cookies.admin_token) || null;
+    if (token) {
+      const decoded = jwt.verify(token, getJwtSecret());
+      const id = decoded.userId || decoded.id || decoded.sub;
+      if (id) identity = { id, role: String(decoded.role || '') };
+    }
+  } catch {
+    identity = null;
+  }
+  req._rateLimitIdentity = identity;
+  return identity;
+}
+
 // Helper to determine limits based on role
 const getLimitForRole = (req) => {
-  if (!req.user || !req.user.role) return process.env.NODE_ENV === 'production' ? 60 : 300; 
-  const role = req.user.role.toUpperCase();
+  const user = rateLimitIdentity(req);
+  if (!user || !user.role) return process.env.NODE_ENV === 'production' ? 60 : 300;
+  const role = user.role.toUpperCase();
   if (role === 'SUPER_ADMIN' || role === 'ADMIN') return 1000;
   if (role.startsWith('VENDOR') || role === 'DELIVERY') return 300;
   return process.env.NODE_ENV === 'production' ? 120 : 500;
@@ -48,7 +85,8 @@ const getStore = (prefix) => {
  * A single user cannot flood a specific territory with requests.
  */
 const zoneKeyGenerator = (req, res) => {
-  const identity = req.user ? (req.user.id || req.user.userId) : ipKeyGenerator(req, res);
+  const user = rateLimitIdentity(req);
+  const identity = user ? (user.id || user.userId) : ipKeyGenerator(req, res);
   const zone = req.territoryId || req.activeZoneId || 'global';
   return `${zone}:${identity}`;
 };
@@ -207,5 +245,9 @@ module.exports = {
   uploadLimiter,
   publicFormLimiter,
   adminLimiter,
-  ddosProtector
+  ddosProtector,
+  // Exposed for rateLimitIdentity.test.js.
+  rateLimitIdentity,
+  getLimitForRole,
+  zoneKeyGenerator,
 };

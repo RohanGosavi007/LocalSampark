@@ -1,5 +1,8 @@
+import { SITE_URL } from '../lib/seo.js';
+
+// One site URL with the sitemap and canonicals (it defaulted to .com here).
 export default function robots() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://localsampark.com';
+  const baseUrl = SITE_URL;
 
   return {
     rules: {
@@ -17,7 +20,20 @@ export default function robots() {
         '/checkout/',
         '/wallet/',
         '/profile/',
-        '/api/'
+        '/api/',
+        // Carried over from the generated public/robots.txt that used to
+        // shadow this file (F-145), so no private area becomes crawlable.
+        '/dashboard/',
+        '/field-dashboard/',
+        '/franchise-dashboard/',
+        '/moderator-dashboard/',
+        '/security-dashboard/',
+        '/service-dashboard/',
+        '/sos-dashboard/',
+        '/payouts/',
+        '/login/',
+        '/register/',
+        '/unauthorized/',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

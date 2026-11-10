@@ -10,6 +10,7 @@ const PayoutService = require('../../../services/payout.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
 const { requireShopParam, isPlatformAdmin } = require('../../../middleware/shop-owner.middleware');
 const logger = require('../../../config/logger');
+const { recordAudit } = require('../../crm/services/adminAudit.service');
 
 // Compared against 'ADMIN' / 'SUPER_ADMIN'; roles are stored lower case, so no
 // administrator could calculate or approve a payout.
@@ -77,6 +78,7 @@ router.put('/:payoutId/approve', authenticate, requireAdmin, async (req, res, ne
   try {
     const adminId = req.user.id || req.user.userId;
     const result = await PayoutService.approvePayout(req.params.payoutId, adminId);
+    await recordAudit(req, { action: 'approve_payout', targetType: 'shop_payout', targetId: req.params.payoutId, details: result });
     res.json({ success: true, ...result });
   } catch (error) { next(error); }
 });

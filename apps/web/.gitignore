@@ -1,0 +1,6 @@
+
+# Written by next-sitemap, which used to run as postbuild and shadowed
+# src/app/sitemap.js and src/app/robots.js with a sitemap listing only
+# itself (F-144). The app router files are the sitemap and robots.txt.
+/public/sitemap*.xml
+/public/robots.txt

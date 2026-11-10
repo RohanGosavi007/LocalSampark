@@ -545,7 +545,20 @@ img { max-width: 100%; display: block; object-fit: cover; }
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+/*
+ * This used to define `pulse` as an expanding ripple (scale 1 -> 1.6, fading
+ * out). That name is Tailwind's: it replaced `animate-pulse`, so every loading
+ * skeleton on the site grew to 1.6x and vanished on a loop. While the shop
+ * list loaded, /shops became up to 90px wider than the screen
+ * (tests/e2e/web/layout.spec.js). The society emergency overlay, which is
+ * fixed full-screen, also ballooned and faded out. `pulse` is Tailwind's
+ * opacity pulse again; the ripple is `ripple`.
+ */
 @keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+@keyframes ripple {
   0%   { transform: scale(1);    opacity: 0.8; }
   100% { transform: scale(1.6);  opacity: 0; }
 }
@@ -1390,7 +1403,7 @@ body.dark-mode .glass-card-v2-light:hover,
   inset: -3px;
   border-radius: 50%;
   background: #10B981;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: ripple 1.5s ease-in-out infinite;
 }
 
 /* ── Floating Dock (macOS-style) ── */

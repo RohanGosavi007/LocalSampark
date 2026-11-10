@@ -145,6 +145,12 @@ test.describe('theme system', () => {
 
     // The old implementation called window.location.reload(), throwing away
     // cart state and scroll position to change a colour.
+    // Navigation waits only for DOMContentLoaded, so the page's own first
+    // `load` could arrive after the listener below and read as a reload (it
+    // did on the production build). Let it pass first, and also plant a
+    // marker on window that only a real reload would wipe.
+    await page.waitForLoadState('load');
+    await page.evaluate(() => { window.__themeNoReload = 1; });
     let reloaded = false;
     page.on('load', () => {
       reloaded = true;
@@ -166,6 +172,7 @@ test.describe('theme system', () => {
     expect(after.bodyBg).toBe(GROUND_DARK);
     expect(after.stored).toBe('dark');
     expect(reloaded).toBe(false);
+    expect(await page.evaluate(() => window.__themeNoReload)).toBe(1);
 
     await toggle.click();
     await expect.poll(async () => (await readTheme(page)).dataTheme, POLL).toBe('light');

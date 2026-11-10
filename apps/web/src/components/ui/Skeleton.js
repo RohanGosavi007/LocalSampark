@@ -25,7 +25,10 @@ export function MetricCardSkeleton() {
 
 export function ShopCardSkeleton() {
   return (
-    <div className="flex flex-col h-full border border-border/80 rounded-3xl overflow-hidden p-0 bg-background/60 backdrop-blur-xl shadow-xl animate-pulse">
+    // min-w-0: a grid item defaults to min-width:auto, so while the shop list
+    // was loading these cards held their min-content width and pushed /shops
+    // 20-90px wider than the screen (tests/e2e/web/layout.spec.js).
+    <div className="flex flex-col h-full min-w-0 w-full border border-border/80 rounded-3xl overflow-hidden p-0 bg-background/60 backdrop-blur-xl shadow-xl animate-pulse">
       <div className="h-48 bg-card-bg/60 w-full" />
       <div className="p-6 flex flex-col flex-1 space-y-4">
         <div className="flex justify-between items-center">
