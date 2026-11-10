@@ -111,6 +111,8 @@
     }
   },
   "overrides": {
-    "postcss": "^8.5.32"
+    "postcss": "^8.5.32",
+    "query-string": "9.5.1",
+    "image-size": "2.1.0"
   }
 }

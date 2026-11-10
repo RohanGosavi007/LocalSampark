@@ -38,4 +38,10 @@ module.exports = {
       plugins: ['@babel/plugin-transform-modules-commonjs'],
     }],
   },
+  // query-string 9 and its dependencies ship as ESM only (G13 override, see
+  // __tests__/dependencyPatches.test.js). Metro transforms them in the app;
+  // Jest has to as well, or the patched expo-router cannot be loaded here.
+  transformIgnorePatterns: [
+    '/node_modules/(?!(query-string|decode-uri-component|filter-obj|split-on-first)/)',
+  ],
 };

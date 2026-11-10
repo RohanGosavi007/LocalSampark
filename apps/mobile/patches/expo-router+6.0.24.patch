@@ -1,0 +1,30 @@
+diff --git a/node_modules/expo-router/build/fork/getPathFromState.js b/node_modules/expo-router/build/fork/getPathFromState.js
+index a20305a..87278c5 100644
+--- a/node_modules/expo-router/build/fork/getPathFromState.js
++++ b/node_modules/expo-router/build/fork/getPathFromState.js
+@@ -36,7 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.getPathFromState = getPathFromState;
+ exports.getPathDataFromState = getPathDataFromState;
+ exports.appendBaseUrl = appendBaseUrl;
+-const queryString = __importStar(require("query-string"));
++// LocalSampark patch (G13): query-string 9 is ESM and its entry has only a default
++// export, so __importStar would hide stringify(). Accept either module shape.
++const queryString = (function (m) { return m && typeof m.stringify === "function" ? m : m.default; })(require("query-string"));
+ const expo = __importStar(require("./getPathFromState-forks"));
+ const navigationParams_1 = require("../navigationParams");
+ // END FORK
+diff --git a/node_modules/expo-router/build/fork/getPathFromState-forks.js b/node_modules/expo-router/build/fork/getPathFromState-forks.js
+index e6692ab..8877dfa 100644
+--- a/node_modules/expo-router/build/fork/getPathFromState-forks.js
++++ b/node_modules/expo-router/build/fork/getPathFromState-forks.js
+@@ -41,7 +41,9 @@ exports.appendBaseUrl = appendBaseUrl;
+ exports.getPathWithConventionsCollapsed = getPathWithConventionsCollapsed;
+ exports.isDynamicPart = isDynamicPart;
+ const native_1 = require("@react-navigation/native");
+-const queryString = __importStar(require("query-string"));
++// LocalSampark patch (G13): query-string 9 is ESM and its entry has only a default
++// export, so __importStar would hide stringify(). Accept either module shape.
++const queryString = (function (m) { return m && typeof m.stringify === "function" ? m : m.default; })(require("query-string"));
+ const matchers_1 = require("../matchers");
+ function validatePathConfig({ preserveDynamicRoutes, preserveGroups, shouldEncodeURISegment, ...options }) {
+     (0, native_1.validatePathConfig)(options);

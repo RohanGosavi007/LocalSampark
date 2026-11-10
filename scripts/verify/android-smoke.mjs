@@ -40,7 +40,9 @@ export function foreignAnrWaitButton(uiXml, appLabel = APP_LABEL) {
   return { title: text, x: Math.round((b[0] + b[2]) / 2), y: Math.round((b[1] + b[3]) / 2) };
 }
 const SETTLE_MS = 25000;
-const DEEP_LINK = 'localsampark://shops';
+// The search param makes expo-router serialise a query string on navigation,
+// which exercises the patched query-string import in the release bundle (G13).
+const DEEP_LINK = 'localsampark://shops?q=smoke';
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
@@ -218,7 +220,9 @@ export function runAndroidSmoke({ root, evidenceDir }) {
     if (png && png.length) fs.writeFileSync(path.join(evidenceDir, 'G12-launch.png'), png);
 
     // ── deep link ───────────────────────────────────────────────────────────
-    const link = sh(['shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d', DEEP_LINK, APP_ID]);
+    // adb joins the arguments into one device-shell command line, so the URI is
+    // single-quoted to keep "?" from being read as a glob.
+    const link = sh(['shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d', `'${DEEP_LINK}'`, APP_ID]);
     note(`deep link: ${link.out.trim()}`);
     sleep(8000);
     const aliveAfterDeepLink = alive();
