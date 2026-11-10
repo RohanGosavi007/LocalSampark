@@ -6,10 +6,20 @@
  * 2. Statutory GST Section 52 Tax Collected at Source (TCS) reconciliation for Chartered Accountants
  */
 
+/**
+ * Quotes a CSV field. A text value starting with =, +, -, @, tab or carriage
+ * return is prefixed with an apostrophe: these reports are opened in Excel by
+ * the CA, and a shop or customer named "=HYPERLINK(...)" would otherwise be
+ * evaluated as a formula there. Numbers (including negative ones) are left as
+ * numbers.
+ */
 function escapeCsvField(val) {
   if (val === null || val === undefined) return '""';
-  const str = String(val).replace(/"/g, '""');
-  return `"${str}"`;
+  let str = String(val);
+  if (typeof val !== 'number' && /^[=+\-@\t\r]/.test(str) && !/^-?\d+(\.\d+)?$/.test(str)) {
+    str = `'${str}`;
+  }
+  return `"${str.replace(/"/g, '""')}"`;
 }
 
 function generateStandardOrdersCsv(orders = []) {
@@ -97,8 +107,35 @@ function generateGstTcsSection52Csv(records = [], period = '') {
   return lines.join('\n');
 }
 
+/**
+ * Seller-wise sales and payout reconciliation (A13): for each shop, what it
+ * sold, what the platform kept, what has been paid out and what is still owed.
+ */
+function generateSellerReconciliationCsv(rows = []) {
+  const headers = [
+    'Shop ID', 'Shop Name', 'Seller GSTIN', 'Delivered Orders', 'Gross Sales (INR)',
+    'Commission Rate (%)', 'Commission (INR)', 'Paid Out (INR)', 'Pending Payout (INR)', 'Outstanding (INR)',
+  ];
+  const lines = [headers.map(escapeCsvField).join(',')];
+  const money = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
+  for (const r of rows) {
+    const gross = Number(r.gross_sales) || 0;
+    const rate = Number(r.commission_rate) || 0;
+    const commission = Math.round(gross * rate) / 100;
+    const paid = Number(r.paid_out) || 0;
+    const pending = Number(r.pending_payout) || 0;
+    const outstanding = gross - commission - paid;
+    lines.push([
+      r.shop_id, r.shop_name, r.gstin || 'Not registered', Number(r.delivered_orders) || 0,
+      money(gross), rate.toFixed(2), money(commission), money(paid), money(pending), money(outstanding),
+    ].map(escapeCsvField).join(','));
+  }
+  return lines.join('\n');
+}
+
 module.exports = {
   escapeCsvField,
   generateStandardOrdersCsv,
   generateGstTcsSection52Csv,
+  generateSellerReconciliationCsv,
 };

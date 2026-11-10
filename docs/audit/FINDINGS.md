@@ -993,3 +993,47 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 - **G13 fails:** 4 mobile highs (the decode-uri-component -> query-string -> expo-router chain, and image-size), each recorded in accepted-exceptions.json with `ownerApproved: null`. They need an owner decision or the Expo SDK 58 upgrade (F-135).
 - **G18 fails:** 0/53 VERIFIED (39 CODE COMPLETE, 14 IN PROGRESS). The verifier can now read web/admin/android reports (F-136), but no Playwright or mobile test carries a feature tag yet; that is the V3–V10 work.
 - F-127, F-133, F-134, F-136, F-137 and F-138 become FIXED-VERIFIED once this evidence folder is committed (rule 2B.4).
+
+## Fourth-pass sweep (2026-11-10, night)
+
+### Evidence committed (rule 2B.4)
+- Commit 48389cb added every verify-all evidence folder from 2026-11-09/10, including `verify-2026-11-10T14-08-43`. **F-127, F-133, F-134, F-136, F-137 and F-138 are FIXED-VERIFIED** on that run.
+
+### F-139: The four mobile G13 highs are fixed, not waived
+- **Was:** decode-uri-component <=0.5.0 (GHSA-vcc3-ghjq-m6fr, GHSA-qr28-fpjm-wq7f) came in through expo-router -> query-string 7, and image-size 0.6.3–2.0.2 (GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr) through metro. Earlier analysis held that overrides would break the app, because query-string 9 is ESM-only and image-size 2 changed its API, and that only Expo SDK 58 could fix them.
+- **Fix:** `apps/mobile/package.json` overrides query-string -> 9.5.1 (which brings decode-uri-component 0.5.1) and image-size -> 2.1.0. patch-package repairs both consumers:
+  - `patches/expo-router+6.0.24.patch` accepts query-string 9's default-only ESM entry.
+  - `patches/metro+0.83.7.patch` and `patches/@expo+metro++metro+0.83.3.patch` read the file before calling image-size.
+- **Proof:**
+  - `apps/mobile/__tests__/dependencyPatches.test.js` (20 tests) checks the installed versions and runs expo-router's real `appendQueryAndHash` against a baseline recorded from query-string 7.1.3.
+  - It also runs Metro's real `getAssetData` against every PNG's IHDR header, for both metro copies. Without the patches, image-size 2 throws on a path, and expo-router's `queryString.stringify` would be undefined.
+  - A release `expo export:embed` bundle registers assets with their real dimensions.
+  - G12 now opens `localsampark://shops?q=smoke`, so the release APK serialises a query string at runtime.
+  - Mobile `npm audit --omit=dev`: 0 high, 0 critical. The four accepted-exceptions entries are marked `resolved`.
+- **Status:** CODE COMPLETE. It becomes FIXED-VERIFIED with the next full run's G9, G10, G12 and G13.
+
+### F-140: Admin commerce handlers that reported success without doing the work (A1, A4, A9, A11–A14)
+- **A12 kill switch did nothing.** `PUT /admin/commerce/feature-flags` set `process.env.FEATURE_<KEY>`, but for keys such as `KRISHI_ENABLED` that is `FEATURE_KRISHI_ENABLED`, while `isFeatureEnabled()` reads `FEATURE_KRISHI`. It answered `success: true` and changed nothing. Any write would also have been lost on restart and invisible to other instances.
+  - **Fix:** `services/featureOverrides.service.js` validates keys against the shared registry, keeps the legacy body keys, and refuses to switch off `commerce_core`. It persists overrides in `admin_config` (category `feature_flag`), applies them to the variable the gate reads, and reloads them on start and every 30 s.
+- **A14 broadcast sent nothing.** It wrote an audit row and replied "queued successfully". There was no recipient, no consent check and no history.
+  - **Fix:** it now resolves the zone (unknown zone: 400) and role, keeps only users with granted, unrevoked marketing consent (DPDP Act 2023), and delivers through the notification service. It records the broadcast with eligible, consented, delivered and skipped counts. `GET /broadcasts` returns the history.
+- **A4 refunds were uncapped and repeatable.** One order could be refunded any number of times, for any amount, into the customer's wallet.
+  - **Fix:** a reason is required. In one transaction with the order row locked, the amount is capped at the order total minus earlier order and dispute refunds; a fully refunded order returns 409.
+- **A4 search and timeline.**
+  - Order search matched only the order ID and address. It now also matches the customer name and phone and the shop name.
+  - That search, and the A2 shop search, used `ILIKE`, which SQLite does not have, so both failed outright on SQLite. They now use `LOWER(..) LIKE LOWER(..)`.
+  - The timeline was synthesised from the order row. It now includes admin actions, disputes, returns and wallet refunds.
+- **A11 grievance resolution was discarded.** It went only into the audit log. Migration 136 adds `support_tickets.resolution` and `resolved_at`. Resolving needs a resolution, a reply counts as acknowledgement, and the customer is notified.
+- **A1** KPIs gain `returnedOrders` and `returnRate`.
+- **A6:** new `GET /payouts` lists payout batches across shops.
+- **A9:** `GET /zones/waitlist?format=csv` exports the waitlist.
+- **A13:**
+  - New `format=seller_reconciliation` report, and an unknown format returns 400.
+  - CSV cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'`. A shop or customer named `=HYPERLINK(...)` was evaluated as a formula when the CA opened the export in Excel.
+- **A8:** KYC reviews, rider cash deposits, report exports and waitlist exports now write the admin audit log.
+- **Proof:** `backend/src/__tests__/unit/adminCommerceOpsIntegrity.test.js` (16 tests); each one fails against the previous handlers. Together with `adminCommerceOps.test.js`, 48/48 pass on SQLite and on local PostgreSQL.
+- **Status:** CODE COMPLETE.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `backend/src/__tests__/unit/adminCommerceOps.test.js` [A14.2] | targets a zone it creates (was the invented id `'pune_dhanori'`), and also asserts the audit row is tied to the broadcast id | A broadcast to a zone that does not exist now returns 400. The old assertion passed only because the handler never looked anything up (F-140) |

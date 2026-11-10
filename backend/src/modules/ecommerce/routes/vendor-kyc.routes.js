@@ -5,6 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 const express = require('express');
+const { recordAudit } = require('../../crm/services/adminAudit.service');
 const router = express.Router();
 const GSTVerificationService = require('../../../services/gstVerification.service');
 const { authenticate } = require('../../../middleware/auth.middleware');
@@ -213,6 +214,8 @@ router.put(['/admin/:kycId/review', '/:kycId/review'], authenticate, requireAdmi
         logger.info(`✅ Shop ${kyc.shop_id} activated after KYC verification by admin ${adminId}`);
       }
     }
+
+    await recordAudit(req, { action: `kyc_${action}`, targetType: 'vendor_kyc', targetId: kycId, details: { action, reason: rejection_reason || null } });
 
     res.json({ success: true, message: `KYC ${action}`, status: action });
   } catch (error) { next(error); }

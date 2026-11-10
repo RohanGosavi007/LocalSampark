@@ -36,6 +36,7 @@ router.put('/disputes/:id/resolve', adminCommerceController.resolveDispute);
 
 // A6: Admin Payouts & Commission Configuration
 router.get('/commission', adminCommerceController.getCommission);
+router.get('/payouts', adminCommerceController.getPayouts);
 router.put('/commission', adminCommerceController.updateCommission);
 router.put('/shops/:id/commission', adminCommerceController.setShopCommission);
 
@@ -71,5 +72,6 @@ router.get('/reports/export', adminCommerceController.exportReports);
 
 // A14: Admin Broadcast Notifications
 router.post('/broadcasts', adminCommerceController.broadcastPush);
+router.get('/broadcasts', adminCommerceController.getBroadcasts);
 
 module.exports = router;

@@ -404,6 +404,10 @@ async function startServer() {
       }
     }
 
+    // Console kill switches (A12) persist in admin_config; apply them before
+    // the first request is gated, and keep them in step with other instances.
+    await require('./services/featureOverrides.service').start();
+
     // Connect to Redis
     const activeRedis = await connectRedis();
     if (activeRedis) {

@@ -615,19 +615,38 @@ describe('Milestone M4.3: Admin Commerce Ops Hub (A1–A14)', () => {
     });
 
     it('[A14.2] should queue geo-targeted broadcast announcement and record audit log', async () => {
-      const res = await request(app)
-        .post('/admin/commerce/broadcasts')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          title: 'Special Flash Delivery Window',
-          body: 'Free delivery on all bakery orders for the next 2 hours in Dhanori!',
-          targetZoneId: 'pune_dhanori',
-          targetRole: 'customer',
-        });
+      // Targets a zone that exists. The broadcast used to send nothing, so an
+      // invented zone id ('pune_dhanori') passed; an unknown zone is now a 400
+      // (see adminCommerceOpsIntegrity.test.js and FINDINGS F-140).
+      const zoneId = crypto.randomUUID();
+      await query(
+        `INSERT INTO regions (id, name, state, country, latitude, longitude, is_active)
+         VALUES ($1, $2, 'Maharashtra', 'India', 18.58, 73.89, '1')`,
+        [zoneId, `A14 Test Zone ${zoneId.slice(0, 8)}`]
+      );
+      try {
+        const res = await request(app)
+          .post('/admin/commerce/broadcasts')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({
+            title: 'Special Flash Delivery Window',
+            body: 'Free delivery on all bakery orders for the next 2 hours in Dhanori!',
+            targetZoneId: zoneId,
+            targetRole: 'customer',
+          });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.broadcast.title).toBe('Special Flash Delivery Window');
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.broadcast.title).toBe('Special Flash Delivery Window');
+        const audit = await queryOne(
+          "SELECT id FROM admin_audit_log WHERE action = 'admin_broadcast_notification' AND CAST(target_id AS TEXT) = $1",
+          [res.body.broadcast.id]
+        );
+        expect(audit).toBeTruthy();
+      } finally {
+        await query('DELETE FROM admin_broadcasts WHERE admin_id = $1', [TEST_ADMIN_ID]);
+        await query('DELETE FROM regions WHERE id = $1', [zoneId]);
+      }
     });
   });
 });

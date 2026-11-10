@@ -14,6 +14,7 @@
  */
 
 const express = require('express');
+const { recordAudit } = require('../services/adminAudit.service');
 const crypto = require('crypto');
 
 const router = express.Router();
@@ -319,6 +320,7 @@ router.post('/delivery/agents/:id/cash-deposit', authenticate, requireAdmin, asy
         cashInHand: money(agent.cash_in_hand),
       });
     }
+    await recordAudit(req, { action: 'rider_cash_deposit', targetType: 'delivery_agent', targetId: agent.user_id, details: { amount, note: (req.body && req.body.note) || null } });
     const after = await agentBy(agent.id);
     res.json({ success: true, cashInHand: money(after.cash_in_hand) });
   } catch (error) {
