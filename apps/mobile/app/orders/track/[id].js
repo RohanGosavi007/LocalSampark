@@ -1,71 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MapPin, Navigation, Truck, Package, PhoneCall, CheckCircle } from 'lucide-react-native';
-import { Linking, Alert } from 'react-native';
-import { apiGet } from '../../../src/lib/api';
-// In a real app we'd use react-native-maps
-// import MapView, { Marker, Polyline } from 'react-native-maps';
+import { Package, CheckCircle, Clock, Truck, MapPin, PhoneCall, XCircle } from 'lucide-react-native';
+import { useSocket, useSocketEvent, useSocketRoom } from '../../../src/context/SocketContext';
+import { useCartStore } from '../../../src/store/cartStore';
+import {
+  ORDER_STEPS, ORDER_EVENTS, POLL_INTERVAL_MS, stepIndex, canCancel, shouldPoll, isEventFor,
+  orderRef, statusLabel, loadOrder, cancelOrder, orderAgain, downloadInvoice,
+} from '../../../src/services/orders';
 
+const STEP_ICONS = { pending: Clock, confirmed: CheckCircle, preparing: Package, out_for_delivery: Truck, delivered: MapPin };
+
+/**
+ * One order (C9). The screen used to hand back a made-up delivery (removed
+ * earlier), then showed a progress bar keyed on statuses the server never
+ * sends, with no way to cancel, get the invoice or order again, and no live
+ * updates. The rules are in src/services/orders.js.
+ */
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  
+  const { isConnected } = useSocket();
+  const addItem = useCartStore((s) => s.addItem);
+
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-  useEffect(() => {
-    // A setTimeout used to hand back a complete fictional delivery: order
-    // "ORD-1234" from "Sharma Grocery & Daily Needs", arriving in 12 minutes,
-    // with a driver named "Ramesh Kumar" on "+91 9876543210" riding
-    // "MH 12 AB 1234 (Hero Splendor)". A named person, a working phone number
-    // and a vehicle registration, none of them belonging to anyone, shown to a
-    // customer as the rider bringing their order — with a Call button beside
-    // them. /orders/:orderId has existed the whole time.
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await apiGet(`/orders/${id}`);
-        const o = res?.order ?? res;
-        if (!o || !o.id) throw new Error('Order not found');
-
-        setOrder({
-          id: o.id,
-          shop_name: o.shop_name || 'Shop',
-          status: o.status || o.order_status || 'pending',
-          // Only shown when the server computed one. The mock always claimed
-          // "12 mins".
-          eta: o.eta || o.estimated_delivery_time || null,
-          // The rider block renders only when a rider is actually assigned and
-          // named. There is no invented fallback.
-          driver: o.delivery_agent_name
-            ? {
-                name: o.delivery_agent_name,
-                phone: o.delivery_agent_phone || null,
-                vehicle: o.delivery_agent_vehicle || null,
-              }
-            : null,
-        });
-      } catch (err) {
-        setOrder(null);
-        setError(err?.message === 'Order not found'
-          ? 'This order could not be found.'
-          : 'Could not load this order. Check your connection and try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      load();
-    } else {
-      setOrder(null);
+  const load = useCallback(async (quiet = false) => {
+    if (!id) {
       setError('No order was specified.');
       setLoading(false);
+      return;
+    }
+    if (!quiet) setLoading(true);
+    try {
+      setOrder(await loadOrder(id));
+      setError(null);
+    } catch (err) {
+      // A failed background refresh keeps the order already on screen.
+      if (!quiet) {
+        setOrder(null);
+        setError(err?.message === 'Order not found' || err?.status === 404
+          ? 'This order could not be found.'
+          : 'Could not load this order. Check your connection and try again.');
+      }
+    } finally {
+      if (!quiet) setLoading(false);
     }
   }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Live: the order room, and every event that means the order changed.
+  useSocketRoom('order', id);
+  const onEvent = useCallback((payload) => { if (isEventFor(payload, id)) load(true); }, [id, load]);
+  useSocketEvent(ORDER_EVENTS[0], onEvent);
+  useSocketEvent(ORDER_EVENTS[1], onEvent);
+  useSocketEvent(ORDER_EVENTS[2], onEvent);
+
+  // Polling fallback while the socket is down and the order can still change.
+  const status = order?.status;
+  useEffect(() => {
+    if (!status || !shouldPoll(status, isConnected)) return undefined;
+    const timer = setInterval(() => load(true), POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [status, isConnected, load]);
+
+  const onCancel = () => {
+    Alert.alert('Cancel this order?', 'The shop will be told, and any payment refunded.', [
+      { text: 'Keep order', style: 'cancel' },
+      {
+        text: 'Cancel order',
+        style: 'destructive',
+        onPress: async () => {
+          setBusy('cancel');
+          setNotice(null);
+          try {
+            await cancelOrder(order);
+            setNotice({ ok: true, text: 'Your order has been cancelled.' });
+          } catch (e) {
+            setNotice({ ok: false, text: e.message || 'The order could not be cancelled.' });
+          } finally {
+            setBusy(null);
+            load(true);
+          }
+        },
+      },
+    ]);
+  };
+
+  const onInvoice = async () => {
+    setBusy('invoice');
+    setNotice(null);
+    try {
+      // Loaded on demand: expo-router loads every route at start-up, and a
+      // build made before expo-sharing was added would otherwise fail to open
+      // at all instead of only this one action failing.
+      let fs;
+      let sharing;
+      try {
+        fs = require('expo-file-system');
+        sharing = require('expo-sharing');
+      } catch {
+        throw new Error('Update the app to download invoices.');
+      }
+      await downloadInvoice(order.id, { fs, sharing });
+    } catch (e) {
+      setNotice({ ok: false, text: e.message || 'The invoice could not be downloaded.' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onOrderAgain = async () => {
+    setBusy('reorder');
+    setNotice(null);
+    try {
+      const r = await orderAgain(order, { addItem });
+      if (r.reason === 'none_available') {
+        setNotice({ ok: false, text: 'None of these items is available from the shop any more.' });
+      } else if (r.reason === 'different_shop') {
+        setNotice({ ok: false, text: `Your cart has items from ${r.currentShopName}. Empty it first, then order again.` });
+      } else {
+        if (r.missing.length) Alert.alert('Some items were not added', `Not available any more: ${r.missing.join(', ')}`);
+        router.push('/cart');
+      }
+    } catch (e) {
+      setNotice({ ok: false, text: e.message || 'Could not order again.' });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -81,99 +149,60 @@ export default function OrderTrackingScreen() {
         <View style={styles.center}>
           <Text style={styles.errorTitle}>Order unavailable</Text>
           <Text style={styles.errorBody}>{error}</Text>
-          <TouchableOpacity style={styles.errorBtn} onPress={() => router.back()}>
-            <Text style={styles.errorBtnText}>Go Back</Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => router.back()}>
+            <Text style={styles.primaryText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  const steps = [
-    { id: 'placed', label: 'Placed', icon: Package },
-    { id: 'packing', label: 'Packing', icon: CheckCircle },
-    { id: 'out_for_delivery', label: 'On the Way', icon: Truck },
-    { id: 'delivered', label: 'Delivered', icon: MapPin }
-  ];
-  
-  const currentStepIndex = steps.findIndex(s => s.id === order.status);
+  const reached = stepIndex(order.status);
+  const cancelled = reached < 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Map View Placeholder */}
-      <View style={styles.mapContainer}>
-        {/* 
-        <MapView 
-          style={{flex: 1}}
-          initialRegion={{
-            latitude: order.coords.driver.latitude,
-            longitude: order.coords.driver.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }}
-        >
-          <Marker coordinate={order.coords.shop} title="Shop" />
-          <Marker coordinate={order.coords.user} title="Delivery Location" pinColor="green" />
-          <Marker coordinate={order.coords.driver} title="Driver">
-             <View style={styles.driverMarker}><Truck size={14} color="#fff"/></View>
-          </Marker>
-        </MapView>
-        */}
-        <View style={styles.simulatedMap}>
-          <Navigation size={48} color="#9ca3af" style={{ opacity: 0.5 }} />
-          <Text style={styles.simulatedText}>Live Map Tracking (Native)</Text>
-          <Text style={styles.simulatedSubText}>Requires react-native-maps package</Text>
-        </View>
-      </View>
-
-      {/* Tracking Details */}
-      <View style={styles.detailsContainer}>
-        <View style={styles.dragHandle} />
-        
+      <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.header}>
-          <Text style={styles.orderId}>{order.id}</Text>
-          {/* No invented ETA: shown only if the server sent one. */}
-          {order.eta ? (
-            <Text style={styles.etaText}>Arriving in <Text style={{color: '#4f46e5'}}>{order.eta}</Text></Text>
-          ) : null}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.shopName}>{order.shopName}</Text>
+            <Text style={styles.orderId}>#{orderRef(order.id)} • {statusLabel(order.status)}</Text>
+          </View>
+          <Text style={styles.total}>₹{order.total}</Text>
         </View>
+        {/* No invented ETA: shown only if the server sent one. */}
+        {order.eta && !cancelled ? <Text style={styles.etaText}>Arriving in {order.eta}</Text> : null}
 
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          {steps.map((step, index) => {
-            const isCompleted = index <= currentStepIndex;
-            const isCurrent = index === currentStepIndex;
-            const Icon = step.icon;
-            
-            return (
-              <View key={step.id} style={styles.stepWrapper}>
-                <View style={[styles.stepIcon, isCompleted && styles.stepCompleted, isCurrent && styles.stepCurrent]}>
-                  <Icon size={16} color={isCompleted ? '#fff' : '#9ca3af'} />
+        {cancelled ? (
+          <View style={styles.cancelledRow}>
+            <XCircle size={20} color="#dc2626" />
+            <Text style={styles.cancelledText}>This order was cancelled.</Text>
+          </View>
+        ) : (
+          <View style={styles.steps} accessibilityLabel={`Order status: ${statusLabel(order.status)}`}>
+            {ORDER_STEPS.map((step, i) => {
+              const Icon = STEP_ICONS[step.key];
+              const done = i <= reached;
+              return (
+                <View key={step.key} style={styles.stepRow}>
+                  <View style={[styles.stepIcon, done && styles.stepDone]}>
+                    <Icon size={16} color={done ? '#fff' : '#9ca3af'} />
+                  </View>
+                  <Text style={[styles.stepText, done && styles.stepTextDone]}>{step.label}</Text>
                 </View>
-                <Text style={[styles.stepText, isCompleted && styles.stepTextCompleted]}>{step.label}</Text>
-                
-                {index < steps.length - 1 && (
-                  <View style={[styles.stepLine, index < currentStepIndex && styles.stepLineCompleted]} />
-                )}
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
 
-        {/* Driver Info */}
         {order.driver && (
           <View style={styles.driverCard}>
-            <View style={styles.driverAvatar}>
-              <Text style={styles.driverInitials}>{order.driver.name.charAt(0)}</Text>
-            </View>
             <View style={styles.driverInfo}>
               <Text style={styles.driverName}>{order.driver.name}</Text>
-              {order.driver.vehicle ? (
-                <Text style={styles.driverVehicle}>{order.driver.vehicle}</Text>
-              ) : null}
+              {order.driver.vehicle ? <Text style={styles.driverVehicle}>{order.driver.vehicle}</Text> : null}
             </View>
-            {/* The Call button had no handler — it dialled nothing. */}
             <TouchableOpacity
+              accessibilityLabel="Call the delivery partner"
               style={[styles.callBtn, !order.driver.phone && { opacity: 0.45 }]}
               disabled={!order.driver.phone}
               onPress={() =>
@@ -186,6 +215,37 @@ export default function OrderTrackingScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {order.items.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Items</Text>
+            {order.items.map((it, i) => (
+              <Text key={`${it.productId}-${i}`} style={styles.itemText}>{it.name} × {it.quantity}</Text>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.actions}>
+          {canCancel(order.status) && (
+            <TouchableOpacity accessibilityRole="button" style={styles.dangerBtn} disabled={!!busy} onPress={onCancel}>
+              <Text style={styles.dangerText}>{busy === 'cancel' ? 'Cancelling…' : 'Cancel order'}</Text>
+            </TouchableOpacity>
+          )}
+          {!cancelled && (
+            <TouchableOpacity accessibilityRole="button" style={styles.outlineBtn} disabled={!!busy} onPress={onInvoice}>
+              <Text style={styles.outlineText}>{busy === 'invoice' ? 'Preparing…' : 'Download invoice'}</Text>
+            </TouchableOpacity>
+          )}
+          {['delivered', 'cancelled'].includes(order.status) && order.items.length > 0 && (
+            <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} disabled={!!busy} onPress={onOrderAgain}>
+              <Text style={styles.primaryText}>{busy === 'reorder' ? 'Adding…' : 'Order again'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {notice ? (
+          <Text accessibilityLiveRegion="polite" style={[styles.notice, { color: notice.ok ? '#047857' : '#dc2626' }]}>{notice.text}</Text>
+        ) : null}
+
         {/* C14: in-app order help; the ticket keeps this order. */}
         <TouchableOpacity
           accessibilityRole="button"
@@ -194,57 +254,46 @@ export default function OrderTrackingScreen() {
         >
           <Text style={styles.helpText}>Get help with this order</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  helpBtn: { marginTop: 16, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#4f46e5' },
-  helpText: { color: '#4f46e5', fontWeight: '800' },
   container: { flex: 1, backgroundColor: '#f3f4f6' },
+  body: { padding: 20, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   errorTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },
   errorBody: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  errorBtn: { backgroundColor: '#4f46e5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, minHeight: 44, justifyContent: 'center' },
-  errorBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  mapContainer: { flex: 1, backgroundColor: '#e5e7eb' },
-  simulatedMap: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#eef2ff' },
-  simulatedText: { fontSize: 18, fontWeight: 'bold', color: '#6b7280', marginTop: 12 },
-  simulatedSubText: { fontSize: 12, color: '#9ca3af', marginTop: 4 },
-  
-  detailsContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-    marginTop: -24
-  },
-  dragHandle: { width: 40, height: 4, backgroundColor: '#e5e7eb', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  orderId: { fontSize: 18, fontWeight: '900', color: '#111827' },
-  etaText: { fontSize: 16, fontWeight: 'bold', color: '#374151' },
-  
-  progressContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
-  stepWrapper: { alignItems: 'center', flex: 1, position: 'relative' },
-  stepIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f3f4f6', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  stepCompleted: { backgroundColor: '#4f46e5' },
-  stepCurrent: { borderWidth: 2, borderColor: '#c7d2fe' },
-  stepText: { fontSize: 10, color: '#9ca3af', marginTop: 8, textAlign: 'center', fontWeight: 'bold' },
-  stepTextCompleted: { color: '#111827' },
-  stepLine: { position: 'absolute', top: 15, left: '50%', width: '100%', height: 2, backgroundColor: '#f3f4f6', zIndex: 1 },
-  stepLineCompleted: { backgroundColor: '#4f46e5' },
-  
-  driverCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#e5e7eb' },
-  driverAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#c7d2fe', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  driverInitials: { fontSize: 18, fontWeight: 'bold', color: '#4f46e5' },
+  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: 12 },
+  shopName: { fontSize: 17, fontWeight: '900', color: '#111827' },
+  orderId: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  total: { fontSize: 18, fontWeight: '900', color: '#111827' },
+  etaText: { fontSize: 15, fontWeight: '700', color: '#4f46e5', marginBottom: 12 },
+  cancelledRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', padding: 16, borderRadius: 16, marginBottom: 12 },
+  cancelledText: { marginLeft: 8, color: '#dc2626', fontWeight: '800' },
+  steps: { backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: 12 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
+  stepIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f3f4f6', justifyContent: 'center', alignItems: 'center' },
+  stepDone: { backgroundColor: '#4f46e5' },
+  stepText: { marginLeft: 12, fontSize: 14, color: '#9ca3af', fontWeight: '700' },
+  stepTextDone: { color: '#111827' },
+  driverCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: 12 },
   driverInfo: { flex: 1 },
   driverName: { fontSize: 15, fontWeight: 'bold', color: '#111827' },
   driverVehicle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  callBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center' }
+  callBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center' },
+  card: { backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: 12 },
+  cardTitle: { fontWeight: '800', color: '#111827', marginBottom: 6 },
+  itemText: { color: '#374151', paddingVertical: 2 },
+  actions: { gap: 10, marginTop: 4 },
+  primaryBtn: { backgroundColor: '#4f46e5', paddingHorizontal: 24, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
+  primaryText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  outlineBtn: { borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff', minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
+  outlineText: { color: '#111827', fontWeight: '800' },
+  dangerBtn: { borderWidth: 1, borderColor: '#dc2626', backgroundColor: '#fff', minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
+  dangerText: { color: '#dc2626', fontWeight: '800' },
+  notice: { marginTop: 10, fontWeight: '700' },
+  helpBtn: { marginTop: 16, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#4f46e5' },
+  helpText: { color: '#4f46e5', fontWeight: '800' },
 });

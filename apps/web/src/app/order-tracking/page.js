@@ -1,11 +1,12 @@
 'use client';
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Package, CheckCircle2, Clock, Truck, XCircle } from 'lucide-react';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPut, API_BASE, getAuthHeaders } from '@/lib/api';
+import { useCart } from '@/context/CartContext';
 import { useSocket, useSocketEvent } from '@/context/SocketContext';
 
 // The signed-in customer's real orders. This page used to show one made-up order from "Sharma
@@ -57,6 +58,120 @@ function OrderList() {
   );
 }
 
+/** Statuses a customer may still cancel from (the server enforces the same rule). */
+const CUSTOMER_CANCELLABLE = ['pending', 'confirmed'];
+
+/**
+ * C9 actions on an order: cancel while the window is open, download the GST
+ * invoice, order the same items again. The page had none of these; the
+ * server already enforced the cancellation window and generated invoices.
+ */
+function OrderActions({ order, items, reload }) {
+  const router = useRouter();
+  const { dispatch } = useCart();
+  const [busy, setBusy] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const status = String(order.status || '').toLowerCase();
+
+  const cancel = async () => {
+    if (!window.confirm('Cancel this order?')) return;
+    setBusy('cancel');
+    setNotice(null);
+    try {
+      await apiPut(`/orders/${order.id}/status`, { status: 'cancelled', reason: 'Cancelled by customer' });
+      setNotice({ ok: true, text: 'Your order has been cancelled.' });
+      reload();
+    } catch (e) {
+      // e.g. "The shop has started preparing this order, so it can no longer be cancelled."
+      setNotice({ ok: false, text: e.message || 'The order could not be cancelled.' });
+      reload();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const invoice = async () => {
+    setBusy('invoice');
+    setNotice(null);
+    try {
+      const res = await fetch(`${API_BASE}/orders/${order.id}/invoice/pdf`, { headers: getAuthHeaders() });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `The invoice could not be downloaded (HTTP ${res.status}).`);
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${String(order.id).slice(0, 8).toUpperCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setNotice({ ok: false, text: e.message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Re-order at today's prices: only items the shop still lists, priced as
+  // they are now, never as they were on the old order.
+  const reorder = async () => {
+    setBusy('reorder');
+    setNotice(null);
+    try {
+      const listed = await apiGet(`/shops/${order.shop_id}/products`);
+      const current = new Map((Array.isArray(listed) ? listed : listed.data || []).map((p) => [String(p.id), p]));
+      const missing = [];
+      let added = 0;
+      for (const it of items) {
+        const product = current.get(String(it.product_id));
+        if (!product) { missing.push(it.name || 'an item'); continue; }
+        dispatch({
+          type: 'ADD_ITEM',
+          payload: { ...product, shop_id: order.shop_id, shop_name: order.shop_name, quantity: Number(it.quantity) || 1 },
+        });
+        added += 1;
+      }
+      if (!added) {
+        setNotice({ ok: false, text: 'None of these items is available from the shop any more.' });
+        return;
+      }
+      if (missing.length) window.alert(`Not available any more, so not added: ${missing.join(', ')}`);
+      router.push('/checkout');
+    } catch (e) {
+      setNotice({ ok: false, text: e.message || 'Could not re-order.' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-3">
+        {CUSTOMER_CANCELLABLE.includes(status) && (
+          <button onClick={cancel} disabled={!!busy} className="px-4 py-2 min-h-[44px] rounded-xl border border-red-500 text-red-600 font-bold disabled:opacity-60">
+            {busy === 'cancel' ? 'Cancelling…' : 'Cancel order'}
+          </button>
+        )}
+        {status !== 'cancelled' && (
+          <button onClick={invoice} disabled={!!busy} className="px-4 py-2 min-h-[44px] rounded-xl border border-border font-bold disabled:opacity-60">
+            {busy === 'invoice' ? 'Preparing…' : 'Download invoice'}
+          </button>
+        )}
+        {['delivered', 'cancelled'].includes(status) && items.length > 0 && (
+          <button onClick={reorder} disabled={!!busy} className="px-4 py-2 min-h-[44px] rounded-xl bg-primary text-white font-bold disabled:opacity-60">
+            {busy === 'reorder' ? 'Adding…' : 'Order again'}
+          </button>
+        )}
+      </div>
+      {notice && (
+        <p role={notice.ok ? 'status' : 'alert'} data-testid="order-notice" className={`font-semibold ${notice.ok ? 'text-green-700' : 'text-red-600'}`}>{notice.text}</p>
+      )}
+    </div>
+  );
+}
+
 function OrderDetail({ id }) {
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
@@ -76,6 +191,15 @@ function OrderDetail({ id }) {
   useSocketEvent('ORDER_STATUS_UPDATED', (d) => { if (d && String(d.orderId) === String(id)) load(); });
   useSocketEvent('order_status_update', (d) => { if (d && String(d.orderId) === String(id)) load(); });
   useSocketEvent('ORDER_RIDER_ASSIGNED', (d) => { if (d && String(d.orderId) === String(id)) load(); });
+
+  // Polling fallback (C9): with no live connection the page used to show the
+  // status it was opened with until reloaded. Stops once the order is final.
+  const finalStatus = order && ['delivered', 'cancelled', 'returned'].includes(order.status);
+  useEffect(() => {
+    if (isConnected || finalStatus) return undefined;
+    const timer = setInterval(load, 15000);
+    return () => clearInterval(timer);
+  }, [isConnected, finalStatus, load]);
 
   if (error) return <p role="alert" className="text-red-500 font-bold">{error}</p>;
   if (!order) return <p className="text-text-muted">Loading order…</p>;
@@ -114,6 +238,8 @@ function OrderDetail({ id }) {
           </ul>
         </div>
       )}
+      <OrderActions order={order} items={items} reload={load} />
+
       <div className="flex flex-wrap gap-4 items-center">
         <Link href="/order-tracking" className="text-primary font-bold text-sm">← All orders</Link>
         {/* C14: the in-app order help entry point; the ticket keeps this order. */}

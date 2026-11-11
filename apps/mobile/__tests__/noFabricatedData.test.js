@@ -33,7 +33,7 @@ const NEEDLES = [
   'Sharma Grocery', 'Apollo Pharmacy', 'A-One Beauty', 'Maa Ki Rasoi', 'Spice Route',
   'Speedy Garage', 'City Cabs', 'Car Point', 'Bike Point', 'City Hospital',
   'Learnix', 'QuickFix AC', 'Verma & Associates', 'Dr. Sharma Clinic',
-  'Mock Grocery Mart',
+  'Mock Grocery Mart', 'Dhanori Fresh', 'City Pharmacy',
   // invented branded stock
   'Aashirvaad', 'Ashirvaad', 'Amul ', 'Maggi', 'Tata Salt', 'Dolo 650', 'Vicks Vaporub',
   'Mahindra Tractor',
@@ -45,6 +45,8 @@ const NEEDLES = [
   // invented promises and records
   'LOCAL10', '214 Ratings', 'Token #14', 'Ambulance Dispatched',
   'Savings vs Zomato',
+  // a sample row shown in place of an empty list (the order history did this)
+  "id: 'mock", 'id: "mock',
 ];
 
 /**

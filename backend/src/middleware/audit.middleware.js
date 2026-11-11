@@ -75,9 +75,16 @@ const auditLogger = (req, res, next) => {
       logger.info(`📡 [API] ${req.method} ${req.originalUrl} → ${statusCode} (${responseTimeMs}ms) [${userRole}]`);
     }
 
-    // Set response headers for client-side debugging
-    res.setHeader('X-Request-Id', requestId);
-    res.setHeader('X-Response-Time', `${responseTimeMs}ms`);
+    // Set response headers for client-side debugging -- only while headers
+    // can still be set. A streamed response (the invoice PDF, packing slips,
+    // anything piped) has sent them long before end() runs; setting them here
+    // threw ERR_HTTP_HEADERS_SENT from inside the stream's end event, the
+    // uncaughtException handler exited, and one invoice download took the
+    // whole API down (F-148).
+    if (!res.headersSent) {
+      res.setHeader('X-Request-Id', requestId);
+      res.setHeader('X-Response-Time', `${responseTimeMs}ms`);
+    }
 
     originalEnd.apply(res, args);
   };

@@ -248,7 +248,11 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/variantAndInvoice.test.js"
+      "backend/src/__tests__/unit/variantAndInvoice.test.js",
+      "backend/src/__tests__/middleware/auditStreaming.test.js",
+      "tests/e2e/web/orders.spec.js",
+      "apps/mobile/__tests__/orders.test.js",
+      "apps/mobile/src/services/orders.js"
     ],
     "notes": "GST tax invoice generation via pdfkit and PDF download stream implemented."
   },

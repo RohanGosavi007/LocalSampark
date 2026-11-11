@@ -710,7 +710,9 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception: ' + error.message);
+  // The stack, not just the message: "Cannot set headers after they are sent"
+  // alone gave no clue which handler wrote twice (F-148).
+  logger.error('Uncaught Exception: ' + (error && error.stack ? error.stack : error.message));
   process.exit(1);
 });
 

@@ -4,7 +4,19 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Package, Clock, CheckCircle, XCircle } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '../../src/lib/api';
+import { listMyOrders, orderRef, statusLabel } from '../../src/services/orders';
+
+const BADGE = {
+  done: { bg: '#ecfdf5', fg: '#065f46' },
+  stopped: { bg: '#fef2f2', fg: '#b91c1c' },
+  active: { bg: '#fef3c7', fg: '#b45309' },
+};
+const tone = (status) => {
+  const s = String(status || '').toLowerCase();
+  if (s === 'delivered') return 'done';
+  if (s === 'cancelled' || s === 'rejected') return 'stopped';
+  return 'active';
+};
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -12,11 +24,11 @@ export default function OrdersScreen() {
   // Using React Query (Phase C)
   const { data: orders, isLoading, error } = useQuery({
     queryKey: ['myOrders'],
-    queryFn: async () => {
-      const response = await apiGet('/orders/my-orders');
-      return response.data || [];
-    },
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => listMyOrders(),
+    // Re-read on every visit: a cancellation or a status change made on the
+    // order screen must show here, not after a five-minute cache.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const getStatusIcon = (status) => {
@@ -36,20 +48,22 @@ export default function OrdersScreen() {
     >
       <View style={styles.orderHeader}>
         <Text style={styles.shopName}>{item.shop_name || 'Local Shop'}</Text>
-        <Text style={styles.orderDate}>{new Date(item.created_at || Date.now()).toLocaleDateString()}</Text>
+        <Text style={styles.orderDate}>
+          #{orderRef(item.id)}{item.created_at ? ` • ${new Date(item.created_at).toLocaleDateString()}` : ''}
+        </Text>
       </View>
       
       <View style={styles.orderDetails}>
         <View style={styles.detailRow}>
           <Package size={16} color="#64748b" />
           <Text style={styles.itemsText}>
-            {item.items_count || 1} {item.items_count === 1 ? 'item' : 'items'} • ₹{item.total_amount}
+            {Number(item.items_count) || 0} {Number(item.items_count) === 1 ? 'item' : 'items'} • ₹{Number(item.total_amount) || 0}
           </Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: item.status === 'delivered' ? '#ecfdf5' : '#fef3c7' }]}>
+        <View style={[styles.statusBadge, { backgroundColor: BADGE[tone(item.status)].bg }]}>
           {getStatusIcon(item.status)}
-          <Text style={[styles.statusText, { color: item.status === 'delivered' ? '#065f46' : '#b45309' }]}>
-            {item.status?.toUpperCase() || 'PENDING'}
+          <Text style={[styles.statusText, { color: BADGE[tone(item.status)].fg }]}>
+            {statusLabel(item.status)}
           </Text>
         </View>
       </View>
@@ -76,17 +90,16 @@ export default function OrdersScreen() {
         </View>
       ) : (
         <FlashList
-          data={orders?.length ? orders : [
-            { id: 'mock1', shop_name: 'Dhanori Fresh', total_amount: 145, status: 'delivered', items_count: 3 },
-            { id: 'mock2', shop_name: 'City Pharmacy', total_amount: 850, status: 'pending', items_count: 1 }
-          ]}
+          // An empty history is shown as empty. This used to fall back to two
+          // invented orders presented as the customer's own.
+          data={orders || []}
           renderItem={renderItem}
           estimatedItemSize={120}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No orders found</Text>
+              <Text style={styles.emptyText}>You have not placed an order yet.</Text>
             </View>
           }
         />

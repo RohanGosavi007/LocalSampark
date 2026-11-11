@@ -30,6 +30,9 @@ const IDS = {
   payout: 'e2e00000-0000-4000-8000-000000000080',
   shopper: 'e2e00000-0000-4000-8000-0000000000b0',
   shopperOrder: 'e2e00000-0000-4000-8000-0000000000b1',
+  shopperConfirmed: 'e2e00000-0000-4000-8000-0000000000c1',
+  shopperPreparing: 'e2e00000-0000-4000-8000-0000000000c5',
+  shopperLive: 'e2e00000-0000-4000-8000-0000000000c6',
 };
 
 const PHONES = {
@@ -191,6 +194,27 @@ async function seedE2eFixtures() {
     'INSERT INTO order_items (id, order_id, product_id, name, price, quantity, price_at_buy) VALUES ($1, $2, $3, $4, $5, 1, $5)',
     ['e2e00000-0000-4000-8000-0000000000b2', IDS.shopperOrder, product.id, product.name, product.price]
   );
+
+  // C9: one order the shopper may still cancel, one the shop is preparing
+  // (past the cancellation window), and one for the live-update check.
+  for (const [orderId, status, itemId] of [
+    [IDS.shopperConfirmed, 'confirmed', 'e2e00000-0000-4000-8000-0000000000c2'],
+    [IDS.shopperPreparing, 'preparing', 'e2e00000-0000-4000-8000-0000000000c3'],
+    [IDS.shopperLive, 'confirmed', 'e2e00000-0000-4000-8000-0000000000c4'],
+  ]) {
+    await run(
+      `INSERT INTO orders (id, user_id, shop_id, subtotal, total_amount, delivery_fee, delivery_address,
+                           payment_method, payment_status, order_status, status, fulfillment_method,
+                           delivery_lat, delivery_lng, created_at, updated_at)
+       VALUES ($1, $2, $3, 112, 132, 20, 'E2E Flat 3, Prasanna Goldfields, Dhanori', 'cod', 'pending', $4, $4,
+               'delivery', 18.5790, 73.8970, $5, $5)`,
+      [orderId, IDS.shopper, shop.id, status, HOURS(0.2)]
+    );
+    await run(
+      'INSERT INTO order_items (id, order_id, product_id, name, price, quantity, price_at_buy) VALUES ($1, $2, $3, $4, $5, 2, $5)',
+      [itemId, orderId, product.id, product.name, product.price]
+    );
+  }
 
   // A9: a second, inactive zone the console can switch without taking the
   // pilot zone (which the web specs order from) offline mid-run.
