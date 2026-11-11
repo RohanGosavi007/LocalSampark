@@ -1277,3 +1277,51 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
   - **App:** `apps/mobile/__tests__/notifications.test.js` [C13.10]–[C13.12].
   - **Browser:** `tests/e2e/web/notifications.spec.js` [C13.13]–[C13.14]. A placed order's notification is unread in the inbox, opens the order, and is then read. Turning off offers is saved on the server and shown again after a reload.
 - **Status:** CODE COMPLETE. Email delivery itself needs `SMTP_*` set to a provider such as Brevo's SMTP relay (owner action); without it the email service logs instead of sending.
+
+### F-153: Feature tags in the after-order suite credited the wrong features
+- **Defect:** `backend/src/__tests__/unit/afterOrderExperience.test.js` was written to an older feature numbering. Its tags put delivery tracking under C10, returns under C11, reviews under C12 and invoices under C13. The feature verifier counts passing tests by tag, so each feature was credited with another feature's tests: C12 (wishlist) and C13 (notifications) with reviews and invoices, C11 (reviews) with returns, and C10 (returns) with tracking. Nothing was reported VERIFIED on the strength of it, but the per-feature evidence was wrong.
+- **Fix:** tags renumbered to the feature each test exercises, per `docs/launch/features.json`. Tracking became [C9.41]–[C9.44], returns [C10.21]–[C10.29], reviews [C11.21]–[C11.26] and invoices [C9.45]–[C9.47]. The C14 tags were already correct. No assertion changed.
+- **Status:** FIXED.
+
+| Test | Change | Why |
+|---|---|---|
+| `backend/src/__tests__/unit/afterOrderExperience.test.js` (22 titles, 4 describe headings) | tag ids only, as above | Evidence must be counted against the feature it proves; assertions untouched |
+
+### F-154: No product page, no Legal Metrology declarations, and checkout ignored variants (C4)
+- **Defects:**
+  - **No product page:** neither the web nor the app had one; a product was only a row inside a shop page.
+  - **No declarations:** the catalogue had nowhere to keep what the Legal Metrology (Packaged Commodities) Rules, 2011 require an e-commerce listing to show: generic name, net quantity, manufacturer/packer/importer, country of origin, consumer care and best before.
+  - **Variants ignored at checkout:** variants carried a price modifier and their own stock, but checkout charged the product's base price and took the product's stock whatever variant was chosen.
+  - **Price above MRP:** nothing stopped a seller pricing above MRP.
+  - **Invented badge:** the web header's cart badge printed a literal "0".
+- **Fix:**
+  - **Declarations:** migration 141 adds the declarations, more photos and a seller's per-order limit to `shop_products` on both engines.
+  - **Product page endpoint:** `GET /shops/:shopId/products/:productId` (`services/productDetail.service.js`) returns:
+    - the gallery (web links only, each once) and variants (own price and stock);
+    - price, MRP and discount, and the quantity allowed;
+    - the seller, with the FSSAI licence for a food business;
+    - the return window, from the same rule returns apply (`services/catalogRules.js`, now used by `return.service.js`);
+    - the declarations, with the missing ones named rather than filled in;
+    - reviews, marked verified only when the author has a delivered order from the shop.
+  - **Cart and checkout:** variants are priced as base plus modifier and stocked on their own (guarded decrement). The per-order limit is enforced in both (400 `QUANTITY_LIMIT`).
+  - **Seller edits:** the product update accepts the declarations, photos and limit, and refuses a price above MRP (400 `PRICE_ABOVE_MRP`).
+  - **Clients:** web `/shops/:id/products/:productId` and app `/product/:shopId/:productId` show all of it, with a variant picker, quantity within the limit, Add to cart carrying the variant, and Save. Product names on the shop pages open them. The header badge counts the cart.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/productDetailC4.test.js` [C4.1]–[C4.6]. All six fail with the route, checkout, cart, returns and seller changes reverted.
+  - **Web:** `apps/web/tests/productPage.test.mjs` [C4.7].
+  - **App:** `apps/mobile/__tests__/product.test.js` [C4.8]–[C4.10].
+- **Status:** CODE COMPLETE. Sellers must still enter the declarations for their packaged products; the page shows "Not provided by the seller" until they do.
+
+### F-155: The wishlist existed only on the server, and nothing recorded what a customer looked at (C12)
+- **Defects:**
+  - **No wishlist UI:** `/wishlist` (list, save, remove, move to cart) had no caller on the web or in the app.
+  - **No recently viewed:** nothing recorded products a customer had viewed.
+  - **Duplicate cart lines:** move-to-cart matched only cart lines stored with no options (`NULL`). The clients store "no options" as `{}`, so moving an item already in the cart added a second line.
+- **Fix:**
+  - **Save:** Save on the product page, on web and app.
+  - **Saved items:** a web `/wishlist` page and an app wishlist screen list saved items, move one to the cart (then bring the cart up to date) and remove one.
+  - **Recently viewed:** kept per device, newest first, one entry per product, at most 20, recorded when a product page opens.
+  - **Move-to-cart:** now matches `NULL` and `{}`.
+  - **Entry points:** links from the web header and the app's cart.
+- **Proof:** `apps/web/tests/productPage.test.mjs` [C12.7]–[C12.8]; `apps/mobile/__tests__/product.test.js` [C12.9]–[C12.10]. The backend wishlist suite ([C12.1]–[C12.6]) still applies.
+- **Status:** CODE COMPLETE.

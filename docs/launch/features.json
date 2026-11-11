@@ -108,7 +108,12 @@
     "evidence": [
       "backend/src/__tests__/unit/variantAndInvoice.test.js",
       "backend/src/__tests__/integration/shopDetailRoutes.test.js",
-      "backend/src/__tests__/unit/afterOrderExperience.test.js"
+      "backend/src/__tests__/unit/afterOrderExperience.test.js",
+      "backend/src/__tests__/integration/productDetailC4.test.js",
+      "backend/src/services/productDetail.service.js",
+      "backend/src/services/catalogRules.js",
+      "apps/web/tests/productPage.test.mjs",
+      "apps/mobile/__tests__/product.test.js"
     ],
     "notes": "Legal metrology fields, MRP/discount validation, variant selection, and verified reviews verified."
   },
@@ -270,7 +275,8 @@
       "backend/src/__tests__/middleware/auditStreaming.test.js",
       "tests/e2e/web/orders.spec.js",
       "apps/mobile/__tests__/orders.test.js",
-      "apps/mobile/src/services/orders.js"
+      "apps/mobile/src/services/orders.js",
+      "backend/src/__tests__/unit/afterOrderExperience.test.js"
     ],
     "notes": "GST tax invoice generation via pdfkit and PDF download stream implemented."
   },
@@ -344,7 +350,11 @@
     ],
     "status": "IN PROGRESS",
     "evidence": [
-      "backend/src/__tests__/unit/wishlistEngine.test.js"
+      "backend/src/__tests__/unit/wishlistEngine.test.js",
+      "apps/web/tests/productPage.test.mjs",
+      "apps/mobile/__tests__/product.test.js",
+      "apps/web/src/app/wishlist/page.js",
+      "apps/mobile/app/wishlist/index.js"
     ],
     "notes": "Database-backed wishlist persistence, quick add-to-cart, and saved product management verified."
   },

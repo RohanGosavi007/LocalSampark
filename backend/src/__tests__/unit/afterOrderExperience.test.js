@@ -13,7 +13,10 @@ const supportRouter = require('../../modules/core/routes/support.routes');
 
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
-describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
+// Feature ids follow docs/launch/features.json. This file was written to an
+// older numbering and credited tracking to C10, returns to C11, reviews to C12
+// and invoices to C13, so each feature was counted with another's tests (F-153).
+describe('Milestone M5: After-Order Experience (C9–C11, C14, S5–S7)', () => {
   let app;
   const TEST_CUSTOMER_ID = crypto.randomUUID();
   const TEST_SHOP_OWNER_ID = crypto.randomUUID();
@@ -233,20 +236,20 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // C10 / S5: Real-Time Delivery Tracking & Live Milestones
   // ───────────────────────────────────────────────────────────────────────────
-  describe('C10 / S5: Real-Time Delivery Tracking & Milestones', () => {
-    it('[C10.1] should reject unauthenticated tracking requests with 401', async () => {
+  describe('C9 / S5: Real-Time Delivery Tracking & Milestones', () => {
+    it('[C9.41] should reject unauthenticated tracking requests with 401', async () => {
       const res = await request(app).get(`/orders/${TEST_ACTIVE_ORDER_ID}/tracking`);
       expect(res.status).toBe(401);
     });
 
-    it('[C10.2] should reject unauthorized user attempting to track another user order with 403', async () => {
+    it('[C9.42] should reject unauthorized user attempting to track another user order with 403', async () => {
       const res = await request(app)
         .get(`/orders/${TEST_ACTIVE_ORDER_ID}/tracking`)
         .set('Authorization', `Bearer ${otherUserToken}`);
       expect(res.status).toBe(403);
     });
 
-    it('[C10.3] should return live tracking with milestones, rider GPS fix, and ETA for customer', async () => {
+    it('[C9.43] should return live tracking with milestones, rider GPS fix, and ETA for customer', async () => {
       const res = await request(app)
         .get(`/orders/${TEST_ACTIVE_ORDER_ID}/tracking`)
         .set('Authorization', `Bearer ${customerToken}`);
@@ -270,7 +273,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.tracking.etaMinutes).toBeGreaterThan(0);
     });
 
-    it('[C10.4] should support legacy /tracking/:orderId endpoint with identical payload', async () => {
+    it('[C9.44] should support legacy /tracking/:orderId endpoint with identical payload', async () => {
       const res = await request(app)
         .get(`/tracking/${TEST_ACTIVE_ORDER_ID}`)
         .set('Authorization', `Bearer ${customerToken}`);
@@ -284,11 +287,11 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // C11 / S6: Post-Delivery Returns, Replacements & Multi-Tier Refund Approval
   // ───────────────────────────────────────────────────────────────────────────
-  describe('C11 / S6: Returns & Multi-Tier Refund Approval', () => {
+  describe('C10 / S6: Returns & Multi-Tier Refund Approval', () => {
     let returnCodId;
     let returnOnlineId;
 
-    it('[C11.1] should reject return request on an active non-delivered order with 400', async () => {
+    it('[C10.21] should reject return request on an active non-delivered order with 400', async () => {
       const res = await request(app)
         .post(`/orders/${TEST_ACTIVE_ORDER_ID}/returns`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -298,7 +301,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.error).toMatch(/must be delivered/i);
     });
 
-    it('[C11.2] should reject return request when window has expired (>48h for bakery) with 400', async () => {
+    it('[C10.22] should reject return request when window has expired (>48h for bakery) with 400', async () => {
       const res = await request(app)
         .post(`/orders/${TEST_EXPIRED_ORDER_ID}/returns`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -308,7 +311,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.error).toMatch(/window of 48 hours has expired/i);
     });
 
-    it('[C11.3] should successfully submit return request for delivered COD order within 48h', async () => {
+    it('[C10.23] should successfully submit return request for delivered COD order within 48h', async () => {
       const res = await request(app)
         .post(`/orders/${TEST_DELIVERED_COD_ORDER_ID}/returns`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -325,7 +328,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       returnCodId = res.body.data.id;
     });
 
-    it('[C11.4] should submit return request for delivered Online order', async () => {
+    it('[C10.24] should submit return request for delivered Online order', async () => {
       const res = await request(app)
         .post(`/orders/${TEST_DELIVERED_ONLINE_ORDER_ID}/returns`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -339,7 +342,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       returnOnlineId = res.body.data.id;
     });
 
-    it('[C11.5] should prevent duplicate return submission on the same order', async () => {
+    it('[C10.25] should prevent duplicate return submission on the same order', async () => {
       const res = await request(app)
         .post(`/orders/${TEST_DELIVERED_COD_ORDER_ID}/returns`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -349,7 +352,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.error).toMatch(/already on file/i);
     });
 
-    it('[C11.6] should restrict pending-review queue from regular shoppers with 403', async () => {
+    it('[C10.26] should restrict pending-review queue from regular shoppers with 403', async () => {
       const res = await request(app)
         .get('/orders/returns/pending-review')
         .set('Authorization', `Bearer ${customerToken}`);
@@ -357,7 +360,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.status).toBe(403);
     });
 
-    it('[C11.7] should allow Territory Admin to inspect pending returns review queue', async () => {
+    it('[C10.27] should allow Territory Admin to inspect pending returns review queue', async () => {
       const res = await request(app)
         .get('/orders/returns/pending-review')
         .set('Authorization', `Bearer ${territoryAdminToken}`);
@@ -371,7 +374,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(found.evidence_urls).toContain('https://storage.localsampark.com/returns/burnt_bread.jpg');
     });
 
-    it('[C11.8] should execute hybrid refund: COD order approved by Territory Admin credits wallet balance', async () => {
+    it('[C10.28] should execute hybrid refund: COD order approved by Territory Admin credits wallet balance', async () => {
       const res = await request(app)
         .put(`/orders/returns/${returnCodId}/verify`)
         .set('Authorization', `Bearer ${territoryAdminToken}`)
@@ -393,7 +396,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(order.payment_status).toBe('refunded');
     });
 
-    it('[C11.9] should execute hybrid refund: Online order approved by Super Admin triggers gateway refund', async () => {
+    it('[C10.29] should execute hybrid refund: Online order approved by Super Admin triggers gateway refund', async () => {
       const res = await request(app)
         .put(`/orders/returns/${returnOnlineId}/verify`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -409,10 +412,10 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // C12 / S7: Verified Buyer Review Engine & Seller Replies
   // ───────────────────────────────────────────────────────────────────────────
-  describe('C12 / S7: Verified Buyer Reviews & Seller Replies', () => {
+  describe('C11 / S7: Verified Buyer Reviews & Seller Replies', () => {
     let createdReviewId;
 
-    it('[C12.1] should reject review from non-purchaser user with 403', async () => {
+    it('[C11.21] should reject review from non-purchaser user with 403', async () => {
       const res = await request(app)
         .post(`/trust-reviews/${TEST_SHOP_ID}`)
         .set('Authorization', `Bearer ${otherUserToken}`)
@@ -422,7 +425,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.error).toMatch(/only verified buyers/i);
     });
 
-    it('[C12.2] should accept review from verified buyer and recalculate shop rating', async () => {
+    it('[C11.22] should accept review from verified buyer and recalculate shop rating', async () => {
       const res = await request(app)
         .post(`/trust-reviews/${TEST_SHOP_ID}`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -443,7 +446,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(Number(shop.rating)).toBe(5);
     });
 
-    it('[C12.3] should prevent duplicate review for the same delivered order', async () => {
+    it('[C11.23] should prevent duplicate review for the same delivered order', async () => {
       const res = await request(app)
         .post(`/trust-reviews/${TEST_SHOP_ID}`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -457,7 +460,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.error).toMatch(/already reviewed/i);
     });
 
-    it('[C12.4] should reject seller reply from unrelated user with 403', async () => {
+    it('[C11.24] should reject seller reply from unrelated user with 403', async () => {
       const res = await request(app)
         .post(`/trust-reviews/${createdReviewId}/reply`)
         .set('Authorization', `Bearer ${otherUserToken}`)
@@ -466,7 +469,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.status).toBe(403);
     });
 
-    it('[C12.5] should allow verified shop owner to post official response', async () => {
+    it('[C11.25] should allow verified shop owner to post official response', async () => {
       const res = await request(app)
         .post(`/trust-reviews/${createdReviewId}/reply`)
         .set('Authorization', `Bearer ${shopOwnerToken}`)
@@ -482,7 +485,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(updated.seller_replied_at).toBeTruthy();
     });
 
-    it('[C12.6] should list shop reviews including seller replies and buyer names', async () => {
+    it('[C11.26] should list shop reviews including seller replies and buyer names', async () => {
       const res = await request(app).get(`/trust-reviews/shop/${TEST_SHOP_ID}`);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -497,8 +500,8 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // C13 / N7: GST Section 31 Tax Invoice Download
   // ───────────────────────────────────────────────────────────────────────────
-  describe('C13 / N7: GST Section 31 Tax Invoice Download', () => {
-    it('[C13.1] should reject invoice download from unauthorized caller with 403', async () => {
+  describe('C9 / N7: GST Section 31 Tax Invoice Download', () => {
+    it('[C9.45] should reject invoice download from unauthorized caller with 403', async () => {
       const res = await request(app)
         .get(`/orders/${TEST_DELIVERED_COD_ORDER_ID}/invoice`)
         .set('Authorization', `Bearer ${otherUserToken}`);
@@ -506,7 +509,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.status).toBe(403);
     });
 
-    it('[C13.2] should return structured JSON invoice with GSTIN & FSSAI details for customer', async () => {
+    it('[C9.46] should return structured JSON invoice with GSTIN & FSSAI details for customer', async () => {
       const res = await request(app)
         .get(`/orders/${TEST_DELIVERED_COD_ORDER_ID}/invoice`)
         .set('Authorization', `Bearer ${customerToken}`);
@@ -519,7 +522,7 @@ describe('Milestone M5: After-Order Experience (C10–C14, S5–S7)', () => {
       expect(res.body.invoice.total_amount).toBe(340);
     });
 
-    it('[C13.3] should stream valid A4 PDF tax invoice with correct Content-Type', async () => {
+    it('[C9.47] should stream valid A4 PDF tax invoice with correct Content-Type', async () => {
       const res = await request(app)
         .get(`/orders/${TEST_DELIVERED_COD_ORDER_ID}/invoice/pdf`)
         .set('Authorization', `Bearer ${customerToken}`);

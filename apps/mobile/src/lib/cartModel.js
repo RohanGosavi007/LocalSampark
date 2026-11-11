@@ -106,7 +106,19 @@ export function checkoutPlan(items) {
 }
 
 /** The request lines for batch checkout and its quote. */
-export const batchLines = (items) => (items || []).map((i) => ({ shop_id: i.shop_id, product_id: i.id, quantity: num(i.quantity) || 1 }));
+export const batchLines = (items) => (items || []).map((i) => ({
+  shop_id: i.shop_id,
+  product_id: i.id,
+  quantity: num(i.quantity) || 1,
+  ...(i.options && i.options.variantId ? { variantId: i.options.variantId } : {}),
+}));
+
+/** The request lines for a single shop's checkout and quote; a chosen variant goes with its line (C4). */
+export const orderLines = (items) => (items || []).map((i) => ({
+  productId: i.id,
+  quantity: num(i.quantity) || 1,
+  ...(i.options && i.options.variantId ? { variantId: i.options.variantId } : {}),
+}));
 
 /** Which items cannot be checked out as they are. */
 export function blockers(items) {

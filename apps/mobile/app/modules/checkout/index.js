@@ -8,7 +8,7 @@ import { useAuth } from '../../../src/context/AuthContext';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../theme';
 import { ShieldCheck, MapPin, ChevronRight } from 'lucide-react-native';
 import BouncyButton from '../../../src/components/BouncyButton';
-import { checkoutPlan, batchLines, describeChange, blockers } from '../../../src/lib/cartModel';
+import { checkoutPlan, batchLines, orderLines, describeChange, blockers } from '../../../src/lib/cartModel';
 import { createAttempt } from '../../../src/services/checkoutAttempt';
 import { ASAP, timeOptions, keepChoice } from '../../../src/services/deliveryTime';
 
@@ -86,7 +86,7 @@ export default function CheckoutScreen() {
   const forgetKeyAfter = (error) => attempt.current.failed(error);
 
   const shopId = plan.shopId;
-  const lines = cartItems.map(item => ({ productId: item.id, quantity: item.quantity }));
+  const lines = orderLines(cartItems);
   const cartKey = cartItems.map(item => `${item.id}:${item.quantity}`).join(',');
 
   useEffect(() => {

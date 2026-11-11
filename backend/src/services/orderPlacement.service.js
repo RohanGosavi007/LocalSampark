@@ -29,6 +29,7 @@ const pricing = require('./deliveryPricing.service');
 const commission = require('./commission.service');
 const couponService = require('./coupon.service');
 const slots = require('./deliverySlots.service');
+const catalogRules = require('./catalogRules');
 
 const MAX_LINES = 100;
 const MAX_QUANTITY = 999;
@@ -91,6 +92,32 @@ async function priceItems(shopId, items) {
         throw new OrderError(400, 'ITEM_UNAVAILABLE', `${product.name} is not available right now.`);
       }
       const tracked = Number(product.track_inventory) === 1 || product.track_inventory === true;
+      // C4: the seller's per-order limit.
+      const limit = catalogRules.quantityLimit(product);
+      if (limit && quantity > limit) {
+        throw new OrderError(400, 'QUANTITY_LIMIT', `${product.name}: at most ${limit} per order.`, { productId: product.id, limit });
+      }
+      // C4: a variant has its own price (base + modifier) and its own stock.
+      // Checkout used to charge the base price whatever variant was chosen.
+      const variantId = item.variantId ?? item.variant_id ?? (item.options && item.options.variantId) ?? null;
+      if (variantId) {
+        const variant = await queryOne(
+          'SELECT * FROM product_variants WHERE CAST(id AS TEXT) = $1 AND CAST(product_id AS TEXT) = $2',
+          [String(variantId), String(product.id)]
+        );
+        if (!variant) throw new OrderError(400, 'ITEM_UNAVAILABLE', `That option of ${product.name} is not available.`, { productId: product.id });
+        const vStock = Number(variant.inventory_count ?? 0);
+        if (tracked && vStock < quantity) {
+          throw new OrderError(400, 'OUT_OF_STOCK', `Insufficient stock for ${product.name} (${variant.variant_value}). Available: ${vStock}`);
+        }
+        const vPrice = money((Number(product.price) || 0) + (Number(variant.price_modifier) || 0));
+        subtotal += vPrice * quantity;
+        lines.push({
+          productId: product.id, variantId: variant.id, name: `${product.name} (${variant.variant_value})`,
+          price: vPrice, quantity, tracked,
+        });
+        continue;
+      }
       const onHand = Number(product.inventory_count ?? 0);
       if (tracked && onHand < quantity) {
         throw new OrderError(400, 'OUT_OF_STOCK', `Insufficient stock for ${product.name}. Available: ${onHand}`);
@@ -304,7 +331,14 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
         'INSERT INTO order_items (id, order_id, product_id, name, price, quantity) VALUES ($1, $2, $3, $4, $5, $6)',
         [crypto.randomUUID(), orderId, line.productId, line.name, line.price, line.quantity]
       );
-      if (line.tracked) {
+      if (line.tracked && line.variantId) {
+        // The variant's own stock, taken the same guarded way as below.
+        const takenVariant = await tx.query(
+          'UPDATE product_variants SET inventory_count = inventory_count - $1 WHERE id = $2 AND inventory_count >= $1',
+          [line.quantity, line.variantId]
+        );
+        if (!takenVariant.rowCount) throw new OrderError(409, 'OUT_OF_STOCK', `${line.name} has just gone out of stock.`);
+      } else if (line.tracked) {
         // The stock check in priceItems was a read; this is the one that
         // counts. Two customers checking out the last unit both pass the read,
         // and only one of them may take it.

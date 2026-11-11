@@ -1026,7 +1026,7 @@ async function priceBatch(user, body) {
             throw new orderPlacement.OrderError(400, 'BAD_LINE', 'Each item needs shop_id, product_id and a whole quantity of at least 1');
         }
         if (!byShop.has(item.shop_id)) byShop.set(item.shop_id, []);
-        byShop.get(item.shop_id).push({ productId: item.product_id, quantity: item.quantity });
+        byShop.get(item.shop_id).push({ productId: item.product_id, quantity: item.quantity, variantId: item.variantId ?? item.variant_id ?? null });
     }
 
     // The placement service reads the address and location under these names.
@@ -2102,6 +2102,22 @@ router.get('/:shopId/products/low-stock', authenticate, async (req, res, next) =
       variants,
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /shops/:shopId/products/:productId — the product page (C4): gallery,
+ * variants, price/MRP/discount and quantity limit, seller (with FSSAI for a
+ * food business), return window, Legal Metrology declarations and verified
+ * reviews (services/productDetail.service.js). Public, like the catalogue.
+ */
+router.get('/:shopId/products/:productId', async (req, res, next) => {
+  try {
+    const productDetail = require('../../../services/productDetail.service');
+    res.json({ success: true, product: await productDetail.getProductDetail(req.params.shopId, req.params.productId) });
+  } catch (err) {
+    if (err && err.code === 'PRODUCT_NOT_FOUND') return res.status(404).json({ success: false, error: err.message });
     next(err);
   }
 });

@@ -88,29 +88,9 @@ export default function ShopDetailScreen() {
       shop_name: shop?.name,
       shop_category: shop?.category_name || shop?.category,
     };
-    const result = addToCart(cartProduct, 1, {});
-
-    // A cart holds one shop's items at a time. The store used to refuse a
-    // second shop's item silently: the customer tapped Add, nothing appeared,
-    // and nothing explained why. Offer the only two things they can actually
-    // do about it.
-    if (result && !result.added && result.reason === 'different_shop') {
-      Alert.alert(
-        'Start a new cart?',
-        `Your cart already has items from ${result.currentShopName}. Orders go to one shop at a time.`,
-        [
-          { text: 'Keep my cart', style: 'cancel' },
-          {
-            text: `Clear and add`,
-            style: 'destructive',
-            onPress: () => {
-              clearCart();
-              addToCart(cartProduct, 1, {});
-            },
-          },
-        ]
-      );
-    }
+    // Items from several shops share one cart (Decision D6), so the "start a
+    // new cart?" prompt this used to show for a second shop is gone.
+    addToCart(cartProduct, 1, {});
   };
 
   if (loading) {
@@ -191,7 +171,10 @@ export default function ShopDetailScreen() {
               return (
                 <View key={item.id} style={styles.productCard}>
                   <View style={styles.productInfo}>
-                    <Text style={styles.productName}>{item.name}</Text>
+                    {/* C4: the product screen, with its details and declarations. */}
+                    <TouchableOpacity accessibilityRole="link" onPress={() => router.push(`/product/${encodeURIComponent(shop?.id || id)}/${encodeURIComponent(item.id)}`)}>
+                      <Text style={[styles.productName, { textDecorationLine: 'underline' }]}>{item.name}</Text>
+                    </TouchableOpacity>
                     <Text style={styles.productDesc}>{item.description || item.desc || ''}</Text>
                     <Text style={styles.productPrice}>₹{price}</Text>
                   </View>

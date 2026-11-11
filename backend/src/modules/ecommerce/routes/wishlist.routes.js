@@ -165,7 +165,8 @@ router.post('/:productId/move-to-cart', authenticate, async (req, res, next) => 
 
     // Add or increment in cart_items
     const existingCartItem = await queryOne(
-      'SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2 AND custom_options IS NULL LIMIT 1',
+      // Clients store "no options" as '{}'; matching only NULL added a second line for the same product.
+      "SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (custom_options IS NULL OR custom_options = '{}') LIMIT 1",
       [userId, actualProductId]
     );
 

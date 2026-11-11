@@ -62,7 +62,17 @@ router.get('/', optionalAuth, async (req, res) => {
         customOptions = null;
       }
 
-      const price = Number(row.price) || 0;
+      // A variant line is priced and stocked as that variant (C4).
+      const variantId = customOptions && customOptions.variantId;
+      const variant = variantId
+        ? await queryOne('SELECT price_modifier, inventory_count, variant_value FROM product_variants WHERE CAST(id AS TEXT) = $1', [String(variantId)])
+        : null;
+      if (variant) {
+        row.price = (Number(row.price) || 0) + (Number(variant.price_modifier) || 0);
+        row.current_stock = Number(variant.inventory_count) || 0;
+        row.product_name = `${row.product_name} (${variant.variant_value})`;
+      }
+      const price = Math.round((Number(row.price) || 0) * 100) / 100;
       const quantity = Number(row.quantity) || 1;
       const itemSubtotal = price * quantity;
       // A product whose stock is not tracked (made to order, services) is
@@ -172,11 +182,29 @@ router.post('/', optionalAuth, async (req, res) => {
 
     if (qty > 0) {
       const product = await queryOne(
-        'SELECT COALESCE(inventory_count, stock, 0) AS stock_available, track_inventory FROM shop_products WHERE id = $1',
+        'SELECT COALESCE(inventory_count, stock, 0) AS stock_available, track_inventory, max_order_quantity, name FROM shop_products WHERE id = $1',
         [productId]
       );
 
-      if (product && Number(product.track_inventory ?? 1) === 1) {
+      // C4: the seller's per-order limit, said when the cart is filled rather
+      // than at checkout.
+      const limit = product ? require('../../../services/catalogRules').quantityLimit(product) : null;
+      if (limit && qty > limit) {
+        return res.status(400).json({ error: `At most ${limit} per order`, code: 'QUANTITY_LIMIT', limit, available: limit });
+      }
+
+      // A chosen variant is stocked on its own.
+      const variantId = customOptions && customOptions.variantId;
+      if (product && variantId) {
+        const variant = await queryOne(
+          'SELECT inventory_count FROM product_variants WHERE CAST(id AS TEXT) = $1 AND CAST(product_id AS TEXT) = $2',
+          [String(variantId), String(productId)]
+        );
+        if (!variant) return res.status(400).json({ error: 'That option is not available', code: 'ITEM_UNAVAILABLE' });
+        if (Number(product.track_inventory ?? 1) === 1 && Number(variant.inventory_count || 0) < qty) {
+          return res.status(400).json({ error: 'Insufficient inventory', available: Number(variant.inventory_count || 0) });
+        }
+      } else if (product && Number(product.track_inventory ?? 1) === 1) {
         const available = Number(product.stock_available ?? 0);
         if (available < qty) {
           return res.status(400).json({
