@@ -433,7 +433,8 @@ export default function Header() {
                     <div className="flex flex-col gap-3 max-h-80 overflow-y-auto">
                       {notifications.length === 0 && <p className="text-sm text-text-muted p-2">You have no notifications.</p>}
                       {notifications.slice(0, 10).map((n) => (
-                        <a key={n.id} href={n.actionUrl || '#'} className={`flex gap-3 items-start p-2 rounded-lg hover:bg-border/30 transition-colors ${n.isRead ? 'opacity-70' : ''}`}>
+                        // Only links within the site: a stored javascript: URL here would run in the customer's browser.
+                        <a key={n.id} href={typeof n.actionUrl === 'string' && n.actionUrl.startsWith('/') && !n.actionUrl.startsWith('//') ? n.actionUrl : '/notifications'} className={`flex gap-3 items-start p-2 rounded-lg hover:bg-border/30 transition-colors ${n.isRead ? 'opacity-70' : ''}`}>
                           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Bell className="w-4 h-4" /></div>
                           <div>
                             <p className="text-sm font-medium">{n.title}</p>
@@ -442,6 +443,7 @@ export default function Header() {
                         </a>
                       ))}
                     </div>
+                    <a href="/notifications" className="block text-center text-sm font-bold text-primary mt-3 hover:underline">See all and settings</a>
                   </motion.div>
                 )}
               </AnimatePresence>

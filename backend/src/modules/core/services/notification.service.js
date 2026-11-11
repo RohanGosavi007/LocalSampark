@@ -74,6 +74,16 @@ const STORED_TYPES = new Set([
 
 async function processNotification(recipientId, notification) {
   const { id, type, title, body, data, actionUrl, icon } = notification;
+  // C13: the recipient's settings (services/notificationPrefs.service.js).
+  // A setting that cannot be read leaves every channel on, as by default.
+  let prefs = null;
+  try {
+    prefs = await require('../../../services/notificationPrefs.service').get(recipientId);
+  } catch (err) {
+    console.error('[NOTIFICATION] settings unreadable:', err.message);
+  }
+  const { allows } = require('../../../services/notificationPrefs.service');
+  if (!allows(prefs, type, 'inbox')) return;
   const storedType = STORED_TYPES.has(type) ? type : 'system';
   const storedData = storedType === type ? (data || {}) : { ...(data || {}), type: type || 'system' };
 
@@ -100,6 +110,7 @@ async function processNotification(recipientId, notification) {
   // 3. To the user's phones, for when the app is closed. Nothing was pushed
   // before: notifications reached a user only if they happened to have the
   // app open. push.sendToUser never throws.
+  if (!allows(prefs, type, 'push')) return;
   await push.sendToUser(recipientId, {
     title: title || 'LocalSampark',
     body: body || '',
@@ -219,7 +230,8 @@ async function notifyOrderUpdate(userId, orderId, status, shopName) {
   return sendToUser(userId, {
     type: 'order_update', ...msg,
     data: { orderId, status },
-    actionUrl: `/order-tracking/${orderId}`,
+    // The web's order page is /order-tracking?id=; /order-tracking/<id> is not a route.
+    actionUrl: `/order-tracking?id=${encodeURIComponent(orderId)}`,
     icon: '📦',
   });
 }

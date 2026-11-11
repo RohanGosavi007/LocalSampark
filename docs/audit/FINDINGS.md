@@ -1241,3 +1241,39 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
   - **Browser:** `tests/e2e/web/checkout.spec.js` [C8.8] captures the real checkout request, sends it again with its key, and gets the same order back; the customer has exactly one order. [C8.9] checks the bill shown is the server's quote.
   - **App:** `apps/mobile/__tests__/checkoutAttempt.test.js` [C8.10]–[C8.12].
 - **Status:** CODE COMPLETE.
+
+### F-151: Checkout offered no delivery time, and placing an order told nobody (C8, C13)
+- **No delivery time:** C8 asks for a delivery time slot or ASAP; every order was ASAP, with no way to choose a time.
+- **No notifications:** placing an order sent a socket event to the shop's dashboard and nothing else. A shop owner without the dashboard open heard nothing, and the customer got no confirmation.
+- **Broken link:** the order-update notification linked to `/order-tracking/<id>`, which is not a web route (the page is `/order-tracking?id=`).
+- **Fix:**
+  - **Slots:** `backend/src/services/deliverySlots.service.js` offers one-hour slots, today and tomorrow, inside the shop's opening hours (India time; hours that wrap past midnight and all-day hours handled) and at least 45 minutes ahead. A shop without readable hours offers ASAP only, rather than slots for hours nobody gave.
+  - **Quotes and orders:** `POST /checkout/quote` and `POST /shops/cart/batch-quote` return the slots (for several shops, those every shop shares). An order may be placed for one: `orders.scheduled_for`, migration 139 on both engines. A time not offered is refused with 400 `SLOT_UNAVAILABLE` before anything is written.
+  - **Clients:** the web and app checkouts show "As soon as possible" plus the slots, send the choice, and fall back to ASAP if a slot drops out.
+  - **Notifications:** `backend/src/services/orderEvents.service.js` notifies the shop owner and the customer (inbox and push) after every order placed: `/checkout`, `/shops/:id/orders`, and each order of a multi-shop checkout after its commit. It never throws, so a notification failure cannot undo a placed order. The customer's notification opens `/order-tracking?id=<id>`, and the order-update link is corrected the same way.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/checkoutSlotsEvents.test.js` [C8.13]–[C8.17], on SQLite and PostgreSQL. With the placement and route changes reverted, the four integration tests fail.
+  - **App:** `apps/mobile/__tests__/checkoutAttempt.test.js` [C8.18].
+  - **Browser:** `tests/e2e/web/checkout.spec.js` [C8.19] chooses a slot, places the order, and checks the confirmation and the stored order agree on the time.
+- **Fixture:** "E2E Corner Chemist" is open all day, so it offers slots whenever the suite runs.
+- **Status:** CODE COMPLETE.
+
+### F-152: Notifications opened nothing, had no settings, and order emails were wrong and unescaped (C13)
+- **Defects:**
+  - **Tapping did nothing:** a notification in the app's inbox had a placeholder where navigation should be ("Add navigation logic here"). A tapped push only opened the app. The inbox API did not return the notification's `data`, so the app had no order id to open even if it tried.
+  - **No settings:** there was no way to turn off promotions, push or email, on any client or on the server.
+  - **Web inbox:** the web had only the header dropdown, which put `actionUrl` straight into an `href`. A stored `javascript:` link would have run in the customer's browser.
+  - **Order emails:** they said "Confirmed" for an order the shop had not seen yet, and called every order "Self Pickup" (they read `orders.delivery_type`, which does not exist). They linked to `/order-tracking/<id>`, which is not a page, and put customers' and shops' names into the HTML unescaped. The placed-order email was never sent at all (see F-151).
+- **Fix:**
+  - **Backend:**
+    - `GET /notifications` returns each notification's `data`.
+    - `GET`/`PUT /notifications/preferences` (migration 140, both engines, defaults all on). Settings cover order updates, offers, push and email.
+    - Settings are applied where every notification is sent (`modules/core/services/notification.service.js`): offers turned off are not delivered; push turned off sends nothing to the phone; order updates are always kept in the inbox, and turning them off stops only their push and email.
+    - Order emails are sent within the same settings (`services/orderEvents.service.js`), escaped, with the right link, fulfilment and status.
+  - **Web:** a `/notifications` page lists every notification, marks one read when it is opened and goes to what it is about, offers mark-all-read, and holds the settings. The header dropdown links only within the site and points to the page.
+  - **App:** `src/services/notificationLinks.js` maps a notification to an app screen (an order opens `/orders/track/:id`, also from the web links the server writes). The inbox opens it on tap, `src/components/NotificationTapHandler.js` does the same for a tapped push (including the one that launched the app), and the settings are at the foot of the inbox.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/notificationsC13.test.js` [C13.4]–[C13.9], on SQLite and PostgreSQL. All six fail with the notification, route and email changes reverted.
+  - **App:** `apps/mobile/__tests__/notifications.test.js` [C13.10]–[C13.12].
+  - **Browser:** `tests/e2e/web/notifications.spec.js` [C13.13]–[C13.14]. A placed order's notification is unread in the inbox, opens the order, and is then read. Turning off offers is saved on the server and shown again after a reload.
+- **Status:** CODE COMPLETE. Email delivery itself needs `SMTP_*` set to a provider such as Brevo's SMTP relay (owner action); without it the email service logs instead of sending.

@@ -171,3 +171,14 @@ describe('order history', () => {
     expect(screen).toMatch(/\/orders\/track\/\$\{item\.id\}/);
   });
 });
+
+describe('scheduled orders', () => {
+  test('[C9.28] an order placed for a slot shows its window in India time; ASAP shows none', () => {
+    const { slotText } = require('../src/services/orders');
+    const o = presentOrder({ order: { id: 'o1', order_status: 'confirmed', scheduled_for: '2026-11-12T12:30:00.000Z', fulfillment_method: 'pickup' }, items: [] });
+    expect(o).toMatchObject({ scheduledFor: '2026-11-12T12:30:00.000Z', pickup: true });
+    expect(slotText(o.scheduledFor)).toBe('12 Nov, 18:00–19:00');
+    expect(presentOrder({ order: { id: 'o2' } }).scheduledFor).toBeNull();
+    expect(slotText(null)).toBeNull();
+  });
+});

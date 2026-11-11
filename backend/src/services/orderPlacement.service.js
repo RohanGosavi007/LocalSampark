@@ -28,6 +28,7 @@ const payments = require('./payments.service');
 const pricing = require('./deliveryPricing.service');
 const commission = require('./commission.service');
 const couponService = require('./coupon.service');
+const slots = require('./deliverySlots.service');
 
 const MAX_LINES = 100;
 const MAX_QUANTITY = 999;
@@ -141,6 +142,7 @@ async function resolveDrop(user, body) {
 
 function toOrderError(error) {
   if (error instanceof pricing.PricingError) return new OrderError(error.status, error.code, error.message, error.details);
+  if (error instanceof slots.SlotError) return new OrderError(error.status, error.code, error.message);
   return error;
 }
 
@@ -185,7 +187,8 @@ async function quoteOrder({ user = null, shopId, items, body = {} }) {
   } catch (error) {
     throw toOrderError(error);
   }
-  return { shop, lines, bill, pickup, drop };
+  // C8: ASAP, or one of these one-hour windows.
+  return { shop, lines, bill, pickup, drop, slots: slots.slotsFor(shop) };
 }
 
 /**
@@ -235,6 +238,15 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
         : 'Cash on delivery is not available. Please pay online or from your wallet.');
   }
 
+  // ASAP (null), or a slot the shop offers; anything else is refused before
+  // anything is written.
+  let scheduledFor = null;
+  try {
+    scheduledFor = slots.chosenSlot(shop, body.deliverySlot ?? body.delivery_slot ?? body.scheduledFor ?? null);
+  } catch (error) {
+    throw toOrderError(error);
+  }
+
   const orderId = crypto.randomUUID();
   // The handover code the rider (or the shop, at the counter) asks for.
   const otpCode = String(crypto.randomInt(1000, 10000));
@@ -258,9 +270,9 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
          (id, user_id, shop_id, batch_id, subtotal, total_amount, delivery_fee, platform_fee, small_order_fee,
           payment_method, payment_status, order_status, delivery_address, delivery_coordinate, delivery_lat,
                     delivery_lng, delivery_distance_km, surge_multiplier, rider_payout, otp_code, fulfillment_method,
-          special_instructions, commission_percent, discount)
+          special_instructions, commission_percent, discount, scheduled_for)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12,
-               ${pointSql(drop.point && drop.point.lat, drop.point && drop.point.lng)}, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+               ${pointSql(drop.point && drop.point.lat, drop.point && drop.point.lng)}, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
       [
         orderId, user.id, shop.id, batchId, bill.subtotal, bill.total, bill.deliveryFee, bill.platformFee, bill.smallOrderFee,
         method, paidNow ? 'paid' : 'pending',
@@ -272,6 +284,7 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
                 instructions ? String(instructions).slice(0, 500) : null,
         commissionPercent,
         bill.discount || 0,
+        scheduledFor,
       ]
     );
 

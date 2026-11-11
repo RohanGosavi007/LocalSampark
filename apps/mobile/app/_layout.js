@@ -175,6 +175,8 @@ try { LanguageProvider = require('../src/context/LanguageContext').LanguageProvi
 // owns one authenticated connection for the whole app.
 // C6: keeps the cart in step with the customer's server cart. Optional like
 // the providers above, so a failed import cannot stop the app from opening.
+let NotificationTapHandler = () => null;
+try { NotificationTapHandler = require('../src/components/NotificationTapHandler').default; } catch (e) { console.warn('[_layout] NotificationTapHandler import failed:', e.message); }
 let CartSync = () => null;
 try { CartSync = require('../src/components/commerce/CartSync').default; } catch (e) { console.warn('[_layout] CartSync import failed:', e.message); }
 let SocketProvider = PassthroughProvider;
@@ -378,6 +380,7 @@ function RootLayout() {
                         <DynamicNavigator />
                         <DevLoginScreen />
                         <CartSync />
+                        <NotificationTapHandler />
                       </LanguageProvider>
                     </NotificationProvider>
                   </OrderRingerProvider>

@@ -33,6 +33,8 @@ const useMockCatalog = () =>
   process.env.USE_MOCK_CATALOG === 'true' && process.env.NODE_ENV !== 'production';
 const { authenticate, optionalAuth } = require('../../../middleware/auth.middleware');
 const { idempotent } = require('../../../middleware/idempotency.middleware');
+const orderEvents = require('../../../services/orderEvents.service');
+const deliverySlots = require('../../../services/deliverySlots.service');
 const crypto = require('crypto');
 // NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
@@ -896,6 +898,7 @@ router.post('/:id/orders', authenticate, idempotent('shop-order'), async (req, r
 
       const io = req.app?.get ? req.app.get('io') : null;
       if (io) io.emit(`vendor:orders:${req.params.id}`, { event: 'ORDER_CREATED', order: placed.order });
+      orderEvents.orderPlaced({ order: placed.order, shop: placed.shop, user: req.user });
     }
 
     // 2. Handle services (Hybrid Cart Support). Paid at the shop.
@@ -1077,6 +1080,8 @@ router.post('/cart/batch-quote', optionalAuth, async (req, res, next) => {
     try {
         const priced = await priceBatch(req.user || null, req.body || {});
         const etas = priced.quotes.map((q) => Number(q.quote.bill.etaMinutes) || 0).filter(Boolean);
+        // A multi-shop cart arrives together: the slots every shop offers.
+        const commonSlots = deliverySlots.commonSlots(priced.quotes.map((q) => q.quote.shop));
         res.json({
             success: true,
             bill: {
@@ -1102,6 +1107,7 @@ router.post('/cart/batch-quote', optionalAuth, async (req, res, next) => {
             })),
             // One gateway payment settles one order, so not for several shops.
             paymentMethods: { cod: priced.codAvailable, wallet: true, razorpay: false },
+            slots: commonSlots,
             cod: { available: priced.codAvailable, maxOrderValue: priced.config.cod_max_order_value || null },
         });
     } catch (err) {
@@ -1129,6 +1135,7 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
         const batch_id = crypto.randomUUID();
         const paid = method === 'wallet';
 
+        const placedOrders = [];
         const outcome = await withTransaction(async (client) => {
             let finalAmount = cartTotal;
             let coinsUsed = 0;
@@ -1175,6 +1182,7 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
                     batchId: batch_id, client, prepaid: paid, fees: { ...q.fees, discount },
                 });
                 placed.push(result.order.id);
+                placedOrders.push(result);
             }
 
             // 1% back in coins, on money that has actually been received.
@@ -1190,6 +1198,9 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
 
             return { finalAmount, coinsUsed, earnedCoins, orderIds: placed };
         });
+
+        // After the commit: one notification per shop's order.
+        for (const result of placedOrders) orderEvents.orderPlaced({ order: result.order, shop: result.shop, user: req.user });
 
         res.json({
             batch_id, totalBatchAmount: itemsTotal, totalDeliveryFee,

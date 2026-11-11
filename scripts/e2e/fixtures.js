@@ -221,7 +221,8 @@ async function seedE2eFixtures() {
     );
   }
 
-  // C6: a second, open shop in the pilot zone with its own owner, and a
+  // C6: a second, open shop in the pilot zone with its own owner (open all
+  // day, so it offers C8 time slots whenever the suite runs), and a
   // product in each shop for cart specs to use (plenty of stock, so parallel
   // specs cannot run each other out).
   await run(
@@ -231,9 +232,9 @@ async function seedE2eFixtures() {
   );
   await run(
     `INSERT INTO local_shops (id, owner_id, region_id, name, category, phone, address, latitude, longitude,
-                              coordinate, is_active, is_verified, approval_status, pincode, delivery_available)
+                              coordinate, is_active, is_verified, approval_status, pincode, delivery_available, opening_hours)
      VALUES ($1, $2, $3, 'E2E Corner Chemist', 'Pharmacy', '+919800000060', 'Dhanori Road, Pune', 18.5795, 73.8975, 'POINT(73.8975 18.5795)',
-             '1', '1', 'approved', '411015', '1')`,
+             '1', '1', 'approved', '411015', '1', '{"open":"00:00","close":"00:00"}')`,
     [IDS.chemistShop, IDS.chemistOwner, region.id]
   );
   await run(

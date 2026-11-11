@@ -96,6 +96,8 @@ async function quoteCheckout(req, res, next) {
       bill: presentBill(quote.bill),
       items: quote.lines.map(({ productId, name, price, quantity }) => ({ id: productId, name, price, quantity })),
       paymentMethods: { cod: quote.bill.cod.available, wallet: true, razorpay: razorpay.isConfigured() },
+      // C8: ASAP, or one of these windows (services/deliverySlots.service.js).
+      slots: quote.slots,
       cod: quote.bill.cod,
     });
   } catch (error) {
@@ -135,6 +137,7 @@ async function processCheckout(req, res, next) {
     if (io) {
       io.emit(`vendor:orders:${placed.shop.id}`, { event: 'ORDER_CREATED', order: placed.order });
     }
+    require('../../../services/orderEvents.service').orderPlaced({ order: placed.order, shop: placed.shop, user: req.user });
 
     return res.status(201).json({
       success: true,

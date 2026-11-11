@@ -96,26 +96,50 @@ async function sendEmail(to, subject, htmlContent) {
 }
 
 /**
- * Order confirmation email to customer
+ * Names and addresses come from customers and shops; in an email body they are
+ * text, never markup.
+ */
+function esc(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** How the order reaches the customer. `delivery_type` is not a column of orders. */
+const isDelivery = (order) => String(order.fulfillment_method || order.delivery_type || 'delivery').toLowerCase() === 'delivery';
+const orderLink = (order) => `${process.env.FRONTEND_URL || 'http://localhost:3000'}/order-tracking?id=${encodeURIComponent(order.id)}`;
+
+/**
+ * Order email to the customer: "placed" when the order is new, "confirmed"
+ * once the shop has accepted it (shop-management.controller sends that one).
+ *
+ * It used to say "Confirmed" for an order the shop had not seen yet, call
+ * every order "Self Pickup" (it read a column orders does not have), link to a
+ * page that does not exist (/order-tracking/<id>), and put the customer's and
+ * shop's names into the HTML unescaped.
  */
 async function sendOrderConfirmation(customer, order, shop) {
+  const placed = ['pending', 'placed'].includes(String(order.order_status || order.status || '').toLowerCase());
+  const ref = String(order.id).slice(0, 8).toUpperCase();
+  const when = order.scheduled_for
+    ? new Date(order.scheduled_for).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })
+    : 'As soon as possible';
   const content = `
-    <h2>Order Confirmed! 🎉</h2>
-    <p>Hi ${customer.full_name || 'there'}, your order has been placed successfully.</p>
-    
+    <h2>${placed ? 'Order placed' : 'Order confirmed'}</h2>
+    <p>Hi ${esc(customer.full_name || 'there')}, ${placed ? 'your order has been placed. The shop will confirm it shortly.' : 'the shop has accepted your order.'}</p>
+
     <div class="info-card">
-      <div class="info-row"><span class="info-label">Order ID</span><span class="info-value">#${order.id.slice(0, 8).toUpperCase()}</span></div>
-      <div class="info-row"><span class="info-label">Shop</span><span class="info-value">${shop.name}</span></div>
-      <div class="info-row"><span class="info-label">Total</span><span class="info-value">₹${order.total_amount}</span></div>
-      <div class="info-row"><span class="info-label">Delivery</span><span class="info-value">${order.delivery_type === 'delivery' ? '🚴 Home Delivery' : '🏃 Self Pickup'}</span></div>
-      <div class="info-row" style="border:none"><span class="info-label">Status</span><span class="status-badge status-confirmed">Confirmed</span></div>
+      <div class="info-row"><span class="info-label">Order ID</span><span class="info-value">#${ref}</span></div>
+      <div class="info-row"><span class="info-label">Shop</span><span class="info-value">${esc(shop && shop.name)}</span></div>
+      <div class="info-row"><span class="info-label">Total</span><span class="info-value">₹${esc(order.total_amount)}</span></div>
+      <div class="info-row"><span class="info-label">${isDelivery(order) ? 'Delivery' : 'Pickup'}</span><span class="info-value">${isDelivery(order) ? 'Home delivery' : 'Self pickup'} · ${esc(when)}</span></div>
+      <div class="info-row" style="border:none"><span class="info-label">Status</span><span class="status-badge status-confirmed">${placed ? 'Placed' : 'Confirmed'}</span></div>
     </div>
-    
+
     <p>You'll receive updates as your order progresses.</p>
-    <p style="text-align:center;margin-top:24px"><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/order-tracking/${order.id}" class="btn">Track Order</a></p>
+    <p style="text-align:center;margin-top:24px"><a href="${orderLink(order)}" class="btn">Track Order</a></p>
   `;
 
-  return sendEmail(customer.email, `Order #${order.id.slice(0, 8).toUpperCase()} Confirmed`, getBaseTemplate(content, 'Order Confirmed'));
+  return sendEmail(customer.email, `Order #${ref} ${placed ? 'placed' : 'confirmed'}`, getBaseTemplate(content, placed ? 'Order placed' : 'Order confirmed'));
 }
 
 /**
@@ -124,13 +148,13 @@ async function sendOrderConfirmation(customer, order, shop) {
 async function sendNewOrderNotification(ownerEmail, order, customer) {
   const content = `
     <h2>New Order Received! 🔔</h2>
-    <p>You have a new order from <strong>${customer.full_name || 'a customer'}</strong>.</p>
+    <p>You have a new order from <strong>${esc(customer.full_name || 'a customer')}</strong>.</p>
     
     <div class="info-card">
       <div class="info-row"><span class="info-label">Order ID</span><span class="info-value">#${order.id.slice(0, 8).toUpperCase()}</span></div>
-      <div class="info-row"><span class="info-label">Amount</span><span class="info-value">₹${order.total_amount}</span></div>
-      <div class="info-row"><span class="info-label">Items</span><span class="info-value">${order.item_count || 'Multiple'} items</span></div>
-      <div class="info-row" style="border:none"><span class="info-label">Type</span><span class="info-value">${order.delivery_type === 'delivery' ? '🚴 Delivery' : '🏃 Pickup'}</span></div>
+      <div class="info-row"><span class="info-label">Amount</span><span class="info-value">₹${esc(order.total_amount)}</span></div>
+      ${order.item_count ? `<div class="info-row"><span class="info-label">Items</span><span class="info-value">${esc(order.item_count)}</span></div>` : ''}
+      <div class="info-row" style="border:none"><span class="info-label">Type</span><span class="info-value">${isDelivery(order) ? '🚴 Delivery' : '🏃 Pickup'}</span></div>
     </div>
     
     <p style="text-align:center;margin-top:24px"><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/shop-dashboard" class="btn">View in Dashboard</a></p>
@@ -212,6 +236,7 @@ async function sendPayoutNotification(ownerEmail, payout) {
 }
 
 module.exports = {
+  esc,
   sendEmail,
   sendOrderConfirmation,
   sendNewOrderNotification,

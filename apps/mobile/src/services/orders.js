@@ -65,6 +65,19 @@ export const statusLabel = (status) => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
+/** "12 Nov, 18:00–19:00" in India time, for an order placed for a slot (C8). */
+export function slotText(iso) {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return null;
+  const pad = (n) => String(n).padStart(2, '0');
+  const ist = (ms) => new Date(ms + 330 * 60 * 1000);
+  const s = ist(at);
+  const e = ist(at + 3600000);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${s.getUTCDate()} ${months[s.getUTCMonth()]}, ${pad(s.getUTCHours())}:${pad(s.getUTCMinutes())}–${pad(e.getUTCHours())}:${pad(e.getUTCMinutes())}`;
+}
+
 /** Shapes GET /orders/:id for the screen. Nothing is invented. */
 export function presentOrder(res) {
   const o = (res && (res.order || res)) || null;
@@ -76,6 +89,9 @@ export function presentOrder(res) {
     status: norm(o.status || o.order_status),
     total: Number(o.total_amount) || 0,
     eta: o.eta || o.estimated_delivery_time || null,
+    // C8: the window the order was placed for (null: as soon as possible).
+    scheduledFor: o.scheduled_for || null,
+    pickup: o.fulfillment_method === 'pickup',
     driver: o.delivery_agent_name
       ? { name: o.delivery_agent_name, phone: o.delivery_agent_phone || null, vehicle: o.delivery_agent_vehicle || null }
       : null,

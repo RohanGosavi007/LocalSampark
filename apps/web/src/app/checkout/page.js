@@ -46,6 +46,8 @@ export default function CheckoutPage() {
   const [pincode, setPincode] = useState('');
   const [fulfillmentMethod, setFulfillmentMethod] = useState('DELIVERY'); // 'DELIVERY' | 'SELF_PICKUP'
   const [paymentMethod, setPaymentMethod] = useState('COD'); // 'RAZORPAY' | 'WALLET' | 'COD'
+  // C8: 'asap', or the ISO start of one of the slots the quote offers.
+  const [deliverySlot, setDeliverySlot] = useState('asap');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -194,12 +196,19 @@ export default function CheckoutPage() {
   }, [allowedPayments.join(','), paymentMethod]);
 
   const bill = pendingOrder ? pendingOrder.bill : quote ? quote.bill : null;
+  const slots = (quote && Array.isArray(quote.slots)) ? quote.slots : [];
+  const chosenSlot = slots.find((sl) => sl.start === deliverySlot) || null;
+  const slotLabel = (sl) => `${sl.day === 'today' ? 'Today' : 'Tomorrow'} ${sl.from}–${sl.to}`;
+  // A slot that has passed, or that a changed cart's shops do not share, falls back to ASAP.
+  useEffect(() => {
+    if (deliverySlot !== 'asap' && quote && !chosenSlot) setDeliverySlot('asap');
+  }, [deliverySlot, quote, chosenSlot]);
   const finalTotal = bill ? bill.total : null;
   const money = (value) => (value === null || value === undefined ? '—' : `₹${Number(value).toFixed(2)}`);
 
   const finish = (order, paid, method) => {
     attemptKey.current = null;
-    setConfirmed({ id: order.id, ids: order.ids || [order.id], paid, method });
+    setConfirmed({ id: order.id, ids: order.ids || [order.id], paid, method, slot: chosenSlot ? slotLabel(chosenSlot) : null });
     setPendingOrder(null);
     setStep(4);
     clearCart();
@@ -259,6 +268,7 @@ export default function CheckoutPage() {
             deliveryAddress: delivering ? `${address}, ${pincode}` : null,
             addressId: delivering && selectedAddressId ? selectedAddressId : undefined,
             deliveryCoordinate: delivering && location ? location : undefined,
+            deliverySlot,
             items: batchLines(cartItems),
           }),
         });
@@ -285,6 +295,7 @@ export default function CheckoutPage() {
                     deliveryAddress: delivering ? `${address}, ${pincode}` : null,
           addressId: delivering && selectedAddressId ? selectedAddressId : undefined,
           deliveryCoordinate: delivering && location ? location : undefined,
+          deliverySlot,
           items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
         }),
       });
@@ -490,6 +501,26 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     )}
+                    {quote && (
+                      <div className="mt-8" data-testid="delivery-time">
+                        <p className="font-bold text-text mb-3">{delivering ? 'When should it arrive?' : 'When will you collect it?'}</p>
+                        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Time">
+                          {[{ start: 'asap', label: 'As soon as possible' }, ...slots.map((sl) => ({ start: sl.start, label: slotLabel(sl) }))].map((opt) => (
+                            <button
+                              key={opt.start}
+                              type="button"
+                              role="radio"
+                              aria-checked={deliverySlot === opt.start}
+                              onClick={() => setDeliverySlot(opt.start)}
+                              className={`px-4 py-2 min-h-[44px] rounded-xl border text-sm font-bold transition-colors ${deliverySlot === opt.start ? 'bg-primary-glass border-primary text-primary' : 'bg-background-alt/50 border-border text-text-muted'}`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                        {slots.length === 0 && <p className="text-text-muted text-xs mt-2">This shop has not published its hours, so orders are taken for as soon as possible.</p>}
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
@@ -566,6 +597,12 @@ export default function CheckoutPage() {
                         <p key={oid} data-testid="confirmed-order-id" className="text-text font-bold text-xl mb-2 break-all">{oid}</p>
                       ))}
                       <div className="mb-2" />
+                      {confirmed?.slot && (
+                        <>
+                          <p className="text-text-muted text-sm mb-1">{fulfillmentMethod === 'SELF_PICKUP' ? 'Collect' : 'Arrives'}</p>
+                          <p className="text-text font-bold mb-4" data-testid="confirmed-slot">{confirmed.slot}</p>
+                        </>
+                      )}
                       <p className="text-text-muted text-sm mb-1">Payment</p>
                       <p className="text-text font-bold mb-4">
                         {confirmed?.paid

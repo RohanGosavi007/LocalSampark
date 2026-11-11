@@ -4,6 +4,7 @@ const { authenticate, requireAdmin } = require('../../../middleware/auth.middlew
 const { query } = require('../../../config/database');
 const { sendTopicPush } = require('../../../config/firebase');
 const push = require('../../../services/push.service');
+const notificationPrefs = require('../../../services/notificationPrefs.service');
 const { v4: uuidv4 } = require('uuid');
 
 /**
@@ -36,9 +37,44 @@ router.get('/', authenticate, async (req, res, next) => {
         type: n.type,
         isRead: Boolean(Number(n.is_read)),
         actionUrl: n.action_url || null,
+        // C13: the ids a client routes on (an order opens the order).
+        data: (() => { try { return typeof n.data === 'string' ? JSON.parse(n.data || '{}') : (n.data || {}); } catch { return {}; } })(),
         createdAt: n.created_at,
       })),
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET/PUT /notifications/preferences — what reaches the signed-in customer,
+ * and how (C13). PUT takes any of orderUpdates, promotions, push, email as
+ * booleans and answers with all four.
+ */
+router.get('/preferences', authenticate, async (req, res, next) => {
+  try {
+    res.json({ success: true, preferences: await notificationPrefs.get(req.user.userId || req.user.id) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/preferences', authenticate, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const changes = {};
+    for (const key of Object.keys(notificationPrefs.COLUMNS)) {
+      if (body[key] === undefined) continue;
+      if (typeof body[key] !== 'boolean') {
+        return res.status(400).json({ success: false, error: `${key} must be true or false` });
+      }
+      changes[key] = body[key];
+    }
+    if (!Object.keys(changes).length) {
+      return res.status(400).json({ success: false, error: 'Nothing to change. Send orderUpdates, promotions, push or email.' });
+    }
+    res.json({ success: true, preferences: await notificationPrefs.set(req.user.userId || req.user.id, changes) });
   } catch (error) {
     next(error);
   }

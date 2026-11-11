@@ -236,7 +236,11 @@
       "tests/e2e/web/checkout.spec.js",
       "apps/mobile/__tests__/checkoutAttempt.test.js",
       "apps/mobile/src/services/checkoutAttempt.js",
-      "backend/src/__tests__/integration/cartCheckoutD6.test.js"
+      "backend/src/__tests__/integration/cartCheckoutD6.test.js",
+      "backend/src/__tests__/integration/checkoutSlotsEvents.test.js",
+      "backend/src/services/deliverySlots.service.js",
+      "backend/src/services/orderEvents.service.js",
+      "apps/mobile/src/services/deliveryTime.js"
     ],
     "notes": "Server quote integrity, COD vs online handling, and Idempotency-Key deduplication verified."
   },
@@ -365,7 +369,13 @@
     "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/integration/pushNotifications.test.js",
-      "backend/src/__tests__/unit/adminCommerceOps.test.js"
+      "backend/src/__tests__/unit/adminCommerceOps.test.js",
+      "backend/src/__tests__/integration/notificationsC13.test.js",
+      "backend/src/services/notificationPrefs.service.js",
+      "tests/e2e/web/notifications.spec.js",
+      "apps/mobile/__tests__/notifications.test.js",
+      "apps/mobile/src/services/notificationLinks.js",
+      "apps/web/src/app/notifications/page.js"
     ],
     "notes": "Push notification delivery, token format alignment (N17), in-app notification inbox, and broadcast verified."
   },

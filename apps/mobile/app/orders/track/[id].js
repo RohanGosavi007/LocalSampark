@@ -6,7 +6,7 @@ import { useSocket, useSocketEvent, useSocketRoom } from '../../../src/context/S
 import { useCartStore } from '../../../src/store/cartStore';
 import {
   ORDER_STEPS, ORDER_EVENTS, POLL_INTERVAL_MS, stepIndex, canCancel, shouldPoll, isEventFor,
-  orderRef, statusLabel, loadOrder, cancelOrder, orderAgain, downloadInvoice,
+  orderRef, statusLabel, loadOrder, cancelOrder, orderAgain, downloadInvoice, slotText,
 } from '../../../src/services/orders';
 
 const STEP_ICONS = { pending: Clock, confirmed: CheckCircle, preparing: Package, out_for_delivery: Truck, delivered: MapPin };
@@ -172,6 +172,9 @@ export default function OrderTrackingScreen() {
         </View>
         {/* No invented ETA: shown only if the server sent one. */}
         {order.eta && !cancelled ? <Text style={styles.etaText}>Arriving in {order.eta}</Text> : null}
+        {order.scheduledFor && !cancelled ? (
+          <Text style={styles.etaText}>{order.pickup ? 'Collect' : 'Arrives'} {slotText(order.scheduledFor)}</Text>
+        ) : null}
 
         {cancelled ? (
           <View style={styles.cancelledRow}>

@@ -10,6 +10,7 @@ import { ShieldCheck, MapPin, ChevronRight } from 'lucide-react-native';
 import BouncyButton from '../../../src/components/BouncyButton';
 import { checkoutPlan, batchLines, describeChange, blockers } from '../../../src/lib/cartModel';
 import { createAttempt } from '../../../src/services/checkoutAttempt';
+import { ASAP, timeOptions, keepChoice } from '../../../src/services/deliveryTime';
 
 // Loaded the way ZoneContext loads it: a build without the native module can
 // still check out with a saved address.
@@ -64,6 +65,8 @@ export default function CheckoutScreen() {
   const [deliveryMode, setDeliveryMode] = useState('delivery');
   const [address, setAddress] = useState('');
   const [method, setMethod] = useState('cod');
+  // C8: ASAP, or the start of a slot the quote offers.
+  const [deliverySlot, setDeliverySlot] = useState(ASAP);
   const [onlineAvailable, setOnlineAvailable] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [quote, setQuote] = useState(null);
@@ -162,6 +165,11 @@ export default function CheckoutScreen() {
   }, [method, onlineOffered, pendingOrder]);
 
   const bill = pendingOrder ? pendingOrder.bill : quote?.bill || null;
+  const times = timeOptions(quote);
+  useEffect(() => {
+    const kept = keepChoice(deliverySlot, quote);
+    if (kept !== deliverySlot) setDeliverySlot(kept);
+  }, [deliverySlot, quote]);
   const rupees = (value) => (value === null || value === undefined ? '—' : `₹${Number(value).toFixed(0)}`);
 
   const finish = (order, paid) => {
@@ -229,6 +237,7 @@ export default function CheckoutScreen() {
           deliveryAddress: deliveryMode === 'delivery' ? address.trim() : null,
           addressId: deliveryMode === 'delivery' && savedAddressId ? savedAddressId : undefined,
           deliveryCoordinate: deliveryMode === 'delivery' && location ? location : undefined,
+          deliverySlot,
           items: batchLines(cartItems),
         }, { headers: { 'Idempotency-Key': idempotencyKey() } });
         const ids = Array.isArray(data?.orderIds) ? data.orderIds : [];
@@ -257,6 +266,7 @@ export default function CheckoutScreen() {
                 deliveryAddress: deliveryMode === 'delivery' ? address.trim() : null,
         addressId: deliveryMode === 'delivery' && savedAddressId ? savedAddressId : undefined,
         deliveryCoordinate: deliveryMode === 'delivery' && location ? location : undefined,
+        deliverySlot,
         items: lines,
       }, { headers: { 'Idempotency-Key': idempotencyKey() } });
 
@@ -348,6 +358,27 @@ export default function CheckoutScreen() {
             </Text>
           )}
         </View>
+
+        {/* When (C8) */}
+        {quote ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{deliveryMode === 'pickup' ? 'When will you collect it?' : 'When should it arrive?'}</Text>
+            <View style={[styles.modeRow, { flexWrap: 'wrap' }]}>
+              {times.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: deliverySlot === opt.value }}
+                  disabled={Boolean(pendingOrder)}
+                  onPress={() => setDeliverySlot(opt.value)}
+                  style={[styles.modeChip, deliverySlot === opt.value && styles.modeChipActive]}
+                >
+                  <Text style={[styles.modeChipText, deliverySlot === opt.value && styles.modeChipTextActive]}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {/* Cart Items List */}
         <View style={styles.card}>

@@ -7,7 +7,8 @@
 const { test, expect } = require('@playwright/test');
 const { API, signInCustomer, freshPhone } = require('../helpers/session');
 
-const RICE = 'e2e00000-0000-4000-8000-0000000000d3'; // seeded vendor's shop; pickup only
+const RICE = 'e2e00000-0000-4000-8000-0000000000d3'; // seeded vendor's shop; pickup only, no published hours
+const SOAP = 'e2e00000-0000-4000-8000-0000000000d2'; // E2E Corner Chemist, open all day
 const auth = (session) => ({ Authorization: `Bearer ${session.accessToken}` });
 
 test.describe('Checkout', () => {
@@ -65,5 +66,35 @@ test.describe('Checkout', () => {
     await expect(page.getByText(`₹${Number(quote.bill.total).toFixed(2)}`).first()).toBeVisible();
     await page.getByRole('button', { name: 'Proceed to Payment' }).click();
     await expect(page.locator('input[value="COD"]')).toBeChecked();
+  });
+
+  test('[C8.19] a time slot can be chosen instead of ASAP, and the order keeps it', async ({ page }) => {
+    const session = await signInCustomer(page, freshPhone(), 'E2E Slot Buyer');
+    await page.request.post(`${API}/cart`, { headers: auth(session), data: { productId: SOAP, quantity: 1 } });
+
+    await page.goto('/checkout');
+    await page.getByRole('button', { name: 'Proceed to Fulfillment' }).click();
+    await page.getByRole('button', { name: 'Self Pickup' }).click();
+    const times = page.getByTestId('delivery-time').getByRole('radio');
+    await expect(times.first()).toHaveText('As soon as possible');
+    await expect(times.first()).toHaveAttribute('aria-checked', 'true');
+    const slot = times.nth(2);
+    const label = (await slot.innerText()).trim();
+    expect(label).toMatch(/^(Today|Tomorrow) \d{2}:\d{2}–\d{2}:\d{2}$/);
+    await slot.click();
+    await expect(slot).toHaveAttribute('aria-checked', 'true');
+
+    await page.getByRole('button', { name: 'Proceed to Payment' }).click();
+    await page.locator('input[value="COD"]').check();
+    await page.getByRole('button', { name: /Place Order/ }).click();
+    await expect(page.getByTestId('confirmed-slot')).toHaveText(label);
+    const [orderId] = await page.getByTestId('confirmed-order-id').allInnerTexts();
+
+    const order = (await (await page.request.get(`${API}/orders/${orderId}`, { headers: auth(session) })).json()).order;
+    expect(order.scheduled_for, 'the order keeps the slot').toBeTruthy();
+    // India time of the stored start is the time the page showed.
+    const start = new Date(Date.parse(order.scheduled_for) + 330 * 60000);
+    const hhmm = `${String(start.getUTCHours()).padStart(2, '0')}:${String(start.getUTCMinutes()).padStart(2, '0')}`;
+    expect(label).toContain(`${hhmm}–`);
   });
 });

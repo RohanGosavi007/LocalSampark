@@ -24,6 +24,14 @@ const RANK = { pending: 0, confirmed: 1, accepted: 1, preparing: 2, ready: 2, as
 
 const label = (v) => { const t = String(v || 'pending').replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
 const when = (iso) => (iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '');
+// C8: the one-hour window an order was placed for, in India time.
+const slotText = (iso) => {
+  if (!iso) return null;
+  const start = new Date(iso);
+  const fmt = (d) => d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+  const day = start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+  return `${day}, ${fmt(start)}–${fmt(new Date(start.getTime() + 3600000))}`;
+};
 
 function OrderList() {
   const [orders, setOrders] = useState(null);
@@ -213,6 +221,11 @@ function OrderDetail({ id }) {
         <p className="font-bold text-text">{order.shop_name}</p>
         <p className="text-xs text-text-muted">#{String(order.id).slice(0, 8)} • {when(order.created_at)}</p>
         <p className="mt-2 text-lg font-black text-text">₹{Number(order.total_amount) || 0}</p>
+        {order.scheduled_for && (
+          <p className="text-sm font-bold text-primary mt-1" data-testid="order-slot">
+            {order.fulfillment_method === 'pickup' ? 'Collect' : 'Arrives'} {slotText(order.scheduled_for)}
+          </p>
+        )}
       </div>
 
       {cancelled ? (
