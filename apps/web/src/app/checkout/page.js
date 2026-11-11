@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_BASE, getAuthHeaders } from '../../lib/api';
 import { openCheckout, payFor } from '../../lib/payments';
 import { fetchQuote, currentPosition, billLines, etaText } from '../../lib/deliveryQuote';
+import { checkoutPlan, batchLines, describeChange, blockers } from '../../lib/cartModel';
 
 /**
  * The cart checkout.
@@ -32,6 +33,12 @@ import { fetchQuote, currentPosition, billLines, etaText } from '../../lib/deliv
  *     button retries the payment instead of ordering again.
  *
  * Online payment is offered only when the API reports it is configured.
+ *
+ * A cart with items from several shops (D6) is priced by
+ * POST /shops/cart/batch-quote and placed by POST /shops/cart/batch-checkout:
+ * one order per shop, in one transaction, paid once from the wallet or in
+ * cash. One gateway payment settles one order, so online payment is offered
+ * only for a single shop's cart.
  */
 export default function CheckoutPage() {
   const [step, setStep] = useState(1); // 1: Cart, 2: Address/Fulfillment, 3: Payment, 4: Success
@@ -50,11 +57,30 @@ export default function CheckoutPage() {
   const [locating, setLocating] = useState(false);
   // An order that has been placed for online payment and not paid yet.
   const [pendingOrder, setPendingOrder] = useState(null);
+  // One Idempotency-Key per attempt to place this order (C8). A retry after a
+  // network failure (the request may have been placed) sends the same key, so
+  // the server answers with the order it already placed instead of placing a
+  // second one. Once the server has answered with a refusal, the next press
+  // is a new request and gets a new key.
+  const attemptKey = useRef(null);
+  const idempotencyKey = () => {
+    if (!attemptKey.current) {
+      attemptKey.current = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    }
+    return attemptKey.current;
+  };
   // The order shown on the confirmation step: { id, paid, method }.
   const [confirmed, setConfirmed] = useState(null);
 
-  const { items: cartItems, getCartTotal, clearCart, currentShopName, currentShopId } = useCartStore();
+  const { items: cartItems, getCartTotal, clearCart, notices, dismissNotices } = useCartStore();
   const total = getCartTotal();
+  const plan = checkoutPlan(cartItems);
+  const isBatch = plan.mode === 'batch';
+  const singleShopId = plan.shopId;
+  const currentShopName = plan.shops.length === 1 ? plan.shops[0].shopName : null;
+  const unavailable = blockers(cartItems);
 
   const [allowedFulfillments, setAllowedFulfillments] = useState(['DELIVERY', 'SELF_PICKUP']);
   const [shopPayments, setShopPayments] = useState(['RAZORPAY', 'WALLET', 'COD']);
@@ -66,7 +92,9 @@ export default function CheckoutPage() {
   const onlineAvailable = Boolean(quote && quote.paymentMethods && quote.paymentMethods.razorpay);
     const codAvailable = !quote || quote.paymentMethods.cod;
   const allowedPayments = ['RAZORPAY', 'WALLET', 'COD'].filter(
-    (m) => (m === 'WALLET' || shopPayments.includes(m)) && (m !== 'RAZORPAY' || onlineAvailable) && (m !== 'COD' || codAvailable)
+    (m) => plan.payments.includes(m)
+      && (isBatch || m === 'WALLET' || shopPayments.includes(m))
+      && (m !== 'RAZORPAY' || onlineAvailable) && (m !== 'COD' || codAvailable)
   );
   const delivering = fulfillmentMethod === 'DELIVERY';
 
@@ -106,8 +134,8 @@ export default function CheckoutPage() {
   }, [token]);
 
   useEffect(() => {
-    if (!currentShopId) return;
-    fetch(`${API_BASE}/shops/${currentShopId}`)
+    if (!singleShopId) return;
+    fetch(`${API_BASE}/shops/${singleShopId}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.category_details) {
@@ -122,32 +150,40 @@ export default function CheckoutPage() {
       })
       .catch(err => console.error('Failed to fetch shop rules:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentShopId]);
+  }, [singleShopId]);
 
   // Ask the server what this cart costs whenever it, or how it is fulfilled, changes.
   const cartKey = cartItems.map(i => `${i.id}:${i.quantity}`).join(',');
   useEffect(() => {
-    if (!currentShopId || cartItems.length === 0 || pendingOrder) {
+    if ((!singleShopId && !isBatch) || cartItems.length === 0 || pendingOrder) {
       if (cartItems.length === 0) setQuote(null);
       return undefined;
     }
-        let cancelled = false;
-    fetchQuote({
-      shopId: currentShopId,
-      fulfillmentMethod,
-      items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
-      ...(fulfillmentMethod === 'DELIVERY'
-        ? { addressId: selectedAddressId || undefined, deliveryCoordinate: location || undefined }
-        : {}),
-    })
+    let cancelled = false;
+    const where = fulfillmentMethod === 'DELIVERY'
+      ? { addressId: selectedAddressId || undefined, deliveryCoordinate: location || undefined }
+      : {};
+    (isBatch
+      ? fetchQuote({ fulfillmentMethod, items: batchLines(cartItems), ...where }, { batch: true })
+      : fetchQuote({
+        shopId: singleShopId,
+        fulfillmentMethod,
+        items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
+        ...where,
+      }))
       .then((data) => { if (!cancelled) { setQuote(data); setQuoteError(null); } })
       .catch((e) => { if (!cancelled) { setQuote(null); setQuoteError(e); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentShopId, cartKey, fulfillmentMethod, pendingOrder, selectedAddressId, location ? `${location.lat},${location.lng}` : '']);
+  }, [singleShopId, isBatch, cartKey, fulfillmentMethod, pendingOrder, selectedAddressId, location ? `${location.lat},${location.lng}` : '']);
 
   // Until the delivery location is known, the cart is priced but the delivery is not.
   const needsLocation = Boolean(quoteError && quoteError.code === 'LOCATION_REQUIRED');
+  // Problems that choosing pickup, or a delivery address, in the next step can
+  // solve. Step 1 used to wait for a priced quote, so a cart from a shop that
+  // does not deliver ("Choose pickup instead") could never reach the step where
+  // pickup is chosen.
+  const fulfilmentProblem = Boolean(quoteError && ['LOCATION_REQUIRED', 'DELIVERY_NOT_OFFERED', 'SHOP_LOCATION_MISSING', 'OUT_OF_DELIVERY_RANGE'].includes(quoteError.code));
 
   // Keep the selected method one that is actually on offer.
   useEffect(() => {
@@ -162,7 +198,8 @@ export default function CheckoutPage() {
   const money = (value) => (value === null || value === undefined ? '—' : `₹${Number(value).toFixed(2)}`);
 
   const finish = (order, paid, method) => {
-    setConfirmed({ id: order.id, paid, method });
+    attemptKey.current = null;
+    setConfirmed({ id: order.id, ids: order.ids || [order.id], paid, method });
     setPendingOrder(null);
     setStep(4);
     clearCart();
@@ -210,12 +247,39 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
+    if (isBatch) {
+      // One order per shop, one payment (D6).
+      try {
+        const res = await fetch(`${API_BASE}/shops/cart/batch-checkout`, {
+          method: 'POST',
+          headers: { ...getAuthHeaders(), 'Idempotency-Key': idempotencyKey() },
+          body: JSON.stringify({
+            fulfillmentMethod,
+            paymentMethod: paymentMethod.toLowerCase(),
+            deliveryAddress: delivering ? `${address}, ${pincode}` : null,
+            addressId: delivering && selectedAddressId ? selectedAddressId : undefined,
+            deliveryCoordinate: delivering && location ? location : undefined,
+            items: batchLines(cartItems),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !Array.isArray(data.orderIds)) {
+          if (res.status !== 409) attemptKey.current = null;
+          throw new Error(data.message || data.error || `Order failed (${res.status})`);
+        }
+        finish({ id: data.orderIds[0], ids: data.orderIds }, data.paymentStatus === 'paid', paymentMethod);
+      } catch (e) {
+        setError(e.message);
+      }
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/checkout`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { ...getAuthHeaders(), 'Idempotency-Key': idempotencyKey() },
         body: JSON.stringify({
-          shopId: currentShopId,
+          shopId: singleShopId,
           fulfillmentMethod,
           paymentMethod: paymentMethod.toLowerCase(),
                     deliveryAddress: delivering ? `${address}, ${pincode}` : null,
@@ -226,6 +290,7 @@ export default function CheckoutPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
+        if (res.status !== 409) attemptKey.current = null;
         throw new Error(data.error || data.message || `Order failed (${res.status})`);
       }
 
@@ -288,6 +353,17 @@ export default function CheckoutPage() {
                   <motion.div key="cart" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="bg-card-bg border border-border rounded-3xl p-6 md:p-8 shadow-glass-glow backdrop-blur-xl">
                     <h2 className="text-2xl font-bold text-text mb-2 border-b border-border pb-4">Review Your Cart</h2>
                     {currentShopName && <p className="text-primary font-bold mb-6">Ordering from: {currentShopName}</p>}
+                    {isBatch && (
+                      <p className="text-primary font-bold mb-6" data-testid="multi-shop-note">
+                        {plan.shops.length} shops, one checkout: each shop gets its own order, paid together.
+                      </p>
+                    )}
+                    {notices && notices.length > 0 && (
+                      <div role="status" data-testid="cart-notices" className="mb-6 p-4 rounded-2xl border border-amber-400/50 bg-amber-500/10 text-sm space-y-1">
+                        {notices.map((n, i) => <p key={i} className="text-text">{describeChange(n)}</p>)}
+                        <button type="button" onClick={dismissNotices} className="text-primary font-bold text-xs mt-1">OK</button>
+                      </div>
+                    )}
 
                     {cartItems.length === 0 ? (
                       <div className="text-center py-12">
@@ -296,15 +372,30 @@ export default function CheckoutPage() {
                         <button className="px-6 py-2 bg-primary text-white rounded-xl font-bold" onClick={() => window.location.href = '/'}>Start Shopping</button>
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        {cartItems.map((item, i) => (
-                          <div key={i} className="flex justify-between items-center p-4 bg-background-alt/50 rounded-2xl border border-border/50">
-                            <div>
-                              <h4 className="text-text font-bold">{item.name}</h4>
-                              <p className="text-primary font-bold mt-1">₹{item.price} x {item.quantity}</p>
-                            </div>
-                            <div className="text-xl font-black text-text">₹{item.price * item.quantity}</div>
-                          </div>
+                      <div className="space-y-8">
+                        {plan.shops.map((group) => (
+                          <section key={String(group.shopId)} data-testid="cart-shop-group" aria-label={group.shopName} className="space-y-3">
+                            {isBatch && (
+                              <div className="flex justify-between items-baseline border-b border-border/60 pb-2">
+                                <h3 className="text-text font-bold flex items-center gap-2"><Store className="w-4 h-4" /> {group.shopName}</h3>
+                                <span className="text-text-muted text-sm">₹{group.subtotal.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {group.items.map((item) => (
+                              <div key={`${item.id}-${JSON.stringify(item.options || {})}`} className="flex justify-between items-center p-4 bg-background-alt/50 rounded-2xl border border-border/50">
+                                <div>
+                                  <h4 className="text-text font-bold">{item.name}</h4>
+                                  <p className="text-primary font-bold mt-1">₹{item.price} x {item.quantity}</p>
+                                  {item.isOutOfStock && (
+                                    <p className="text-red-400 text-sm font-bold mt-1">
+                                      {item.availableStock > 0 ? `Only ${item.availableStock} left: reduce the quantity` : 'Out of stock: remove it to continue'}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="text-xl font-black text-text">₹{(Number(item.price) * item.quantity).toFixed(2)}</div>
+                              </div>
+                            ))}
+                          </section>
                         ))}
                       </div>
                     )}
@@ -392,7 +483,11 @@ export default function CheckoutPage() {
                     {fulfillmentMethod === 'SELF_PICKUP' && (
                       <div className="bg-primary-glass border border-primary/20 rounded-xl p-4 flex gap-3 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <p className="text-emerald-200">You can pick up your order directly from <strong>{currentShopName}</strong> once it is marked as ready. No delivery fee will be charged.</p>
+                        <p className="text-emerald-200">
+                          {isBatch
+                            ? <>You can pick up each shop&apos;s order from that shop once it is marked as ready. No delivery fee will be charged.</>
+                            : <>You can pick up your order directly from <strong>{currentShopName}</strong> once it is marked as ready. No delivery fee will be charged.</>}
+                        </p>
                       </div>
                     )}
                   </motion.div>
@@ -404,7 +499,13 @@ export default function CheckoutPage() {
                     <h2 className="text-2xl font-bold text-text mb-6 border-b border-border pb-4">Payment Method</h2>
                     <div className="space-y-4">
 
-                      {quote && !onlineAvailable && (
+                      {isBatch && (
+                        <p className="text-text-muted text-sm flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          An order from several shops is paid from your wallet or in cash. To pay online, check out one shop at a time.
+                        </p>
+                      )}
+                      {quote && !onlineAvailable && !isBatch && (
                         <p className="text-text-muted text-sm flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                           Online payment (UPI, cards, netbanking) is not available right now.
@@ -460,8 +561,11 @@ export default function CheckoutPage() {
                     <p className="text-text-muted text-lg mb-8">Thank you for supporting a local business.</p>
 
                     <div className="bg-background-alt rounded-2xl p-6 inline-block text-left mb-8 border border-border min-w-[300px]">
-                      <p className="text-text-muted text-sm mb-1">Order Tracking ID</p>
-                      <p className="text-text font-bold text-xl mb-4 break-all">{confirmed?.id}</p>
+                      <p className="text-text-muted text-sm mb-1">{confirmed?.ids?.length > 1 ? `Orders (one per shop)` : 'Order Tracking ID'}</p>
+                      {(confirmed?.ids || []).map((oid) => (
+                        <p key={oid} data-testid="confirmed-order-id" className="text-text font-bold text-xl mb-2 break-all">{oid}</p>
+                      ))}
+                      <div className="mb-2" />
                       <p className="text-text-muted text-sm mb-1">Payment</p>
                       <p className="text-text font-bold mb-4">
                         {confirmed?.paid
@@ -479,7 +583,7 @@ export default function CheckoutPage() {
                       <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-background-alt text-text font-bold rounded-xl hover:bg-card-bg transition">
                         Back to Home
                       </button>
-                      <button onClick={() => window.location.href = `/order-tracking?id=${confirmed?.id}`} className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow">
+                      <button onClick={() => window.location.href = confirmed?.ids?.length > 1 ? '/order-tracking' : `/order-tracking?id=${confirmed?.id}`} className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow">
                         Track Order
                       </button>
                     </div>
@@ -531,7 +635,7 @@ export default function CheckoutPage() {
                   )}
 
                   {step === 1 && (
-                                        <button onClick={() => setStep(2)} disabled={cartItems.length === 0 || (!quote && !needsLocation)} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow disabled:opacity-50">
+                                        <button onClick={() => setStep(2)} disabled={cartItems.length === 0 || unavailable.length > 0 || (!quote && !fulfilmentProblem)} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary transition shadow-emerald-glow disabled:opacity-50">
                       Proceed to Fulfillment
                     </button>
                   )}

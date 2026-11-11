@@ -199,6 +199,15 @@ module.exports = defineConfig({
         PORT: '3000',
         // apps/web/src/lib/api.js appends /api/v1 to this origin.
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
+        // apps/web/.env holds a live Firebase project; with it the login page
+        // put a real Google reCAPTCHA in front of every E2E sign-in. Set to ''
+        // (Next does not override a variable that is already set), so the
+        // page uses the server OTP the E2E backend issues.
+        ...Object.fromEntries([
+          'NEXT_PUBLIC_FIREBASE_API_KEY', 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+          'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+          'NEXT_PUBLIC_FIREBASE_APP_ID', 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID',
+        ].map((k) => [k, ''])),
       },
     },
     {

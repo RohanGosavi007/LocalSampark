@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, Image, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { useCartStore } from '../../../src/store/cartStore';
@@ -8,6 +8,8 @@ import { useAuth } from '../../../src/context/AuthContext';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../theme';
 import { ShieldCheck, MapPin, ChevronRight } from 'lucide-react-native';
 import BouncyButton from '../../../src/components/BouncyButton';
+import { checkoutPlan, batchLines, describeChange, blockers } from '../../../src/lib/cartModel';
+import { createAttempt } from '../../../src/services/checkoutAttempt';
 
 // Loaded the way ZoneContext loads it: a build without the native module can
 // still check out with a saved address.
@@ -45,10 +47,20 @@ const METHODS = [
  *   online    Razorpay Checkout opens for the payment the server opened; the
  *             order is confirmed paid once the server has verified it. Backing
  *             out leaves the order unpaid and the button retries the payment.
+ *
+ * A cart from several shops (Decision D6) is priced by
+ * POST /shops/cart/batch-quote and placed by POST /shops/cart/batch-checkout:
+ * one order per shop in one transaction, paid once from the wallet or in cash
+ * (one gateway payment settles one order, so online payment is for a single
+ * shop's cart).
  */
 export default function CheckoutScreen() {
   const { user, refreshWallet } = useAuth();
-  const { items: cartItems, clearCart, currentShopId, currentShopName } = useCartStore();
+  const { items: cartItems, clearCart, notices, dismissNotices } = useCartStore();
+  const plan = checkoutPlan(cartItems);
+  const isBatch = plan.mode === 'batch';
+  const currentShopName = plan.shops.length === 1 ? plan.shops[0].shopName : null;
+  const unavailableItems = blockers(cartItems);
   const [deliveryMode, setDeliveryMode] = useState('delivery');
   const [address, setAddress] = useState('');
   const [method, setMethod] = useState('cod');
@@ -63,8 +75,14 @@ export default function CheckoutScreen() {
   const [locating, setLocating] = useState(false);
   // An order placed for online payment that has not been paid yet.
   const [pendingOrder, setPendingOrder] = useState(null);
+  // One Idempotency-Key per attempt to place the order (C8,
+  // src/services/checkoutAttempt.js).
+  const attempt = useRef(null);
+  if (!attempt.current) attempt.current = createAttempt();
+  const idempotencyKey = () => attempt.current.key();
+  const forgetKeyAfter = (error) => attempt.current.failed(error);
 
-  const shopId = currentShopId || cartItems[0]?.shop_id;
+  const shopId = plan.shopId;
   const lines = cartItems.map(item => ({ productId: item.id, quantity: item.quantity }));
   const cartKey = cartItems.map(item => `${item.id}:${item.quantity}`).join(',');
 
@@ -86,7 +104,7 @@ export default function CheckoutScreen() {
   }, []);
 
   useEffect(() => {
-        if (!shopId || cartItems.length === 0 || pendingOrder) return undefined;
+    if ((!shopId && !isBatch) || cartItems.length === 0 || pendingOrder) return undefined;
     const delivering = deliveryMode === 'delivery';
     if (delivering && !location && !savedAddressId) {
       setQuote(null);
@@ -94,12 +112,10 @@ export default function CheckoutScreen() {
       return undefined;
     }
     let cancelled = false;
-    apiPost('/checkout/quote', {
-      shopId,
-      deliveryMode,
-      items: lines,
-      ...(delivering ? { addressId: savedAddressId || undefined, deliveryCoordinate: location || undefined } : {}),
-    })
+    const where = delivering ? { addressId: savedAddressId || undefined, deliveryCoordinate: location || undefined } : {};
+    (isBatch
+      ? apiPost('/shops/cart/batch-quote', { deliveryMode, items: batchLines(cartItems), ...where })
+      : apiPost('/checkout/quote', { shopId, deliveryMode, items: lines, ...where }))
       .then(data => {
         if (cancelled) return;
         setQuote(data);
@@ -112,12 +128,14 @@ export default function CheckoutScreen() {
       });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shopId, cartKey, deliveryMode, pendingOrder, savedAddressId, location ? `${location.lat},${location.lng}` : '']);
+    }, [shopId, isBatch, cartKey, deliveryMode, pendingOrder, savedAddressId, location ? `${location.lat},${location.lng}` : '']);
 
   const codAvailable = !quote || quote.paymentMethods?.cod !== false;
+  // A multi-shop cart is paid from the wallet or in cash.
+  const onlineOffered = onlineAvailable && !isBatch;
   useEffect(() => {
-    if (method === 'cod' && !codAvailable && !pendingOrder) setMethod(onlineAvailable ? 'online' : 'wallet');
-  }, [method, codAvailable, onlineAvailable, pendingOrder]);
+    if (method === 'cod' && !codAvailable && !pendingOrder) setMethod(onlineOffered ? 'online' : 'wallet');
+  }, [method, codAvailable, onlineOffered, pendingOrder]);
 
   const useMyLocation = async () => {
     if (!Location) {
@@ -140,13 +158,14 @@ export default function CheckoutScreen() {
   };
 
   useEffect(() => {
-    if (method === 'online' && !onlineAvailable && !pendingOrder) setMethod('cod');
-  }, [method, onlineAvailable, pendingOrder]);
+    if (method === 'online' && !onlineOffered && !pendingOrder) setMethod('cod');
+  }, [method, onlineOffered, pendingOrder]);
 
   const bill = pendingOrder ? pendingOrder.bill : quote?.bill || null;
   const rupees = (value) => (value === null || value === undefined ? '—' : `₹${Number(value).toFixed(0)}`);
 
   const finish = (order, paid) => {
+    attempt.current.done();
     setPendingOrder(null);
     clearCart();
     if (paid && refreshWallet) refreshWallet();
@@ -196,7 +215,40 @@ export default function CheckoutScreen() {
       return;
     }
 
+    if (unavailableItems.length) {
+      Alert.alert('Some items are unavailable', `${unavailableItems.join(', ')}: change the quantity or remove them first.`);
+      return;
+    }
+
     setIsProcessing(true);
+    if (isBatch) {
+      try {
+        const data = await apiPost('/shops/cart/batch-checkout', {
+          deliveryMode,
+          paymentMethod: method,
+          deliveryAddress: deliveryMode === 'delivery' ? address.trim() : null,
+          addressId: deliveryMode === 'delivery' && savedAddressId ? savedAddressId : undefined,
+          deliveryCoordinate: deliveryMode === 'delivery' && location ? location : undefined,
+          items: batchLines(cartItems),
+        }, { headers: { 'Idempotency-Key': idempotencyKey() } });
+        const ids = Array.isArray(data?.orderIds) ? data.orderIds : [];
+        if (!ids.length) throw new Error(data?.message || 'The order was not placed. Please try again.');
+        const paid = data.paymentStatus === 'paid';
+        attempt.current.done();
+        clearCart();
+        if (paid && refreshWallet) refreshWallet();
+        Alert.alert(
+          paid ? 'Orders placed and paid' : 'Orders placed',
+          `${ids.length} orders, one per shop: ${ids.map((id) => String(id).slice(0, 8)).join(', ')}.`,
+          [{ text: 'My orders', onPress: () => router.push('/orders') }]
+        );
+      } catch (error) {
+        forgetKeyAfter(error);
+        Alert.alert('Order not placed', error?.message || 'Please try again.');
+      }
+      setIsProcessing(false);
+      return;
+    }
     try {
       const data = await apiPost('/checkout', {
         shopId,
@@ -206,7 +258,7 @@ export default function CheckoutScreen() {
         addressId: deliveryMode === 'delivery' && savedAddressId ? savedAddressId : undefined,
         deliveryCoordinate: deliveryMode === 'delivery' && location ? location : undefined,
         items: lines,
-      });
+      }, { headers: { 'Idempotency-Key': idempotencyKey() } });
 
       if (method === 'online') {
         setPendingOrder({ order: data.order, bill: data.bill });
@@ -219,6 +271,7 @@ export default function CheckoutScreen() {
         finish(data.order, method === 'wallet');
       }
     } catch (error) {
+      forgetKeyAfter(error);
       Alert.alert('Order not placed', error?.message || 'Please try again.');
     }
     setIsProcessing(false);
@@ -290,21 +343,39 @@ export default function CheckoutScreen() {
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={styles.timeText}>Collect from {currentShopName || 'the shop'} once it is ready.</Text>
+            <Text style={styles.timeText}>
+              {isBatch ? 'Collect each order from its shop once it is ready.' : `Collect from ${currentShopName || 'the shop'} once it is ready.`}
+            </Text>
           )}
         </View>
 
         {/* Cart Items List */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Order Items</Text>
-          {cartItems.map((item, idx) => (
-            <View key={`${item.id}-${idx}`} style={styles.cartItemRow}>
-              <View style={styles.cartItemIcon} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cartItemName}>{item.name}</Text>
-                <Text style={styles.cartItemPrice}>₹{item.price} x {item.quantity}</Text>
-              </View>
-              <Text style={styles.cartItemTotal}>₹{(item.price * item.quantity).toFixed(0)}</Text>
+          {isBatch ? (
+            <Text style={styles.timeText}>{plan.shops.length} shops, one checkout: each shop gets its own order, paid together.</Text>
+          ) : null}
+          {notices && notices.length > 0 ? (
+            <TouchableOpacity onPress={dismissNotices} accessibilityRole="button">
+              {notices.map((n, i) => <Text key={i} style={styles.errorText}>{describeChange(n)}</Text>)}
+            </TouchableOpacity>
+          ) : null}
+          {plan.shops.map((group) => (
+            <View key={String(group.shopId)}>
+              {isBatch ? <Text style={styles.cartItemName}>{group.shopName} · ₹{group.subtotal.toFixed(0)}</Text> : null}
+              {group.items.map((item, idx) => (
+                <View key={`${item.id}-${idx}`} style={styles.cartItemRow}>
+                  <View style={styles.cartItemIcon} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cartItemName}>{item.name}</Text>
+                    <Text style={styles.cartItemPrice}>₹{item.price} x {item.quantity}</Text>
+                    {item.isOutOfStock ? (
+                      <Text style={styles.errorText}>{item.availableStock > 0 ? `Only ${item.availableStock} left` : 'Out of stock'}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.cartItemTotal}>₹{(Number(item.price) * item.quantity).toFixed(0)}</Text>
+                </View>
+              ))}
             </View>
           ))}
           <TouchableOpacity style={styles.addMoreBtn} onPress={() => router.back()}>
@@ -344,7 +415,7 @@ export default function CheckoutScreen() {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Pay With</Text>
           {METHODS.map(option => {
-                        const unavailable = (option.key === 'online' && !onlineAvailable) || (option.key === 'cod' && !codAvailable);
+            const unavailable = (option.key === 'online' && !onlineOffered) || (option.key === 'cod' && !codAvailable);
             const selected = method === option.key;
             return (
               <TouchableOpacity
@@ -367,7 +438,7 @@ export default function CheckoutScreen() {
           })}
         </View>
 
-        {onlineAvailable && (
+        {onlineOffered && (
           <View style={styles.trustBadgeRow}>
             <ShieldCheck color={COLORS.success} size={20} />
             <Text style={styles.trustText}>Online payments are processed by Razorpay</Text>

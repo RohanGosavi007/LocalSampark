@@ -173,6 +173,10 @@ try { LanguageProvider = require('../src/context/LanguageContext').LanguageProvi
 // New: src/services/socket.js was a complete socket client with zero
 // importers, so the Android app had no realtime of any kind. SocketProvider
 // owns one authenticated connection for the whole app.
+// C6: keeps the cart in step with the customer's server cart. Optional like
+// the providers above, so a failed import cannot stop the app from opening.
+let CartSync = () => null;
+try { CartSync = require('../src/components/commerce/CartSync').default; } catch (e) { console.warn('[_layout] CartSync import failed:', e.message); }
 let SocketProvider = PassthroughProvider;
 try { SocketProvider = require('../src/context/SocketContext').SocketProvider; } catch (e) { console.warn('[_layout] SocketProvider import failed:', e.message); }
 
@@ -373,6 +377,7 @@ function RootLayout() {
                         <ThemedStatusBar />
                         <DynamicNavigator />
                         <DevLoginScreen />
+                        <CartSync />
                       </LanguageProvider>
                     </NotificationProvider>
                   </OrderRingerProvider>

@@ -74,7 +74,7 @@ const PUBLIC = [
   'GET /payments/razorpay/config', 'GET /privacy-policy', 'GET /users/privacy-policy', 'GET /leads-crm/',
   'GET /campaigns/geo-feed', 'GET /premium/plan', 'GET /ml/', 'GET /bills/status', 'GET /community-hub', 'GET /health',
   // price/cost calculators and quotes
-  'POST /carpool/cost-calculator', 'POST /marketplace/price-suggest', 'POST /checkout/quote', 'POST /delivery/quote',
+  'POST /carpool/cost-calculator', 'POST /marketplace/price-suggest', 'POST /checkout/quote', 'POST /shops/cart/batch-quote', 'POST /delivery/quote',
   'POST /ml/', 'POST /campaigns/', 'POST /logistics/riders/register', 'POST /gtm/interest-lead',
   // gateway callbacks: authenticated by signature, not by session
   'POST /webhooks/', 'POST /payments/webhook/', 'POST /societies/cctv/webhook', 'POST /society/cctv/webhook',

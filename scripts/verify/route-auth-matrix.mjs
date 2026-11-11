@@ -52,6 +52,10 @@ const PUBLIC_ALLOWLIST_PATTERNS = [
 
   // Public Quote, Contact, Leads & Discovery
   /^\/api\/v1\/checkout\/quote/,
+  // C6/D6: the multi-shop counterpart of /checkout/quote. Prices a cart and
+  // writes nothing (backend/src/__tests__/integration/cartCheckoutD6.test.js
+  // [C6.8] checks no batch row is created). Placing it needs a session.
+  /^\/api\/v1\/shops\/cart\/batch-quote/,
   /^\/api\/v1\/public\//,
   /^\/api\/v1\/leads/,
   /^\/api\/v1\/chatbot\/query/,

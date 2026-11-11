@@ -4,13 +4,15 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCartStore } from '../src/store/cartStore';
 import { ShoppingBag, Minus, Plus, Trash2, ArrowRight } from 'lucide-react-native';
+import { describeChange } from '../src/lib/cartModel';
 
 export default function CartScreen() {
   const router = useRouter();
-  const { items, currentShopName, updateQuantity, removeItem, getCartTotal, getItemCount } = useCartStore();
+  const { items, updateQuantity, removeItem, getCartTotal, shopGroups, notices, dismissNotices } = useCartStore();
+  const groups = shopGroups();
 
   const total = getCartTotal();
-  const itemCount = getItemCount();
+
 
   if (items.length === 0) {
     return (
@@ -32,28 +34,40 @@ export default function CartScreen() {
     <SafeAreaView style={s.s5}>
       <View style={s.s6}>
         <Text style={s.s7}>Review Cart</Text>
-        <Text style={s.s8}>From: {currentShopName}</Text>
+        <Text style={s.s8}>
+          {groups.length === 1 ? `From: ${groups[0].shopName}` : `${groups.length} shops: one checkout, an order for each shop`}
+        </Text>
       </View>
       
       <ScrollView style={s.s9}>
-        <View style={s.s10}>
-          {items.map((item, index) => (
-            <View key={item.id} style={[s.s35, index !== items.length - 1 && s.s36]}>
+        {notices && notices.length > 0 ? (
+          <TouchableOpacity onPress={dismissNotices} accessibilityRole="button" style={s.notice}>
+            {notices.map((n, i) => <Text key={i} style={s.noticeText}>{describeChange(n)}</Text>)}
+          </TouchableOpacity>
+        ) : null}
+        {groups.map((group) => (
+        <View key={String(group.shopId)} style={s.s10}>
+          {groups.length > 1 ? <Text style={s.shopHeading}>{group.shopName} · ₹{group.subtotal.toFixed(0)}</Text> : null}
+          {group.items.map((item, index) => (
+            <View key={`${item.id}-${JSON.stringify(item.options || {})}`} style={[s.s35, index !== group.items.length - 1 && s.s36]}>
               <View style={s.s11}>
                 <Text style={s.s12}>{item.name}</Text>
                 <Text style={s.s13}>₹{item.price}</Text>
+                {item.isOutOfStock ? (
+                  <Text style={s.noticeText}>{item.availableStock > 0 ? `Only ${item.availableStock} left` : 'Out of stock'}</Text>
+                ) : null}
               </View>
               
               <View style={s.s14}>
                 <TouchableOpacity 
-                  onPress={() => item.quantity > 1 ? updateQuantity(item.id, item.quantity - 1) : removeItem(item.id)}
+                  onPress={() => item.quantity > 1 ? updateQuantity(item.id, item.quantity - 1, item.options || {}) : removeItem(item.id, item.options || {})}
                   style={s.s15}
                 >
                   {item.quantity > 1 ? <Minus color="#fff" size={16} /> : <Trash2 color="#ef4444" size={16} />}
                 </TouchableOpacity>
                 <Text style={s.s16}>{item.quantity}</Text>
                 <TouchableOpacity 
-                  onPress={() => updateQuantity(item.id, item.quantity + 1)}
+                  onPress={() => updateQuantity(item.id, item.quantity + 1, item.options || {})}
                   style={s.s17}
                 >
                   <Plus color="#fff" size={16} />
@@ -62,6 +76,7 @@ export default function CartScreen() {
             </View>
           ))}
         </View>
+        ))}
 
         <View style={s.s18}>
           <Text style={s.s19}>Bill Details</Text>
@@ -69,17 +84,12 @@ export default function CartScreen() {
             <Text style={s.s21}>Item Total</Text>
             <Text style={s.s22}>₹{total}</Text>
           </View>
-          <View style={s.s23}>
-            <Text style={s.s24}>Platform Fee</Text>
-            <Text style={s.s25}>₹10</Text>
-          </View>
+          {/* Delivery and fees are the server's, worked out at checkout from where
+              the order is going. This screen used to show a ₹10 platform fee
+              of its own and add it to the total. */}
           <View style={s.s26}>
-            <Text style={s.s27}>Delivery Fee</Text>
-            <Text style={s.s28}>To be calculated</Text>
-          </View>
-          <View style={s.s29}>
-            <Text style={s.s30}>Total Amount</Text>
-            <Text style={s.s31}>₹{total + 10}</Text>
+            <Text style={s.s27}>Delivery and fees</Text>
+            <Text style={s.s28}>Worked out at checkout</Text>
           </View>
         </View>
       </ScrollView>
@@ -98,6 +108,9 @@ export default function CartScreen() {
 }
 
 const s = StyleSheet.create({
+  notice: { marginHorizontal: 16, marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: '#fef3c7' },
+  noticeText: { color: '#b45309', fontWeight: '700', fontSize: 13 },
+  shopHeading: { fontWeight: '800', fontSize: 15, color: '#e2e8f0', marginBottom: 8 },
   s0: { flex: 1, backgroundColor: '#020617', justifyContent: 'center', alignItems: 'center' },
   s1: { color: '#ffffff', fontSize: 20, fontWeight: '700', marginBottom: 8 },
   s2: { color: '#94a3b8', marginBottom: 32 },

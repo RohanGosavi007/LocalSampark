@@ -10,6 +10,7 @@ import { ThemeProvider } from '../contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 import ServiceWorkerRegistrar from './components/ServiceWorkerRegistrar';
 import DevLoginScreen from '../components/DevLoginScreen';
+import CartSync from '../components/CartSync';
 import QueryProvider from './components/QueryProvider';
 import ConsentBanner from '../components/ConsentBanner';
 import WelcomeTour from '../components/WelcomeTour';
@@ -189,6 +190,8 @@ export default function RootLayout({ children }) {
                         <ConsentBanner />
                         <WelcomeTour />
                         <DevLoginScreen />
+                        {/* C6: the cart follows the customer (server cart, guest merge, revalidation). */}
+                        <CartSync />
                       </LocationProvider>
                     </ZoneProvider>
                   </SocketProvider>

@@ -9,7 +9,7 @@ import { useCartStore } from '../../../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Store, Navigation, Star, MessageSquare, HelpCircle, 
-  Clock, Truck, MapPin, Share2, Phone, BadgeCheck, 
+  Truck, MapPin, Share2, Phone, BadgeCheck, 
   Minus, Plus, ShoppingBag, CreditCard, Wallet, Calendar, X 
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
@@ -151,7 +151,9 @@ export default function ShopDetailPage() {
   }, [id]);
 
 
-  const shopCartItems = cart.filter(item => item.shop_id === id);
+  // D6: the cart may hold other shops' items too; this page shows its own.
+  const shopCartItems = cart.filter(item => String(item.shop_id) === String(id));
+  const otherShops = new Set(cart.filter(item => String(item.shop_id) !== String(id)).map(item => String(item.shop_id))).size;
   const cartSubtotal = shopCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const getServiceFinalPrice = () => {
@@ -493,9 +495,6 @@ export default function ShopDetailPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-100">
-                                    <Clock className="w-4 h-4"/> Estimated Ready: ~25 mins
-                                </div>
                             </div>
                         )}
                         
@@ -513,6 +512,11 @@ export default function ShopDetailPage() {
                         <Button className="w-full shadow-lg shadow-primary/20 hover:-translate-y-1" size="lg" onClick={() => setShowCheckout(true)}>
                         Proceed to Checkout
                         </Button>
+                        {otherShops > 0 && (
+                            <a href="/checkout" data-testid="checkout-all-shops" className="block text-center text-sm font-bold text-primary mt-3">
+                                Your cart also has items from {otherShops} other {otherShops === 1 ? 'shop' : 'shops'}: check out everything together
+                            </a>
+                        )}
                     </div>
                     )}
                 </div>

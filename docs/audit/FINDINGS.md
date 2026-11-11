@@ -1188,3 +1188,56 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | Test | Assertion change | Why |
 |---|---|---|
 | `apps/mobile/__tests__/noFabricatedData.test.js` NEEDLES | added `'Dhanori Fresh'`, `'City Pharmacy'`, `id: 'mock` | Stricter only: catches the sample-row fallback this pass removed |
+
+### F-149: The cart was one shop at a time, never the customer's, and could lose or leak lines (C6, D6)
+- **Single shop, against D6:**
+  - The web asked to throw away the first shop's items when a second shop's item was added; the app refused the item (`different_shop`).
+  - Decision D6 is a multi-shop cart with one checkout, and the backend already had it (`POST /shops/cart/batch-checkout`: one order per shop, one payment, one transaction). No client called it.
+- **Never the customer's cart:**
+  - The web posted every change with the anonymous session id only, never the token. The server cart was never tied to the customer: it did not follow them to the app, and the guest cart was never merged on sign-in (`POST /cart/merge` had no caller).
+  - The app's sync sent the quantity just added. `POST /cart` *sets* the line, so adding 1 to a line of 2 left the server at 1.
+  - Neither client read the server's answer: "Insufficient inventory" left a quantity on screen the shop could not supply.
+  - Emptying the cart after an order left the server copy, which would come back on the next pull.
+- **Backend:**
+  - **Guest access:** a guest request matched rows by session id alone. Rows that belong to a signed-in customer keep their session id, so anyone holding it could read and clear that customer's cart. A guest now reaches only rows with no owner.
+  - **Merge:** a row already owned by the customer was matched as both the guest line and the customer's line; its quantity was doubled and then the row was deleted. Only unowned rows merge now.
+  - **Stock:** `GET /cart` marked a product whose stock is not tracked as out of stock, which `POST /cart` already allowed on the same rule.
+  - **Pickup fee:** a multi-shop *pickup* cart was charged the extra-pickup delivery fee for every shop after the first.
+- **Found by the browser specs:**
+  - **CORS:** `X-Session-Id`, the header the cart routes read, was not in the CORS allow-list. Every cart request from the web failed its preflight, so even after the client fixes nothing reached the server. The app is not subject to CORS. Proof: `backend/src/__tests__/integration/corsCartHeaders.test.js` [C6.23], which preflights the real server and fails without the header.
+  - **Checkout dead end:** checkout step 1 waited for a priced quote. A cart from a shop that does not deliver is refused for the default (delivery) with "Choose pickup instead", but pickup is chosen in step 2, so the customer could never get there. Step 1 now proceeds when the only problem is how the order is fulfilled. [C6.21] goes through it.
+  - **Firebase:** with no Firebase project configured, the web login still called Google with placeholder keys ("mock-api-key") and put up a reCAPTCHA before falling back to the server OTP. It now goes straight to the server OTP (`firebaseConfigured`, `apps/web/src/lib/firebase.js`).
+  - **E2E isolation:** the E2E web build read the live Firebase project from `apps/web/.env`, so E2E sign-ins reached Google's reCAPTCHA. `playwright.config.js` now blanks the `NEXT_PUBLIC_FIREBASE_*` variables for the web server, as it already did for the backend's provider credentials.
+- **Invented figures:**
+  - The app's cart screen showed a ₹10 "Platform Fee" and added it to the total. The server's fee comes from platform config and is shown at checkout.
+  - The web shop page showed "Estimated Ready: ~25 mins", which nothing computes.
+- **Fix:**
+  - **Shared rules:** `cartModel.js`, identical in both apps (a parity test fails if they drift), covers lines, grouping by shop, reconciling with the server and choosing the checkout. Both stores send the line's full quantity with the token and session, apply stock refusals, clear the server copy, pull on start-up and when the app or tab returns, and merge on sign-in.
+  - **Resumable merge:** the web login page reloads straight after signing in, which can cut the merge off. A `signedIn` flag reruns it on the next load, which is safe because the server only moves unowned rows. Guest lines the server never received are put back. The app waits for its saved cart to load before acting.
+  - **Checkout:** both checkouts take a multi-shop cart via the new `POST /shops/cart/batch-quote`. It uses the same pricing function as batch checkout, so the bill shown is the bill charged. Payment is wallet or cash for a multi-shop cart (one gateway payment settles one order).
+  - **Route-auth matrix:** `scripts/verify/route-auth-matrix.mjs` lists batch-quote as a reviewed public route. It had passed only because the matrix counts any non-2xx as protected.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/cartCheckoutD6.test.js` [C6.8]–[C6.12], on SQLite and PostgreSQL; all five fail against the previous routes.
+  - **Unit:** `apps/web/tests/cartModel.test.mjs` [C6.5]–[C6.7]; `apps/mobile/__tests__/cartIsolation.test.js` [C6.13]–[C6.18]; `apps/mobile/__tests__/cartModelParity.test.js` [C6.19].
+  - **Browser:** `tests/e2e/web/cart.spec.js` [C6.20]–[C6.22]. The cart filled through the API shows on the web grouped by shop; a two-shop checkout makes two orders whose totals match the page and empties the cart; a guest cart survives signing in through the login page without doubling.
+- **Status:** CODE COMPLETE.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `apps/mobile/__tests__/cartIsolation.test.js` "adding from a different shop" (4 tests: refused with `different_shop`; existing cart untouched; refused item not synced; clearing releases the shop lock) | replaced by [C6.13]–[C6.16]. A second shop's item is accepted beside the first and grouped. What is synced is the line's full quantity for every shop. A stock refusal sets the line to what is available. Clearing empties the server copy | The old tests pinned single-shop behaviour that contradicts Decision D6. Their real concern, that device and server agree, is kept and made stricter: the old "accepted item reaches the server" only checked that `fetch` was called, not with what |
+| `backend/src/__tests__/integration/routeSmoke.test.js` public route list | added `POST /shops/cart/batch-quote` beside `POST /checkout/quote` | A new route that is public by design: it prices a multi-shop cart and writes nothing ([C6.8] checks no row is created). This suite found it, as it should; placing the order (`batch-checkout`) still requires a session and is not listed |
+
+### F-150: Placing an order was not idempotent: a retry or a double tap placed a second order (C8)
+- **Defect:** no route that places an order (`POST /checkout`, `POST /shops/:id/orders`, `POST /shops/cart/batch-checkout`, and `/checkout` on the unified router) recognised a repeated request. A double tap on Pay placed two orders; so did a client retry after a timeout when the first request had reached the server. A wallet order was charged twice, and a multi-shop cart became two batches.
+- **Fix:**
+  - **Middleware:** `backend/src/middleware/idempotency.middleware.js`, after `authenticate` on all four routes. It keeps the answer for (customer, route, key) for 24 hours in `idempotency_keys` (migration 138, both engines).
+  - **Retries:** a retry of the same request gets the same answer, marked `Idempotent-Replayed: true`. The same key on a different request gets 422 `IDEMPOTENCY_KEY_REUSED`; a second press while the first is still being placed gets 409 `IDEMPOTENCY_IN_PROGRESS`. Server errors are not kept, so they can be retried.
+  - **Ledger failure:** if the ledger cannot be read, the request is processed as one without a key rather than refused.
+  - **CORS:** `Idempotency-Key` added to the allowed headers.
+  - **Clients:** the web checkout, the shop page's checkout and the app's checkout send one key per attempt. They keep it when the answer was lost (network, timeout, 5xx, 409), spend it on a refusal, and drop it once the order is placed. The app's rules are in `apps/mobile/src/services/checkoutAttempt.js`.
+- **Not yet:** a request *without* a key is still processed, so app builds already installed keep working. Requiring the key on these routes is a one-line change once every client in use sends it; until then the protection depends on the client sending one, which all three current clients do.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/idempotencyOrders.test.js` [C8.1]–[C8.7], on SQLite and PostgreSQL. With the middleware replaced by a pass-through, six of the seven fail; the seventh, keys belong to one customer, holds either way.
+  - **Browser:** `tests/e2e/web/checkout.spec.js` [C8.8] captures the real checkout request, sends it again with its key, and gets the same order back; the customer has exactly one order. [C8.9] checks the bill shown is the server's quote.
+  - **App:** `apps/mobile/__tests__/checkoutAttempt.test.js` [C8.10]–[C8.12].
+- **Status:** CODE COMPLETE.

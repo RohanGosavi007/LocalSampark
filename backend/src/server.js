@@ -128,6 +128,13 @@ app.use(cors({
     'X-CSRF-Token',
     'X-Territory-ID',
     'X-Society-ID',
+    // The guest cart's session (modules/ecommerce/routes/cart.routes.js reads
+    // it). Without it every cart request from the web failed its preflight,
+    // so the web cart never reached the server (F-149).
+    'X-Session-Id',
+    // Sent with every attempt to place an order (C8,
+    // middleware/idempotency.middleware.js).
+    'Idempotency-Key',
     'ngrok-skip-browser-warning',
     'x-razorpay-signature',
     'x-webhook-signature',

@@ -22,6 +22,7 @@ const {
 // authenticate + requireShopOwner for an order status change), so these were
 // unguarded duplicates rather than a deliberate public contract.
 const { authenticate } = require('../../../middleware/auth.middleware');
+const { idempotent } = require('../../../middleware/idempotency.middleware');
 
 // GET /shops/:id was registered here as well as in shop.routes.js. routes/index.js
 // mounts /shops first, so Express has always resolved it there and this
@@ -31,7 +32,7 @@ const { authenticate } = require('../../../middleware/auth.middleware');
 // router.get('/shops/:id', getShopById);
 
 // â”€â”€ POST /api/checkout (Product Order Flow)
-router.post('/checkout', authenticate, processCheckout);
+router.post('/checkout', authenticate, idempotent('checkout'), processCheckout);
 
 // â”€â”€ POST /api/book (Service Appointment Flow)
 router.post('/book', authenticate, processBooking);

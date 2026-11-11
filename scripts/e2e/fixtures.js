@@ -33,6 +33,11 @@ const IDS = {
   shopperConfirmed: 'e2e00000-0000-4000-8000-0000000000c1',
   shopperPreparing: 'e2e00000-0000-4000-8000-0000000000c5',
   shopperLive: 'e2e00000-0000-4000-8000-0000000000c6',
+  // C6: a second shop, so a cart can hold two shops' items (D6).
+  chemistShop: 'e2e00000-0000-4000-8000-0000000000d0',
+  chemistOwner: 'e2e00000-0000-4000-8000-0000000000d1',
+  chemistSoap: 'e2e00000-0000-4000-8000-0000000000d2',
+  vendorRice: 'e2e00000-0000-4000-8000-0000000000d3',
 };
 
 const PHONES = {
@@ -215,6 +220,32 @@ async function seedE2eFixtures() {
       [itemId, orderId, product.id, product.name, product.price]
     );
   }
+
+  // C6: a second, open shop in the pilot zone with its own owner, and a
+  // product in each shop for cart specs to use (plenty of stock, so parallel
+  // specs cannot run each other out).
+  await run(
+    `INSERT INTO users (id, phone_number, full_name, role, is_verified, is_active, region_id)
+     VALUES ($1, '+919800000060', 'E2E Chemist Owner', 'shop_owner', '1', '1', $2)`,
+    [IDS.chemistOwner, region.id]
+  );
+  await run(
+    `INSERT INTO local_shops (id, owner_id, region_id, name, category, phone, address, latitude, longitude,
+                              coordinate, is_active, is_verified, approval_status, pincode, delivery_available)
+     VALUES ($1, $2, $3, 'E2E Corner Chemist', 'Pharmacy', '+919800000060', 'Dhanori Road, Pune', 18.5795, 73.8975, 'POINT(73.8975 18.5795)',
+             '1', '1', 'approved', '411015', '1')`,
+    [IDS.chemistShop, IDS.chemistOwner, region.id]
+  );
+  await run(
+    `INSERT INTO shop_products (id, shop_id, name, description, price, is_active, is_available, inventory_count, stock_quantity, track_inventory)
+     VALUES ($1, $2, 'E2E Glycerine Soap', 'Cart fixture', 45, 1, '1', 0, 0, 0)`,
+    [IDS.chemistSoap, IDS.chemistShop]
+  );
+  await run(
+    `INSERT INTO shop_products (id, shop_id, name, description, price, is_active, is_available, inventory_count, stock_quantity, track_inventory)
+     VALUES ($1, $2, 'E2E Basmati Rice 1kg', 'Cart fixture', 64, 1, '1', 500, 500, 1)`,
+    [IDS.vendorRice, shop.id]
+  );
 
   // A9: a second, inactive zone the console can switch without taking the
   // pilot zone (which the web specs order from) offline mid-run.

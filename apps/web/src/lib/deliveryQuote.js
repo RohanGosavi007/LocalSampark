@@ -31,11 +31,15 @@ export class QuoteError extends Error {
 /**
  * POST /checkout/quote. `body` is what POST /checkout takes.
  * Resolves to { bill, paymentMethods, cod }; rejects with a QuoteError.
+ *
+ * With `batch: true` it prices a multi-shop cart (D6) with
+ * POST /shops/cart/batch-quote, which answers in the same shape plus `shops`,
+ * each shop's share; `body.items` are then { shop_id, product_id, quantity }.
  */
-export async function fetchQuote(body) {
+export async function fetchQuote(body, { batch = false } = {}) {
   let res;
   try {
-    res = await fetch(`${API_BASE}/checkout/quote`, {
+    res = await fetch(`${API_BASE}${batch ? '/shops/cart/batch-quote' : '/checkout/quote'}`, {
       method: 'POST',
       // Signed in, a saved address can be named by id.
       headers: getAuthHeaders(),
@@ -47,7 +51,7 @@ export async function fetchQuote(body) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     const code = data.code || 'UNPRICEABLE';
-    throw new QuoteError(code, PROBLEMS[code] || data.error || 'This order cannot be priced right now.', data);
+    throw new QuoteError(code, PROBLEMS[code] || data.error || data.message || 'This order cannot be priced right now.', data);
   }
   return data;
 }

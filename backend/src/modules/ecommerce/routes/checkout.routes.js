@@ -5,6 +5,7 @@ const { orderPlacementLimiter } = require('../../../middleware/rateLimit.middlew
 const { enforceKillSwitch } = require('../../../middleware/godmode.middleware');
 const { processCheckout, quoteCheckout } = require('../controllers/unified-superapp.controller');
 const razorpayRoutes = require('../../payments/routes/razorpay.routes');
+const { idempotent } = require('../../../middleware/idempotency.middleware');
 
 
 // POST /checkout/quote — what a cart will cost. Prices are public, so no
@@ -14,7 +15,8 @@ router.post('/quote', optionalAuth, quoteCheckout);
 // POST /checkout — place an order. An order is always placed by someone, so
 // this authenticates (it was optionalAuth, with the handler refusing an
 // anonymous caller itself) and the limit is per account.
-router.post('/', authenticate, orderPlacementLimiter, enforceKillSwitch('kill_switch_deliveries', 'Checkout is temporarily disabled due to system maintenance (Deliveries Halted).'), processCheckout);
+// C8: a retried checkout with the same Idempotency-Key gets the first answer.
+router.post('/', authenticate, idempotent('checkout'), orderPlacementLimiter, enforceKillSwitch('kill_switch_deliveries', 'Checkout is temporarily disabled due to system maintenance (Deliveries Halted).'), processCheckout);
 
 // Payments. Aliases of POST /payments/razorpay/order and /verify — see
 // modules/payments/routes/razorpay.routes.js for the flow. These two paths

@@ -163,7 +163,15 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/cartEngine.test.js"
+      "backend/src/__tests__/unit/cartEngine.test.js",
+      "backend/src/__tests__/integration/cartCheckoutD6.test.js",
+      "apps/web/tests/cartModel.test.mjs",
+      "tests/e2e/web/cart.spec.js",
+      "apps/mobile/__tests__/cartIsolation.test.js",
+      "apps/mobile/__tests__/cartModelParity.test.js",
+      "apps/web/src/lib/cartModel.js",
+      "apps/mobile/src/lib/cartModel.js",
+      "backend/src/__tests__/integration/corsCartHeaders.test.js"
     ],
     "notes": "Enforces server-side authority on all pricing and stock. D6 multi-shop grouping implemented."
   },
@@ -222,7 +230,13 @@
     "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/integration/orderPlacementPayments.test.js",
-      "backend/src/__tests__/concurrency.test.js"
+      "backend/src/__tests__/concurrency.test.js",
+      "backend/src/__tests__/integration/idempotencyOrders.test.js",
+      "backend/src/middleware/idempotency.middleware.js",
+      "tests/e2e/web/checkout.spec.js",
+      "apps/mobile/__tests__/checkoutAttempt.test.js",
+      "apps/mobile/src/services/checkoutAttempt.js",
+      "backend/src/__tests__/integration/cartCheckoutD6.test.js"
     ],
     "notes": "Server quote integrity, COD vs online handling, and Idempotency-Key deduplication verified."
   },

@@ -10,6 +10,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 'mock-app-id',
 };
 
+/**
+ * Whether a real Firebase project is configured. Without one the client is
+ * still initialised on the placeholders above (other modules import `auth`),
+ * but phone sign-in must not be attempted: it called Google with
+ * "mock-api-key", put up a reCAPTCHA, and only fell back to the server's OTP
+ * after that failed, if the customer got that far.
+ */
+export const firebaseConfigured = Boolean(
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+);
+
 // Initialize Firebase client
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -47,6 +58,10 @@ export function setupRecaptcha(containerId = 'recaptcha-container') {
  * @param {string} containerId - reCAPTCHA container ID
  */
 export async function sendFirebasePhoneOtp(phoneNumber, containerId = 'recaptcha-container') {
+  if (!firebaseConfigured) {
+    // The caller falls back to the server's OTP.
+    throw new Error('Firebase phone sign-in is not configured');
+  }
   try {
     const appVerifier = setupRecaptcha(containerId);
     const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);

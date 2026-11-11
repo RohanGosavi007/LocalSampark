@@ -9,30 +9,44 @@ const logger = require('../../../config/logger');
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 const useSqlite = process.env.USE_SQLITE === 'true';
 
+/**
+ * Whose cart a request is about. A signed-in customer's rows are theirs by
+ * user_id. A guest's are the rows with their session id *and no owner*: a row
+ * that has been merged into an account, or was added while signed in, keeps
+ * its session id, and matching on the session id alone let anyone holding that
+ * id read and change a customer's cart.
+ */
+function cartOwner(req, alias = '') {
+  const userId = req.user ? req.user.id : null;
+  const sessionId = req.headers['x-session-id'] || (req.body && req.body.sessionId) || req.query.sessionId;
+  const col = (c) => (alias ? `${alias}.${c}` : c);
+  if (userId) return { userId, sessionId, where: `${col('user_id')} = $1`, value: userId };
+  if (sessionId) return { userId: null, sessionId, where: `${col('session_id')} = $1 AND ${col('user_id')} IS NULL`, value: sessionId };
+  return null;
+}
+
 // GET Cart Items (with multi-shop grouping D6 & stock/price revalidation C6)
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const userId = req.user ? req.user.id : null;
-    const sessionId = req.headers['x-session-id'] || req.query.sessionId;
-
-    if (!userId && !sessionId) {
+    const owner = cartOwner(req, 'c');
+    if (!owner) {
       return res.status(400).json({ error: 'User ID or Session ID is required' });
     }
 
-    const ownerColumn = userId ? 'c.user_id' : 'c.session_id';
     const rows = await query(
       `SELECT c.id, c.quantity, c.custom_options,
               p.id AS product_id, p.name AS product_name, p.price, p.image_url,
               COALESCE(p.inventory_count, p.stock, 0) AS current_stock,
+              p.track_inventory,
               s.id AS shop_id, s.name AS shop_name, s.category AS shop_category,
               COALESCE(s.delivery_fee, 0) AS delivery_fee,
               COALESCE(s.min_order_amount, 0) AS min_order_amount
          FROM cart_items c
          JOIN shop_products p ON p.id = c.product_id
          LEFT JOIN local_shops s ON s.id = p.shop_id
-        WHERE ${ownerColumn} = $1
+        WHERE ${owner.where}
         ORDER BY c.created_at DESC`,
-      [userId || sessionId]
+      [owner.value]
     ).then((r) => r.rows || r || []);
 
     const formattedItems = [];
@@ -51,8 +65,11 @@ router.get('/', optionalAuth, async (req, res) => {
       const price = Number(row.price) || 0;
       const quantity = Number(row.quantity) || 1;
       const itemSubtotal = price * quantity;
+      // A product whose stock is not tracked (made to order, services) is
+      // never out of stock; POST / already allowed it on the same rule.
+      const tracked = row.track_inventory === null || row.track_inventory === undefined || Number(row.track_inventory) === 1;
       const availableStock = Number(row.current_stock) || 0;
-      const isOutOfStock = availableStock < quantity;
+      const isOutOfStock = tracked && availableStock < quantity;
 
       const itemObj = {
         id: row.id,
@@ -140,10 +157,11 @@ router.get('/', optionalAuth, async (req, res) => {
 router.post('/', optionalAuth, async (req, res) => {
   try {
     const { productId, quantity, customOptions } = req.body;
-    const userId = req.user ? req.user.id : null;
-    const sessionId = req.body.sessionId || req.headers['x-session-id'];
+    const owner = cartOwner(req);
+    const userId = owner ? owner.userId : null;
+    const sessionId = owner ? owner.sessionId : null;
 
-    if ((!userId && !sessionId) || !productId || quantity === undefined) {
+    if (!owner || !productId || quantity === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -170,8 +188,6 @@ router.post('/', optionalAuth, async (req, res) => {
     }
 
     const customOptionsStr = customOptions ? JSON.stringify(customOptions) : null;
-    const ownerCol = userId ? 'user_id' : 'session_id';
-    const ownerVal = userId || sessionId;
 
     const optionsCondition = process.env.USE_SQLITE === 'true'
       ? '((custom_options IS NULL AND $3 IS NULL) OR custom_options = $3)'
@@ -180,10 +196,10 @@ router.post('/', optionalAuth, async (req, res) => {
     // Check for existing cart item
     const existingItem = await queryOne(
       `SELECT * FROM cart_items
-        WHERE ${ownerCol} = $1 AND product_id = $2
+        WHERE ${owner.where} AND product_id = $2
           AND ${optionsCondition}
         LIMIT 1`,
-      [ownerVal, productId, customOptionsStr]
+      [owner.value, productId, customOptionsStr]
     );
 
     let result;
@@ -253,8 +269,12 @@ router.post('/merge', authenticate, async (req, res) => {
     }
 
     // Fetch guest items
+    // Only rows nobody owns yet. A row already in this account (added while
+    // signed in, under the same session) used to be matched as both the guest
+    // line and the customer's line: its quantity was doubled and then the row
+    // was deleted.
     const guestItems = await query(
-      'SELECT id, product_id, quantity, custom_options FROM cart_items WHERE session_id = $1',
+      'SELECT id, product_id, quantity, custom_options FROM cart_items WHERE session_id = $1 AND user_id IS NULL',
       [sessionId]
     ).then((r) => r.rows || r || []);
 
@@ -278,7 +298,7 @@ router.post('/merge', authenticate, async (req, res) => {
       );
 
       if (existingUserItem) {
-        const newQty = existingUserItem.quantity + item.quantity;
+        const newQty = Number(existingUserItem.quantity) + Number(item.quantity);
         await query('UPDATE cart_items SET quantity = $1 WHERE id = $2', [newQty, existingUserItem.id]);
         await query('DELETE FROM cart_items WHERE id = $1', [item.id]);
       } else {
@@ -299,19 +319,14 @@ router.post('/merge', authenticate, async (req, res) => {
 router.delete('/:itemId', optionalAuth, async (req, res) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user ? req.user.id : null;
-    const sessionId = req.headers['x-session-id'] || req.query.sessionId;
-
-    if (!userId && !sessionId) {
+    const owner = cartOwner(req);
+    if (!owner) {
       return res.status(400).json({ error: 'User ID or Session ID is required' });
     }
 
-    const ownerCol = userId ? 'user_id' : 'session_id';
-    const ownerVal = userId || sessionId;
-
-    const deleted = await query(
-      `DELETE FROM cart_items WHERE id = $1 AND ${ownerCol} = $2`,
-      [itemId, ownerVal]
+    await query(
+      `DELETE FROM cart_items WHERE ${owner.where.replace('$1', '$2')} AND id = $1`,
+      [itemId, owner.value]
     );
 
     res.json({ success: true, message: 'Item deleted' });
@@ -324,17 +339,12 @@ router.delete('/:itemId', optionalAuth, async (req, res) => {
 // DELETE Clear Entire Cart
 router.delete('/', optionalAuth, async (req, res) => {
   try {
-    const userId = req.user ? req.user.id : null;
-    const sessionId = req.headers['x-session-id'] || req.query.sessionId;
-
-    if (!userId && !sessionId) {
+    const owner = cartOwner(req);
+    if (!owner) {
       return res.status(400).json({ error: 'User ID or Session ID is required' });
     }
 
-    const ownerCol = userId ? 'user_id' : 'session_id';
-    const ownerVal = userId || sessionId;
-
-    await query(`DELETE FROM cart_items WHERE ${ownerCol} = $1`, [ownerVal]);
+    await query(`DELETE FROM cart_items WHERE ${owner.where}`, [owner.value]);
 
     res.json({ success: true, message: 'Cart cleared' });
   } catch (error) {

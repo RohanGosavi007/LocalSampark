@@ -31,7 +31,8 @@ const { generateMockProducts, generateMockServices, generateMockStaff } = requir
 // Read at call time so tests and local runs can toggle it.
 const useMockCatalog = () =>
   process.env.USE_MOCK_CATALOG === 'true' && process.env.NODE_ENV !== 'production';
-const { authenticate } = require('../../../middleware/auth.middleware');
+const { authenticate, optionalAuth } = require('../../../middleware/auth.middleware');
+const { idempotent } = require('../../../middleware/idempotency.middleware');
 const crypto = require('crypto');
 // NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
@@ -856,7 +857,7 @@ router.post('/:id/appointments', authenticate, async (req, res, next) => {
  *
  * A service in the cart is booked as an appointment and paid at the shop.
  */
-router.post('/:id/orders', authenticate, async (req, res, next) => {
+router.post('/:id/orders', authenticate, idempotent('shop-order'), async (req, res, next) => {
   try {
     const body = req.body || {};
     const { items, appointmentDetails } = body;
@@ -1004,58 +1005,124 @@ router.put('/orders/:id/status', authenticate, async (req, res, next) => {
  *   coins      earned only on a cart that has actually been paid for.
  */
 const BATCH_MAX_LINES = 100;
+const round2 = (value) => Math.round(value * 100) / 100;
 
-router.post('/cart/batch-checkout', authenticate, async (req, res, next) => {
+/**
+ * Prices a multi-shop cart. Shared by the quote and the checkout so the bill
+ * shown is the bill charged. Throws OrderError (400) for a malformed cart.
+ */
+async function priceBatch(user, body) {
+    const { items } = body;
+    if (!Array.isArray(items) || items.length === 0) throw new orderPlacement.OrderError(400, 'EMPTY_CART', 'Cart is empty');
+    if (items.length > BATCH_MAX_LINES) throw new orderPlacement.OrderError(400, 'TOO_MANY_LINES', `A cart can hold at most ${BATCH_MAX_LINES} lines`);
+
+    // Lines grouped by the shop they are from.
+    const byShop = new Map();
+    for (const item of items) {
+        if (!item || !item.shop_id || !item.product_id) {
+            throw new orderPlacement.OrderError(400, 'BAD_LINE', 'Each item needs shop_id, product_id and a whole quantity of at least 1');
+        }
+        if (!byShop.has(item.shop_id)) byShop.set(item.shop_id, []);
+        byShop.get(item.shop_id).push({ productId: item.product_id, quantity: item.quantity });
+    }
+
+    // The placement service reads the address and location under these names.
+    const orderBody = { ...body, deliveryAddress: body.deliveryAddress ?? body.address, deliveryCoordinate: body.deliveryCoordinate ?? body.coordinate };
+
+    // Price every shop's part first; nothing is written until all of it is good.
+    const quotes = [];
+    for (const [shopId, lines] of byShop) {
+        quotes.push({ shopId, lines, quote: await orderPlacement.quoteOrder({ user, shopId, items: lines, body: orderBody }) });
+    }
+
+    const config = await platformConfig.all();
+    const itemsTotal = round2(quotes.reduce((sum, q) => sum + q.quote.bill.subtotal, 0));
+
+    // One delivery charge for the cart: the dearest leg, plus a pickup fee
+    // for each further shop. The shop with the dearest leg carries it.
+    quotes.sort((a, b) => b.quote.bill.deliveryFee - a.quote.bill.deliveryFee);
+    const pickup = orderPlacement.isPickup(orderBody);
+    const freeDelivery = config.delivery_free_above > 0 && itemsTotal >= config.delivery_free_above;
+    const smallOrderFee = config.small_order_threshold > 0 && itemsTotal < config.small_order_threshold ? config.small_order_fee : 0;
+    quotes.forEach((q, index) => {
+        q.fees = {
+            deliveryFee: pickup || freeDelivery ? 0 : (index === 0 ? q.quote.bill.deliveryFee : config.delivery_extra_pickup_fee),
+            platformFee: index === 0 ? config.platform_fee : 0,
+            smallOrderFee: index === 0 ? smallOrderFee : 0,
+        };
+    });
+    const totalDeliveryFee = round2(quotes.reduce((sum, q) => sum + q.fees.deliveryFee, 0));
+    const cartTotal = round2(itemsTotal + totalDeliveryFee + config.platform_fee + smallOrderFee);
+    const codAvailable = Boolean(config.cod_enabled) && !(config.cod_max_order_value > 0 && cartTotal > config.cod_max_order_value);
+
+    return { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable, freeDelivery };
+}
+
+function sendBatchError(res, err, next) {
+    if (err instanceof orderPlacement.OrderError) {
+        return res.status(err.status).json({ success: false, message: err.message, error: err.message, code: err.code, ...err.details });
+    }
+    if (err instanceof payments.PaymentError) {
+        return res.status(err.status).json({ success: false, message: err.message, error: err.message, code: err.code });
+    }
+    return next(err);
+}
+
+/**
+ * POST /shops/cart/batch-quote — what a multi-shop cart will cost (C6, D6),
+ * in the shape POST /checkout/quote answers in, plus each shop's share.
+ * Nothing is written.
+ */
+router.post('/cart/batch-quote', optionalAuth, async (req, res, next) => {
+    try {
+        const priced = await priceBatch(req.user || null, req.body || {});
+        const etas = priced.quotes.map((q) => Number(q.quote.bill.etaMinutes) || 0).filter(Boolean);
+        res.json({
+            success: true,
+            bill: {
+                subtotal: priced.itemsTotal,
+                deliveryFee: priced.totalDeliveryFee,
+                smallOrderFee: priced.smallOrderFee,
+                platformFee: priced.config.platform_fee,
+                total: priced.cartTotal,
+                distanceKm: null,
+                surgeMultiplier: 1,
+                freeDelivery: priced.freeDelivery,
+                // The slowest shop decides when everything has arrived.
+                etaMinutes: etas.length ? Math.max(...etas) : null,
+            },
+            shops: priced.quotes.map((q) => ({
+                shopId: q.shopId,
+                shopName: q.quote.shop ? q.quote.shop.name : null,
+                subtotal: q.quote.bill.subtotal,
+                deliveryFee: q.fees.deliveryFee,
+                platformFee: q.fees.platformFee,
+                smallOrderFee: q.fees.smallOrderFee,
+                total: round2(q.quote.bill.subtotal + q.fees.deliveryFee + q.fees.platformFee + q.fees.smallOrderFee),
+            })),
+            // One gateway payment settles one order, so not for several shops.
+            paymentMethods: { cod: priced.codAvailable, wallet: true, razorpay: false },
+            cod: { available: priced.codAvailable, maxOrderValue: priced.config.cod_max_order_value || null },
+        });
+    } catch (err) {
+        sendBatchError(res, err, next);
+    }
+});
+
+router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), async (req, res, next) => {
     try {
         const body = req.body || {};
-        const { items, use_coins } = body;
-        if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ message: 'Cart is empty' });
-        if (items.length > BATCH_MAX_LINES) return res.status(400).json({ message: `A cart can hold at most ${BATCH_MAX_LINES} lines` });
+        const { use_coins } = body;
 
         const method = payments.paymentMethod(body.paymentMethod || 'wallet');
         if (method !== 'wallet' && method !== 'cod') {
             return res.status(400).json({ message: 'A multi-shop cart can be paid from the wallet or on delivery' });
         }
 
-        // Lines grouped by the shop they are from.
-        const byShop = new Map();
-        for (const item of items) {
-            if (!item || !item.shop_id || !item.product_id) {
-                return res.status(400).json({ message: 'Each item needs shop_id, product_id and a whole quantity of at least 1' });
-            }
-            if (!byShop.has(item.shop_id)) byShop.set(item.shop_id, []);
-            byShop.get(item.shop_id).push({ productId: item.product_id, quantity: item.quantity });
-        }
+        const { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable } = await priceBatch(req.user, body);
+        const round = round2;
 
-        // The placement service reads the address and location under these names.
-        const orderBody = { ...body, deliveryAddress: body.deliveryAddress ?? body.address, deliveryCoordinate: body.deliveryCoordinate ?? body.coordinate };
-
-        // Price every shop's part first; nothing is written until all of it is good.
-        const quotes = [];
-        for (const [shopId, lines] of byShop) {
-            quotes.push({ shopId, lines, quote: await orderPlacement.quoteOrder({ user: req.user, shopId, items: lines, body: orderBody }) });
-        }
-
-        const config = await platformConfig.all();
-        const round = (value) => Math.round(value * 100) / 100;
-        const itemsTotal = round(quotes.reduce((sum, q) => sum + q.quote.bill.subtotal, 0));
-
-        // One delivery charge for the cart: the dearest leg, plus a pickup fee
-        // for each further shop. The shop with the dearest leg carries it.
-        quotes.sort((a, b) => b.quote.bill.deliveryFee - a.quote.bill.deliveryFee);
-        const freeDelivery = config.delivery_free_above > 0 && itemsTotal >= config.delivery_free_above;
-        const smallOrderFee = config.small_order_threshold > 0 && itemsTotal < config.small_order_threshold ? config.small_order_fee : 0;
-        quotes.forEach((q, index) => {
-            q.fees = {
-                deliveryFee: freeDelivery ? 0 : (index === 0 ? q.quote.bill.deliveryFee : config.delivery_extra_pickup_fee),
-                platformFee: index === 0 ? config.platform_fee : 0,
-                smallOrderFee: index === 0 ? smallOrderFee : 0,
-            };
-        });
-        const totalDeliveryFee = round(quotes.reduce((sum, q) => sum + q.fees.deliveryFee, 0));
-        const cartTotal = round(itemsTotal + totalDeliveryFee + config.platform_fee + smallOrderFee);
-
-        if (method === 'cod' && (!config.cod_enabled || (config.cod_max_order_value > 0 && cartTotal > config.cod_max_order_value))) {
+        if (method === 'cod' && !codAvailable) {
             return res.status(400).json({ message: 'Cash on delivery is not available for this cart. Please pay from your wallet.', code: 'COD_NOT_AVAILABLE' });
         }
 
@@ -1132,13 +1199,7 @@ router.post('/cart/batch-checkout', authenticate, async (req, res, next) => {
             paymentMethod: method, paymentStatus: paid ? 'paid' : 'pending',
         });
     } catch (err) {
-        if (err instanceof orderPlacement.OrderError) {
-            return res.status(err.status).json({ message: err.message, code: err.code, ...err.details });
-        }
-        if (err instanceof payments.PaymentError) {
-            return res.status(err.status).json({ message: err.message, code: err.code });
-        }
-        next(err);
+        sendBatchError(res, err, next);
     }
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wallet, CreditCard, AlertCircle, MapPin, Clock } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
@@ -52,6 +52,17 @@ export default function CheckoutModal({
   const [quoteError, setQuoteError] = useState(null);
   // An order placed for online payment that has not been paid yet.
   const [pendingOrder, setPendingOrder] = useState(null);
+  // One Idempotency-Key per attempt (C8): a retry after a network failure is
+  // answered with the order already placed, not a second order.
+  const attemptKey = useRef(null);
+  const idempotencyKey = () => {
+    if (!attemptKey.current) {
+      attemptKey.current = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    }
+    return attemptKey.current;
+  };
 
   const hasProducts = shopCartItems.length > 0;
   const productSubtotal = shopCartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * item.quantity, 0);
@@ -110,6 +121,7 @@ export default function CheckoutModal({
   };
 
   const finish = (orderId) => {
+    attemptKey.current = null;
     shopCartItems.forEach((item) => removeItem(item.id));
     setPendingOrder(null);
     setShowCheckout(false);
@@ -168,7 +180,7 @@ export default function CheckoutModal({
 
       const res = await fetch(`${API_BASE}/shops/${shop.id}/orders`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { ...getAuthHeaders(), 'Idempotency-Key': idempotencyKey() },
         body: JSON.stringify({
           items,
           paymentMethod,
@@ -182,6 +194,7 @@ export default function CheckoutModal({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
+        if (res.status !== 409) attemptKey.current = null;
         throw new Error(data.error || data.message || `Order failed (${res.status})`);
       }
 
