@@ -7,6 +7,7 @@ const request = require('supertest');
 const { fx, fxLike } = require('../helpers/fixtureIds');
 const { query, queryOne } = require('../../config/database');
 const { authenticate, generateTokens, phoneOtpEnabled } = require('../../middleware/auth.middleware');
+const emailService = require('../../modules/core/services/email.service');
 
 const USER = fx('c1x-user');
 let app;
@@ -23,6 +24,8 @@ beforeAll(async () => {
   saved.free = process.env.ALLOW_FREE_OTP_MODE;
   saved.phone = process.env.ENABLE_PHONE_OTP;
   process.env.ALLOW_FREE_OTP_MODE = 'true';
+  // No test sends mail, whatever SMTP the machine's .env configures.
+  jest.spyOn(emailService, 'sendLoginCode').mockResolvedValue({ success: true, mock: true });
   await cleanup();
   await query("INSERT INTO users (id, full_name, phone_number, role, email) VALUES ($1, 'C1 User', '9833020101', 'user', 'c1x-existing@example.com')", [USER]);
   app = express();
@@ -32,6 +35,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  jest.restoreAllMocks();
   await cleanup();
   for (const [k, v] of [['ALLOW_FREE_OTP_MODE', saved.free], ['ENABLE_PHONE_OTP', saved.phone]]) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;

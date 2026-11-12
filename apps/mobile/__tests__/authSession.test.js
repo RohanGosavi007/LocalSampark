@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  DEFAULT_METHODS, loginTabs, readMethods, fetchLoginMethods, sendEmailCode, verifyEmailCode, googleSignIn, signOutOnServer,
+  DEFAULT_METHODS, loginTabs, readMethods, fetchLoginMethods, sendEmailCode, verifyEmailCode, googleSignIn, signOutOnServer, offerGoogle,
 } = require('../src/services/authSession');
 
 const reply = (status, body) => ({ ok: status < 400, status, json: async () => body });
@@ -47,6 +47,10 @@ test('[C1.26] an emailed code signs in; a new address is asked for a name first'
   expect((await googleSignIn('google-id-token', { fetch: google, apiUrl })).accessToken).toBe('g');
   expect(JSON.parse(google.mock.calls[0][1].body)).toEqual({ googleIdToken: 'google-id-token' });
   await expect(googleSignIn(null, { fetch: google, apiUrl })).rejects.toThrow(/cancelled/);
+  // The Google button needs the server to accept Google and this build to have a client id.
+  expect(offerGoogle({ google: true }, { androidClientId: 'x.apps.googleusercontent.com' })).toBe(true);
+  expect(offerGoogle({ google: true }, { androidClientId: undefined })).toBe(false);
+  expect(offerGoogle({ google: false }, { androidClientId: 'x.apps.googleusercontent.com' })).toBe(false);
 });
 
 test('[C1.27] signing out tells the server — this phone, or every device', async () => {

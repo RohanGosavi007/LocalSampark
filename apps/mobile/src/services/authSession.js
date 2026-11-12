@@ -83,6 +83,23 @@ export async function verifyEmailCode(email, code, fullName, d) {
   return post('/auth/email/verify-otp', { email: address, otp, ...(name ? { fullName: name } : {}) }, d);
 }
 
+/**
+ * The app's Google OAuth client ids (Google Cloud console; owner action).
+ * Each is read by its full literal name so Expo inlines it into the bundle. The server must list the same ids in GOOGLE_OAUTH_CLIENT_IDS.
+ */
+export function googleClientIds() {
+  return {
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || undefined,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
+  };
+}
+
+/** Whether to offer Google: the server accepts it and this build has a client id. */
+export function offerGoogle(methods, ids = googleClientIds()) {
+  return Boolean(methods && methods.google === true && ids.androidClientId);
+}
+
 /** Google Sign-In from the app: Google's ID token, checked by the server. */
 export async function googleSignIn(googleIdToken, d) {
   if (!googleIdToken) throw new Error('Google sign-in was cancelled.');

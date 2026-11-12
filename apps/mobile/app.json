@@ -87,7 +87,8 @@
         }
       ],
       "@sentry/react-native",
-      "./plugins/withTrimmedPermissions"
+      "./plugins/withTrimmedPermissions",
+      "expo-web-browser"
     ],
     "extra": {
       "API_URL_PROD": "https://localsampark-api.onrender.com/api/v1",

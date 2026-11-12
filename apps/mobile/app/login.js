@@ -4,7 +4,8 @@ import { useAuth } from '../src/context/AuthContext';
 import { apiPost } from '../src/lib/api';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { loginTabs, cleanCode } from '../src/services/authSession';
+import { loginTabs, cleanCode, offerGoogle } from '../src/services/authSession';
+import GoogleSignInButton from '../src/components/GoogleSignInButton';
 
 export default function LoginScreen() {
   // C1 / Decision D3: an emailed code first, then a password; phone only when
@@ -16,7 +17,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp, loginEmail, loginMethods, sendEmailOtp, verifyEmailOtp } = useAuth();
+  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp, loginEmail, loginMethods, sendEmailOtp, verifyEmailOtp, googleLogin } = useAuth();
   const tabs = loginTabs(loginMethods);
   const method = tabs.some((t) => t.id === chosen) ? chosen : tabs[0].id;
   const [emailStep, setEmailStep] = useState('address'); // 'address' | 'code' | 'name'
@@ -32,6 +33,18 @@ export default function LoginScreen() {
       Alert.alert('Check your email', data && data.otp ? `Verification Code: ${data.otp}` : 'We have emailed you a sign-in code.');
     } catch (err) {
       Alert.alert('Could not send the code', err?.message || 'Please try again in a moment.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleToken = async (idToken) => {
+    setLoading(true);
+    try {
+      await googleLogin(idToken);
+      router.replace('/(tabs)');
+    } catch (err) {
+      Alert.alert('Google sign-in failed', err?.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -188,6 +201,14 @@ export default function LoginScreen() {
         <Text style={styles.subtitle}>
           Sign in to connect with your local neighborhood
         </Text>
+
+        {offerGoogle(loginMethods) && (
+          <GoogleSignInButton
+            disabled={loading}
+            onIdToken={handleGoogleToken}
+            onError={(err) => Alert.alert('Google sign-in failed', err.message)}
+          />
+        )}
 
         {/* Toggle Login Method */}
         <View style={styles.toggleContainer}>

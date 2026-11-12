@@ -231,8 +231,8 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const postAuth = async (path, body) => {
-    const res = await fetch(`${API_URL}/api/v1/auth${path}`, {
+  const postAuth = async (url, body) => {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -251,7 +251,7 @@ export function AuthProvider({ children }) {
   const sendEmailOtp = async (email) => {
     setError(null);
     try {
-      return await postAuth('/email/send-otp', { email });
+      return await postAuth(`${API_URL}/api/v1/auth/email/send-otp`, { email });
     } catch (err) {
       setError(err.message);
       throw err;
@@ -265,7 +265,7 @@ export function AuthProvider({ children }) {
   const verifyEmailOtp = async (email, otp, fullName = '') => {
     setError(null);
     try {
-      const data = await postAuth('/email/verify-otp', { email, otp, ...(fullName ? { fullName } : {}) });
+      const data = await postAuth(`${API_URL}/api/v1/auth/email/verify-otp`, { email, otp, ...(fullName ? { fullName } : {}) });
       if (data.registered && data.accessToken) saveAuthSession(data);
       return data;
     } catch (err) {
@@ -279,7 +279,7 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const firebaseIdToken = await signInWithGoogle();
-      const data = await postAuth('/google', { firebaseIdToken });
+      const data = await postAuth(`${API_URL}/api/v1/auth/google`, { firebaseIdToken });
       if (data.accessToken) saveAuthSession(data);
       return data;
     } catch (err) {

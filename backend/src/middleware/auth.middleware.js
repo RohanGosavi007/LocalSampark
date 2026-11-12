@@ -315,7 +315,7 @@ function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}, { acc
  * until ENABLE_PHONE_OTP=true (DLT registration and an SMS gateway); in
  * development and test it is on unless ENABLE_PHONE_OTP=false.
  */
-function phoneOtpEnabled(env = process.env) {
+function phoneOtpEnabled(env = { ENABLE_PHONE_OTP: process.env.ENABLE_PHONE_OTP, NODE_ENV: process.env.NODE_ENV }) {
   if (env.ENABLE_PHONE_OTP === 'true') return true;
   if (env.ENABLE_PHONE_OTP === 'false') return false;
   return ['development', 'test'].includes(env.NODE_ENV);

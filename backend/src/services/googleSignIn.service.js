@@ -11,12 +11,12 @@
  */
 const { verifyFirebaseToken, firebaseReady } = require('../modules/core/services/firebase.service');
 
-const clientIds = (env = process.env) => String(env.GOOGLE_OAUTH_CLIENT_IDS || '')
+const clientIds = (env = { GOOGLE_OAUTH_CLIENT_IDS: process.env.GOOGLE_OAUTH_CLIENT_IDS }) => String(env.GOOGLE_OAUTH_CLIENT_IDS || '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 
 /** Whether either path is configured, so the clients offer the button. */
-function enabled(env = process.env) {
-  return firebaseReady() || clientIds(env).length > 0;
+function enabled() {
+  return firebaseReady() || clientIds().length > 0;
 }
 
 class GoogleSignInError extends Error {

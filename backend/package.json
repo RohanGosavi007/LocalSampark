@@ -36,6 +36,7 @@
     "express-validator": "^7.3.2",
     "face-api.js": "^0.22.2",
     "firebase-admin": "^14.2.0",
+    "google-auth-library": "^10.9.1",
     "helmet": "^8.1.0",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
