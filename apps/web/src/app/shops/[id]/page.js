@@ -25,6 +25,46 @@ const OrderHistory = dynamic(() => import('./components/OrderHistory'), { ssr: f
 const LoyaltyGamification = dynamic(() => import('./components/LoyaltyGamification'), { ssr: false });
 const CheckoutModal = dynamic(() => import('./components/CheckoutModal'), { ssr: false });
 
+/**
+ * C11: report a review that is abusive, fake or off-topic. It goes to the
+ * admin moderation queue; reporting needs a signed-in account.
+ */
+const REPORT_REASONS = [['fake', 'Fake or not a real customer'], ['offensive', 'Offensive'], ['spam', 'Spam or advertising'], ['personal_information', 'Shares personal information'], ['off_topic', 'Not about this shop'], ['other', 'Something else']];
+function ReportReview({ shopId, reviewId }) {
+  const [open, setOpen] = React.useState(false);
+  const [reason, setReason] = React.useState('fake');
+  const [state, setState] = React.useState(null);
+  const send = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/shops/${shopId}/reviews/${reviewId}/report`, {
+        method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ reason }),
+      });
+      if (res.status === 401) { setState('Sign in to report a review.'); return; }
+      if (!res.ok) throw new Error();
+      setState('Thanks. Our team will look at it.');
+      setOpen(false);
+    } catch {
+      setState('The report could not be sent. Please try again.');
+    }
+  };
+  return (
+    <div className="mt-2 text-xs">
+      {!open && !state && <button type="button" onClick={() => setOpen(true)} className="text-text-muted underline min-h-[32px]">Report this review</button>}
+      {open && (
+        <span className="inline-flex flex-wrap gap-2 items-center">
+          <label className="sr-only" htmlFor={`reason-${reviewId}`}>Why are you reporting it?</label>
+          <select id={`reason-${reviewId}`} value={reason} onChange={(e) => setReason(e.target.value)} className="bg-background-alt border border-border rounded-lg px-2 py-1">
+            {REPORT_REASONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <button type="button" onClick={send} className="px-3 py-1 rounded-lg bg-primary text-white font-bold">Report</button>
+          <button type="button" onClick={() => setOpen(false)} className="text-text-muted underline">Cancel</button>
+        </span>
+      )}
+      {state && <span role="status" className="text-text-muted">{state}</span>}
+    </div>
+  );
+}
+
 export default function ShopDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -83,8 +123,10 @@ export default function ShopDetailPage() {
         const offersData = await offersRes.json();
         setOffers(Array.isArray(offersData) ? offersData : []);
         
+        // GET /shops/:id/reviews answers { success, data, meta }. Reading it as
+        // a bare array showed "No reviews yet" for every shop.
         const reviewsData = await reviewsRes.json();
-        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+        setReviews(Array.isArray(reviewsData) ? reviewsData : (reviewsData && Array.isArray(reviewsData.data) ? reviewsData.data : []));
 
         const qaData = await qaRes.json();
         setQaList(Array.isArray(qaData) ? qaData : []);
@@ -384,20 +426,25 @@ export default function ShopDetailPage() {
                                   <div>
                                       <div className="flex items-center gap-2">
                                           <span className="font-bold">{r.user_name || 'Customer'}</span>
-                                          {r.is_society_verified === 1 && (
+                                          {(r.verified_purchase || Number(r.verified) === 1 || Number(r.is_society_verified) === 1) && (
                                               <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 py-0 text-[10px] h-5"><BadgeCheck className="w-3 h-3 mr-1"/> Verified</Badge>
                                           )}
                                       </div>
                                       <div className="flex text-amber-500 text-sm mt-0.5">
-                                          {[...Array(5)].map((_, i) => <Star key={i} className={`w-3 h-3 ${i < Math.round(r.rating || 5) ? 'fill-amber-500' : 'text-border fill-transparent'}`} />)}
+                                          {[...Array(5)].map((_, i) => <Star key={i} className={`w-3 h-3 ${i < Math.round(Number(r.rating) || 0) ? 'fill-amber-500' : 'text-border fill-transparent'}`} />)}
                                       </div>
                                   </div>
                                 </div>
                                 <p className="text-text-muted ml-13 pl-13">{r.review_text || r.comment}</p>
+                                {r.reply && <p className="text-sm text-text-muted mt-2 border-l-2 border-primary pl-3">Reply from the shop: {r.reply}</p>}
+                                <ReportReview shopId={id} reviewId={r.id} />
                             </div>
                         ))
                     )}
-                    <Button variant="outline" className="mt-4 w-full" icon={Star}>Write a Review</Button>
+                    {/* C11: reviews come from delivered orders; the order page is where one is written. */}
+                    <a href="/order-tracking" className="mt-4 block w-full text-center px-4 py-3 rounded-xl border border-border font-bold text-text hover:border-primary">
+                      Review an order you have received
+                    </a>
                   </div>
                 ) : (
                   <div>

@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -106,7 +107,7 @@ export default function RetailVisitorView({ shop, products = [], onAddToCart }) 
               {/* Product Info */}
               <div className={viewMode === 'grid' ? 'p-3' : 'flex-1'}>
                 <div className="flex items-start justify-between mb-1">
-                  <p className="font-bold text-sm text-text line-clamp-2 leading-tight">{product.name || 'Product'}</p>
+                  <Link href={`/shops/${shop.id}/products/${product.id}`} data-testid="product-link" className="font-bold text-sm text-text line-clamp-2 leading-tight hover:text-primary">{product.name || 'Product'}</Link>
                   {product.stock !== undefined && product.stock !== null && <StockBadge stock={product.stock} />}
                 </div>
                 {product.unit && <p className="text-[10px] text-text-muted mt-0.5">{product.unit}</p>}

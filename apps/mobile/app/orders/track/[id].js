@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Package, CheckCircle, Clock, Truck, MapPin, PhoneCall, XCircle } from 'lucide-react-native';
 import { useSocket, useSocketEvent, useSocketRoom } from '../../../src/context/SocketContext';
 import { useCartStore } from '../../../src/store/cartStore';
 import {
   ORDER_STEPS, ORDER_EVENTS, POLL_INTERVAL_MS, stepIndex, canCancel, shouldPoll, isEventFor,
-  orderRef, statusLabel, loadOrder, cancelOrder, orderAgain, downloadInvoice, slotText,
+  orderRef, statusLabel, loadOrder, cancelOrder, orderAgain, downloadInvoice, slotText, reviewOrder,
 } from '../../../src/services/orders';
 
 const STEP_ICONS = { pending: Clock, confirmed: CheckCircle, preparing: Package, out_for_delivery: Truck, delivered: MapPin };
@@ -17,6 +17,40 @@ const STEP_ICONS = { pending: Clock, confirmed: CheckCircle, preparing: Package,
  * sends, with no way to cancel, get the invoice or order again, and no live
  * updates. The rules are in src/services/orders.js.
  */
+/** C11: rate a delivered order's shop (a verified purchase). */
+function RateOrder({ order }) {
+  const [stars, setStars] = useState(0);
+  const [text, setText] = useState('');
+  const [note, setNote] = useState(null);
+  const send = async () => {
+    try {
+      await reviewOrder(order, stars, text);
+      setNote({ ok: true, text: 'Thank you. Your review is published as a verified purchase.' });
+    } catch (e) {
+      setNote({ ok: false, text: e?.message || 'The review could not be saved.' });
+    }
+  };
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Rate {order.shopName}</Text>
+      <View style={{ flexDirection: 'row', gap: 4 }} accessibilityRole="radiogroup">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <TouchableOpacity key={n} accessibilityRole="radio" accessibilityState={{ checked: stars === n }} accessibilityLabel={`${n} star${n > 1 ? 's' : ''}`}
+            onPress={() => setStars(n)} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 26, color: n <= stars ? '#f59e0b' : '#cbd5e1' }}>★</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <TextInput value={text} onChangeText={setText} placeholder="Your review (optional)" multiline maxLength={2000}
+        style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 10, minHeight: 64, marginTop: 8 }} />
+      <TouchableOpacity accessibilityRole="button" style={[styles.primaryBtn, { marginTop: 10 }]} onPress={send}>
+        <Text style={styles.primaryText}>Publish review</Text>
+      </TouchableOpacity>
+      {note ? <Text style={[styles.notice, { color: note.ok ? '#047857' : '#dc2626' }]}>{note.text}</Text> : null}
+    </View>
+  );
+}
+
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -248,6 +282,8 @@ export default function OrderTrackingScreen() {
         {notice ? (
           <Text accessibilityLiveRegion="polite" style={[styles.notice, { color: notice.ok ? '#047857' : '#dc2626' }]}>{notice.text}</Text>
         ) : null}
+
+        {order.status === 'delivered' ? <RateOrder order={order} /> : null}
 
         {/* C14: in-app order help; the ticket keeps this order. */}
         <TouchableOpacity

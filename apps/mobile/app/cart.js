@@ -20,6 +20,9 @@ export default function CartScreen() {
         <ShoppingBag color="#64748b" size={64} />
         <Text style={s.s1}>Your cart is empty</Text>
         <Text style={s.s2}>Add items from shops to start an order</Text>
+        <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/wishlist')}>
+          <Text style={{ color: '#93c5fd', fontWeight: '700', marginBottom: 16 }}>♡ Saved items and recently viewed</Text>
+        </TouchableOpacity>
         <TouchableOpacity 
           style={s.s3}
           onPress={() => router.push('/')}
@@ -34,6 +37,9 @@ export default function CartScreen() {
     <SafeAreaView style={s.s5}>
       <View style={s.s6}>
         <Text style={s.s7}>Review Cart</Text>
+        <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/wishlist')}>
+          <Text style={{ color: '#93c5fd', fontWeight: '700', paddingVertical: 4 }}>♡ Saved items and recently viewed</Text>
+        </TouchableOpacity>
         <Text style={s.s8}>
           {groups.length === 1 ? `From: ${groups[0].shopName}` : `${groups.length} shops: one checkout, an order for each shop`}
         </Text>

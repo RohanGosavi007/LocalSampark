@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -98,7 +99,7 @@ export default function PharmacyVisitorView({ shop, products = [], onAddToCart }
               </div>
               <div className="p-3 flex-1 flex flex-col">
                 <div className="flex items-start justify-between mb-1">
-                  <p className="font-bold text-xs text-text line-clamp-2 leading-tight">{product.name}</p>
+                  <Link href={`/shops/${shop.id}/products/${product.id}`} data-testid="product-link" className="font-bold text-xs text-text line-clamp-2 leading-tight hover:text-primary">{product.name}</Link>
                   {product.stock !== undefined && product.stock !== null && <StockBadge stock={product.stock} />}
                 </div>
                 {product.requires_prescription && (

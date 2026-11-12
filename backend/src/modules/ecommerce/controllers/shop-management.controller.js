@@ -651,6 +651,16 @@ async function addProduct(req, res, next) {
   } catch (error) { next(error); }
 }
 
+/** Text declarations a product may carry (C4, migration 141): request key, column. */
+const PRODUCT_TEXT_FIELDS = [
+  ['genericName', 'generic_name'],
+  ['netQuantity', 'net_quantity'],
+  ['manufacturer', 'manufacturer_details'],
+  ['countryOfOrigin', 'country_of_origin'],
+  ['bestBefore', 'best_before'],
+  ['consumerCare', 'consumer_care'],
+];
+
 async function updateProduct(req, res, next) {
   try {
     const { productId } = req.params;
@@ -677,6 +687,30 @@ async function updateProduct(req, res, next) {
     if (b.sku !== undefined) set('sku', b.sku);
     if (b.unit !== undefined) set('unit', b.unit);
     if (b.low_stock_threshold !== undefined) set('low_stock_threshold', Number(b.low_stock_threshold) || 0);
+    // C4: Legal Metrology declarations, more photos, a per-order limit, MRP.
+    for (const [key, col] of PRODUCT_TEXT_FIELDS) {
+      const value = b[key] ?? b[col];
+      if (value !== undefined) set(col, value === null ? null : String(value).trim().slice(0, 1000) || null);
+    }
+    const gallery = b.galleryUrls ?? b.gallery_urls;
+    if (gallery !== undefined) {
+      const urls = (Array.isArray(gallery) ? gallery : []).map((u) => String(u).trim()).filter((u) => /^https?:\/\//i.test(u)).slice(0, 10);
+      set('gallery_urls', JSON.stringify(urls));
+    }
+    const limit = b.maxOrderQuantity ?? b.max_order_quantity;
+    if (limit !== undefined) {
+      const n = limit === null || limit === '' ? null : Number(limit);
+      if (n !== null && (!Number.isInteger(n) || n < 1)) return res.status(400).json({ error: 'The per-order limit must be a whole number of at least 1' });
+      set('max_order_quantity', n);
+    }
+    const mrp = b.mrp;
+    if (mrp !== undefined) set('mrp', mrp === null || mrp === '' ? null : Number(mrp));
+    // Selling above MRP is an offence (Legal Metrology Act, 2009, s. 36).
+    const nextPrice = b.price !== undefined ? Number(b.price) : Number(existing.price);
+    const nextMrp = mrp !== undefined ? (mrp === null || mrp === '' ? null : Number(mrp)) : (existing.mrp === null ? null : Number(existing.mrp));
+    if (nextMrp !== null && Number.isFinite(nextMrp) && nextMrp > 0 && nextPrice > nextMrp) {
+      return res.status(400).json({ error: `The price (₹${nextPrice}) cannot be more than the MRP (₹${nextMrp}).`, code: 'PRICE_ABOVE_MRP' });
+    }
 
     // Stock lives in two columns that must not drift: the storefront reads
     // stock_quantity, checkout decrements inventory_count.

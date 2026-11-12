@@ -780,6 +780,49 @@ function GrievanceSection() {
   );
 }
 
+// ── C11 ────────────────────────────────────────────────────────────────────
+// Reviews customers reported. Hiding one takes it out of the shop's listings
+// and its rating; keeping it publishes it again. Either way the reports close.
+function ReviewsSection() {
+  const queue = useResource(() => get(`${API_BASE}/admin/commerce/review-reports`).then((r) => r.data), []);
+  const [notes, setNotes] = useState({});
+  const [run, msg] = useAction();
+  const decide = (r, action) => run(
+    () => fetchJson(`${API_BASE}/admin/commerce/review-reports/${r.review_id}/moderate`, { method: 'POST', ...opts({ action, note: notes[r.review_id] || undefined }) }).then((out) => { queue.reload(); return out; }),
+    (out) => `Review ${action === 'hide' ? 'hidden' : 'kept'}; ${r.shop_name} is now rated ${out && out.shopRating}`
+  );
+  return (
+    <section data-testid="ops-reviews" style={S.card}>
+      <h3 style={S.h3}>Reported reviews</h3>
+      {msg}
+      <Err error={queue.error} />
+      {queue.data && queue.data.length === 0 && <Empty>No reported reviews.</Empty>}
+      {queue.data && queue.data.length > 0 && (
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Review</th><th style={S.th}>Shop</th><th style={S.th}>Reports</th><th style={S.th}>Decision</th></tr></thead>
+          <tbody>
+            {queue.data.map((r) => (
+              <tr key={r.review_id} data-testid={`review-report-${r.review_id}`}>
+                <td style={S.td}><strong>{'★'.repeat(Number(r.rating) || 0)}</strong> {r.author || 'Customer'}<div>{r.review_text}</div></td>
+                <td style={S.td}>{r.shop_name}</td>
+                <td style={S.td}>{r.reports}<div style={S.muted}>since {when(r.first_reported_at)}</div></td>
+                <td style={S.td}>
+                  <input aria-label={`Note on the review by ${r.author || 'customer'}`} style={S.input} placeholder="Reason (kept in the audit log)"
+                    value={notes[r.review_id] || ''} onChange={(e) => setNotes({ ...notes, [r.review_id]: e.target.value })} />
+                  <div style={S.row}>
+                    <button style={S.danger} onClick={() => decide(r, 'hide')}>Hide review</button>
+                    <button style={S.ghost} onClick={() => decide(r, 'keep')}>Keep</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 // ── A12 ────────────────────────────────────────────────────────────────────
 function FlagsSection() {
   const flags = useResource(() => get(`${API_BASE}/admin/commerce/feature-flags`).then((r) => r.data.registry));
@@ -905,6 +948,7 @@ export const COMMERCE_SECTIONS = [
   ['zones', 'Zones', ZonesSection],
   ['fleet', 'Fleet & cash', FleetSection],
   ['grievances', 'Grievances', GrievanceSection],
+  ['reviews', 'Reviews', ReviewsSection],
   ['flags', 'Feature flags', FlagsSection],
   ['reports', 'Reports', ReportsSection],
   ['broadcasts', 'Broadcasts', BroadcastSection],

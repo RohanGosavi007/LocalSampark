@@ -13,11 +13,18 @@ import dynamic from 'next/dynamic';
 import VoiceSearch from '../../components/VoiceSearch';
 import { ThemeToggle } from './ui/ThemeToggle';
 import { apiGet, apiPut } from '@/lib/api';
+import { useCartStore } from '../../store/cartStore';
 import { isFeatureEnabled } from '../../lib/features';
 
 const AccountDropdown = dynamic(() => import('./AccountDropdown'), { ssr: false });
 
 export default function Header() {
+  // The cart badge read a literal "0" whatever was in the cart.
+  const cartCount = useCartStore((s) => s.items.reduce((n, i) => n + (Number(i.quantity) || 0), 0));
+  // The cart is restored from this browser's storage, which the server render
+  // cannot see; the count is shown once the page is running in the browser.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
     const { user, activeRole, assignedRoles, switchRole, logout, demoLogin } = useAuth();
   const { t } = useLanguage();
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -396,9 +403,20 @@ export default function Header() {
             className="p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors relative"
           >
             <ShoppingCart className="w-5 h-5" />
-            <span className="absolute top-0 right-0 w-4 h-4 bg-secondary text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-background">
-              0
-            </span>
+            {mounted && cartCount > 0 && (
+              <span data-testid="cart-count" className="absolute top-0 right-0 min-w-4 h-4 px-0.5 bg-secondary text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-background">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
+          </a>
+
+          {/* C12: saved items and recently viewed */}
+          <a
+            href="/wishlist"
+            aria-label="Saved items"
+            className="p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full hover:bg-border/50 text-text-muted hover:text-text transition-colors"
+          >
+            <span aria-hidden="true" className="text-lg leading-none">♡</span>
           </a>
 
           {user ? (

@@ -49,11 +49,13 @@ test('a customer the shop has served gets a verified review', async () => {
   expect(res.body.is_society_verified).toBe(1);
 });
 
-test('anyone else can review, but it is not marked verified', async () => {
+// C11 (F-156): reviews are restricted to verified purchasers. This used to
+// accept the review and only mark it unverified.
+test('anyone the shop has not served cannot review it, and nothing is stored', async () => {
   const res = await review(fx('rev-passerby'), { rating: 2 });
-  expect(res.status).toBe(201);
-  expect(res.body.is_society_verified).toBe(0);
-  expect((await queryOne(`SELECT is_society_verified FROM shop_reviews WHERE user_id = '${fx('rev-passerby')}'`)).is_society_verified).toBe(0);
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('NOT_VERIFIED_PURCHASE');
+  expect(await queryOne(`SELECT id FROM shop_reviews WHERE user_id = '${fx('rev-passerby')}'`)).toBeFalsy();
 });
 
 test('one review per customer, none from the owner, and a rating from 1 to 5', async () => {

@@ -1286,3 +1286,80 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
   - R1–R5: missing Android (and admin or web) tests;
   - P9: missing web, Android and admin tests.
 - Statuses in `docs/launch/features.json` are not edited by hand; the run reports them (write mode off).
+### F-153: Feature tags in the after-order suite credited the wrong features
+- **Defect:** `backend/src/__tests__/unit/afterOrderExperience.test.js` was written to an older feature numbering. Its tags put delivery tracking under C10, returns under C11, reviews under C12 and invoices under C13. The feature verifier counts passing tests by tag, so each feature was credited with another feature's tests: C12 (wishlist) and C13 (notifications) with reviews and invoices, C11 (reviews) with returns, and C10 (returns) with tracking. Nothing was reported VERIFIED on the strength of it, but the per-feature evidence was wrong.
+- **Fix:** tags renumbered to the feature each test exercises, per `docs/launch/features.json`. Tracking became [C9.41]–[C9.44], returns [C10.21]–[C10.29], reviews [C11.21]–[C11.26] and invoices [C9.45]–[C9.47]. The C14 tags were already correct. No assertion changed.
+- **Status:** FIXED.
+
+| Test | Change | Why |
+|---|---|---|
+| `backend/src/__tests__/unit/afterOrderExperience.test.js` (22 titles, 4 describe headings) | tag ids only, as above | Evidence must be counted against the feature it proves; assertions untouched |
+
+### F-154: No product page, no Legal Metrology declarations, and checkout ignored variants (C4)
+- **Defects:**
+  - **No product page:** neither the web nor the app had one; a product was only a row inside a shop page.
+  - **No declarations:** the catalogue had nowhere to keep what the Legal Metrology (Packaged Commodities) Rules, 2011 require an e-commerce listing to show: generic name, net quantity, manufacturer/packer/importer, country of origin, consumer care and best before.
+  - **Variants ignored at checkout:** variants carried a price modifier and their own stock, but checkout charged the product's base price and took the product's stock whatever variant was chosen.
+  - **Price above MRP:** nothing stopped a seller pricing above MRP.
+  - **Invented badge:** the web header's cart badge printed a literal "0".
+- **Fix:**
+  - **Declarations:** migration 141 adds the declarations, more photos and a seller's per-order limit to `shop_products` on both engines.
+  - **Product page endpoint:** `GET /shops/:shopId/products/:productId` (`services/productDetail.service.js`) returns:
+    - the gallery (web links only, each once) and variants (own price and stock);
+    - price, MRP and discount, and the quantity allowed;
+    - the seller, with the FSSAI licence for a food business;
+    - the return window, from the same rule returns apply (`services/catalogRules.js`, now used by `return.service.js`);
+    - the declarations, with the missing ones named rather than filled in;
+    - reviews, marked verified only when the author has a delivered order from the shop.
+  - **Cart and checkout:** variants are priced as base plus modifier and stocked on their own (guarded decrement). The per-order limit is enforced in both (400 `QUANTITY_LIMIT`).
+  - **Seller edits:** the product update accepts the declarations, photos and limit, and refuses a price above MRP (400 `PRICE_ABOVE_MRP`).
+  - **Clients:** web `/shops/:id/products/:productId` and app `/product/:shopId/:productId` show all of it, with a variant picker, quantity within the limit, Add to cart carrying the variant, and Save. Product names on the shop pages open them. The header badge counts the cart.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/productDetailC4.test.js` [C4.1]–[C4.6]. All six fail with the route, checkout, cart, returns and seller changes reverted.
+  - **Web:** `apps/web/tests/productPage.test.mjs` [C4.7].
+  - **App:** `apps/mobile/__tests__/product.test.js` [C4.8]–[C4.10].
+- **Status:** CODE COMPLETE. Sellers must still enter the declarations for their packaged products; the page shows "Not provided by the seller" until they do.
+
+### F-155: The wishlist existed only on the server, and nothing recorded what a customer looked at (C12)
+- **Defects:**
+  - **No wishlist UI:** `/wishlist` (list, save, remove, move to cart) had no caller on the web or in the app.
+  - **No recently viewed:** nothing recorded products a customer had viewed.
+  - **Duplicate cart lines:** move-to-cart matched only cart lines stored with no options (`NULL`). The clients store "no options" as `{}`, so moving an item already in the cart added a second line.
+- **Fix:**
+  - **Save:** Save on the product page, on web and app.
+  - **Saved items:** a web `/wishlist` page and an app wishlist screen list saved items, move one to the cart (then bring the cart up to date) and remove one.
+  - **Recently viewed:** kept per device, newest first, one entry per product, at most 20, recorded when a product page opens.
+  - **Move-to-cart:** now matches `NULL` and `{}`.
+  - **Entry points:** links from the web header and the app's cart.
+- **Proof:** `apps/web/tests/productPage.test.mjs` [C12.7]–[C12.8]; `apps/mobile/__tests__/product.test.js` [C12.9]–[C12.10]. The backend wishlist suite ([C12.1]–[C12.6]) still applies.
+- **Status:** CODE COMPLETE.
+
+### F-156: Reviews could be posted by anyone, the rating was whichever path wrote last, and nothing could be moderated (C11)
+- **Defects:**
+  - **Five ways in, three different rules:** reviews arrived through `POST /shops/:id/reviews`, the order review, `/trust-reviews`, `/engagement/reviews/submit` and offline sync, into three tables (`shop_reviews`, `trust_reviews`, `reviews`).
+    - Two paths accepted a review from someone the shop had never served: one marked it unverified, `/engagement/reviews/submit` did not even do that, and offline sync inserted with no check at all.
+    - Three paths overwrote `local_shops.rating` with the average of their own table, trust-reviews defaulting to 5.0, so the rating shown was whichever path wrote last.
+  - **Missing id on SQLite:** the order review inserted without an id, which on SQLite left the review with none.
+  - **Web reviews never shown:** the shop page read `GET /shops/:id/reviews` (`{ success, data, meta }`) as a bare array, so every shop showed "No reviews yet". Its "Write a Review" button did nothing, and a missing rating was drawn as five stars.
+  - **No moderation:** reviews could not be reported, and there was no moderation queue: `shop_reviews.is_flagged` had nothing behind it.
+- **Fix:**
+  - **One service:** `backend/src/services/reviews.service.js` is the only way in, and every path goes through it.
+    - A review needs a delivered order (or completed appointment) from the shop; owners cannot review their own shop.
+    - There is one review per customer per shop.
+    - The shop's rating is the average of its verified, visible reviews, recomputed on every change.
+  - **Reporting and moderation:**
+    - `POST /shops/:id/reviews/:reviewId/report` takes a reason from a fixed list; migration 142 adds `review_reports` on both engines.
+    - The admin queue at `GET /admin/commerce/review-reports` hides or keeps a review (`POST …/moderate`), with an audit-log entry; hidden reviews leave the listings and the rating.
+  - **Web:** the shop page shows reviews, the shop's reply and a Report control, and points to the order page, where a delivered order can be rated.
+  - **App:** the order screen rates a delivered order, and the product screen reports a review.
+  - **Admin:** the console has a Reviews section.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/reviewsC11.test.js` [C11.1]–[C11.4]. All four fail with the routing changes reverted. The existing suites [C11.21]–[C11.26] still pass.
+  - **App:** `apps/mobile/__tests__/reviews.test.js` [C11.5]–[C11.7].
+  - **Browser:** `tests/e2e/web/reviews.spec.js` [C11.8]–[C11.9].
+  - **Admin:** `tests/e2e/admin/commerce-ops.spec.js` [C11.10] and `apps/admin/tests/reviewModeration.test.mjs` [C11.11].
+- **Status:** CODE COMPLETE.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `backend/src/__tests__/integration/shopReviews.test.js` "anyone else can review, but it is not marked verified" | now "anyone the shop has not served cannot review it, and nothing is stored": 403 `NOT_VERIFIED_PURCHASE`, no row. It used to expect 201 with `is_society_verified: 0` | C11 restricts reviews to verified purchasers (Consumer Protection (E-Commerce) Rules, 2020, r.4(9); IS 19000:2022). The old test pinned the behaviour the feature forbids |

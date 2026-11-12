@@ -34,9 +34,8 @@ class ReturnService {
 
     // Check category-aware return window (48h for food/grocery/perishable; 7 days for retail)
     const shop = await queryOne('SELECT category FROM local_shops WHERE id = $1', [order.shop_id]);
-    const isPerishable = ['restaurant', 'grocery', 'food', 'bakery', 'meat', 'dairy', 'perishable']
-      .includes(String(shop?.category || '').toLowerCase());
-    const windowHours = isPerishable ? 48 : 168; // 48h vs 7 days
+    // The window the product page states (services/catalogRules.js).
+    const windowHours = require('../../../services/catalogRules').returnWindowHours(shop?.category);
 
     const deliveredTimestamp = order.delivered_at || order.created_at;
     const elapsedHours = (Date.now() - new Date(deliveredTimestamp).getTime()) / (1000 * 60 * 60);

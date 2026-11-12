@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Package, CheckCircle2, Clock, Truck, XCircle } from 'lucide-react';
-import { apiGet, apiPut, API_BASE, getAuthHeaders } from '@/lib/api';
+import { apiGet, apiPut, apiPost, API_BASE, getAuthHeaders } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import { useSocket, useSocketEvent } from '@/context/SocketContext';
 
@@ -180,6 +180,45 @@ function OrderActions({ order, items, reload }) {
   );
 }
 
+/**
+ * C11: a delivered order can be reviewed. The review is of the shop, from a
+ * verified purchase (the server checks the order is this customer's and
+ * delivered); a second review replaces the first.
+ */
+function RateOrder({ order }) {
+  const [rating, setRating] = useState(0);
+  const [text, setText] = useState('');
+  const [state, setState] = useState(null);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!rating) { setState({ ok: false, text: 'Choose a rating from 1 to 5 stars.' }); return; }
+    try {
+      await apiPost(`/shops/${order.shop_id}/orders/${order.id}/review`, { rating, review: text.trim() || undefined });
+      setState({ ok: true, text: 'Thank you. Your review is published as a verified purchase.' });
+    } catch (err) {
+      setState({ ok: false, text: err.message || 'The review could not be saved.' });
+    }
+  };
+  return (
+    <form onSubmit={submit} className="glass-card rounded-2xl border border-border p-5 space-y-3" aria-labelledby="rate-heading">
+      <p id="rate-heading" className="font-bold text-text">Rate {order.shop_name}</p>
+      <div role="radiogroup" aria-label="Rating" className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`}
+            onClick={() => setRating(n)} className={`text-2xl min-w-[44px] min-h-[44px] ${n <= rating ? 'text-amber-500' : 'text-border'}`}>★</button>
+        ))}
+      </div>
+      <label className="block">
+        <span className="text-sm text-text-muted">Your review (optional)</span>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} rows={3}
+          className="mt-1 w-full bg-background-alt text-text rounded-xl p-3 border border-border focus:border-primary outline-none" />
+      </label>
+      <button type="submit" className="px-5 min-h-[44px] rounded-xl bg-primary text-white font-bold">Publish review</button>
+      {state && <p role={state.ok ? 'status' : 'alert'} data-testid="review-notice" className={`text-sm font-semibold ${state.ok ? 'text-green-700' : 'text-red-600'}`}>{state.text}</p>}
+    </form>
+  );
+}
+
 function OrderDetail({ id }) {
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
@@ -252,6 +291,7 @@ function OrderDetail({ id }) {
         </div>
       )}
       <OrderActions order={order} items={items} reload={load} />
+      {String(order.status).toLowerCase() === 'delivered' && <RateOrder order={order} />}
 
       <div className="flex flex-wrap gap-4 items-center">
         <Link href="/order-tracking" className="text-primary font-bold text-sm">← All orders</Link>

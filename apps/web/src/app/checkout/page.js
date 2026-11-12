@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_BASE, getAuthHeaders } from '../../lib/api';
 import { openCheckout, payFor } from '../../lib/payments';
 import { fetchQuote, currentPosition, billLines, etaText } from '../../lib/deliveryQuote';
-import { checkoutPlan, batchLines, describeChange, blockers } from '../../lib/cartModel';
+import { checkoutPlan, batchLines, orderLines, describeChange, blockers } from '../../lib/cartModel';
 
 /**
  * The cart checkout.
@@ -170,7 +170,7 @@ export default function CheckoutPage() {
       : fetchQuote({
         shopId: singleShopId,
         fulfillmentMethod,
-        items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
+        items: orderLines(cartItems),
         ...where,
       }))
       .then((data) => { if (!cancelled) { setQuote(data); setQuoteError(null); } })
@@ -296,7 +296,7 @@ export default function CheckoutPage() {
           addressId: delivering && selectedAddressId ? selectedAddressId : undefined,
           deliveryCoordinate: delivering && location ? location : undefined,
           deliverySlot,
-          items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
+          items: orderLines(cartItems),
         }),
       });
       const data = await res.json().catch(() => ({}));

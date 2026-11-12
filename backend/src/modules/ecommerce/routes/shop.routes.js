@@ -1026,7 +1026,7 @@ async function priceBatch(user, body) {
             throw new orderPlacement.OrderError(400, 'BAD_LINE', 'Each item needs shop_id, product_id and a whole quantity of at least 1');
         }
         if (!byShop.has(item.shop_id)) byShop.set(item.shop_id, []);
-        byShop.get(item.shop_id).push({ productId: item.product_id, quantity: item.quantity });
+        byShop.get(item.shop_id).push({ productId: item.product_id, quantity: item.quantity, variantId: item.variantId ?? item.variant_id ?? null });
     }
 
     // The placement service reads the address and location under these names.
@@ -1282,43 +1282,20 @@ router.get('/:id/qa', async (req, res, next) => {
  * order, or a completed appointment.
  */
 router.post('/:id/reviews', authenticate, async (req, res, next) => {
+    // C11: services/reviews.service.js. A review from someone the shop has not
+    // served used to be accepted, marked "not verified".
     try {
-        const { rating, review_text, photo_urls } = req.body || {};
-        const stars = Number(rating);
-        if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
-            return res.status(400).json({ message: 'rating must be a whole number from 1 to 5' });
-        }
-        if (review_text !== undefined && review_text !== null && (typeof review_text !== 'string' || review_text.length > 2000)) {
-            return res.status(400).json({ message: 'review_text must be text of at most 2000 characters' });
-        }
-        const photos = Array.isArray(photo_urls) ? photo_urls.filter((u) => typeof u === 'string').slice(0, 10) : [];
-
-        const shop = await queryOne('SELECT id, owner_id FROM local_shops WHERE id = $1', [req.params.id]);
-        if (!shop) return res.status(404).json({ message: 'Shop not found' });
-        if (String(shop.owner_id) === String(req.user.id)) {
-            return res.status(403).json({ message: 'You cannot review your own shop' });
-        }
-
-        const served = await queryOne(
-            `SELECT 1 AS ok FROM orders WHERE shop_id = $1 AND user_id = $2 AND LOWER(order_status) = 'delivered'
-             UNION ALL
-             SELECT 1 AS ok FROM shop_appointments WHERE shop_id = $1 AND user_id = $2 AND LOWER(status) = 'completed'
-             LIMIT 1`,
-            [shop.id, req.user.id]
-        );
-        const is_society_verified = served ? 1 : 0;
-
-        // One review per customer per shop (a unique index): they edit it rather than add another.
-        const already = await queryOne('SELECT id FROM shop_reviews WHERE shop_id = $1 AND user_id = $2', [shop.id, req.user.id]);
-        if (already) return res.status(409).json({ message: 'You have already reviewed this shop', reviewId: already.id });
-
-        const review_id = crypto.randomUUID();
-        await query(`INSERT INTO shop_reviews (id, shop_id, user_id, rating, review_text, photo_urls, is_society_verified)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [review_id, shop.id, req.user.id, stars, review_text || null, JSON.stringify(photos), is_society_verified]);
-            
-        res.status(201).json({ id: review_id, is_society_verified, message: 'Review added' });
+        const reviews = require('../../../services/reviews.service');
+        const body = req.body || {};
+        const saved = await reviews.submit({
+            userId: req.user.id, shopId: req.params.id, rating: body.rating,
+            text: body.review_text ?? body.comment, photos: body.photo_urls ?? body.photos, mode: 'create',
+        });
+        res.status(201).json({ id: saved.id, is_society_verified: 1, shopRating: saved.shopRating, message: 'Review added' });
     } catch (err) {
+        if (err && err.name === 'ReviewError') {
+            return res.status(err.status).json({ message: err.message, error: err.message, code: err.code });
+        }
         next(err);
     }
 });
@@ -1481,26 +1458,16 @@ router.get('/:id/offers', async (req, res, next) => {
 // Shop reviews endpoint — queries shop_reviews table with user info
 router.get('/:id/reviews', async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const result = await query(`SELECT sr.id, sr.rating, sr.review_text, sr.photo_urls, sr.created_at,
-              u.full_name as user_name, u.avatar_url as user_avatar
-       FROM shop_reviews sr
-       LEFT JOIN users u ON sr.user_id = u.id
-       WHERE sr.shop_id = $1
-       ORDER BY sr.created_at DESC
-       LIMIT 50`,
-      [id]
-    );
-    const reviews = result.rows || result || [];
-    
-    // Calculate aggregate rating
-    let avgRating = 0;
-    if (reviews.length > 0) {
-      const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
-      avgRating = parseFloat((sum / reviews.length).toFixed(1));
-    }
-    
-    res.json({ success: true, data: reviews, meta: { averageRating: avgRating, totalReviews: reviews.length } });
+    // C11: reviews hidden by moderation are left out, and the average is of
+    // verified reviews (the shop's rating, services/reviews.service.js).
+    const reviews = await require('../../../services/reviews.service').listForShop(req.params.id);
+    const verified = reviews.filter((r) => Number(r.verified) === 1);
+    const avgRating = verified.length ? parseFloat((verified.reduce((a, r) => a + (Number(r.rating) || 0), 0) / verified.length).toFixed(1)) : 0;
+    res.json({
+      success: true,
+      data: reviews.map((r) => ({ ...r, verified_purchase: Number(r.verified) === 1 })),
+      meta: { averageRating: avgRating, totalReviews: reviews.length, verifiedReviews: verified.length },
+    });
   } catch (error) { next(error); }
 });
 
@@ -1669,39 +1636,36 @@ router.get('/:id/orders/history', authenticate, async (req, res, next) => {
 });
 
 router.post('/:id/orders/:orderId/review', authenticate, async (req, res, next) => {
+  // C11: services/reviews.service.js. This inserted without an id, which on
+  // SQLite left the review with none.
   try {
-    const rating = parseInt(req.body.rating, 10);
-    const review = req.body.review || req.body.review_text || null;
-
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'rating must be an integer between 1 and 5' });
-    }
-
-    // Only the buyer of a delivered order may review it.
-    const order = await queryOne(
-      'SELECT id, user_id, order_status FROM orders WHERE id = $1 AND shop_id = $2',
-      [req.params.orderId, req.params.id]
-    );
-    if (!order) return res.status(404).json({ error: 'Order not found for this shop' });
-    if (String(order.user_id) !== String(req.user.id)) {
-      return res.status(403).json({ error: 'You can only review your own orders' });
-    }
-    if (order.order_status !== 'delivered') {
-      return res.status(400).json({ error: 'Only delivered orders can be reviewed' });
-    }
-
-    // shop_reviews is unique per (shop_id, user_id), so a second review from the
-    // same customer updates their existing rating rather than failing.
-    await query(
-      `INSERT INTO shop_reviews (shop_id, user_id, rating, review_text)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (shop_id, user_id) DO UPDATE
-         SET rating = EXCLUDED.rating, review_text = EXCLUDED.review_text`,
-      [req.params.id, req.user.id, rating, review]
-    );
-
-    res.status(201).json({ success: true, message: 'Review saved' });
+    const reviews = require('../../../services/reviews.service');
+    const saved = await reviews.submit({
+      userId: req.user.id, shopId: req.params.id, orderId: req.params.orderId,
+      rating: req.body.rating, text: req.body.review ?? req.body.review_text, photos: req.body.photo_urls,
+      mode: 'upsert',
+    });
+    res.status(201).json({ success: true, message: 'Review saved', id: saved.id, shopRating: saved.shopRating });
   } catch (error) {
+    if (error && error.name === 'ReviewError') return res.status(error.status).json({ error: error.message, code: error.code });
+    next(error);
+  }
+});
+
+/**
+ * POST /shops/:id/reviews/:reviewId/report { reason, details } — a customer
+ * reports a review (C11). It goes to the admin moderation queue
+ * (/crm/admin/commerce/review-reports).
+ */
+router.post('/:id/reviews/:reviewId/report', authenticate, async (req, res, next) => {
+  try {
+    const reviews = require('../../../services/reviews.service');
+    const review = await queryOne('SELECT shop_id FROM shop_reviews WHERE CAST(id AS TEXT) = $1', [String(req.params.reviewId)]);
+    if (!review || String(review.shop_id) !== String(req.params.id)) return res.status(404).json({ error: 'Review not found' });
+    const out = await reviews.report({ reviewId: req.params.reviewId, reporterId: req.user.id, reason: (req.body || {}).reason, details: (req.body || {}).details });
+    res.status(out.alreadyReported ? 200 : 201).json({ success: true, reportId: out.id, alreadyReported: out.alreadyReported });
+  } catch (error) {
+    if (error && error.name === 'ReviewError') return res.status(error.status).json({ error: error.message, code: error.code });
     next(error);
   }
 });
@@ -2102,6 +2066,22 @@ router.get('/:shopId/products/low-stock', authenticate, async (req, res, next) =
       variants,
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /shops/:shopId/products/:productId — the product page (C4): gallery,
+ * variants, price/MRP/discount and quantity limit, seller (with FSSAI for a
+ * food business), return window, Legal Metrology declarations and verified
+ * reviews (services/productDetail.service.js). Public, like the catalogue.
+ */
+router.get('/:shopId/products/:productId', async (req, res, next) => {
+  try {
+    const productDetail = require('../../../services/productDetail.service');
+    res.json({ success: true, product: await productDetail.getProductDetail(req.params.shopId, req.params.productId) });
+  } catch (err) {
+    if (err && err.code === 'PRODUCT_NOT_FOUND') return res.status(404).json({ success: false, error: err.message });
     next(err);
   }
 });

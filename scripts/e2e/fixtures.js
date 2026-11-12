@@ -38,6 +38,9 @@ const IDS = {
   chemistOwner: 'e2e00000-0000-4000-8000-0000000000d1',
   chemistSoap: 'e2e00000-0000-4000-8000-0000000000d2',
   vendorRice: 'e2e00000-0000-4000-8000-0000000000d3',
+  // C11: a review of the vendor's shop that a customer has reported.
+  reportedReview: 'e2e00000-0000-4000-8000-0000000000e0',
+  reviewReport: 'e2e00000-0000-4000-8000-0000000000e1',
 };
 
 const PHONES = {
@@ -246,6 +249,37 @@ async function seedE2eFixtures() {
     `INSERT INTO shop_products (id, shop_id, name, description, price, is_active, is_available, inventory_count, stock_quantity, track_inventory)
      VALUES ($1, $2, 'E2E Basmati Rice 1kg', 'Cart fixture', 64, 1, '1', 500, 500, 1)`,
     [IDS.vendorRice, shop.id]
+  );
+  // C4: the soap's page has an MRP, most of the Legal Metrology declarations
+  // (consumer care and best before are left out, so the page must say so), a
+  // per-order limit and two sizes.
+  await run(
+    `UPDATE shop_products SET mrp = 50, generic_name = 'Toilet soap', net_quantity = '75 g',
+            manufacturer_details = 'E2E Soaps Pvt Ltd, Plot 7, Chakan MIDC, Pune 410501', country_of_origin = 'India',
+            max_order_quantity = 4
+      WHERE id = $1`,
+    [IDS.chemistSoap]
+  );
+  for (const [id, value, modifier] of [['e2e00000-0000-4000-8000-0000000000d4', '75 g', 0], ['e2e00000-0000-4000-8000-0000000000d5', '125 g', 20]]) {
+    await run(
+      `INSERT INTO product_variants (id, product_id, variant_name, variant_value, price_modifier, inventory_count)
+       VALUES ($1, $2, 'Size', $3, $4, 100)`,
+      [id, IDS.chemistSoap, value, modifier]
+    );
+  }
+
+  // C11: the seeded customer (who has a delivered order from the vendor's
+  // shop) reviewed it; the shopper reported the review. The console's
+  // moderation queue acts on this.
+  await run(
+    `INSERT INTO shop_reviews (id, shop_id, user_id, rating, review_text, is_society_verified, status, created_at, updated_at)
+     VALUES ($1, $2, $3, 1, 'E2E reported review: call 98xxxxxx for cheaper stock', 1, 'Published', $4, $4)`,
+    [IDS.reportedReview, shop.id, customer.id, HOURS(4)]
+  );
+  await run(
+    `INSERT INTO review_reports (id, review_id, reporter_id, reason, details, status, created_at)
+     VALUES ($1, $2, $3, 'spam', 'Advertises another seller', 'open', $4)`,
+    [IDS.reviewReport, IDS.reportedReview, IDS.shopper, HOURS(2)]
   );
 
   // A9: a second, inactive zone the console can switch without taking the

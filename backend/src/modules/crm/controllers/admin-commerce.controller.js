@@ -1290,7 +1290,44 @@ const broadcastPush = async (req, res, next) => {
   }
 };
 
+
+/** C11: reviews customers have reported, most reported first. */
+const getReviewReports = async (req, res, next) => {
+  try {
+    const queue = await require('../../../services/reviews.service').moderationQueue();
+    res.json({ success: true, data: queue.map((r) => ({ ...r, reports: Number(r.reports) || 0 })) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** C11: hide a reported review (it leaves the listings and the rating) or keep it. */
+const moderateReview = async (req, res, next) => {
+  try {
+    const { action, note } = req.body || {};
+    const reviews = require('../../../services/reviews.service');
+    let out;
+    try {
+      out = await reviews.moderate({ reviewId: req.params.reviewId, action, adminId: req.user.id, note });
+    } catch (e) {
+      if (e && e.name === 'ReviewError') return res.status(e.status).json({ success: false, error: e.message, code: e.code });
+      throw e;
+    }
+    await recordAudit(req, {
+      action: action === 'hide' ? 'hide_review' : 'keep_review',
+      targetType: 'review',
+      targetId: req.params.reviewId,
+      details: { note: note || null, shopRating: out.shopRating },
+    });
+    res.json({ success: true, ...out });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
+  getReviewReports,
+  moderateReview,
   getKpis,
   getShops,
   updateShopStatus,

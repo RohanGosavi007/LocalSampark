@@ -11,7 +11,7 @@
  * backend/src/services/orderLifecycle.service.js. The server enforces them;
  * the app only decides what to offer.
  */
-import { apiGet, apiPut, API_BASE, getAuthHeaders } from '../lib/api';
+import { apiGet, apiPut, apiPost, API_BASE, getAuthHeaders } from '../lib/api';
 
 export const ORDER_STEPS = [
   { key: 'pending', label: 'Placed' },
@@ -199,4 +199,18 @@ export async function downloadInvoice(id, deps) {
     await sharing.shareAsync(file.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: invoiceFileName(id) });
   }
   return file.uri;
+}
+
+/**
+ * C11: review a delivered order's shop. The server checks the order is this
+ * customer's and delivered; a second review replaces the first.
+ */
+export async function reviewOrder(order, rating, text, api = { apiPost }) {
+  const stars = Number(rating);
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Choose a rating from 1 to 5 stars.');
+  if (String(order.status).toLowerCase() !== 'delivered') throw new Error('You can review an order once it has been delivered.');
+  const body = { rating: stars };
+  const trimmed = String(text || '').trim();
+  if (trimmed) body.review = trimmed.slice(0, 2000);
+  return api.apiPost(`/shops/${encodeURIComponent(order.shopId)}/orders/${encodeURIComponent(order.id)}/review`, body);
 }

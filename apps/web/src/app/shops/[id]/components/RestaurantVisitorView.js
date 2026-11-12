@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -130,7 +131,7 @@ export default function RestaurantVisitorView({ shop, products = [], onAddToCart
               {/* Item Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-bold text-text text-sm">{item.name}</p>
+                  <Link href={`/shops/${shop.id}/products/${item.id}`} data-testid="product-link" className="font-bold text-text text-sm hover:text-primary">{item.name}</Link>
                   {item.is_bestseller && <span className="text-[9px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold">⭐ Bestseller</span>}
                   {item.is_spicy && <Flame className="w-3 h-3 text-red-500" />}
                 </div>
