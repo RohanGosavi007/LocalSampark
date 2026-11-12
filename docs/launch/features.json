@@ -27,7 +27,14 @@
       "backend/src/__tests__/authSecurity.test.js",
       "backend/src/__tests__/integration/otpAndSessions.test.js",
       "apps/mobile/__tests__/secureStorage.test.js",
-      "apps/web/tests/legalCompliance.test.mjs"
+      "apps/web/tests/legalCompliance.test.mjs",
+      "backend/src/__tests__/integration/authC1.test.js",
+      "backend/src/__tests__/integration/googleSignInC1.test.js",
+      "backend/src/services/sessions.service.js",
+      "backend/src/services/googleSignIn.service.js",
+      "apps/web/tests/loginMethods.test.mjs",
+      "apps/mobile/__tests__/authSession.test.js",
+      "tests/e2e/web/auth-c1.spec.js"
     ],
     "notes": "Addresses N1 and N2. Verified with OTP leakage prevention, SecureStore native mobile storage, and legal deletion portal."
   },

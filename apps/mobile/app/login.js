@@ -4,16 +4,62 @@ import { useAuth } from '../src/context/AuthContext';
 import { apiPost } from '../src/lib/api';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { loginTabs, cleanCode } from '../src/services/authSession';
 
 export default function LoginScreen() {
-  const [method, setMethod] = useState('email'); // 'email' | 'phone'
+  // C1 / Decision D3: an emailed code first, then a password; phone only when
+  // the server has it switched on.
+  const [chosen, setMethod] = useState('emailOtp');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp, loginEmail } = useAuth();
+  const { loginWithDevPreset, API_URL, sendOtp, verifyOtp, loginEmail, loginMethods, sendEmailOtp, verifyEmailOtp } = useAuth();
+  const tabs = loginTabs(loginMethods);
+  const method = tabs.some((t) => t.id === chosen) ? chosen : tabs[0].id;
+  const [emailStep, setEmailStep] = useState('address'); // 'address' | 'code' | 'name'
+  const [emailCode, setEmailCode] = useState('');
+  const [fullName, setFullName] = useState('');
+
+  const handleSendEmailCode = async () => {
+    setLoading(true);
+    try {
+      const data = await sendEmailOtp(email);
+      setEmailStep('code');
+      setEmailCode('');
+      Alert.alert('Check your email', data && data.otp ? `Verification Code: ${data.otp}` : 'We have emailed you a sign-in code.');
+    } catch (err) {
+      Alert.alert('Could not send the code', err?.message || 'Please try again in a moment.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async () => {
+    if (!cleanCode(emailCode)) {
+      Alert.alert('Enter the code', 'Type the code from the email.');
+      return;
+    }
+    if (emailStep === 'name' && !fullName.trim()) {
+      Alert.alert('Your name', 'Tell us your name to create your account.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await verifyEmailOtp(email, emailCode, emailStep === 'name' ? fullName : '');
+      if (data && data.registered) {
+        router.replace('/(tabs)');
+      } else {
+        setEmailStep('name');
+      }
+    } catch (err) {
+      Alert.alert('Sign-in failed', err?.message || 'Invalid or expired code.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSendOtp = async () => {
     const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
@@ -145,25 +191,78 @@ export default function LoginScreen() {
 
         {/* Toggle Login Method */}
         <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[styles.toggleButton, method === 'phone' && styles.toggleButtonActive]}
-            onPress={() => { setMethod('phone'); setOtpSent(false); }}
-          >
-            <Text style={[styles.toggleButtonText, method === 'phone' && styles.toggleButtonTextActive]}>
-              📱 Phone OTP
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, method === 'email' && styles.toggleButtonActive]}
-            onPress={() => setMethod('email')}
-          >
-            <Text style={[styles.toggleButtonText, method === 'email' && styles.toggleButtonTextActive]}>
-              📧 Email & Password
-            </Text>
-          </TouchableOpacity>
+          {tabs.map((t) => (
+            <TouchableOpacity
+              key={t.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: method === t.id }}
+              style={[styles.toggleButton, method === t.id && styles.toggleButtonActive]}
+              onPress={() => { setMethod(t.id); setOtpSent(false); setEmailStep('address'); }}
+            >
+              <Text style={[styles.toggleButtonText, method === t.id && styles.toggleButtonTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {method === 'phone' ? (
+        {method === 'emailOtp' ? (
+          emailStep === 'address' ? (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email Address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="name@email.com"
+                placeholderTextColor="#64748b"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                value={email}
+                onChangeText={setEmail}
+                testID="email-otp-address"
+              />
+              <TouchableOpacity style={styles.primaryButton} onPress={handleSendEmailCode} disabled={loading || !email}>
+                <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Email me a code'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Code from the email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="123456"
+                placeholderTextColor="#64748b"
+                keyboardType="number-pad"
+                autoComplete="one-time-code"
+                value={emailCode}
+                onChangeText={setEmailCode}
+                maxLength={8}
+                testID="email-otp-code"
+              />
+              {emailStep === 'name' && (
+                <>
+                  <Text style={styles.label}>Your name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Your full name"
+                    placeholderTextColor="#64748b"
+                    autoComplete="name"
+                    value={fullName}
+                    onChangeText={setFullName}
+                    maxLength={100}
+                    testID="email-otp-name"
+                  />
+                </>
+              )}
+              <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyEmailCode} disabled={loading}>
+                <Text style={styles.buttonText}>{loading ? 'Checking...' : emailStep === 'name' ? 'Create account' : 'Sign in'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ marginTop: 16 }} onPress={() => { setEmailStep('address'); setEmailCode(''); }}>
+                <Text style={{ color: '#3b82f6', textAlign: 'center', fontWeight: 'bold' }}>Use a different email</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        ) : method === 'phone' ? (
           !otpSent ? (
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Mobile Number</Text>

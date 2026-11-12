@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'mock-api-key',
@@ -90,4 +90,16 @@ export async function verifyFirebasePhoneOtp(code) {
     console.error('Firebase OTP Verification Error:', error);
     throw error;
   }
+}
+
+/**
+ * Google Sign-In (C1, Decision D3): a Google pop-up through Firebase. Resolves
+ * to the Firebase ID token, which the server checks (POST /auth/google).
+ */
+export async function signInWithGoogle() {
+  if (!firebaseConfigured) throw new Error('Google sign-in is not available on this site yet.');
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const result = await signInWithPopup(auth, provider);
+  return result.user.getIdToken();
 }

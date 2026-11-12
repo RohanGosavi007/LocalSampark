@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { API_URL, apiFetch, clearSession, SESSION_KEYS, installAuthFetch, startSessionKeepAlive } from '@/lib/api';
 
-import { sendFirebasePhoneOtp, verifyFirebasePhoneOtp } from '@/lib/firebase';
+import { sendFirebasePhoneOtp, verifyFirebasePhoneOtp, signInWithGoogle } from '@/lib/firebase';
+import { DEFAULT_METHODS, readMethods } from '@/lib/loginMethods';
 
 const AuthContext = createContext(null);
 
@@ -43,6 +44,17 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [activeRole, setActiveRole] = useState(null);
   const [assignedRoles, setAssignedRoles] = useState([]);
+  const [loginMethods, setLoginMethods] = useState(DEFAULT_METHODS);
+
+  // Which ways of signing in the server has open (C1, Decision D3).
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/api/v1/auth/methods`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => { if (!cancelled && body) setLoginMethods(readMethods(body)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const forget = useCallback(() => {
     setToken(null);
@@ -219,6 +231,63 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const postAuth = async (path, body) => {
+    const res = await fetch(`${API_URL}/api/v1/auth${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.error || 'Something went wrong. Please try again.');
+      err.status = res.status;
+      err.code = data.code;
+      throw err;
+    }
+    return data;
+  };
+
+  /** Emails a sign-in code (C1, Decision D3). */
+  const sendEmailOtp = async (email) => {
+    setError(null);
+    try {
+      return await postAuth('/email/send-otp', { email });
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  /**
+   * Checks the emailed code. A new address answers { registered: false } until
+   * it is sent again with the customer's name.
+   */
+  const verifyEmailOtp = async (email, otp, fullName = '') => {
+    setError(null);
+    try {
+      const data = await postAuth('/email/verify-otp', { email, otp, ...(fullName ? { fullName } : {}) });
+      if (data.registered && data.accessToken) saveAuthSession(data);
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  /** Google pop-up, then the server (C1, Decision D3). */
+  const googleLogin = async () => {
+    setError(null);
+    try {
+      const firebaseIdToken = await signInWithGoogle();
+      const data = await postAuth('/google', { firebaseIdToken });
+      if (data.accessToken) saveAuthSession(data);
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   const loginEmail = async (email, password) => {
     setError(null);
     try {
@@ -256,21 +325,31 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
+  /**
+   * Signs out of this browser, or with { allDevices: true } of every device
+   * (C1). Resolves to whether the server confirmed it; the browser's session
+   * is cleared either way.
+   */
+  const logout = async ({ allDevices = false } = {}) => {
+    let confirmed = false;
     try {
       const storedToken = localStorage.getItem(SESSION_KEYS.token);
       if (storedToken) {
-        await fetch(`${API_URL}/api/v1/auth/logout`, {
+        const res = await fetch(`${API_URL}/api/v1/auth/logout`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${storedToken}`, 'Content-Type': 'application/json' }
+          headers: { 'Authorization': `Bearer ${storedToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allDevices: Boolean(allDevices) }),
         });
+        confirmed = res.ok;
       }
     } catch (e) {
       console.warn('Backend logout notification failed (non-critical):', e.message);
     } finally {
       Object.values(SESSION_KEYS).forEach((key) => localStorage.removeItem(key));
+      localStorage.removeItem('admin_token');
       forget();
     }
+    return confirmed;
   };
 
   /**
@@ -307,6 +386,10 @@ export function AuthProvider({ children }) {
       verifyOtp,
       loginEmail,
       registerEmail,
+      loginMethods,
+      sendEmailOtp,
+      verifyEmailOtp,
+      googleLogin,
       logout,
       demoLogin,
     }}>

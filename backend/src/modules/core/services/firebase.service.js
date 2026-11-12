@@ -80,7 +80,13 @@ async function verifyFirebaseToken(idToken) {
 
 initFirebase();
 
+/** Whether the Admin SDK has real credentials (so Firebase tokens can be checked). */
+function firebaseReady() {
+  return initialized;
+}
+
 module.exports = {
   admin,
-  verifyFirebaseToken
+  verifyFirebaseToken,
+  firebaseReady
 };

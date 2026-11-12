@@ -108,6 +108,10 @@ describe('a login code', () => {
   test('demo numbers get no fixed code on a staging server', async () => {
     await withEnv('staging', async () => {
       const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Phone sign-in is off outside development unless switched on (Decision
+      // D3, C1); this is about a server where it has been switched on.
+      const phoneFlag = process.env.ENABLE_PHONE_OTP;
+      process.env.ENABLE_PHONE_OTP = 'true';
       try {
         const res = await request(app).post('/auth/send-otp').send({ phoneNumber: '+919000000012' });
         // No SMS provider here, so the honest answer is that it was not sent…
@@ -118,6 +122,7 @@ describe('a login code', () => {
         expect(login.status).toBe(400);
         expect(login.body.accessToken).toBeUndefined();
       } finally {
+        if (phoneFlag === undefined) delete process.env.ENABLE_PHONE_OTP; else process.env.ENABLE_PHONE_OTP = phoneFlag;
         error.mockRestore();
       }
     });

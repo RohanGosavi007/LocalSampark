@@ -1429,3 +1429,52 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | `backend/src/__tests__/unit/adminCommerceOps.test.js` fixture | the dispute now has an order of its own (`TEST_DISPUTE_ORDER_ID`); no assertion changed | `TEST_ORDER_ID` is refunded in full earlier in the suite, and a dispute refund now counts against the same order. The test still checks that resolving a dispute with a refund works, without relying on a double refund |
 | `tests/e2e/admin/commerce-ops.spec.js` [A4] refund | button "Refund to wallet" is now "Refund to customer"; the timeline entry expected is `data-source="payout"`, not `"wallet"` | The E2E backend runs with the wallet off, as production does; the refund is a payout and the label must not promise a wallet |
 | `tests/e2e/admin/commerce-ops.spec.js` [C10.11] | follows the refund to a recorded payout instead of a wallet balance | Same: D10 |
+
+
+### F-159: The launch sign-in methods did not exist, and "log out" either did nothing or signed out everywhere (C1)
+- **Defects:**
+  - **No launch sign-in:** Decision D3 makes Google and an emailed code the launch sign-in methods, with phone OTP off until DLT registration. Neither Google nor email-code sign-in existed on any platform. Phone OTP was always open, and the web and app showed a phone tab that in production could only fail.
+  - **Email registration broken on PostgreSQL:** accounts made with an email alone got the placeholder phone `email_123456_7890`. At 17 characters it does not fit `users.phone_number VARCHAR(15)`, so every email registration failed on PostgreSQL. The placeholder was also shown to the customer as their phone number.
+  - **Logout:**
+    - the server's logout bumped `token_version`, which signed the account out of every device. There was no single-device logout.
+    - the app's logout never told the server. It deleted the tokens on the phone, and a copied access or refresh token went on working for its whole life.
+  - **Account menu:** the web account menu opened on mouse hover only, so touch and keyboard users could not reach Sign Out.
+- **Fix:**
+  - **Sessions:**
+    - every token pair carries a session id (`sid`), kept across refreshes;
+    - `POST /auth/logout` revokes that session (`revoked_sessions`, migration 146, both engines);
+    - `{ allDevices: true }` bumps `token_version` and ends every session;
+    - `authenticate`, `optionalAuth`, `verifyRole` and refresh refuse a revoked session. A token from before sessions had ids still signs out everywhere, as it always did.
+  - **Sign-in methods** (Decision D3):
+    - `GET /auth/methods` reports what is open;
+    - `POST /auth/email/send-otp` and `POST /auth/email/verify-otp` sign in or sign up by emailed code. The code is single-use, the address case-insensitive, sends are rate limited, and a new address is asked for a name. In production with no mail server the request is refused (503 `EMAIL_NOT_CONFIGURED`), never reported as sent;
+    - `POST /auth/google` accepts a Firebase ID token from a Google sign-in (website) or a Google ID token for one of `GOOGLE_OAUTH_CLIENT_IDS` (app), with a verified email;
+    - phone OTP (send, verify, WhatsApp) answers 403 `PHONE_OTP_DISABLED` unless `ENABLE_PHONE_OTP=true`. It is off by default in production and on in development and test.
+  - **Placeholder phone:** `e` plus 14 hex digits (15 characters), never shown as a phone.
+  - **Website:**
+    - the sign-in page takes its tabs from `/auth/methods`: Email code (default), Password, Phone only when on;
+    - Continue with Google appears when the server and the site's Firebase are both configured;
+    - Security & Privacy has "Sign out of all devices";
+    - the account menu opens on click too.
+  - **App:**
+    - the sign-in screen works the same way;
+    - logout tells the server first, through the refreshing API client, so an expired access token cannot leave a live refresh token;
+    - the More tab has "Sign out of all devices".
+- **Proof:**
+  - **Backend** (SQLite and PostgreSQL):
+    - `backend/src/__tests__/integration/authC1.test.js`: [C1.10] single-device and all-device logout, [C1.11] refresh keeps the session, [C1.12] phone OTP flag, [C1.13] email code sign-up and sign-in, single use, placeholder fits, [C1.14] no mail server in production;
+    - `googleSignInC1.test.js`: [C1.15]–[C1.18].
+  - **Mutation check:** with the auth routes and middleware reverted, 4 of the 5 [C1.10–14] tests fail. [C1.11] passes either way, because the old logout ended every session.
+  - **Web:** `apps/web/tests/loginMethods.test.mjs` [C1.22]–[C1.24].
+  - **Browser:** `tests/e2e/web/auth-c1.spec.js`: [C1.19] sign-up by emailed code, [C1.20] Sign Out ends this browser only, [C1.21] sign out of all devices.
+  - **App:** `apps/mobile/__tests__/authSession.test.js` [C1.25]–[C1.27].
+- **Status:** CODE COMPLETE.
+- **Owner actions:**
+  - SMTP settings, so codes are actually emailed in production;
+  - Firebase web configuration with the Google provider enabled, for the website's Google button;
+  - Google OAuth client IDs (`GOOGLE_OAUTH_CLIENT_IDS`, `EXPO_PUBLIC_GOOGLE_*`) for the app's Google button;
+  - `ENABLE_PHONE_OTP=true` once DLT registration is done.
+
+| Test | Change | Why |
+|---|---|---|
+| `backend/src/__tests__/integration/otpAndSessions.test.js` "demo numbers get no fixed code on a staging server" | sets `ENABLE_PHONE_OTP=true` for the duration of the test; no assertion changed | Phone sign-in is now off outside development unless switched on (Decision D3). The test is about a staging server with phone sign-in on, where it must still answer 503 and refuse the demo code; without the flag it would get 403 from the gate before reaching that behaviour |

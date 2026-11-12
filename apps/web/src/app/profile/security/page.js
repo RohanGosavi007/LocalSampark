@@ -1,9 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import Header from '../../components/Header';
-import { ShieldAlert, Download, Trash2, AlertTriangle, Lock } from 'lucide-react';
+import { ShieldAlert, Download, Trash2, AlertTriangle, Lock, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPost, clearSession } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function SecurityPage() {
   const router = useRouter();
@@ -11,6 +12,21 @@ export default function SecurityPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const { logout } = useAuth();
+
+  // C1: ends every session of this account: phones, other browsers, this one.
+  const handleSignOutEverywhere = async () => {
+    setError(null);
+    setSigningOut(true);
+    const confirmed = await logout({ allDevices: true });
+    if (!confirmed) {
+      setSigningOut(false);
+      setError('We could not reach the server to sign out your other devices. You are signed out here; please try again after signing in.');
+      return;
+    }
+    router.push('/login');
+  };
 
   // Both actions call the privacy API (DPDP access and erasure). The export used to be a
   // file containing { user: "Admin", history: [] } and the deletion only logged the person
@@ -82,6 +98,24 @@ export default function SecurityPage() {
             >
               <Download size={18} />
               {isExporting ? 'Preparing…' : 'Download My Data'}
+            </button>
+          </div>
+
+          <div className="pt-8 border-t border-border">
+            <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
+              <LogOut className="text-blue-500" />
+              Signed-in devices
+            </h2>
+            <p className="text-text-muted text-sm mb-4 leading-relaxed">
+              Lost a phone, or signed in on someone else&apos;s computer? Sign out everywhere, including here.
+            </p>
+            <button
+              onClick={handleSignOutEverywhere}
+              disabled={signingOut}
+              className="w-full bg-card-bg hover:bg-background-alt text-text font-bold py-3 rounded-xl transition-colors border border-border flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              {signingOut ? 'Signing out…' : 'Sign out of all devices'}
             </button>
           </div>
 

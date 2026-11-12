@@ -143,6 +143,20 @@ async function sendOrderConfirmation(customer, order, shop) {
 }
 
 /**
+ * C1: a sign-in code (Decision D3, email OTP). Valid for the OTP store's TTL;
+ * the code is the only thing in the message a reader needs.
+ */
+async function sendLoginCode(to, code) {
+  const content = `
+    <h2>Your sign-in code</h2>
+    <p>Use this code to sign in to LocalSampark:</p>
+    <p style="font-size:28px;font-weight:800;letter-spacing:6px;text-align:center;margin:24px 0">${esc(code)}</p>
+    <p>It expires in a few minutes. If you did not ask for it, you can ignore this email.</p>
+  `;
+  return sendEmail(to, `${code} is your sign-in code`, getBaseTemplate(content, 'Sign-in code'));
+}
+
+/**
  * New order notification to shop owner
  */
 async function sendNewOrderNotification(ownerEmail, order, customer) {
@@ -237,6 +251,7 @@ async function sendPayoutNotification(ownerEmail, payout) {
 
 module.exports = {
   esc,
+  sendLoginCode,
   sendEmail,
   sendOrderConfirmation,
   sendNewOrderNotification,
