@@ -70,6 +70,10 @@ router.put('/feature-flags', adminCommerceController.updateFeatureFlags);
 // A13: Admin Financial & Tax Report Exports
 router.get('/reports/export', adminCommerceController.exportReports);
 
+// C11: reported reviews, and the decision on each.
+router.get('/review-reports', adminCommerceController.getReviewReports);
+router.post('/review-reports/:reviewId/moderate', adminCommerceController.moderateReview);
+
 // A14: Admin Broadcast Notifications
 router.post('/broadcasts', adminCommerceController.broadcastPush);
 router.get('/broadcasts', adminCommerceController.getBroadcasts);

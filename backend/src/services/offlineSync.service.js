@@ -162,13 +162,12 @@ class OfflineSyncService {
    * Apply a create_review mutation from offline queue
    */
   static async applyCreateReview(userId, payload) {
-    const reviewId = crypto.randomUUID();
-    await query(
-      `INSERT INTO shop_reviews (id, shop_id, user_id, rating, comment)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [reviewId, payload.shopId, userId, payload.rating, payload.comment || '']
-    );
-    return { reviewId };
+    // C11: the same rule as every other review (a delivered order from the
+    // shop); queued offline is not a way round it.
+    const saved = await require('./reviews.service').submit({
+      userId, shopId: payload.shopId, rating: Number(payload.rating), text: payload.comment, mode: 'upsert',
+    });
+    return { reviewId: saved.id };
   }
 
   /**

@@ -38,6 +38,9 @@ const IDS = {
   chemistOwner: 'e2e00000-0000-4000-8000-0000000000d1',
   chemistSoap: 'e2e00000-0000-4000-8000-0000000000d2',
   vendorRice: 'e2e00000-0000-4000-8000-0000000000d3',
+  // C11: a review of the vendor's shop that a customer has reported.
+  reportedReview: 'e2e00000-0000-4000-8000-0000000000e0',
+  reviewReport: 'e2e00000-0000-4000-8000-0000000000e1',
 };
 
 const PHONES = {
@@ -264,6 +267,20 @@ async function seedE2eFixtures() {
       [id, IDS.chemistSoap, value, modifier]
     );
   }
+
+  // C11: the seeded customer (who has a delivered order from the vendor's
+  // shop) reviewed it; the shopper reported the review. The console's
+  // moderation queue acts on this.
+  await run(
+    `INSERT INTO shop_reviews (id, shop_id, user_id, rating, review_text, is_society_verified, status, created_at, updated_at)
+     VALUES ($1, $2, $3, 1, 'E2E reported review: call 98xxxxxx for cheaper stock', 1, 'Published', $4, $4)`,
+    [IDS.reportedReview, shop.id, customer.id, HOURS(4)]
+  );
+  await run(
+    `INSERT INTO review_reports (id, review_id, reporter_id, reason, details, status, created_at)
+     VALUES ($1, $2, $3, 'spam', 'Advertises another seller', 'open', $4)`,
+    [IDS.reviewReport, IDS.reportedReview, IDS.shopper, HOURS(2)]
+  );
 
   // A9: a second, inactive zone the console can switch without taking the
   // pilot zone (which the web specs order from) offline mid-run.

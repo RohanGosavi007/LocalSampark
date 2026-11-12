@@ -327,7 +327,13 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/afterOrderExperience.test.js"
+      "backend/src/__tests__/unit/afterOrderExperience.test.js",
+      "backend/src/__tests__/integration/reviewsC11.test.js",
+      "backend/src/services/reviews.service.js",
+      "apps/mobile/__tests__/reviews.test.js",
+      "tests/e2e/web/reviews.spec.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "apps/admin/tests/reviewModeration.test.mjs"
     ],
     "notes": "Delivered order verified buyer enforcement, duplicate review protection, and shop rating recalculation."
   },

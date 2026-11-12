@@ -1325,3 +1325,33 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
   - **Entry points:** links from the web header and the app's cart.
 - **Proof:** `apps/web/tests/productPage.test.mjs` [C12.7]–[C12.8]; `apps/mobile/__tests__/product.test.js` [C12.9]–[C12.10]. The backend wishlist suite ([C12.1]–[C12.6]) still applies.
 - **Status:** CODE COMPLETE.
+
+### F-156: Reviews could be posted by anyone, the rating was whichever path wrote last, and nothing could be moderated (C11)
+- **Defects:**
+  - **Five ways in, three different rules:** reviews arrived through `POST /shops/:id/reviews`, the order review, `/trust-reviews`, `/engagement/reviews/submit` and offline sync, into three tables (`shop_reviews`, `trust_reviews`, `reviews`).
+    - Two paths accepted a review from someone the shop had never served: one marked it unverified, `/engagement/reviews/submit` did not even do that, and offline sync inserted with no check at all.
+    - Three paths overwrote `local_shops.rating` with the average of their own table, trust-reviews defaulting to 5.0, so the rating shown was whichever path wrote last.
+  - **Missing id on SQLite:** the order review inserted without an id, which on SQLite left the review with none.
+  - **Web reviews never shown:** the shop page read `GET /shops/:id/reviews` (`{ success, data, meta }`) as a bare array, so every shop showed "No reviews yet". Its "Write a Review" button did nothing, and a missing rating was drawn as five stars.
+  - **No moderation:** reviews could not be reported, and there was no moderation queue: `shop_reviews.is_flagged` had nothing behind it.
+- **Fix:**
+  - **One service:** `backend/src/services/reviews.service.js` is the only way in, and every path goes through it.
+    - A review needs a delivered order (or completed appointment) from the shop; owners cannot review their own shop.
+    - There is one review per customer per shop.
+    - The shop's rating is the average of its verified, visible reviews, recomputed on every change.
+  - **Reporting and moderation:**
+    - `POST /shops/:id/reviews/:reviewId/report` takes a reason from a fixed list; migration 142 adds `review_reports` on both engines.
+    - The admin queue at `GET /admin/commerce/review-reports` hides or keeps a review (`POST …/moderate`), with an audit-log entry; hidden reviews leave the listings and the rating.
+  - **Web:** the shop page shows reviews, the shop's reply and a Report control, and points to the order page, where a delivered order can be rated.
+  - **App:** the order screen rates a delivered order, and the product screen reports a review.
+  - **Admin:** the console has a Reviews section.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/reviewsC11.test.js` [C11.1]–[C11.4]. All four fail with the routing changes reverted. The existing suites [C11.21]–[C11.26] still pass.
+  - **App:** `apps/mobile/__tests__/reviews.test.js` [C11.5]–[C11.7].
+  - **Browser:** `tests/e2e/web/reviews.spec.js` [C11.8]–[C11.9].
+  - **Admin:** `tests/e2e/admin/commerce-ops.spec.js` [C11.10] and `apps/admin/tests/reviewModeration.test.mjs` [C11.11].
+- **Status:** CODE COMPLETE.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `backend/src/__tests__/integration/shopReviews.test.js` "anyone else can review, but it is not marked verified" | now "anyone the shop has not served cannot review it, and nothing is stored": 403 `NOT_VERIFIED_PURCHASE`, no row. It used to expect 201 with `is_society_verified: 0` | C11 restricts reviews to verified purchasers (Consumer Protection (E-Commerce) Rules, 2020, r.4(9); IS 19000:2022). The old test pinned the behaviour the feature forbids |

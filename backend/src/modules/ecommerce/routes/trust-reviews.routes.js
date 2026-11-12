@@ -71,12 +71,13 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
     );
 
     // Automatically recalculate and update shop rating average
-    const stats = await queryOne(
-      'SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews FROM trust_reviews WHERE shop_id = $1',
-      [shopId]
-    );
-    const newRating = stats?.avg_rating ? Math.round(Number(stats.avg_rating) * 10) / 10 : 5.0;
-    await query('UPDATE local_shops SET rating = $1 WHERE id = $2', [newRating, shopId]);
+    // C11: the customer's public review of the shop, and the shop's rating,
+    // come from services/reviews.service.js. This used to set the rating to
+    // the average of trust_reviews alone (5.0 when it had none), while other
+    // paths set it from other tables.
+    const publicReview = await require('../../../services/reviews.service').submit({
+      userId, shopId, orderId: finalOrderId, rating: stars, text: review_text, mode: 'upsert',
+    });
 
     const created = await queryOne('SELECT * FROM trust_reviews WHERE id = $1', [reviewId]);
 
@@ -84,7 +85,7 @@ router.post('/:shopId', authenticate, async (req, res, next) => {
       success: true,
       message: 'Verified buyer review posted successfully',
       review: created,
-      shopRating: newRating
+      shopRating: publicReview.shopRating
     });
   } catch (err) {
     next(err);

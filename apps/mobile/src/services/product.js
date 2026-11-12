@@ -92,3 +92,18 @@ export async function clearRecent(store = AsyncStorage) {
   try { await store.removeItem(RECENT_KEY); } catch { /* storage unavailable */ }
   return [];
 }
+
+// ── reporting a review (C11) ────────────────────────────────────────────────
+
+export const REPORT_REASONS = [
+  ['fake', 'Fake or not a real customer'],
+  ['offensive', 'Offensive'],
+  ['spam', 'Spam or advertising'],
+  ['personal_information', 'Shares personal information'],
+  ['off_topic', 'Not about this shop'],
+];
+
+export function reportReview(shopId, reviewId, reason, api = { apiPost }) {
+  if (!REPORT_REASONS.some(([r]) => r === reason)) return Promise.reject(new Error('Choose why you are reporting it.'));
+  return api.apiPost(`/shops/${enc(shopId)}/reviews/${enc(reviewId)}/report`, { reason });
+}

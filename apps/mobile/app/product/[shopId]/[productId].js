@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../../src/context/AuthContext';
 import { useCartStore } from '../../../src/store/cartStore';
 import {
-  loadProduct, offer, cartLine, clampQuantity, recordView, listWishlist, saveProduct, unsaveProduct,
+  loadProduct, offer, cartLine, clampQuantity, recordView, listWishlist, saveProduct, unsaveProduct, reportReview, REPORT_REASONS,
 } from '../../../src/services/product';
 
 /**
@@ -70,6 +70,20 @@ export default function ProductScreen() {
     } catch {
       setSaved(!next);
     }
+  };
+
+  // C11: report a review; it goes to the admin moderation queue.
+  const report = (r) => {
+    if (!authToken) { router.push('/login'); return; }
+    Alert.alert('Report this review', 'Why are you reporting it?', [
+      ...REPORT_REASONS.slice(0, 3).map(([reason, label]) => ({
+        text: label,
+        onPress: () => reportReview(product.shopId, r.id, reason)
+          .then(() => Alert.alert('Thanks', 'Our team will look at it.'))
+          .catch((e) => Alert.alert('Not sent', e?.message || 'Please try again.')),
+      })),
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   if (error) {
@@ -177,6 +191,9 @@ export default function ProductScreen() {
               <Text style={styles.reviewHead}>{'★'.repeat(r.rating)} {r.author} {r.verifiedPurchase ? '· Verified purchase' : '· Not a verified purchase'}</Text>
               {r.text ? <Text style={styles.reviewText}>{r.text}</Text> : null}
               {r.reply ? <Text style={styles.muted}>Reply from the shop: {r.reply}</Text> : null}
+              <TouchableOpacity accessibilityRole="button" onPress={() => report(r)}>
+                <Text style={[styles.muted, { textDecorationLine: 'underline', paddingVertical: 6 }]}>Report this review</Text>
+              </TouchableOpacity>
             </View>
           ))}
         </View>

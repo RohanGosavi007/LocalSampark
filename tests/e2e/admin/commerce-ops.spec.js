@@ -23,6 +23,7 @@ const IDS = {
   kycShop: 'e2e00000-0000-4000-8000-000000000050',
   returnRequest: 'e2e00000-0000-4000-8000-000000000060',
   payout: 'e2e00000-0000-4000-8000-000000000080',
+  reportedReview: 'e2e00000-0000-4000-8000-0000000000e0',
 };
 const RIDER_PHONE = '+919999999994';
 
@@ -309,6 +310,24 @@ test.describe('Commerce Ops console', () => {
     const mine = await (await customerApi.get(`${API}/support/tickets/my`, { headers: auth })).json();
     expect(mine.tickets.find((t) => t.id === ticketId)).toMatchObject({ status: 'resolved', resolution: 'The rider has your gate number now.' });
     await customerApi.dispose();
+  });
+
+  test('[C11.10] a reported review is in the moderation queue; hiding it removes it from the shop', async () => {
+    // The console's session cookie goes with page.request.
+    const queue = await (await page.request.get(`${API}/admin/commerce/review-reports`)).json();
+    const reported = queue.data.find((r) => String(r.review_id) === IDS.reportedReview);
+    expect(reported, 'the fixture review is reported').toBeTruthy();
+
+    await openSection('reviews');
+    const row = page.getByTestId(`review-report-${IDS.reportedReview}`);
+    await expect(row).toContainText('E2E reported review');
+    await row.getByLabel(/Note on the review/).fill('Advertises another seller');
+    await row.getByRole('button', { name: 'Hide review' }).click();
+    await expect(message()).toContainText('Review hidden');
+    await expect(row).toHaveCount(0);
+
+    const listed = await (await page.request.get(`${API}/shops/${reported.shop_id}/reviews`)).json();
+    expect(listed.data.map((r) => String(r.id))).not.toContain(IDS.reportedReview);
   });
 
   test('[A12.4] a kill switch reaches the public registry and API gating', async () => {

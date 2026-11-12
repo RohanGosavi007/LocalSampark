@@ -113,20 +113,25 @@ router.post('/reviews/submit', authenticate, async (req, res) => {
         
         if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be between 1 and 5' });
 
+        // C11: a review of a shop is held to the shop rule (a delivered order
+        // from it) and stored with the shop's other reviews. This wrote it
+        // here for anyone and overwrote the shop's rating with this table's
+        // average.
+        if (targetType === 'shop') {
+            const reviews = require('../../../services/reviews.service');
+            try {
+                const saved = await reviews.submit({ userId: req.user.id, shopId: targetId, rating: Number(rating), text: comment, mode: 'upsert' });
+                return res.json({ message: 'Review submitted successfully', reviewId: saved.id });
+            } catch (e) {
+                if (e && e.name === 'ReviewError') return res.status(e.status).json({ error: e.message, code: e.code });
+                throw e;
+            }
+        }
+
         const reviewId = uuidv4();
         await query(`INSERT INTO reviews (id, user_id, target_id, target_type, rating, comment) VALUES ($1, $2, $3, $4, $5, $6)`,
             [reviewId, req.user.id, targetId, targetType, rating, comment]
         );
-
-        // Calculate and update average rating (e.g., on shop table) if targetType is 'shop'
-        if (targetType === 'shop') {
-            const avgResult = await query(`SELECT AVG(rating) as avg_rating, COUNT(*) as review_count FROM reviews WHERE target_id = $1`, [targetId]);
-            const avgRating = parseFloat(avgResult.rows[0].avg_rating).toFixed(1);
-            const reviewCount = parseInt(avgResult.rows[0].review_count);
-            // local_shops carries the average only (there is no total_ratings column).
-            // This was commented out, so a submitted review never moved the shop's rating.
-            await query('UPDATE local_shops SET rating = $1 WHERE id = $2', [Number(avgRating), targetId]);
-        }
 
         res.json({ message: 'Review submitted successfully', reviewId });
     } catch (error) {
