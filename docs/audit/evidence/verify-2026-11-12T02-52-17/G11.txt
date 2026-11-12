@@ -1,0 +1,192 @@
+=== Playwright E2E Output ===
+
+Running 107 tests using 1 worker
+
+  ok   1 [web-chromium] › tests\e2e\web\auth-flow.spec.js:11:3 › Auth Flow › should show login page with phone input (9.1s)
+  ok   2 [web-chromium] › tests\e2e\web\auth-flow.spec.js:17:3 › Auth Flow › should show register page with form fields (1.0s)
+  ok   3 [web-chromium] › tests\e2e\web\auth-flow.spec.js:26:3 › Auth Flow › should navigate from login to register (1.4s)
+  ok   4 [web-chromium] › tests\e2e\web\auth-flow.spec.js:43:3 › Auth Flow › should show forgot password page (861ms)
+  ok   5 [web-chromium] › tests\e2e\web\auth-flow.spec.js:49:3 › Auth Flow › should prevent empty form submission on login (966ms)
+  ok   6 [web-chromium] › tests\e2e\web\auth-flow.spec.js:70:3 › Auth Flow › should reject invalid phone number format (1.1s)
+  ok   7 [web-chromium] › tests\e2e\web\cart.spec.js:28:3 › Cart › [C6.20] a cart filled in the app is on the web, grouped by shop (1.3s)
+  ok   8 [web-chromium] › tests\e2e\web\cart.spec.js:42:3 › Cart › [C6.21] two shops check out together: one order per shop, one payment, and the cart is emptied (3.1s)
+  ok   9 [web-chromium] › tests\e2e\web\cart.spec.js:74:3 › Cart › [C6.22] a guest's cart is kept through signing in on the login page (2.4s)
+  ok  10 [web-chromium] › tests\e2e\web\checkout.spec.js:15:3 › Checkout › [C8.8] an order is placed with an Idempotency-Key; sending it again returns the same order (3.9s)
+  ok  11 [web-chromium] › tests\e2e\web\checkout.spec.js:54:3 › Checkout › [C8.9] the bill on the page is the server's quote, and cash is the default for a new customer (2.5s)
+  ok  12 [web-chromium] › tests\e2e\web\checkout.spec.js:71:3 › Checkout › [C8.19] a time slot can be chosen instead of ASAP, and the order keeps it (4.0s)
+  ok  13 [web-chromium] › tests\e2e\web\homepage.spec.js:11:3 › Homepage › should load without errors and return 200 (1.2s)
+  ok  14 [web-chromium] › tests\e2e\web\homepage.spec.js:16:3 › Homepage › should display the main title and tagline (1.1s)
+  ok  15 [web-chromium] › tests\e2e\web\homepage.spec.js:23:3 › Homepage › should have correct SEO meta tags (1.4s)
+  ok  16 [web-chromium] › tests\e2e\web\homepage.spec.js:40:3 › Homepage › should have working navigation links (1.5s)
+  ok  17 [web-chromium] › tests\e2e\web\homepage.spec.js:50:3 › Homepage › should display platform service pillars (1.4s)
+  ok  18 [web-chromium] › tests\e2e\web\homepage.spec.js:62:3 › Homepage › should be responsive on mobile viewport (954ms)
+  ok  19 [web-chromium] › tests\e2e\web\homepage.spec.js:72:3 › Homepage › should not have any console errors (2.1s)
+  ok  20 [web-chromium] › tests\e2e\web\homepage.spec.js:90:3 › Homepage › should load within 5 seconds (performance check) (1.1s)
+  ok  21 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › / does not overflow a 1280px screen (5.1s)
+  ok  22 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /community does not overflow a 1280px screen (4.7s)
+  ok  23 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /shops does not overflow a 1280px screen (4.7s)
+  ok  24 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /login does not overflow a 1280px screen (4.7s)
+  ok  25 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /services does not overflow a 1280px screen (4.7s)
+  ok  26 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › / does not overflow a 375px screen (4.8s)
+  ok  27 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /community does not overflow a 375px screen (4.7s)
+  ok  28 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /shops does not overflow a 375px screen (4.7s)
+  ok  29 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /login does not overflow a 375px screen (4.7s)
+  ok  30 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /services does not overflow a 375px screen (4.9s)
+  ok  31 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /shops does not overflow a 1280px screen while loading (3.6s)
+  ok  32 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /services does not overflow a 1280px screen while loading (3.5s)
+  ok  33 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /shops does not overflow a 375px screen while loading (3.5s)
+  ok  34 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /services does not overflow a 375px screen while loading (3.6s)
+  ok  35 [web-chromium] › tests\e2e\web\notifications.spec.js:26:3 › Notifications › [C13.13] an order's notification is in the inbox, opens the order, and is then read (1.6s)
+  ok  36 [web-chromium] › tests\e2e\web\notifications.spec.js:44:3 › Notifications › [C13.14] turning off offers is saved for the customer and shown again on return (1.6s)
+  ok  37 [web-chromium] › tests\e2e\web\orders.spec.js:27:3 › My orders › [C9.10] the order list shows the customer's own orders with their status (1.2s)
+  ok  38 [web-chromium] › tests\e2e\web\orders.spec.js:39:3 › My orders › [C9.11] a confirmed order can be cancelled, and the server agrees (1.3s)
+  ok  39 [web-chromium] › tests\e2e\web\orders.spec.js:52:3 › My orders › [C9.12] past the cancellation window there is no cancel button, and the server refuses (977ms)
+  ok  40 [web-chromium] › tests\e2e\web\orders.spec.js:65:3 › My orders › [C9.13] the GST invoice downloads as a PDF (2.4s)
+  ok  41 [web-chromium] › tests\e2e\web\orders.spec.js:78:3 › My orders › [C9.14] order again puts the same items in the cart at today's price (1.9s)
+  ok  42 [web-chromium] › tests\e2e\web\orders.spec.js:98:3 › My orders › [C9.15] a status change made elsewhere appears without reloading the page (1.3s)
+  ok  43 [web-chromium] › tests\e2e\web\product.spec.js:16:3 › Product page › [C4.11] the page states price, MRP and discount, the seller and every declaration, naming the missing ones (1.6s)
+  ok  44 [web-chromium] › tests\e2e\web\product.spec.js:40:3 › Product page › [C4.12] a chosen size goes into the cart, and the cart and checkout charge that size's price (1.4s)
+  ok  45 [web-chromium] › tests\e2e\web\product.spec.js:61:3 › Product page › [C12.11] a saved product is on the wishlist, moves to the cart, and viewed products are listed (2.0s)
+  ok  46 [web-chromium] › tests\e2e\web\returns.spec.js:14:1 › [C10.10] a delivered order can be returned from its page with a photo, and the request is then shown (4.6s)
+  ok  47 [web-chromium] › tests\e2e\web\reviews.spec.js:14:3 › Reviews › [C11.8] a delivered order can be reviewed; the review shows on the shop as a verified purchase (5.2s)
+  ok  48 [web-chromium] › tests\e2e\web\reviews.spec.js:33:3 › Reviews › [C11.9] someone the shop has not served cannot review it (189ms)
+  ok  49 [web-chromium] › tests\e2e\web\seo.spec.js:28:3 › SEO and metadata › [P7.2] a shop page is server-rendered with its own title, description, Open Graph and canonical (62ms)
+  ok  50 [web-chromium] › tests\e2e\web\seo.spec.js:40:3 › SEO and metadata › [P7.3] a shop page carries LocalBusiness, Product/Offer and breadcrumb JSON-LD from real data (63ms)
+  ok  51 [web-chromium] › tests\e2e\web\seo.spec.js:70:3 › SEO and metadata › [P7.4] the sitemap lists active shops and robots.txt points at it on the same site (86ms)
+  ok  52 [web-chromium] › tests\e2e\web\seo.spec.js:84:3 › SEO and metadata › [P7.5] every public page declares itself, not the homepage, as canonical (146ms)
+  ok  53 [web-chromium] › tests\e2e\web\seo.spec.js:93:3 › SEO and metadata › [P7.6] an unknown shop is not indexed (41ms)
+  ok  54 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:11:3 › Shop Browsing › should load shops listing page (1.0s)
+  ok  55 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:16:3 › Shop Browsing › should display shop cards or empty state (1.8s)
+  ok  56 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:24:3 › Shop Browsing › should have search/filter functionality (1.5s)
+  ok  57 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:37:3 › Services Page › should load services page (1.2s)
+  ok  58 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:42:3 › Services Page › should display service categories (1.8s)
+  ok  59 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:53:3 › Community Pages › should load community page (1.1s)
+  ok  60 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:58:3 › Community Pages › should load townsquare page (1.1s)
+  ok  61 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:63:3 › Community Pages › should load events page (808ms)
+  ok  62 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:71:3 › Dashboard Pages › should load delivery dashboard (854ms)
+  ok  63 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:76:3 › Dashboard Pages › should load shop dashboard (690ms)
+  ok  64 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:81:3 › Dashboard Pages › should load franchise dashboard (898ms)
+  ok  65 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:88:3 › Dashboard Pages › should load the order tracking page (954ms)
+  ok  66 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:96:3 › Static Pages › should load about page (892ms)
+  ok  67 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:101:3 › Static Pages › should load download page (1.4s)
+  ok  68 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:106:3 › Static Pages › should load premium page (869ms)
+  ok  69 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:111:3 › Static Pages › should show 404 page for unknown routes (616ms)
+  ok  70 [web-chromium] › tests\e2e\web\support.spec.js:12:3 › Help & support › [C14.10] a signed-out visitor is asked to sign in, not shown someone else's tickets (832ms)
+  ok  71 [web-chromium] › tests\e2e\web\support.spec.js:18:3 › Help & support › [C14.11] order help: a ticket raised from an order keeps that order and reaches the support queue (2.6s)
+  ok  72 [web-chromium] › tests\e2e\web\support.spec.js:43:3 › Help & support › [C14.12] a formal grievance is marked as such and shows its resolution deadline (1.3s)
+  ok  73 [web-chromium] › tests\e2e\web\support.spec.js:58:3 › Help & support › [C14.13] an empty ticket is refused before it is sent (1.1s)
+  ok  74 [web-chromium] › tests\e2e\web\support.spec.js:66:3 › Help & support › [C14.14] the public grievance page shows the configured Grievance Officer (1.1s)
+  ok  75 [web-chromium] › tests\e2e\web\theme.spec.js:76:5 › theme system › a stored "light" preference survives hydration (9.2s)
+  ok  76 [web-chromium] › tests\e2e\web\theme.spec.js:76:5 › theme system › a stored "dark" preference survives hydration (9.0s)
+  ok  77 [web-chromium] › tests\e2e\web\theme.spec.js:94:3 › theme system › all three DOM markers agree (9.1s)
+  ok  78 [web-chromium] › tests\e2e\web\theme.spec.js:116:5 › theme system › "system" follows an OS set to light (9.3s)
+  ok  79 [web-chromium] › tests\e2e\web\theme.spec.js:116:5 › theme system › "system" follows an OS set to dark (9.6s)
+  x   80 [web-chromium] › tests\e2e\web\theme.spec.js:126:3 › theme system › the header toggle changes the page, without a reload (3.1s)
+  ok  81 [web-chromium] › tests\e2e\web\theme.spec.js:126:3 › theme system › the header toggle changes the page, without a reload (retry #1) (5.7s)
+  ok  82 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:58:3 › Commerce Ops console › [A8.3] the console sends a signed-out visitor to the login page (663ms)
+  ok  83 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:68:3 › Commerce Ops console › [A8.4] an admin signs in with phone, OTP and PIN (1.6s)
+  ok  84 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:84:3 › Commerce Ops console › [A1.3] KPIs on screen are the live aggregates (174ms)
+  ok  85 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:95:3 › Commerce Ops console › [A2.2] KYC queue: documents, mandatory reason, resubmission and approval (555ms)
+  ok  86 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:115:3 › Commerce Ops console › [A2.3] shop kill switch needs a reason and can be reversed (437ms)
+  ok  87 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:128:3 › Commerce Ops console › [A3.4] category taxonomy and restricted-goods moderation (640ms)
+  ok  88 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:142:3 › Commerce Ops console › [A4.10] order search, timeline, capped refund and forced cancellation (804ms)
+  ok  89 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:176:3 › Commerce Ops console › [A5.3] disputes and returns are settled from the queue (579ms)
+  ok  90 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:194:3 › Commerce Ops console › [A6.4] commission, payout approval and COD settlement (544ms)
+  ok  91 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:210:3 › Commerce Ops console › [A7.3] platform coupon and homepage banner (706ms)
+  ok  92 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:230:3 › Commerce Ops console › [A8.5] every console action above is in the audit log (248ms)
+  ok  93 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:239:3 › Commerce Ops console › [A9.4] zone switch and waitlist export (779ms)
+  ok  94 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:259:3 › Commerce Ops console › [A10.3] fleet status and COD deposit reconciliation (486ms)
+  ok  95 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:280:3 › Commerce Ops console › [A11.5] statutory grievance: 48h breach, reply and resolution (350ms)
+  ok  96 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:293:3 › Commerce Ops console › [C14.21] a ticket a customer raises reaches the console, and the reply reaches the customer (407ms)
+  ok  97 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:318:3 › Commerce Ops console › [C10.11] a customer’s return is approved in the console and the refund paid out and recorded (700ms)
+  ok  98 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:349:3 › Commerce Ops console › [C11.10] a reported review is in the moderation queue; hiding it removes it from the shop (330ms)
+  ok  99 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:367:3 › Commerce Ops console › [A12.4] a kill switch reaches the public registry and API gating (413ms)
+  ok 100 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:385:3 › Commerce Ops console › [A13.5] financial and tax exports download from the console (525ms)
+  ok 101 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:401:3 › Commerce Ops console › [A14.6] broadcast reaches only consenting users and is kept in history (341ms)
+  ok 102 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:11:3 › Admin Panel › should load admin login page (577ms)
+  ok 103 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:16:3 › Admin Panel › should show login form with required fields (405ms)
+  ok 104 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:24:3 › Admin Panel › should load dashboard page (636ms)
+  ok 105 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:29:3 › Admin Panel › should load territories page (5.5s)
+  ok 106 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:34:3 › Admin Panel › should load audit page (5.7s)
+  ok 107 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:39:3 › Admin Panel › should load settings page (502ms)
+  ok 108 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:44:3 › Admin Panel › should not have console errors on dashboard (1.2s)
+
+
+  1) [web-chromium] › tests\e2e\web\theme.spec.js:126:3 › theme system › the header toggle changes the page, without a reload 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "rgb(15, 21, 32)"
+    Received: "rgb(198, 201, 205)"
+
+      170 |
+      171 |     const after = await readTheme(page);
+    > 172 |     expect(after.bodyBg).toBe(GROUND_DARK);
+          |                          ^
+      173 |     expect(after.stored).toBe('dark');
+      174 |     expect(reloaded).toBe(false);
+      175 |     expect(await page.evaluate(() => window.__themeNoReload)).toBe(1);
+        at C:\localsampark 04-09-2026\localsampark 25-10-2026\tests\e2e\web\theme.spec.js:172:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\theme-theme-system-the-hea-e1c9e-s-the-page-without-a-reload-web-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\theme-theme-system-the-hea-e1c9e-s-the-page-without-a-reload-web-chromium\error-context.md
+
+  1 flaky
+    [web-chromium] › tests\e2e\web\theme.spec.js:126:3 › theme system › the header toggle changes the page, without a reload 
+  106 passed (9.3m)
+
+[WebServer] ⚠️  Running in non-production mode. Strict validation skipped.
+[WebServer]    13 optional service keys not configured (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, FIREBASE_PROJECT_ID...)
+[WebServer] [Firebase] Warning: Valid Firebase credentials not configured. Firebase sign-in is mocked (development mode).
+[WebServer] ⚠️ Firebase credentials not configured — SMS OTP and Push will use fallback mode
+[WebServer]  ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:19:38.846Z","requestId":"req-1794453578846-fn2jbe","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:20:02.559Z","requestId":"req-1794453602558-u7hwvv","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: POST /api/v1/shops/e2e00000-0000-4000-8000-0000000000d0/reviews by CUSTOMER (e7a8b331-5cc8-41f2-a0b0-4b42dc32cc53) {"timestamp":"2026-11-12T03:21:02.952Z","requestId":"req-1794453662949-1mnzqm","method":"POST","path":"/api/v1/shops/e2e00000-0000-4000-8000-0000000000d0/reviews","statusCode":403,"responseTimeMs":3,"userRole":"CUSTOMER","userId":"e7a8b331-5cc8-41f2-a0b0-4b42dc32cc53","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:21:11.880Z","requestId":"req-1794453671879-51tun3","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/delivery/analytics from ::1 {"timestamp":"2026-11-12T03:21:14.592Z","requestId":"req-1794453674591-1mz270","method":"GET","path":"/api/v1/delivery/analytics","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/delivery/my-jobs from ::1 {"timestamp":"2026-11-12T03:21:14.597Z","requestId":"req-1794453674597-fst61x","method":"GET","path":"/api/v1/delivery/my-jobs","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/franchise/dashboard from ::1 {"timestamp":"2026-11-12T03:21:16.283Z","requestId":"req-1794453676282-dtfs8x","method":"GET","path":"/api/v1/franchise/dashboard","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/franchise/territory-customers?limit=200 from ::1 {"timestamp":"2026-11-12T03:21:16.290Z","requestId":"req-1794453676289-4ofzts","method":"GET","path":"/api/v1/franchise/territory-customers?limit=200","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/franchise/reports?months=6 from ::1 {"timestamp":"2026-11-12T03:21:16.295Z","requestId":"req-1794453676294-lung9r","method":"GET","path":"/api/v1/franchise/reports?months=6","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/orders/my-orders from ::1 {"timestamp":"2026-11-12T03:21:17.388Z","requestId":"req-1794453677388-ggales","method":"GET","path":"/api/v1/orders/my-orders","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:27.286Z","requestId":"req-1794453747285-rsj8on","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:27.427Z","requestId":"req-1794453747426-prftim","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin/commerce/kpis from ::1 {"timestamp":"2026-11-12T03:22:27.456Z","requestId":"req-1794453747455-kfmuoc","method":"GET","path":"/api/v1/admin/commerce/kpis","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:27.826Z","requestId":"req-1794453747825-ee55u2","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:28.358Z","requestId":"req-1794453748358-uq1mch","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:29.314Z","requestId":"req-1794453749313-mbvtyz","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:29.487Z","requestId":"req-1794453749486-q4bzmm","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:30.064Z","requestId":"req-1794453750063-7a0dgk","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:30.520Z","requestId":"req-1794453750520-98fi20","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:31.163Z","requestId":"req-1794453751162-nihr96","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:31.981Z","requestId":"req-1794453751981-nfj40j","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:32.610Z","requestId":"req-1794453752610-wev5sg","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:33.162Z","requestId":"req-1794453753161-m183mg","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:33.887Z","requestId":"req-1794453753887-yri5u5","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:34.132Z","requestId":"req-1794453754132-11gani","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:34.953Z","requestId":"req-1794453754953-fl8jok","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:35.437Z","requestId":"req-1794453755437-wu7r7b","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:35.834Z","requestId":"req-1794453755833-006oeu","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:36.257Z","requestId":"req-1794453756257-9iv1s6","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:36.586Z","requestId":"req-1794453756586-yeqe2z","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:36.956Z","requestId":"req-1794453756956-eoj127","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:37.288Z","requestId":"req-1794453757288-7kcksm","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/krishi/listings by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:37.412Z","requestId":"req-1794453757412-kyqmp8","method":"GET","path":"/api/v1/krishi/listings","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/krishi/listings by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:37.607Z","requestId":"req-1794453757607-27mob0","method":"GET","path":"/api/v1/krishi/listings","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:37.718Z","requestId":"req-1794453757717-twelyh","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-12T03:22:38.248Z","requestId":"req-1794453758248-1epirz","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:39.146Z","requestId":"req-1794453759146-3gy8c0","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:39.564Z","requestId":"req-1794453759563-4bnsnd","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:40.211Z","requestId":"req-1794453760210-qidxst","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:40.841Z","requestId":"req-1794453760840-fr86an","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:40.946Z","requestId":"req-1794453760945-xo9yoz","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:46.554Z","requestId":"req-1794453766553-ocr3h5","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:46.673Z","requestId":"req-1794453766673-o642lc","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:51.876Z","requestId":"req-1794453771875-ln7943","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:52.026Z","requestId":"req-1794453772025-ykg4ef","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:52.531Z","requestId":"req-1794453772530-sasdx5","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-12T03:22:52.683Z","requestId":"req-1794453772682-0hajq6","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}

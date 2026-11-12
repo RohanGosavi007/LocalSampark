@@ -1429,3 +1429,8 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | `backend/src/__tests__/unit/adminCommerceOps.test.js` fixture | the dispute now has an order of its own (`TEST_DISPUTE_ORDER_ID`); no assertion changed | `TEST_ORDER_ID` is refunded in full earlier in the suite, and a dispute refund now counts against the same order. The test still checks that resolving a dispute with a refund works, without relying on a double refund |
 | `tests/e2e/admin/commerce-ops.spec.js` [A4] refund | button "Refund to wallet" is now "Refund to customer"; the timeline entry expected is `data-source="payout"`, not `"wallet"` | The E2E backend runs with the wallet off, as production does; the refund is a payout and the label must not promise a wallet |
 | `tests/e2e/admin/commerce-ops.spec.js` [C10.11] | follows the refund to a recorded payout instead of a wallet balance | Same: D10 |
+
+### Verify run verify-2026-11-12T02-52-17 (commit bccd8e8)
+- 17 of 18 gates pass (G1–G17).
+- G18: 23 of 53 launch features VERIFIED. Newly verified: C10. F-157 and F-158 are FIXED-VERIFIED by this run.
+- Still CODE COMPLETE: C1 (web and Android tests), R1–R5 (Android, and admin or web, tests) and P9 (web, Android and admin tests).

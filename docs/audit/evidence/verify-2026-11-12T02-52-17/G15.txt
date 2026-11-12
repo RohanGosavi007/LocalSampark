@@ -1,0 +1,93 @@
+=== Launch Policy Tests ===
+{
+  "gate": "G15",
+  "title": "Launch Policy Tests",
+  "timestamp": "2026-11-12T03:24:43.030Z",
+  "passed": true,
+  "checks": {
+    "POL-01": {
+      "id": "POL-01",
+      "title": "No OTPs returned in production responses",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-02": {
+      "id": "POL-02",
+      "title": "No plain AsyncStorage token writes on native Android/iOS",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-03": {
+      "id": "POL-03",
+      "title": "No hardcoded mock coupons or arbitrary business fees",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-04": {
+      "id": "POL-04",
+      "title": "No Math.random used for business data in commerce flows",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-05": {
+      "id": "POL-05",
+      "title": "No \"coming soon\" placeholders in enabled commerce flows",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-06": {
+      "id": "POL-06",
+      "title": "No LAN IPs in mobile release configuration",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-07": {
+      "id": "POL-07",
+      "title": "No console.log in backend src (use Winston logger)",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-08": {
+      "id": "POL-08",
+      "title": "No mojibake or UTF-8 BOM in source files",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    },
+    "POL-09": {
+      "id": "POL-09",
+      "title": "No banned hyperbole or unsubstantiated 100% claims in launch docs",
+      "passed": true,
+      "count": 0,
+      "violations": []
+    }
+  }
+}
+
+=== Harness Self-Tests ===
+Exit Code: 0
+✔ Harness 1: G18 rejects a feature marked VERIFIED when no tagged test exists (89.9975ms)
+✔ Harness 2: G18 rejects a feature with a failing tagged test on PostgreSQL only (90.5863ms)
+✔ Harness 3: G14 catches a planted fake secret in a tracked text file (5.5401ms)
+✔ Harness 4: POL-09 flags unverified "100%" or banned hyperbole in launch markdown (0.7445ms)
+✔ Harness 5: renderStatusMarkdown correctly formats partial vs full run banners (0.608ms)
+✔ Harness 6: G3 flags a backend suite that pins SQLite without @engine sqlite-only (18.3248ms)
+✔ Harness 7: G9 rejects an expo-doctor check switched off without a passing replacement suite (36.6898ms)
+✔ Harness 8: G12 smoke verdict fails on leaked permissions, crashes, blank screens and a dead process (2.7ms)
+✔ Harness 9: G18 reads tagged Playwright results by project, and flaky or failed runs do not count as passes (5.7353ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 433.9693
+
