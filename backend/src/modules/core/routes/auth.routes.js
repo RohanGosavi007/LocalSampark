@@ -26,13 +26,23 @@ const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
  * The table is snake_case (`phone_number`, `full_name`, `region_id`); Prisma's
  * model was camelCase. Serving both keeps every existing client working.
  */
+/**
+ * users.phone_number is required (NOT NULL UNIQUE), so an account made with an
+ * email alone needs a placeholder. It must fit PostgreSQL's VARCHAR(15): the
+ * one used before, "email_123456_7890", was 17 characters and every email
+ * registration failed on PostgreSQL. 'e' + 14 hex digits is 15, and is never
+ * a phone number, so it is not shown as one.
+ */
+const placeholderPhone = () => `e${crypto.randomBytes(7).toString('hex')}`;
+const isPlaceholderPhone = (v) => typeof v === 'string' && /^(e[0-9a-f]{14}|email_\d+_\d+)$/.test(v);
+
 function presentUser(row) {
   if (!row) return null;
   const { password_hash: _ignored, ...rest } = row;
   return {
     ...rest,
     id: row.id,
-    phone: row.phone_number || row.phone || null,
+    phone: isPlaceholderPhone(row.phone_number || row.phone) ? null : (row.phone_number || row.phone || null),
     name: row.full_name || null,
     fullName: row.full_name || null,
     role: row.role,
@@ -92,7 +102,9 @@ async function findUserByPhone(phoneNumber) {
 }
 
 async function findUserByEmail(email) {
-  return queryOne('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
+  // Addresses are not case-sensitive in practice: "Asha@x.com" signing in by
+  // email code or Google is the account registered as "asha@x.com".
+  return queryOne('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [email]);
 }
 
 async function findUserById(id) {
@@ -130,7 +142,9 @@ async function updateUser(id, fields) {
   await query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
   return findUserById(id);
 }
-const { authenticate, generateTokens } = require('../../../middleware/auth.middleware');
+const { authenticate, generateTokens, phoneOtpEnabled } = require('../../../middleware/auth.middleware');
+const sessions = require('../../../services/sessions.service');
+const googleSignIn = require('../../../services/googleSignIn.service');
 const { authLimiter } = require('../../../middleware/rateLimit.middleware');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
@@ -196,10 +210,21 @@ function requireOtpStore(res) {
   return false;
 }
 
+/**
+ * Decision D3: phone OTP stays closed in production until ENABLE_PHONE_OTP=true
+ * (DLT registration and an SMS gateway). Sign-in is by email OTP or Google.
+ */
+function requirePhoneOtp(res) {
+  if (phoneOtpEnabled()) return true;
+  res.status(403).json({ error: 'Sign-in by phone is not available yet. Please use email or Google.', code: 'PHONE_OTP_DISABLED' });
+  return false;
+}
+
 router.post('/send-otp', authLimiter, validate({
   phoneNumber: { type: 'string', required: true, maxLength: 20, label: 'Phone number' },
 }), async (req, res, next) => {
   try {
+    if (!requirePhoneOtp(res)) return;
         const phoneNumber = normalisePhone((req.body || {}).phoneNumber);
     if (!phoneNumber) {
       return res.status(400).json({ error: 'A valid phone number is required' });
@@ -266,6 +291,7 @@ router.post('/verify-otp', authLimiter, validate({
   method: { type: 'string', maxLength: 20 },
 }), async (req, res, next) => {
   try {
+    if (!requirePhoneOtp(res)) return;
         const { otp, fullName, regionId, pincode, method } = req.body || {};
     const phoneNumber = normalisePhone((req.body || {}).phoneNumber);
     if (!phoneNumber || !otp) {
@@ -589,6 +615,10 @@ router.post('/refresh-token', authLimiter, async (req, res, next) => {
     if (Number(account.token_version ?? 0) !== Number(decoded.tokenVersion ?? 0)) {
       return res.status(401).json({ error: 'This session has been signed out. Please log in again.' });
     }
+    // C1: this device signed out.
+    if (decoded.sid && await sessions.isRevoked(decoded.sid)) {
+      return res.status(401).json({ error: 'This session has been signed out. Please log in again.' });
+    }
 
     /**
      * A refresh token is single-use.
@@ -628,7 +658,8 @@ router.post('/refresh-token', authLimiter, async (req, res, next) => {
       user.id,
       user.role,
       user.tokenVersion || 0,
-      { regionId: user.regionId }
+      // The same session goes on (C1): signing out of it ends the new pair too.
+      { regionId: user.regionId, ...(decoded.sid ? { sid: decoded.sid } : {}) }
     );
 
     res.json({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
@@ -646,6 +677,7 @@ router.post('/refresh-token', authLimiter, async (req, res, next) => {
 // says the method is unavailable so the client can offer SMS.
 router.post('/send-whatsapp-otp', authLimiter, async (req, res, next) => {
   try {
+    if (!requirePhoneOtp(res)) return;
     const phoneNumber = normalisePhone((req.body || {}).phoneNumber);
     if (!phoneNumber) {
       return res.status(400).json({ error: 'A valid phone/WhatsApp number is required' });
@@ -710,7 +742,7 @@ router.post('/register-email',
     const passwordHash = await bcrypt.hash(password, 12);
     
     // Generate dummy random phone number prefix since phone is required in schema
-    const dummyPhone = `email_${Math.floor(100000 + Math.random() * 900000)}_${Date.now().toString().slice(-4)}`;
+    const dummyPhone = placeholderPhone();
     
     let assignedRegionId = regionId || null;
     if (!assignedRegionId && pincode) {
@@ -1038,8 +1070,128 @@ router.put('/switch-role', authenticate, async (req, res, next) => {
  */
 router.post('/logout', authenticate, async (req, res, next) => {
   try {
-    await query('UPDATE users SET token_version = COALESCE(token_version, 0) + 1 WHERE id = $1', [req.user.id]);
-    res.json({ success: true, message: 'Logged out. You have been signed out on all devices.' });
+    // C1: this device by default; every device with { allDevices: true }. A
+    // token from before sessions had ids cannot be told apart from the
+    // others, so it signs out everywhere, as it always did.
+    const allDevices = Boolean((req.body || {}).allDevices) || !req.sessionId;
+    if (allDevices) {
+      await sessions.revokeAll(req.user.id);
+      return res.json({ success: true, allDevices: true, message: 'Logged out. You have been signed out on all devices.' });
+    }
+    await sessions.revoke(req.sessionId, req.user.id);
+    res.json({ success: true, allDevices: false, message: 'Logged out of this device.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /auth/methods — which ways of signing in are open (Decision D3), so the
+ * web and the app offer exactly those.
+ */
+router.get('/methods', (req, res) => {
+  res.json({ success: true, methods: { emailOtp: true, google: googleSignIn.enabled(), phoneOtp: phoneOtpEnabled() } });
+});
+
+/**
+ * Signs in (or up) the account with this email, which the caller has proved:
+ * by an emailed code or by Google. A deactivated account is refused.
+ */
+async function signInByEmail(res, { email, fullName, method }) {
+  let user = presentUser(await findUserByEmail(email));
+  if (user && (user.is_active === 0 || user.is_active === false || user.is_active === '0')) {
+    return res.status(403).json({ error: 'This account has been deactivated.' });
+  }
+  if (!user) {
+    user = presentUser(await createUser({
+      phoneNumber: placeholderPhone(), email, fullName: String(fullName).trim().slice(0, 100), role: 'CUSTOMER',
+    }));
+    await query('UPDATE users SET email_verified = 1, auth_method = $1 WHERE id = $2', [method, user.id]);
+  }
+  const { accessToken, refreshToken } = generateTokens(user.id, user.role, user.tokenVersion || 0, { regionId: user.regionId });
+  return res.json({ registered: true, user: toClientUser(user), accessToken, refreshToken });
+}
+
+/**
+ * POST /auth/google { firebaseIdToken } (website) or { googleIdToken } (app).
+ * Decision D3. Google has confirmed the email, so a new address becomes an
+ * account straight away, named as on Google.
+ */
+router.post('/google', authLimiter, async (req, res, next) => {
+  try {
+    let who;
+    try {
+      who = await googleSignIn.verify(req.body || {});
+    } catch (e) {
+      if (e instanceof googleSignIn.GoogleSignInError) return res.status(e.status).json({ error: e.message, code: 'GOOGLE_SIGN_IN_FAILED' });
+      throw e;
+    }
+    return signInByEmail(res, { email: who.email, fullName: (req.body && req.body.fullName) || who.name || who.email.split('@')[0], method: 'google' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+const normaliseEmail = (v) => (typeof v === 'string' && EMAIL.test(v.trim()) && v.trim().length <= 254 ? v.trim().toLowerCase() : null);
+
+/**
+ * POST /auth/email/send-otp { email } — a sign-in code by email (Decision D3:
+ * the launch method with Google). In production the code is only ever sent by
+ * mail; with no mail server configured the request is refused rather than
+ * reported as sent.
+ */
+router.post('/email/send-otp', authLimiter, async (req, res, next) => {
+  try {
+    const email = normaliseEmail((req.body || {}).email);
+    if (!email) return res.status(400).json({ error: 'A valid email address is required' });
+    if (!process.env.SMTP_USER && !DEMO_LOGIN_ALLOWED()) {
+      return res.status(503).json({ error: 'Email sign-in is not available right now. Please try again later.', code: 'EMAIL_NOT_CONFIGURED' });
+    }
+    if (!requireOtpStore(res)) return;
+    if (!(await otpStore.allowSend(`email:${email}`))) {
+      return res.status(429).json({ error: 'Too many codes requested for this address. Please wait a few minutes.' });
+    }
+    const otp = generateOTP();
+    await otpStore.setOtp(`email_otp:${email}`, otp);
+    const sent = await require('../services/email.service').sendLoginCode(email, otp);
+    if (!sent || !sent.success) {
+      await otpStore.deleteOtp(`email_otp:${email}`);
+      return res.status(503).json({ error: 'We could not send the code right now. Please try again shortly.' });
+    }
+    const response = { success: true, message: 'We have emailed you a sign-in code.' };
+    if (DEMO_LOGIN_ALLOWED() && process.env.ALLOW_FREE_OTP_MODE === 'true') response.otp = otp;
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /auth/email/verify-otp { email, otp, fullName? } — signs in. A new
+ * address with no fullName answers { registered: false } so the client asks
+ * for a name and sends the code again with it.
+ */
+router.post('/email/verify-otp', authLimiter, async (req, res, next) => {
+  try {
+    const { otp, fullName } = req.body || {};
+    const email = normaliseEmail((req.body || {}).email);
+    if (!email || !/^\d{4,8}$/.test(String(otp || ''))) return res.status(400).json({ error: 'Email and code are required' });
+    if (!requireOtpStore(res)) return;
+
+    let user = presentUser(await findUserByEmail(email));
+    if (!user && !(fullName && String(fullName).trim())) {
+      // Checked, not spent: the code is used once the name comes with it.
+      const pending = await otpStore.getOtp(`email_otp:${email}`);
+      if (pending !== null && pending !== undefined && String(pending) !== String(otp)) {
+        return res.status(400).json({ error: 'Invalid or expired code' });
+      }
+      return res.status(200).json({ registered: false, message: 'Code checked. Tell us your name to finish creating your account.' });
+    }
+    if (!(await otpStore.verifyAndConsume(`email_otp:${email}`, String(otp)))) {
+      return res.status(400).json({ error: 'Invalid or expired code' });
+    }
+    return signInByEmail(res, { email, fullName, method: 'email_otp' });
   } catch (error) {
     next(error);
   }

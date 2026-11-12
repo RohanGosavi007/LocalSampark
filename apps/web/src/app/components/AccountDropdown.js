@@ -36,7 +36,15 @@ export default function AccountDropdown() {
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-border/40 hover:bg-border transition-colors border border-border">
+      {/* Opens on hover and on click/tap/keyboard: hover alone left touch and keyboard users with no way to sign out. */}
+      <button
+        type="button"
+        aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((v) => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-border/40 hover:bg-border transition-colors border border-border"
+      >
         <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary text-white flex items-center justify-center text-xs font-bold">
           {user.name ? user.name[0].toUpperCase() : 'U'}
         </div>

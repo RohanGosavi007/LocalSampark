@@ -109,7 +109,13 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Session invalidated. Please login again.' });
     }
 
+    // C1: this device's session, if it has been signed out.
+    if (decoded.sid && await require('../services/sessions.service').isRevoked(decoded.sid)) {
+      return res.status(401).json({ error: 'This session has been signed out. Please log in again.' });
+    }
+
     req.user = user;
+    req.sessionId = decoded.sid || null;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -139,7 +145,9 @@ const optionalAuth = async (req, res, next) => {
 
       const isActive = user ? (user.isActive ?? user.is_active) : null;
       const deactivated = isActive === false || isActive === 0 || isActive === '0';
-      req.user = user && !deactivated ? user : null;
+      // C1: a signed-out session is anonymous here too.
+      const revoked = decoded.sid ? await require('../services/sessions.service').isRevoked(decoded.sid) : false;
+      req.user = user && !deactivated && !revoked ? user : null;
     }
   } catch {
     req.user = null;
@@ -276,11 +284,15 @@ function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}, { acc
 
   const canonicalRole = normalizeRole(role || ROLES.USER);
 
+  // C1: the session this pair belongs to (kept across refreshes, so signing
+  // out of this device ends exactly this session).
+  const sid = extraPayload.sid || require('crypto').randomUUID();
   const payload = {
     userId,
     role: canonicalRole,
     tokenVersion,
-    ...extraPayload
+    ...extraPayload,
+    sid,
   };
 
   const accessToken = jwt.sign(
@@ -290,12 +302,23 @@ function generateTokens(userId, role, tokenVersion = 0, extraPayload = {}, { acc
   );
 
   const refreshToken = jwt.sign(
-    { userId, tokenVersion, jti: require('crypto').randomUUID() },
+    { userId, tokenVersion, sid, jti: require('crypto').randomUUID() },
     jwtRefreshSecret,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
   );
 
-  return { accessToken, refreshToken };
+  return { accessToken, refreshToken, sid };
+}
+
+/**
+ * Whether phone OTP sign-in is open (Decision D3). In production it is off
+ * until ENABLE_PHONE_OTP=true (DLT registration and an SMS gateway); in
+ * development and test it is on unless ENABLE_PHONE_OTP=false.
+ */
+function phoneOtpEnabled(env = process.env) {
+  if (env.ENABLE_PHONE_OTP === 'true') return true;
+  if (env.ENABLE_PHONE_OTP === 'false') return false;
+  return ['development', 'test'].includes(env.NODE_ENV);
 }
 
 // Phase 1: verifyRole Middleware for strict access control + Token Versioning
@@ -328,7 +351,8 @@ const verifyRole = (allowedRoles) => {
         [decoded.userId]
       );
       
-      if (!user || user.tokenVersion !== decoded.tokenVersion) {
+      if (!user || user.tokenVersion !== decoded.tokenVersion
+          || (decoded.sid && await require('../services/sessions.service').isRevoked(decoded.sid))) {
         return res.status(401).json({ success: false, error: 'Session invalidated. Please login again.' });
       }
 
@@ -511,6 +535,7 @@ module.exports = {
   requireTerritory,
   requireAreaAgent,
   generateTokens,
+  phoneOtpEnabled,
   ROLES,
   hasAccess,
   enforceMultiTenancy,

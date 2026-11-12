@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Store, ShieldCheck, User, Bike, Key, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { loginTabs, offerGoogle, normaliseEmail, cleanCode } from '../../lib/loginMethods';
+import { firebaseConfigured } from '../../lib/firebase';
 
 /**
  * Login.
@@ -46,9 +48,17 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 export default function LoginPage() {
   const router = useRouter();
-    const { loginEmail, sendOtp, verifyOtp, demoLogin } = useAuth();
+  const { loginEmail, sendOtp, verifyOtp, demoLogin, loginMethods, sendEmailOtp, verifyEmailOtp, googleLogin } = useAuth();
 
-  const [method, setMethod] = useState('email'); // Default to email for 100% friction-free launch
+  // C1 / Decision D3: an emailed code first, then a password; phone only when
+  // the server has it switched on.
+  const tabs = loginTabs(loginMethods);
+  const [chosen, setChosen] = useState('emailOtp');
+  const method = tabs.some((t) => t.id === chosen) ? chosen : tabs[0].id;
+  const setMethod = setChosen;
+  const [emailStep, setEmailStep] = useState('address'); // 'address' | 'code' | 'name'
+  const [emailCode, setEmailCode] = useState('');
+  const [fullName, setFullName] = useState('');
   const [activeOtpChannel, setActiveOtpChannel] = useState('firebase'); // 'firebase' | 'phone'
   const [step, setStep] = useState(1);
   const [phone, setPhone] = useState('');
@@ -170,6 +180,65 @@ export default function LoginPage() {
     }
   };
 
+  const handleSendEmailCode = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const address = normaliseEmail(email);
+    if (!address) {
+      setMessage('Please enter a valid email address.');
+      return;
+    }
+    setLoading(true);
+    setMessage('');
+    try {
+      const res = await sendEmailOtp(address);
+      setEmailStep('code');
+      setEmailCode('');
+      setMessage(`We have emailed a sign-in code to ${address}.${res && res.otp ? ` [Verification Code: ${res.otp}]` : ''}`);
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async (e) => {
+    e.preventDefault();
+    const code = cleanCode(emailCode);
+    if (!code) {
+      setMessage('Enter the code from the email.');
+      return;
+    }
+    setLoading(true);
+    setMessage('');
+    try {
+      const data = await verifyEmailOtp(normaliseEmail(email), code, emailStep === 'name' ? fullName.trim() : '');
+      if (data && data.registered && data.accessToken) {
+        goToRoleHome(data.user);
+        return;
+      }
+      setEmailStep('name');
+      setMessage('Welcome! Tell us your name to create your account.');
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      const data = await googleLogin();
+      if (data && data.accessToken) goToRoleHome(data.user);
+    } catch (err) {
+      // Closing the pop-up is not an error worth showing.
+      if (!/popup-closed|cancelled-popup/.test(String(err && (err.code || err.message)))) setMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -227,14 +296,12 @@ export default function LoginPage() {
 
           {/* Method toggle */}
           <div className="flex gap-2 mb-6 bg-background p-1.5 rounded-xl">
-            {[
-              { id: 'email', label: '📧 Email & Password' },
-              { id: 'phone', label: '📱 Phone OTP' },
-            ].map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => { setMethod(t.id); setStep(1); setMessage(''); }}
+                aria-pressed={method === t.id}
+                onClick={() => { setMethod(t.id); setStep(1); setEmailStep('address'); setMessage(''); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
                   method === t.id ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'
                 }`}
@@ -321,8 +388,85 @@ export default function LoginPage() {
             </form>
           )}
 
+          {/* EMAIL CODE (C1, Decision D3) */}
+          {method === 'emailOtp' && emailStep === 'address' && (
+            <form onSubmit={handleSendEmailCode}>
+              <label htmlFor="otp-email" className="block text-sm font-bold text-text-muted mb-2">
+                Email
+              </label>
+              <input
+                id="otp-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="name@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
+              />
+              <button type="submit" disabled={loading || !email} className={`${buttonClass} mt-6`}>
+                {loading ? spinner : 'Email me a code'}
+              </button>
+            </form>
+          )}
+
+          {method === 'emailOtp' && emailStep !== 'address' && (
+            <form onSubmit={handleVerifyEmailCode}>
+              <label htmlFor="email-code" className="block text-sm font-bold text-text-muted mb-2">
+                Code from the email
+              </label>
+              <input
+                id="email-code"
+                name="email-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+                required
+                placeholder="XXXXXX"
+                value={emailCode}
+                onChange={(e) => setEmailCode(e.target.value)}
+                className={`${inputClass} tracking-[0.5em] text-center text-lg`}
+              />
+              {emailStep === 'name' && (
+                <>
+                  <label htmlFor="full-name" className="block text-sm font-bold text-text-muted mb-2 mt-4">
+                    Your name
+                  </label>
+                  <input
+                    id="full-name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    maxLength={100}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={inputClass}
+                  />
+                </>
+              )}
+              <button
+                type="submit"
+                disabled={loading || !cleanCode(emailCode) || (emailStep === 'name' && !fullName.trim())}
+                className={`${buttonClass} mt-6`}
+              >
+                {loading ? spinner : emailStep === 'name' ? 'Create account' : 'Sign in'}
+              </button>
+              <div className="flex justify-between mt-3 text-sm font-semibold">
+                <button type="button" onClick={() => { setEmailStep('address'); setEmailCode(''); setMessage(''); }} className="text-text-muted hover:text-text">
+                  Use a different email
+                </button>
+                <button type="button" onClick={handleSendEmailCode} disabled={loading} className="text-text-muted hover:text-text">
+                  Send a new code
+                </button>
+              </div>
+            </form>
+          )}
+
           {/* EMAIL + PASSWORD */}
-          {method === 'email' && (
+          {method === 'password' && (
             <form onSubmit={handleEmailLogin}>
               <label htmlFor="email" className="block text-sm font-bold text-text-muted mb-2">
                 Email
@@ -356,6 +500,22 @@ export default function LoginPage() {
                 {loading ? spinner : 'Sign in'}
               </button>
             </form>
+          )}
+
+          {offerGoogle(loginMethods, firebaseConfigured) && (
+            <>
+              <div className="flex items-center gap-3 my-6 text-xs text-text-muted font-bold uppercase">
+                <span className="flex-1 h-px bg-border" />or<span className="flex-1 h-px bg-border" />
+              </div>
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={loading}
+                className="w-full bg-white text-gray-900 font-bold py-3 rounded-xl border border-border hover:bg-gray-100 disabled:opacity-50 transition-colors"
+              >
+                Continue with Google
+              </button>
+            </>
           )}
 
           <div className="flex items-center justify-between mt-6 text-sm">

@@ -4,6 +4,7 @@ import { registerForPushNotificationsAsync } from '../services/NotificationServi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SecureTokenStorage } from '../lib/secureStorage';
 import { API_URL, apiPost } from '../lib/api';
+import * as authSession from '../services/authSession';
 // One shared client. This module used to construct a second one from its own
 // copy of the URL and anon key, so the app held two clients pointed at a project
 // configured in two places. src/lib/supabase owns that config now.
@@ -21,6 +22,13 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authToken, setAuthToken] = useState(null);
+  // Which ways of signing in the server has open (C1, Decision D3).
+  const [loginMethods, setLoginMethods] = useState(authSession.DEFAULT_METHODS);
+  useEffect(() => {
+    let cancelled = false;
+    authSession.fetchLoginMethods().then((m) => { if (!cancelled) setLoginMethods(m); });
+    return () => { cancelled = true; };
+  }, []);
   const [activeRole, setActiveRole] = useState(null);
   const [assignedRoles, setAssignedRoles] = useState([]);
   const [permissionOverrides, setPermissionOverrides] = useState({});
@@ -347,7 +355,17 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-    const logout = async () => {
+  /**
+   * Signs out of this phone, or with { allDevices: true } of every device
+   * (C1). The server is told first, so the tokens stop working rather than
+   * merely being forgotten here; offline, the phone still signs out.
+   * Resolves to whether the server confirmed.
+   */
+  const logout = async ({ allDevices = false } = {}) => {
+    const confirmed = await Promise.race([
+      authSession.signOutOnServer({ allDevices }),
+      new Promise((resolve) => setTimeout(() => resolve(false), 8000)),
+    ]);
     // Stop pushing this user's notifications to this phone. Best effort: a
     // sign-out offline still signs out.
     if (pushTokenRef.current && authToken) {
@@ -383,6 +401,7 @@ export function AuthProvider({ children }) {
     } catch (e) {
       console.error('Error clearing storage during logout', e);
     }
+    return confirmed;
   };
 
   const fetchPendingApprovals = async (token) => {
@@ -508,6 +527,46 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /** Takes a session the server issued (email code or Google) into the app. */
+  const adoptSession = async (data) => {
+    const token = data.accessToken;
+    const userData = data.user;
+    const roles = userData.roles || [userData.role || 'user'];
+    await SecureTokenStorage.setToken('authToken', token);
+    if (data.refreshToken) await SecureTokenStorage.setToken('refreshToken', data.refreshToken);
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    await AsyncStorage.setItem('activeRole', roles[0]);
+    await AsyncStorage.setItem('assignedRoles', JSON.stringify(roles));
+    setAuthToken(token);
+    setUser(userData);
+    setAssignedRoles(roles);
+    setActiveRole(roles[0]);
+    setPermissionOverrides(userData.permission_overrides || {});
+    fetchWallet(token);
+    initSupabaseRealtime(userData.id);
+  };
+
+  /** Emails a sign-in code (C1, Decision D3). */
+  const sendEmailOtp = (email) => authSession.sendEmailCode(email);
+
+  /**
+   * Checks the emailed code. Resolves to { registered: false } for a new
+   * address (ask for a name, then call again with it), or { registered: true }
+   * once signed in.
+   */
+  const verifyEmailOtp = async (email, code, fullName) => {
+    const data = await authSession.verifyEmailCode(email, code, fullName);
+    if (data.registered && data.accessToken) await adoptSession(data);
+    return data;
+  };
+
+  /** Google Sign-In with Google's ID token from the app (C1, Decision D3). */
+  const googleLogin = async (googleIdToken) => {
+    const data = await authSession.googleSignIn(googleIdToken);
+    if (data.accessToken) await adoptSession(data);
+    return data;
+  };
+
   const loginEmail = async (email, password) => {
     try {
       const res = await fetch(`${API_URL}/auth/login-email`, {
@@ -558,6 +617,10 @@ export function AuthProvider({ children }) {
       authToken, 
       API_URL, 
       loginWithDevPreset,
+      loginMethods,
+      sendEmailOtp,
+      verifyEmailOtp,
+      googleLogin,
       adminLogin, 
       logout, 
       walletBalance, 

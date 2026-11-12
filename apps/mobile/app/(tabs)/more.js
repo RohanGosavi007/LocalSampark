@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Wallet, Briefcase, Building2, Store, Truck, Car, Home, IndianRupee, Heart, Cross, Stethoscope, Ticket, User, Settings, LogOut, ShieldCheck, Globe } from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
@@ -83,6 +83,32 @@ export default function MoreScreen() {
                 <LogOut size={20} color="#ef4444" />
               </View>
               <Text style={[styles.listText, { color: '#ef4444' }]}>Log Out</Text>
+            </TouchableOpacity>
+
+            {/* C1: every session of this account, on every device. */}
+            <TouchableOpacity
+              style={styles.listItem}
+              onPress={() => Alert.alert(
+                'Sign out of all devices?',
+                'You will be signed out on every phone and browser, including this one.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Sign out everywhere',
+                    style: 'destructive',
+                    onPress: async () => {
+                      const confirmed = logout ? await logout({ allDevices: true }) : false;
+                      if (!confirmed) Alert.alert('Signed out here', 'We could not reach the server to sign out your other devices. Please try again after signing in.');
+                      router.replace('/login');
+                    },
+                  },
+                ],
+              )}
+            >
+              <View style={[styles.listIconBox, { backgroundColor: '#fee2e2' }]}>
+                <LogOut size={20} color="#ef4444" />
+              </View>
+              <Text style={[styles.listText, { color: '#ef4444' }]}>Sign out of all devices</Text>
             </TouchableOpacity>
           </View>
         </View>
