@@ -1482,3 +1482,37 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | Test | Change | Why |
 |---|---|---|
 | `backend/src/__tests__/integration/otpAndSessions.test.js` "demo numbers get no fixed code on a staging server" | sets `ENABLE_PHONE_OTP=true` for the duration of the test; no assertion changed | Phone sign-in is now off outside development unless switched on (Decision D3). The test is about a staging server with phone sign-in on, where it must still answer 503 and refuse the demo code; without the flag it would get 403 from the gate before reaching that behaviour |
+
+
+### F-161: No product could be found by search, and a typo found nothing (C5)
+- **Defects:**
+  - **Shops only:** the only search (`GET /shops/search`, the web /search page, the app's search screen) looked at shops. A customer typing "basmati" or "atta" found no product.
+  - **No typo tolerance:** keyword search was exact (full-text or substring), so "basmatti", "bred" or "chaki atta" found nothing.
+  - **No filters or autocomplete:** there were no category or price filters and no sorting, and the app needed three letters before it searched at all.
+  - **No pg_trgm:** nothing used pg_trgm, which the acceptance names as the default.
+- **Fix:**
+  - **Search service:** `services/catalogSearch.service.js` searches products and shops:
+    - `GET /shops/search/catalog?q=&category=&minPrice=&maxPrice=&shopId=&sort=&limit=&offset=` returns products, the matching shops, a total, and facets;
+    - the category counts ignore the chosen category and the price range ignores the chosen limits, so a filter can always be widened again;
+    - `GET /shops/search/suggest?q=` autocompletes shops and products, prefix matches first.
+  - **Matching:** trigram similarity, as pg_trgm defines it. On PostgreSQL the database computes it (migration 147: `pg_trgm` and trigram GIN indexes on product and shop names). On SQLite the service computes the same measure; it matches pg_trgm's documented values. A substring match always counts. Without pg_trgm, PostgreSQL falls back to substring matching instead of failing.
+  - **What search offers:** only available, active products of active shops that are not rejected or suspended, and never restricted goods. The A3 keyword list moved to `services/restrictedGoods.js` and is shared with the console.
+  - **Website:** /search is rebuilt on it:
+    - suggestions while typing;
+    - matching shops;
+    - products linking to their pages;
+    - a category facet with counts, a price range and a sort;
+    - the search is kept in the URL.
+  - **App:** the search screen does the same.
+- **Proof:**
+  - **Backend** (SQLite and PostgreSQL): `backend/src/__tests__/integration/catalogSearchC5.test.js`:
+    - [C5.5] typos, visibility, restricted goods;
+    - [C5.6] facets;
+    - [C5.7] sort and paging;
+    - [C5.8] autocomplete;
+    - [C5.9] the similarity measure is pg_trgm's.
+  - **Web:** `apps/web/tests/catalogSearch.test.mjs` [C5.10]–[C5.11].
+  - **App:** `apps/mobile/__tests__/catalogSearch.test.js` [C5.12]–[C5.13].
+  - **Browser:** `tests/e2e/web/search.spec.js` [C5.14].
+- **Status:** CODE COMPLETE.
+- **Owner decision:** the restricted-goods list is keyword-based, so search also hides, for example, a kitchen "knife" or "wine vinegar". It is the A3 list as it stands; refine it if that is too broad.
