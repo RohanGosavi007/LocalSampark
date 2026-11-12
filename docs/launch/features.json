@@ -147,7 +147,15 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/searchEngine.test.js"
+      "backend/src/__tests__/unit/searchEngine.test.js",
+      "backend/src/__tests__/integration/catalogSearchC5.test.js",
+      "backend/src/services/catalogSearch.service.js",
+      "backend/src/migrations/147_catalog_search.sql",
+      "apps/web/tests/catalogSearch.test.mjs",
+      "apps/web/src/app/search/page.js",
+      "apps/mobile/__tests__/catalogSearch.test.js",
+      "apps/mobile/src/services/catalogSearch.js",
+      "tests/e2e/web/search.spec.js"
     ],
     "notes": "PostgreSQL FTS + SQLite FTS5 fallback fully tested."
   },
