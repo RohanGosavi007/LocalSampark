@@ -1,0 +1,177 @@
+{
+  "timestamp": "2026-11-11T15:06:45.610Z",
+  "evidenceDirectory": "docs/audit/evidence/verify-2026-11-11T14-28-54",
+  "partial": false,
+  "gatesPassed": 17,
+  "totalGates": 18,
+  "gatePassPercentage": "94.4%",
+  "featureCompletion": "19 / 53 (35.8%) [22 CODE COMPLETE, 12 IN PROGRESS]",
+  "results": [
+    {
+      "id": "G1",
+      "name": "Backend ESLint",
+      "category": "Code Quality",
+      "passed": true,
+      "skipped": false,
+      "summary": "Backend ESLint reported 0 errors",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G1.txt"
+    },
+    {
+      "id": "G2",
+      "name": "Backend Jest on SQLite",
+      "category": "Unit & Integration Tests",
+      "passed": true,
+      "skipped": false,
+      "summary": "1718 passed, 0 failed across 155 test suites",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G2.txt"
+    },
+    {
+      "id": "G3",
+      "name": "Backend Jest on local PostgreSQL + PostGIS",
+      "category": "PostgreSQL Verification",
+      "passed": true,
+      "skipped": false,
+      "summary": "1674 passed, 0 failed in 146 suites on PostgreSQL (localsampark_test); 9 @engine sqlite-only suite(s) excluded",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G3.txt"
+    },
+    {
+      "id": "G4",
+      "name": "Database Migrations & Seed Idempotency",
+      "category": "Database Integrity",
+      "passed": true,
+      "skipped": false,
+      "summary": "Both engines: empty -> migrate -> seed x2 (idempotent) -> verify passed",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G4.txt"
+    },
+    {
+      "id": "G5",
+      "name": "Route-Auth Matrix Test (N11)",
+      "category": "Security & Access Control",
+      "passed": true,
+      "skipped": false,
+      "summary": "All write routes pass auth gate",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G5.txt"
+    },
+    {
+      "id": "G6",
+      "name": "Concurrency & Idempotency Suite on Postgres (L7)",
+      "category": "Data Integrity & Concurrency",
+      "passed": true,
+      "skipped": false,
+      "summary": "Concurrency & idempotency suite passed on PostgreSQL",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G6.txt"
+    },
+    {
+      "id": "G7",
+      "name": "Web Unit Tests & Production Build",
+      "category": "Web App",
+      "passed": true,
+      "skipped": false,
+      "summary": "Web tests and Next.js production build passed",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G7.txt"
+    },
+    {
+      "id": "G8",
+      "name": "Admin Tests & Production Build",
+      "category": "Admin Console",
+      "passed": true,
+      "skipped": false,
+      "summary": "Admin tests and production build passed",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G8.txt"
+    },
+    {
+      "id": "G9",
+      "name": "Mobile Jest, ESLint, expo-doctor & export",
+      "category": "Mobile App",
+      "passed": true,
+      "skipped": false,
+      "summary": "Mobile Jest, ESLint, expo-doctor, and export passed; doctor check(s) appConfigFieldsNotSyncedCheck replaced by passing Jest suites",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G9.txt"
+    },
+    {
+      "id": "G10",
+      "name": "Android assembleRelease Build & Artifact Proof",
+      "category": "Mobile Build Artifacts",
+      "passed": true,
+      "skipped": false,
+      "summary": "Release APK generated (Artifact: app-release.apk | Size: 172.30 MB | SHA-256: bc43a30323faa85cfeb7fb293e0e94685aab86f40afafeb1c38c80d69c513374 | Built: 2026-11-11T14:56:01.122Z)",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G10.txt"
+    },
+    {
+      "id": "G11",
+      "name": "Playwright E2E Commerce Persona Journeys",
+      "category": "End-to-End Testing",
+      "passed": true,
+      "skipped": false,
+      "summary": "Playwright E2E commerce flows passed",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G11.txt"
+    },
+    {
+      "id": "G12",
+      "name": "Android Release Smoke Test on Emulator",
+      "category": "Mobile Runtime Smoke",
+      "passed": true,
+      "skipped": false,
+      "summary": "Release APK installed on emulator-5554, launched, survived 25s + deep link, 14 UI elements, no blocked permissions, no fatal exceptions",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G12.txt"
+    },
+    {
+      "id": "G13",
+      "name": "Dependency Vulnerability Audit (N4)",
+      "category": "Security & Dependencies",
+      "passed": true,
+      "skipped": false,
+      "summary": "0 critical, 0 high unaccepted vulnerabilities (0 approved exceptions)",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G13.txt"
+    },
+    {
+      "id": "G14",
+      "name": "Secret Scan of Tracked Files",
+      "category": "Security & Credentials",
+      "passed": true,
+      "skipped": false,
+      "summary": "Zero secrets discovered in tracked git repository files",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G14.txt"
+    },
+    {
+      "id": "G15",
+      "name": "Launch Policy & Harness Self-Tests (G15 Suite)",
+      "category": "Launch Policy Compliance",
+      "passed": true,
+      "skipped": false,
+      "summary": "All launch policy checks and harness self-tests passed (0 violations)",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G15.txt"
+    },
+    {
+      "id": "G16",
+      "name": "Accessibility Audits (axe Core & WCAG 2.1 AA)",
+      "category": "Accessibility",
+      "passed": true,
+      "skipped": false,
+      "summary": "WCAG 2.1 AA & semantic accessibility suite passed (0 violations)",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G16.txt"
+    },
+    {
+      "id": "G17",
+      "name": "Performance Budgets & Asset Optimization",
+      "category": "Performance",
+      "passed": true,
+      "skipped": false,
+      "summary": "Performance budgets & dynamic code-splitting checks passed",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G17.txt"
+    },
+    {
+      "id": "G18",
+      "name": "Target Feature Verification (features.json)",
+      "category": "Feature Verification",
+      "passed": false,
+      "skipped": false,
+      "summary": "19 / 53 launch features verified (35.8%) [22 CODE COMPLETE, 12 IN PROGRESS]",
+      "log": "docs/audit/evidence/verify-2026-11-11T14-28-54/G18.txt",
+      "totalCount": 53,
+      "verifiedCount": 19,
+      "codeCompleteCount": 22,
+      "inProgressCount": 12
+    }
+  ]
+}

@@ -1277,3 +1277,12 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
   - **App:** `apps/mobile/__tests__/notifications.test.js` [C13.10]–[C13.12].
   - **Browser:** `tests/e2e/web/notifications.spec.js` [C13.13]–[C13.14]. A placed order's notification is unread in the inbox, opens the order, and is then read. Turning off offers is saved on the server and shown again after a reload.
 - **Status:** CODE COMPLETE. Email delivery itself needs `SMTP_*` set to a provider such as Brevo's SMTP relay (owner action); without it the email service logs instead of sending.
+
+### Verify run verify-2026-11-11T14-28-54 (commit 3cafc50)
+- 17 of 18 gates pass: G1–G17 all pass, including G10 release build, G11 Playwright, G12 emulator smoke and G13 audit.
+- G18: 19 of 53 launch features VERIFIED. New since the last run: C6, C8, C9, C13 and C14, alongside A1–A11, A13, A14 and P7. F-148 to F-152 are FIXED-VERIFIED by this run.
+- Still CODE COMPLETE, per the verifier:
+  - C1 and C12: missing web and Android tagged tests;
+  - R1–R5: missing Android (and admin or web) tests;
+  - P9: missing web, Android and admin tests.
+- Statuses in `docs/launch/features.json` are not edited by hand; the run reports them (write mode off).
