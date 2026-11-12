@@ -137,6 +137,13 @@ async function seedE2eFixtures() {
     [IDS.restrictedProduct, shop.id]
   );
 
+  // C7: a coupon any E2E customer can use at checkout, as often as the specs need.
+  await run(
+    `INSERT INTO coupons (id, code, discount_type, discount_value, min_order_amount, max_uses, current_uses, per_user_limit, first_order_only, is_active, description)
+     VALUES ('e2e-coupon-flat20', 'E2EFLAT20', 'fixed', 20, 0, 1000000, 0, 1000, 0, 1, '₹20 off (E2E)')`,
+    []
+  );
+
   // A9: someone outside every zone asked to be told when we arrive.
   await run(
     `INSERT INTO unserviceable_waitlist (id, phone_number, email, latitude, longitude, pincode, address, created_at)

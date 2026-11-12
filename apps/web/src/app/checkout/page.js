@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_BASE, getAuthHeaders } from '../../lib/api';
 import { openCheckout, payFor } from '../../lib/payments';
 import { fetchQuote, currentPosition, billLines, etaText } from '../../lib/deliveryQuote';
+import CouponField from '../../components/CouponField';
 import { checkoutPlan, batchLines, orderLines, describeChange, blockers } from '../../lib/cartModel';
 
 /**
@@ -53,6 +54,8 @@ export default function CheckoutPage() {
 
   // The server's bill for this cart, and why there is none if there is none.
   const [quote, setQuote] = useState(null);
+  // C7: the coupon the customer applied; the server prices it with the cart.
+  const [couponCode, setCouponCode] = useState(null);
     const [quoteError, setQuoteError] = useState(null);
   // Where a delivery is going, as a point. A saved address may carry its own.
   const [location, setLocation] = useState(null);
@@ -167,6 +170,7 @@ export default function CheckoutPage() {
     const where = fulfillmentMethod === 'DELIVERY'
       ? { addressId: selectedAddressId || undefined, deliveryCoordinate: location || undefined }
       : {};
+    if (couponCode) where.couponCode = couponCode;
     (isBatch
       ? fetchQuote({ fulfillmentMethod, items: batchLines(cartItems), ...where }, { batch: true })
       : fetchQuote({
@@ -179,7 +183,7 @@ export default function CheckoutPage() {
       .catch((e) => { if (!cancelled) { setQuote(null); setQuoteError(e); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [singleShopId, isBatch, cartKey, fulfillmentMethod, pendingOrder, selectedAddressId, location ? `${location.lat},${location.lng}` : '']);
+  }, [singleShopId, isBatch, cartKey, fulfillmentMethod, pendingOrder, selectedAddressId, location ? `${location.lat},${location.lng}` : '', couponCode]);
 
   // Until the delivery location is known, the cart is priced but the delivery is not.
   const needsLocation = Boolean(quoteError && quoteError.code === 'LOCATION_REQUIRED');
@@ -256,6 +260,10 @@ export default function CheckoutPage() {
       setError('Share your delivery location so the delivery charge can be worked out.');
       return;
     }
+    if (couponCode && bill && bill.couponError) {
+      setError(`${bill.couponError.message}. Remove the coupon to place the order without it.`);
+      return;
+    }
 
     setLoading(true);
     if (isBatch) {
@@ -272,6 +280,7 @@ export default function CheckoutPage() {
             deliveryCoordinate: delivering && location ? location : undefined,
             deliverySlot,
             items: batchLines(cartItems),
+            couponCode: couponCode || undefined,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -299,6 +308,7 @@ export default function CheckoutPage() {
           deliveryCoordinate: delivering && location ? location : undefined,
           deliverySlot,
           items: orderLines(cartItems),
+          couponCode: couponCode || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -651,6 +661,9 @@ export default function CheckoutPage() {
                     )}
                     {needsLocation && !pendingOrder && (
                       <p className="text-text-muted text-xs">The delivery charge appears once you share where the order is going.</p>
+                    )}
+                    {!pendingOrder && cartItems.length > 0 && (
+                      <CouponField code={couponCode} bill={bill} disabled={loading} onApply={setCouponCode} onRemove={() => setCouponCode(null)} />
                     )}
                     {etaText(bill, { pickup: !delivering }) && (
                       <p className="flex items-center gap-2 text-text-muted"><Clock className="w-4 h-4" /> {etaText(bill, { pickup: !delivering })}</p>

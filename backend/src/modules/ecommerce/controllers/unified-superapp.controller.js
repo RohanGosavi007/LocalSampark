@@ -58,6 +58,10 @@ function presentBill(bill) {
     deliveryFee: bill.deliveryFee,
     smallOrderFee: bill.smallOrderFee,
     platformFee: bill.platformFee,
+    // C7: what a coupon took off, and which; or why the one given does not apply.
+    discount: bill.discount || 0,
+    coupon: bill.coupon ? { code: bill.coupon.code, type: bill.coupon.type, discount: bill.coupon.discount, deliveryWaived: bill.coupon.deliveryWaived, message: bill.coupon.message } : null,
+    couponError: bill.couponError || null,
     total: bill.total,
     distanceKm: bill.distanceKm,
     surgeMultiplier: bill.surgeMultiplier,

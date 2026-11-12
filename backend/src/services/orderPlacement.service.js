@@ -173,6 +173,18 @@ function toOrderError(error) {
   return error;
 }
 
+/** The coupon code a checkout body carries, by any of its spellings. */
+function couponCodeOf(body = {}) {
+  const code = body.couponCode ?? body.coupon_code ?? body.coupon;
+  return typeof code === 'string' && code.trim() ? code.trim() : null;
+}
+
+/** The body without its coupon (a multi-shop cart prices the coupon once, for the cart). */
+function withoutCoupon(body = {}) {
+  const { couponCode: _a, coupon_code: _b, coupon: _c, ...rest } = body;
+  return rest;
+}
+
 /** What a cart will cost, without ordering it. */
 async function quoteOrder({ user = null, shopId, items, body = {} }) {
   const { shop, lines, subtotal } = await priceItems(shopId, items);
@@ -186,29 +198,25 @@ async function quoteOrder({ user = null, shopId, items, body = {} }) {
     const member = user && user.id ? await require('./membership.service').isMember(user.id) : false;
     bill = await pricing.quote({ shop, subtotal, pickup, drop: drop.point, member });
 
-    // Database-backed coupon validation
-    const couponCode = body.couponCode ?? body.coupon_code ?? body.coupon;
+    // C7: a coupon. One that does not apply leaves the bill as it is and says
+    // why (bill.couponError), so the checkout can show the bill and the reason
+    // side by side; placing the order with it is refused (placeOrder).
+    const couponCode = couponCodeOf(body);
     if (couponCode) {
       try {
-        const valRes = await couponService.validateCoupon({
+        const priced = await couponService.priceCart({
           code: couponCode,
-          cartTotal: subtotal,
           userId: user ? user.id : null,
-          shopId: shop.id
+          parts: [{ shopId: shop.id, subtotal, deliveryFee: bill.deliveryFee }],
         });
-        const cpn = valRes.coupon;
-        if (cpn.type === 'free_delivery') {
-          bill.deliveryFee = 0;
-        } else if (cpn.discount > 0) {
-          bill.discount = Math.min(money(cpn.discount), money(bill.subtotal));
-        }
-        bill.total = Math.max(0, money(bill.subtotal + bill.deliveryFee + bill.platformFee + bill.smallOrderFee - (bill.discount || 0)));
-        bill.coupon = cpn;
+        const share = priced.shares.get(String(shop.id));
+        if (share.deliveryWaived > 0) bill.deliveryFee = 0;
+        bill.discount = money(Math.min(share.discount, bill.subtotal));
+        bill.total = Math.max(0, money(bill.subtotal + bill.deliveryFee + bill.platformFee + bill.smallOrderFee - bill.discount));
+        bill.coupon = priced.coupon;
       } catch (cErr) {
-        if (cErr instanceof couponService.CouponError) {
-          throw new OrderError(cErr.status, cErr.code, cErr.message);
-        }
-        throw cErr;
+        if (!(cErr instanceof couponService.CouponError)) throw cErr;
+        bill.couponError = { code: cErr.code, message: cErr.message };
       }
     }
   } catch (error) {
@@ -249,6 +257,9 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
   }
 
   const { shop, lines, bill, pickup, drop } = await quoteOrder({ user, shopId, items, body });
+  if (bill.couponError) {
+    throw new OrderError(400, bill.couponError.code, bill.couponError.message);
+  }
 
   if (fees) {
     for (const key of ['deliveryFee', 'platformFee', 'smallOrderFee']) {
@@ -361,7 +372,8 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
           couponId: bill.coupon.id,
           userId: user.id,
           orderId,
-          discountApplied: bill.discount || 0,
+          // What the coupon saved: money off, or the delivery charge waived.
+          discountApplied: money((bill.discount || 0) + (bill.coupon.deliveryWaived || 0)),
           client: tx
         });
       } catch (cErr) {
@@ -407,4 +419,4 @@ async function placeOrder({ user, shopId, items, body = {}, method, batchId = nu
   return { order, items: orderItems, bill, shop, paymentData, paymentError };
 }
 
-module.exports = { OrderError, isPickup, priceItems, resolveDrop, quoteOrder, placeOrder, truthy };
+module.exports = { OrderError, isPickup, priceItems, resolveDrop, quoteOrder, placeOrder, truthy, couponCodeOf, withoutCoupon };

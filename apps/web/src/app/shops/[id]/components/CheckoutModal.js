@@ -9,6 +9,7 @@ import { useCartStore } from '../../../../store/cartStore';
 import { API_BASE, getAuthHeaders } from '@/lib/api';
 import { getPaymentConfig, openCheckout, payFor } from '@/lib/payments';
 import { fetchQuote, currentPosition, billLines, etaText } from '@/lib/deliveryQuote';
+import CouponField from '@/components/CouponField';
 
 /**
  * Checkout for one shop's cart: POST /shops/:id/orders, then payment.
@@ -50,6 +51,8 @@ export default function CheckoutModal({
   const [onlineAvailable, setOnlineAvailable] = useState(false);
   const [quote, setQuote] = useState(null);
   const [quoteError, setQuoteError] = useState(null);
+  // C7: the coupon the customer applied; the server prices it.
+  const [couponCode, setCouponCode] = useState(null);
   // An order placed for online payment that has not been paid yet.
   const [pendingOrder, setPendingOrder] = useState(null);
   // One Idempotency-Key per attempt (C8): a retry after a network failure is
@@ -95,12 +98,13 @@ export default function CheckoutModal({
       items: shopCartItems.map((item) => ({ productId: item.id, quantity: item.quantity })),
       deliveryMode: pickup ? 'pickup' : 'delivery',
       ...(pickup ? {} : { deliveryCoordinate: location }),
+      ...(couponCode ? { couponCode } : {}),
     })
       .then((data) => { if (!cancelled) { setQuote(data); setQuoteError(null); } })
       .catch((e) => { if (!cancelled) { setQuote(null); setQuoteError(e); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCheckout, shop.id, cartKey, deliveryType, locationKey, pendingOrder]);
+  }, [showCheckout, shop.id, cartKey, deliveryType, locationKey, pendingOrder, couponCode]);
 
   // Keep the selected method one that is on offer.
   useEffect(() => {
@@ -170,6 +174,10 @@ export default function CheckoutModal({
       setError(quoteError ? quoteError.message : 'Your bill is still being worked out.');
       return;
     }
+    if (couponCode && bill && bill.couponError) {
+      setError(`${bill.couponError.message}. Remove the coupon to place the order without it.`);
+      return;
+    }
     if (service && (!service.staffId || !service.appointmentDate || !service.timeSlot)) {
       setError('Choose a staff member, date and time for the service before checking out.');
       return;
@@ -189,6 +197,7 @@ export default function CheckoutModal({
           deliveryType,
           deliveryAddress: pickup ? null : deliveryAddress.trim(),
           deliveryCoordinate: pickup ? undefined : location,
+          couponCode: couponCode || undefined,
           appointmentDetails: service
             ? { staffId: service.staffId, appointmentDate: service.appointmentDate, timeSlot: service.timeSlot }
             : undefined,
@@ -287,6 +296,12 @@ export default function CheckoutModal({
                         </label>
                     </div>
                 </div>
+
+                {hasProducts && !locked && (
+                    <div className="mb-4">
+                        <CouponField code={couponCode} bill={bill} disabled={processing} onApply={setCouponCode} onRemove={() => setCouponCode(null)} />
+                    </div>
+                )}
 
                 {hasProducts && bill && (
                     <div className="mb-4 space-y-2 text-sm">

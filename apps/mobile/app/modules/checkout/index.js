@@ -11,6 +11,7 @@ import BouncyButton from '../../../src/components/BouncyButton';
 import { checkoutPlan, batchLines, orderLines, describeChange, blockers } from '../../../src/lib/cartModel';
 import { createAttempt } from '../../../src/services/checkoutAttempt';
 import { ASAP, timeOptions, keepChoice } from '../../../src/services/deliveryTime';
+import { cleanCouponCode, withCoupon, couponSummary, couponBlocks } from '../../../src/services/coupon';
 
 // Loaded the way ZoneContext loads it: a build without the native module can
 // still check out with a saved address.
@@ -70,6 +71,9 @@ export default function CheckoutScreen() {
   const [onlineAvailable, setOnlineAvailable] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [quote, setQuote] = useState(null);
+  // C7: the coupon applied (the server prices it) and what is being typed.
+  const [couponCode, setCouponCode] = useState(null);
+  const [couponInput, setCouponInput] = useState('');
     const [quoteError, setQuoteError] = useState('');
   // Where a delivery is going: a saved address (the server knows its location)
   // and/or a point from the phone.
@@ -115,7 +119,7 @@ export default function CheckoutScreen() {
       return undefined;
     }
     let cancelled = false;
-    const where = delivering ? { addressId: savedAddressId || undefined, deliveryCoordinate: location || undefined } : {};
+    const where = withCoupon(delivering ? { addressId: savedAddressId || undefined, deliveryCoordinate: location || undefined } : {}, couponCode);
     (isBatch
       ? apiPost('/shops/cart/batch-quote', { deliveryMode, items: batchLines(cartItems), ...where })
       : apiPost('/checkout/quote', { shopId, deliveryMode, items: lines, ...where }))
@@ -131,7 +135,7 @@ export default function CheckoutScreen() {
       });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shopId, isBatch, cartKey, deliveryMode, pendingOrder, savedAddressId, location ? `${location.lat},${location.lng}` : '']);
+    }, [shopId, isBatch, cartKey, deliveryMode, pendingOrder, savedAddressId, location ? `${location.lat},${location.lng}` : '', couponCode]);
 
   const codAvailable = !quote || quote.paymentMethods?.cod !== false;
   // A multi-shop cart is paid from the wallet or in cash.
@@ -222,6 +226,11 @@ export default function CheckoutScreen() {
       Alert.alert('Delivery address', 'Please enter the address to deliver to.');
       return;
     }
+    const couponProblem = couponBlocks(couponCode, bill);
+    if (couponProblem) {
+      Alert.alert('Coupon', couponProblem);
+      return;
+    }
 
     if (unavailableItems.length) {
       Alert.alert('Some items are unavailable', `${unavailableItems.join(', ')}: change the quantity or remove them first.`);
@@ -231,7 +240,7 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
     if (isBatch) {
       try {
-        const data = await apiPost('/shops/cart/batch-checkout', {
+        const data = await apiPost('/shops/cart/batch-checkout', withCoupon({
           deliveryMode,
           paymentMethod: method,
           deliveryAddress: deliveryMode === 'delivery' ? address.trim() : null,
@@ -239,7 +248,7 @@ export default function CheckoutScreen() {
           deliveryCoordinate: deliveryMode === 'delivery' && location ? location : undefined,
           deliverySlot,
           items: batchLines(cartItems),
-        }, { headers: { 'Idempotency-Key': idempotencyKey() } });
+        }, couponCode), { headers: { 'Idempotency-Key': idempotencyKey() } });
         const ids = Array.isArray(data?.orderIds) ? data.orderIds : [];
         if (!ids.length) throw new Error(data?.message || 'The order was not placed. Please try again.');
         const paid = data.paymentStatus === 'paid';
@@ -259,7 +268,7 @@ export default function CheckoutScreen() {
       return;
     }
     try {
-      const data = await apiPost('/checkout', {
+      const data = await apiPost('/checkout', withCoupon({
         shopId,
         deliveryMode,
         paymentMethod: method,
@@ -268,7 +277,7 @@ export default function CheckoutScreen() {
         deliveryCoordinate: deliveryMode === 'delivery' && location ? location : undefined,
         deliverySlot,
         items: lines,
-      }, { headers: { 'Idempotency-Key': idempotencyKey() } });
+      }, couponCode), { headers: { 'Idempotency-Key': idempotencyKey() } });
 
       if (method === 'online') {
         setPendingOrder({ order: data.order, bill: data.bill });
@@ -414,6 +423,39 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Coupon (C7) */}
+        {!pendingOrder && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Coupon</Text>
+            {couponCode ? (
+              <View style={styles.billRow}>
+                <Text testID="coupon-status" style={[styles.billLabel, { flex: 1 }, couponSummary(bill) && !couponSummary(bill).ok && { color: COLORS.error || '#dc2626' }]}>
+                  {couponSummary(bill) ? couponSummary(bill).text : `Checking ${couponCode}…`}
+                </Text>
+                <TouchableOpacity accessibilityRole="button" onPress={() => { setCouponCode(null); setCouponInput(''); }}>
+                  <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={[styles.billRow, { gap: 8 }]}>
+                <TextInput
+                  testID="coupon-input"
+                  value={couponInput}
+                  onChangeText={setCouponInput}
+                  placeholder="Coupon code"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={40}
+                  style={{ flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, color: COLORS.text }}
+                />
+                <TouchableOpacity accessibilityRole="button" disabled={!cleanCouponCode(couponInput)} onPress={() => setCouponCode(cleanCouponCode(couponInput))}>
+                  <Text style={{ color: COLORS.primary, fontWeight: '700', opacity: cleanCouponCode(couponInput) ? 1 : 0.5 }}>Apply</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Bill Details */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Bill Details</Text>
@@ -432,6 +474,9 @@ export default function CheckoutScreen() {
             <View style={styles.billRow}><Text style={styles.billLabel}>Small Order Fee</Text><Text style={styles.billValue}>{rupees(bill.smallOrderFee)}</Text></View>
           )}
           <View style={styles.billRow}><Text style={styles.billLabel}>Platform Fee</Text><Text style={styles.billValue}>{rupees(bill?.platformFee)}</Text></View>
+          {bill?.discount > 0 && (
+            <View style={styles.billRow}><Text style={styles.billLabel}>Coupon discount</Text><Text style={[styles.billValue, { color: COLORS.success }]}>−{rupees(bill.discount)}</Text></View>
+          )}
           <View style={styles.divider} />
           <View style={styles.billRow}><Text style={styles.totalLabel}>To Pay</Text><Text style={styles.totalValue}>{rupees(bill?.total)}</Text></View>
                     {!!bill?.etaMinutes && (

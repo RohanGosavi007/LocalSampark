@@ -503,7 +503,7 @@ function PayoutsSection() {
 function PromotionsSection() {
   const coupons = useResource(() => get(`${API_BASE}/admin/commerce/coupons`).then((r) => r.data));
   const banners = useResource(() => get(`${API_BASE}/admin/commerce/banners`).then((r) => r.data));
-  const [cp, setCp] = useState({ code: '', discountType: 'percentage', discountValue: '', minOrderAmount: '', maxDiscountAmount: '', usageLimit: '' });
+  const [cp, setCp] = useState({ code: '', discountType: 'percentage', discountValue: '', minOrderAmount: '', maxDiscountAmount: '', usageLimit: '', perUserLimit: '', firstOrderOnly: false, endDate: '' });
   const [bn, setBn] = useState({ title: '', imageUrl: '', actionUrl: '', priority: '' });
   const [run, msg] = useAction();
   return (
@@ -513,26 +513,51 @@ function PromotionsSection() {
       <form style={{ ...S.row, marginBottom: '0.8rem' }} onSubmit={(e) => { e.preventDefault(); run(() => fetchJson(`${API_BASE}/admin/commerce/coupons`, { method: 'POST', ...opts(cp) }).then(() => coupons.reload()), `Coupon ${cp.code.toUpperCase()} created`); }}>
         <input aria-label="Coupon code" placeholder="CODE" style={{ ...S.input, width: '8rem' }} value={cp.code} onChange={(e) => setCp({ ...cp, code: e.target.value })} />
         <select aria-label="Discount type" style={S.input} value={cp.discountType} onChange={(e) => setCp({ ...cp, discountType: e.target.value })}>
-          <option value="percentage">% off</option><option value="flat">₹ off</option>
+          <option value="percentage">% off</option><option value="fixed">₹ off</option><option value="free_delivery">Free delivery</option>
         </select>
-        <input aria-label="Discount value" placeholder="Value" style={{ ...S.input, width: '5rem' }} value={cp.discountValue} onChange={(e) => setCp({ ...cp, discountValue: e.target.value })} />
+        {cp.discountType !== 'free_delivery' && (
+          <input aria-label="Discount value" placeholder="Value" style={{ ...S.input, width: '5rem' }} value={cp.discountValue} onChange={(e) => setCp({ ...cp, discountValue: e.target.value })} />
+        )}
         <input aria-label="Minimum order" placeholder="Min order ₹" style={{ ...S.input, width: '7rem' }} value={cp.minOrderAmount} onChange={(e) => setCp({ ...cp, minOrderAmount: e.target.value })} />
         <input aria-label="Maximum discount" placeholder="Max discount ₹" style={{ ...S.input, width: '8rem' }} value={cp.maxDiscountAmount} onChange={(e) => setCp({ ...cp, maxDiscountAmount: e.target.value })} />
         <input aria-label="Usage budget" placeholder="Uses budget" style={{ ...S.input, width: '7rem' }} value={cp.usageLimit} onChange={(e) => setCp({ ...cp, usageLimit: e.target.value })} />
+        <input aria-label="Uses per customer" placeholder="Per customer" style={{ ...S.input, width: '7rem' }} value={cp.perUserLimit} onChange={(e) => setCp({ ...cp, perUserLimit: e.target.value })} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <input type="checkbox" aria-label="First order only" checked={cp.firstOrderOnly} onChange={(e) => setCp({ ...cp, firstOrderOnly: e.target.checked })} /> First order only
+        </label>
+        <input type="date" aria-label="Ends on" style={S.input} value={cp.endDate} onChange={(e) => setCp({ ...cp, endDate: e.target.value })} />
         <button type="submit" style={S.btn}>Create coupon</button>
       </form>
       <Err error={coupons.error} />
       {coupons.data && (
         <table style={S.table}>
-          <thead><tr><th style={S.th}>Code</th><th style={S.th}>Discount</th><th style={S.th}>Min order</th><th style={S.th}>Used / budget</th><th style={S.th}>Scope</th></tr></thead>
+          <thead><tr><th style={S.th}>Code</th><th style={S.th}>Discount</th><th style={S.th}>Min order</th><th style={S.th}>Used / budget</th><th style={S.th}>Rules</th><th style={S.th}>Scope</th><th style={S.th}>Status</th></tr></thead>
           <tbody>
             {coupons.data.map((c) => (
               <tr key={c.id} data-testid={`coupon-row-${c.code}`}>
                 <td style={S.td}><strong>{c.code}</strong></td>
-                <td style={S.td}>{c.discount_type === 'percentage' ? `${c.discount_value}%` : inr(c.discount_value)}{c.max_discount_amount ? ` (max ${inr(c.max_discount_amount)})` : ''}</td>
+                <td style={S.td}>{c.discount_type === 'free_delivery' ? 'Free delivery' : c.discount_type === 'percentage' ? `${c.discount_value}%` : inr(c.discount_value)}{c.max_discount_amount && c.discount_type === 'percentage' ? ` (max ${inr(c.max_discount_amount)})` : ''}</td>
                 <td style={S.td}>{inr(c.min_order_amount)}</td>
                 <td style={S.td}>{c.current_uses || 0} / {c.max_uses || '∞'}</td>
+                <td style={S.td}>
+                  {`${c.per_user_limit || 1} per customer`}
+                  {[1, true, '1', 'true'].includes(c.first_order_only) ? ' · first order' : ''}
+                  {c.end_date ? ` · ends ${String(c.end_date).slice(0, 10)}` : ''}
+                </td>
                 <td style={S.td}>{c.shop_id ? 'Shop' : 'Platform'}</td>
+                <td style={S.td}>
+                  {[1, true, '1', 'true'].includes(c.is_active) ? 'Active' : 'Paused'}{' '}
+                  <button
+                    type="button"
+                    style={S.btn}
+                    onClick={() => {
+                      const active = [1, true, '1', 'true'].includes(c.is_active);
+                      run(() => fetchJson(`${API_BASE}/admin/commerce/coupons/${c.id}`, { method: 'PUT', ...opts({ isActive: !active }) }).then(() => coupons.reload()), `Coupon ${c.code} ${active ? 'paused' : 'resumed'}`);
+                    }}
+                  >
+                    {[1, true, '1', 'true'].includes(c.is_active) ? 'Pause' : 'Resume'}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

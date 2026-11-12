@@ -121,7 +121,7 @@ describe('C7 Coupon Engine', () => {
       userId: 'test-user-2',
       orderId: 'ord-test-2',
       discountApplied: 30
-    })).rejects.toThrow('Coupon was claimed by another customer');
+    })).rejects.toMatchObject({ code: 'COUPON_LIMIT_EXCEEDED', status: 409 });
   });
 
   test('[C7.6] POST /orders/validate-coupon endpoint returns validated coupon', async () => {
