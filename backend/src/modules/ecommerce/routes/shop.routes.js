@@ -60,6 +60,7 @@ const CacheService = require('../../../services/cache.service');
 const AuditLogger = require('../../../services/audit.logger');
 const logger = require('../../../config/logger');
 const SearchEngine = require('../../../services/search.engine');
+const catalogSearch = require('../../../services/catalogSearch.service');
 
 // GET /search via Typesense AI Search Engine
 router.get('/search', async (req, res, next) => {
@@ -115,6 +116,26 @@ router.get('/search', async (req, res, next) => {
     });
   } catch (error) { next(error); }
 });
+/**
+ * C5: the catalogue search: products (and the shops that match) with
+ * category and price facets, typo-tolerant (services/catalogSearch.service.js).
+ * GET /shops/search/catalog?q=&category=&minPrice=&maxPrice=&shopId=&sort=&limit=&offset=
+ */
+router.get('/search/catalog', async (req, res, next) => {
+    try {
+        const { q, category, minPrice, maxPrice, shopId, sort, limit, offset } = req.query;
+        const result = await catalogSearch.searchCatalog({ q, category, minPrice, maxPrice, shopId, sort, limit, offset });
+        res.json({ success: true, ...result });
+    } catch (error) { next(error); }
+});
+
+/** C5: autocomplete. GET /shops/search/suggest?q= */
+router.get('/search/suggest', async (req, res, next) => {
+    try {
+        res.json({ success: true, ...(await catalogSearch.suggest(req.query.q)) });
+    } catch (error) { next(error); }
+});
+
 router.get('/categories', async (req, res, next) => {
   try {
     if (useMockCatalog()) {

@@ -11,24 +11,8 @@ const { escapeCsvField, generateStandardOrdersCsv, generateGstTcsSection52Csv, g
 
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
-// Restricted goods keywords for catalog moderation (A3)
-const RESTRICTED_KEYWORDS = [
-  'tobacco', 'cigarette', 'bidi', 'gutkha', 'nicotine',
-  'alcohol', 'liquor', 'beer', 'whiskey', 'rum', 'vodka', 'wine',
-  'weapon', 'gun', 'pistol', 'knife', 'explosive',
-  'narcotic', 'steroid', 'weed', 'cannabis', 'marijuana'
-];
-
-function isRestrictedProduct(name = '', description = '') {
-  const text = `${name} ${description}`.toLowerCase();
-  for (const kw of RESTRICTED_KEYWORDS) {
-    const regex = new RegExp(`\\b${kw}\\b`, 'i');
-    if (regex.test(text)) {
-      return { restricted: true, keyword: kw };
-    }
-  }
-  return { restricted: false };
-}
+// Restricted goods (A3): services/restrictedGoods.js, shared with search (C5).
+const { isRestrictedProduct } = require('../../../services/restrictedGoods');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A1: Admin Commerce KPI Dashboard
