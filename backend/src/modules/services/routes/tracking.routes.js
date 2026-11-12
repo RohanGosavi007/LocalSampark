@@ -71,6 +71,15 @@ async function getOrderTrackingPayload(orderId, reqUser) {
       [order.assigned_agent_id]
     );
 
+    // The rider's position is shared only while this order is on its way.
+    // Before, it went to anyone whose order the rider had ever carried, so a
+    // past customer could keep following the rider around town.
+    const live = ['assigned', 'out_for_delivery'].includes(status);
+    if (agent && !live) {
+      agent.current_lat = null;
+      agent.current_lng = null;
+    }
+
     if (agent) {
       rider = {
         name: agent.rider_name || 'Delivery Partner',

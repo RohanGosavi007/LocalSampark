@@ -33,6 +33,8 @@ const IDS = {
   shopperConfirmed: 'e2e00000-0000-4000-8000-0000000000c1',
   shopperPreparing: 'e2e00000-0000-4000-8000-0000000000c5',
   shopperLive: 'e2e00000-0000-4000-8000-0000000000c6',
+  // R4: out for delivery with the seeded rider.
+  shopperRiding: 'e2e00000-0000-4000-8000-0000000000c7',
   // C6: a second shop, so a cart can hold two shops' items (D6).
   chemistShop: 'e2e00000-0000-4000-8000-0000000000d0',
   chemistOwner: 'e2e00000-0000-4000-8000-0000000000d1',
@@ -44,6 +46,9 @@ const IDS = {
   // C10: two delivered orders of the shopper's, one for each return spec.
   shopperReturnWeb: 'e2e00000-0000-4000-8000-0000000000f0',
   shopperReturnAdmin: 'e2e00000-0000-4000-8000-0000000000f2',
+  // R1: a rider who has applied and is waiting on review.
+  riderApplicant: 'e2e00000-0000-4000-8000-000000000100',
+  riderApplication: 'e2e00000-0000-4000-8000-000000000101',
 };
 
 const PHONES = {
@@ -170,6 +175,20 @@ async function seedE2eFixtures() {
     [IDS.kyc, IDS.kycShop, IDS.kycOwner, HOURS(3)]
   );
 
+  // R1: a rider applicant waiting on review in the console.
+  await run(
+    `INSERT INTO users (id, phone_number, full_name, role, is_verified, is_active, region_id)
+     VALUES ($1, '+919800000100', 'E2E New Rider', 'user', '1', '1', $2)`,
+    [IDS.riderApplicant, region.id]
+  );
+  await run(
+    `INSERT INTO delivery_agents (id, user_id, vehicle_type, vehicle_number, dl_number, rc_number, aadhar_number,
+                                  kyc_status, status, is_online, cash_in_hand, created_at)
+     VALUES ($1, $2, 'motorcycle', 'MH-12-E2E-0060', 'MH1220260000060', 'MH12RC0060', '123412340060',
+             'pending', 'offline', '0', 0, $3)`,
+    [IDS.riderApplication, IDS.riderApplicant, HOURS(4)]
+  );
+
   // A14: one customer in the pilot zone who agreed to marketing; the seeded
   // customer has not, so a zone broadcast reaches exactly one person.
   await run(
@@ -233,6 +252,21 @@ async function seedE2eFixtures() {
       [itemId, orderId, product.id, product.name, product.price]
     );
   }
+
+  // R4: an order of the shopper's out for delivery with the seeded rider, so
+  // the tracking page has a rider whose position it can follow.
+  await run(
+    `INSERT INTO orders (id, user_id, shop_id, subtotal, total_amount, delivery_fee, delivery_address,
+                         payment_method, payment_status, order_status, status, fulfillment_method,
+                         delivery_lat, delivery_lng, assigned_agent_id, created_at, updated_at)
+     VALUES ($1, $2, $3, 112, 132, 20, 'E2E Flat 3, Prasanna Goldfields, Dhanori', 'razorpay', 'paid',
+             'out_for_delivery', 'out_for_delivery', 'delivery', 18.5790, 73.8970, $4, $5, $5)`,
+    [IDS.shopperRiding, IDS.shopper, shop.id, rider.id, HOURS(0.5)]
+  );
+  await run(
+    'INSERT INTO order_items (id, order_id, product_id, name, price, quantity, price_at_buy) VALUES ($1, $2, $3, $4, $5, 2, $5)',
+    ['e2e00000-0000-4000-8000-0000000000c8', IDS.shopperRiding, product.id, product.name, product.price]
+  );
 
   // C6: a second, open shop in the pilot zone with its own owner (open all
   // day, so it offers C8 time slots whenever the suite runs), and a

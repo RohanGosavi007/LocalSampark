@@ -202,6 +202,10 @@ describe('Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5)', () =
       const pendingRider = listRes.body.agents.find((a) => String(a.user_id) === String(TEST_RIDER_ID));
       expect(pendingRider).toBeDefined();
 
+      // The queue shows the last four digits only, never the full Aadhaar or bank account.
+      expect(pendingRider.aadhar_number).toMatch(/^XXXX\d{4}$/);
+      if (pendingRider.bank_account_number) expect(pendingRider.bank_account_number).toMatch(/^XXXX\d{4}$/);
+
       const approveRes = await request(app)
         .put(`/admin/delivery/agents/${agentRecordId}/kyc`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -217,6 +221,32 @@ describe('Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5)', () =
 
       const user = await queryOne('SELECT role FROM users WHERE id = $1', [TEST_RIDER_ID]);
       expect(user.role).toBe('delivery_agent');
+    });
+  });
+
+  describe('R1: rejection reasons', () => {
+    it('[R1.10] rejecting or suspending a rider needs a reason, which the rider then sees', async () => {
+      const noReason = await request(app)
+        .put(`/admin/delivery/agents/${agentRecordId}/kyc`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'resubmission' });
+      expect(noReason.status).toBe(400);
+      expect(noReason.body.error).toMatch(/rejection_reason is required/);
+
+      const withReason = await request(app)
+        .put(`/admin/delivery/agents/${agentRecordId}/kyc`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'resubmission', rejectionReason: 'Licence photo is blurred' });
+      expect(withReason.status).toBe(200);
+      const profile = await request(app).get('/delivery/profile').set('Authorization', `Bearer ${riderToken}`);
+      expect(profile.body.profile).toMatchObject({ kycStatus: 'resubmission', rejectionReason: 'Licence photo is blurred' });
+
+      // Put the rider back where the rest of the suite expects them.
+      const back = await request(app)
+        .put(`/admin/delivery/agents/${agentRecordId}/kyc`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'approved' });
+      expect(back.status).toBe(200);
     });
   });
 
@@ -388,6 +418,42 @@ describe('Milestone M4.2: Rider Fleet Operations Hub (R1, R2, R3, R4, R5)', () =
 
       const order = await queryOne('SELECT order_status FROM orders WHERE id = $1', [TEST_ORDER_PREPAID_ID]);
       expect(order.order_status).toBe('out_for_delivery');
+    });
+
+    it('[R4.10] the assigned rider\'s position is broadcast to that order\'s customer room', async () => {
+      const emitted = [];
+      const io = { to: () => io, emit: (event, payload) => { emitted.push({ event, payload }); } };
+      app.set('io', io);
+      try {
+        const res = await request(app)
+          .post('/delivery/location')
+          .set('Authorization', `Bearer ${riderToken}`)
+          .send({ latitude: 18.5851, longitude: 73.8861, orderId: TEST_ORDER_PREPAID_ID });
+        expect(res.status).toBe(200);
+      } finally {
+        app.set('io', null);
+      }
+      const update = emitted.find((e) => e.event === 'RIDER_LOCATION_UPDATE');
+      expect(update.payload).toMatchObject({ orderId: TEST_ORDER_PREPAID_ID, latitude: 18.5851, longitude: 73.8861 });
+    });
+
+    it('[R4.11] another rider cannot put a position on an order that is not theirs', async () => {
+      const emitted = [];
+      const io = { to: () => io, emit: (event) => { emitted.push(event); } };
+      app.set('io', io);
+      try {
+        const res = await request(app)
+          .post('/delivery/location')
+          .set('Authorization', `Bearer ${rider2Token}`)
+          .send({ latitude: 19.07, longitude: 72.87, orderId: TEST_ORDER_PREPAID_ID });
+        expect(res.status).toBe(403);
+      } finally {
+        app.set('io', null);
+      }
+      expect(emitted).not.toContain('RIDER_LOCATION_UPDATE');
+      const trace = await queryOne(
+        'SELECT COUNT(*) AS n FROM live_tracking WHERE order_id = $1 AND latitude > 19', [TEST_ORDER_PREPAID_ID]);
+      expect(Number(trace.n)).toBe(0);
     });
 
     it('[R4.2] should reject completion with invalid OTP code using timing-safe comparison', async () => {

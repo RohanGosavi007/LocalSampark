@@ -2,6 +2,7 @@
 // deprecated in v10 and stops working in v11.
 import { withSentryConfig } from '@sentry/nextjs/config';
 import { ADMIN_CONSOLE_TABS, adminConsoleUrl, FRANCHISE_REDIRECTS } from './src/lib/adminConsole.mjs';
+import { SECURITY_HEADERS } from './src/lib/csp.mjs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -40,6 +41,11 @@ const nextConfig = {
   // duplicated /franchise-dashboard/*, which reads /api/v1/franchise/*. Each is
   // sent to the wired page closest to it. /franchise itself (the public
   // partner application) and /franchise/territory (live map) are real.
+  // P9: security headers on every response. The CSP itself is per request
+  // (it carries a nonce) and is set in src/middleware.js.
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+  },
   async redirects() {
     const adminConsole = Object.keys(ADMIN_CONSOLE_TABS).map((key) => ({
       source: `/admin-dashboard/${key}`,

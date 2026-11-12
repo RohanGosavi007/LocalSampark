@@ -353,6 +353,78 @@ function RateOrder({ order }) {
   );
 }
 
+/**
+ * Where the rider is (R4), while the order is on its way.
+ *
+ * Starts from GET /tracking/:id (the last position the server has), then moves
+ * with each RIDER_LOCATION_UPDATE the rider's app sends to this order's room.
+ * No map tiles: a position, the distance to the drop and a link to open it.
+ */
+const haversineKm = (a, b) => {
+  const r = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2;
+  return Math.round(6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)) * 10) / 10;
+};
+
+function LiveRider({ orderId }) {
+  const [rider, setRider] = useState(null);
+  const [dest, setDest] = useState(null);
+  const [pos, setPos] = useState(null);
+  const { isConnected } = useSocket();
+
+  const fetchTracking = useCallback(() => {
+    apiGet(`/tracking/${orderId}`)
+      .then((r) => {
+        const t = r.tracking || {};
+        setRider(t.rider || null);
+        setDest(t.destination && t.destination.latitude != null ? { lat: t.destination.latitude, lng: t.destination.longitude } : null);
+        if (t.rider && t.rider.currentLat != null) setPos({ lat: t.rider.currentLat, lng: t.rider.currentLng, at: t.rider.lastUpdated });
+      })
+      .catch(() => {});
+  }, [orderId]);
+
+  useEffect(() => { fetchTracking(); }, [fetchTracking]);
+
+  // Without a live connection, re-read the last position every 15 s, as the
+  // order status does.
+  useEffect(() => {
+    if (isConnected) return undefined;
+    const timer = setInterval(fetchTracking, 15000);
+    return () => clearInterval(timer);
+  }, [isConnected, fetchTracking]);
+
+  useSocketEvent('RIDER_LOCATION_UPDATE', (d) => {
+    if (!d || String(d.orderId) !== String(orderId)) return;
+    const lat = Number(d.latitude); const lng = Number(d.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) setPos({ lat, lng, at: d.timestamp || new Date().toISOString() });
+  });
+
+  if (!rider) return null;
+  const km = pos && dest ? haversineKm(pos, dest) : null;
+  return (
+    <div className="glass-card rounded-2xl border border-border p-5" data-testid="rider-live">
+      <p className="font-bold text-text flex items-center gap-2"><Truck className="w-5 h-5 text-primary" /> {rider.name}{rider.vehicleNumber ? ` · ${rider.vehicleNumber}` : ''}</p>
+      {pos ? (
+        <>
+          <p className="text-sm text-text mt-1" data-testid="rider-distance">
+            {km != null ? `${km} km from you` : 'On the way'}
+            {km != null ? ` · about ${Math.max(3, Math.round((km / 20) * 60 + 5))} min` : ''}
+          </p>
+          <p className="text-xs text-text-muted mt-1">
+            Last seen {when(pos.at)} ·{' '}
+            <a className="text-primary font-bold" target="_blank" rel="noreferrer" data-testid="rider-map-link"
+              href={`https://www.openstreetmap.org/?mlat=${pos.lat}&mlon=${pos.lng}#map=16/${pos.lat}/${pos.lng}`}>
+              Open on map
+            </a>
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-text-muted mt-1">The rider&apos;s location will appear here once they set off.</p>
+      )}
+    </div>
+  );
+}
+
 function OrderDetail({ id }) {
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
@@ -413,6 +485,8 @@ function OrderDetail({ id }) {
           ))}
         </ol>
       )}
+
+      {['assigned', 'out_for_delivery', 'picked_up'].includes(String(order.status).toLowerCase()) && <LiveRider orderId={order.id} />}
 
       {items.length > 0 && (
         <div className="glass-card rounded-2xl border border-border p-5">

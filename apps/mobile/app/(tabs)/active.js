@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator, RefreshControl, Linking } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { apiGet, apiPost } from '../../src/lib/api';
+import { apiGet } from '../../src/lib/api';
+import { pickUp, completeJob, startTracking } from '../../src/services/rider';
 
 /**
  * The rider's current delivery.
@@ -45,11 +46,28 @@ export default function ActiveOrders() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Share the rider's position with this order's customer while the job is
+  // open on screen (R4). Stops when the job closes or the tab unmounts.
+  const [sharing, setSharing] = useState(false);
+  useEffect(() => {
+    if (!job?.id) return undefined;
+    let stop = null;
+    let cancelled = false;
+    startTracking(job.id).then((fn) => {
+      if (cancelled) { if (fn) fn(); return; }
+      stop = fn;
+      setSharing(Boolean(fn));
+    }).catch(() => setSharing(false));
+    return () => { cancelled = true; if (stop) stop(); setSharing(false); };
+  }, [job?.id]);
+
   const markPickedUp = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSubmitting(true);
     try {
-      await apiPost(`/delivery/jobs/${job.id}/status`, { status: 'out_for_delivery' });
+      // /pickup, not /status: it is the route that tells the customer's
+      // tracking screen the order is on its way.
+      await pickUp(job.id);
       await load({ isRefresh: true });
     } catch (err) {
       Alert.alert('Not updated', err?.message || 'The status change was not saved.');
@@ -67,7 +85,7 @@ export default function ActiveOrders() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSubmitting(true);
     try {
-      const res = await apiPost(`/delivery/jobs/${job.id}/complete`, { otp: otp.trim() });
+      const res = await completeJob(job.id, otp);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const earned = Number(res?.data?.earnings) || 0;
       Alert.alert(
@@ -126,6 +144,9 @@ export default function ActiveOrders() {
               </View>
 
               <Text style={styles.earnings}>₹{Number(job.earnings) || 0}</Text>
+              <Text style={styles.legText} testID="location-sharing">
+                {sharing ? '📡 Sharing your location with the customer' : '📡 Location not shared — allow location access so the customer can follow the delivery'}
+              </Text>
 
               {job.pickup ? <Text style={styles.legText}>📦 Pick up from {job.pickup}</Text> : null}
               {job.dropoff ? <Text style={styles.legText}>📍 Drop at {job.dropoff}</Text> : null}

@@ -32,6 +32,23 @@ export class ApiError extends Error {
   }
 }
 
+/** Seconds from a Retry-After header (delta-seconds or an HTTP date), or null. */
+export function parseRetryAfter(value, now = Date.now()) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (Number.isFinite(n)) return n > 0 ? Math.ceil(n) : null;
+  const at = Date.parse(value);
+  if (Number.isNaN(at)) return null;
+  const secs = Math.ceil((at - now) / 1000);
+  return secs > 0 ? secs : null;
+}
+
+export function formatWait(seconds) {
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  const mins = Math.ceil(seconds / 60);
+  return `${mins} minute${mins === 1 ? '' : 's'}`;
+}
+
 /**
  * Retrieve authorization headers with stored JWT token.
  * Includes Cache-Control: no-cache to force the Android network stack
@@ -189,6 +206,16 @@ async function request(endpoint, options = {}) {
         // Note: Global app state notification or navigation redirect can be triggered here
       }
       
+      // Rate limited (P9): the server's own message, and how long to wait when
+      // it says. Never retried automatically — that would only extend the block.
+      if (response.status === 429) {
+        const retryAfter = parseRetryAfter(response.headers.get('retry-after'));
+        const base = responseData?.error || responseData?.message || 'Too many attempts. Please wait and try again.';
+        const err = new ApiError(retryAfter ? `${base} (try again in ${formatWait(retryAfter)})` : base, 429, responseData);
+        err.retryAfter = retryAfter;
+        throw err;
+      }
+
       const errorMessage = responseData?.error || responseData?.message || `HTTP error ${response.status}`;
       throw new ApiError(errorMessage, response.status, responseData);
     }

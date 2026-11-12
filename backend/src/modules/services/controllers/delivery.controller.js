@@ -861,6 +861,19 @@ const updateLocation = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Delivery agent profile not found' });
     }
 
+    // The position is broadcast to the order's customer. Without this check
+    // any rider could name any order and move its rider on the customer's map.
+    if (orderId) {
+      const order = await queryOne(
+        `SELECT id FROM orders
+          WHERE id = $1 AND assigned_agent_id = $2 AND LOWER(order_status) IN ('assigned', 'out_for_delivery')`,
+        [orderId, userId]
+      );
+      if (!order) {
+        return res.status(403).json({ success: false, error: 'This order is not an active delivery of yours.' });
+      }
+    }
+
     await query(
       `UPDATE delivery_agents
           SET current_lat = $1, current_lng = $2, coordinate = ${pointSql(lat, lng)}, updated_at = ${NOW}
@@ -869,15 +882,21 @@ const updateLocation = async (req, res, next) => {
     );
 
     // Record audit trace point in live_tracking (linked to delivery_riders foreign key)
+    // A rider without a phone number used to be given an invented one
+    // (+919<timestamp>), which then sat in delivery_riders as if real. Without
+    // a number the trace row is skipped; the position above is still saved
+    // and broadcast.
     const userRow = await queryOne('SELECT phone_number, full_name FROM users WHERE id = $1', [userId]);
-    const userPhone = userRow?.phone_number || `+919${Date.now().toString().slice(-9)}`;
+    const userPhone = userRow?.phone_number || null;
     const userName = userRow?.full_name || 'Delivery Partner';
 
     let trackingRiderId = null;
-    const legacyRider = await queryOne('SELECT id FROM delivery_riders WHERE user_id = $1 OR phone = $2', [userId, userPhone]);
+    const legacyRider = userPhone
+      ? await queryOne('SELECT id FROM delivery_riders WHERE user_id = $1 OR phone = $2', [userId, userPhone])
+      : await queryOne('SELECT id FROM delivery_riders WHERE user_id = $1', [userId]);
     if (legacyRider) {
       trackingRiderId = legacyRider.id;
-    } else {
+    } else if (userPhone) {
       trackingRiderId = `RIDER-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
       try {
         await query(

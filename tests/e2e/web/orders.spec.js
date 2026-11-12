@@ -111,3 +111,34 @@ test.describe('My orders', () => {
     await expect(page.getByRole('button', { name: 'Cancel order' })).toHaveCount(0, { timeout: 30000 });
   });
 });
+
+test.describe('Live rider position (R4)', () => {
+  const RIDING = 'e2e00000-0000-4000-8000-0000000000c7';
+
+  test('[R4.40] the customer follows the rider: last known position, then each update the rider sends, without a reload', async ({ page, playwright }) => {
+    const { apiSession } = require('../helpers/session');
+    await signInCustomer(page);
+    await page.goto(`/order-tracking?id=${RIDING}`);
+
+    const panel = page.getByTestId('rider-live');
+    await expect(panel).toBeVisible({ timeout: 30000 });
+
+    // The rider's app reports a position about 2 km out, for this order.
+    const riderApi = await playwright.request.newContext();
+    try {
+      const rider = await apiSession(riderApi, '+919999999994');
+      const auth = { Authorization: `Bearer ${rider.accessToken}` };
+      const far = await riderApi.post(`${API}/delivery/location`, { headers: auth, data: { latitude: 18.5970, longitude: 73.8970, orderId: RIDING } });
+      expect(far.status(), await far.text()).toBe(200);
+      await expect(page.getByTestId('rider-distance')).toContainText('2 km from you', { timeout: 30000 });
+
+      // ...and moves closer; the page follows (live socket, no reload).
+      const near = await riderApi.post(`${API}/delivery/location`, { headers: auth, data: { latitude: 18.5800, longitude: 73.8970, orderId: RIDING } });
+      expect(near.status()).toBe(200);
+      await expect(page.getByTestId('rider-distance')).toContainText('0.1 km from you', { timeout: 30000 });
+      await expect(page.getByTestId('rider-map-link')).toHaveAttribute('href', /mlat=18\.58&mlon=73\.897/);
+    } finally {
+      await riderApi.dispose();
+    }
+  });
+});

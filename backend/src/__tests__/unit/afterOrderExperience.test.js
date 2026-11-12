@@ -273,6 +273,20 @@ describe('Milestone M5: After-Order Experience (C9–C11, C14, S5–S7)', () => 
       expect(res.body.tracking.etaMinutes).toBeGreaterThan(0);
     });
 
+    it('[R4.12] a delivered order no longer reveals where its rider is', async () => {
+      // The same rider is still out on TEST_ACTIVE_ORDER_ID at 18.5840 (above).
+      const res = await request(app)
+        .get(`/orders/${TEST_DELIVERED_COD_ORDER_ID}/tracking`)
+        .set('Authorization', `Bearer ${customerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.tracking.status).toBe('delivered');
+      expect(res.body.tracking.rider).toBeTruthy(); // who delivered it is still shown
+      expect(res.body.tracking.rider.currentLat).toBeNull();
+      expect(res.body.tracking.rider.currentLng).toBeNull();
+      expect(res.body.tracking.distanceKm).toBeNull();
+    });
+
     it('[C9.44] should support legacy /tracking/:orderId endpoint with identical payload', async () => {
       const res = await request(app)
         .get(`/tracking/${TEST_ACTIVE_ORDER_ID}`)

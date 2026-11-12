@@ -25,6 +25,7 @@ const IDS = {
   payout: 'e2e00000-0000-4000-8000-000000000080',
   reportedReview: 'e2e00000-0000-4000-8000-0000000000e0',
   shopperReturnAdmin: 'e2e00000-0000-4000-8000-0000000000f2',
+  riderApplicant: 'e2e00000-0000-4000-8000-000000000100',
 };
 const RIDER_PHONE = '+919999999994';
 
@@ -301,6 +302,56 @@ test.describe('Commerce Ops console', () => {
     await expect(cash).toContainText('₹2,000');
     await cash.getByRole('button', { name: 'Ledger' }).click();
     await expect(page.getByTestId('cash-ledger')).toContainText('deposited');
+  });
+
+  test('[R5.30] a deposit recorded in the console is what the rider sees in their own cash ledger', async ({ playwright }) => {
+    // A10.3 above took the rider from ₹3,500 to ₹2,000 at the counter.
+    const riderApi = await playwright.request.newContext();
+    try {
+      const session = await apiSession(riderApi, RIDER_PHONE);
+      const res = await riderApi.get(`${API}/delivery/cash`, { headers: { Authorization: `Bearer ${session.accessToken}` } });
+      expect(res.ok(), `GET /delivery/cash -> ${res.status()}`).toBeTruthy();
+      const { data } = await res.json();
+      expect(data.cashInHand).toBe(2000);
+      expect(data.isBlocked).toBe(false); // under the ₹3,000 limit again
+      expect(data.ledger.map((e) => [e.entry_type, Number(e.amount)])).toEqual(expect.arrayContaining([['deposited', 1500], ['collected', 3500]]));
+
+      // And the rider may go on duty again, which the limit had stopped.
+      const duty = await riderApi.put(`${API}/delivery/duty`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        data: { isOnline: true, latitude: 18.579, longitude: 73.897 },
+      });
+      expect(duty.status(), await duty.text()).toBe(200);
+    } finally {
+      await riderApi.dispose();
+    }
+  });
+
+  test('[R1.30] a rider application is reviewed in the console: reason required, resubmission, approval', async ({ playwright }) => {
+    await openSection('riders');
+    const row = page.getByTestId(`rider-kyc-row-${IDS.riderApplicant}`);
+    await expect(row).toContainText('E2E New Rider');
+    await expect(row).toContainText('MH-12-E2E-0060');
+    // Only the last four digits of the Aadhaar reach the console.
+    await expect(row).toContainText('XXXX0060');
+    await expect(row).not.toContainText('123412340060');
+
+    await row.getByRole('button', { name: 'Reject' }).click();
+    await expect(message()).toContainText(/rejection_reason is required/i);
+
+    await row.getByLabel('Reason for E2E New Rider').fill('Licence photo is blurred');
+    await row.getByRole('button', { name: 'Request resubmission' }).click();
+    await expect(message()).toContainText('resubmission');
+    await expect(row).toContainText('Licence photo is blurred');
+
+    await row.getByRole('button', { name: 'Approve' }).click();
+    await expect(message()).toContainText('approved');
+    await expect(page.getByTestId(`rider-kyc-row-${IDS.riderApplicant}`)).toHaveCount(0);
+
+    // The approval is what the server now holds for that rider.
+    const agents = await (await apiGet('/admin/delivery/agents?kyc_status=approved')).json();
+    const list = agents.agents || agents.data || [];
+    expect(list.some((a) => String(a.user_id) === IDS.riderApplicant)).toBe(true);
   });
 
   test('[A11.5] statutory grievance: 48h breach, reply and resolution', async () => {

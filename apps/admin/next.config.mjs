@@ -22,13 +22,12 @@ const nextConfig = {
    * these headers are the layer that keeps it that way and limits the damage of
    * a future one. They cost nothing and cannot break a same-origin app.
    *
-   * Note on Content-Security-Policy: it is deliberately NOT set here. Next.js
-   * injects inline bootstrap and hydration scripts, so a CSP for this app is
-   * only meaningful with per-request nonces threaded through middleware —
-   * a `script-src 'self' 'unsafe-inline'` policy would look like protection
-   * while permitting exactly the injected-script attack it appears to stop.
-   * The backend already sends a real CSP for API responses (see helmet in
-   * backend/src/server.js).
+   * Note on Content-Security-Policy: it is not set here, because Next.js
+   * injects inline bootstrap and hydration scripts and a CSP for this app is
+   * only meaningful with per-request nonces — a `script-src 'self'
+   * 'unsafe-inline'` policy would look like protection while permitting the
+   * injected-script attack it appears to stop. It is set per request, with a
+   * nonce, in src/middleware.js (policy in src/lib/csp.mjs).
    */
   async headers() {
     return [

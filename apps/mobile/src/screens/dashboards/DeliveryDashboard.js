@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { apiGet } from '../../lib/api';
+import { getRiderProfile, dutyState, setDuty as setDutyOnServer } from '../../services/rider';
 import { Package, MapPin, IndianRupee, Clock, Star, Navigation, Zap, CalendarDays } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -30,11 +31,30 @@ export default function DeliveryDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [duty, setDuty] = useState({ canToggle: false, reason: null, online: false });
+  const [switching, setSwitching] = useState(false);
+
+  const toggleDuty = async () => {
+    const next = !duty.online;
+    setSwitching(true);
+    try {
+      await setDutyOnServer(next);
+      setDuty((d) => ({ ...d, online: next }));
+    } catch (err) {
+      // The server's reason: not approved, cash over the limit, outside the zone.
+      Alert.alert(next ? 'Could not go online' : 'Could not go offline', err?.message || 'Try again.');
+    } finally {
+      setSwitching(false);
+    }
+  };
+
   useEffect(() => {
     Promise.allSettled([
       apiGet('/delivery/analytics'),
       apiGet('/delivery/my-jobs'),
-    ]).then(([analytics, myJobs]) => {
+      getRiderProfile(),
+    ]).then(([analytics, myJobs, profile]) => {
+      setDuty(dutyState(profile.status === 'fulfilled' ? profile.value : null));
       if (analytics.status === 'fulfilled') {
         setData(analytics.value?.data ?? null);
       } else {
@@ -81,14 +101,46 @@ export default function DeliveryDashboard({ user }) {
             <Package color="#3b82f6" size={24} style={{ marginRight: 8 }} />
             <Text style={s.headerTitle}>Delivery Agent</Text>
           </View>
-          {/* The fallback greeted an unnamed rider as "Ramesh". */}
-          <Text style={s.headerSubtitle}>Online{user?.name ? ` • Welcome, ${user.name}` : ''}</Text>
+          {/* The fallback greeted an unnamed rider as "Ramesh". The "Online"
+              here was a literal, beside a GO OFFLINE badge that did nothing. */}
+          <Text style={s.headerSubtitle}>
+            {duty.online ? 'Online' : 'Offline'}{user?.name ? ` • Welcome, ${user.name}` : ''}
+          </Text>
         </View>
-        <TouchableOpacity style={s.statusBadge}>
-          <View style={s.statusDot} />
-          <Text style={s.statusText}>GO OFFLINE</Text>
-        </TouchableOpacity>
+        {duty.canToggle ? (
+          <TouchableOpacity
+            testID="duty-toggle"
+            accessibilityRole="switch"
+            accessibilityState={{ checked: duty.online, busy: switching }}
+            disabled={switching}
+            style={[s.statusBadge, !duty.online && s.statusBadgeOff]}
+            onPress={toggleDuty}
+          >
+            <View style={[s.statusDot, !duty.online && s.statusDotOff]} />
+            <Text style={[s.statusText, !duty.online && s.statusTextOff]}>{switching ? '…' : duty.online ? 'GO OFFLINE' : 'GO ONLINE'}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
+
+      {!duty.canToggle && !loading ? (
+        <View style={s.noticeCard} testID="duty-blocked">
+          <Text style={s.noticeTitle}>
+            {duty.reason === 'apply' ? 'Become a delivery partner' : duty.reason === 'rejected' ? 'Application not approved' : 'Application under review'}
+          </Text>
+          <Text style={s.noticeBody}>
+            {duty.reason === 'apply'
+              ? 'Send your licence and vehicle details to start taking deliveries.'
+              : duty.reason === 'rejected'
+                ? (duty.rejectionReason || 'Update your documents and apply again.')
+                : 'You can go online once your documents are approved.'}
+          </Text>
+          {duty.reason !== 'pending' ? (
+            <TouchableOpacity style={s.noticeBtn} onPress={() => router.push('/modules/delivery-dashboard/onboarding')}>
+              <Text style={s.noticeBtnText}>{duty.reason === 'apply' ? 'Apply' : 'Update documents'}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* Active Run Card. Rendered only when the rider genuinely has a job
           assigned; nothing computes an ETA, so that field is gone rather than
@@ -159,6 +211,14 @@ const s = StyleSheet.create({
   statusBadge: { backgroundColor: 'rgba(16,185,129,0.2)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981', marginRight: 8 },
   statusText: { color: '#34d399', fontWeight: '700', fontSize: 12 },
+  statusBadgeOff: { backgroundColor: 'rgba(148,163,184,0.15)', borderColor: 'rgba(148,163,184,0.5)' },
+  statusDotOff: { backgroundColor: '#94a3b8' },
+  statusTextOff: { color: '#e2e8f0' },
+  noticeCard: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#f59e0b', borderRadius: 16, padding: 16, marginBottom: 24 },
+  noticeTitle: { color: '#fbbf24', fontWeight: '800', fontSize: 16, marginBottom: 4 },
+  noticeBody: { color: '#cbd5e1', fontSize: 14 },
+  noticeBtn: { marginTop: 12, alignSelf: 'flex-start', backgroundColor: '#f59e0b', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+  noticeBtnText: { color: '#0f172a', fontWeight: '800' },
   activeCard: { backgroundColor: '#2563eb', borderRadius: 24, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: '#3b82f6' },
   activeCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   activeCardBadge: { backgroundColor: 'rgba(59,130,246,0.5)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },

@@ -682,6 +682,52 @@ function ZonesSection() {
   );
 }
 
+// ── R1 ─────────────────────────────────────────────────────────────────────
+// Rider applications. The approve/reject API existed with no screen, so no
+// rider could be approved from the console and none could go on duty.
+function RiderKycSection() {
+  const queue = useResource(() => get(`${API_BASE}/admin/delivery/pending-kyc`).then((r) => r.agents || []));
+  const [reasons, setReasons] = useState({});
+  const [run, msg] = useAction();
+  const docLinks = (a) => [['Photo', a.profile_image_url_signed], ['Driving licence', a.dl_image_url_signed], ['RC', a.rc_image_url_signed], ['Aadhaar', a.aadhaar_image_url_signed]].filter(([, u]) => u);
+  const decide = (a, status) => run(
+    () => fetchJson(`${API_BASE}/admin/delivery/agents/${a.id}/kyc`, { method: 'PUT', ...opts({ status, rejectionReason: reasons[a.id] || undefined }) }).then(() => queue.reload()),
+    `Rider ${a.name}: ${status}`
+  );
+  return (
+    <section data-testid="ops-riders" style={S.card}>
+      <h3 style={S.h3}>Rider applications</h3>
+      {msg}
+      <Err error={queue.error} />
+      {queue.data && queue.data.length === 0 && <Empty>No rider applications are waiting.</Empty>}
+      {queue.data && queue.data.length > 0 && (
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Rider</th><th style={S.th}>Vehicle &amp; licence</th><th style={S.th}>Documents</th><th style={S.th}>Status</th><th style={S.th}>Decision</th></tr></thead>
+          <tbody>
+            {queue.data.map((a) => (
+              <tr key={a.id} data-testid={`rider-kyc-row-${a.user_id}`}>
+                <td style={S.td}>{a.name}<div style={S.muted}>{a.phone}</div><div style={S.muted}>Applied {when(a.created_at)}</div></td>
+                <td style={S.td}>{a.vehicle_type} {a.vehicle_number}<div style={S.muted}>DL {a.dl_number || '—'} · RC {a.rc_number || '—'}</div><div style={S.muted}>Aadhaar {a.aadhar_number || '—'}</div></td>
+                <td style={S.td}>{docLinks(a).length === 0 ? <span style={S.muted}>None uploaded</span> : docLinks(a).map(([l, u]) => <div key={l}><a href={u} target="_blank" rel="noreferrer">{l}</a></div>)}</td>
+                <td style={S.td}>{a.kyc_status || 'pending'}{a.rejection_reason && <div style={S.muted}>“{a.rejection_reason}”</div>}</td>
+                <td style={S.td}>
+                  <input aria-label={`Reason for ${a.name}`} placeholder="Reason (needed to reject)" style={{ ...S.input, marginBottom: '0.4rem', width: '100%' }}
+                    value={reasons[a.id] || ''} onChange={(e) => setReasons({ ...reasons, [a.id]: e.target.value })} />
+                  <div style={S.row}>
+                    <button style={S.btn} onClick={() => decide(a, 'approved')}>Approve</button>
+                    <button style={S.ghost} onClick={() => decide(a, 'resubmission')}>Request resubmission</button>
+                    <button style={S.danger} onClick={() => decide(a, 'rejected')}>Reject</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 // ── A10 ────────────────────────────────────────────────────────────────────
 function FleetSection() {
   const fleet = useResource(() => get(`${API_BASE}/admin/commerce/fleet/live`).then((r) => r.data));
@@ -1026,6 +1072,7 @@ export const COMMERCE_SECTIONS = [
   ['promotions', 'Promotions & CMS', PromotionsSection],
   ['audit', 'Audit log', AuditSection],
   ['zones', 'Zones', ZonesSection],
+  ['riders', 'Rider applications', RiderKycSection],
   ['fleet', 'Fleet & cash', FleetSection],
   ['grievances', 'Grievances', GrievanceSection],
   ['reviews', 'Reviews', ReviewsSection],

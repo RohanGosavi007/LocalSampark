@@ -124,13 +124,16 @@ const themeScript = `
   })();
 `;
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // The per-request nonce from middleware.js (P9). Inline scripts without it
+  // are refused by the page's Content-Security-Policy.
+  const nonce = (await headers()).get('x-nonce') || undefined;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Must run before the first paint, and before any stylesheet applies,
             or the page flashes the wrong palette on every load. */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="manifest" href="/manifest.json" />
@@ -139,6 +142,7 @@ export default function RootLayout({ children }) {
       <body suppressHydrationWarning>
         <LanguageProvider>
           <script
+            nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: `
                 if ('serviceWorker' in navigator) {

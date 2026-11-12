@@ -127,3 +127,10 @@ This document tracks items that strictly require the project owner's credentials
 - **Action Required by Owner:**
   Verify the exact PostgreSQL major version running in Supabase Dashboard → Project Settings → Database.
 
+
+---
+
+### Item 15: Rider location while the app is in the background (R4)
+- **Context:** The rider app now shares the rider's position with the customer during an active delivery, but only while the app is open on screen. The R4 acceptance text asks for tracking in the background. That needs `ACCESS_BACKGROUND_LOCATION` and a location foreground service, which M7 deliberately removed from the manifest, and Google Play only allows it after a Permissions Declaration (with a video of the feature) is approved for the listing.
+- **Action Required by Owner:**
+  Decide whether to apply for the background-location declaration. If yes, the app change is small (a foreground service around `startTracking` in `apps/mobile/src/services/rider.js`); until then riders should keep the app open during deliveries.

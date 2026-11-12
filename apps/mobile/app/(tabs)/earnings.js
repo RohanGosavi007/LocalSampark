@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { apiGet } from '../../src/lib/api';
+import RiderCashCard from '../../src/components/RiderCashCard';
 
 /**
  * A delivery agent's earnings.
@@ -89,6 +90,8 @@ export default function AgentEarnings() {
               does nothing. */}
           <Text style={styles.summaryNote}>Settled to your registered bank account</Text>
         </View>
+
+        <RiderCashCard onSettled={() => load({ isRefresh: true })} />
 
         <View style={styles.statsRow}>
           <View style={styles.statBox}>

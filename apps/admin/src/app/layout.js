@@ -1,4 +1,5 @@
 import React from 'react';
+import { headers } from 'next/headers';
 import './globals.css';
 import { AdminAuthProvider } from '../context/AdminAuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -35,11 +36,13 @@ const themeScript = `
   })();
 `;
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // The per-request nonce from src/middleware.js (P9).
+  const nonce = (await headers()).get('x-nonce') || undefined;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       {/* The background and colour now come from globals.css tokens rather than
           from a hardcoded #0f172a here, so the console can have a light mode. */}

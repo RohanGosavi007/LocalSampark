@@ -653,11 +653,18 @@
       "[R1.3] rider: profile masking and status retrieval",
       "[R1.4] rider: admin kyc approval flow",
       "[R2.1] rider: pilot zone geofence validation",
-      "[R2.2] rider: online/offline duty status toggle"
+      "[R2.2] rider: online/offline duty status toggle",
+      "[R1.10] rider: rejection needs a reason the rider then sees",
+      "[R1.20]–[R1.24] app: duty switch follows KYC status and the server (android)",
+      "[R1.30] console: rider application review with reason, resubmission, approval (admin)"
     ],
     "status": "IN PROGRESS",
     "evidence": [
-      "backend/src/__tests__/unit/riderFleet.test.js"
+      "backend/src/__tests__/unit/riderFleet.test.js",
+      "apps/mobile/src/services/rider.js",
+      "apps/mobile/__tests__/riderApp.test.js",
+      "apps/admin/src/components/tabs/CommerceOpsTab.js",
+      "tests/e2e/admin/commerce-ops.spec.js"
     ],
     "notes": "Rider app lives in Android mobile app."
   },
@@ -678,11 +685,14 @@
       "[R3.1] rider: proximity-sorted job listings",
       "[R3.2] rider: atomic job acceptance",
       "[R3.3] rider: duplicate claim prevention",
-      "[R3.4] rider: job release/rejection back to ready pool"
+      "[R3.4] rider: job release/rejection back to ready pool",
+      "[R2.20] app: accept claims the job; a lost race is reported (android)"
     ],
     "status": "IN PROGRESS",
     "evidence": [
-      "backend/src/__tests__/unit/riderFleet.test.js"
+      "backend/src/__tests__/unit/riderFleet.test.js",
+      "apps/mobile/src/services/rider.js",
+      "apps/mobile/__tests__/riderApp.test.js"
     ],
     "notes": "Uses existing dispatch queue."
   },
@@ -703,11 +713,15 @@
     "tests": [
       "[R4.1] rider: pickup confirmation to out_for_delivery",
       "[R4.2] rider: timing-safe invalid handover code rejection",
-      "[R4.3] rider: valid OTP delivery completion and wallet credit"
+      "[R4.3] rider: valid OTP delivery completion and wallet credit",
+      "[R3.20] app: pickup via /pickup notifies the customer (android)",
+      "[R3.21] app: delivery closes only with the handover code (android)"
     ],
     "status": "IN PROGRESS",
     "evidence": [
-      "backend/src/__tests__/unit/riderFleet.test.js"
+      "backend/src/__tests__/unit/riderFleet.test.js",
+      "apps/mobile/src/services/rider.js",
+      "apps/mobile/__tests__/riderApp.test.js"
     ],
     "notes": "Prevents unauthorized delivery completion."
   },
@@ -726,11 +740,20 @@
       "Zero simulated or mock coordinates in production mode"
     ],
     "tests": [
-      "[R2.3] rider: battery-aware GPS coordinate ingestion and live tracking history"
+      "[R2.3] rider: battery-aware GPS coordinate ingestion and live tracking history",
+      "[R4.10] rider: assigned rider position broadcast to the order room",
+      "[R4.11] rider: another rider cannot post a position on an order",
+      "[R4.12] tracking: delivered order no longer reveals the rider position",
+      "[R4.20]–[R4.22] app: throttled, spoof-filtered position sharing (android)",
+      "[R4.40] web: customer follows the rider live on the tracking page"
     ],
     "status": "IN PROGRESS",
     "evidence": [
-      "backend/src/__tests__/unit/riderFleet.test.js"
+      "backend/src/__tests__/unit/riderFleet.test.js",
+      "apps/mobile/src/services/rider.js",
+      "apps/mobile/__tests__/riderApp.test.js",
+      "apps/web/src/app/order-tracking/page.js",
+      "tests/e2e/web/orders.spec.js"
     ],
     "notes": "No simulated GPS movement in production."
   },
@@ -752,11 +775,16 @@
       "[R5.1] rider: cod cash collection ledger record",
       "[R5.2] rider: cash in hand position and limit status",
       "[R5.3] rider: auto-block duty online when cash exceeds threshold",
-      "[R5.4] rider: physical hub cash deposit and unblock"
+      "[R5.4] rider: physical hub cash deposit and unblock",
+      "[R5.20]–[R5.22] app: cash in hand, ledger and settle from wallet (android)",
+      "[R5.30] console deposit reaches the rider ledger and lifts the limit (admin)"
     ],
     "status": "IN PROGRESS",
     "evidence": [
-      "backend/src/__tests__/unit/riderFleet.test.js"
+      "backend/src/__tests__/unit/riderFleet.test.js",
+      "apps/mobile/src/components/RiderCashCard.js",
+      "apps/mobile/__tests__/riderApp.test.js",
+      "tests/e2e/admin/commerce-ops.spec.js"
     ],
     "notes": "Uses existing rider_cash_ledger table."
   },
@@ -1321,13 +1349,24 @@
     ],
     "tests": [
       "[P9.1] security: envValidator blocks production free otp",
-      "[P9.2] security: rate limiter on auth routes"
+      "[P9.2] security: rate limiter on auth routes",
+      "[P9.20]–[P9.21] app: 429 shows the server message and wait, no retry (android)",
+      "[P9.30]–[P9.31] console: nonce CSP and rate-limited sign-in (admin)",
+      "[P9.40]–[P9.41] web: nonce CSP, security headers, rate-limited sign-in (web)"
     ],
     "status": "IN PROGRESS",
     "evidence": [
       "backend/src/__tests__/authSecurity.test.js",
       "backend/src/__tests__/integration/security.test.js",
-      "backend/src/__tests__/middleware/validate.test.js"
+      "backend/src/__tests__/middleware/validate.test.js",
+      "apps/web/src/lib/csp.mjs",
+      "apps/web/src/middleware.js",
+      "apps/admin/src/lib/csp.mjs",
+      "apps/admin/src/middleware.js",
+      "apps/mobile/src/lib/api.js",
+      "tests/e2e/web/security-p9.spec.js",
+      "tests/e2e/admin/security-p9.spec.js",
+      "apps/mobile/__tests__/riderApp.test.js"
     ],
     "notes": "ASVS L2 security baseline, rate limiting on auth/checkout, input validation, and envValidator boot guards verified."
   },

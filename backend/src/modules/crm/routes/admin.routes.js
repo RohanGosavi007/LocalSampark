@@ -1295,6 +1295,17 @@ router.get('/delivery/overview', authenticate, requireAdmin, async (req, res, ne
 });
 
 // ─── Phase 2.5: Admin Delivery Fleet Endpoints (R1, R5) ───
+
+// The reviewer checks the documents, not the numbers: the full Aadhaar and bank
+// account do not need to reach a browser (DPDP minimisation), so only the last
+// four digits are sent, as on the rider's own profile.
+const last4 = (v) => (v ? `XXXX${String(v).slice(-4)}` : null);
+const maskRiderIds = (agent) => ({
+  ...agent,
+  aadhar_number: last4(agent.aadhar_number),
+  bank_account_number: last4(agent.bank_account_number),
+});
+
 router.get('/delivery/agents', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { kyc_status, status } = req.query;
@@ -1328,7 +1339,7 @@ router.get('/delivery/agents', authenticate, requireAdmin, async (req, res, next
           }
         }
       }
-      return { ...agent, ...signedDocs };
+      return { ...maskRiderIds(agent), ...signedDocs };
     }));
 
     res.json({ agents: enriched });
@@ -1359,7 +1370,7 @@ router.get('/delivery/pending-kyc', authenticate, requireAdmin, async (req, res,
           }
         }
       }
-      return { ...agent, ...signedDocs };
+      return { ...maskRiderIds(agent), ...signedDocs };
     }));
 
     res.json({ success: true, count: enriched.length, agents: enriched });
@@ -1375,6 +1386,12 @@ const handleAgentKycStatusUpdate = async (req, res, next) => {
     const VALID_STATUSES = ['pending', 'active', 'approved', 'verified', 'suspended', 'rejected', 'resubmission'];
     if (!VALID_STATUSES.includes(rawStatus)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    // The rider sees this reason on their dashboard; without it a rejected
+    // rider is told only "not approved" and has nothing to fix. Same rule as
+    // the seller KYC queue.
+    if (['rejected', 'resubmission', 'suspended'].includes(rawStatus) && !String(reason || '').trim()) {
+      return res.status(400).json({ error: 'rejection_reason is required to reject, suspend or ask for resubmission.' });
     }
 
     const agent = await queryOne('SELECT * FROM delivery_agents WHERE CAST(id AS TEXT) = $1 OR CAST(user_id AS TEXT) = $1', [String(req.params.id)]);
