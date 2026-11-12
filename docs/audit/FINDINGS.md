@@ -1429,3 +1429,56 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | `backend/src/__tests__/unit/adminCommerceOps.test.js` fixture | the dispute now has an order of its own (`TEST_DISPUTE_ORDER_ID`); no assertion changed | `TEST_ORDER_ID` is refunded in full earlier in the suite, and a dispute refund now counts against the same order. The test still checks that resolving a dispute with a refund works, without relying on a double refund |
 | `tests/e2e/admin/commerce-ops.spec.js` [A4] refund | button "Refund to wallet" is now "Refund to customer"; the timeline entry expected is `data-source="payout"`, not `"wallet"` | The E2E backend runs with the wallet off, as production does; the refund is a payout and the label must not promise a wallet |
 | `tests/e2e/admin/commerce-ops.spec.js` [C10.11] | follows the refund to a recorded payout instead of a wallet balance | Same: D10 |
+
+
+### F-160: Customers could not enter a coupon anywhere, and a coupon in a multi-shop cart was redeemed once per shop (C7)
+- **Defects:**
+  - **No coupon at checkout:** the website, the shop page's checkout and the app had nowhere to enter a code. The quote applied a coupon sent to it, but `presentBill` left the discount out of what it returned, so no bill could show one.
+  - **Invalid code broke the bill:** a coupon that did not apply (a typo, a minimum not met) failed the whole quote, and the checkout lost its bill.
+  - **Multi-shop carts** (Decision D6):
+    - the coupon was checked against each shop's order separately, so a platform coupon applied once per shop and a shop's coupon failed for the other shops;
+    - placing the cart then overwrote the coupon discount with the coins discount, while still redeeming the coupon once per order. The customer got no discount, and the coupon's uses were spent several times.
+  - **Per-customer limit:** checked only when the cart was priced. Two orders placed at once by one customer both used a once-per-customer coupon.
+  - **Admin console:**
+    - its "₹ off" option stored the type `flat`, which the engine does not know, so every flat coupon made there took nothing off;
+    - the console could not set the per-customer, first-order, end-date or free-delivery rules, and nothing could be paused;
+    - impossible terms were accepted: a 150% coupon, a negative amount, an end date before the start.
+  - **Unlimited coupons:** with no total limit (`max_uses` NULL, possible on a legacy PostgreSQL table), redemption always failed.
+- **Fix:**
+  - **One pricing rule:** `coupon.service.priceCart` prices a coupon for one shop's order or for a whole cart:
+    - a shop's coupon applies to that shop's items, and its minimum is judged on them;
+    - a platform coupon is shared between the orders in proportion to their items, so each order's total is what is owed for it;
+    - free delivery waives the delivery charge.
+  - **Quotes:** the single-shop and multi-shop quotes return `discount`, `coupon` and `couponError`. A coupon that does not apply leaves the bill intact and says why; placing the order with it is refused (400 with the reason) and nothing is written.
+  - **Redemption:**
+    - a multi-shop cart redeems its coupon once, against its first order, with the coins applied after it;
+    - redemption takes the coupon's row lock (the guarded UPDATE), then re-checks the per-customer limit, so concurrent orders by one customer are redeemed one at a time;
+    - a coupon with no total limit can be redeemed.
+  - **Terms checked at creation:** a type the engine knows, a percentage of 1 to 100, positive amounts, an end after the start, limits of at least 1.
+  - **Website:** a coupon field on the checkout page and in the shop page's checkout. It shows what was saved, or why the code was refused, and blocks ordering with a refused coupon.
+  - **App:** the same on the checkout screen, with the discount on the bill.
+  - **Admin console:** it goes through the coupon service (`flat` is read as `fixed`), sets per-customer, first-order, end-date and free-delivery rules, and pauses or resumes a coupon (`PUT /admin/commerce/coupons/:id`, audited).
+- **Proof:**
+  - **Backend** (SQLite and PostgreSQL): `backend/src/__tests__/integration/couponsC7.test.js`:
+    - [C7.7] single-shop discount charged and redeemed once;
+    - [C7.8] refused coupon keeps the bill and blocks the order;
+    - [C7.9] free delivery, percentage cap, another shop's coupon;
+    - [C7.10] platform coupon shared across a multi-shop cart, redeemed once;
+    - [C7.11] shop coupon in a multi-shop cart;
+    - [C7.12] once-per-customer under concurrency;
+    - [C7.13] impossible terms refused;
+    - [C7.14] console coupons take money off, impossible terms refused, pause.
+  - **Mutation check:** with the fix reverted, all 7 [C7.7]–[C7.13] tests fail.
+  - **Web:** `apps/web/tests/coupon.test.mjs` [C7.15]–[C7.16].
+  - **App:** `apps/mobile/__tests__/coupon.test.js` [C7.17].
+  - **Browser:**
+    - `tests/e2e/web/coupons.spec.js` [C7.18]: refused code, then a coupon applied at checkout and charged on the order;
+    - `tests/e2e/admin/commerce-ops.spec.js` [C7.19]: a "₹ off" coupon with rules, impossible terms refused, pause.
+- **Status:** CODE COMPLETE.
+- **Owner decisions:**
+  - Migration 128 seeds three active coupons (WELCOME50, FREEDELIVERY, SAVE10) in every database, production included. They are marketing offers nobody has signed off; pause them in Commerce Ops → Promotions if they are not wanted at launch.
+  - Every discount currently comes off what the customer pays, not off what the shop is credited, so the platform funds shop coupons too. Whether shops fund their own coupons is a settlement decision for the owner.
+
+| Test | Change | Why |
+|---|---|---|
+| `backend/src/__tests__/unit/couponEngine.test.js` [C7.5] | the second redemption of a single-use coupon is expected to fail with code `COUPON_LIMIT_EXCEEDED` (409), not the message "Coupon was claimed by another customer" | The message now says the coupon has run out and what to do. The test still checks that the second redemption is refused, by its code rather than its wording |
