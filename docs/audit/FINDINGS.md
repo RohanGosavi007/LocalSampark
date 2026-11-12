@@ -1363,3 +1363,8 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 | Test | Assertion change | Why |
 |---|---|---|
 | `backend/src/__tests__/integration/shopReviews.test.js` "anyone else can review, but it is not marked verified" | now "anyone the shop has not served cannot review it, and nothing is stored": 403 `NOT_VERIFIED_PURCHASE`, no row. It used to expect 201 with `is_society_verified: 0` | C11 restricts reviews to verified purchasers (Consumer Protection (E-Commerce) Rules, 2020, r.4(9); IS 19000:2022). The old test pinned the behaviour the feature forbids |
+
+### Verify run verify-2026-11-12T01-37-15 (commit 9a4465a)
+- 17 of 18 gates pass (G1–G17).
+- G18: 22 of 53 launch features VERIFIED. Newly verified: C4, C11 and C12. F-153 to F-156 are FIXED-VERIFIED by this run.
+- Still CODE COMPLETE: C1 (web and Android tests), R1–R5 (Android, and admin or web, tests) and P9 (web, Android and admin tests).
