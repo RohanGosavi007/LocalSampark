@@ -245,7 +245,8 @@
       "backend/src/__tests__/integration/checkoutSlotsEvents.test.js",
       "backend/src/services/deliverySlots.service.js",
       "backend/src/services/orderEvents.service.js",
-      "apps/mobile/src/services/deliveryTime.js"
+      "apps/mobile/src/services/deliveryTime.js",
+      "backend/src/__tests__/integration/refundPayoutsD10.test.js"
     ],
     "notes": "Server quote integrity, COD vs online handling, and Idempotency-Key deduplication verified."
   },
@@ -302,7 +303,14 @@
     ],
     "status": "CODE COMPLETE",
     "evidence": [
-      "backend/src/__tests__/unit/afterOrderExperience.test.js"
+      "backend/src/__tests__/unit/afterOrderExperience.test.js",
+      "backend/src/__tests__/integration/returnsC10.test.js",
+      "backend/src/modules/ecommerce/services/return.service.js",
+      "apps/mobile/__tests__/returns.test.js",
+      "tests/e2e/web/returns.spec.js",
+      "tests/e2e/admin/commerce-ops.spec.js",
+      "backend/src/__tests__/integration/refundPayoutsD10.test.js",
+      "backend/src/services/refundPayouts.service.js"
     ],
     "notes": "Handles COD wallet credit and online payment refund routing with double-entry ledger integration."
   },

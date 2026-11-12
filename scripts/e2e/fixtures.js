@@ -41,6 +41,9 @@ const IDS = {
   // C11: a review of the vendor's shop that a customer has reported.
   reportedReview: 'e2e00000-0000-4000-8000-0000000000e0',
   reviewReport: 'e2e00000-0000-4000-8000-0000000000e1',
+  // C10: two delivered orders of the shopper's, one for each return spec.
+  shopperReturnWeb: 'e2e00000-0000-4000-8000-0000000000f0',
+  shopperReturnAdmin: 'e2e00000-0000-4000-8000-0000000000f2',
 };
 
 const PHONES = {
@@ -265,6 +268,21 @@ async function seedE2eFixtures() {
       `INSERT INTO product_variants (id, product_id, variant_name, variant_value, price_modifier, inventory_count)
        VALUES ($1, $2, 'Size', $3, $4, 100)`,
       [id, IDS.chemistSoap, value, modifier]
+    );
+  }
+
+  for (const [orderId, itemId] of [[IDS.shopperReturnWeb, 'e2e00000-0000-4000-8000-0000000000f1'], [IDS.shopperReturnAdmin, 'e2e00000-0000-4000-8000-0000000000f3']]) {
+    await run(
+      `INSERT INTO orders (id, user_id, shop_id, subtotal, total_amount, delivery_fee, delivery_address,
+                           payment_method, payment_status, order_status, status, fulfillment_method,
+                           delivery_lat, delivery_lng, created_at, updated_at, delivered_at)
+       VALUES ($1, $2, $3, 112, 112, 0, 'E2E Flat 3, Prasanna Goldfields, Dhanori', 'cod', 'paid', 'delivered', 'delivered',
+               'pickup', 18.5790, 73.8970, $4, $4, $5)`,
+      [orderId, IDS.shopper, shop.id, HOURS(5), HOURS(3)]
+    );
+    await run(
+      'INSERT INTO order_items (id, order_id, product_id, name, price, quantity, price_at_buy) VALUES ($1, $2, $3, $4, $5, 1, $5)',
+      [itemId, orderId, product.id, product.name, product.price]
     );
   }
 

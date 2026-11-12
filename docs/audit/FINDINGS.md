@@ -1368,3 +1368,64 @@ Each is a fixture or expectation change; none loosens what the test checks. The 
 - 17 of 18 gates pass (G1–G17).
 - G18: 22 of 53 launch features VERIFIED. Newly verified: C4, C11 and C12. F-153 to F-156 are FIXED-VERIFIED by this run.
 - Still CODE COMPLETE: C1 (web and Android tests), R1–R5 (Android, and admin or web, tests) and P9 (web, Android and admin tests).
+
+### F-157: An approved return on an online order was reported refunded with a made-up reference; nothing was sent (C10)
+- **Defects:**
+  - **Fake refund:** approving a return on an order paid online marked the order `refunded`, with a reference generated on the spot (`GW-RFND-…`), and recorded the money as credited to the customer's *wallet* in the ledger. No call was made to the payment gateway, so the customer was told they were refunded and the money never came back.
+  - **Wallet orders:** a wallet-paid order was treated the same way, sent to the "gateway" instead of back to the wallet.
+  - **Double refund:** approval read the status, then wrote it, so two reviewers acting at once could refund twice.
+  - **No reason codes:** reasons were free text only, and photo links were not checked.
+  - **Seller locked out:** only administrators could review; the seller of the shop could not.
+  - **No customer view:** the customer had no way to see a return's progress.
+  - **No client UI:** neither the web nor the app had a way to ask for a return at all.
+- **Fix (`backend/src/modules/ecommerce/services/return.service.js`):**
+  - **Claim first:** a decision claims the request with a guarded update; the other reviewer is refused.
+  - **Cash and wallet orders:** refunded to the wallet in the same transaction, with a ledger entry from seller payable to customer wallet.
+  - **Online orders:** refunded through Razorpay after the commit (`orderLifecycle.refundThroughGateway`, the cancellation path). The return reads refunded only when Razorpay returns a refund id; otherwise it stays `refund_pending` for the existing retry and admin refund. The ledger records seller payable to refund payable.
+  - **Reason codes:** one of a fixed list (migration 143 adds `reason_code` on both engines), with the customer's details. Photos must be web links or this platform's `/uploads/` paths; a new `return_photo` upload purpose stores them.
+  - **Seller review:** the seller reviews their own shop's returns; administrators review any.
+  - **Customer view and notices:** the customer lists their returns (`GET /orders/returns/mine`) and is notified of each decision. The shop is notified of each request.
+  - **Clients:** the web order page and the app's order screen ask for a return or replacement with a reason, details and photos, then show where it stands.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/returnsC10.test.js` [C10.1]–[C10.6], on SQLite and PostgreSQL; all six fail against the previous code. [C10.3] checks that Razorpay is called with the captured payment and amount, and [C10.5] that two simultaneous approvals refund once.
+  - **App:** `apps/mobile/__tests__/returns.test.js` [C10.7]–[C10.9].
+  - **Browser:** `tests/e2e/web/returns.spec.js` [C10.10].
+  - **Admin:** `tests/e2e/admin/commerce-ops.spec.js` [C10.11] approves a customer's return in the console and checks the wallet.
+- **Status:** CODE COMPLETE. Gateway refunds need the Razorpay keys configured (owner action); without them an approved online return stays `refund_pending`, which is true.
+
+| Test | Assertion change | Why |
+|---|---|---|
+| `backend/src/__tests__/unit/afterOrderExperience.test.js` [C10.29] | expects `status: 'refund_pending'`, `refundReferenceId: null` and the order `payment_status: 'refund_pending'`; it used to expect a reference matching `/^GW-RFND-/` | The old assertion pinned the fabricated reference for a refund that was never made. With no captured payment or gateway configured in that suite, pending is the true state; [C10.3] covers the real refund |
+
+### F-158: Decision D10 was never built: every refund went to a wallet customers cannot see at launch
+- **Defects:**
+  - **Wallet refunds while the wallet is off:** Decision D10 (adopted 2026-10-25) keeps the consumer wallet off at launch (`wallet_coins` off; `/wallet` is not reachable) and says cash refunds are manual UPI or bank payouts an admin confirms, with a ledger entry. Nothing implemented that. Return refunds, the admin order refund and dispute refunds all credited the wallet, so at launch a refunded customer would be told they were paid and could never see or use the money.
+  - **Wallet offered at checkout:** checkout (web, shop page and app) offered "Pay from wallet", although nobody could have a balance.
+  - **Dispute refunds:**
+    - uncapped;
+    - repeatable: resolving a resolved dispute refunded again;
+    - credited against the dispute's id rather than the order's, so the order refund's cap never counted them and an order could be refunded beyond its total. The existing [A4]/[A5] backend suites did exactly that: ₹440 refunded in full, then ₹200 more.
+  - **Upload purposes:** `file_uploads.purpose` refused four purposes the upload service offers (`voice_intro`, `video`, `story` and the new `return_photo`): those uploads failed after the file was accepted.
+- **Fix:**
+  - **One routing rule:** `backend/src/services/refundPayouts.service.js` sends every refund that does not go through the gateway either to the wallet (wallet on) or, wallet off, to a manual payout in `refund_payouts` (migration 145, both engines).
+  - **Admin payouts:** an administrator pays the payout and records the transfer reference (Commerce Ops → Refund payouts, `POST /admin/commerce/refund-payouts/:id/paid`, audited). That writes the ledger (refunds payable to customer cash), marks the order refunded and tells the customer.
+  - **Customer side:** a customer can give a UPI ID with a cash return (`order_returns.refund_upi`). Their return shows whether the payout is pending or paid, with the reference.
+  - **Cap:** the admin order refund and dispute refunds use the same routing and count every earlier refund of the order (wallet credits and payouts). A dispute is resolved once.
+  - **Timeline:** the order timeline shows payouts.
+  - **Checkout:** with the wallet off, it is not offered, and the server refuses it (400 `WALLET_UNAVAILABLE`, single-shop and multi-shop).
+  - **Upload purposes:** migration 144 widens the `file_uploads.purpose` constraint to every purpose the service offers. On SQLite this is a table rebuild that keeps all columns, rows and indexes.
+- **Proof:**
+  - **Backend:** `backend/src/__tests__/integration/refundPayoutsD10.test.js`, run with the feature-flag bypass lifted and the wallet off:
+    - [C10.12] a return payout is paid and confirmed;
+    - [A4.20] an admin order refund is queued as a payout and counted;
+    - [A5.10] a dispute is refunded once, capped;
+    - [C8.20] checkout refuses the wallet.
+  - **App:** `apps/mobile/__tests__/returns.test.js` [C10.13].
+  - **Browser:** `tests/e2e/admin/commerce-ops.spec.js` [C10.11] approves a return and pays its refund out in the console; [A4.x] sees the refund as a payout.
+- **Status:** CODE COMPLETE. When the owner switches the wallet on, the same paths credit the wallet instead; nothing else changes.
+
+| Test | Change | Why |
+|---|---|---|
+| `backend/src/__tests__/unit/adminCommerceOps.test.js` fixture | the dispute now has an order of its own (`TEST_DISPUTE_ORDER_ID`); no assertion changed | `TEST_ORDER_ID` is refunded in full earlier in the suite, and a dispute refund now counts against the same order. The test still checks that resolving a dispute with a refund works, without relying on a double refund |
+| `tests/e2e/admin/commerce-ops.spec.js` [A4] refund | button "Refund to wallet" is now "Refund to customer"; the timeline entry expected is `data-source="payout"`, not `"wallet"` | The E2E backend runs with the wallet off, as production does; the refund is a payout and the label must not promise a wallet |
+| `tests/e2e/admin/commerce-ops.spec.js` [C10.11] | follows the refund to a recorded payout instead of a wallet balance | Same: D10 |

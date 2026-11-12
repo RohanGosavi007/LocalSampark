@@ -7,6 +7,7 @@ import { useCartStore } from '../../../src/store/cartStore';
 import {
   ORDER_STEPS, ORDER_EVENTS, POLL_INTERVAL_MS, stepIndex, canCancel, shouldPoll, isEventFor,
   orderRef, statusLabel, loadOrder, cancelOrder, orderAgain, downloadInvoice, slotText, reviewOrder,
+  RETURN_REASONS, RETURN_STATUS, myReturns, requestReturn, refundText,
 } from '../../../src/services/orders';
 
 const STEP_ICONS = { pending: Clock, confirmed: CheckCircle, preparing: Package, out_for_delivery: Truck, delivered: MapPin };
@@ -17,6 +18,100 @@ const STEP_ICONS = { pending: Clock, confirmed: CheckCircle, preparing: Package,
  * sends, with no way to cancel, get the invoice or order again, and no live
  * updates. The rules are in src/services/orders.js.
  */
+/**
+ * C10: ask to return or replace a delivered order, with photos, and follow the
+ * request. The server holds the window and refunds an accepted return.
+ */
+function ReturnRequest({ order }) {
+  const [existing, setExisting] = useState(undefined);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ returnType: 'return', reasonCode: 'damaged', reason: '', photos: [], refundUpi: '' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => {
+    myReturns().then((list) => setExisting(list.find((r) => String(r.order_id) === String(order.id)) || null)).catch(() => setExisting(null));
+  }, [order.id]);
+  useEffect(() => { load(); }, [load]);
+
+  const pickPhotos = async () => {
+    let Picker;
+    try { Picker = require('expo-image-picker'); } catch { setError('This build cannot attach photos.'); return; }
+    const res = await Picker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 5, quality: 0.7 });
+    if (!res.canceled) setForm((f) => ({ ...f, photos: (res.assets || []).slice(0, 5).map((a) => ({ uri: a.uri, name: a.fileName || 'photo.jpg', type: a.mimeType || 'image/jpeg' })) }));
+  };
+
+  const send = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await requestReturn(order, form);
+      setOpen(false);
+      load();
+    } catch (e) {
+      setError(e?.message || 'The request could not be sent.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (existing === undefined) return null;
+  if (existing) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Your {existing.return_type === 'replacement' ? 'replacement' : 'return'} request: {RETURN_STATUS[existing.status] || existing.status}</Text>
+        {existing.status === 'verified_approved' ? <Text style={styles.itemText}>{refundText(existing)}</Text> : null}
+        {existing.status === 'rejected' && existing.rejection_reason ? <Text style={styles.itemText}>Reason: {existing.rejection_reason}</Text> : null}
+      </View>
+    );
+  }
+  if (!open) {
+    return (
+      <TouchableOpacity accessibilityRole="button" style={[styles.outlineBtn, { marginBottom: 12 }]} onPress={() => setOpen(true)}>
+        <Text style={styles.outlineText}>Return or replace an item</Text>
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Return or replace</Text>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+        {[['return', 'Refund'], ['replacement', 'Replacement']].map(([v, l]) => (
+          <TouchableOpacity key={v} accessibilityRole="radio" accessibilityState={{ checked: form.returnType === v }}
+            onPress={() => setForm({ ...form, returnType: v })}
+            style={[styles.outlineBtn, { flex: 1 }, form.returnType === v && { borderColor: '#4f46e5' }]}>
+            <Text style={styles.outlineText}>{l}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {RETURN_REASONS.map(([code, label]) => (
+          <TouchableOpacity key={code} accessibilityRole="radio" accessibilityState={{ checked: form.reasonCode === code }}
+            onPress={() => setForm({ ...form, reasonCode: code })}
+            style={{ paddingHorizontal: 12, minHeight: 40, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: form.reasonCode === code ? '#4f46e5' : '#d1d5db' }}>
+            <Text style={{ fontWeight: '700', color: form.reasonCode === code ? '#4f46e5' : '#111827' }}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <TextInput value={form.reason} onChangeText={(t) => setForm({ ...form, reason: t })} multiline maxLength={1000}
+        placeholder={form.reasonCode === 'other' ? 'Tell us what went wrong' : 'Details (optional)'}
+        style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 10, minHeight: 64, marginTop: 8 }} />
+      {order.paymentMethod === 'cod' ? (
+        <TextInput value={form.refundUpi} onChangeText={(t) => setForm({ ...form, refundUpi: t })} autoCapitalize="none"
+          placeholder="Your UPI ID for the refund (optional), e.g. name@bank" accessibilityLabel="UPI ID for the refund"
+          style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 10, marginTop: 8 }} />
+      ) : null}
+      <TouchableOpacity accessibilityRole="button" onPress={pickPhotos} style={[styles.outlineBtn, { marginTop: 8 }]}>
+        <Text style={styles.outlineText}>{form.photos.length ? `${form.photos.length} photo(s) attached` : 'Attach photos (up to 5)'}</Text>
+      </TouchableOpacity>
+      {error ? <Text style={[styles.notice, { color: '#dc2626' }]}>{error}</Text> : null}
+      <TouchableOpacity accessibilityRole="button" disabled={busy} style={[styles.primaryBtn, { marginTop: 10 }, busy && { opacity: 0.6 }]} onPress={send}>
+        <Text style={styles.primaryText}>{busy ? 'Sending…' : 'Send request'}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 /** C11: rate a delivered order's shop (a verified purchase). */
 function RateOrder({ order }) {
   const [stars, setStars] = useState(0);
@@ -284,6 +379,7 @@ export default function OrderTrackingScreen() {
         ) : null}
 
         {order.status === 'delivered' ? <RateOrder order={order} /> : null}
+        {order.status === 'delivered' ? <ReturnRequest order={order} /> : null}
 
         {/* C14: in-app order help; the ticket keeps this order. */}
         <TouchableOpacity

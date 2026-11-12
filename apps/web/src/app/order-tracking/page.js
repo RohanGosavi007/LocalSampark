@@ -180,6 +180,140 @@ function OrderActions({ order, items, reload }) {
   );
 }
 
+/** C10: what a customer may give as the reason for a return (the server's list). */
+const RETURN_REASONS = [
+  ['damaged', 'Damaged'], ['wrong_item', 'Wrong item'], ['missing_items', 'Items missing'],
+  ['spoiled_or_expired', 'Spoiled or expired'], ['quality_issue', 'Poor quality'],
+  ['not_as_described', 'Not as described'], ['other', 'Something else'],
+];
+/** Where an accepted return's money is. */
+function refundText(r) {
+  const amount = `₹${Number(r.refund_amount)}`;
+  if (r.refund_channel === 'wallet') return `${amount} refunded to your LocalSampark wallet.`;
+  if (r.refund_channel === 'manual_payout') {
+    return r.payout_status === 'paid'
+      ? `${amount} sent${r.refund_upi ? ` to ${r.refund_upi}` : ''} (reference ${r.payout_reference}).`
+      : `${amount} will be sent${r.refund_upi ? ` to ${r.refund_upi}` : ''}; our team will tell you when it is.`;
+  }
+  return r.refund_reference_id ? `${amount} refunded to your original payment method.` : `${amount} is being refunded to your original payment method.`;
+}
+
+const RETURN_STATUS = {
+  pending_review: 'Waiting for the shop to decide',
+  verified_approved: 'Accepted',
+  rejected: 'Not accepted',
+};
+
+/**
+ * C10: ask to return or replace a delivered order, with photos, and follow
+ * the request. The server holds the window (48 hours for food, 7 days
+ * otherwise) and refunds an accepted return to the wallet (cash, wallet) or
+ * the original payment method (online).
+ */
+function ReturnRequest({ order }) {
+  const [existing, setExisting] = useState(undefined);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ returnType: 'return', reasonCode: 'damaged', reason: '', refundUpi: '' });
+  // A cash order's refund is paid to a UPI ID while the wallet is off (D10).
+  const cash = String(order.payment_method || '').toLowerCase() === 'cod';
+  const [files, setFiles] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => {
+    apiGet('/orders/returns/mine')
+      .then((r) => setExisting(((r && r.data) || []).find((x) => String(x.order_id) === String(order.id)) || null))
+      .catch(() => setExisting(null));
+  }, [order.id]);
+  useEffect(() => { load(); }, [load]);
+
+  const upload = async (file) => {
+    const body = new FormData();
+    body.append('files', file);
+    body.append('purpose', 'return_photo');
+    body.append('referenceId', String(order.id));
+    const headers = { ...getAuthHeaders() };
+    delete headers['Content-Type'];
+    const res = await fetch(`${API_BASE}/upload`, { method: 'POST', headers, body });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) throw new Error(data.error || 'A photo could not be uploaded.');
+    return data.url;
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const evidenceUrls = [];
+      for (const f of files.slice(0, 5)) evidenceUrls.push(await upload(f));
+      await apiPost(`/orders/${order.id}/returns`, { ...form, reason: form.reason.trim() || undefined, refundUpi: form.refundUpi.trim() || undefined, evidenceUrls });
+      setOpen(false);
+      load();
+    } catch (err) {
+      setError(err.message || 'The request could not be sent.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (existing === undefined) return null;
+  if (existing) {
+    const refunded = existing.status === 'verified_approved';
+    return (
+      <div className="glass-card rounded-2xl border border-border p-5" data-testid="return-status">
+        <p className="font-bold text-text">Your {existing.return_type === 'replacement' ? 'replacement' : 'return'} request: {RETURN_STATUS[existing.status] || existing.status}</p>
+        {refunded && (
+          <p className="text-sm text-text-muted mt-1" data-testid="return-refund">{refundText(existing)}</p>
+        )}
+        {existing.status === 'rejected' && existing.rejection_reason && <p className="text-sm text-text-muted mt-1">Reason: {existing.rejection_reason}</p>}
+      </div>
+    );
+  }
+  if (!open) {
+    return <button type="button" onClick={() => setOpen(true)} className="px-4 py-2 min-h-[44px] rounded-xl border border-border font-bold text-text">Return or replace an item</button>;
+  }
+  return (
+    <form onSubmit={submit} aria-label="Return request" className="glass-card rounded-2xl border border-border p-5 space-y-3">
+      <p className="font-bold text-text">Return or replace</p>
+      <div className="flex gap-4" role="radiogroup" aria-label="What would you like?">
+        {[['return', 'Refund'], ['replacement', 'Replacement']].map(([v, l]) => (
+          <label key={v} className="flex items-center gap-2 min-h-[44px]">
+            <input type="radio" name="returnType" value={v} checked={form.returnType === v} onChange={() => setForm({ ...form, returnType: v })} /> {l}
+          </label>
+        ))}
+      </div>
+      <label className="block">
+        <span className="text-sm text-text-muted">What went wrong?</span>
+        <select value={form.reasonCode} onChange={(e) => setForm({ ...form, reasonCode: e.target.value })} className="mt-1 w-full bg-background-alt text-text rounded-xl p-3 border border-border">
+          {RETURN_REASONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+      </label>
+      <label className="block">
+        <span className="text-sm text-text-muted">Details{form.reasonCode === 'other' ? '' : ' (optional)'}</span>
+        <textarea value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} maxLength={1000} rows={3}
+          className="mt-1 w-full bg-background-alt text-text rounded-xl p-3 border border-border" />
+      </label>
+      {cash && (
+        <label className="block">
+          <span className="text-sm text-text-muted">Your UPI ID for the refund (optional)</span>
+          <input value={form.refundUpi} onChange={(e) => setForm({ ...form, refundUpi: e.target.value })} placeholder="name@bank" inputMode="email"
+            className="mt-1 w-full bg-background-alt text-text rounded-xl p-3 border border-border" />
+        </label>
+      )}
+      <label className="block">
+        <span className="text-sm text-text-muted">Photos (up to 5)</span>
+        <input type="file" accept="image/*" multiple onChange={(e) => setFiles(Array.from(e.target.files || []).slice(0, 5))} className="mt-1 block text-sm" />
+      </label>
+      {error && <p role="alert" className="text-red-600 text-sm font-semibold">{error}</p>}
+      <div className="flex gap-3">
+        <button type="submit" disabled={busy} className="px-5 min-h-[44px] rounded-xl bg-primary text-white font-bold disabled:opacity-60">{busy ? 'Sending…' : 'Send request'}</button>
+        <button type="button" onClick={() => setOpen(false)} className="px-4 min-h-[44px] rounded-xl border border-border font-bold">Cancel</button>
+      </div>
+    </form>
+  );
+}
+
 /**
  * C11: a delivered order can be reviewed. The review is of the shop, from a
  * verified purchase (the server checks the order is this customer's and
@@ -292,6 +426,7 @@ function OrderDetail({ id }) {
       )}
       <OrderActions order={order} items={items} reload={load} />
       {String(order.status).toLowerCase() === 'delivered' && <RateOrder order={order} />}
+      {String(order.status).toLowerCase() === 'delivered' && <ReturnRequest order={order} />}
 
       <div className="flex flex-wrap gap-4 items-center">
         <Link href="/order-tracking" className="text-primary font-bold text-sm">← All orders</Link>

@@ -405,7 +405,13 @@ describe('Milestone M5: After-Order Experience (C9–C11, C14, S5–S7)', () => 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.refundChannel).toBe('source_gateway');
-      expect(res.body.refundReferenceId).toMatch(/^GW-RFND-/);
+      // F-157: the refund goes through the gateway. With no captured payment
+      // or gateway configured here it is pending, not reported as done with a
+      // made-up reference (this used to expect /^GW-RFND-/).
+      expect(res.body.status).toBe('refund_pending');
+      expect(res.body.refundReferenceId).toBeNull();
+      const order = await queryOne('SELECT return_status, payment_status FROM orders WHERE id = $1', [TEST_DELIVERED_ONLINE_ORDER_ID]);
+      expect(order.payment_status).toBe('refund_pending');
     });
   });
 

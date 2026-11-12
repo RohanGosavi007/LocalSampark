@@ -340,7 +340,7 @@ function OrdersSection() {
               <div style={{ ...S.row, marginTop: '0.8rem' }}>
                 <input aria-label="Intervention reason" placeholder="Reason (required)" style={{ ...S.input, minWidth: '16rem' }} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
                 <input aria-label="Refund amount" placeholder="Refund ₹ (blank = all remaining)" style={S.input} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-                <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/orders/${open}/refund`, { method: 'POST', ...opts({ amount: form.amount ? Number(form.amount) : undefined, reason: form.reason }) }).then((r) => { after(); return r; }), (r) => r.message)}>Refund to wallet</button>
+                <button style={S.ghost} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/orders/${open}/refund`, { method: 'POST', ...opts({ amount: form.amount ? Number(form.amount) : undefined, reason: form.reason }) }).then((r) => { after(); return r; }), (r) => r.message)}>Refund to customer</button>
                 <button style={S.danger} onClick={() => run(() => fetchJson(`${API_BASE}/admin/commerce/orders/${open}/cancel`, { method: 'POST', ...opts({ reason: form.reason }) }).then(after), 'Order cancelled')}>Force cancel</button>
               </div>
               <div style={{ ...S.row, marginTop: '0.6rem' }}>
@@ -780,6 +780,61 @@ function GrievanceSection() {
   );
 }
 
+// ── D10 ────────────────────────────────────────────────────────────────────
+// While the wallet is off, a cash refund is paid by hand: transfer it, then
+// record the UPI or bank reference here. The customer is told.
+function RefundPayoutsSection() {
+  const [status, setStatus] = useState('pending');
+  const payouts = useResource(() => get(`${API_BASE}/admin/commerce/refund-payouts?status=${status}`).then((r) => r.data), [status]);
+  const [refs, setRefs] = useState({});
+  const [upis, setUpis] = useState({});
+  const [run, msg] = useAction();
+  const pay = (p) => run(
+    () => fetchJson(`${API_BASE}/admin/commerce/refund-payouts/${p.id}/paid`, { method: 'POST', ...opts({ reference: refs[p.id], payeeUpi: upis[p.id] || undefined }) }).then((out) => { payouts.reload(); return out; }),
+    (out) => `Refund of ₹${out && out.amount} recorded as paid (ref ${out && out.reference})`
+  );
+  return (
+    <section data-testid="ops-refunds" style={S.card}>
+      <div style={{ ...S.row, justifyContent: 'space-between' }}>
+        <h3 style={S.h3}>Refund payouts</h3>
+        <select aria-label="Payout status" style={S.input} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="pending">To pay</option>
+          <option value="paid">Paid</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      {msg}
+      <Err error={payouts.error} />
+      {payouts.data && payouts.data.length === 0 && <Empty>No refunds {status === 'pending' ? 'waiting to be paid' : 'here'}.</Empty>}
+      {payouts.data && payouts.data.length > 0 && (
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Customer</th><th style={S.th}>Amount</th><th style={S.th}>For</th><th style={S.th}>Pay to</th><th style={S.th}>Status</th></tr></thead>
+          <tbody>
+            {payouts.data.map((p) => (
+              <tr key={p.id} data-testid={`refund-payout-${p.id}`}>
+                <td style={S.td}>{p.customer_name || '—'}<div style={S.muted}>{p.customer_phone}</div></td>
+                <td style={S.td}>₹{p.amount}</td>
+                <td style={S.td}>{p.source_type} · order #{String(p.order_id).slice(0, 8)}<div style={S.muted}>{when(p.created_at)}</div></td>
+                <td style={S.td}>{p.status === 'pending'
+                  ? <input aria-label={`UPI ID for ${p.customer_name || 'customer'}`} style={S.input} placeholder="name@bank" value={upis[p.id] ?? (p.payee_upi || '')} onChange={(e) => setUpis({ ...upis, [p.id]: e.target.value })} />
+                  : (p.payee_upi || '—')}</td>
+                <td style={S.td}>
+                  {p.status === 'pending' ? (
+                    <div style={S.row}>
+                      <input aria-label={`Transfer reference for ${p.customer_name || 'customer'}`} style={S.input} placeholder="UPI / bank reference" value={refs[p.id] || ''} onChange={(e) => setRefs({ ...refs, [p.id]: e.target.value })} />
+                      <button style={S.btn} onClick={() => pay(p)}>Mark paid</button>
+                    </div>
+                  ) : <span>Paid {when(p.paid_at)}<div style={S.muted}>ref {p.reference}</div></span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 // ── C11 ────────────────────────────────────────────────────────────────────
 // Reviews customers reported. Hiding one takes it out of the shop's listings
 // and its rating; keeping it publishes it again. Either way the reports close.
@@ -949,6 +1004,7 @@ export const COMMERCE_SECTIONS = [
   ['fleet', 'Fleet & cash', FleetSection],
   ['grievances', 'Grievances', GrievanceSection],
   ['reviews', 'Reviews', ReviewsSection],
+  ['refunds', 'Refund payouts', RefundPayoutsSection],
   ['flags', 'Feature flags', FlagsSection],
   ['reports', 'Reports', ReportsSection],
   ['broadcasts', 'Broadcasts', BroadcastSection],

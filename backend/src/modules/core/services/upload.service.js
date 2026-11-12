@@ -79,6 +79,8 @@ const PURPOSES = {
   shop_photo: { dir: 'shops', private: false, types: IMAGES },
   profile_photo: { dir: 'profiles', private: false, types: IMAGES },
   review_photo: { dir: 'reviews', private: false, types: IMAGES },
+  // C10: photos a customer attaches to a return request.
+  return_photo: { dir: 'returns', private: false, types: IMAGES },
   job_card_photo: { dir: 'job-cards', private: false, types: IMAGES },
   chat_image: { dir: 'chat', private: false, types: IMAGES },
   prescription: { dir: 'prescriptions', private: true, types: [...IMAGES, 'application/pdf'] },

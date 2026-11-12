@@ -97,6 +97,8 @@ export default function CheckoutPage() {
     (m) => plan.payments.includes(m)
       && (isBatch || m === 'WALLET' || shopPayments.includes(m))
       && (m !== 'RAZORPAY' || onlineAvailable) && (m !== 'COD' || codAvailable)
+      // The wallet only while the server offers it (Decision D10: off at launch).
+      && (m !== 'WALLET' || !quote || !quote.paymentMethods || quote.paymentMethods.wallet !== false)
   );
   const delivering = fulfillmentMethod === 'DELIVERY';
 

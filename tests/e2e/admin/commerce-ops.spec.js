@@ -24,6 +24,7 @@ const IDS = {
   returnRequest: 'e2e00000-0000-4000-8000-000000000060',
   payout: 'e2e00000-0000-4000-8000-000000000080',
   reportedReview: 'e2e00000-0000-4000-8000-0000000000e0',
+  shopperReturnAdmin: 'e2e00000-0000-4000-8000-0000000000f2',
 };
 const RIDER_PHONE = '+919999999994';
 
@@ -150,16 +151,18 @@ test.describe('Commerce Ops console', () => {
     const detail = page.getByTestId('order-detail');
     await expect(detail).toContainText('Sharma Grocery');
 
-    await detail.getByRole('button', { name: 'Refund to wallet' }).click();
+    await detail.getByRole('button', { name: 'Refund to customer' }).click();
     await expect(message()).toContainText(/refund reason is required/i);
     await page.getByLabel('Intervention reason').fill('Item missing from bag');
     await page.getByLabel('Refund amount').fill('100');
-    await detail.getByRole('button', { name: 'Refund to wallet' }).click();
+    await detail.getByRole('button', { name: 'Refund to customer' }).click();
     await expect(message()).toContainText('Refund of ₹100');
-    await expect(page.getByTestId('order-timeline').locator('[data-source="wallet"]')).toHaveCount(1);
+    // The E2E backend runs as production does, with the wallet off (D10): the
+    // refund is a payout to make, not a wallet credit (F-158).
+    await expect(page.getByTestId('order-timeline').locator('[data-source="payout"]')).toHaveCount(1);
 
     await page.getByLabel('Refund amount').fill('1000');
-    await detail.getByRole('button', { name: 'Refund to wallet' }).click();
+    await detail.getByRole('button', { name: 'Refund to customer' }).click();
     await expect(message()).toContainText('can still be refunded');
 
     await detail.getByRole('button', { name: 'Force cancel' }).click();
@@ -309,6 +312,37 @@ test.describe('Commerce Ops console', () => {
 
     const mine = await (await customerApi.get(`${API}/support/tickets/my`, { headers: auth })).json();
     expect(mine.tickets.find((t) => t.id === ticketId)).toMatchObject({ status: 'resolved', resolution: 'The rider has your gate number now.' });
+    await customerApi.dispose();
+  });
+
+  test('[C10.11] a customer’s return is approved in the console and the refund paid out and recorded', async ({ playwright }) => {
+    const customerApi = await playwright.request.newContext();
+    const session = await apiSession(customerApi);
+    const auth = { Authorization: `Bearer ${session.accessToken}` };
+    const filed = await customerApi.post(`${API}/orders/${IDS.shopperReturnAdmin}/returns`, {
+      headers: auth, data: { reasonCode: 'missing_items', reason: 'E2E: one pack missing', returnType: 'return', refundUpi: 'shopper@okaxis' },
+    });
+    expect(filed.status(), await filed.text()).toBe(201);
+    const returnId = (await filed.json()).data.id;
+
+    await openSection('disputes');
+    const row = page.getByTestId(`return-row-${returnId}`);
+    await expect(row).toContainText('one pack missing');
+    await row.getByRole('button', { name: 'Approve refund' }).click();
+    await expect(message()).toContainText('Return approved and refunded');
+
+    // With the wallet off (D10) the refund is a payout to make and record.
+    let mine = await (await customerApi.get(`${API}/orders/returns/mine`, { headers: auth })).json();
+    expect(mine.data.find((r) => r.id === returnId)).toMatchObject({ status: 'verified_approved', refund_channel: 'manual_payout', payout_status: 'pending' });
+
+    await openSection('refunds');
+    const payout = page.locator('[data-testid^="refund-payout-"]').filter({ hasText: 'return ·' }).filter({ hasText: '₹112' }).first();
+    await payout.getByLabel(/Transfer reference/).fill('UPIE2E0001');
+    await payout.getByRole('button', { name: 'Mark paid' }).click();
+    await expect(message()).toContainText('recorded as paid (ref UPIE2E0001)');
+
+    mine = await (await customerApi.get(`${API}/orders/returns/mine`, { headers: auth })).json();
+    expect(mine.data.find((r) => r.id === returnId)).toMatchObject({ payout_status: 'paid', payout_reference: 'UPIE2E0001' });
     await customerApi.dispose();
   });
 

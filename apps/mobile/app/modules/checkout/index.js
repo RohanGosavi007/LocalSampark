@@ -446,7 +446,9 @@ export default function CheckoutScreen() {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Pay With</Text>
           {METHODS.map(option => {
-            const unavailable = (option.key === 'online' && !onlineOffered) || (option.key === 'cod' && !codAvailable);
+            const unavailable = (option.key === 'online' && !onlineOffered) || (option.key === 'cod' && !codAvailable)
+              // The wallet only while the server offers it (Decision D10: off at launch).
+              || (option.key === 'wallet' && quote?.paymentMethods?.wallet === false);
             const selected = method === option.key;
             return (
               <TouchableOpacity

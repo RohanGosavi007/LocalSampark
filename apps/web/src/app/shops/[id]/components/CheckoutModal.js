@@ -70,6 +70,7 @@ export default function CheckoutModal({
   const pickup = deliveryType === 'pickup';
   const bill = pendingOrder ? pendingOrder.bill : quote ? quote.bill : null;
   const codAvailable = !quote || quote.paymentMethods.cod;
+  const walletAvailable = !quote || !quote.paymentMethods || quote.paymentMethods.wallet !== false;
 
   useEffect(() => {
     if (!showCheckout) return;
@@ -106,8 +107,9 @@ export default function CheckoutModal({
     if (pendingOrder) return;
     if (!hasProducts && paymentMethod !== 'COD') setPaymentMethod('COD');
     else if (paymentMethod === 'RAZORPAY' && !onlineAvailable) setPaymentMethod('COD');
+    else if (paymentMethod === 'WALLET' && !walletAvailable) setPaymentMethod('COD');
     else if (paymentMethod === 'COD' && !codAvailable && hasProducts) setPaymentMethod(onlineAvailable ? 'RAZORPAY' : 'WALLET');
-  }, [hasProducts, onlineAvailable, codAvailable, paymentMethod, pendingOrder]);
+  }, [hasProducts, onlineAvailable, codAvailable, walletAvailable, paymentMethod, pendingOrder]);
 
   const useMyLocation = async () => {
     setError('');
@@ -269,10 +271,13 @@ export default function CheckoutModal({
                               )}
                             </span>
                         </label>
+                        {/* The wallet only while the server offers it (Decision D10: off at launch). */}
+                        {walletAvailable && (
                         <label className={optionClass(paymentMethod === 'WALLET', locked || !hasProducts)}>
                             <input type="radio" disabled={locked || !hasProducts} checked={paymentMethod === 'WALLET'} onChange={() => setPaymentMethod('WALLET')} className="w-4 h-4 text-primary focus:ring-primary accent-primary" />
                             <span className="font-bold text-sm flex items-center gap-2"><Wallet className="w-4 h-4 text-text-muted"/> LocalSampark Wallet</span>
                         </label>
+                        )}
                         <label className={optionClass(paymentMethod === 'RAZORPAY', locked || !hasProducts || !onlineAvailable)}>
                             <input type="radio" disabled={locked || !hasProducts || !onlineAvailable} checked={paymentMethod === 'RAZORPAY'} onChange={() => setPaymentMethod('RAZORPAY')} className="w-4 h-4 text-primary focus:ring-primary accent-primary" />
                             <span className="font-bold text-sm flex items-center gap-2">

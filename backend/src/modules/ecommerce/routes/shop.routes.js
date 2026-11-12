@@ -1106,7 +1106,7 @@ router.post('/cart/batch-quote', optionalAuth, async (req, res, next) => {
                 total: round2(q.quote.bill.subtotal + q.fees.deliveryFee + q.fees.platformFee + q.fees.smallOrderFee),
             })),
             // One gateway payment settles one order, so not for several shops.
-            paymentMethods: { cod: priced.codAvailable, wallet: true, razorpay: false },
+            paymentMethods: { cod: priced.codAvailable, wallet: require('../../../services/refundPayouts.service').walletEnabled(), razorpay: false },
             slots: commonSlots,
             cod: { available: priced.codAvailable, maxOrderValue: priced.config.cod_max_order_value || null },
         });
@@ -1123,6 +1123,10 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
         const method = payments.paymentMethod(body.paymentMethod || 'wallet');
         if (method !== 'wallet' && method !== 'cod') {
             return res.status(400).json({ message: 'A multi-shop cart can be paid from the wallet or on delivery' });
+        }
+        // Decision D10: the wallet is off at launch.
+        if (method === 'wallet' && !require('../../../services/refundPayouts.service').walletEnabled()) {
+            return res.status(400).json({ message: 'Paying from the wallet is not available. Please choose cash on delivery.', code: 'WALLET_UNAVAILABLE' });
         }
 
         const { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable } = await priceBatch(req.user, body);

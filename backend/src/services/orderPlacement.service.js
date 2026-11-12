@@ -236,6 +236,11 @@ async function quoteOrder({ user = null, shopId, items, body = {} }) {
 async function placeOrder({ user, shopId, items, body = {}, method, batchId = null, client = null, prepaid = false, fees = null }) {
   if (!user || !user.id) throw new OrderError(401, 'UNAUTHENTICATED', 'Authentication required to place an order.');
   if (!method) throw new OrderError(400, 'INVALID_PAYMENT_METHOD', 'paymentMethod must be cod, razorpay or wallet');
+  // Decision D10: the consumer wallet is off at launch; it cannot pay for an
+  // order the customer cannot see the balance of.
+  if (method === 'wallet' && !require('./refundPayouts.service').walletEnabled()) {
+    throw new OrderError(400, 'WALLET_UNAVAILABLE', 'Paying from the wallet is not available. Please choose cash on delivery or pay online.');
+  }
 
   // Said before the order exists. Finding out after would leave the customer
   // with an order they have no way to pay for.

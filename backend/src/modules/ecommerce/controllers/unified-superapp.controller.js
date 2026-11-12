@@ -95,7 +95,8 @@ async function quoteCheckout(req, res, next) {
       success: true,
       bill: presentBill(quote.bill),
       items: quote.lines.map(({ productId, name, price, quantity }) => ({ id: productId, name, price, quantity })),
-      paymentMethods: { cod: quote.bill.cod.available, wallet: true, razorpay: razorpay.isConfigured() },
+      // The wallet only while it is switched on (Decision D10: off at launch).
+      paymentMethods: { cod: quote.bill.cod.available, wallet: require('../../../services/refundPayouts.service').walletEnabled(), razorpay: razorpay.isConfigured() },
       // C8: ASAP, or one of these windows (services/deliverySlots.service.js).
       slots: quote.slots,
       cod: quote.bill.cod,

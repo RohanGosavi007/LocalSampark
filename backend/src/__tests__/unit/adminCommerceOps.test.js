@@ -16,6 +16,9 @@ describe('Milestone M4.3: Admin Commerce Ops Hub (A1–A14)', () => {
   const TEST_RIDER_ID = crypto.randomUUID();
   const TEST_SHOP_ID = crypto.randomUUID();
   const TEST_ORDER_ID = crypto.randomUUID();
+  // The dispute's own order: TEST_ORDER_ID is refunded in full by [A4.x], and a
+  // dispute refund now counts against the same order (F-158).
+  const TEST_DISPUTE_ORDER_ID = crypto.randomUUID();
   const TEST_DISPUTE_ID = crypto.randomUUID();
   const TEST_CATEGORY_ID = crypto.randomUUID();
   const TEST_PRODUCT_ID = crypto.randomUUID();
@@ -49,6 +52,8 @@ describe('Milestone M4.3: Admin Commerce Ops Hub (A1–A14)', () => {
     await query("DELETE FROM coupons WHERE code = 'ADMIN50'");
     await query("DELETE FROM order_items WHERE order_id = $1", [TEST_ORDER_ID]);
     await query("DELETE FROM orders WHERE id = $1", [TEST_ORDER_ID]);
+    await query("DELETE FROM refund_payouts WHERE order_id IN ($1, $2)", [TEST_ORDER_ID, TEST_DISPUTE_ORDER_ID]);
+    await query("DELETE FROM orders WHERE id = $1", [TEST_DISPUTE_ORDER_ID]);
     await query("DELETE FROM shop_products WHERE id = $1", [TEST_PRODUCT_ID]);
     await query("DELETE FROM shop_categories WHERE id = $1", [TEST_CATEGORY_ID]);
     await query("DELETE FROM local_shops WHERE id = $1", [TEST_SHOP_ID]);
@@ -104,6 +109,12 @@ describe('Milestone M4.3: Admin Commerce Ops Hub (A1–A14)', () => {
       [TEST_ORDER_ID, TEST_CUSTOMER_ID, TEST_SHOP_ID]
     );
 
+    await query(
+      `INSERT INTO orders (id, user_id, shop_id, subtotal, total_amount, delivery_fee, payment_method, payment_status, order_status, status, fulfillment_method, created_at)
+       VALUES ($1, $2, $3, 300, 300, 0, 'cod', 'paid', 'delivered', 'delivered', 'pickup', ${NOW})`,
+      [TEST_DISPUTE_ORDER_ID, TEST_CUSTOMER_ID, TEST_SHOP_ID]
+    );
+
     // Seed test product
     await query(
       `INSERT INTO shop_products (id, shop_id, name, description, price, is_active, inventory_count)
@@ -115,7 +126,7 @@ describe('Milestone M4.3: Admin Commerce Ops Hub (A1–A14)', () => {
     await query(
       `INSERT INTO disputes (id, user_id, order_id, shop_id, type, description, status, created_at)
        VALUES ($1, $2, $3, $4, 'quality_issue', 'Food arrived cold and spilled', 'open', ${NOW})`,
-      [TEST_DISPUTE_ID, TEST_CUSTOMER_ID, TEST_ORDER_ID, TEST_SHOP_ID]
+      [TEST_DISPUTE_ID, TEST_CUSTOMER_ID, TEST_DISPUTE_ORDER_ID, TEST_SHOP_ID]
     );
 
     // Seed test statutory grievance

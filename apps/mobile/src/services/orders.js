@@ -91,6 +91,7 @@ export function presentOrder(res) {
     eta: o.eta || o.estimated_delivery_time || null,
     // C8: the window the order was placed for (null: as soon as possible).
     scheduledFor: o.scheduled_for || null,
+    paymentMethod: String(o.payment_method || '').toLowerCase() || null,
     pickup: o.fulfillment_method === 'pickup',
     driver: o.delivery_agent_name
       ? { name: o.delivery_agent_name, phone: o.delivery_agent_phone || null, vehicle: o.delivery_agent_vehicle || null }
@@ -213,4 +214,82 @@ export async function reviewOrder(order, rating, text, api = { apiPost }) {
   const trimmed = String(text || '').trim();
   if (trimmed) body.review = trimmed.slice(0, 2000);
   return api.apiPost(`/shops/${encodeURIComponent(order.shopId)}/orders/${encodeURIComponent(order.id)}/review`, body);
+}
+
+// ── returns (C10) ───────────────────────────────────────────────────────────
+
+/** The server's reason codes (modules/ecommerce/services/return.service.js), with labels. */
+export const RETURN_REASONS = [
+  ['damaged', 'Damaged'], ['wrong_item', 'Wrong item'], ['missing_items', 'Items missing'],
+  ['spoiled_or_expired', 'Spoiled or expired'], ['quality_issue', 'Poor quality'],
+  ['not_as_described', 'Not as described'], ['other', 'Something else'],
+];
+
+export const RETURN_STATUS = {
+  pending_review: 'Waiting for the shop to decide',
+  verified_approved: 'Accepted',
+  rejected: 'Not accepted',
+};
+
+const UPI = /^[A-Za-z0-9.\-_]{2,256}@[A-Za-z][A-Za-z0-9]{1,63}$/;
+
+/** Where an accepted return's money is (D10: a cash refund is paid by hand while the wallet is off). */
+export function refundText(r) {
+  const amount = `₹${Number(r.refund_amount)}`;
+  if (r.refund_channel === 'wallet') return `${amount} refunded to your LocalSampark wallet.`;
+  if (r.refund_channel === 'manual_payout') {
+    return r.payout_status === 'paid'
+      ? `${amount} sent${r.refund_upi ? ` to ${r.refund_upi}` : ''} (reference ${r.payout_reference}).`
+      : `${amount} will be sent${r.refund_upi ? ` to ${r.refund_upi}` : ''}; our team will tell you when it is.`;
+  }
+  return r.refund_reference_id ? `${amount} refunded to your original payment method.` : `${amount} is being refunded to your original payment method.`;
+}
+
+/** Returns an error message, or null when the request can be sent. */
+export function validateReturn(form) {
+  if (!form || !RETURN_REASONS.some(([c]) => c === form.reasonCode)) return 'Choose what went wrong.';
+  if (form.reasonCode === 'other' && !String(form.reason || '').trim()) return 'Tell us what went wrong.';
+  if (String(form.reason || '').length > 1000) return 'Please keep the details under 1000 characters.';
+  if ((form.photos || []).length > 5) return 'Attach at most 5 photos.';
+  if (!['return', 'replacement'].includes(form.returnType || 'return')) return 'Choose a refund or a replacement.';
+  if (form.refundUpi && !UPI.test(String(form.refundUpi).trim())) return 'Enter a UPI ID like name@bank.';
+  return null;
+}
+
+/** The customer's own return requests. */
+export async function myReturns(api = { apiGet }) {
+  const res = await api.apiGet('/orders/returns/mine');
+  return (res && res.data) || [];
+}
+
+/** Uploads one photo (a local file uri) and resolves to its web address. */
+export async function uploadReturnPhoto(orderId, photo, deps = {}) {
+  const fetchImpl = deps.fetch || fetch;
+  const headers = { ...(await (deps.headers || getAuthHeaders)()) };
+  delete headers['Content-Type'];
+  const body = new FormData();
+  body.append('files', { uri: photo.uri, name: photo.name || 'photo.jpg', type: photo.type || 'image/jpeg' });
+  body.append('purpose', 'return_photo');
+  body.append('referenceId', String(orderId));
+  const res = await fetchImpl(`${API_BASE}/upload`, { method: 'POST', headers, body });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.url) throw new Error(data.error || 'A photo could not be uploaded.');
+  return data.url;
+}
+
+/** Sends a return request (uploading any photos first). */
+export async function requestReturn(order, form, deps = {}) {
+  const problem = validateReturn(form);
+  if (problem) throw new Error(problem);
+  const api = deps.api || { apiPost };
+  const evidenceUrls = [];
+  for (const photo of form.photos || []) evidenceUrls.push(await uploadReturnPhoto(order.id, photo, deps));
+  const reason = String(form.reason || '').trim();
+  return api.apiPost(`/orders/${encodeURIComponent(order.id)}/returns`, {
+    returnType: form.returnType || 'return',
+    reasonCode: form.reasonCode,
+    ...(reason ? { reason } : {}),
+    ...(form.refundUpi ? { refundUpi: String(form.refundUpi).trim() } : {}),
+    evidenceUrls,
+  });
 }

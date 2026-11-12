@@ -4,6 +4,7 @@ const platformConfig = require('../../../services/platformConfig.service');
 const payments = require('../../../services/payments.service');
 const ledgerService = require('../../../services/ledger.service');
 const { recordAudit } = require('../services/adminAudit.service');
+const refundPayouts = require('../../../services/refundPayouts.service');
 const notificationService = require('../../core/services/notification.service');
 const { escapeCsvField, generateStandardOrdersCsv, generateGstTcsSection52Csv, generateSellerReconciliationCsv } = require('../services/adminReporting.service');
 
@@ -435,10 +436,12 @@ const getOrderTimeline = async (req, res, next) => {
       query('SELECT id, return_type, status, refund_amount, created_at FROM order_returns WHERE CAST(order_id AS TEXT) = $1', [String(id)]),
       query(
         `SELECT wt.amount, wt.purpose, wt.created_at FROM wallet_transactions wt
-          WHERE wt.reference_id = $1 AND wt.purpose IN ('order_refund', 'dispute_refund')`,
+          WHERE wt.reference_id = $1 AND wt.purpose IN ('order_refund', 'dispute_refund', 'return_refund')`,
         [String(id)]
       ),
     ]);
+    // D10: refunds paid by hand while the wallet is off.
+    const payoutRows = await query('SELECT amount, source_type, status, reference, created_at, paid_at FROM refund_payouts WHERE order_id = $1', [String(id)]);
     const rowsOf = (r) => r.rows || r || [];
     for (const a of rowsOf(adminActions)) {
       timeline.push({ status: a.action, timestamp: a.created_at, detail: `Admin action: ${String(a.action).replace(/_/g, ' ')}`, source: 'admin' });
@@ -451,6 +454,16 @@ const getOrderTimeline = async (req, res, next) => {
     }
     for (const w of rowsOf(refunds)) {
       timeline.push({ status: 'refunded', timestamp: w.created_at, detail: `₹${Number(w.amount)} credited to customer wallet (${w.purpose})`, source: 'wallet' });
+    }
+    for (const p of (payoutRows.rows || payoutRows || [])) {
+      timeline.push({
+        status: p.status === 'paid' ? 'refund_paid' : 'refund_payout_pending',
+        timestamp: p.paid_at || p.created_at,
+        detail: p.status === 'paid'
+          ? `₹${Number(p.amount)} paid to the customer (${p.source_type}, ref ${p.reference})`
+          : `₹${Number(p.amount)} to be paid to the customer (${p.source_type}); see Refund payouts`,
+        source: 'payout',
+      });
     }
     timeline.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
@@ -535,14 +548,10 @@ const refundOrder = async (req, res, next) => {
     const outcome = await withTransaction(async (client) => {
       const order = (await client.query('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [id])).rows[0];
       if (!order) return { status: 404, body: { success: false, error: 'Order not found' } };
-      const refunded = (await client.query(
-        `SELECT COALESCE(SUM(wt.amount), 0) AS total
-           FROM wallet_transactions wt
-          WHERE wt.reference_id = $1 AND wt.purpose IN ('order_refund', 'dispute_refund')`,
-        [String(id)]
-      )).rows[0];
+      // Wallet credits and manual payouts (D10) both count as refunded.
+      const refundedTotal = await refundPayouts.refundedSoFar(id, client);
       const orderTotal = Number(order.total_amount) || 0;
-      const remaining = Math.round((orderTotal - (Number(refunded && refunded.total) || 0)) * 100) / 100;
+      const remaining = Math.round((orderTotal - refundedTotal) * 100) / 100;
       if (remaining <= 0) {
         return { status: 409, body: { success: false, error: 'This order has already been refunded in full', refundable: 0 } };
       }
@@ -551,20 +560,29 @@ const refundOrder = async (req, res, next) => {
         return { status: 400, body: { success: false, error: `At most ₹${remaining} of this order can still be refunded`, refundable: remaining } };
       }
       const refundAmount = Math.round(requested * 100) / 100;
-      await payments.creditWallet({ userId: order.user_id, amount: refundAmount, purpose: 'order_refund', referenceId: String(id), client });
-      return { refundAmount, remaining, userId: order.user_id };
+      const out = await refundPayouts.refundCustomer({
+        client, orderId: id, userId: order.user_id, amount: refundAmount, purpose: 'order_refund',
+        sourceType: 'order_refund', sourceId: id, note: String(reason).trim(),
+      });
+      return { refundAmount, remaining, userId: order.user_id, channel: out.channel };
     });
     if (outcome.status) return res.status(outcome.status).json(outcome.body);
-    const { refundAmount, remaining, userId } = outcome;
+    const { refundAmount, remaining, userId, channel } = outcome;
 
     await recordAudit(req, {
       action: 'admin_order_refund',
       targetType: 'order',
       targetId: id,
-      details: { refundAmount, reason, customerId: userId },
+      details: { refundAmount, reason, customerId: userId, channel },
     });
 
-    res.json({ success: true, message: `Refund of ₹${refundAmount} issued to customer wallet`, refundAmount, refundable: Math.round((remaining - refundAmount) * 100) / 100 });
+    res.json({
+      success: true,
+      message: channel === 'wallet'
+        ? `Refund of ₹${refundAmount} issued to customer wallet`
+        : `Refund of ₹${refundAmount} queued for payout to the customer (see Refund payouts)`,
+      refundAmount, channel, refundable: Math.round((remaining - refundAmount) * 100) / 100,
+    });
   } catch (error) {
     next(error);
   }
@@ -669,27 +687,42 @@ const resolveDispute = async (req, res, next) => {
     const dispute = await queryOne('SELECT * FROM disputes WHERE id = $1', [id]);
     if (!dispute) return res.status(404).json({ success: false, error: 'Dispute not found' });
 
-    await query(
+    // A dispute's refund comes off what the order can still refund, counted
+    // with every other refund of it. It used to be uncapped, repeatable (a
+    // resolved dispute could be resolved again) and credited against the
+    // dispute's id, so the order refund's cap never saw it.
+    const wantsRefund = resolution === 'refund_customer' && Number(refundAmount) > 0 && dispute.user_id && dispute.order_id;
+    if (wantsRefund) {
+      const order = await queryOne('SELECT total_amount FROM orders WHERE id = $1', [dispute.order_id]);
+      const remaining = Math.round(((Number(order && order.total_amount) || 0) - await refundPayouts.refundedSoFar(dispute.order_id)) * 100) / 100;
+      if (Number(refundAmount) > remaining) {
+        return res.status(400).json({ success: false, error: `At most ₹${Math.max(0, remaining)} of this order can still be refunded`, refundable: Math.max(0, remaining) });
+      }
+    }
+
+    const claimed = await query(
       `UPDATE disputes
           SET status = 'resolved', resolution = $1, resolved_at = ${NOW}, updated_at = ${NOW}
-        WHERE id = $2`,
+        WHERE id = $2 AND COALESCE(status, 'open') <> 'resolved'`,
       [resolution, id]
     );
+    if (!Number(claimed.rowCount ?? claimed.changes ?? 0)) {
+      return res.status(409).json({ success: false, error: 'This dispute has already been resolved' });
+    }
 
-    if (resolution === 'refund_customer' && Number(refundAmount) > 0 && dispute.user_id) {
-      await payments.creditWallet({
-        userId: dispute.user_id,
-        amount: Number(refundAmount),
-        purpose: 'dispute_refund',
-        referenceId: String(id),
-      });
+    let channel = null;
+    if (wantsRefund) {
+      channel = (await refundPayouts.refundCustomer({
+        orderId: dispute.order_id, userId: dispute.user_id, amount: Number(refundAmount),
+        purpose: 'dispute_refund', sourceType: 'dispute', sourceId: id,
+      })).channel;
     }
 
     await recordAudit(req, {
       action: 'resolve_dispute',
       targetType: 'dispute',
       targetId: id,
-      details: { resolution, refundAmount },
+      details: { resolution, refundAmount, channel },
     });
 
     res.json({ success: true, message: 'Dispute resolved successfully', status: 'resolved' });
@@ -1325,7 +1358,37 @@ const moderateReview = async (req, res, next) => {
   }
 };
 
+
+/** D10: refunds waiting to be paid by hand (UPI or bank), and those paid. */
+const getRefundPayouts = async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await refundPayouts.listPayouts({ status: req.query.status || 'pending' }) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** D10: an administrator has made the transfer; record its reference. */
+const markRefundPaid = async (req, res, next) => {
+  try {
+    const { reference, payeeUpi } = req.body || {};
+    let out;
+    try {
+      out = await refundPayouts.markPaid({ id: req.params.id, reference, adminId: req.user.id, payeeUpi });
+    } catch (e) {
+      if (e && e.name === 'PayoutError') return res.status(e.status).json({ success: false, error: e.message });
+      throw e;
+    }
+    await recordAudit(req, { action: 'refund_payout_paid', targetType: 'refund_payout', targetId: req.params.id, details: { reference: out.reference, amount: out.amount } });
+    res.json({ success: true, ...out });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
+  getRefundPayouts,
+  markRefundPaid,
   getReviewReports,
   moderateReview,
   getKpis,
