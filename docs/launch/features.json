@@ -208,7 +208,15 @@
     "status": "CODE COMPLETE",
     "evidence": [
       "backend/src/__tests__/unit/couponEngine.test.js",
-      "backend/src/__tests__/concurrency.test.js"
+      "backend/src/__tests__/concurrency.test.js",
+      "backend/src/__tests__/integration/couponsC7.test.js",
+      "backend/src/services/coupon.service.js",
+      "apps/web/tests/coupon.test.mjs",
+      "apps/web/src/components/CouponField.js",
+      "apps/mobile/__tests__/coupon.test.js",
+      "apps/mobile/src/services/coupon.js",
+      "tests/e2e/web/coupons.spec.js",
+      "tests/e2e/admin/commerce-ops.spec.js"
     ],
     "notes": "Replaces hardcoded mock coupons (N5). Tested under PostgreSQL concurrency."
   },

@@ -5,6 +5,7 @@ const payments = require('../../../services/payments.service');
 const ledgerService = require('../../../services/ledger.service');
 const { recordAudit } = require('../services/adminAudit.service');
 const refundPayouts = require('../../../services/refundPayouts.service');
+const couponService = require('../../../services/coupon.service');
 const notificationService = require('../../core/services/notification.service');
 const { escapeCsvField, generateStandardOrdersCsv, generateGstTcsSection52Csv, generateSellerReconciliationCsv } = require('../services/adminReporting.service');
 
@@ -816,26 +817,58 @@ const getCoupons = async (req, res, next) => {
   }
 };
 
+/**
+ * The console's coupon form, in the coupon service's terms (C7). It used to
+ * insert the row itself: the form's "₹ off" was stored as discount type
+ * 'flat', which the engine does not know, so every flat coupon made here took
+ * nothing off; and none of the per-customer, first-order, shop or date rules
+ * could be set, nor were impossible terms refused.
+ */
+function couponFields(body = {}) {
+  const type = String(body.discountType ?? body.discount_type ?? 'percentage').toLowerCase();
+  const pick = (camel, snake) => (body[camel] !== undefined ? body[camel] : body[snake]);
+  const blankToNull = (v) => (v === '' || v === undefined ? null : v);
+  return {
+    code: body.code,
+    discount_type: type === 'flat' ? 'fixed' : type,
+    discount_value: type === 'free_delivery' ? 0 : Number(pick('discountValue', 'discount_value')),
+    min_order_amount: Number(pick('minOrderAmount', 'min_order_amount')) || 0,
+    max_discount_amount: blankToNull(pick('maxDiscountAmount', 'max_discount_amount')),
+    max_uses: blankToNull(pick('usageLimit', 'max_uses')),
+    per_user_limit: blankToNull(pick('perUserLimit', 'per_user_limit')),
+    first_order_only: Boolean(pick('firstOrderOnly', 'first_order_only')),
+    shop_id: blankToNull(pick('shopId', 'shop_id')),
+    start_date: blankToNull(pick('startDate', 'start_date')),
+    end_date: blankToNull(pick('endDate', 'end_date')),
+    description: blankToNull(body.description) || undefined,
+  };
+}
+
+const couponFailure = (res, error, next) => (error instanceof couponService.CouponError
+  ? res.status(error.status).json({ success: false, error: error.message, code: error.code })
+  : next(error));
+
 const createCoupon = async (req, res, next) => {
   try {
-    const { code, discountType = 'percentage', discountValue, minOrderAmount = 0, maxDiscountAmount, usageLimit } = req.body || {};
-    if (!code || !(Number(discountValue) > 0)) {
-      return res.status(400).json({ success: false, error: 'Code and positive discountValue are required' });
-    }
-
-    const cleanCode = String(code).toUpperCase().trim();
-    const couponId = crypto.randomUUID();
-
-    await query(
-      `INSERT INTO coupons (id, code, discount_type, discount_value, min_order_amount, max_discount_amount, max_uses, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
-      [couponId, cleanCode, discountType, Number(discountValue), Number(minOrderAmount), maxDiscountAmount ? Number(maxDiscountAmount) : null, usageLimit ? Number(usageLimit) : 1000]
-    );
-
-    await recordAudit(req, { action: 'create_coupon', targetType: 'coupon', targetId: couponId, details: { code: cleanCode, discountValue } });
-    res.status(201).json({ success: true, data: { id: couponId, code: cleanCode } });
+    const fields = couponFields(req.body);
+    const coupon = await couponService.createCoupon(fields);
+    await recordAudit(req, { action: 'create_coupon', targetType: 'coupon', targetId: coupon.id, details: { code: coupon.code, type: fields.discount_type, value: fields.discount_value } });
+    res.status(201).json({ success: true, data: { id: coupon.id, code: coupon.code } });
   } catch (error) {
-    next(error);
+    couponFailure(res, error, next);
+  }
+};
+
+/** PUT /admin/commerce/coupons/:id { isActive } — pause or resume a coupon. */
+const updateCoupon = async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    if (body.isActive === undefined) return res.status(400).json({ success: false, error: 'isActive is required' });
+    const coupon = await couponService.updateCoupon(req.params.id, { is_active: Boolean(body.isActive) });
+    await recordAudit(req, { action: body.isActive ? 'resume_coupon' : 'pause_coupon', targetType: 'coupon', targetId: coupon.id, details: { code: coupon.code } });
+    res.json({ success: true, data: coupon });
+  } catch (error) {
+    couponFailure(res, error, next);
   }
 };
 
@@ -1415,6 +1448,7 @@ module.exports = {
   getPayouts,
   getCoupons,
   createCoupon,
+  updateCoupon,
   getBanners,
   createBanner,
   deleteBanner,

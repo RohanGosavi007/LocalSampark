@@ -43,6 +43,7 @@ router.put('/shops/:id/commission', adminCommerceController.setShopCommission);
 // A7: Admin Promotions, Campaigns & CMS
 router.get('/coupons', adminCommerceController.getCoupons);
 router.post('/coupons', adminCommerceController.createCoupon);
+router.put('/coupons/:id', adminCommerceController.updateCoupon);
 router.get('/banners', adminCommerceController.getBanners);
 router.post('/banners', adminCommerceController.createBanner);
 router.delete('/banners/:id', adminCommerceController.deleteBanner);

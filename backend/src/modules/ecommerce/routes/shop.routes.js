@@ -35,6 +35,7 @@ const { authenticate, optionalAuth } = require('../../../middleware/auth.middlew
 const { idempotent } = require('../../../middleware/idempotency.middleware');
 const orderEvents = require('../../../services/orderEvents.service');
 const deliverySlots = require('../../../services/deliverySlots.service');
+const couponService = require('../../../services/coupon.service');
 const crypto = require('crypto');
 // NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
@@ -1030,7 +1031,9 @@ async function priceBatch(user, body) {
     }
 
     // The placement service reads the address and location under these names.
-    const orderBody = { ...body, deliveryAddress: body.deliveryAddress ?? body.address, deliveryCoordinate: body.deliveryCoordinate ?? body.coordinate };
+    // A coupon is priced once, for the whole cart (C7), not by each shop's order.
+    const couponCode = orderPlacement.couponCodeOf(body);
+    const orderBody = orderPlacement.withoutCoupon({ ...body, deliveryAddress: body.deliveryAddress ?? body.address, deliveryCoordinate: body.deliveryCoordinate ?? body.coordinate });
 
     // Price every shop's part first; nothing is written until all of it is good.
     const quotes = [];
@@ -1054,11 +1057,38 @@ async function priceBatch(user, body) {
             smallOrderFee: index === 0 ? smallOrderFee : 0,
         };
     });
+
+    // C7: the coupon, for the cart. A shop's coupon comes off that shop's
+    // order; a platform coupon is shared between the orders in proportion to
+    // their items; free delivery waives the delivery the orders carry.
+    let coupon = null;
+    let couponError = null;
+    quotes.forEach((q) => { q.couponDiscount = 0; });
+    if (couponCode) {
+        try {
+            const priced = await couponService.priceCart({
+                code: couponCode,
+                userId: user ? user.id : null,
+                parts: quotes.map((q) => ({ shopId: q.shopId, subtotal: q.quote.bill.subtotal, deliveryFee: q.fees.deliveryFee })),
+            });
+            for (const q of quotes) {
+                const share = priced.shares.get(String(q.shopId));
+                if (share.deliveryWaived > 0) q.fees.deliveryFee = 0;
+                q.couponDiscount = share.discount;
+            }
+            coupon = priced.coupon;
+        } catch (e) {
+            if (!(e instanceof couponService.CouponError)) throw e;
+            couponError = { code: e.code, message: e.message };
+        }
+    }
+    const discount = round2(quotes.reduce((sum, q) => sum + q.couponDiscount, 0));
+
     const totalDeliveryFee = round2(quotes.reduce((sum, q) => sum + q.fees.deliveryFee, 0));
-    const cartTotal = round2(itemsTotal + totalDeliveryFee + config.platform_fee + smallOrderFee);
+    const cartTotal = round2(Math.max(0, itemsTotal + totalDeliveryFee + config.platform_fee + smallOrderFee - discount));
     const codAvailable = Boolean(config.cod_enabled) && !(config.cod_max_order_value > 0 && cartTotal > config.cod_max_order_value);
 
-    return { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable, freeDelivery };
+    return { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable, freeDelivery, discount, coupon, couponError };
 }
 
 function sendBatchError(res, err, next) {
@@ -1089,12 +1119,15 @@ router.post('/cart/batch-quote', optionalAuth, async (req, res, next) => {
                 deliveryFee: priced.totalDeliveryFee,
                 smallOrderFee: priced.smallOrderFee,
                 platformFee: priced.config.platform_fee,
+                discount: priced.discount,
                 total: priced.cartTotal,
                 distanceKm: null,
                 surgeMultiplier: 1,
                 freeDelivery: priced.freeDelivery,
                 // The slowest shop decides when everything has arrived.
                 etaMinutes: etas.length ? Math.max(...etas) : null,
+                coupon: priced.coupon,
+                couponError: priced.couponError,
             },
             shops: priced.quotes.map((q) => ({
                 shopId: q.shopId,
@@ -1103,7 +1136,8 @@ router.post('/cart/batch-quote', optionalAuth, async (req, res, next) => {
                 deliveryFee: q.fees.deliveryFee,
                 platformFee: q.fees.platformFee,
                 smallOrderFee: q.fees.smallOrderFee,
-                total: round2(q.quote.bill.subtotal + q.fees.deliveryFee + q.fees.platformFee + q.fees.smallOrderFee),
+                discount: q.couponDiscount,
+                total: round2(q.quote.bill.subtotal + q.fees.deliveryFee + q.fees.platformFee + q.fees.smallOrderFee - q.couponDiscount),
             })),
             // One gateway payment settles one order, so not for several shops.
             paymentMethods: { cod: priced.codAvailable, wallet: require('../../../services/refundPayouts.service').walletEnabled(), razorpay: false },
@@ -1129,8 +1163,11 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
             return res.status(400).json({ message: 'Paying from the wallet is not available. Please choose cash on delivery.', code: 'WALLET_UNAVAILABLE' });
         }
 
-        const { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable } = await priceBatch(req.user, body);
+        const { orderBody, quotes, config, itemsTotal, totalDeliveryFee, smallOrderFee, cartTotal, codAvailable, discount: couponDiscount, coupon, couponError } = await priceBatch(req.user, body);
         const round = round2;
+        if (couponError) {
+            return res.status(400).json({ success: false, message: couponError.message, error: couponError.message, code: couponError.code });
+        }
 
         if (method === 'cod' && !codAvailable) {
             return res.status(400).json({ message: 'Cash on delivery is not available for this cart. Please pay from your wallet.', code: 'COD_NOT_AVAILABLE' });
@@ -1171,22 +1208,36 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
             await client.query('INSERT INTO batch_orders (id, user_id, total_batch_amount, combined_delivery_fee, status) VALUES ($1, $2, $3, $4, $5)',
                 [batch_id, req.user.id, finalAmount, totalDeliveryFee, 'pending']);
 
-                        // The coins come off the orders themselves, first order first, so
-            // that each order's total is what is actually owed for it: a rider
-            // collecting cash for one collects the discounted amount, and a
-            // refund returns what was paid.
+                        // The coupon's share and then the coins come off the orders
+            // themselves, first order first, so that each order's total is
+            // what is actually owed for it: a rider collecting cash for one
+            // collects the discounted amount, and a refund returns what was paid.
             const placed = [];
             let discountLeft = coinsUsed;
             for (const q of quotes) {
-                const before = round(q.quote.bill.subtotal + q.fees.deliveryFee + q.fees.platformFee + q.fees.smallOrderFee);
-                const discount = Math.min(discountLeft, before);
-                discountLeft = round(discountLeft - discount);
+                const before = round(q.quote.bill.subtotal + q.fees.deliveryFee + q.fees.platformFee + q.fees.smallOrderFee - q.couponDiscount);
+                const coins = Math.min(discountLeft, before);
+                discountLeft = round(discountLeft - coins);
+                const discount = round(q.couponDiscount + coins);
                 const result = await orderPlacement.placeOrder({
                     user: req.user, shopId: q.shopId, items: q.lines, body: orderBody, method,
                     batchId: batch_id, client, prepaid: paid, fees: { ...q.fees, discount },
                 });
                 placed.push(result.order.id);
                 placedOrders.push(result);
+            }
+
+            // The coupon is used once for the cart, against its first order.
+            if (coupon) {
+                try {
+                    await couponService.redeemCoupon({
+                        couponId: coupon.id, userId: req.user.id, orderId: placed[0],
+                        discountApplied: round(couponDiscount + (coupon.deliveryWaived || 0)), client,
+                    });
+                } catch (e) {
+                    if (e instanceof couponService.CouponError) throw new orderPlacement.OrderError(e.status, e.code, e.message);
+                    throw e;
+                }
             }
 
             // 1% back in coins, on money that has actually been received.
@@ -1208,7 +1259,7 @@ router.post('/cart/batch-checkout', authenticate, idempotent('batch-checkout'), 
 
         res.json({
             batch_id, totalBatchAmount: itemsTotal, totalDeliveryFee,
-            platformFee: config.platform_fee, smallOrderFee,
+            platformFee: config.platform_fee, smallOrderFee, discount: couponDiscount, coupon: coupon ? { code: coupon.code, type: coupon.type } : null,
             finalAmount: outcome.finalAmount, coinsUsed: outcome.coinsUsed, earnedCoins: outcome.earnedCoins,
             orderIds: outcome.orderIds,
             paymentMethod: method, paymentStatus: paid ? 'paid' : 'pending',

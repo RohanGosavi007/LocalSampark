@@ -227,6 +227,32 @@ test.describe('Commerce Ops console', () => {
     await expect(banner).toHaveCount(0);
   });
 
+  test('[C7.19] a "₹ off" coupon with per-customer rules, then paused', async () => {
+    await openSection('promotions');
+    await page.getByLabel('Coupon code').fill('e2eflat5');
+    await page.getByLabel('Discount type').selectOption('fixed');
+    await page.getByLabel('Discount value').fill('5');
+    await page.getByLabel('Uses per customer').fill('2');
+    await page.getByLabel('First order only').check();
+    await page.getByRole('button', { name: 'Create coupon' }).click();
+    const row = page.getByTestId('coupon-row-E2EFLAT5');
+    await expect(row).toContainText('₹5');
+    await expect(row).toContainText('2 per customer · first order');
+    await expect(row).toContainText('Active');
+
+    // Impossible terms are refused, not saved.
+    await page.getByLabel('Coupon code').fill('e2etoomuch');
+    await page.getByLabel('Discount type').selectOption('percentage');
+    await page.getByLabel('Discount value').fill('150');
+    await page.getByRole('button', { name: 'Create coupon' }).click();
+    await expect(page.getByText('A percentage discount must be between 1 and 100')).toBeVisible();
+    await expect(page.getByTestId('coupon-row-E2ETOOMUCH')).toHaveCount(0);
+
+    await row.getByRole('button', { name: 'Pause' }).click();
+    await expect(row).toContainText('Paused');
+    await expect(row.getByRole('button', { name: 'Resume' })).toBeVisible();
+  });
+
   test('[A8.5] every console action above is in the audit log', async () => {
     await openSection('audit');
     for (const action of ['login', 'kyc_resubmission', 'kyc_verified', 'emergency_shop_suspend', 'create_category',
