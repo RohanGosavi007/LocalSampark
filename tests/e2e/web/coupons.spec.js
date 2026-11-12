@@ -28,7 +28,8 @@ test('[C7.18] a coupon at checkout comes off the bill and the order', async ({ p
   await page.getByRole('button', { name: 'Apply' }).click();
   await expect(page.getByTestId('coupon-applied')).toContainText('Invalid or expired coupon code');
   await place.click();
-  await expect(page.getByRole('alert')).toContainText('Remove the coupon');
+  // (Next.js's route announcer is also role="alert"; this is the checkout's.)
+  await expect(page.getByRole('alert').filter({ hasText: 'Remove the coupon' })).toBeVisible();
   await page.getByRole('button', { name: 'Remove coupon NOSUCHCODE' }).click();
 
   await page.getByLabel('Coupon code').fill('e2eflat20');

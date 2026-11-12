@@ -77,7 +77,9 @@ test('[C1.20] signing out from the account menu ends this browser’s session on
     page.waitForResponse((r) => r.url().includes('/auth/logout') && r.status() === 200),
     page.getByRole('button', { name: 'Sign Out' }).click(),
   ]);
-  await expect.poll(async () => page.evaluate(() => localStorage.getItem('auth_token'))).toBeNull();
+  // Signing out goes to the home page; the stored session is gone.
+  await page.waitForURL((url) => url.pathname === '/');
+  expect(await page.evaluate(() => localStorage.getItem('auth_token'))).toBeNull();
 
   expect((await me(request, here.accessToken)).status()).toBe(401);
   expect((await me(request, phone.accessToken)).status()).toBe(200);
