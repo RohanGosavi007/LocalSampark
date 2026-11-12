@@ -48,8 +48,8 @@ beforeAll(async () => {
   for (const [id, user, status] of [[ORDER, BUYER, 'delivered'], [ORDER2, BUYER2, 'delivered'], [PENDING, STRANGER, 'preparing']]) {
     await query(
       `INSERT INTO orders (id, user_id, shop_id, total_amount, delivery_fee, payment_method, order_status, status)
-       VALUES ($1, $2, $3, 100, 0, 'cod', $4, $4)`,
-      [id, user, SHOP, status]
+       VALUES ($1, $2, $3, 100, 0, 'cod', $4, $5)`,
+      [id, user, SHOP, status, status]
     );
   }
   app = express();

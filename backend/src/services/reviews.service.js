@@ -117,8 +117,9 @@ async function submit({ userId, shopId, rating, text, photos, orderId = null, mo
     id = crypto.randomUUID();
     await query(
       `INSERT INTO shop_reviews (id, shop_id, user_id, rating, review_text, photo_urls, is_society_verified, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, 1, 'Published', $7, $7)`,
-      [id, shop.id, userId, stars, body, JSON.stringify(cleanPhotos(photos)), now()]
+       VALUES ($1, $2, $3, $4, $5, $6, 1, 'Published', $7, $8)`,
+      // Separate parameters: created_at and updated_at are different types on PostgreSQL.
+      [id, shop.id, userId, stars, body, JSON.stringify(cleanPhotos(photos)), now(), now()]
     );
   }
   const shopRating = await recomputeRating(shop.id);
