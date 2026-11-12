@@ -1,0 +1,1058 @@
+=== Feature Verification Summary ===
+Total Launch Features: 53
+Verified: 1
+Code Complete: 0
+In Progress: 52
+Not Started: 0
+
+Discrepancies (32):
+[
+  {
+    "id": "C5",
+    "title": "Catalog Search",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C6",
+    "title": "Cart Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C7",
+    "title": "Database-Backed Coupon Engine",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C9",
+    "title": "Order Management & Tracking",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C10",
+    "title": "Returns & Refunds",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C11",
+    "title": "Verified Reviews & Ratings",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C13",
+    "title": "Notification System",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "C14",
+    "title": "Support & Grievance Redressal",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S1",
+    "title": "Seller Onboarding & KYC",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S2",
+    "title": "Seller Catalog & Inventory Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S3",
+    "title": "Seller Order Operations & Kitchen Display",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "S4",
+    "title": "Seller Financials & Payouts",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A1",
+    "title": "Admin Commerce KPI Dashboard",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A2",
+    "title": "Admin Seller & KYC Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A3",
+    "title": "Admin Catalog Moderation & Categories",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A4",
+    "title": "Admin Order Operations & Interventions",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A5",
+    "title": "Admin Returns & Dispute Queue",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A6",
+    "title": "Admin Payouts & Commission Configuration",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A7",
+    "title": "Admin Promotions, Campaigns & CMS",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A8",
+    "title": "Admin RBAC & Immutable Audit Log",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A9",
+    "title": "Admin Serviceability Zones",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A10",
+    "title": "Admin Delivery Fleet & Cash Reconciliation",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A11",
+    "title": "Admin Grievance & Support Management",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A12",
+    "title": "Admin Feature Flags & Vertical Kill Switches",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A13",
+    "title": "Admin Financial & Tax Report Exports",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "A14",
+    "title": "Admin Broadcast Notifications",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P3",
+    "title": "Double-Entry Financial Ledger",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P7",
+    "title": "Web SEO & Metadata Automation",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "VERIFIED",
+    "failedTests": [],
+    "missingPlatforms": [],
+    "missingEvidence": []
+  },
+  {
+    "id": "P8",
+    "title": "Observability & Health Checks",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P10",
+    "title": "Automated Database Backups",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "api"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P12",
+    "title": "Accessibility & Internationalization",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "web",
+      "android"
+    ],
+    "missingEvidence": []
+  },
+  {
+    "id": "P13",
+    "title": "Performance Budgets & Low-End Device Optimization",
+    "storedStatus": "CODE COMPLETE",
+    "computedStatus": "IN PROGRESS",
+    "failedTests": [],
+    "missingPlatforms": [
+      "web",
+      "api",
+      "android"
+    ],
+    "missingEvidence": []
+  }
+]
+
+Features Breakdown:
+[
+  {
+    "id": "C1",
+    "title": "Customer Account & Authentication",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 17,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C2",
+    "title": "Location & Serviceability",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C3",
+    "title": "Discovery & Shop Listings",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C4",
+    "title": "Product Detail & Legal Metrology",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 8,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C5",
+    "title": "Catalog Search",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 10,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C6",
+    "title": "Cart Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 13,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C7",
+    "title": "Database-Backed Coupon Engine",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 16,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C8",
+    "title": "Checkout Flow",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 16,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C9",
+    "title": "Order Management & Tracking",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 17,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C10",
+    "title": "Returns & Refunds",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 18,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C11",
+    "title": "Verified Reviews & Ratings",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 13,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C12",
+    "title": "Wishlist & Saved Items",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 7,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C13",
+    "title": "Notification System",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 8,
+    "failedTestCount": 0
+  },
+  {
+    "id": "C14",
+    "title": "Support & Grievance Redressal",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 15,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S1",
+    "title": "Seller Onboarding & KYC",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S2",
+    "title": "Seller Catalog & Inventory Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 6,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S3",
+    "title": "Seller Order Operations & Kitchen Display",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S4",
+    "title": "Seller Financials & Payouts",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S5",
+    "title": "Shop-Level Coupons & Offers",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S6",
+    "title": "Seller Review Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "S7",
+    "title": "Seller Business Analytics",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android",
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "R1",
+    "title": "Rider Onboarding & Duty Toggle",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "R2",
+    "title": "Rider Task Assignment & Dispatch",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "R3",
+    "title": "Rider Fulfillment & Proof of Delivery",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "R4",
+    "title": "Rider Real-Time Location Sharing",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "api",
+      "web"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "R5",
+    "title": "Rider COD Cash Ledger & Earnings",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "android",
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A1",
+    "title": "Admin Commerce KPI Dashboard",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A2",
+    "title": "Admin Seller & KYC Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A3",
+    "title": "Admin Catalog Moderation & Categories",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A4",
+    "title": "Admin Order Operations & Interventions",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 11,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A5",
+    "title": "Admin Returns & Dispute Queue",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A6",
+    "title": "Admin Payouts & Commission Configuration",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A7",
+    "title": "Admin Promotions, Campaigns & CMS",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A8",
+    "title": "Admin RBAC & Immutable Audit Log",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 6,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A9",
+    "title": "Admin Serviceability Zones",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A10",
+    "title": "Admin Delivery Fleet & Cash Reconciliation",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A11",
+    "title": "Admin Grievance & Support Management",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A12",
+    "title": "Admin Feature Flags & Vertical Kill Switches",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api",
+      "web",
+      "android"
+    ],
+    "passedTestCount": 4,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A13",
+    "title": "Admin Financial & Tax Report Exports",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "A14",
+    "title": "Admin Broadcast Notifications",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "admin",
+      "api"
+    ],
+    "passedTestCount": 6,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P1",
+    "title": "Canonical Commerce Pipeline",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P2",
+    "title": "Payment Gateway Integration",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P3",
+    "title": "Double-Entry Financial Ledger",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P4",
+    "title": "Cloud Object Storage & Media Pipeline",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P5",
+    "title": "Unified Notification Provider Engine",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P6",
+    "title": "Unified Module Registry & Feature Flag System",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P7",
+    "title": "Web SEO & Metadata Automation",
+    "scope": "launch",
+    "status": "VERIFIED",
+    "platforms": [
+      "web"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P8",
+    "title": "Observability & Health Checks",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 3,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P9",
+    "title": "Security, Rate Limiting & Input Validation",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api",
+      "web",
+      "android",
+      "admin"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P10",
+    "title": "Automated Database Backups",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "api"
+    ],
+    "passedTestCount": 5,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P11",
+    "title": "Privacy-Friendly Product Analytics",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P12",
+    "title": "Accessibility & Internationalization",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  },
+  {
+    "id": "P13",
+    "title": "Performance Budgets & Low-End Device Optimization",
+    "scope": "launch",
+    "status": "IN PROGRESS",
+    "platforms": [
+      "web",
+      "api",
+      "android"
+    ],
+    "passedTestCount": 0,
+    "failedTestCount": 0
+  }
+]

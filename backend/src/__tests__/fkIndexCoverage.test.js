@@ -53,7 +53,9 @@ describe('SQLite', () => {
       }
     }
     expect(missing).toEqual([]);
-  }, 60000);
+    // ~4 PRAGMA round trips per table across the whole schema: ~8 s alone, but it
+    // overran 60 s mid-suite on a loaded machine (G2, 2026-11-12).
+  }, 180000);
 });
 
 describe('PostgreSQL (migration files)', () => {

@@ -168,7 +168,9 @@ describe('hysteresis', () => {
     }
 
     expect(events).toHaveLength(0);
-  });
+    // 120 database round trips: same budget, and same reason, as the cooldown
+    // test below (overran the 10 s default under load, G2 2026-11-12).
+  }, 60000);
 
   test('cutting a corner does not count as leaving', async () => {
     const t0 = 1_700_000_000_000;

@@ -1,0 +1,118 @@
+=== Backend Jest on SQLite Execution ===
+Exit Code: 1
+Summary: 1758 passed, 2 failed across 163 test suites
+
+STDOUT:
+19:10:03 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 24.542 ms - 293[0m
+[0mGET /ready [32m200[0m 3.688 ms - 136[0m
+[0mGET /metrics [32m200[0m 0.729 ms - 392[0m
+
+
+STDERR:
+FAIL src/__tests__/fkIndexCoverage.test.js (60.758 s)
+  ● SQLite › every foreign-key column leads an index
+
+    thrown: "Exceeded timeout of 60000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 60000 ms for a test.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          34 |
+          35 | describe('SQLite', () => {
+        > 36 |   test('every foreign-key column leads an index', async () => {
+             |   ^
+          37 |     const tables = (await db.queryMany(
+          38 |       "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+          39 |     )).map((t) => t.name).filter((n) => !SCRATCH.test(n));
+
+          at test (src/__tests__/fkIndexCoverage.test.js:36:3)
+          at Object.describe (src/__tests__/fkIndexCoverage.test.js:35:1)
+
+FAIL src/__tests__/services/boundaryMonitor.test.js (36.089 s)
+  ● hysteresis › jitter on the boundary never alerts, however long it goes on
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 10000 ms for a test.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          155 |   });
+          156 |
+        > 157 |   test('jitter on the boundary never alerts, however long it goes on', async () => {
+              |   ^
+          158 |     // The scenario that makes the naive version useless: a rider parked at the
+          159 |     // edge while GPS wanders either side of the line for ten minutes.
+          160 |     let t = 1_700_000_000_000;
+
+          at test (src/__tests__/services/boundaryMonitor.test.js:157:3)
+          at Object.describe (src/__tests__/services/boundaryMonitor.test.js:137:1)
+
+
+Summary of all failing tests
+FAIL src/__tests__/fkIndexCoverage.test.js (60.758 s)
+  ● SQLite › every foreign-key column leads an index
+
+    thrown: "Exceeded timeout of 60000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 60000 ms for a test.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          34 |
+          35 | describe('SQLite', () => {
+        > 36 |   test('every foreign-key column leads an index', async () => {
+             |   ^
+          37 |     const tables = (await db.queryMany(
+          38 |       "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+          39 |     )).map((t) => t.name).filter((n) => !SCRATCH.test(n));
+
+          at test (src/__tests__/fkIndexCoverage.test.js:36:3)
+          at Object.describe (src/__tests__/fkIndexCoverage.test.js:35:1)
+
+FAIL src/__tests__/services/boundaryMonitor.test.js (36.089 s)
+  ● hysteresis › jitter on the boundary never alerts, however long it goes on
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 10000 ms for a test.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          155 |   });
+          156 |
+        > 157 |   test('jitter on the boundary never alerts, however long it goes on', async () => {
+              |   ^
+          158 |     // The scenario that makes the naive version useless: a rider parked at the
+          159 |     // edge while GPS wanders either side of the line for ten minutes.
+          160 |     let t = 1_700_000_000_000;
+
+          at test (src/__tests__/services/boundaryMonitor.test.js:157:3)
+          at Object.describe (src/__tests__/services/boundaryMonitor.test.js:137:1)
+
+
+Test Suites: 2 failed, 161 passed, 163 total
+Tests:       2 failed, 1758 passed, 1760 total
+Snapshots:   0 total
+Time:        548.088 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-12T13-39-43\jest-sqlite.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

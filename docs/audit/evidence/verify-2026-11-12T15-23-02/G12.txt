@@ -1,0 +1,59 @@
+=== Android release smoke test ===
+APK: C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\mobile\android\app\build\outputs\apk\release\app-release.apk (2026-11-12T14:12:03.962Z)
+Device: emulator-5554 — Android 14 (x86_64)
+install: Performing Streamed Install
+Success
+requested permissions (34):
+  android.permission.ACCESS_COARSE_LOCATION
+  android.permission.ACCESS_FINE_LOCATION
+  android.permission.CAMERA
+  android.permission.INTERNET
+  android.permission.POST_NOTIFICATIONS
+  android.permission.VIBRATE
+  android.permission.ACCESS_NETWORK_STATE
+  android.permission.ACCESS_WIFI_STATE
+  android.permission.FOREGROUND_SERVICE
+  android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+  android.permission.RECEIVE_BOOT_COMPLETED
+  android.permission.NFC
+  android.permission.WAKE_LOCK
+  com.google.android.c2dm.permission.RECEIVE
+  android.permission.USE_BIOMETRIC
+  android.permission.USE_FINGERPRINT
+  com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE
+  com.sec.android.provider.badge.permission.READ
+  com.sec.android.provider.badge.permission.WRITE
+  com.htc.launcher.permission.READ_SETTINGS
+  com.htc.launcher.permission.UPDATE_SHORTCUT
+  com.sonyericsson.home.permission.BROADCAST_BADGE
+  com.sonymobile.home.permission.PROVIDER_INSERT_BADGE
+  com.anddoes.launcher.permission.UPDATE_COUNT
+  com.majeur.launcher.permission.UPDATE_BADGE
+  com.huawei.android.launcher.permission.CHANGE_BADGE
+  com.huawei.android.launcher.permission.READ_SETTINGS
+  com.huawei.android.launcher.permission.WRITE_SETTINGS
+  android.permission.READ_APP_BADGE
+  com.oppo.launcher.permission.READ_SETTINGS
+  com.oppo.launcher.permission.WRITE_SETTINGS
+  me.everything.badger.permission.BADGE_COUNT_READ
+  me.everything.badger.permission.BADGE_COUNT_WRITE
+  android.permission.READ_BASIC_PHONE_STATE
+installed uid: 10202
+am start: Starting: Intent { cmp=in.localsampark.app/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: in.localsampark.app/.MainActivity
+TotalTime: 2511
+WaitTime: 2520
+Complete
+resumed: topResumedActivity=ActivityRecord{626a2a0 u0 in.localsampark.app/.MainActivity t31}
+uiautomator dump (attempt 1): UI hierchary dumped to: /data/local/tmp/ls-ui.xml
+deep link: Starting: Intent { act=android.intent.action.VIEW dat=localsampark://shops/... pkg=in.localsampark.app }
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+Status: ok
+LaunchState: UNKNOWN (0)
+Activity: in.localsampark.app/.MainActivity
+TotalTime: 0
+WaitTime: 16
+Complete
+labelled app UI elements: 14

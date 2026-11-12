@@ -421,6 +421,11 @@ const gates = [
       }
 
       const res = runCmd(path.join(androidDir, gradlew), ['assembleRelease'], { cwd: androidDir, timeout: 600000 });
+      // Gradle daemons (and the Kotlin daemon) stay resident after the build,
+      // ~2.4 GB between them. G11 builds Next.js with a 4 GB heap straight after
+      // this, and with them still up it died on a 16 GB machine (0xC0000409,
+      // then spawn UNKNOWN, full runs of 2026-11-12) while passing on its own.
+      runCmd(path.join(androidDir, gradlew), ['--stop'], { cwd: androidDir, timeout: 60000 });
 
       // Inspect built release APK artifact
       let artifactProof = 'No release APK artifact discovered';

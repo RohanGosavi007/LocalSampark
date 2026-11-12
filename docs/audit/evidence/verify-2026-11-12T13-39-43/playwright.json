@@ -1,0 +1,198 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\localsampark 04-09-2026\\localsampark 25-10-2026\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--project=web-chromium",
+      "--project=admin-chromium"
+    ],
+    "configFile": "C:\\localsampark 04-09-2026\\localsampark 25-10-2026\\playwright.config.js",
+    "rootDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "web-chromium",
+        "name": "web-chromium",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "web-firefox",
+        "name": "web-firefox",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "web-webkit",
+        "name": "web-webkit",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "admin-chromium",
+        "name": "admin-chromium",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/admin",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "mobile-chrome",
+        "name": "mobile-chrome",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "mobile-safari",
+        "name": "mobile-safari",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "visual",
+        "name": "visual",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/visual",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "api",
+        "name": "api",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/api",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "a11y",
+        "name": "a11y",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/accessibility",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: Process from config.webServer was not able to start. Exit code: 3221226505",
+      "stack": "Error: Process from config.webServer was not able to start. Exit code: 3221226505"
+    }
+  ],
+  "stats": {
+    "startTime": "2026-11-12T14:12:09.493Z",
+    "duration": 112883.441,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,15 @@
+=== Playwright E2E Output ===
+Error: Process from config.webServer was not able to start. Exit code: 3221226505
+
+
+[WebServer] ⚠️  Running in non-production mode. Strict validation skipped.
+[WebServer]    13 optional service keys not configured (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, FIREBASE_PROJECT_ID...)
+[WebServer] [Firebase] Warning: Valid Firebase credentials not configured. Firebase sign-in is mocked (development mode).
+[WebServer] ⚠️ Firebase credentials not configured — SMS OTP and Push will use fallback mode
+[WebServer] npm error Lifecycle script `build` failed with error:
+[WebServer] npm error code 3221226505
+[WebServer] npm error path C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web
+[WebServer] npm error workspace @localsampark/web@1.0.0
+[WebServer] npm error location C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web
+[WebServer] npm error command failed
+[WebServer] npm error command C:\WINDOWS\system32\cmd.exe /d /s /c node ./scripts/build.js
