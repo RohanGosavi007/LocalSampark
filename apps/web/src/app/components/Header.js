@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import VoiceSearch from '../../components/VoiceSearch';
+import LocationServiceability from '../../components/LocationServiceability';
 import { ThemeToggle } from './ui/ThemeToggle';
 import { apiGet, apiPut } from '@/lib/api';
 import { useCartStore } from '../../store/cartStore';
@@ -355,7 +356,20 @@ export default function Header() {
               >
                 <h4 className="text-lg font-heading font-semibold mb-1">Update Location</h4>
                 <p className="text-xs text-text-muted mb-4">Select your zone to explore nearby shops.</p>
-                
+
+                <LocationServiceability
+                  onInZone={({ territory, lat, lng }) => {
+                    updateLocation({
+                      pincode: territory.pincode || '',
+                      addressLabel: territory.name,
+                      region_id: territory.id,
+                      lat,
+                      lng,
+                    });
+                    setShowLocationModal(false);
+                  }}
+                />
+
                 <form onSubmit={handleSaveLocation} className="flex flex-col gap-3">
                   <select className="form-input text-sm" required value={locState} onChange={e => { setLocState(e.target.value); setLocDistrict(''); setLocZone(''); }}>
                     <option value="">Select State</option>

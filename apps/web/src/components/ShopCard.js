@@ -114,6 +114,15 @@ const ShopCardComponent = ({ shop, category, index, onQuickView }) => {
           {shop.distance_km ? ` · ${shop.distance_km} km` : ''}
         </p>
 
+        {/* C3: from the shop's hours, in IST (GET /shops/nearby is_open_now).
+            Unknown hours (null) show nothing rather than a guess. */}
+        {shop.is_open_now === true && (
+          <span data-testid="open-status" className="text-[11px] font-semibold text-commerce-action">Open now</span>
+        )}
+        {shop.is_open_now === false && (
+          <span data-testid="open-status" className="text-[11px] font-semibold text-commerce-ink-muted">Closed now</span>
+        )}
+
         {shop.description && (
           <p className="line-clamp-1 text-xs text-commerce-ink-muted">{shop.description}</p>
         )}
@@ -193,6 +202,7 @@ export const ShopCard = memo(ShopCardComponent, (prev, next) => {
     prev.shop.rating === next.shop.rating &&
     prev.shop.stock_qty === next.shop.stock_qty &&
     prev.shop.is_premium === next.shop.is_premium &&
+    prev.shop.is_open_now === next.shop.is_open_now &&
     prev.category?.id === next.category?.id &&
     prev.index === next.index
   );

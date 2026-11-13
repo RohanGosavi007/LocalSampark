@@ -8,6 +8,7 @@ try {
 import { useAuth } from './AuthContext';
 import { Alert } from 'react-native';
 import { useTerritoryStore } from '../store/useTerritoryStore';
+import { checkServiceability, outOfZoneMessage, joinWaitlist } from '../services/serviceability';
 
 const ZoneContext = createContext();
 
@@ -26,6 +27,8 @@ export function ZoneProvider({ children }) {
   const [savedZones, setSavedZones] = useState([]);
   const [allZones, setAllZones] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // C2: the last "outside every zone" answer, so a screen can offer the waitlist.
+  const [outOfZone, setOutOfZone] = useState(null);
 
   useEffect(() => {
     // 1. Fetch all available zones
@@ -108,21 +111,16 @@ export function ZoneProvider({ children }) {
 
       const location = await Location.getCurrentPositionAsync({});
       
-      const res = await fetch(`${API_URL}/zones/resolve?lat=${location.coords.latitude}&lng=${location.coords.longitude}`);
-      const data = await res.json();
-      
-      if (data.success && !data.outOfBounds && data.territory) {
-        await lockTerritory(data.territory);
+      // C2: outside every zone used to switch the user into the nearest one
+      // (GET /zones/nearby) without a word. Now: say so, keep them where they
+      // are, and let the screen offer the waitlist (joinWaitlist).
+      const result = await checkServiceability(location.coords.latitude, location.coords.longitude);
+      if (result.inZone) {
+        setOutOfZone(null);
+        await lockTerritory(result.territory);
       } else {
-        const legacyRes = await fetch(`${API_URL}/zones/nearby?lat=${location.coords.latitude}&lng=${location.coords.longitude}&limit=1`);
-        const legacyData = await legacyRes.json();
-        
-        if (legacyData.success && legacyData.data.length > 0) {
-          const nearest = legacyData.data[0];
-          await switchZone(nearest.id, nearest);
-        } else {
-          Alert.alert('No nearby zones found for your location.');
-        }
+        setOutOfZone(result);
+        Alert.alert('Not in your area yet', outOfZoneMessage(result));
       }
     } catch (err) {
       console.warn('Location detection failed:', err);
@@ -203,6 +201,8 @@ export function ZoneProvider({ children }) {
       isLoading,
       switchZone,
       detectLocation,
+      outOfZone,
+      joinWaitlist: (contact) => joinWaitlist({ lat: outOfZone?.lat, lng: outOfZone?.lng, contact }),
       saveZone,
       territoryId,
       isLocked

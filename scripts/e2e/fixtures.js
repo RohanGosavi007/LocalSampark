@@ -49,6 +49,10 @@ const IDS = {
   // R1: a rider who has applied and is waiting on review.
   riderApplicant: 'e2e00000-0000-4000-8000-000000000100',
   riderApplication: 'e2e00000-0000-4000-8000-000000000101',
+  c2State: 'e2e00000-0000-4000-8000-000000000110',
+  c2District: 'e2e00000-0000-4000-8000-000000000111',
+  c2Taluka: 'e2e00000-0000-4000-8000-000000000112',
+  c2Territory: 'e2e00000-0000-4000-8000-000000000113',
 };
 
 const PHONES = {
@@ -339,6 +343,26 @@ async function seedE2eFixtures() {
     `INSERT INTO review_reports (id, review_id, reporter_id, reason, details, status, created_at)
      VALUES ($1, $2, $3, 'spam', 'Advertises another seller', 'open', $4)`,
     [IDS.reviewReport, IDS.reportedReview, IDS.shopper, HOURS(2)]
+  );
+
+  // C2: a pilot territory with a verified boundary around Dhanori, so
+  // GET /zones/resolve answers "inside" for a browser placed there and "outside"
+  // anywhere else (the seed's territories are all unverified, by design).
+  let state = await queryOne("SELECT id FROM location_states WHERE name = 'Maharashtra' OR code = 'MH'");
+  if (!state) {
+    await run("INSERT INTO location_states (id, name, code) VALUES ($1, 'Maharashtra', 'MH')", [IDS.c2State]);
+    state = { id: IDS.c2State };
+  }
+  await run("INSERT INTO location_districts (id, state_id, name) VALUES ($1, $2, 'E2E Pune District')", [IDS.c2District, state.id]);
+  await run("INSERT INTO location_talukas (id, district_id, name) VALUES ($1, $2, 'E2E Haveli')", [IDS.c2Taluka, IDS.c2District]);
+  const D = 0.03; // ~3 km each way around the pilot shops
+  await run(
+    `INSERT INTO territories (id, taluka_id, name, pincode, centroid_lat, centroid_lng, boundary_geojson, is_active, boundary_verified, centroid_verified)
+     VALUES ($1, $2, 'E2E Dhanori Pilot', '411915', 18.5793, 73.8796, $3, 1, TRUE, TRUE)`,
+    [IDS.c2Territory, IDS.c2Taluka, JSON.stringify({
+      type: 'Polygon',
+      coordinates: [[[73.8796 - D, 18.5793 - D], [73.8796 + D, 18.5793 - D], [73.8796 + D, 18.5793 + D], [73.8796 - D, 18.5793 + D], [73.8796 - D, 18.5793 - D]]],
+    })]
   );
 
   // A9: a second, inactive zone the console can switch without taking the

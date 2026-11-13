@@ -12,6 +12,7 @@ import { useImpressionTracking } from '../../src/hooks/useImpressionTracking';
 import { initTelemetry, resetImpressions } from '../../src/lib/telemetry';
 import { useShopSearch } from '../../src/hooks/useShopSearch';
 import PredictiveSearchBar from '../../src/components/PredictiveSearchBar';
+import { distanceLabel, openStatusLabel } from '../../src/services/discovery';
 
 // DEMO_SHOPS lived here: eleven invented businesses with addresses, ratings and
 // distances — "Sharma Grocery & Dairy, Kalyani Nagar, 4.8, 0.5 km",
@@ -384,7 +385,10 @@ export default function DirectoryScreen() {
               <Text style={styles.shopAddress} numberOfLines={1}>{shop.address || ''}</Text>
               <View style={styles.shopMetaRow}>
                 <Text style={styles.shopMeta} numberOfLines={1}>⭐ {shop.rating || 'New'}</Text>
-                <Text style={styles.shopMeta} numberOfLines={1}>📍 {shop.distance ? shop.distance + 'km' : 'Nearby'}</Text>
+                <Text style={styles.shopMeta} numberOfLines={1}>📍 {distanceLabel(shop)}</Text>
+                {openStatusLabel(shop) && (
+                  <Text testID="open-status" style={styles.shopMeta} numberOfLines={1}>{openStatusLabel(shop)}</Text>
+                )}
               </View>
 
               <TouchableOpacity 

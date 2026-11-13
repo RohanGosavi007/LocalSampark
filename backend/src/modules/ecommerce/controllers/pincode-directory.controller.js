@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 const { query } = require('../../../config/database');
+const { isOpenNow } = require('../../../utils/shopHours');
 
 // In-Memory LRU Cache Fallback
 const directoryCache = new Map();
@@ -27,7 +28,10 @@ async function getShopsByPincode(req, res, next) {
 
     const pageSize = Math.min(parseInt(limit, 10) || 15, 20); // Hard cap at max 20
 
-    if (process.env.NODE_ENV !== 'production') {
+    // Mock data only when asked for (USE_MOCK_CATALOG=true, as GET /shops/categories).
+    // It was served to every non-production run, so development and the E2E
+    // suite saw invented shops instead of the database.
+    if (process.env.USE_MOCK_CATALOG === 'true' && process.env.NODE_ENV !== 'production') {
       try {
         const fs = require('fs'); const path = require('path');
         const mockPath = path.resolve(__dirname, '../../../../../packages/mock-data/seeds/shops_directory.json');
@@ -83,7 +87,7 @@ async function getShopsByPincode(req, res, next) {
     const result = await query(
       `SELECT s.id, s.name, s.rating, s.pincode, s.photo_urls,
               s.estimated_delivery_time, s.delivery_available, s.pickup_available,
-              s.category_id, c.name AS category_name, c.slug AS category_slug,
+              s.category_id, s.opening_hours, c.name AS category_name, c.slug AS category_slug,
               c.icon AS category_icon
          FROM local_shops s
          LEFT JOIN shop_categories c ON c.id = s.category_id
@@ -117,6 +121,9 @@ async function getShopsByPincode(req, res, next) {
       estimatedDeliveryTime: row.estimated_delivery_time ?? null,
       deliveryAvailable: Boolean(row.delivery_available),
       pickupAvailable: Boolean(row.pickup_available),
+      // C3.2: from the shop's hours, in IST; null when unknown.
+      opening_hours: row.opening_hours ?? null,
+      is_open_now: isOpenNow(row.opening_hours),
       category: row.category_id
         ? {
           id: row.category_id,

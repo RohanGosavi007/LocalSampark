@@ -226,9 +226,15 @@ describe('[C3.2] discovery: shop hours and open status', () => {
     expect(isOpenNow({ open: '09:00', close: '12:00' }, at('2026-11-13T06:30:00Z'))).toBe(false); // 12:00
   });
 
-  test('[C3.2] missing, unreadable or ambiguous hours are unknown (null)', () => {
-    for (const h of [null, '', 'not json', {}, { open: '9am', close: '5pm' }, { open: '09:00', close: '09:00' }]) {
+  test('[C3.2] missing or unreadable hours are unknown (null)', () => {
+    for (const h of [null, '', 'not json', {}, { open: '9am', close: '5pm' }]) {
       expect(isOpenNow(h, at('2026-11-13T06:30:00Z'))).toBeNull();
+    }
+  });
+
+  test('[C3.2] equal opening and closing times are a 24-hour shop, as the catalogue stores them', () => {
+    for (const iso of ['2026-11-13T06:30:00Z', '2026-11-13T20:30:00Z']) {
+      expect(isOpenNow({ open: '00:00', close: '00:00' }, at(iso))).toBe(true);
     }
   });
 });

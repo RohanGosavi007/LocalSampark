@@ -48,9 +48,10 @@ function isOpenNow(openingHours, now = new Date()) {
   const hours = parseHours(openingHours);
   if (!hours) return null;
   const t = istMinutesOfDay(now);
-  // Equal times (09:00-09:00) could mean 24 h or closed; don't guess. A real
-  // 24-hour shop is 00:00-24:00, which the range check below covers.
-  if (hours.open === hours.close) return null;
+  // Equal times mean open all day: this catalogue stores 24-hour shops as
+  // {"open":"00:00","close":"00:00"} (seed, E2E fixtures), and
+  // ml/ranking/sessionBoost.isOpenAt reads them the same way.
+  if (hours.open === hours.close) return true;
   // A closing time before the opening time means the shop runs past midnight.
   if (hours.close < hours.open) return t >= hours.open || t < hours.close;
   return t >= hours.open && t < hours.close;
