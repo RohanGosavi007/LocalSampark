@@ -5,10 +5,11 @@ import { useRouter } from 'expo-router';
 import { useZone } from '../../../src/context/ZoneContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import WaitlistPanel from '../../../src/components/WaitlistPanel';
 
 export default function ZoneSelectorScreen() {
   const router = useRouter();
-  const { allZones, savedZones, activeZone, switchZone, detectLocation, isLoading, saveZone } = useZone();
+  const { allZones, savedZones, activeZone, switchZone, detectLocation, isLoading, saveZone, outOfZone, joinWaitlist } = useZone();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
 
@@ -22,11 +23,13 @@ export default function ZoneSelectorScreen() {
     router.back();
   };
 
+  // C2: this always went back, so someone outside every zone left the screen
+  // before they could be told or join the waitlist. Back only when in a zone.
   const handleDetectLocation = async () => {
     setIsDetecting(true);
-    await detectLocation();
+    const result = await detectLocation();
     setIsDetecting(false);
-    router.back();
+    if (result && result.inZone) router.back();
   };
 
   const renderZoneItem = ({ item }) => {
@@ -85,6 +88,8 @@ export default function ZoneSelectorScreen() {
           </>
         )}
       </TouchableOpacity>
+
+      <WaitlistPanel result={outOfZone} onJoin={joinWaitlist} />
 
       {savedZones.length > 0 && !searchQuery && (
         <View style={styles.section}>

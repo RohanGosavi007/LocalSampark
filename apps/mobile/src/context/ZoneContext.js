@@ -8,7 +8,7 @@ try {
 import { useAuth } from './AuthContext';
 import { Alert } from 'react-native';
 import { useTerritoryStore } from '../store/useTerritoryStore';
-import { checkServiceability, outOfZoneMessage, joinWaitlist } from '../services/serviceability';
+import { checkServiceability, joinWaitlist } from '../services/serviceability';
 
 const ZoneContext = createContext();
 
@@ -120,8 +120,8 @@ export function ZoneProvider({ children }) {
         await lockTerritory(result.territory);
       } else {
         setOutOfZone(result);
-        Alert.alert('Not in your area yet', outOfZoneMessage(result));
       }
+      return result;
     } catch (err) {
       console.warn('Location detection failed:', err);
     }

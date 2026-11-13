@@ -68,6 +68,15 @@ describe('[C2.6] location: waitlist sign-up from the phone', () => {
     }
   );
 
+  test('[C2.6] the zone screen stays put when out of zone and offers the waitlist', () => {
+    const screen = fs.readFileSync(path.join(__dirname, '../app/modules/zone-selector/index.js'), 'utf8');
+    expect(screen).toContain('<WaitlistPanel result={outOfZone} onJoin={joinWaitlist} />');
+    expect(screen).toMatch(/if \(result && result\.inZone\) router\.back\(\);/);
+    const panel = fs.readFileSync(path.join(__dirname, '../src/components/WaitlistPanel.js'), 'utf8');
+    expect(panel).toContain('waitlistContact(contact)');
+    expect(panel).toContain('outOfZoneMessage(result)');
+  });
+
   test('[C2.6] a valid sign-up is posted with the position it was made from', async () => {
     apiPost.mockResolvedValueOnce({ success: true, id: 'w1' });
     await joinWaitlist({ lat: 19.8762, lng: 75.3433, contact: '9876543210' });
