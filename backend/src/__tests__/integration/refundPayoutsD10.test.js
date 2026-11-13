@@ -127,7 +127,12 @@ test('[C10.12] with the wallet off, an accepted cash return is a payout the admi
   expect(notes.find((n) => n.title === 'Refund sent').body).toMatch(/meera@okbank.*UPI123456789/);
   const ledger = await queryMany("SELECT account_type, entry_type, amount_paise FROM platform_ledger_entries WHERE reference_id = $1 AND description LIKE 'Manual refund payout%'", [RETURNED]);
   expect(ledger.map((e) => [e.entry_type, e.account_type, Number(e.amount_paise)]).sort()).toEqual([['CREDIT', 'CUSTOMER_CASH', 25000], ['DEBIT', 'REFUND_PAYABLE', 25000]]);
-});
+  // 60 s, not the 10 s default: this is one chain of ~12 requests, and on
+  // 2026-11-13 a full verify run (SQLite suite at 2x its usual time) pushed it
+  // past 10 s although it passes alone every time. Ruled out: push (fixture
+  // users have no device tokens, so nothing leaves the machine) and test
+  // logic (no clocks, sleeps or ordering assumptions).
+}, 60000);
 
 test('[A4.20] with the wallet off, an admin order refund is queued for payout, and payouts count against the order', async () => {
   const first = await request(app).post(`/admin/commerce/orders/${REFUNDED}/refund`).set(as(ADMIN)).send({ amount: 300, reason: 'Late delivery' });

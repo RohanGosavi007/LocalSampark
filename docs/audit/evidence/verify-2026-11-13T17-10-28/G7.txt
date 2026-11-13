@@ -1,0 +1,439 @@
+=== Web Tests Output ===
+
+> @localsampark/web@1.0.0 test
+> node --test "tests/**/*.test.mjs"
+
+✔ P12.1 [a11y]: layout.js declares accessible skip-to-content link targeting main-content (2.6193ms)
+✔ P12.2 [a11y]: root landing page declares main landmark with id="main-content" and tabIndex="-1" (2.6375ms)
+✔ P12.3 [a11y]: Header declares accessible banner and navigation landmarks (0.6058ms)
+✔ P12.4 [a11y]: interactive action buttons carry explicit aria-label attributes (0.6968ms)
+✔ P12.5 [a11y]: globals.css defines accessible skip-link styles with focus visibility (1.6689ms)
+✔ no web source file reads bare localStorage.getItem("token") without auth_token fallback (512.082ms)
+(node:21380) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/cartModel.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ [C6.5] items from a second shop are kept beside the first, not discarded (D6) (2.8453ms)
+✔ [C6.6] a multi-shop cart takes batch checkout, wallet or cash; one shop keeps every method (0.721ms)
+✔ [C6.7] the server cart is the truth: new prices, stock shortfalls and dropped lines are reported (2.1688ms)
+(node:20524) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/catalogCsv.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ quoted cells, doubled quotes, embedded commas/newlines and CRLF parse (2.5901ms)
+✔ the downloadable template is itself a valid import (0.9356ms)
+✔ bad rows are reported with their line number and left out (1.8432ms)
+✔ a file without the required columns is refused outright (0.4899ms)
+(node:20796) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/catalogSearch.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ [C5.10] a search, its filters and its sort round-trip through the URL; nonsense is dropped (4.036ms)
+✔ [C5.11] the search page reads the catalogue search and its suggestions, not the shop-only search (4.0011ms)
+(node:22020) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/apiUrl.js?v=0.02957930983995427 is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ no source file carries its own API host (510.6302ms)
+✔ apiUrl.js has no client directive, so server components can import it (2.7391ms)
+✔ server components that need the API address import apiUrl, not the client module (413.8787ms)
+✔ both deployment conventions resolve to the same base (8.4271ms)
+(node:10444) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/coupon.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ [C7.15] the checkout says what a coupon saved, or why it does not apply, and shows the discount on the bill (4.0279ms)
+✔ [C7.16] both checkouts send the applied coupon with the quote and the order, and refuse to order with one that does not apply (3.9965ms)
+✔ the route table was found (guards against an empty check) (1.3771ms)
+✔ every internal link resolves to a page (641.952ms)
+✔ the pages the footer and stores rely on exist (0.4431ms)
+✔ Legal 1.1: /account-deletion page exists and provides Google Play compliant deletion workflow (3.3923ms)
+✔ Legal 1.2: /legal/grievance page exists with Consumer Protection Rules 2020 compliance (2.7316ms)
+✔ Legal 1.3: LegalHub provides comprehensive DPDP and M5 refund disclosures (1.3966ms)
+(node:11492) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/loginMethods.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ [C1.22] email code first; phone only when the server has it on; Google only when both ends are set up (2.7895ms)
+✔ [C1.23] addresses and codes are cleaned the way the server checks them (0.6262ms)
+✔ [C1.24] the sign-in page takes its tabs from the server, and logout can end every device (5.6657ms)
+✔ a failed request does not fall back to invented rows (9.803ms)
+✔ numbers on screen are not random (10.9161ms)
+✔ the payouts page reads the wallet ledger (2.0052ms)
+✔ admin and safety pages read the API instead of simulating it (16.5593ms)
+✔ no page invents a rating or a sponsored product (6.4585ms)
+✔ no live page or component carries invented people, shops or totals (681.9707ms)
+✔ pages that used to simulate a result now call the API (4.1148ms)
+✔ P13.1 [perf]: heavy 3D card component is dynamically loaded with ssr: false (3.1582ms)
+✔ P13.2 [perf]: interactive map component is dynamically loaded with ssr: false (1.4391ms)
+✔ P13.3 [perf]: customer shopping landing page does not directly bundle heavy 3D canvas (2.4658ms)
+(node:17948) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/recentlyViewed.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ [C12.7] recently viewed keeps the newest first, one entry per product, and at most 20 (6.118ms)
+✔ [C4.7] the product page shows the server's declarations, never invented ones, and records the view (13.8186ms)
+✔ [C12.8] the wishlist page uses the server wishlist and its move-to-cart, and the header links to it (2.9482ms)
+(node:16596) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/app/sitemap.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ P7.1 [SEO]: sitemap.js returns structured URLs with valid priority and changeFrequency (85.053ms)
+✔ P7.2 [SEO]: robots.js disallows private consoles and specifies canonical sitemap (0.7842ms)
+✔ P7.3 [SEO]: JsonLd schema generator outputs valid Schema.org structures (2.3782ms)
+(node:21152) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/localsampark%2004-09-2026/localsampark%2025-10-2026/apps/web/src/lib/api.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\localsampark 04-09-2026\localsampark 25-10-2026\apps\web\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ a 401 on a page's own fetch renews the session and repeats the request with the new token (40.7882ms)
+✔ a POST is repeated with its body intact (0.6769ms)
+✔ five requests failing at once cause ONE refresh (35.5962ms)
+✔ a refresh the server REFUSES ends the session (0.8892ms)
+✔ a refresh that merely cannot be completed (offline, server down) keeps the session (5.169ms)
+✔ two tabs refreshing together: this tab adopts the pair the other one stored (410.8913ms)
+✔ a request that did not carry the user's token is left alone (1.6398ms)
+✔ a request already superseded by a rotation is repeated with the current token, without another refresh (0.5034ms)
+✔ tokenExpiryMs reads a JWT and shrugs off garbage (0.9378ms)
+✔ keep-alive renews a token about to expire, and leaves a fresh one alone (115.9501ms)
+✔ refreshSession with no refresh token says the session is over (0.3553ms)
+ℹ tests 57
+ℹ suites 0
+ℹ pass 57
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1119.0993
+
+
+
+=== Web Build Output ===
+
+> @localsampark/web@1.0.0 build
+> node ./scripts/build.js
+
+   [1m[38;2;173;127;168m▲ Next.js 15.5.28[39m[22m
+   - Environments: .env.production, .env
+   - Experiments (use with caution):
+     · cpus: 1
+     · clientTraceMetadata
+     · optimizePackageImports
+     [1m✓[22m webpackMemoryOptimizations
+
+ [37m[1m [22m[39m Creating an optimized production build ...
+ [32m[1m✓[22m[39m Compiled successfully in 44s
+ [37m[1m [22m[39m Linting and checking validity of types ...
+ [37m[1m [22m[39m Collecting page data ...
+ [37m[1m [22m[39m Generating static pages (0/288) ...
+ [37m[1m [22m[39m Generating static pages (72/288) 
+ [37m[1m [22m[39m Generating static pages (144/288) 
+ [37m[1m [22m[39m Generating static pages (216/288) 
+ [32m[1m✓[22m[39m Generating static pages (288/288)
+ [37m[1m [22m[39m Finalizing page optimization ...
+ [37m[1m [22m[39m Collecting build traces ...
+
+[4mRoute (app)[24m                                     [4mSize[24m  [4mFirst Load JS[24m  [4m[24m  [4m[24m
+┌ ƒ /                                        15.1 kB         [37m[1m316 kB[22m[39m
+├ ƒ /_not-found                                156 B         [37m[1m176 kB[22m[39m
+├ ƒ /[state]/[city]/[zone]                     156 B         [37m[1m176 kB[22m[39m
+├ ƒ /about                                   1.49 kB         [37m[1m294 kB[22m[39m
+├ ƒ /account-deletion                          198 B         [37m[1m296 kB[22m[39m
+├ ƒ /admin                                     156 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard                            6 kB         [37m[1m227 kB[22m[39m
+├ ƒ /admin-dashboard/ads                     2.99 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/ai-analytics              926 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/alerts                  3.74 kB         [37m[1m195 kB[22m[39m
+├ ƒ /admin-dashboard/analytics               2.63 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/animal                  3.59 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin-dashboard/approvals                3.1 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/audit                    2.2 kB         [37m[1m185 kB[22m[39m
+├ ƒ /admin-dashboard/backups                 3.16 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/bills                   3.75 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin-dashboard/campaigns               2.33 kB         [37m[1m185 kB[22m[39m
+├ ƒ /admin-dashboard/charity                 3.19 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/chef                      934 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/civic                   4.03 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin-dashboard/commissions               268 B         [37m[1m179 kB[22m[39m
+├ ƒ /admin-dashboard/community                 930 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/crm                     2.96 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/delivery-monitor          456 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/disputes                4.75 kB         [37m[1m226 kB[22m[39m
+├ ƒ /admin-dashboard/environment             3.37 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin-dashboard/events                    925 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/finance                   938 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/finance-ledger          2.88 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/finance-ledger/payouts    313 B         [37m[1m179 kB[22m[39m
+├ ƒ /admin-dashboard/fleet-assets              932 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/franchises              2.71 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/fraud                     934 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/gtm                       934 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/jobs                    3.09 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/krishi                  3.13 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/languages               3.11 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/leads-crm                 932 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/logistics                 938 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/logistics/map            4.5 kB         [37m[1m188 kB[22m[39m
+├ ƒ /admin-dashboard/marketing               3.19 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/marketplace             2.73 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/medical                 3.73 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin-dashboard/mobility                2.82 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/payouts                   929 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/performance             3.69 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin-dashboard/properties                939 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/revenue                   934 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/revenue-models          2.65 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/rewards                   935 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/roles                   3.23 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/saas                      935 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/security                2.01 kB         [37m[1m185 kB[22m[39m
+├ ƒ /admin-dashboard/settings                3.25 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/shop-categories         2.45 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/skilled-dispatch          926 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/societies               3.63 kB         [37m[1m224 kB[22m[39m
+├ ƒ /admin-dashboard/sos                     3.68 kB         [37m[1m224 kB[22m[39m
+├ ƒ /admin-dashboard/subscriptions             937 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/support                 2.73 kB         [37m[1m186 kB[22m[39m
+├ ƒ /admin-dashboard/territory                 934 B         [37m[1m176 kB[22m[39m
+├ ƒ /admin-dashboard/users                    3.4 kB         [37m[1m187 kB[22m[39m
+├ ƒ /admin/health                            2.21 kB         [37m[1m292 kB[22m[39m
+├ ƒ /advanced                                11.4 kB         [37m[1m304 kB[22m[39m
+├ ƒ /api/health                                156 B         [37m[1m176 kB[22m[39m
+├ ƒ /bills                                   3.61 kB         [37m[1m296 kB[22m[39m
+├ ƒ /care                                      754 B         [37m[1m294 kB[22m[39m
+├ ƒ /carpool                                 9.38 kB         [37m[1m315 kB[22m[39m
+├ ƒ /chat                                       4 kB         [37m[1m310 kB[22m[39m
+├ ƒ /checkout                                9.89 kB         [37m[1m303 kB[22m[39m
+├ ƒ /chef                                    2.49 kB         [37m[1m295 kB[22m[39m
+├ ƒ /coming-soon                             1.21 kB         [37m[1m294 kB[22m[39m
+├ ƒ /community                               2.13 kB         [37m[1m295 kB[22m[39m
+├ ƒ /community-hub                           1.93 kB         [37m[1m295 kB[22m[39m
+├ ƒ /community/jobs                            443 B         [37m[1m176 kB[22m[39m
+├ ƒ /dashboard                               10.7 kB         [37m[1m385 kB[22m[39m
+├ ƒ /delivery                                3.89 kB         [37m[1m297 kB[22m[39m
+├ ƒ /delivery-dashboard                      6.29 kB         [37m[1m304 kB[22m[39m
+├ ƒ /delivery-dashboard/onboarding           2.59 kB         [37m[1m299 kB[22m[39m
+├ ƒ /donations                               1.93 kB         [37m[1m295 kB[22m[39m
+├ ƒ /download                                3.96 kB         [37m[1m297 kB[22m[39m
+├ ƒ /earn                                    3.66 kB         [37m[1m296 kB[22m[39m
+├ ƒ /equipment                               1.99 kB         [37m[1m295 kB[22m[39m
+├ ƒ /events                                  3.86 kB         [37m[1m297 kB[22m[39m
+├ ƒ /features                                5.56 kB         [37m[1m307 kB[22m[39m
+├ ƒ /field-dashboard                         1.67 kB         [37m[1m291 kB[22m[39m
+├ ƒ /forgot-password                         2.57 kB         [37m[1m299 kB[22m[39m
+├ ƒ /franchise                               4.52 kB         [37m[1m297 kB[22m[39m
+├ ƒ /franchise-dashboard                     4.33 kB         [37m[1m300 kB[22m[39m
+├ ƒ /franchise-dashboard/marketing           2.24 kB         [37m[1m298 kB[22m[39m
+├ ƒ /franchise-dashboard/reports             2.44 kB         [37m[1m299 kB[22m[39m
+├ ƒ /franchise-dashboard/revenue              2.6 kB         [37m[1m299 kB[22m[39m
+├ ƒ /franchise-dashboard/settings            2.19 kB         [37m[1m298 kB[22m[39m
+├ ƒ /franchise-dashboard/shops               2.46 kB         [37m[1m299 kB[22m[39m
+├ ƒ /franchise-dashboard/users               2.23 kB         [37m[1m298 kB[22m[39m
+├ ƒ /franchise-dashboard/zones               2.09 kB         [37m[1m298 kB[22m[39m
+├ ƒ /franchise/agents                          856 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/approvals                       850 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/dashboard                       848 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/posts                           857 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/providers                       851 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/revenue                         849 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/settings                        847 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/shops                           850 B         [37m[1m176 kB[22m[39m
+├ ƒ /franchise/territory                     1.94 kB         [37m[1m291 kB[22m[39m
+├ ƒ /franchise/users                           849 B         [37m[1m176 kB[22m[39m
+├ ƒ /gatekeeper                              4.27 kB         [37m[1m307 kB[22m[39m
+├ ƒ /health                                  2.79 kB         [37m[1m296 kB[22m[39m
+├ ƒ /investor-demo                           3.62 kB         [37m[1m296 kB[22m[39m
+├ ƒ /jobs                                    12.1 kB         [37m[1m318 kB[22m[39m
+├ ƒ /krishi                                  4.18 kB         [37m[1m309 kB[22m[39m
+├ ƒ /krishi/712-utara                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/academy                          2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/agri-processing                  2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/agri-waste                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/alt-protein                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/ambulance                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/anganwadi                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/animal-rescue                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/apeda                            2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/aquaculture                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/art-workshop                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/battery-rental                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/bazaar                           2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/beekeeping                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/bike-taxi                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/biogas                           2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/borewell                         2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/bus-tracker                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/carbon-credit                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/chatbot                          2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/chc-connect                      2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/chit-fund                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/cold-storage                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/commodity-alerts                 2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/contract-farming                 2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/credit-score                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/crop-disease-ai                  2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/crop-rotation                    2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/csc-locator                      2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/dairy-visit                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/death-services                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/digital-literacy                 2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/digital-locker                   2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/drone-spray                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/event-planners                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/exotic-produce                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/expense-tracker                  2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/export-buyer                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/export-checker                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/farm-diary                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/farm-labor                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/farm-stay                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/feed-calculator                  2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/festival-calendar                2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/field-mapping                    2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/fishing-tour                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/floriculture                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/fmcg-distrib                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/food-processing                  2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/forest-products                  2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/forum                            2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/fpo-loans                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/fruit-picking                    2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/fssai                            2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/generic-medicine                 2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/gi-tag                           2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/govt-jobs                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/gram-panchayat                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/handcrafts                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/health-camps                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/health-record                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/hospital-finder                  2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/insurance                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/internet-check                   2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/irrigation                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/iti-courses                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/ivr-service                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/jan-dhan                         2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/kirana-digital                   2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/krishi-calendar                  2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/land-lease                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/legal-aid                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/livestock                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/loans                            2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/local-news                       2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/machinery                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/mandi                            2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/mental-health                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/micro-atm                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/milk-collection                  2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/mobile-recharge                  2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/organic-cert                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/packaging                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/petrol-pump                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/pm-kisan                         2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/pmay-status                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/poultry-rates                    2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/print-demand                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/refurbished-phones               2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/roi-calculator                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/rural-auto                       2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/rural-construction               2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/rural-helpline                   2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/rural-matrimony                  2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/satellite-crop                   2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/schemes                          2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/scholarships                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/seed-bank                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/sell                             2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/services                         2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/shg-food                         2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/shg-training                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/soil                             2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/solar-pump                       2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/store                            2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/tailoring                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/temple-services                  2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/timber-market                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/transport                        2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/tree-tracker                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/tuition-tutor                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/vehicle-rental                   2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/vermicompost                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/vet-on-call                      2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/voter-id                         2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/warehouse-receipt                2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/water-tanker                     2.23 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/water-testing                    2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/weather                          2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/welding                          2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /krishi/whatsapp-bot                     2.22 kB         [37m[1m302 kB[22m[39m
+├ ƒ /legal                                     157 B         [37m[1m297 kB[22m[39m
+├ ƒ /legal/account-deletion                    198 B         [37m[1m296 kB[22m[39m
+├ ƒ /legal/grievance                         3.44 kB         [37m[1m296 kB[22m[39m
+├ ƒ /login                                   4.87 kB         [37m[1m221 kB[22m[39m
+├ ƒ /marketplace                             7.84 kB         [37m[1m301 kB[22m[39m
+├ ƒ /medical                                 3.49 kB         [37m[1m296 kB[22m[39m
+├ ƒ /moderator-dashboard                     2.62 kB         [37m[1m304 kB[22m[39m
+├ ƒ /notifications                            2.1 kB         [37m[1m298 kB[22m[39m
+├ ƒ /offline                                  2.1 kB         [37m[1m228 kB[22m[39m
+├ ƒ /order-tracking                          7.43 kB         [37m[1m317 kB[22m[39m
+├ ƒ /payouts                                 1.61 kB         [37m[1m291 kB[22m[39m
+├ ƒ /pets                                    4.91 kB         [37m[1m306 kB[22m[39m
+├ ƒ /premium                                 4.91 kB         [37m[1m306 kB[22m[39m
+├ ƒ /privacy                                   157 B         [37m[1m297 kB[22m[39m
+├ ƒ /profile                                 4.51 kB         [37m[1m306 kB[22m[39m
+├ ƒ /profile/security                        2.61 kB         [37m[1m292 kB[22m[39m
+├ ƒ /properties                                201 B         [37m[1m308 kB[22m[39m
+├ ƒ /real-estate                               255 B         [37m[1m308 kB[22m[39m
+├ ƒ /referral                                2.15 kB         [37m[1m295 kB[22m[39m
+├ ƒ /refunds                                   157 B         [37m[1m297 kB[22m[39m
+├ ƒ /register                                2.47 kB         [37m[1m295 kB[22m[39m
+├ ƒ /register-shop                            2.6 kB         [37m[1m304 kB[22m[39m
+├ ƒ /resident                                3.92 kB         [37m[1m306 kB[22m[39m
+├ ƒ /resident/orders                           447 B         [37m[1m176 kB[22m[39m
+├ ƒ /resident/wallet                           442 B         [37m[1m176 kB[22m[39m
+├ ƒ /rewards                                 2.15 kB         [37m[1m295 kB[22m[39m
+├ ○ /robots.txt                                156 B         [37m[1m176 kB[22m[39m
+├ ƒ /scrap                                   5.61 kB         [37m[1m307 kB[22m[39m
+├ ƒ /search                                  3.54 kB         [37m[1m296 kB[22m[39m
+├ ƒ /security-dashboard                      5.55 kB         [37m[1m379 kB[22m[39m
+├ ƒ /security-dashboard/new-visitor          2.91 kB         [37m[1m310 kB[22m[39m
+├ ƒ /service-dashboard                       2.65 kB         [37m[1m299 kB[22m[39m
+├ ƒ /services                                  700 B         [37m[1m297 kB[22m[39m
+├ ƒ /shop-dashboard                          15.6 kB         [37m[1m328 kB[22m[39m
+├ ƒ /shop-manager/[category]                 30.8 kB         [37m[1m344 kB[22m[39m
+├ ƒ /shop-manager/ads                         4.8 kB         [37m[1m294 kB[22m[39m
+├ ƒ /shop-manager/billing                    3.26 kB         [37m[1m293 kB[22m[39m
+├ ƒ /shop-manager/bulk-upload                3.41 kB         [37m[1m293 kB[22m[39m
+├ ƒ /shop-manager/studio                     4.92 kB         [37m[1m294 kB[22m[39m
+├ ƒ /shop/[id]                                 156 B         [37m[1m176 kB[22m[39m
+├ ƒ /shops                                   20.2 kB         [37m[1m322 kB[22m[39m
+├ ƒ /shops/[id]                              10.6 kB         [37m[1m325 kB[22m[39m
+├ ƒ /shops/[id]/products/[productId]         3.66 kB         [37m[1m300 kB[22m[39m
+├ ƒ /sitemap.xml                               156 B         [37m[1m176 kB[22m[39m
+├ ƒ /society                                 20.4 kB         [37m[1m236 kB[22m[39m
+├ ƒ /society-admin                             453 B         [37m[1m176 kB[22m[39m
+├ ƒ /society-admin-dashboard                 2.56 kB         [37m[1m304 kB[22m[39m
+├ ƒ /society-admin/broadcast                 2.39 kB         [37m[1m292 kB[22m[39m
+├ ƒ /society-registration                     1.6 kB         [37m[1m294 kB[22m[39m
+├ ƒ /sos-dashboard                           4.05 kB         [37m[1m305 kB[22m[39m
+├ ƒ /story-create                            2.14 kB         [37m[1m295 kB[22m[39m
+├ ƒ /subscriptions                           3.04 kB         [37m[1m296 kB[22m[39m
+├ ƒ /support                                  3.5 kB         [37m[1m296 kB[22m[39m
+├ ƒ /terms                                     157 B         [37m[1m297 kB[22m[39m
+├ ƒ /townsquare                                446 B         [37m[1m176 kB[22m[39m
+├ ƒ /tracking                                  550 B         [37m[1m176 kB[22m[39m
+├ ƒ /unauthorized                              170 B         [37m[1m179 kB[22m[39m
+├ ƒ /volunteer                               2.51 kB         [37m[1m295 kB[22m[39m
+├ ƒ /wallet                                  4.65 kB         [37m[1m306 kB[22m[39m
+└ ƒ /wishlist                                2.37 kB         [37m[1m299 kB[22m[39m
++ First Load JS shared by all                 [37m[1m175 kB[22m[39m
+  ├ chunks/6900-d1971bbbd992cee4.js           115 kB
+  ├ chunks/87c73c54-09e1ba5c70e60a51.js      54.2 kB
+  └ other shared chunks (total)              5.73 kB
+
+
+ƒ Middleware                                 [37m[1m99.3 kB[22m[39m
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+

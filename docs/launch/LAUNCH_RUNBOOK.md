@@ -211,3 +211,22 @@ If database corruption or catastrophic data loss occurs:
 1. Verify Supabase connection count in Supabase Dashboard → Database → Connections.
 2. Confirm API uses the Supavisor connection pooler URL on port `6543` (not direct port `5432`).
 3. Reduce `DB_POOL_MAX` in Render environment variables from `5` to `2` per instance and restart.
+
+## 8. Pre-Release Verification (Gates G1–G18)
+
+The only gate runner is `node scripts/verify/verify-all.mjs` (there is no `run-all-gates.mjs`; older audit notes that name it, or quote "142 suites", are out of date). A release is signed off only by **one full run** on the release commit — `--only` runs are for development and never regenerate `docs/launch/STATUS.md`.
+
+| Gate | What it runs | Manual equivalent (local only, rule L6) |
+| --- | --- | --- |
+| G1 | Backend ESLint | `cd backend && npx eslint src` |
+| G2 | Backend Jest on SQLite (`backend/src/data/test.db`) | `cd backend && npx jest --forceExit` |
+| G3 | Backend Jest on local PostgreSQL | `cd backend && TEST_USE_POSTGRES=1 USE_SQLITE=false DB_SSL=false DATABASE_URL=postgres://postgres:password@127.0.0.1:5432/localsampark_test npx jest --forceExit` |
+| G4 | Migrations + seed idempotency, both engines | `node backend/src/migrations/run.js` with the G3 variables |
+| G5 | Route-auth matrix | `node scripts/verify/route-auth-matrix.mjs` |
+| G7 / G8 | Web / admin unit tests + production build | `npm --prefix apps/web run build`, `npm --prefix apps/admin run build` |
+| G11 | Playwright web + admin E2E | `npx playwright test --project=web-chromium --project=admin-chromium` |
+| G14 | Secret scan | `node scripts/verify/secret-scanner.mjs` |
+| G15 | Launch policy + harness self-tests | `node --test scripts/verify/__tests__/harness.test.mjs` |
+| G18 | Feature verification from real test reports | full run only |
+
+Never point any of these at the Supabase host in `backend/.env`: `jest.globalSetup.js` refuses any database that is not local and named `*_test`. Run one verification at a time on a machine — the SQLite suites share `test.db`.

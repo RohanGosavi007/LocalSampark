@@ -23,7 +23,7 @@
 
 const { fx, fxLike } = require('../helpers/fixtureIds');
 const crypto = require('crypto');
-const { query, queryOne } = require('../../config/database');
+const { query, queryOne, queryMany } = require('../../config/database');
 const svc = require('../../services/territoryResolution.service');
 const spatial = require('../../repositories/spatial.repository');
 const scope = require('../../middleware/franchiseScope.middleware');
@@ -427,17 +427,45 @@ describe('franchise exclusivity', () => {
     // The Phase 6 reassignment case: last month's orders belong to whoever held
     // the territory then, and that money has in many cases already been paid.
     await svc.assignTerritory({ franchisePartnerId: PARTNER_A, territoryId: T_VERIFIED });
-    await new Promise((resolve) => setTimeout(resolve, 1100)); // distinct timestamps
+    // 2.1 s: SQLite stores whole seconds, so the transfer must land at least one
+    // full second after the assignment for an instant between them to exist.
+    await new Promise((resolve) => setTimeout(resolve, 2100));
     await svc.transferTerritory({ territoryId: T_VERIFIED, toFranchisePartnerId: PARTNER_B });
 
-    const now = await svc.holderAt(T_VERIFIED, Date.now() + 1000);
-    expect(now).toBe(PARTNER_B);
+    // Instants are taken from what the database stamped, not from this
+    // process's clock. Comparing Date.now() with the database's
+    // CURRENT_TIMESTAMP failed under a loaded full run (2026-11-13): the
+    // transfer row landed after "now + 1 s" and the old holder was returned.
+    // Read as text (UTC, the pool sets the session zone) so node-pg does not
+    // reinterpret a TIMESTAMP WITHOUT TIME ZONE as local time.
+    const rows = await queryMany(
+      `SELECT action, CAST(effective_from AS TEXT) AS at
+         FROM territory_assignment_log
+        WHERE territory_id = $1 AND action IN ('ASSIGNED', 'TRANSFERRED')
+        ORDER BY effective_from ASC`,
+      [T_VERIFIED]
+    );
+    const utc = (text) => new Date(`${String(text).replace(' ', 'T').slice(0, 19)}Z`);
+    const assigned = rows.filter((r) => r.action === 'ASSIGNED').pop();
+    const transferred = rows.filter((r) => r.action === 'TRANSFERRED').pop();
+    expect(assigned).toBeTruthy();
+    expect(transferred).toBeTruthy();
+    expect(utc(transferred.at).getTime()).toBeGreaterThan(utc(assigned.at).getTime());
 
-    const earlier = await svc.holderAt(T_VERIFIED, Date.now() - 600000);
-    // Either the previous holder or null, but never the new one: the new
-    // partner must not be credited for a period they did not hold.
-    expect(earlier).not.toBe(PARTNER_B);
-  });
+    // Just after the transfer: the new holder.
+    expect(await svc.holderAt(T_VERIFIED, new Date(utc(transferred.at).getTime() + 1000))).toBe(PARTNER_B);
+
+    // Between assignment and transfer: the previous holder, and never the new
+    // one — the new partner must not be credited for a period they did not hold.
+    // utc() keeps whole seconds; holderAt compares at second precision, so the
+    // next whole second is safely after the assignment and before the transfer
+    // (which is at least 2.1 s later).
+    const between = await svc.holderAt(T_VERIFIED, new Date(utc(assigned.at).getTime() + 1000));
+    expect(between).toBe(PARTNER_A);
+
+    // Long before either: never the new holder.
+    expect(await svc.holderAt(T_VERIFIED, new Date(utc(assigned.at).getTime() - 600000))).not.toBe(PARTNER_B);
+  }, 30000);
 
   test('assignment fails clearly for a territory that does not exist', async () => {
     await expect(
