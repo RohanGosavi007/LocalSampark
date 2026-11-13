@@ -42,6 +42,7 @@ const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
 const { autoCreateShopDelivery } = require('../../services/controllers/delivery.controller');
 const geo = require('../../../utils/geo');
+const { isOpenNow } = require('../../../utils/shopHours');
 
 // Payments for a shop order go through services/payments.service.js
 // (POST /payments/razorpay/order with purpose 'shop_order'). A Razorpay client
@@ -249,6 +250,8 @@ router.get('/nearby', async (req, res, next) => {
       category_slug: row.category_slug,
       category_name: row.category_name,
       distance_km: located ? geo.distanceKm(lat, lng, Number(row.latitude), Number(row.longitude)) : null,
+      // C3.2: true/false from the shop's hours in IST; null when hours are unknown.
+      is_open_now: isOpenNow(row.opening_hours),
     }));
     if (located) {
       // The box is square; the radius is a circle.

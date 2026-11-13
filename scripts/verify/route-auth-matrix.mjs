@@ -62,6 +62,9 @@ const PUBLIC_ALLOWLIST_PATTERNS = [
   /^\/api\/v1\/ml\/events/,
   /^\/api\/v1\/events\/track/,
   /^\/api\/v1\/delivery\/quote/,
+  // C2.2: out-of-zone "notify me" sign-up. Rate limited, shape-checked, needs
+  // a phone or email, refuses served locations (409); writes one waitlist row.
+  /^\/api\/v1\/zones\/waitlist$/,
   /carpool\/cost-calculator/,
   /marketplace\/price-suggest/,
 ];

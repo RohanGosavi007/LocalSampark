@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const spatialRepo = require('../../../repositories/spatial.repository');
 const geo = require('../../../utils/geo');
 const territoryValidator = require('../../../validators/territory.validator');
+const { publicFormLimiter } = require('../../../middleware/rateLimit.middleware');
 
 // GET /api/v1/zones/resolve?lat=X&lng=Y — PiP territory resolution
 router.get('/resolve', async (req, res, next) => {
@@ -69,6 +70,64 @@ router.get('/resolve', async (req, res, next) => {
         distance_km: nearest.distance_km
       } : null
     });
+  } catch (error) { next(error); }
+});
+
+// POST /api/v1/zones/waitlist — "tell me when you reach my area" (C2.2).
+//
+// The admin waitlist (GET /admin/commerce/zones/waitlist, with CSV export) has
+// always read unserviceable_waitlist, but nothing wrote to it, so the list
+// that decides the next zone to open was permanently empty. Anonymous, so it
+// is rate limited per IP, every field is shape-checked, and a way to reach the
+// person (phone or email) is required — a sign-up nobody can contact is noise.
+const WAITLIST_PINCODE_RE = /^[1-9][0-9]{5}$/;
+const WAITLIST_PHONE_RE = /^\+?[0-9]{10,15}$/;
+const WAITLIST_EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
+
+router.post('/waitlist', publicFormLimiter, async (req, res, next) => {
+  try {
+    const { latitude, longitude, pincode, phone, email, address } = req.body || {};
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (latitude === undefined || longitude === undefined || latitude === null || longitude === null
+      || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      return res.status(400).json({ success: false, error: 'latitude and longitude must be valid coordinates' });
+    }
+    const pin = pincode === undefined || pincode === null || pincode === '' ? null : String(pincode).trim();
+    if (pin !== null && !WAITLIST_PINCODE_RE.test(pin)) {
+      return res.status(400).json({ success: false, error: 'pincode must be a 6-digit Indian pincode' });
+    }
+    const phoneClean = phone ? String(phone).replace(/[\s-]/g, '') : null;
+    if (phoneClean && !WAITLIST_PHONE_RE.test(phoneClean)) {
+      return res.status(400).json({ success: false, error: 'phone must be a valid mobile number' });
+    }
+    const emailClean = email ? String(email).trim().toLowerCase() : null;
+    if (emailClean && !WAITLIST_EMAIL_RE.test(emailClean)) {
+      return res.status(400).json({ success: false, error: 'email must be a valid address' });
+    }
+    if (!phoneClean && !emailClean) {
+      return res.status(400).json({ success: false, error: 'a phone number or email is required' });
+    }
+    if (address !== undefined && address !== null && (typeof address !== 'string' || address.length > 500)) {
+      return res.status(400).json({ success: false, error: 'address must be at most 500 characters' });
+    }
+
+    // Someone inside a live zone does not belong on this list; tell them so
+    // rather than recording a demand signal for an area already served.
+    const served = pin
+      ? await spatialRepo.territoryByPincode(pin)
+      : await spatialRepo.pointInTerritory(lat, lng);
+    if (served) {
+      return res.status(409).json({ success: false, error: 'This location is already serviceable.', territory: { id: served.id, name: served.name } });
+    }
+
+    const id = crypto.randomUUID();
+    await query(
+      `INSERT INTO unserviceable_waitlist (id, phone_number, email, latitude, longitude, pincode, address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, phoneClean, emailClean, lat, lng, pin, address ? address.trim() : null]
+    );
+    res.status(201).json({ success: true, id, message: "You're on the list. We'll tell you when we reach your area." });
   } catch (error) { next(error); }
 });
 

@@ -75,7 +75,7 @@ const PUBLIC = [
   'GET /campaigns/geo-feed', 'GET /premium/plan', 'GET /ml/', 'GET /bills/status', 'GET /community-hub', 'GET /health',
   // price/cost calculators and quotes
   'POST /carpool/cost-calculator', 'POST /marketplace/price-suggest', 'POST /checkout/quote', 'POST /shops/cart/batch-quote', 'POST /delivery/quote',
-  'POST /ml/', 'POST /campaigns/', 'POST /logistics/riders/register', 'POST /gtm/interest-lead',
+  'POST /ml/', 'POST /campaigns/', 'POST /logistics/riders/register', 'POST /gtm/interest-lead', 'POST /zones/waitlist',
   // gateway callbacks: authenticated by signature, not by session
   'POST /webhooks/', 'POST /payments/webhook/', 'POST /societies/cctv/webhook', 'POST /society/cctv/webhook',
   // guest cart
