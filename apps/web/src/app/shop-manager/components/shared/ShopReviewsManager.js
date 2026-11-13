@@ -14,6 +14,7 @@ export default function ShopReviewsManager({ token, shopId }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All | Pending Reply | Responded
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [replyError, setReplyError] = useState('');
 
   const [loading, setLoading] = useState(true);
 
@@ -26,12 +27,15 @@ export default function ShopReviewsManager({ token, shopId }) {
       const data = await res.json();
       if (data.success) {
         // Map backend fields to frontend format
+        // S6: these read customer_name and comment, which the API does not
+        // send (it sends reviewer_name and review_text), so every review showed
+        // as "Anonymous" with no text.
         const mapped = data.reviews.map(r => ({
           id: r.id.toString(),
-          customer: r.customer_name || 'Anonymous',
+          customer: r.reviewer_name || r.customer_name || 'Anonymous',
           rating: r.rating,
           date: new Date(r.created_at).toLocaleDateString(),
-          text: r.comment || '',
+          text: r.review_text || r.comment || '',
           status: r.reply ? 'Responded' : 'Pending Reply',
           reply: r.reply || ''
         }));
@@ -50,18 +54,25 @@ export default function ShopReviewsManager({ token, shopId }) {
 
   const handleReplySubmit = async (id) => {
     if (!replyText.trim()) return;
+    // S6: fetch does not throw on a 400/404, so a refused reply used to close
+    // the box as though it had been saved. The server's answer is checked now.
+    setReplyError('');
     try {
-      await fetch(`${API_BASE}/shops/my-shop/reviews/${id}/reply`, {
+      const res = await fetch(`${API_BASE}/shops/my-shop/reviews/${id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reply: replyText })
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setReplyError(body.error || 'Your reply could not be saved.');
+        return;
+      }
       fetchReviews();
       setReplyingTo(null);
       setReplyText('');
     } catch (e) {
-      console.error(e);
-      alert('Error saving reply');
+      setReplyError('Your reply could not be saved. Check your connection and try again.');
     }
   };
 
@@ -164,8 +175,10 @@ export default function ShopReviewsManager({ token, shopId }) {
                 </div>
               ) : replyingTo === r.id ? (
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                  <textarea 
+                  {replyError && <p role="alert" style={{ color: '#dc2626', fontSize: '0.8rem' }}>{replyError}</p>}
+                  <textarea
                     autoFocus
+                    aria-label="Your reply"
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
                     placeholder="Write your response to the customer..."

@@ -877,7 +877,11 @@ async function getShopReviews(req, res, next) {
     // nothing to label a review with. Joined here so the merchant sees who left
     // it rather than the screen inventing a name.
     const reviews = await queryMany(
-      `SELECT r.id, r.rating, r.review_text, r.photo_urls, r.created_at, r.user_id,
+      // S6: the reply was never selected, so the merchant's own replies did not
+      // show and every review stayed "Pending Reply". Older rows hold their text
+      // in `comment`, newer ones in `review_text`.
+      `SELECT r.id, r.rating, COALESCE(r.review_text, r.comment) AS review_text, r.reply,
+              r.photo_urls, r.created_at, r.user_id,
               u.full_name AS reviewer_name
          FROM shop_reviews r
          LEFT JOIN users u ON u.id = r.user_id

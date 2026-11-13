@@ -1,0 +1,13 @@
+=== Performance Budget Output ===
+✔ P13.1 [perf]: heavy 3D card component is dynamically loaded with ssr: false (1.1028ms)
+✔ P13.2 [perf]: interactive map component is dynamically loaded with ssr: false (0.3098ms)
+✔ P13.3 [perf]: customer shopping landing page does not directly bundle heavy 3D canvas (0.9435ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8.0266
+

@@ -1,0 +1,59 @@
+=== Backend Jest on PostgreSQL Execution ===
+Database: localsampark_test on 127.0.0.1:5432
+Exit Code: 1
+Summary: 1788 passed, 1 failed in 158 suites on PostgreSQL (localsampark_test); 9 @engine sqlite-only suite(s) excluded
+
+STDOUT:
+21:35:48 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 175.954 ms - 293[0m
+[0mGET /ready [32m200[0m 8.815 ms - 136[0m
+[0mGET /metrics [32m200[0m 0.492 ms - 391[0m
+
+
+STDERR:
+FAIL src/__tests__/services/territoryResolution.test.js
+  ● franchise exclusivity › a transfer leaves the previous holder attributable for past dates
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "7e858ba7-3cf7-49dd-909a-afd26f500122"
+    Received: "7e858ba7-64ba-4a94-8c7b-657e0a52a53c"
+
+      432 |
+      433 |     const now = await svc.holderAt(T_VERIFIED, Date.now() + 1000);
+    > 434 |     expect(now).toBe(PARTNER_B);
+          |                 ^
+      435 |
+      436 |     const earlier = await svc.holderAt(T_VERIFIED, Date.now() - 600000);
+      437 |     // Either the previous holder or null, but never the new one: the new
+
+      at Object.toBe (src/__tests__/services/territoryResolution.test.js:434:17)
+
+
+Summary of all failing tests
+FAIL src/__tests__/services/territoryResolution.test.js
+  ● franchise exclusivity › a transfer leaves the previous holder attributable for past dates
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "7e858ba7-3cf7-49dd-909a-afd26f500122"
+    Received: "7e858ba7-64ba-4a94-8c7b-657e0a52a53c"
+
+      432 |
+      433 |     const now = await svc.holderAt(T_VERIFIED, Date.now() + 1000);
+    > 434 |     expect(now).toBe(PARTNER_B);
+          |                 ^
+      435 |
+      436 |     const earlier = await svc.holderAt(T_VERIFIED, Date.now() - 600000);
+      437 |     // Either the previous holder or null, but never the new one: the new
+
+      at Object.toBe (src/__tests__/services/territoryResolution.test.js:434:17)
+
+
+Test Suites: 1 failed, 157 passed, 158 total
+Tests:       1 failed, 1788 passed, 1789 total
+Snapshots:   0 total
+Time:        199.992 s, estimated 255 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-13T16-00-40\jest-postgres.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

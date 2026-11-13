@@ -167,6 +167,12 @@ export default function ShopDashboard() {
           <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/(tabs)/revenue')}>
             <Text style={styles.manageBtnText}>Settlements</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/modules/merchant/coupons')}>
+            <Text style={styles.manageBtnText}>Coupons</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/modules/merchant/analytics')}>
+            <Text style={styles.manageBtnText}>Shop figures</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
       )}

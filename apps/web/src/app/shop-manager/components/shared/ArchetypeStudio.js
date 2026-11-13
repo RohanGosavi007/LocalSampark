@@ -8,6 +8,7 @@ import ShopStaffManager from './ShopStaffManager';
 import ShopAnalyticsManager from './ShopAnalyticsManager';
 import ShopSettingsManager from './ShopSettingsManager';
 import ShopReviewsManager from './ShopReviewsManager';
+import ShopCouponsManager from './ShopCouponsManager';
 
 /**
  * Seller Studio shell for the non-retail archetypes (salon, clinic, tutor,
@@ -37,6 +38,7 @@ const PANELS = {
   staff: ShopStaffManager,
   analytics: ShopAnalyticsManager,
   reviews: ShopReviewsManager,
+  coupons: ShopCouponsManager,
   settings: ShopSettingsManager,
 };
 

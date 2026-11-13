@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, ShoppingBag, Calendar, Package, Users,
   Star, MessageCircle, Bell, Settings, TrendingUp, CreditCard,
-  AlertTriangle, BarChart3, ArrowLeft
+  AlertTriangle, BarChart3, ArrowLeft, Tag,
 } from 'lucide-react';
 import DynamicIcon, { getCategoryIconInfo, CATEGORY_ICONS } from '../../components/DynamicIcon';
 
@@ -27,6 +27,7 @@ import LeadCRMCenter from './shared/LeadCRMCenter';
 import ShopLedger from './shared/ShopLedger';
 import ShopStaffManager from './shared/ShopStaffManager';
 import ShopReviewsManager from './shared/ShopReviewsManager';
+import ShopCouponsManager from './shared/ShopCouponsManager';
 import ShopAnalyticsManager from './shared/ShopAnalyticsManager';
 import ShopSettingsManager from './shared/ShopSettingsManager';
 import ShopChatManager from './shared/ShopChatManager';
@@ -171,6 +172,7 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
     { id: 'ledger', label: 'Ledger', icon: CreditCard },
     { id: 'staff', label: 'Staff', icon: Users },
     { id: 'reviews', label: 'Reviews', icon: Star },
+    { id: 'coupons', label: 'Coupons', icon: Tag },
     { id: 'chat', label: 'Chat', icon: MessageCircle },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -209,6 +211,7 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
       {activeTab === 'ledger' && <ShopLedger token={token} shopId={shopId} />}
       {activeTab === 'staff' && <ShopStaffManager token={token} shopId={shopId} />}
       {activeTab === 'reviews' && <ShopReviewsManager token={token} shopId={shopId} />}
+      {activeTab === 'coupons' && <ShopCouponsManager token={token} shopId={shopId} />}
       {activeTab === 'chat' && <ShopChatManager token={token} shopId={shopId} />}
       {activeTab === 'analytics' && <ShopAnalyticsManager token={token} shopId={shopId} />}
       {activeTab === 'settings' && <ShopSettingsManager token={token} shopId={shopId} />}

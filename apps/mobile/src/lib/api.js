@@ -255,6 +255,14 @@ export async function apiPut(endpoint, body, options = {}) {
   });
 }
 
+export async function apiPatch(endpoint, body, options = {}) {
+  return request(endpoint, {
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+    ...options
+  });
+}
+
 export async function apiDelete(endpoint, options = {}) {
   return request(endpoint, { method: 'DELETE', ...options });
 }

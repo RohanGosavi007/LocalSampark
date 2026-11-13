@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { apiGet } from '../../src/lib/api';
+import ReviewReply from '../../src/components/ReviewReply';
 
 /**
  * Merchant-facing customer reviews.
@@ -36,6 +37,7 @@ export default function ServiceReviews() {
           customer: r.reviewer_name || 'Customer',
           rating: Number(r.rating) || 0,
           text: r.review_text || '',
+          reply: r.reply || '',
           date: r.created_at
             ? new Date(r.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
             : '',
@@ -115,6 +117,11 @@ export default function ServiceReviews() {
                 ))}
               </View>
               {rev.text ? <Text style={styles.reviewText}>{rev.text}</Text> : null}
+              <ReviewReply
+                reviewId={rev.id}
+                existing={rev.reply}
+                onSaved={(reply) => setReviews((list) => list.map((x) => (x.id === rev.id ? { ...x, reply } : x)))}
+              />
             </View>
           ))}
         </ScrollView>

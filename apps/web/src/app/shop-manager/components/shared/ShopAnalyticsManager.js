@@ -6,24 +6,30 @@ import {
   PieChart, BarChart3, Receipt
 } from 'lucide-react';
 
+import { API_BASE } from '@/lib/api';
 // KPIS will be built dynamically
 
 export default function ShopAnalyticsManager({ token, shopId }) {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   React.useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const res = await fetch(`/api/v1/shops/my-shop/analytics-data`, {
+        // S7: this was a relative /api/v1 path, which goes to the web server,
+        // not the API, so the figures never loaded and nothing said so.
+        const res = await fetch(`${API_BASE}/shops/my-shop/analytics-data`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        if (data.success) {
+        if (res.ok && data.success) {
           setAnalytics(data.analytics);
+        } else {
+          setLoadError(data.error || 'Your shop figures could not be loaded.');
         }
       } catch (e) {
-        console.error(e);
+        setLoadError('Your shop figures could not be loaded. Check your connection and try again.');
       } finally {
         setLoading(false);
       }
@@ -63,10 +69,12 @@ export default function ShopAnalyticsManager({ token, shopId }) {
               </div>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>{kpi.label}</p>
-            <h4 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{kpi.value}</h4>
+            <h4 data-testid={`kpi-${kpi.id}`} style={{ fontSize: '1.5rem', fontWeight: 800 }}>{kpi.value}</h4>
           </div>
         ))}
       </div>
+
+      {loadError && <p role="alert" style={{ color: '#dc2626' }}>{loadError}</p>}
 
       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Figures are for your shop's recorded activity. Charts, tax and settlement reports will appear here once there is data to report.</p>
     </div>

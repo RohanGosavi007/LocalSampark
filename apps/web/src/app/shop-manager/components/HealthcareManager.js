@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { BarChart3, Calendar, Pill, Settings, Star, Users } from 'lucide-react';
+import { BarChart3, Calendar, Pill, Settings, Star, Tag, Users } from 'lucide-react';
 import ArchetypeStudio from './shared/ArchetypeStudio';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -18,6 +18,7 @@ const TABS = [
   { id: 'services', label: 'Services & Inventory', icon: Pill, panel: 'catalogue' },
   { id: 'staff', label: 'Doctors & Staff', icon: Users, panel: 'staff' },
   { id: 'reviews', label: 'Reviews', icon: Star, panel: 'reviews' },
+  { id: 'coupons', label: 'Coupons', icon: Tag, panel: 'coupons' },
   { id: 'settings', label: 'Settings', icon: Settings, panel: 'settings' },
 ];
 
