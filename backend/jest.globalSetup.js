@@ -181,6 +181,16 @@ async function resetLocalPostgres(dbUrl, { withFixtures = true } = {}) {
   const client = new Client({ connectionString: dbUrl, ssl: false });
   await client.connect();
   try {
+    // DROP SCHEMA waits for every lock any other session holds in it. A Jest
+    // run that was killed or left behind (2026-11-13: a frozen G3 run outlived
+    // its gate) kept sessions open, and the next run's reset blocked for good
+    // or died with "deadlock detected". This database is local-only (L6 guard
+    // above) and exclusively the test suite's, so end other sessions first,
+    // and fail fast rather than hang if a lock still appears.
+    await client.query(
+      'SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()'
+    );
+    await client.query("SET lock_timeout = '30s'");
     await client.query('DROP SCHEMA IF EXISTS public CASCADE');
     await client.query('CREATE SCHEMA public');
     await client.query('GRANT ALL ON SCHEMA public TO public');

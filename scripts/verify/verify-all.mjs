@@ -69,22 +69,48 @@ function runCmd(cmd, cmdArgs, { cwd = ROOT, env = process.env, timeout = 300000 
   // Gradle starts.
   const formattedCmd = isWindows && cmd.includes(' ') && !cmd.startsWith('"') ? `"${cmd}"` : cmd;
 
+  // Output goes to files, not pipes. On 2026-11-13 G3 and G11 each froze for
+  // ~3 h when their output was piped back to spawnSync, while the same
+  // commands writing to a file finished in minutes. A timeout also kills only
+  // cmd.exe, and the children it orphans used to keep the pipe (and so this
+  // call) open; with files there is no pipe for them to hold.
+  const tag = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const outPath = path.join(evidenceDir, `.run-${tag}.out`);
+  const errPath = path.join(evidenceDir, `.run-${tag}.err`);
+  const outFd = fs.openSync(outPath, 'w');
+  const errFd = fs.openSync(errPath, 'w');
+  const readAndRemove = (p) => {
+    try {
+      return fs.readFileSync(p, 'utf8');
+    } catch {
+      return '';
+    } finally {
+      fs.rmSync(p, { force: true });
+    }
+  };
   try {
     const res = spawnSync(formattedCmd, formattedArgs, {
       cwd,
       env: { ...env, FORCE_COLOR: '0', CI: 'true' },
-      encoding: 'utf8',
+      stdio: ['ignore', outFd, errFd],
       timeout,
-      shell: isWindows,
-      maxBuffer: 20 * 1024 * 1024
+      shell: isWindows
     });
+    fs.closeSync(outFd);
+    fs.closeSync(errFd);
+    const stdout = readAndRemove(outPath);
+    const stderr = readAndRemove(errPath);
     return {
       code: res.status !== null ? res.status : 1,
-      stdout: res.stdout || '',
-      stderr: res.stderr || (res.error ? res.error.message : ''),
+      stdout,
+      stderr: stderr || (res.error ? res.error.message : ''),
       error: res.error
     };
   } catch (err) {
+    try { fs.closeSync(outFd); } catch { /* already closed */ }
+    try { fs.closeSync(errFd); } catch { /* already closed */ }
+    readAndRemove(outPath);
+    readAndRemove(errPath);
     return {
       code: 1,
       stdout: '',
@@ -465,10 +491,36 @@ const gates = [
       // proven (G18) and the console's E2E specs were dead code. Both projects
       // now run; the admin spec drives the console against the fixture DB that
       // scripts/e2e/prepare-db.js builds for the E2E backend.
-      const res = runCmd('npx', ['playwright', 'test', '--project=web-chromium', '--project=admin-chromium'], { cwd: ROOT, timeout: 1800000 });
+      // 2026-11-13: run through runCmd (cmd.exe, output piped back to
+      // spawnSync) the suite froze after ~84 tests twice and G11 blocked for
+      // 3 h; the same suite with output going to a file passed 120/120 in
+      // 6.7 min. spawnSync's timeout also kills only cmd.exe, and the
+      // webServers it orphaned kept the pipe open. So: Playwright's CLI runs
+      // directly under node (no shell), its output goes to a file (no pipe for
+      // orphans to hold), --global-timeout makes it stop and clean up on its
+      // own, and anything still listening on the E2E ports is killed after.
+      const outPath = path.join(evidenceDir, 'G11-raw.txt');
+      const outFd = fs.openSync(outPath, 'w');
+      const pwCli = path.join(ROOT, 'node_modules', '@playwright', 'test', 'cli.js');
+      const run = spawnSync(process.execPath, [pwCli, 'test', '--project=web-chromium', '--project=admin-chromium', '--global-timeout=1680000'], {
+        cwd: ROOT,
+        env: { ...process.env, FORCE_COLOR: '0', CI: 'true' },
+        stdio: ['ignore', outFd, outFd],
+        timeout: 1800000
+      });
+      fs.closeSync(outFd);
+      if (process.platform === 'win32') {
+        for (const port of [3000, 3001, 5000]) {
+          const ns = spawnSync('cmd.exe', ['/c', `for /f "tokens=5" %p in ('netstat -ano ^| findstr LISTENING ^| findstr :${port}') do taskkill /F /T /PID %p`], { encoding: 'utf8', timeout: 30000 });
+          void ns;
+        }
+      }
+      const output = fs.readFileSync(outPath, 'utf8');
+      fs.rmSync(outPath, { force: true });
+      const code = run.status !== null ? run.status : 1;
       if (fs.existsSync(pwReport)) fs.copyFileSync(pwReport, path.join(evidenceDir, 'playwright.json'));
-      const log = writeLog('G11', `=== Playwright E2E Output ===\n${res.stdout}\n${res.stderr}`);
-      return { passed: res.code === 0, summary: res.code === 0 ? 'Playwright E2E commerce flows passed' : 'E2E tests failed or not executed', log };
+      const log = writeLog('G11', `=== Playwright E2E Output ===\n${output}\n${run.error ? run.error.message : ''}`);
+      return { passed: code === 0, summary: code === 0 ? 'Playwright E2E commerce flows passed' : 'E2E tests failed or not executed', log };
     }
   },
   {
