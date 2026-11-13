@@ -98,7 +98,7 @@ test('[C13.6] with promotions off a promotion is not delivered; an order update 
   expect(pushed.mock.calls.map(([, msg]) => msg.title)).toEqual(['Order placed']);
 });
 
-test('[C13.7] push off, or order updates off, keeps the inbox but sends nothing to the phone', async () => {
+test('[C13.7] [P5.1] push off, or order updates off, keeps the inbox but sends nothing to the phone', async () => {
   const pushed = jest.spyOn(push, 'sendToUser').mockResolvedValue(undefined);
   await notifications.sendToUser(ME, { type: 'order_update', title: 'One', body: 'b' });
   expect(pushed).toHaveBeenCalledTimes(1);
@@ -113,7 +113,7 @@ test('[C13.7] push off, or order updates off, keeps the inbox but sends nothing 
   expect((await inbox(ME)).map((n) => n.title).sort()).toEqual(['Four', 'One', 'Three', 'Two']);
 });
 
-test('[C13.8] the order email goes to the customer within their settings', async () => {
+test('[C13.8] [P5.1] the order email goes to the customer within their settings', async () => {
   const email = require('../../modules/core/services/email.service');
   const sent = jest.spyOn(email, 'sendOrderConfirmation').mockResolvedValue({ success: true });
   jest.spyOn(push, 'sendToUser').mockResolvedValue(undefined);

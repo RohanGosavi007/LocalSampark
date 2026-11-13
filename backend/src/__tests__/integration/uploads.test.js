@@ -77,7 +77,7 @@ const send = (userId, buffer, name, fields = {}, field = 'file', type = 'image/p
 };
 
 describe('what is accepted', () => {
-  test('an image is stored under its purpose, named by its real type, at a URL that resolves', async () => {
+  test('[P4.1] an image is stored under its purpose, named by its real type, at a URL that resolves', async () => {
     const res = await send(OWNER, JPEG, 'holiday.png', { purpose: 'product_image' });
 
     expect(res.status).toBe(201);
@@ -88,7 +88,7 @@ describe('what is accepted', () => {
     expect(fs.existsSync(uploads.diskPath({ file_path: res.body.url }))).toBe(true);
   });
 
-  test('a page labelled as an image is refused, whatever it is called, and nothing is written', async () => {
+  test('[P4.2] a page labelled as an image is refused, whatever it is called, and nothing is written', async () => {
     const before = (await queryMany(`SELECT id FROM file_uploads WHERE uploader_id = '${fx('upl-owner')}'`)).length;
     for (const name of ['photo.png', 'photo.html', 'photo.svg']) {
       const res = await send(OWNER, HTML, name);
@@ -98,7 +98,7 @@ describe('what is accepted', () => {
     expect((await queryMany(`SELECT id FROM file_uploads WHERE uploader_id = '${fx('upl-owner')}'`)).length).toBe(before);
   });
 
-  test('a real image named .html is stored as an image', async () => {
+  test('[P4.2] a real image named .html is stored as an image', async () => {
     const res = await send(OWNER, PNG, 'evil.html');
     expect(res.status).toBe(201);
     expect(res.body.url).toMatch(/\.png$/);

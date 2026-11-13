@@ -9,7 +9,7 @@ describe('PaymentGatewayEngine', () => {
 
   // ─── verifyWebhookSignature ───────────────────────────────
   describe('verifyWebhookSignature()', () => {
-    it('should verify valid Razorpay webhook signature', () => {
+    it('[P2.1] should verify valid Razorpay webhook signature', () => {
       const secret = 'test-webhook-secret';
       const payload = JSON.stringify({ event: 'order.paid', payload: { payment: { entity: { id: 'pay_123' } } } });
       const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
@@ -18,7 +18,7 @@ describe('PaymentGatewayEngine', () => {
       expect(isValid).toBe(true);
     });
 
-    it('should reject tampered Razorpay webhook payload', () => {
+    it('[P2.1] should reject tampered Razorpay webhook payload', () => {
       const secret = 'test-webhook-secret';
       const originalPayload = '{"event":"order.paid"}';
       const tamperedPayload = '{"event":"order.refunded"}';
@@ -28,7 +28,7 @@ describe('PaymentGatewayEngine', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should reject invalid signature', () => {
+    it('[P2.1] should reject invalid signature', () => {
       const isValid = PaymentGatewayEngine.verifyWebhookSignature('razorpay', '{}', 'invalidsig', 'secret');
       expect(isValid).toBe(false);
     });

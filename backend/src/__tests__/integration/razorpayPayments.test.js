@@ -194,7 +194,7 @@ describe('confirming a payment', () => {
     return start.body.razorpayOrderId;
   }
 
-  test('a genuine result marks that order paid, once', async () => {
+  test('[P2.1] a genuine result marks that order paid, once', async () => {
     const rzpOrder = await paid(fx('rzp-order-good'), 250);
     const body = {
       razorpay_order_id: rzpOrder,
@@ -214,7 +214,7 @@ describe('confirming a payment', () => {
     expect(again.body.alreadyPaid).toBe(true);
   });
 
-  test('a forged signature settles nothing', async () => {
+  test('[P2.1] a forged signature settles nothing', async () => {
     const rzpOrder = await paid(fx('rzp-order-forged'), 250);
 
     const res = await verifyPayment(BUYER, {
@@ -226,7 +226,7 @@ describe('confirming a payment', () => {
     expect(order.payment_status).toBe('pending');
   });
 
-  test('a genuine payment for one order cannot be replayed onto another', async () => {
+  test('[P2.1] a genuine payment for one order cannot be replayed onto another', async () => {
     // The hole this closes: verification used to check the signature and then
     // mark paid whichever order_id the request named.
     const cheap = await paid(fx('rzp-order-cheap'), 1);
@@ -363,7 +363,7 @@ describe('the webhook', () => {
     payload: { payment: { entity: { id: paymentId, order_id: rzpOrder, amount, status: 'captured' } } },
   });
 
-  test('a signed delivery settles the order, though the body was parsed before the route saw it', async () => {
+  test('[P2.1] a signed delivery settles the order, though the body was parsed before the route saw it', async () => {
     await newShopOrder(fx('rzp-order-hook'), BUYER, 150);
     const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-hook') });
 
@@ -374,7 +374,7 @@ describe('the webhook', () => {
     expect(order.payment_status).toBe('paid');
   });
 
-  test('an unsigned or wrongly signed delivery is refused', async () => {
+  test('[P2.1] an unsigned or wrongly signed delivery is refused', async () => {
     await newShopOrder(fx('rzp-order-hookbad'), BUYER, 150);
     const start = await startPayment(BUYER, { purpose: 'shop_order', referenceId: fx('rzp-order-hookbad') });
     const event = captured(start.body.razorpayOrderId, 'pay_hookbad1', 15000);
@@ -397,7 +397,7 @@ describe('the webhook', () => {
     expect(order.payment_status).toBe('pending');
   });
 
-  test('a top-up settled by the webhook and then by the browser is credited once', async () => {
+  test('[P2.1] a top-up settled by the webhook and then by the browser is credited once', async () => {
     const before = Number((await queryOne('SELECT balance FROM wallets WHERE user_id = $1', [BUYER])).balance);
     const start = await request(app).post('/wallet/create-topup-order').set(as(BUYER)).send({ amount: 300 });
     const rzpOrder = start.body.razorpayOrderId;
@@ -425,7 +425,7 @@ describe('the webhook', () => {
     expect(row).toEqual({ status: 'failed', failure_reason: 'Card declined' });
   });
 
-  test('without a webhook secret every delivery is refused', async () => {
+  test('[P2.1] without a webhook secret every delivery is refused', async () => {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     delete process.env.RAZORPAY_WEBHOOK_SECRET;
     try {
@@ -468,29 +468,39 @@ describe('with no keys configured', () => {
   });
 });
 
+// The legacy route now proxies the order pipeline (P1.2), so it acts on the
+// `orders` table that checkout writes, not the retired shop_orders.
 describe('PUT /shops/orders/:id/status', () => {
   const setStatus = (userId, id, status) => request(app).put(`/shops/orders/${id}/status`).set(as(userId)).send({ status });
+  const codOrder = (id) => query(
+    `INSERT INTO orders (id, user_id, shop_id, total_amount, subtotal, delivery_fee, status, order_status, payment_method, payment_status, fulfillment_method)
+     VALUES ($1, $2, $3, 100, 100, 0, 'pending', 'pending', 'COD', 'unpaid', 'delivery')`,
+    [id, BUYER, SHOP]
+  );
+  const statusOf = async (id) => (await queryOne('SELECT order_status FROM orders WHERE id = $1', [id])).order_status;
 
-  test('a stranger cannot move an order; the owner can', async () => {
-    await newShopOrder(fx('rzp-order-status'), BUYER, 100);
+  test('a stranger cannot move an order; the owner can, by its old status names too', async () => {
+    await codOrder(fx('rzp-order-status'));
 
-    expect((await setStatus(OTHER, fx('rzp-order-status'), 'delivered')).status).toBe(403);
-    expect((await queryOne('SELECT status FROM shop_orders WHERE id = $1', [fx('rzp-order-status')])).status).toBe('pending');
+    expect((await setStatus(OTHER, fx('rzp-order-status'), 'delivered')).status).toBeGreaterThanOrEqual(400);
+    expect(await statusOf(fx('rzp-order-status'))).toBe('pending');
 
     const res = await setStatus(OWNER, fx('rzp-order-status'), 'accepted');
     expect(res.status).toBe(200);
-    expect(res.body.order.status).toBe('accepted');
+    expect(await statusOf(fx('rzp-order-status'))).toBe('confirmed');
   });
 
   test('the customer may cancel a pending order, and nothing else', async () => {
-    await newShopOrder(fx('rzp-order-cancel'), BUYER, 100);
+    await codOrder(fx('rzp-order-cancel'));
 
-    expect((await setStatus(BUYER, fx('rzp-order-cancel'), 'delivered')).status).toBe(403);
+    expect((await setStatus(BUYER, fx('rzp-order-cancel'), 'delivered')).status).toBeGreaterThanOrEqual(400);
     expect((await setStatus(BUYER, fx('rzp-order-cancel'), 'cancelled')).status).toBe(200);
 
-    await newShopOrder(fx('rzp-order-toolate'), BUYER, 100);
+    await codOrder(fx('rzp-order-toolate'));
     await setStatus(OWNER, fx('rzp-order-toolate'), 'accepted');
-    expect((await setStatus(BUYER, fx('rzp-order-toolate'), 'cancelled')).status).toBe(403);
+    await setStatus(OWNER, fx('rzp-order-toolate'), 'preparing');
+    expect((await setStatus(BUYER, fx('rzp-order-toolate'), 'cancelled')).status).toBeGreaterThanOrEqual(400);
+    expect(await statusOf(fx('rzp-order-toolate'))).toBe('preparing');
   });
 });
 

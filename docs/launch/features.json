@@ -1269,10 +1269,10 @@
     "tests": [
       "[P6.1] returns all feature flags with launch defaults",
       "[P6.2] allows request when feature is enabled",
-      "[P6.3] blocks route with 404 when vertical is disabled",
+      "[P6.3] blocks route with 403 FEATURE_DISABLED when vertical is disabled",
       "[P6.4] allows request when BYPASS_FEATURE_FLAGS=true",
       "[P6.5] ecommerce vertical routes remain open",
-      "[P6.6] disabled vertical route returns 404",
+      "[P6.6] disabled vertical route returns 403 FEATURE_DISABLED",
       "[P6.7] web client feature flag helper correctly identifies disabled verticals"
     ],
     "status": "IN PROGRESS",

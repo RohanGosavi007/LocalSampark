@@ -902,35 +902,54 @@ async function replyToShopReview(req, res, next) {
   try {
     const shop = req.shop;
     const { reviewId } = req.params;
-    const { reply } = req.body;
-    await query('UPDATE shop_reviews SET reply=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND shop_id=$3', [reply, reviewId, shop.id]);
-    res.json({ success: true, message: 'Reply added successfully' });
+    // S6: this said "Reply added successfully" whatever happened — for a review
+    // of another shop, one that did not exist, or with no reply at all (which
+    // blanked an existing reply). The review must be this shop's, and the reply
+    // real text.
+    const reply = typeof req.body?.reply === 'string' ? req.body.reply.trim() : '';
+    if (!reply) return res.status(400).json({ error: 'Reply text is required' });
+    if (reply.length > 1000) return res.status(400).json({ error: 'Reply must be at most 1000 characters' });
+
+    const review = await queryOne(
+      'SELECT id FROM shop_reviews WHERE CAST(id AS TEXT) = $1 AND CAST(shop_id AS TEXT) = $2',
+      [String(reviewId), String(shop.id)]
+    );
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+
+    await query('UPDATE shop_reviews SET reply=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2', [reply, review.id]);
+    res.json({ success: true, message: 'Reply added successfully', reply });
   } catch (error) { next(error); }
 }
 
 async function getShopAnalyticsData(req, res, next) {
   try {
     const shop = req.shop;
-    
-    // In a full implementation, this might read from shop_analytics_snapshots table.
-    // For now, we will dynamically aggregate from universal_orders.
-    const orders = await queryMany('SELECT * FROM universal_orders WHERE shop_id = $1', [shop.id]);
-    
-    let totalRevenue = 0;
-    let completedOrders = 0;
-    
-    orders.forEach(o => {
-      if (o.status === 'delivered' || o.status === 'completed') {
-        completedOrders++;
-        totalRevenue += parseFloat(o.total_amount || 0);
-      }
-    });
+
+    // S7: this read universal_orders, which checkout never writes (orders go to
+    // `orders`), so every seller saw ₹0 and 0 orders. It also reported views: 0
+    // although store views are not tracked anywhere, and a "conversion" of
+    // 100% whenever there was one completed order. Now: real totals from
+    // `orders`; views null (unknown, not zero); and conversion is the share of
+    // orders placed that were delivered, which is what the data can support.
+    const row = await queryOne(
+      `SELECT COUNT(*) AS placed,
+              SUM(CASE WHEN COALESCE(order_status, status) IN ('delivered', 'completed') THEN 1 ELSE 0 END) AS delivered,
+              SUM(CASE WHEN COALESCE(order_status, status) IN ('delivered', 'completed') THEN COALESCE(total_amount, 0) ELSE 0 END) AS revenue,
+              SUM(CASE WHEN COALESCE(order_status, status) = 'cancelled' THEN 1 ELSE 0 END) AS cancelled
+         FROM orders
+        WHERE CAST(shop_id AS TEXT) = $1`,
+      [String(shop.id)]
+    );
+    const placed = Number(row?.placed) || 0;
+    const delivered = Number(row?.delivered) || 0;
 
     const analytics = {
-      revenue: totalRevenue,
-      orders: completedOrders,
-      views: 0,
-      conversion: completedOrders > 0 ? '100.0' : '0.0'
+      revenue: Math.round((Number(row?.revenue) || 0) * 100) / 100,
+      orders: delivered,
+      placedOrders: placed,
+      cancelledOrders: Number(row?.cancelled) || 0,
+      views: null,
+      conversion: placed > 0 ? ((delivered / placed) * 100).toFixed(1) : '0.0'
     };
 
     res.json({ success: true, analytics });
@@ -1498,16 +1517,20 @@ async function getShopAnalytics(req, res, next) {
     const days = daysMap[period] || 7;
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+    // S7: these read shop_orders, which nothing writes; orders live in `orders`.
     const [revenueByDay, ordersByStatus, topProducts, topServices, reviewTrend] = await Promise.all([
       query(`SELECT DATE(created_at) as date, SUM(total_amount) as revenue, COUNT(*) as orders
-             FROM shop_orders WHERE shop_id = $1 AND created_at >= $2 AND status NOT IN ('cancelled')
-             GROUP BY DATE(created_at) ORDER BY date ASC`, [shop.id, startDate]),
-      query(`SELECT status, COUNT(*) as count FROM shop_orders
-             WHERE shop_id = $1 AND created_at >= $2 GROUP BY status`, [shop.id, startDate]),
-      query(`SELECT p.name, COUNT(oi.id) as order_count, SUM(oi.quantity * oi.price) as revenue
-             FROM order_items oi JOIN shop_products p ON oi.product_id = p.id
-             WHERE p.shop_id = $1 AND oi.created_at >= $2
-             GROUP BY p.id ORDER BY revenue DESC LIMIT 10`, [shop.id, startDate]),
+             FROM orders WHERE CAST(shop_id AS TEXT) = $1 AND created_at >= $2
+               AND COALESCE(order_status, status) <> 'cancelled'
+             GROUP BY DATE(created_at) ORDER BY date ASC`, [String(shop.id), startDate]),
+      query(`SELECT COALESCE(order_status, status) AS status, COUNT(*) as count FROM orders
+             WHERE CAST(shop_id AS TEXT) = $1 AND created_at >= $2
+             GROUP BY COALESCE(order_status, status)`, [String(shop.id), startDate]),
+      query(`SELECT oi.name, COUNT(oi.order_id) as order_count, SUM(oi.quantity * oi.price) as revenue
+             FROM order_items oi JOIN orders o ON o.id = oi.order_id
+             WHERE CAST(o.shop_id AS TEXT) = $1 AND o.created_at >= $2
+               AND COALESCE(o.order_status, o.status) <> 'cancelled'
+             GROUP BY oi.name ORDER BY revenue DESC LIMIT 10`, [String(shop.id), startDate]),
       query(`SELECT s.name, COUNT(a.id) as booking_count
              FROM shop_appointments a JOIN shop_services s ON a.service_id = s.id
              WHERE a.shop_id = $1 AND a.created_at >= $2

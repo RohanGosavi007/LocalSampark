@@ -40,7 +40,7 @@ const crypto = require('crypto');
 // NOW() is PostgreSQL-only; SQLite needs CURRENT_TIMESTAMP.
 const NOW = process.env.USE_SQLITE === 'true' ? 'CURRENT_TIMESTAMP' : 'NOW()';
 
-const { autoCreateShopDelivery } = require('../../services/controllers/delivery.controller');
+const lifecycle = require('../../../services/orderLifecycle.service');
 const geo = require('../../../utils/geo');
 const { isOpenNow } = require('../../../utils/shopHours');
 
@@ -952,54 +952,42 @@ router.post('/:id/orders', authenticate, idempotent('shop-order'), async (req, r
   }
 });
 
-// State Machine API for Orders
+// PUT /shops/orders/:id/status — legacy name for "move this order" (P1.2).
+//
+// This used to UPDATE shop_orders directly: any status from any status (an
+// owner could mark a pending order delivered), on a table checkout stopped
+// writing to (orderPlacement.service), so for every real order it answered
+// 404. It is now a proxy for the canonical pipeline: the same order, the same
+// rules and the same answers as PUT /shops/my-shop/orders/:id/status. The old
+// status names are still accepted.
+const LEGACY_ORDER_STATUS = {
+  accepted: 'confirmed',
+  ready_for_pickup: 'ready',
+  dispatched: 'out_for_delivery',
+};
+
 router.put('/orders/:id/status', authenticate, async (req, res, next) => {
   try {
-    const { status } = req.body;
-    const validStatuses = ['pending', 'accepted', 'preparing', 'ready_for_pickup', 'dispatched', 'delivered', 'cancelled'];
-    if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    const requested = String((req.body && req.body.status) || '');
+    const to = LEGACY_ORDER_STATUS[requested] || requested;
+    const { reason } = req.body || {};
 
-    // Who may move an order.
-    //
-    // This took `authenticate` and updated whichever order id was in the URL:
-    // any signed-in account could mark any shop's order delivered or cancelled.
-    // The shop's owner (or an admin) runs the order through its states; the
-    // customer who placed it may cancel it, and only before the shop has
-    // accepted it.
-    const existing = await queryOne(
-      `SELECT o.id, o.user_id, o.status, s.owner_id
-         FROM shop_orders o LEFT JOIN local_shops s ON s.id = o.shop_id
-        WHERE o.id = $1`,
-      [req.params.id]
-    );
-    if (!existing) return res.status(404).json({ error: 'Order not found' });
-
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
-    const isOwner = existing.owner_id && String(existing.owner_id) === String(req.user.id);
-    const isCustomer = existing.user_id && String(existing.user_id) === String(req.user.id);
-    const customerCancel = isCustomer && status === 'cancelled' && existing.status === 'pending';
-    if (!isAdmin && !isOwner && !customerCancel) {
-      return res.status(403).json({ error: 'You cannot change the status of this order' });
+    let outcome;
+    try {
+      outcome = await lifecycle.changeStatus({ orderId: req.params.id, to, user: req.user, reason });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+      }
+      throw error;
     }
 
-    const order = await queryOne('UPDATE shop_orders SET status = $1 WHERE id = $2 RETURNING *', [status, req.params.id]);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-
-    // Auto-dispatch hook if shop owner marks as ready
-    if (status === 'ready_for_pickup' && order.delivery_type === 'delivery') {
-      const coords = typeof order.delivery_coordinate === 'string' ? JSON.parse(order.delivery_coordinate) : order.delivery_coordinate;
-      await autoCreateShopDelivery(order.id, order.shop_id, order.user_id, coords?.lat || 0, coords?.lng || 0, order.delivery_address, order.items);
+    const io = req.app?.get ? req.app.get('io') : null;
+    if (io && !outcome.unchanged) {
+      io.to(`order_${req.params.id}`).to(`order:${req.params.id}`)
+        .emit('order_status_update', { orderId: req.params.id, status: String(outcome.to).toUpperCase() });
     }
-
-    const supabaseRealtime = req.app.get('supabaseRealtime');
-    if (supabaseRealtime) {
-      supabaseRealtime.broadcast(`order:${order.id}`, 'order:status_update', {
-        orderId: order.id,
-        status: order.status
-      });
-    }
-
-    res.json({ success: true, order });
+    res.json({ success: true, order: outcome.order, refund: outcome.refund });
   } catch (error) {
     next(error);
   }
@@ -1532,6 +1520,51 @@ router.get('/:id/offers', async (req, res, next) => {
     const offers = result.rows || result || [];
     res.json({ success: true, data: offers });
   } catch (error) { next(error); }
+});
+
+// ─── S5: the shop's own coupons ─────────────────────────────────────────────
+// Coupons could only be made by an admin (admin-commerce.routes). These let a
+// seller run coupons for their own shop. The shop is always the one in the
+// URL — a shop_id in the body is ignored — so a seller cannot make a platform
+// coupon or one for another shop, and the coupon engine (coupon.service
+// priceCart) then refuses it at any other shop's checkout (SHOP_MISMATCH).
+const SELLER_COUPON_FIELDS = ['code', 'discount_type', 'discount_value', 'min_order_amount', 'max_discount_amount',
+  'max_uses', 'per_user_limit', 'first_order_only', 'description', 'is_active', 'start_date', 'end_date'];
+const pickCouponFields = (body) => Object.fromEntries(
+  SELLER_COUPON_FIELDS.filter((k) => body && body[k] !== undefined).map((k) => [k, body[k]])
+);
+const couponErrorOr = (res, next) => (err) => (err instanceof couponService.CouponError
+  ? res.status(err.status).json({ error: err.message, code: err.code })
+  : next(err));
+
+router.get('/:id/coupons', authenticate, async (req, res, next) => {
+  try {
+    if (!(await ownsShopOr403(req, res))) return;
+    const result = await query('SELECT * FROM coupons WHERE shop_id = $1 ORDER BY created_at DESC', [req.params.id]);
+    res.json({ success: true, data: result.rows || result || [] });
+  } catch (error) { next(error); }
+});
+
+router.post('/:id/coupons', authenticate, async (req, res, next) => {
+  try {
+    if (!(await ownsShopOr403(req, res))) return;
+    const coupon = await couponService.createCoupon({ ...pickCouponFields(req.body), shop_id: req.params.id });
+    res.status(201).json({ success: true, data: coupon });
+  } catch (error) { couponErrorOr(res, next)(error); }
+});
+
+router.patch('/:id/coupons/:couponId', authenticate, async (req, res, next) => {
+  try {
+    if (!(await ownsShopOr403(req, res))) return;
+    const existing = await queryOne('SELECT id, shop_id FROM coupons WHERE id = $1', [req.params.couponId]);
+    // Another shop's coupon, or a platform one, is "not found" from here.
+    if (!existing || String(existing.shop_id) !== String(req.params.id)) {
+      return res.status(404).json({ error: 'Coupon not found' });
+    }
+    const { code: _code, ...changes } = pickCouponFields(req.body); // the code is fixed once issued
+    const coupon = await couponService.updateCoupon(req.params.couponId, changes);
+    res.json({ success: true, data: coupon });
+  } catch (error) { couponErrorOr(res, next)(error); }
 });
 
 // Shop reviews endpoint — queries shop_reviews table with user info

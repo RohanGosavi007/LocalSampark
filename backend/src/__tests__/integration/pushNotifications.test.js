@@ -71,7 +71,7 @@ test('a phone signed in as someone else stops receiving the previous user\'s not
   expect(await tokensOf(BOB)).toEqual([]);
 });
 
-test('an in-app notification is pushed to the user\'s phones', async () => {
+test('[P5.1] an in-app notification is pushed to the user\'s phones', async () => {
   await request(app).post('/notifications/register-token').set(as(ALICE)).send({ token: TOKEN_A });
   await notificationService.sendToUser(ALICE, { type: 'order_update', title: 'Order ready', body: 'Your order is ready' });
 
@@ -79,7 +79,7 @@ test('an in-app notification is pushed to the user\'s phones', async () => {
   expect(delivered[0].data).toMatchObject({ type: 'order_update' });
 });
 
-test('a token Expo says is gone is forgotten', async () => {
+test('[P5.1] a token Expo says is gone is forgotten', async () => {
   await request(app).post('/notifications/register-token').set(as(ALICE)).send({ token: TOKEN_GONE });
   const result = await push.sendToUser(ALICE, { title: 'Hi', body: 'There' });
   expect(result).toEqual({ sent: 1, failed: 1 });

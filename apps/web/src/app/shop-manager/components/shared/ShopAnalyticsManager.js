@@ -34,8 +34,9 @@ export default function ShopAnalyticsManager({ token, shopId }) {
   const KPIS = analytics ? [
     { id: 'revenue', label: 'Total Revenue', value: `₹${analytics.revenue.toLocaleString()}`, icon: IndianRupee, color: '#10b981' },
     { id: 'orders', label: 'Total Orders', value: analytics.orders.toString(), icon: ShoppingBag, color: '#3b82f6' },
-    { id: 'views', label: 'Store Views', value: analytics.views.toString(), icon: Users, color: '#8b5cf6' },
-    { id: 'conversion', label: 'Conversion Rate', value: `${analytics.conversion}%`, icon: Activity, color: '#f59e0b' }
+    // views is null while store views are not tracked: shown as "—", not 0.
+    { id: 'views', label: 'Store Views', value: analytics.views == null ? '—' : String(analytics.views), icon: Users, color: '#8b5cf6' },
+    { id: 'conversion', label: 'Orders Completed', value: `${analytics.conversion}%`, icon: Activity, color: '#f59e0b' }
   ] : [];
 
 

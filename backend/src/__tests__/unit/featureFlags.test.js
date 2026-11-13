@@ -4,7 +4,7 @@ const { isFeatureEnabled, getAllFeatures, FEATURES } = require('../../../../pack
 const { requireFeature } = require('../../middleware/featureFlag.middleware');
 
 describe('P6 Feature Flag Registry & Middleware', () => {
-  test('defines canonical launch-scoped and off-at-launch features', () => {
+  test('[P6.1] defines canonical launch-scoped and off-at-launch features', () => {
     expect(FEATURES.COMMERCE_CORE.enabled).toBe(true);
     expect(FEATURES.COUPONS.enabled).toBe(true);
     expect(FEATURES.SOCIETY_MANAGEMENT.enabled).toBe(false);
@@ -13,7 +13,7 @@ describe('P6 Feature Flag Registry & Middleware', () => {
     expect(FEATURES.MEDICAL.enabled).toBe(false);
   });
 
-  test('isFeatureEnabled evaluates launch defaults correctly', () => {
+  test('[P6.1] isFeatureEnabled evaluates launch defaults correctly', () => {
     expect(isFeatureEnabled('commerce_core', {})).toBe(true);
     expect(isFeatureEnabled('coupons', {})).toBe(true);
     expect(isFeatureEnabled('carpool', {})).toBe(false);
@@ -25,7 +25,7 @@ describe('P6 Feature Flag Registry & Middleware', () => {
     expect(isFeatureEnabled('coupons', { FEATURE_COUPONS: 'false' })).toBe(false);
   });
 
-  test('middleware blocks disabled features with 403 when bypass is off', async () => {
+  test('[P6.3] middleware blocks disabled features with 403 when bypass is off', async () => {
     const app = express();
     app.use('/test-carpool', (req, res, next) => {
       // simulate non-bypass environment
@@ -44,7 +44,7 @@ describe('P6 Feature Flag Registry & Middleware', () => {
     expect(res.body.feature).toBe('carpool');
   });
 
-  test('middleware allows enabled features through', async () => {
+  test('[P6.2] middleware allows enabled features through', async () => {
     const app = express();
     app.use('/test-commerce', requireFeature('commerce_core'), (req, res) => res.json({ ok: true }));
 
@@ -53,14 +53,14 @@ describe('P6 Feature Flag Registry & Middleware', () => {
     expect(res.body.ok).toBe(true);
   });
 
-  test('getAllFeatures returns lookup of all feature statuses', () => {
+  test('[P6.1] getAllFeatures returns lookup of all feature statuses', () => {
     const all = getAllFeatures({});
     expect(all.commerce_core.is_enabled).toBe(true);
     expect(all.carpool.is_enabled).toBe(false);
     expect(all.society_management.is_enabled).toBe(false);
   });
 
-  test('GET /features returns all feature statuses via main router', async () => {
+  test('[P6.1] GET /features returns all feature statuses via main router', async () => {
     const app = express();
     app.use('/', require('../../routes'));
     const res = await request(app).get('/features');
@@ -68,5 +68,40 @@ describe('P6 Feature Flag Registry & Middleware', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.features.commerce_core.is_enabled).toBe(true);
     expect(res.body.features.carpool.is_enabled).toBe(false);
+  });
+
+  describe('through the real API router', () => {
+    let saved;
+    let app;
+    beforeAll(() => {
+      saved = process.env.BYPASS_FEATURE_FLAGS;
+      app = express();
+      app.use(express.json());
+      app.use('/', require('../../routes'));
+    });
+    afterEach(() => {
+      if (saved === undefined) delete process.env.BYPASS_FEATURE_FLAGS;
+      else process.env.BYPASS_FEATURE_FLAGS = saved;
+    });
+
+    test('[P6.4] BYPASS_FEATURE_FLAGS=true lets a test reach a disabled vertical', async () => {
+      process.env.BYPASS_FEATURE_FLAGS = 'true';
+      const res = await request(app).get('/carpool/rides');
+      expect(res.body.error).not.toBe('FEATURE_DISABLED');
+    });
+
+    test.each(['/carpool/rides', '/societies'])('[P6.6] %s, a disabled vertical, answers 403 FEATURE_DISABLED', async (path) => {
+      delete process.env.BYPASS_FEATURE_FLAGS;
+      const res = await request(app).get(path);
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe('FEATURE_DISABLED');
+    });
+
+    test.each(['/shops/nearby', '/features'])('[P6.5] %s, part of the launch commerce core, stays open', async (path) => {
+      delete process.env.BYPASS_FEATURE_FLAGS;
+      const res = await request(app).get(path);
+      expect(res.status).toBe(200);
+      expect(res.body.error).not.toBe('FEATURE_DISABLED');
+    });
   });
 });
