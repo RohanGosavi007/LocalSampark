@@ -46,7 +46,7 @@ class SpatialRepository {
    * │ JOIN location_talukas lt ON t.taluka_id = lt.id                │
    * │ JOIN location_districts ld ON lt.district_id = ld.id           │
    * │ WHERE ST_Contains(t.boundary, ST_SetSRID(ST_Point($2,$1),4326))│
-   * │ AND t.is_active = true                                            │
+   * │ AND t.is_active = '1'                                             │
    * │ LIMIT 1;                                                       │
    * └─────────────────────────────────────────────────────────────────┘
    */
@@ -157,7 +157,7 @@ class SpatialRepository {
    * │   t.centroid::geography,                                       │
    * │   ST_SetSRID(ST_Point($2,$1),4326)::geography                  │
    * │ ) / 1000.0 as distance_km                                      │
-   * │ FROM territories t WHERE t.is_active = true                       │
+   * │ FROM territories t WHERE t.is_active = '1'                        │
    * │ ORDER BY t.centroid <-> ST_SetSRID(ST_Point($2,$1),4326)       │
    * │ LIMIT 1;                                                       │
    * └─────────────────────────────────────────────────────────────────┘
@@ -222,7 +222,7 @@ class SpatialRepository {
    * │   ST_SetSRID(ST_Point($2,$1),4326)::geography                  │
    * │ ) / 1000.0 as distance_km                                      │
    * │ FROM territories t                                              │
-   * │ WHERE t.is_active = true                                          │
+   * │ WHERE t.is_active = '1'                                           │
    * │ AND ST_DWithin(                                                │
    * │   t.centroid::geography,                                       │
    * │   ST_SetSRID(ST_Point($2,$1),4326)::geography,                │

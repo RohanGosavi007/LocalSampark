@@ -134,7 +134,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
     }
 
     // Verify admin role
-    const adminRole = await queryOne('SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = true', [user.id]);
+    const adminRole = await queryOne("SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = '1'", [user.id]);
     const isDirectAdmin = user.role === 'admin' || user.role === 'super_admin';
     if (!adminRole && !isDirectAdmin) {
       if (isDevBypass) {
@@ -150,9 +150,9 @@ router.post('/login', authLimiter, async (req, res, next) => {
     }
 
     // IP Allowlist Check
-    const allowedIpsCount = await queryOne('SELECT COUNT(*) as count FROM admin_ip_allowlist WHERE is_active = true');
+    const allowedIpsCount = await queryOne("SELECT COUNT(*) as count FROM admin_ip_allowlist WHERE is_active = '1'");
     if (allowedIpsCount && parseInt(allowedIpsCount.count) > 0) {
-      const isAllowed = await queryOne('SELECT * FROM admin_ip_allowlist WHERE ip_address = $1 AND is_active = true', [clientIp]);
+      const isAllowed = await queryOne("SELECT * FROM admin_ip_allowlist WHERE ip_address = $1 AND is_active = '1'", [clientIp]);
       // Simple localhost overrides for development convenience
       const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp.includes('::ffff:127.0.0.1') || isDevBypass;
       if (!isAllowed && !isLocal) {
@@ -321,7 +321,7 @@ router.get('/me', authenticate, async (req, res, next) => {
     // baked into the JWT at login — an admin whose admin_roles row was
     // deactivated since then must fail here.
     const adminRole = await queryOne(
-      'SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = true',
+      "SELECT * FROM admin_roles WHERE user_id = $1 AND is_active = '1'",
       [user.id]
     );
     const isDirectAdmin = user.role === 'admin' || user.role === 'super_admin';

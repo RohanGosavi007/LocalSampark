@@ -22,6 +22,7 @@ const firebase = require('../config/firebase');
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EXPO_BATCH = 100;
+const PUSH_TIMEOUT_MS = Number(process.env.PUSH_TIMEOUT_MS) || 10000;
 
 const isExpoToken = (token) => /^Expo(nent)?PushToken\[[^\]]+\]$/.test(String(token || ''));
 
@@ -38,7 +39,16 @@ async function postToExpo(messages) {
   if (transport) return transport(messages);
   const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (process.env.EXPO_ACCESS_TOKEN) headers.Authorization = `Bearer ${process.env.EXPO_ACCESS_TOKEN}`;
-  const response = await fetch(EXPO_PUSH_URL, { method: 'POST', headers, body: JSON.stringify(messages) });
+  // A bounded wait. sendToUser is awaited in request paths (an order status
+  // change, an admin refund), so an Expo endpoint that never answers used to
+  // hold that request open indefinitely. On timeout fetch rejects, and
+  // sendToUser counts the batch as failed without failing the action.
+  const response = await fetch(EXPO_PUSH_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(messages),
+    signal: AbortSignal.timeout(PUSH_TIMEOUT_MS),
+  });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(`Expo push answered ${response.status}`);
   return Array.isArray(body.data) ? body.data : [];
