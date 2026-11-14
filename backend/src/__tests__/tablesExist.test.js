@@ -75,6 +75,9 @@ function runtimeCreatedTables(files) {
 /** Driver internals, not application tables. */
 const SYSTEM_TABLES = new Set([
   'information_schema', 'sqlite_master', 'pg_catalog', 'pg_tables', 'pg_stat_activity',
+  // The PostgreSQL migration runner's own record of applied files (it creates it);
+  // /ready reads it on PostgreSQL only (services/readiness.service.js).
+  'schema_migrations',
 ]);
 
 /**

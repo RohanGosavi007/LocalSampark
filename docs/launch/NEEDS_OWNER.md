@@ -157,3 +157,25 @@ This document tracks items that strictly require the project owner's credentials
 ### Item 19: Two oversized images in the Android app (P13)
 - **Context:** `apps/mobile/assets/favicon.png` and `splash.png` are about 1.6 MB each (the whole `assets/` folder is 4.3 MB). I did not change them: recompressing or resizing artwork can change how it looks, and the splash screen is the first thing a user sees. The web logo, by comparison, was shrunk from 528 KB to 11 KB with no visible difference (done in this change).
 - **Action Required by Owner:** Ask whoever made the artwork to export both at sensible sizes (the splash at the largest phone screen size, the favicon at 48 to 192 px). A test caps any single image at 2 MB and all images at 6 MB, so they cannot grow further.
+
+---
+
+### Item 20: Accounting rules for the ledger's missing postings (P3)
+- **Context:** The double-entry ledger now books every delivered order (the customer's payment split into what the shop is owed, the platform's earning, the rider's pay and the delivery margin) and every refund, and is append-only. Three money movements are **not** posted yet, because each needs an accounting decision, not just code: seller payouts (money leaving the platform's bank), rider payouts, and wallet top-ups. The ledger's account list has no bank/cash account, so a payout cannot be balanced; adding one means rebuilding a table constraint on SQLite and is a change to your books.
+- **Action Required by Owner:** Decide (with whoever keeps the books) the account for money held at the bank, and whether a platform-funded coupon or loyalty discount should be recorded against the platform's commission revenue (what is done now) or in an account of its own. Then ask for the payout postings.
+
+### Item 21: Switching on online payments (P2, decision D4)
+- **Context:** Online payment is now off in production until you switch it on, even if Razorpay keys are present. A reconciliation job (every 10 minutes) asks Razorpay about payments whose result never reached us, and settles or refunds them.
+- **Action Required by Owner:** When Razorpay KYC is complete: set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` and `ENABLE_ONLINE_PAYMENTS=true` in the production API environment. Do not set the switch before the live keys are in place.
+
+### Item 22: An email carrier (P5)
+- **Context:** Email can go through Resend, Brevo or any SMTP server. With none configured, production sends nothing and says so (the reset-password and verification emails will not arrive).
+- **Action Required by Owner:** Pick one and set its key in the production API environment: `RESEND_API_KEY` or `BREVO_API_KEY` (both have free tiers), or `SMTP_USER`/`SMTP_PASS`. Set `SMTP_FROM` to an address on a domain you have verified with the carrier.
+
+### Item 23: Moving uploads to object storage (P4)
+- **Context:** Uploads are stored on the server's disk unless object storage is configured. A Render disk is not a safe place for KYC documents. `scripts/storage/migrate_uploads.js` copies existing files to S3 / Cloudflare R2 (a dry run by default; it never deletes anything).
+- **Action Required by Owner:** Create an R2 or S3 bucket, set `STORAGE_DRIVER=s3`, `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` (and `STORAGE_PUBLIC_URL` for public images), run the script without `--execute` to see the plan, then with it, check the app, and only then remove the local copies yourself.
+
+### Item 24: Error-reporting projects (P8)
+- **Context:** Sentry now reports errors from the API, web app, admin console and Android app, with personal data scrubbed first. Each stays off until it has a DSN.
+- **Action Required by Owner:** Create the Sentry projects (free tier) and set `SENTRY_DSN` (API), `NEXT_PUBLIC_SENTRY_DSN` (web and admin builds) and `EXPO_PUBLIC_SENTRY_DSN` (Android release build). Optionally set `SENTRY_AUTH_TOKEN` at build time to upload source maps.

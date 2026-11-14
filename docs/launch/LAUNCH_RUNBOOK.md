@@ -206,6 +206,15 @@ node scripts/backup/restore_rehearsal.js            # needs PostgreSQL on this m
 
 ---
 
+## 6A. Payments, media and notifications (P2, P4, P5)
+
+- **Online payments** are off in production until `ENABLE_ONLINE_PAYMENTS=true` (decision D4); having Razorpay keys is not enough. The `payment-reconciliation` job runs every 10 minutes: it settles payments Razorpay captured whose webhook was lost (an order that was already cancelled is refunded), and closes failed and abandoned ones. Check its work in the API log lines starting `[Job] Payment reconciliation`.
+- **Email**: `EMAIL_PROVIDER` (`resend`, `brevo`, `smtp`, `file`, `none`); unset picks the first of Resend, Brevo, SMTP that has credentials, then a local outbox in development, and nothing in production (it is logged as "not sent", never reported as sent).
+- **Uploads**: public images are scaled to `IMAGE_MAX_EDGE` (1600 px) and stripped of EXIF location data; private documents are stored exactly as uploaded. With `STORAGE_DRIVER=s3`, private files are served by a five-minute signed link after the usual access check. To move existing files: `node scripts/storage/migrate_uploads.js` (dry run), then `--execute`. It verifies every copy by SHA-256, can be repeated, and never deletes a local file.
+- **Ledger**: `platform_ledger_entries` is append-only (a correction is a new, opposite entry). Prove the book balances with `ledger.trialBalance()`.
+
+---
+
 ## 7. Emergency Incident Playbook
 
 ### Scenario A: Rogue Store or Malicious Catalog Content
