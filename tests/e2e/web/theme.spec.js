@@ -160,16 +160,17 @@ test.describe('theme system', () => {
     await toggle.click();
     await expect.poll(async () => (await readTheme(page)).dataTheme, POLL).toBe('dark');
 
-    // The painted background is polled separately. --transition-theme runs the
-    // colour change over 160ms, and getComputedStyle mid-transition still
-    // reports the old value, so sampling it the instant data-theme flips reads
-    // the light background and fails for the wrong reason.
+    // The painted background is polled for the colour it must END at. It is
+    // not enough to wait for it to differ from the light one: --transition-theme
+    // fades the change over 160ms, so the first sample that differs is a
+    // half-way colour (rgb(53, 59, 68) was seen), and asserting the final
+    // colour on the next line failed about one run in three for that reason.
+    expect(before.bodyBg).not.toBe(GROUND_DARK);
     await expect
       .poll(async () => (await readTheme(page)).bodyBg, POLL)
-      .not.toBe(before.bodyBg);
+      .toBe(GROUND_DARK);
 
     const after = await readTheme(page);
-    expect(after.bodyBg).toBe(GROUND_DARK);
     expect(after.stored).toBe('dark');
     expect(reloaded).toBe(false);
     expect(await page.evaluate(() => window.__themeNoReload)).toBe(1);

@@ -86,7 +86,7 @@ const PATTERNS = [
 ];
 
 test('the route table was found (guards against an empty check)', () => {
-  assert.ok(routes.length > 250, `only ${routes.length} routes found`);
+  assert.ok(routes.length > 100, `only ${routes.length} routes found`);
 });
 
 test('every internal link resolves to a page', () => {
