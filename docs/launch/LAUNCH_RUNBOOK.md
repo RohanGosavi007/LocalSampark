@@ -184,15 +184,25 @@ If database corruption or catastrophic data loss occurs:
    node scripts/backup/restore_backup.js backups/backup_2026-10-25.dump.enc
    ```
    *Validates SHA-256 checksum, verifies AES-256-GCM authentication tag, and decrypts dump stream without modifying database.*
-2. **Full Production Database Restoration**:
+2. **Restore into a NEW database, then switch over** (the script refuses to restore into the application's own database, and always needs the target named and confirmed; it never reads `DATABASE_URL` as the target):
    ```bash
-   DATABASE_URL="postgresql://..." \
-   node scripts/backup/restore_backup.js backups/backup_2026-10-25.dump.enc --execute
+   BACKUP_ENCRYPTION_KEY="<32-byte-hex-key>"    node scripts/backup/restore_backup.js backups/backup_2026-10-25.dump.enc --execute      --target "postgresql://<user>:<password>@<host>:5432/localsampark_restored"      --confirm-database localsampark_restored
    ```
+   Create the empty `localsampark_restored` database first, check it (`/ready`, row counts), then point `DATABASE_URL` at it.
 3. Run readiness verification:
    ```bash
    curl https://api.localsampark.com/ready
    ```
+
+### 6.3 Restore Rehearsal (do this before launch, and after any schema change)
+A backup that has never been restored is a hope. This builds a populated local database (all migrations plus the demo seed), takes a real `pg_dump` of it, encrypts it as production does, restores it into a fresh scratch database, and compares every table (row count and content checksum) and the trigger count. It also proves a tampered archive and a wrong key are refused.
+```bash
+node scripts/backup/restore_rehearsal.js            # needs PostgreSQL on this machine and its client tools
+```
+- Local only: it refuses any database that is not on this machine, and drops its scratch databases afterwards.
+- If `pg_dump` is not on the PATH, set `PG_BIN_DIR` to the PostgreSQL `bin` folder (the scripts also look in the usual install folders).
+- Evidence: `docs/audit/evidence/restore-rehearsal-<time>/rehearsal.json` (no secrets).
+- Running the backup script with no `BACKUP_ENCRYPTION_KEY` is an error: there is no built-in key, and a failed `pg_dump` is an error, never a placeholder file.
 
 ---
 

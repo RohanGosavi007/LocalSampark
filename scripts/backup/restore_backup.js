@@ -12,14 +12,19 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { connection, parseDatabaseUrl, redactUrl, runPgTool } = require('./pgTools');
 const { decryptBuffer } = require('./pg_dump_backup');
 
 async function runRestore(options = {}) {
   const encDumpPath = options.archivePath;
   const isDryRun = options.dryRun ?? true;
-  const encryptionKey = options.encryptionKey || process.env.BACKUP_ENCRYPTION_KEY || 'default-localsampark-backup-key-change-in-prod';
-  const dbUrl = options.databaseUrl || process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/localsampark';
+  // No fallback key (see pg_dump_backup.js): a wrong key fails the GCM check;
+  // a built-in one would make the backups readable by anyone with the source.
+  const encryptionKey = options.encryptionKey || process.env.BACKUP_ENCRYPTION_KEY;
+  if (!encryptionKey) throw new Error('BACKUP_ENCRYPTION_KEY is not set: the archive cannot be decrypted.');
+  // The database to restore INTO. Never read from DATABASE_URL: that is the
+  // application's own database, and `pg_restore --clean` drops what is there.
+  const dbUrl = options.databaseUrl;
 
   if (!encDumpPath || !fs.existsSync(encDumpPath)) {
     throw new Error(`Backup archive file not found: ${encDumpPath}`);
@@ -53,12 +58,24 @@ async function runRestore(options = {}) {
     };
   }
 
-  // 3. Perform restoration to PostgreSQL
+  // 3. Perform restoration to PostgreSQL. A restore replaces the target's
+  // tables, so it needs a target named on purpose, which is not the
+  // application's own database, and the target's name typed back to confirm.
+  if (!dbUrl) throw new Error('A restore needs an explicit target database: pass --target <postgres-url>.');
+  const target = parseDatabaseUrl(dbUrl);
+  if (process.env.DATABASE_URL && parseDatabaseUrl(process.env.DATABASE_URL).database === target.database
+      && parseDatabaseUrl(process.env.DATABASE_URL).host === target.host && !options.allowLiveTarget) {
+    throw new Error(`Refusing to restore into ${target.database}: that is the application's own database (DATABASE_URL). Restore into a new database, check it, then switch over.`);
+  }
+  if (options.confirmDatabase !== target.database) {
+    throw new Error(`To restore into "${target.database}", confirm it: pass --confirm-database ${target.database}.`);
+  }
   const tempRestorePath = path.join(path.dirname(encDumpPath), `temp_restore_${Date.now()}.dump`);
   try {
     fs.writeFileSync(tempRestorePath, decryptedBytes);
-    console.log(`[RESTORE] Executing pg_restore against ${dbUrl.replace(/:[^:@]+@/, ':***@')}...`);
-    execSync(`pg_restore --clean --if-exists --no-owner --no-privileges -d "${dbUrl}" "${tempRestorePath}"`, { stdio: 'pipe' });
+    console.log(`[RESTORE] Executing pg_restore against ${redactUrl(dbUrl)}...`);
+    const conn = connection(dbUrl);
+    runPgTool('pg_restore', [...conn.args, '--clean', '--if-exists', '--no-owner', '--no-privileges', '-d', conn.database, tempRestorePath], { env: conn.env });
     console.log(`[RESTORE] Restoration completed successfully.`);
   } finally {
     if (fs.existsSync(tempRestorePath)) {
@@ -78,13 +95,14 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const archivePath = args[0];
   const dryRun = !args.includes('--execute');
+  const flag = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 
   if (!archivePath) {
-    console.error(`Usage: node restore_backup.js <path-to-archive.dump.enc> [--execute]`);
+    console.error(`Usage: node restore_backup.js <path-to-archive.dump.enc> [--execute --target <postgres-url> --confirm-database <name>]`);
     process.exit(1);
   }
 
-  runRestore({ archivePath, dryRun })
+  runRestore({ archivePath, dryRun, databaseUrl: flag('--target'), confirmDatabase: flag('--confirm-database') })
     .then(res => {
       console.log(`[RESTORE] Finished with status: ${res.success ? 'SUCCESS' : 'FAILURE'}`);
       process.exit(0);

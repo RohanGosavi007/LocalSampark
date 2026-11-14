@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { findPgTool, connection, redactUrl, runPgTool } = require('./pgTools');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -82,7 +82,13 @@ async function runBackup(options = {}) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = options.backupDir || path.join(ROOT, 'backups');
   const retentionDays = parseInt(options.retentionDays || process.env.BACKUP_RETENTION_DAYS || '7', 10);
-  const encryptionKey = options.encryptionKey || process.env.BACKUP_ENCRYPTION_KEY || 'default-localsampark-backup-key-change-in-prod';
+  // No fallback key. The script used to encrypt with a default key printed in
+  // its own source, so anyone who could read the repository could read every
+  // "encrypted" backup. Without a key of its own it now refuses to run.
+  const encryptionKey = options.encryptionKey || process.env.BACKUP_ENCRYPTION_KEY;
+  if (!encryptionKey || String(encryptionKey).length < 32) {
+    throw new Error('BACKUP_ENCRYPTION_KEY is not set (or is shorter than 32 characters). Generate one with: openssl rand -hex 32');
+  }
 
   if (!fs.existsSync(backupDir)) {
     fs.mkdirSync(backupDir, { recursive: true });
@@ -94,32 +100,43 @@ async function runBackup(options = {}) {
 
   console.log(`[BACKUP] Starting automated database backup at ${new Date().toISOString()}`);
 
-  // 1. Perform dump if pg_dump is available or in simulated mode
-  const dbUrl = options.databaseUrl || process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/localsampark';
+  // 1. Dump the database.
+  const dbUrl = options.databaseUrl || process.env.DATABASE_URL;
   let isSimulated = false;
 
-  try {
-    console.log(`[BACKUP] Executing pg_dump...`);
-    execSync(`pg_dump "${dbUrl}" -F c -b -v -f "${rawDumpPath}"`, { stdio: 'pipe' });
-  } catch (err) {
-    if (options.allowSimulation || process.env.NODE_ENV !== 'production') {
-      console.warn(`[BACKUP] pg_dump not available in local environment, generating simulated database snapshot.`);
-      fs.writeFileSync(rawDumpPath, Buffer.from(`-- LocalSampark Simulated Dump [${timestamp}]\n-- Parity checkpoint\nSELECT 1;`));
-      isSimulated = true;
-    } else {
-      throw new Error(`pg_dump execution failed: ${err.message}`);
+  if (options.allowSimulation) {
+    // Tests only: an explicit request for a stand-in file. This used to happen
+    // on its own whenever pg_dump failed outside production, and the run then
+    // reported "Backup completed successfully" for a file with no data in it.
+    fs.writeFileSync(rawDumpPath, Buffer.from(`-- LocalSampark Simulated Dump [${timestamp}]
+-- Parity checkpoint
+SELECT 1;`));
+    isSimulated = true;
+  } else {
+    if (!dbUrl) throw new Error('DATABASE_URL is not set: there is no database to back up.');
+    console.log(`[BACKUP] Executing pg_dump on ${redactUrl(dbUrl)}...`);
+    const conn = connection(dbUrl);
+    try {
+      runPgTool('pg_dump', [...conn.args, '-F', 'c', '-b', '-f', rawDumpPath, conn.database], { env: conn.env });
+    } catch (error) {
+      if (fs.existsSync(rawDumpPath)) fs.unlinkSync(rawDumpPath); // a partial dump is not kept
+      throw error;
+    }
+    if (!fs.existsSync(rawDumpPath) || fs.statSync(rawDumpPath).size === 0) {
+      throw new Error('pg_dump produced no data.');
     }
   }
 
-  // 2. Read raw dump and encrypt with AES-256-GCM
-  const rawBytes = fs.readFileSync(rawDumpPath);
-  console.log(`[BACKUP] Encrypting ${rawBytes.length} bytes with AES-256-GCM...`);
-  const encryptedBytes = encryptBuffer(rawBytes, encryptionKey);
-  fs.writeFileSync(encDumpPath, encryptedBytes);
-
-  // 3. Remove raw unencrypted dump
-  if (fs.existsSync(rawDumpPath)) {
-    fs.unlinkSync(rawDumpPath);
+  // 2. Encrypt the dump with AES-256-GCM, and 3. remove the unencrypted copy
+  // whether or not that worked: a raw dump must never be left on disk.
+  let encryptedBytes;
+  try {
+    const rawBytes = fs.readFileSync(rawDumpPath);
+    console.log(`[BACKUP] Encrypting ${rawBytes.length} bytes with AES-256-GCM...`);
+    encryptedBytes = encryptBuffer(rawBytes, encryptionKey);
+    fs.writeFileSync(encDumpPath, encryptedBytes);
+  } finally {
+    if (fs.existsSync(rawDumpPath)) fs.unlinkSync(rawDumpPath);
   }
 
   // 4. Compute SHA-256 digest
@@ -166,5 +183,6 @@ module.exports = {
   encryptBuffer,
   decryptBuffer,
   getExpiredBackups,
-  runBackup
+  runBackup,
+  findPgTool
 };
