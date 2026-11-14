@@ -50,9 +50,8 @@ function freshPhone() {
   return `+9198${String(Math.floor(Math.random() * 1e8)).padStart(8, '0')}`;
 }
 
-/** Signs in and installs the session before any page script runs. */
-async function signInCustomer(page, phone = SHOPPER_PHONE, fullName) {
-  const session = await apiSession(page.request, phone, fullName);
+/** Installs an existing session before any page script runs (no new OTP is requested). */
+async function installSession(page, session) {
   await page.addInitScript((s) => {
     try {
       localStorage.setItem('auth_token', s.accessToken);
@@ -62,7 +61,13 @@ async function signInCustomer(page, phone = SHOPPER_PHONE, fullName) {
       localStorage.setItem('localsampark_consent', 'accepted');
     } catch { /* storage blocked */ }
   }, session);
+}
+
+/** Signs in and installs the session before any page script runs. */
+async function signInCustomer(page, phone = SHOPPER_PHONE, fullName) {
+  const session = await apiSession(page.request, phone, fullName);
+  await installSession(page, session);
   return session;
 }
 
-module.exports = { API, SHOPPER_PHONE, apiSession, signInCustomer, freshPhone };
+module.exports = { API, SHOPPER_PHONE, apiSession, signInCustomer, installSession, freshPhone };

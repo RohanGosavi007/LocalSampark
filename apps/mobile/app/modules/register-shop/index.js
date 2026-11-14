@@ -38,8 +38,10 @@ export default function RegisterShopScreen() {
         latitude: here.coords.latitude,
         longitude: here.coords.longitude,
       });
-      Alert.alert('Submitted', 'Your shop registration was received. It goes live after verification.');
-      setTimeout(() => router.back(), 1200);
+      // S1: straight on to KYC. The shop goes live only once it is verified,
+      // and there was no screen to submit KYC from.
+      Alert.alert('Shop registered', 'Next, submit your KYC so we can verify your shop.');
+      router.replace('/modules/merchant/kyc');
     } catch (e) {
       const problems = e && e.data && Array.isArray(e.data.problems) ? e.data.problems.map((p) => p.message).join('\n') : '';
       Alert.alert('Not registered', problems || (e && e.message) || 'Your shop could not be registered. Please try again.');

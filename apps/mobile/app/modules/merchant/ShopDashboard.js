@@ -164,8 +164,12 @@ export default function ShopDashboard() {
           <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/(tabs)/products')}>
             <Text style={styles.manageBtnText}>Catalog Manager</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/(tabs)/revenue')}>
+          {/* Was /(tabs)/revenue — the admin revenue tab, whose /admin/* calls a seller is refused. */}
+          <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/modules/merchant/earnings')}>
             <Text style={styles.manageBtnText}>Settlements</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/modules/merchant/kyc')}>
+            <Text style={styles.manageBtnText}>KYC</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.manageBtn} onPress={() => router.push('/modules/merchant/coupons')}>
             <Text style={styles.manageBtnText}>Coupons</Text>

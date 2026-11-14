@@ -29,6 +29,8 @@ const as = (userId) => ({ Authorization: `Bearer ${jwt.sign({ userId }, getJwtSe
 let app;
 
 async function cleanup() {
+  await query(`DELETE FROM shop_payouts WHERE CAST(id AS TEXT) LIKE '${fxLike('s67')}'`);
+  await query(`DELETE FROM shop_commissions WHERE CAST(shop_id AS TEXT) LIKE '${fxLike('s67')}'`);
   await query(`DELETE FROM order_items WHERE CAST(order_id AS TEXT) LIKE '${fxLike('s67')}'`);
   await query(`DELETE FROM orders WHERE CAST(id AS TEXT) LIKE '${fxLike('s67')}'`);
   await query(`DELETE FROM shop_reviews WHERE CAST(id AS TEXT) LIKE '${fxLike('s67')}'`);
@@ -179,5 +181,43 @@ describe('[S7.1] analytics: real database aggregation metrics', () => {
 
   test('[S7.1] analytics need a signed-in shop owner', async () => {
     expect((await request(app).get('/shops/my-shop/analytics-data')).status).toBe(401);
+  });
+});
+
+describe('[S4.5] seller: ledger from real orders, less what has been settled', () => {
+  beforeAll(async () => {
+    // One settlement already approved for shop A (₹200), one still being prepared (₹999, not counted).
+    for (const [id, net, status] of [[fx('s67-payout-1'), 200, 'approved'], [fx('s67-payout-2'), 999, 'calculated']]) {
+      await query(
+        `INSERT INTO shop_payouts (id, shop_id, period_start, period_end, net_payout, payout_status)
+         VALUES ($1, $2, '2026-11-01', '2026-11-07', $3, $4)`,
+        [id, SHOP_A, net, status]
+      );
+    }
+  });
+
+  test("[S4.5] gross sales and transactions are the shop's delivered orders", async () => {
+    const res = await request(app).get('/shops/my-shop/ledger').set(as(OWNER_A));
+    expect(res.status).toBe(200);
+    const { ledger } = res.body;
+    expect(ledger.grossSales).toBe(500); // 300 + 200 delivered; pending and cancelled left out
+    expect(ledger.transactions.map((t) => t.gross_amount).sort()).toEqual([200, 300]);
+    expect(ledger.netPayout).toBe(ledger.grossSales - ledger.platformCommission);
+  });
+
+  test('[S4.5] awaiting settlement is net earnings less approved or paid settlements', async () => {
+    const { ledger } = (await request(app).get('/shops/my-shop/ledger').set(as(OWNER_A))).body;
+    expect(ledger.settledPayouts).toBe(200);
+    expect(ledger.pendingPayouts).toBe(Math.max(0, ledger.netPayout - 200));
+  });
+
+  test("[S4.5] another shop's orders and settlements never appear", async () => {
+    const { ledger } = (await request(app).get('/shops/my-shop/ledger').set(as(OWNER_B))).body;
+    expect(ledger.grossSales).toBe(999);
+    expect(ledger.settledPayouts).toBe(0);
+  });
+
+  test('[S4.5] the ledger needs a signed-in shop owner', async () => {
+    expect((await request(app).get('/shops/my-shop/ledger')).status).toBe(401);
   });
 });

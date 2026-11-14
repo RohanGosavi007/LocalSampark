@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import { motion } from 'framer-motion';
 import { Store, MapPin, UploadCloud, CheckCircle2, StoreIcon } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import ShopOnboarding from './ShopOnboarding';
 
 export default function RegisterShopPage() {
   return (
@@ -42,50 +43,23 @@ export default function RegisterShopPage() {
             </div>
             
             <div className="flex gap-4">
-                <Button size="lg" className="rounded-2xl px-8 shadow-xl shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700 text-white border-none">
+                {/* Both were buttons with no action. */}
+                <a href="#onboarding" className="rounded-2xl px-8 py-3 shadow-xl shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold inline-flex items-center">
                     Start Onboarding
-                </Button>
-                <Button size="lg" variant="outline" className="rounded-2xl px-8">
+                </a>
+                <a href="/about" className="rounded-2xl px-8 py-3 border border-border font-semibold inline-flex items-center">
                     Learn More
-                </Button>
+                </a>
             </div>
           </div>
 
           <div className="flex-1 w-full max-w-md lg:max-w-none">
-            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, type: 'spring' }} className="glass-card p-8 rounded-[3rem] border border-border bg-background shadow-2xl relative">
+            <motion.div id="onboarding" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, type: 'spring' }} className="glass-card p-8 rounded-[3rem] border border-border bg-background shadow-2xl relative">
                 <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white shadow-xl shadow-amber-500/30 transform rotate-12">
                     <Store size={40} />
                 </div>
                 
-                <h3 className="text-2xl font-black mb-6">Quick Registration</h3>
-                <form className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-bold text-text-muted mb-2">Store Name</label>
-                        <input type="text" className="w-full bg-background-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="e.g. Sharma Kirana" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-text-muted mb-2">Category</label>
-                        <select className="w-full bg-background-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none">
-                            <option>Grocery & Staples</option>
-                            <option>Pharmacy</option>
-                            <option>Electronics</option>
-                            <option>Services</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-text-muted mb-2">Location</label>
-                        <div className="relative">
-                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-                            <input type="text" className="w-full bg-background-alt border border-border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Enter shop address" />
-                        </div>
-                    </div>
-                    
-                    <div className="pt-4">
-                        <Button className="w-full rounded-xl py-6 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 border-none">
-                            Create Digital Storefront
-                        </Button>
-                    </div>
-                </form>
+                <ShopOnboarding />
             </motion.div>
           </div>
           

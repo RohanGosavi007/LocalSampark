@@ -326,9 +326,15 @@ async function getShopLedger(req, res, next) {
   try {
     const shop = req.shop;
 
-    // Fetch all completed/delivered orders for this shop to calculate ledger
-    const orders = await queryMany("SELECT id, total_amount, created_at, status FROM universal_orders WHERE shop_id = $1 AND status IN ('DELIVERED', 'COMPLETED')",
-      [shop.id]
+    // S4: this read universal_orders with upper-case statuses. Checkout writes
+    // `orders`, in lower case, so every seller's ledger was empty — ₹0 sales
+    // and no transactions — whatever they had sold (as S7 analytics was).
+    const orders = await queryMany(
+      `SELECT id, total_amount, created_at
+         FROM orders
+        WHERE CAST(shop_id AS TEXT) = $1
+          AND COALESCE(order_status, status) IN ('delivered', 'completed')`,
+      [String(shop.id)]
     );
 
     let grossSales = 0;
@@ -406,13 +412,27 @@ async function getShopLedger(req, res, next) {
       };
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+    // S4: "pending" was set to everything ever earned ("assuming nothing has
+    // been paid out yet for this demo"). Settlements the platform has
+    // approved or paid (shop_payouts) are what the shop has already received
+    // or is about to; the rest is awaiting settlement.
+    const settledRow = await queryOne(
+      `SELECT COALESCE(SUM(net_payout), 0) AS settled
+         FROM shop_payouts
+        WHERE CAST(shop_id AS TEXT) = $1 AND payout_status IN ('approved', 'paid')`,
+      [String(shop.id)]
+    );
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+    const settledPayouts = round2(settledRow && settledRow.settled);
+
     res.json({
       success: true,
       ledger: {
-        grossSales,
-        platformCommission,
-        netPayout,
-        pendingPayouts: netPayout, // Assuming nothing has been paid out yet for this demo
+        grossSales: round2(grossSales),
+        platformCommission: round2(platformCommission),
+        netPayout: round2(netPayout),
+        settledPayouts,
+        pendingPayouts: Math.max(0, round2(netPayout - settledPayouts)),
         transactions
       }
     });
@@ -619,6 +639,25 @@ async function resolveLocalShop(req) {
   return queryOne('SELECT * FROM local_shops WHERE owner_id = $1 LIMIT 1', [req.user.id]);
 }
 
+/**
+ * S2: price and stock were read with `Number(x) || 0`, so a missing or garbled
+ * price created a ₹0 (free) product, and a negative price or negative stock was
+ * stored as sent. A price is a finite number of 0 or more; stock a whole
+ * number of 0 or more. Returns { value } or { error }.
+ */
+function readPrice(raw) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return { error: 'A price of ₹0 or more is required.' };
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 10000000) return { error: 'The price must be a number of ₹0 or more.' };
+  return { value: Math.round(n * 100) / 100 };
+}
+function readStock(raw) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return { value: 0 };
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 10000000) return { error: 'Stock must be a whole number, 0 or more.' };
+  return { value: n };
+}
+
 async function addProduct(req, res, next) {
   try {
     const shop = await resolveLocalShop(req);
@@ -631,7 +670,11 @@ async function addProduct(req, res, next) {
       return res.status(400).json({ error: 'Product name is required' });
     }
 
-    const stock = Number(stockQuantity ?? stock_quantity ?? 0);
+    const priceCheck = readPrice(price);
+    if (priceCheck.error) return res.status(400).json({ error: priceCheck.error, field: 'price' });
+    const stockCheck = readStock(stockQuantity ?? stock_quantity);
+    if (stockCheck.error) return res.status(400).json({ error: stockCheck.error, field: 'stock_quantity' });
+    const stock = stockCheck.value;
     const id = crypto.randomUUID();
 
     // inventory_count is the column checkout decrements and the cart checks, so
@@ -642,7 +685,7 @@ async function addProduct(req, res, next) {
           sku, unit, stock_quantity, inventory_count, track_inventory, is_available, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
-      [id, shop.id, String(name).trim(), description || null, Number(price) || 0,
+      [id, shop.id, String(name).trim(), description || null, priceCheck.value,
        imageUrl || image_url || null, category || null, subcategory || null,
        sku || null, unit || 'piece', stock, stock, 1, 1, 1]
     );
@@ -680,7 +723,11 @@ async function updateProduct(req, res, next) {
 
     if (b.name !== undefined) set('name', String(b.name).trim());
     if (b.description !== undefined) set('description', b.description);
-    if (b.price !== undefined) set('price', Number(b.price) || 0);
+    if (b.price !== undefined) {
+      const p = readPrice(b.price);
+      if (p.error) return res.status(400).json({ error: p.error, field: 'price' });
+      set('price', p.value);
+    }
     if (b.image_url !== undefined || b.imageUrl !== undefined) set('image_url', b.image_url ?? b.imageUrl);
     if (b.category !== undefined) set('category', b.category);
     if (b.subcategory !== undefined) set('subcategory', b.subcategory);
@@ -706,7 +753,7 @@ async function updateProduct(req, res, next) {
     const mrp = b.mrp;
     if (mrp !== undefined) set('mrp', mrp === null || mrp === '' ? null : Number(mrp));
     // Selling above MRP is an offence (Legal Metrology Act, 2009, s. 36).
-    const nextPrice = b.price !== undefined ? Number(b.price) : Number(existing.price);
+    const nextPrice = b.price !== undefined ? Number(readPrice(b.price).value) : Number(existing.price);
     const nextMrp = mrp !== undefined ? (mrp === null || mrp === '' ? null : Number(mrp)) : (existing.mrp === null ? null : Number(existing.mrp));
     if (nextMrp !== null && Number.isFinite(nextMrp) && nextMrp > 0 && nextPrice > nextMrp) {
       return res.status(400).json({ error: `The price (₹${nextPrice}) cannot be more than the MRP (₹${nextMrp}).`, code: 'PRICE_ABOVE_MRP' });
@@ -716,8 +763,10 @@ async function updateProduct(req, res, next) {
     // stock_quantity, checkout decrements inventory_count.
     const stock = b.stock_quantity ?? b.stockQuantity ?? b.inventory_count;
     if (stock !== undefined) {
-      set('stock_quantity', Number(stock) || 0);
-      set('inventory_count', Number(stock) || 0);
+      const st = readStock(stock);
+      if (st.error) return res.status(400).json({ error: st.error, field: 'stock_quantity' });
+      set('stock_quantity', st.value);
+      set('inventory_count', st.value);
     }
 
     // is_available is what the storefront query filters on; is_active is what

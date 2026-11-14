@@ -111,6 +111,9 @@ async function priceItems(shopId, items) {
           throw new OrderError(400, 'OUT_OF_STOCK', `Insufficient stock for ${product.name} (${variant.variant_value}). Available: ${vStock}`);
         }
         const vPrice = money((Number(product.price) || 0) + (Number(variant.price_modifier) || 0));
+        // A variant whose modifier takes the price below zero (written before the
+        // variant routes validated it) must not become a negative line total.
+        if (vPrice < 0) throw new OrderError(400, 'ITEM_UNAVAILABLE', `That option of ${product.name} is not available.`, { productId: product.id });
         subtotal += vPrice * quantity;
         lines.push({
           productId: product.id, variantId: variant.id, name: `${product.name} (${variant.variant_value})`,

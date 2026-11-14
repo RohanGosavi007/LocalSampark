@@ -1,67 +1,83 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { CreditCard, TrendingUp, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, Download, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, Download, RefreshCw, Landmark } from 'lucide-react';
 import { API_BASE } from '@/lib/api';
+
+/**
+ * S4: the shop's earnings and its settlements.
+ *
+ * "Request Payout" used to say "Withdrawal request submitted successfully!"
+ * without contacting the server: nothing was recorded, and the seller was told
+ * their money was on its way. Shops are not paid by request — LocalSampark
+ * calculates and settles each shop's earnings to its bank account
+ * (shop_payouts, /shops/:shopId/payouts). So this shows what is awaiting
+ * settlement and the real settlement history instead of a button that did
+ * nothing.
+ *
+ * The commission column said "(10%)" whatever the shop was charged; each row
+ * now shows the amount the server recorded, and marks an estimate (no
+ * commission row yet) as one.
+ */
+const money = (n) => (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const STATUS_LABEL = {
+  calculated: 'Being prepared',
+  approved: 'Approved — on its way',
+  paid: 'Paid',
+  failed: 'Failed',
+};
 
 export default function ShopLedger({ token, shopId }) {
   const [ledgerData, setLedgerData] = useState({
-    grossSales: 0,
-    platformCommission: 0,
-    netPayout: 0,
-    pendingPayouts: 0,
-    transactions: []
+    grossSales: 0, platformCommission: 0, netPayout: 0, settledPayouts: 0, pendingPayouts: 0, transactions: [],
   });
+  const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const fetchLedger = async () => {
+  const fetchLedger = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/shops/my-shop/ledger`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success && data.ledger) {
-        setLedgerData(data.ledger);
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await fetch(`${API_BASE}/shops/my-shop/ledger`, { headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success || !data.ledger) throw new Error(data.error || 'Your ledger could not be loaded.');
+      setLedgerData(data.ledger);
+
+      if (shopId) {
+        const pr = await fetch(`${API_BASE}/shops/${shopId}/payouts`, { headers });
+        const pd = await pr.json().catch(() => ({}));
+        setPayouts(pr.ok && Array.isArray(pd.payouts) ? pd.payouts : []);
       }
     } catch (err) {
-      console.error('Failed to fetch ledger:', err);
+      setError(err.message || 'Your ledger could not be loaded.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [shopId, token]);
+
+  useEffect(() => { if (token) fetchLedger(); }, [token, fetchLedger]);
 
   const handleExportCSV = () => {
-    if (ledgerData.transactions.length === 0) return alert('No transactions to export.');
-    const headers = ['Date', 'Order ID', 'Gross Amount', 'Commission', 'Net Earnings'];
-    const rows = ledgerData.transactions.map(t => [
-      new Date(t.created_at).toLocaleDateString(),
-      t.order_id || t.id,
-      t.gross_amount ?? t.total_amount ?? 0,
-      t.commission ?? ((Number(t.gross_amount ?? t.total_amount ?? 0) * 0).toFixed(2)),
-      t.net_amount ?? t.gross_amount ?? t.total_amount ?? 0
+    if (ledgerData.transactions.length === 0) return;
+    const headers = ['Date', 'Order ID', 'Gross Amount', 'Commission', 'Net Earnings', 'Commission source'];
+    const rows = ledgerData.transactions.map((t) => [
+      new Date(t.created_at).toLocaleDateString('en-IN'),
+      t.order_id,
+      Number(t.gross_amount).toFixed(2),
+      Number(t.commission).toFixed(2),
+      Number(t.net_amount).toFixed(2),
+      t.source === 'estimated' ? 'estimated' : 'recorded',
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `shop_ledger_${shopId}.csv`);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `shop_ledger_${shopId || 'mine'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
-
-  const handleWithdraw = async () => {
-    if (ledgerData.pendingPayouts <= 0) return alert('No pending payouts available.');
-    if (!window.confirm(`Are you sure you want to request a withdrawal of ₹${ledgerData.pendingPayouts}?`)) return;
-    
-    alert('Withdrawal request submitted successfully! Our team will process it within 24-48 hours.');
-    // In a real app, you would hit an endpoint like POST /shops/my-shop/payouts/withdraw
-    // Then call fetchLedger() to update the state.
-  };
-
-  useEffect(() => {
-    fetchLedger();
-  }, [shopId, token]);
 
   if (loading) {
     return (
@@ -73,44 +89,67 @@ export default function ShopLedger({ token, shopId }) {
   }
 
   const statCards = [
-    { label: 'Gross Sales', value: ledgerData.grossSales, icon: TrendingUp, color: '#3b82f6', prefix: '₹' },
-    { label: 'Platform Commission', value: ledgerData.platformCommission, icon: ArrowDownRight, color: '#ef4444', prefix: '-₹' },
-    { label: 'Net Earnings', value: ledgerData.netPayout, icon: ArrowUpRight, color: '#22c55e', prefix: '₹' },
-    { label: 'Pending Payout', value: ledgerData.pendingPayouts, icon: DollarSign, color: '#f59e0b', prefix: '₹' }
+    { id: 'gross', label: 'Gross Sales', value: ledgerData.grossSales, icon: TrendingUp, color: '#3b82f6', prefix: '₹' },
+    { id: 'commission', label: 'Platform Commission', value: ledgerData.platformCommission, icon: ArrowDownRight, color: '#ef4444', prefix: '-₹' },
+    { id: 'net', label: 'Net Earnings', value: ledgerData.netPayout, icon: ArrowUpRight, color: '#22c55e', prefix: '₹' },
+    { id: 'pending', label: 'Awaiting Settlement', value: ledgerData.pendingPayouts, icon: DollarSign, color: '#f59e0b', prefix: '₹' },
   ];
+
+  const th = { padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: 600 };
+  const td = { padding: '16px 20px', color: '#cbd5e1', fontSize: '13px' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ color: '#e2e8f0', fontSize: '20px', fontWeight: 800, margin: 0 }}>Financial Ledger</h2>
-          <p style={{ color: '#94a3b8', fontSize: '13px', margin: '4px 0 0' }}>Automated Reconciliation & Payouts</p>
+          <p style={{ color: '#94a3b8', fontSize: '13px', margin: '4px 0 0' }}>Your earnings and settlements</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e2e8f0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s hover:bg-rgba(255,255,255,0.1)' }}>
-            <Download size={16} /> Export CSV
-          </button>
-          <button onClick={handleWithdraw} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', opacity: ledgerData.pendingPayouts > 0 ? 1 : 0.5 }}>
-            <DollarSign size={16} /> Request Payout
-          </button>
-        </div>
+        <button onClick={handleExportCSV} disabled={ledgerData.transactions.length === 0} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e2e8f0', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+          <Download size={16} /> Export CSV
+        </button>
       </div>
 
+      {error && <p role="alert" style={{ color: '#ef4444', margin: 0 }}>{error}</p>}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-        {statCards.map((card, i) => (
-          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${card.color}30`, borderRadius: '16px' }}>
+        {statCards.map((card) => (
+          <div key={card.id} style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${card.color}30`, borderRadius: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
               <div style={{ padding: '8px', background: `${card.color}20`, borderRadius: '8px' }}>
                 <card.icon size={20} color={card.color} />
               </div>
               <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }}>{card.label}</span>
             </div>
-            <p style={{ color: '#e2e8f0', fontSize: '28px', fontWeight: 800, margin: 0 }}>
-              {card.prefix}{card.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            <p data-testid={`ledger-${card.id}`} style={{ color: '#e2e8f0', fontSize: '28px', fontWeight: 800, margin: 0 }}>
+              {card.prefix}{money(card.value)}
             </p>
           </div>
         ))}
       </div>
+
+      <section aria-labelledby="settlements-heading" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '16px 20px' }}>
+        <h3 id="settlements-heading" style={{ color: '#e2e8f0', fontSize: '15px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Landmark size={16} /> Settlements
+        </h3>
+        <p data-testid="settlement-note" style={{ color: '#94a3b8', fontSize: '13px', margin: '6px 0 12px' }}>
+          LocalSampark settles your earnings to your registered bank account — there is nothing to request.
+          {' '}₹{money(ledgerData.settledPayouts)} settled so far; ₹{money(ledgerData.pendingPayouts)} awaiting settlement.
+        </p>
+        {payouts.length === 0 ? (
+          <p role="status" style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>No settlements yet.</p>
+        ) : (
+          <ul aria-label="Settlement history" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {payouts.map((p) => (
+              <li key={p.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', color: '#cbd5e1', fontSize: '13px' }}>
+                <span>{String(p.period_start || '').slice(0, 10)} – {String(p.period_end || '').slice(0, 10)}</span>
+                <span>₹{money(p.net_payout)}</span>
+                <span>{STATUS_LABEL[p.payout_status] || p.payout_status}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
@@ -120,33 +159,36 @@ export default function ShopLedger({ token, shopId }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
-                <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: 600 }}>Date</th>
-                <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: 600 }}>Order ID</th>
-                <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: 600 }}>Gross Amount</th>
-                <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: 600 }}>Commission (10%)</th>
-                <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: 600 }}>Net Earnings</th>
+                <th style={th}>Date</th>
+                <th style={th}>Order ID</th>
+                <th style={th}>Gross Amount</th>
+                <th style={th}>Commission</th>
+                <th style={th}>Net Earnings</th>
               </tr>
             </thead>
             <tbody>
               {ledgerData.transactions.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                    No transactions found for this period.
+                    No delivered orders yet.
                   </td>
                 </tr>
               ) : (
-                ledgerData.transactions.map((tx, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '16px 20px', color: '#cbd5e1', fontSize: '13px' }}>
+                ledgerData.transactions.map((tx) => (
+                  <tr key={tx.order_id} style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
+                    <td style={td}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Calendar size={14} color="#64748b" />
                         {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </td>
-                    <td style={{ padding: '16px 20px', color: '#3b82f6', fontSize: '13px', fontWeight: 600 }}>#{tx.order_id.slice(0,8).toUpperCase()}</td>
-                    <td style={{ padding: '16px 20px', color: '#e2e8f0', fontSize: '13px' }}>₹{tx.gross_amount.toFixed(2)}</td>
-                    <td style={{ padding: '16px 20px', color: '#ef4444', fontSize: '13px' }}>-₹{tx.commission.toFixed(2)}</td>
-                    <td style={{ padding: '16px 20px', color: '#22c55e', fontSize: '13px', fontWeight: 700 }}>₹{tx.net_amount.toFixed(2)}</td>
+                    <td style={{ ...td, color: '#3b82f6', fontWeight: 600 }}>#{String(tx.order_id).slice(0, 8).toUpperCase()}</td>
+                    <td style={{ ...td, color: '#e2e8f0' }}>₹{money(tx.gross_amount)}</td>
+                    <td style={{ ...td, color: '#ef4444' }}>
+                      -₹{money(tx.commission)}
+                      {tx.source === 'estimated' && <span title="No commission was recorded for this order yet; this is your shop's current rate." style={{ color: '#94a3b8', fontSize: '11px', marginLeft: 6 }}>(estimated)</span>}
+                    </td>
+                    <td style={{ ...td, color: '#22c55e', fontWeight: 700 }}>₹{money(tx.net_amount)}</td>
                   </tr>
                 ))
               )}

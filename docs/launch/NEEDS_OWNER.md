@@ -134,3 +134,12 @@ This document tracks items that strictly require the project owner's credentials
 - **Context:** The rider app now shares the rider's position with the customer during an active delivery, but only while the app is open on screen. The R4 acceptance text asks for tracking in the background. That needs `ACCESS_BACKGROUND_LOCATION` and a location foreground service, which M7 deliberately removed from the manifest, and Google Play only allows it after a Permissions Declaration (with a video of the feature) is approved for the listing.
 - **Action Required by Owner:**
   Decide whether to apply for the background-location declaration. If yes, the app change is small (a foreground service around `startTracking` in `apps/mobile/src/services/rider.js`); until then riders should keep the app open during deliveries.
+
+---
+
+### Item 16: KYC encryption key for sellers' bank details (S1)
+- **Context:** A seller's bank account number (submitted with KYC) is now encrypted at rest with AES-256-GCM. It was previously stored as base64, which is an encoding, not encryption. Production **refuses** bank details (HTTP 503, "Bank details cannot be stored until KYC_ENCRYPTION_KEY is configured") until a key is set, rather than storing them weakly. Rows written before this change remain base64 and are still readable by `utils/fieldCrypto.decrypt`.
+- **Action Required by Owner:**
+  1. Generate a key once: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+  2. Set it as `KYC_ENCRYPTION_KEY` in the production API environment (Render), and keep a copy in your password manager — losing it makes stored account numbers unreadable.
+  3. Never commit it, and never change it without a re-encryption step (not built yet; ask before rotating).

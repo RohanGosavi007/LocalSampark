@@ -14,6 +14,27 @@ const { query, queryOne, queryMany } = require('../../../config/database');
 const crypto = require('crypto');
 const logger = require('../../../config/logger');
 const { getStorageProvider } = require('../../../services/storage');
+const fieldCrypto = require('../../../utils/fieldCrypto');
+
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const GSTIN_RE = /^[0-9]{2}[A-Z0-9]{13}$/;
+const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const ACCOUNT_RE = /^[0-9]{9,18}$/;
+
+/** What is wrong with a KYC submission, as { field, message } — empty when fine. */
+function kycProblems(body) {
+  const problems = [];
+  const up = (v) => String(v || '').trim().toUpperCase();
+  if (!body.pan_number) problems.push({ field: 'pan_number', message: 'PAN is required.' });
+  else if (!PAN_RE.test(up(body.pan_number))) problems.push({ field: 'pan_number', message: 'PAN looks like ABCDE1234F.' });
+  if (body.gst_number && !GSTIN_RE.test(up(body.gst_number))) problems.push({ field: 'gst_number', message: 'GSTIN is 15 characters, like 27ABCDE1234F1Z5.' });
+  const account = String(body.bank_account_number || '').replace(/s/g, '');
+  if (account && !ACCOUNT_RE.test(account)) problems.push({ field: 'bank_account_number', message: 'Account number is 9 to 18 digits.' });
+  if (body.bank_ifsc && !IFSC_RE.test(up(body.bank_ifsc))) problems.push({ field: 'bank_ifsc', message: 'IFSC looks like HDFC0001234.' });
+  if (account && !body.bank_ifsc) problems.push({ field: 'bank_ifsc', message: 'IFSC is needed with the account number.' });
+  if (body.bank_ifsc && !account) problems.push({ field: 'bank_account_number', message: 'Account number is needed with the IFSC.' });
+  return problems;
+}
 
 // Roles are stored lower case ('admin', 'super_admin').
 const requireAdmin = (req, res, next) => {
@@ -40,11 +61,28 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
       bank_account_number, bank_ifsc, bank_name, bank_branch,
     } = req.body;
 
-    // Check shop ownership
+    // Check shop ownership. `req.user.is_admin` is not set on these users
+    // (roles are stored lower case); isPlatformAdmin is the check every other
+    // route uses.
     const shop = await queryOne(`SELECT id, owner_id FROM local_shops WHERE id = $1`, [shopId]);
     if (!shop) return res.status(404).json({ error: 'Shop not found' });
-    if (String(shop.owner_id) !== String(userId) && !req.user.is_admin) {
+    if (String(shop.owner_id) !== String(userId) && !isPlatformAdmin(req)) {
       return res.status(403).json({ error: 'Only the shop owner can submit KYC' });
+    }
+
+    // S1: nothing was checked, so an empty body marked KYC "submitted" and put
+    // a blank application in the review queue.
+    const problems = kycProblems(req.body || {});
+    if (problems.length) {
+      return res.status(400).json({ success: false, error: 'These KYC details need fixing.', problems });
+    }
+
+    let bankAccountEncrypted = null;
+    try {
+      bankAccountEncrypted = fieldCrypto.encrypt(bank_account_number ? String(bank_account_number).replace(/\s/g, '') : null);
+    } catch (err) {
+      if (err instanceof fieldCrypto.FieldCryptoError) return res.status(err.status).json({ success: false, error: err.message, code: err.code });
+      throw err;
     }
 
     // Check if KYC already exists
@@ -55,12 +93,6 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
     }
 
     const id = existing?.id || crypto.randomUUID();
-
-    // Encrypt sensitive fields
-    const encryptField = (value) => {
-      if (!value) return null;
-      return Buffer.from(String(value)).toString('base64');
-    };
 
     if (existing) {
       await query(`UPDATE vendor_kyc SET
@@ -86,7 +118,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
         [aadhaar_front_url, aadhaar_back_url, pan_number, pan_url,
          gst_number, fssai_number, fssai_expiry, fssai_url,
          drug_license_number, drug_license_url,
-         encryptField(bank_account_number), bank_ifsc, bank_name, bank_branch, id]
+         bankAccountEncrypted, bank_ifsc, bank_name, bank_branch, id]
       );
     } else {
       await query(`INSERT INTO vendor_kyc (id, shop_id, owner_id,
@@ -100,7 +132,7 @@ router.post('/:shopId/kyc', authenticate, async (req, res, next) => {
          aadhaar_front_url, aadhaar_back_url, pan_number, pan_url,
          gst_number, fssai_number, fssai_expiry, fssai_url,
          drug_license_number, drug_license_url,
-         encryptField(bank_account_number), bank_ifsc, bank_name, bank_branch]
+         bankAccountEncrypted, bank_ifsc, bank_name, bank_branch]
       );
     }
 

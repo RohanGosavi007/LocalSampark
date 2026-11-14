@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Modal, Switch, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useRouter } from 'expo-router';
 import { apiGet, apiPost, apiPut } from '../../src/lib/api';
 
 // Memoized Product Card for zero-allocation Recycling
-const ProductCard = React.memo(({ prod, onToggleStatus, onOpenEditor }) => {
+const ProductCard = React.memo(({ prod, onToggleStatus, onOpenEditor, onOpenOptions }) => {
   return (
     <View style={[styles.productCard, !prod.active && styles.inactiveCard]}>
       <View style={styles.prodDetails}>
@@ -24,6 +25,9 @@ const ProductCard = React.memo(({ prod, onToggleStatus, onOpenEditor }) => {
           onValueChange={() => onToggleStatus(prod.id)}
           trackColor={{ false: '#334155', true: '#3b82f6' }}
         />
+        <TouchableOpacity style={styles.editBtn} onPress={() => onOpenOptions(prod)} accessibilityLabel={`Options for ${prod.name}`}>
+          <Text style={styles.editBtnText}>Options</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.editBtn} onPress={() => onOpenEditor(prod)}>
           <Text style={styles.editBtnText}>Edit</Text>
         </TouchableOpacity>
@@ -74,8 +78,11 @@ export default function ProductsScreen() {
         return;
       }
 
-      const res = await apiGet(`/shops/${resolved}/products`);
-      const rows = res?.products ?? res?.data ?? (Array.isArray(res) ? res : []);
+      // S2: /shops/:id/products is the storefront listing and only returns
+      // AVAILABLE products, so a product the seller had unlisted vanished on the
+      // next refresh and could never be listed again. /shops/my-shop (called
+      // above) returns every product the owner has.
+      const rows = Array.isArray(shop?.products) ? shop.products : [];
       setProducts(
         rows.map((p) => ({
           id: String(p.id),
@@ -110,6 +117,12 @@ export default function ProductsScreen() {
 
   // Form State
   const [form, setForm] = useState({ name: '', category: '', price: '', stock: '' });
+
+  const router = useRouter();
+  // S2: sizes / colours / pack sizes of a product, each with its own price and stock.
+  const openOptions = useCallback((prod) => {
+    router.push({ pathname: '/modules/merchant/variants', params: { productId: prod.id, name: prod.name } });
+  }, [router]);
 
   const openEditor = useCallback((prod = null) => {
     if (prod) {
@@ -182,8 +195,9 @@ export default function ProductsScreen() {
       prod={item} 
       onToggleStatus={toggleStatus} 
       onOpenEditor={openEditor} 
+      onOpenOptions={openOptions}
     />
-  ), [toggleStatus, openEditor]);
+  ), [toggleStatus, openEditor, openOptions]);
 
   return (
     <SafeAreaView style={styles.container}>

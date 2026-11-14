@@ -1400,7 +1400,7 @@ router.get('/flash-sales/active', async (req, res, next) => {
 // ENHANCED SHOP MANAGEMENT ROUTES (v2)
 // ————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-const { requireShopOwner, requireOrderAccess, requireAppointmentAccess } = require('../../../middleware/shop-owner.middleware');
+const { requireShopOwner, requireShopParam, requireOrderAccess, requireAppointmentAccess } = require('../../../middleware/shop-owner.middleware');
 const shopMgmt = require('../controllers/shop-management.controller');
 const uploadService = require('../../core/services/upload.service');
 const { uploadLimiter } = require('../../../middleware/rateLimit.middleware');
@@ -1975,98 +1975,112 @@ router.get('/:shopId/products/:productId/variants', async (req, res, next) => {
   }
 });
 
+// ─── S2: product variants ───────────────────────────────────────────────────
+// POST / PUT / DELETE used to check that the caller owned the shop in the URL
+// and then touched whatever product and variant ids the URL named. A seller
+// could therefore edit or delete ANOTHER shop's variants (PUT/DELETE by
+// variant id alone) or attach one to another shop's product. requireShopParam
+// proves the shop is theirs (platform staff included — the old `is_admin`
+// check matched nobody); the product must then belong to that shop and the
+// variant to that product, or it is "not found" from here.
+const VARIANT_MAX_MODIFIER = 100000;
+
+async function productOfShop(req, res) {
+  const product = await queryOne(
+    'SELECT id, price FROM shop_products WHERE CAST(id AS TEXT) = $1 AND CAST(shop_id AS TEXT) = $2',
+    [String(req.params.productId), String(req.shop.id)]
+  );
+  if (!product) { res.status(404).json({ error: 'Product not found in this shop' }); return null; }
+  return product;
+}
+
+/** Cleans a variant body; returns { values } or { error }. `partial` for updates. */
+function variantInput(body, product, partial) {
+  const out = {};
+  const has = (k) => body[k] !== undefined;
+  if (!partial || has('variant_name')) {
+    if (!String(body.variant_name || '').trim()) return { error: 'variant_name is required' };
+    out.variant_name = String(body.variant_name).trim().slice(0, 80);
+  }
+  if (!partial || has('variant_value')) {
+    if (!String(body.variant_value || '').trim()) return { error: 'variant_value is required' };
+    out.variant_value = String(body.variant_value).trim().slice(0, 80);
+  }
+  if (has('sku')) out.sku = body.sku ? String(body.sku).trim().slice(0, 60) : null;
+  if (has('price_modifier')) {
+    const mod = Number(body.price_modifier);
+    if (!Number.isFinite(mod) || Math.abs(mod) > VARIANT_MAX_MODIFIER) return { error: 'price_modifier must be a number (₹, may be negative)' };
+    if ((Number(product.price) || 0) + mod < 0) return { error: 'price_modifier would make this option cost less than ₹0' };
+    out.price_modifier = Math.round(mod * 100) / 100;
+  }
+  if (has('inventory_count')) {
+    const inv = Number(body.inventory_count);
+    if (!Number.isInteger(inv) || inv < 0) return { error: 'inventory_count must be a whole number, 0 or more' };
+    out.inventory_count = inv;
+  }
+  return { values: out };
+}
+
 // POST create variant for a product
-router.post('/:shopId/products/:productId/variants', authenticate, async (req, res, next) => {
+router.post('/:shopId/products/:productId/variants', authenticate, requireShopParam(), async (req, res, next) => {
   try {
-    const { shopId, productId } = req.params;
-    const { variant_name, variant_value, sku, price_modifier, inventory_count } = req.body;
-
-    if (!variant_name || !variant_value) {
-      return res.status(400).json({ error: 'variant_name and variant_value are required' });
-    }
-
-    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
-    if (!shop) return res.status(404).json({ error: 'Shop not found' });
-    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin && !req.user.isSuperAdmin) {
-      return res.status(403).json({ error: 'Not authorised to manage variants for this shop' });
-    }
-
+    const product = await productOfShop(req, res);
+    if (!product) return;
+    const checked = variantInput(req.body || {}, product, false);
+    if (checked.error) return res.status(400).json({ error: checked.error });
+    const v = { sku: null, price_modifier: 0, inventory_count: 0, ...checked.values };
     const variantId = crypto.randomUUID();
-    const priceMod = Number(price_modifier) || 0;
-    const inv = parseInt(inventory_count, 10) || 0;
-
     await query(
       `INSERT INTO product_variants
          (id, product_id, variant_name, variant_value, sku, price_modifier, inventory_count)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [variantId, productId, variant_name, variant_value, sku || null, priceMod, inv]
+      [variantId, product.id, v.variant_name, v.variant_value, v.sku, v.price_modifier, v.inventory_count]
     );
-
-    res.status(201).json({
-      success: true,
-      variant: {
-        id: variantId,
-        product_id: productId,
-        variant_name,
-        variant_value,
-        sku: sku || null,
-        price_modifier: priceMod,
-        inventory_count: inv
-      }
-    });
+    res.status(201).json({ success: true, variant: { id: variantId, product_id: product.id, ...v } });
   } catch (err) {
     next(err);
   }
 });
 
 // PUT update variant
-router.put('/:shopId/products/:productId/variants/:variantId', authenticate, async (req, res, next) => {
+router.put('/:shopId/products/:productId/variants/:variantId', authenticate, requireShopParam(), async (req, res, next) => {
   try {
-    const { shopId, variantId } = req.params;
-    const { variant_name, variant_value, sku, price_modifier, inventory_count } = req.body;
-
-    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
-    if (!shop) return res.status(404).json({ error: 'Shop not found' });
-    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin && !req.user.isSuperAdmin) {
-      return res.status(403).json({ error: 'Not authorised to manage variants for this shop' });
-    }
-
-    const existing = await queryOne('SELECT * FROM product_variants WHERE id = $1', [variantId]);
+    const product = await productOfShop(req, res);
+    if (!product) return;
+    const existing = await queryOne(
+      'SELECT * FROM product_variants WHERE CAST(id AS TEXT) = $1 AND CAST(product_id AS TEXT) = $2',
+      [String(req.params.variantId), String(product.id)]
+    );
     if (!existing) return res.status(404).json({ error: 'Variant not found' });
-
-    const name = variant_name !== undefined ? variant_name : existing.variant_name;
-    const val = variant_value !== undefined ? variant_value : existing.variant_value;
-    const s = sku !== undefined ? sku : existing.sku;
-    const priceMod = price_modifier !== undefined ? Number(price_modifier) : existing.price_modifier;
-    const inv = inventory_count !== undefined ? parseInt(inventory_count, 10) : existing.inventory_count;
-
+    const checked = variantInput(req.body || {}, product, true);
+    if (checked.error) return res.status(400).json({ error: checked.error });
+    const v = {
+      variant_name: existing.variant_name, variant_value: existing.variant_value, sku: existing.sku,
+      price_modifier: existing.price_modifier, inventory_count: existing.inventory_count, ...checked.values,
+    };
     await query(
       `UPDATE product_variants
           SET variant_name = $1, variant_value = $2, sku = $3, price_modifier = $4, inventory_count = $5
         WHERE id = $6`,
-      [name, val, s, priceMod, inv, variantId]
+      [v.variant_name, v.variant_value, v.sku, v.price_modifier, v.inventory_count, existing.id]
     );
-
-    res.json({
-      success: true,
-      variant: { id: variantId, variant_name: name, variant_value: val, sku: s, price_modifier: priceMod, inventory_count: inv }
-    });
+    res.json({ success: true, variant: { id: existing.id, ...v } });
   } catch (err) {
     next(err);
   }
 });
 
 // DELETE variant
-router.delete('/:shopId/products/:productId/variants/:variantId', authenticate, async (req, res, next) => {
+router.delete('/:shopId/products/:productId/variants/:variantId', authenticate, requireShopParam(), async (req, res, next) => {
   try {
-    const { shopId, variantId } = req.params;
-    const shop = await queryOne('SELECT owner_id FROM local_shops WHERE id = $1', [shopId]);
-    if (!shop) return res.status(404).json({ error: 'Shop not found' });
-    if (String(shop.owner_id) !== String(req.user.id) && !req.user.is_admin && !req.user.isSuperAdmin) {
-      return res.status(403).json({ error: 'Not authorised to manage variants for this shop' });
-    }
-
-    await query('DELETE FROM product_variants WHERE id = $1', [variantId]);
+    const product = await productOfShop(req, res);
+    if (!product) return;
+    const existing = await queryOne(
+      'SELECT id FROM product_variants WHERE CAST(id AS TEXT) = $1 AND CAST(product_id AS TEXT) = $2',
+      [String(req.params.variantId), String(product.id)]
+    );
+    if (!existing) return res.status(404).json({ error: 'Variant not found' });
+    await query('DELETE FROM product_variants WHERE id = $1', [existing.id]);
     res.json({ success: true, message: 'Variant deleted' });
   } catch (err) {
     next(err);

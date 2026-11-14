@@ -28,6 +28,7 @@ import ShopLedger from './shared/ShopLedger';
 import ShopStaffManager from './shared/ShopStaffManager';
 import ShopReviewsManager from './shared/ShopReviewsManager';
 import ShopCouponsManager from './shared/ShopCouponsManager';
+import ShopProductsManager from './shared/ShopProductsManager';
 import ShopAnalyticsManager from './shared/ShopAnalyticsManager';
 import ShopSettingsManager from './shared/ShopSettingsManager';
 import ShopChatManager from './shared/ShopChatManager';
@@ -167,6 +168,9 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
     ...(useOrders ? [{ id: 'orders', label: 'Orders', icon: ShoppingBag }] : []),
     ...(useAppointments ? [{ id: 'appointments', label: 'Appointments', icon: Calendar }] : []),
     ...(useJobCards ? [{ id: 'jobcards', label: 'Job Cards', icon: Package }] : []),
+    // S2: what customers buy (shop_products) and its options; the Catalogue tab is
+    // the separate universal catalogue.
+    ...(useOrders ? [{ id: 'products', label: 'Products', icon: ShoppingBag }] : []),
     { id: 'catalogue', label: 'Catalogue', icon: Package },
     { id: 'crm', label: 'CRM', icon: Users },
     { id: 'ledger', label: 'Ledger', icon: CreditCard },
@@ -206,6 +210,7 @@ function GenericManager({ token, shopId, shop, archetype, categorySlug }) {
       {activeTab === 'orders' && <OrderManagementPanel token={token} shopId={shopId} />}
       {activeTab === 'appointments' && <AppointmentManagementPanel token={token} shopId={shopId} />}
       {activeTab === 'jobcards' && <JobCardManager token={token} shopId={shopId} categoryType={archetype} />}
+      {activeTab === 'products' && <ShopProductsManager token={token} shopId={shopId} />}
       {activeTab === 'catalogue' && <UnifiedCatalogueManager token={token} shopId={shopId} />}
       {activeTab === 'crm' && <LeadCRMCenter token={token} shopId={shopId} />}
       {activeTab === 'ledger' && <ShopLedger token={token} shopId={shopId} />}

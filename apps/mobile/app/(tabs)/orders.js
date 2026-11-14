@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, Modal, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { apiGet, apiPut } from '../../src/lib/api';
+import { orderActions, canPrintSlip, loadPackingSlip } from '../../src/services/sellerTools';
 
 /**
  * Merchant order queue.
@@ -26,7 +27,8 @@ const TAB_STATUS = {
   completed: ['delivered', 'dispatched', 'out_for_delivery', 'cancelled'],
 };
 
-const OrderCard = React.memo(function OrderCard({ order, activeTab, onAction, busy }) {
+const OrderCard = React.memo(function OrderCard({ order, onAction, onSlip, busy }) {
+  const { actions, note } = orderActions(order);
   const Action = ({ label, style, textStyle, status }) => (
     <TouchableOpacity
       style={[styles.actionBtn, style, busy && { opacity: 0.5 }]}
@@ -61,34 +63,29 @@ const OrderCard = React.memo(function OrderCard({ order, activeTab, onAction, bu
       <View style={styles.orderFooter}>
         <Text style={styles.amount}>{order.amount}</Text>
         <View style={styles.actions}>
-          {activeTab === 'new' && (
-            <>
-              {/* Transparent button, so it needs its own text colour — white
-                  on white made the label invisible. */}
-              <Action label="Decline" style={styles.declineBtn} textStyle={styles.declineBtnText} status="cancelled" />
-              <Action label="Accept" style={styles.acceptBtn} status="confirmed" />
-            </>
+          {canPrintSlip(order.status) && (
+            <TouchableOpacity style={[styles.actionBtn, styles.declineBtn]} onPress={() => onSlip(order)} accessibilityLabel="Packing slip">
+              <Text style={[styles.actionBtnText, styles.declineBtnText]}>Packing slip</Text>
+            </TouchableOpacity>
           )}
-          {activeTab === 'preparing' && (
-            <Action label="Mark Ready" style={styles.acceptBtn} status="ready" />
-          )}
-          {activeTab === 'ready' && order.type === 'Pickup' && (
-            <Action label="Handed Over" style={styles.acceptBtn} status="delivered" />
-          )}
-          {activeTab === 'ready' && order.type === 'Delivery' && (
+          {actions.map((a) => (
             <Action
-              label="Dispatch"
-              style={[styles.acceptBtn, { backgroundColor: '#f59e0b', borderColor: '#d97706' }]}
-              status="out_for_delivery"
+              key={a.status}
+              label={a.label}
+              status={a.status}
+              style={a.tone === 'decline' ? styles.declineBtn : a.tone === 'delivery' ? [styles.acceptBtn, { backgroundColor: '#f59e0b', borderColor: '#d97706' }] : styles.acceptBtn}
+              textStyle={a.tone === 'decline' ? styles.declineBtnText : undefined}
             />
-          )}
+          ))}
         </View>
       </View>
+      {!!note && <Text style={styles.metaText}>{note}</Text>}
     </View>
   );
 }, (prev, next) =>
   prev.order.id === next.order.id &&
   prev.order.status === next.order.status &&
+  prev.order.hasRider === next.order.hasRider &&
   prev.activeTab === next.activeTab &&
   prev.busy === next.busy
 );
@@ -100,6 +97,7 @@ export default function OrdersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [slip, setSlip] = useState(null); // { id, text }
 
   const load = useCallback(async ({ isRefresh = false } = {}) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -125,6 +123,7 @@ export default function OrdersScreen() {
             time: o.created_at ? relativeTime(o.created_at) : '',
             type: (o.fulfillment_method || '').toLowerCase() === 'pickup' ? 'Pickup' : 'Delivery',
             status: String(o.status || o.order_status || 'pending').toLowerCase(),
+            hasRider: Boolean(o.assigned_agent_id),
           };
         })
       );
@@ -153,6 +152,14 @@ export default function OrdersScreen() {
     }
   }, [load]);
 
+  const handleSlip = useCallback(async (order) => {
+    try {
+      setSlip({ id: order.id, text: await loadPackingSlip(order.id) });
+    } catch (err) {
+      Alert.alert('Packing slip', (err && err.message) || 'The packing slip could not be loaded.');
+    }
+  }, []);
+
   const grouped = useMemo(() => {
     const out = { new: [], preparing: [], ready: [], completed: [] };
     for (const o of orders) {
@@ -172,8 +179,8 @@ export default function OrdersScreen() {
   const currentOrders = grouped[activeTab] || [];
 
   const renderItem = useCallback(({ item }) => (
-    <OrderCard order={item} activeTab={activeTab} onAction={handleAction} busy={busyId === item.id} />
-  ), [activeTab, handleAction, busyId]);
+    <OrderCard order={item} activeTab={activeTab} onAction={handleAction} onSlip={handleSlip} busy={busyId === item.id} />
+  ), [activeTab, handleAction, handleSlip, busyId]);
 
   const renderEmptyState = useCallback(() => (
     <View style={styles.emptyState}>
@@ -194,6 +201,16 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Modal visible={!!slip} animationType="slide" onRequestClose={() => setSlip(null)}>
+        <SafeAreaView style={styles.container}>
+          <ScrollView horizontal contentContainerStyle={{ padding: 16 }}>
+            <Text testID="packing-slip" style={{ fontFamily: 'monospace', fontSize: 11 }}>{slip ? slip.text : ''}</Text>
+          </ScrollView>
+          <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn, { margin: 16 }]} onPress={() => setSlip(null)} accessibilityRole="button">
+            <Text style={styles.actionBtnText}>Close</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Modal>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Order Management</Text>
       </View>

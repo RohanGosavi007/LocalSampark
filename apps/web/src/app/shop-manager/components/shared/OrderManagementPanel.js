@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package, Clock, CheckCircle, XCircle, Truck, Eye, Phone,
@@ -24,28 +24,81 @@ const ORDER_STATUS_CONFIG = {
 
 const STATUS_TABS = ['pending', 'accepted', 'preparing', 'ready_for_pickup', 'dispatched', 'delivered', 'cancelled'];
 
+// S3: the API stores pipeline names (confirmed, ready, out_for_delivery) and
+// only renames the last for the board. This table is keyed on the board's own
+// names (accepted, ready_for_pickup), so an accepted or ready order found no
+// entry, fell back to the "New Orders" config, and showed "Accept" again — the
+// seller could not move it on.
+const BOARD_KEY = { confirmed: 'accepted', ready: 'ready_for_pickup', out_for_delivery: 'dispatched', completed: 'delivered' };
+const boardKey = (status) => BOARD_KEY[String(status || '').toLowerCase()] || String(status || '').toLowerCase();
+const UNKNOWN_CONFIG = (status) => ({ label: String(status || 'Unknown'), color: '#64748b', bg: '#f1f5f9', icon: Package, action: null, nextStatus: null });
+
+/**
+ * What the shop can do next, following the order pipeline's own rules
+ * (orderLifecycle): a pickup order is handed over from "ready" (it is never
+ * "out for delivery"); once a rider has taken a delivery the rider moves it
+ * and the shop cannot; otherwise the shop is delivering it itself.
+ */
+function actionFor(order, status, config) {
+  const pickup = String(order.fulfillment_method || '').toLowerCase() === 'pickup';
+  const hasRider = Boolean(order.assigned_agent_id);
+  if (status === 'ready_for_pickup') {
+    if (pickup) return { label: 'Mark Handed Over', next: 'delivered' };
+    if (hasRider) return { note: 'A delivery partner is handling this order.' };
+    return { label: 'Out for Delivery (own delivery)', next: 'dispatched', note: 'Delivery partners nearby can also pick this up.' };
+  }
+  if (status === 'dispatched') {
+    if (hasRider) return { note: 'A delivery partner is delivering this order.' };
+    return { label: 'Mark Delivered', next: 'delivered' };
+  }
+  return config.action ? { label: config.action, next: config.nextStatus } : null;
+}
+
 export default function OrderManagementPanel({ token, shopId }) {
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [actionError, setActionError] = useState('');
+  const [slip, setSlip] = useState(null); // { orderId, text }
   const [statusCounts, setStatusCounts] = useState({});
 
-  const fetchOrders = useCallback(async (status) => {
+  // `silent` refreshes (a live update from the socket) keep the list on screen.
+  // Every refresh used to set loading, which replaced the whole list with the
+  // loading state and rebuilt every card: the order a seller was in the middle
+  // of handling collapsed and its button vanished under their finger.
+  // Each load and each live update is its own request, and responses can
+  // arrive out of order. A response may touch the screen only if it is for the
+  // tab the seller is on NOW and is the latest request for that tab. (A live
+  // update fired from the previous tab's socket handler just as the seller
+  // switched used to replace the new tab's list with the old tab's orders.)
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const requestCounter = useRef(0);
+  const latestForTab = useRef({});
+
+  const fetchOrders = useCallback(async (status, { silent = false } = {}) => {
+    const mine = ++requestCounter.current;
+    latestForTab.current[status] = mine;
+    const current = () => activeTabRef.current === status && latestForTab.current[status] === mine;
     try {
-      setLoading(true);
+      if (!silent) { setLoading(true); setActionError(''); }
       const res = await fetch(`${API_BASE}/shops/my-shop/orders?status=${status}&limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      if (!current()) return; // superseded, or for a tab the seller has left
       if (data.success) {
         setOrders(data.orders || []);
+      } else if (!silent) {
+        setActionError(data.error || 'Your orders could not be loaded.');
       }
     } catch (err) {
-      console.error('Failed to fetch orders:', err);
+      if (!silent && current()) setActionError('Your orders could not be loaded. Check your connection and try again.');
     } finally {
-      setLoading(false);
+      // The request the screen is waiting for ends the loading state.
+      if (current()) setLoading(false);
     }
   }, [token]);
 
@@ -65,12 +118,12 @@ export default function OrderManagementPanel({ token, shopId }) {
     socket.on('NEW_ORDER', (data) => {
       // If we are on the pending tab or the status matches, refresh
       if (activeTab === 'pending' || activeTab === data.status) {
-        fetchOrders(activeTab);
+        fetchOrders(activeTab, { silent: true });
       }
     });
 
-    socket.on('ORDER_STATUS_CHANGED', (data) => {
-      fetchOrders(activeTab);
+    socket.on('ORDER_STATUS_CHANGED', () => {
+      fetchOrders(activeTab, { silent: true });
     });
 
     return () => {
@@ -80,41 +133,46 @@ export default function OrderManagementPanel({ token, shopId }) {
   }, [shopId, activeTab, fetchOrders]);
 
   const handleStatusUpdate = async (orderId, newStatus, prepTime) => {
+    // S3: a refused change (a skipped step, an order a rider has taken) used to
+    // do nothing and say nothing. The server's reason is shown now.
+    setActionError('');
     try {
       const res = await fetch(`${API_BASE}/shops/my-shop/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, preparation_time_minutes: prepTime }),
       });
-      const data = await res.json();
-      if (data.success) {
-        // Remove from current tab, play success sound
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setOrders(prev => prev.filter(o => o.id !== orderId));
-        // Update counts
         setStatusCounts(prev => ({
           ...prev,
           [activeTab]: Math.max(0, (prev[activeTab] || 0) - 1),
           [newStatus]: (prev[newStatus] || 0) + 1,
         }));
+      } else {
+        setActionError(data.error || 'That change could not be made.');
       }
     } catch (err) {
-      console.error('Failed to update order:', err);
+      setActionError('That change could not be made. Check your connection and try again.');
     }
   };
 
-  const handleAssignRider = async (orderId) => {
-    // In a real app, this would open a modal with a list of riders.
-    // For now, we mock assign nearest rider.
-    const mockRiderId = 'RIDER-TEST-123';
+  // The packing slip is plain text for an 80 mm thermal printer
+  // (GET /orders/:id/packing-slip); it needs the session, so it is fetched
+  // and shown here rather than opened as a link.
+  const showPackingSlip = async (orderId) => {
+    setActionError('');
     try {
-      const res = await fetch(`${API_BASE}/shops/${shopId}/orders/${orderId}/assign-rider`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ riderId: mockRiderId })
-      });
-      if (res.ok) fetchOrders(activeTab);
-    } catch (e) {
-      console.error(e);
+      const res = await fetch(`${API_BASE}/orders/${orderId}/packing-slip`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || 'The packing slip could not be loaded.');
+        return;
+      }
+      setSlip({ orderId, text: await res.text() });
+    } catch (err) {
+      setActionError('The packing slip could not be loaded. Check your connection.');
     }
   };
 
@@ -218,6 +276,7 @@ export default function OrderManagementPanel({ token, shopId }) {
       </div>
 
       {/* ─── ORDER CARDS ──────────────────────────────────────── */}
+      {actionError && <p role="alert" style={{ color: '#ef4444', fontSize: '14px' }}>{actionError}</p>}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
           <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
@@ -235,13 +294,16 @@ export default function OrderManagementPanel({ token, shopId }) {
       ) : (
         <AnimatePresence mode="popLayout">
           {filteredOrders.map((order, idx) => {
-            const config = ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.pending;
+            const status = boardKey(order.status);
+            const config = ORDER_STATUS_CONFIG[status] || UNKNOWN_CONFIG(order.status);
+            const action = actionFor(order, status, config);
             const isExpanded = expandedOrder === order.id;
             const items = (() => { try { return JSON.parse(order.items || '[]'); } catch { return []; } })();
 
             return (
               <motion.div
                 key={order.id}
+                data-testid={`order-${order.id}`}
                 layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -276,7 +338,8 @@ export default function OrderManagementPanel({ token, shopId }) {
                           padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
                           background: config.bg, color: config.color,
                         }}>
-                          {order.order_type === 'dine_in' ? '🍽️ Dine-in' : order.delivery_type === 'delivery' ? '🚴 Delivery' : '🏃 Pickup'}
+                          {/* orders carry fulfillment_method, not delivery_type: every order read "Pickup" */}
+                          {order.order_type === 'dine_in' ? '🍽️ Dine-in' : String(order.fulfillment_method || '').toLowerCase() === 'pickup' ? '🏃 Pickup' : '🚴 Delivery'}
                         </span>
                       </div>
                       <p style={{ color: '#94a3b8', fontSize: '13px', margin: '2px 0 0' }}>
@@ -362,16 +425,9 @@ export default function OrderManagementPanel({ token, shopId }) {
 
                         {/* Action Buttons */}
                         <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                          {config.action && (
+                          {action && action.next && (
                             <button
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                if (order.status === 'ready_for_pickup' && order.delivery_type === 'delivery') {
-                                  handleAssignRider(order.id);
-                                } else {
-                                  handleStatusUpdate(order.id, config.nextStatus); 
-                                }
-                              }}
+                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, action.next); }}
                               style={{
                                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                                 padding: '12px', borderRadius: '12px', border: 'none',
@@ -379,10 +435,21 @@ export default function OrderManagementPanel({ token, shopId }) {
                                 color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
                               }}
                             >
-                              {order.status === 'ready_for_pickup' && order.delivery_type === 'delivery' ? 'Assign Rider' : config.action} <ArrowRight size={16} />
+                              {action.label} <ArrowRight size={16} />
                             </button>
                           )}
-                          {order.status === 'pending' && (
+                          {action && action.note && (
+                            <p style={{ flex: 1, color: '#94a3b8', fontSize: '13px', alignSelf: 'center' }}>{action.note}</p>
+                          )}
+                          {['confirmed', 'accepted', 'preparing', 'ready_for_pickup'].includes(status) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); showPackingSlip(order.id); }}
+                              style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#cbd5e1', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                              Packing slip
+                            </button>
+                          )}
+                          {status === 'pending' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleReject(order.id); }}
                               style={{
@@ -405,6 +472,17 @@ export default function OrderManagementPanel({ token, shopId }) {
                             <MessageCircle size={18} />
                           </button>
                         </div>
+                        {/* Under this order's own buttons: nothing the seller is about to
+                            click moves when the slip opens. */}
+                        {slip && slip.orderId === order.id && (
+                          <div style={{ marginTop: '12px', background: '#fff', color: '#0f172a', borderRadius: '12px', padding: '16px' }} onClick={(e) => e.stopPropagation()}>
+                            <pre data-testid="packing-slip" style={{ fontFamily: 'monospace', fontSize: '12px', margin: 0, overflowX: 'auto' }}>{slip.text}</pre>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                              <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: '8px', background: '#0f172a', color: '#fff', fontWeight: 600 }}>Print</button>
+                              <button onClick={() => setSlip(null)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600 }}>Close</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
