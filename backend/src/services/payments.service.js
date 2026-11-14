@@ -26,6 +26,7 @@
 const crypto = require('crypto');
 const { query, queryOne, withTransaction } = require('../config/database');
 const razorpay = require('./razorpay.service');
+const ledger = require('./ledger.service');
 
 class PaymentError extends Error {
   constructor(status, code, message) {
@@ -161,6 +162,11 @@ const PURPOSES = {
          VALUES ($1, $2, $3, 'credit', 'wallet_topup', $4, 'completed')`,
         [crypto.randomUUID(), wallet.id, rupees, payment.id]
       );
+      await ledger.postWalletTopup(client, {
+        topupId: payment.id,
+        userId: payment.user_id,
+        amountPaise: payment.amount_paise,
+      });
     },
   },
 };

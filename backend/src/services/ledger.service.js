@@ -263,6 +263,69 @@ class LedgerService {
   }
 
   /**
+   * Books a completed seller payout: reduces the platform's liability to the
+   * shop and credits the platform bank clearing account. Idempotent via
+   * postingKey (`SELLER_PAYOUT:<payoutId>`).
+   */
+  async postSellerPayout(client, { payoutId, shopId, amountPaise, description = '' }) {
+    const amount = Math.round(Number(amountPaise) || 0);
+    if (amount <= 0) return null;
+    return this.recordTransaction({
+      referenceType: 'SELLER_PAYOUT',
+      referenceId: payoutId,
+      description: description || `Seller payout ${payoutId}`,
+      entries: [
+        { entryType: 'DEBIT', accountType: 'SELLER_PAYABLE', accountId: shopId, amountPaise: amount, description: `Payout settled to shop ${shopId}` },
+        { entryType: 'CREDIT', accountType: 'PLATFORM_BANK', accountId: 'PLATFORM', amountPaise: amount, description: `Bank disbursement for seller payout ${payoutId}` },
+      ],
+      client,
+      postingKey: `SELLER_PAYOUT:${payoutId}`,
+    });
+  }
+
+  /**
+   * Books a completed rider payout: reduces the platform's liability to the
+   * rider and credits the platform bank clearing account. Idempotent via
+   * postingKey (`RIDER_PAYOUT:<payoutId>`).
+   */
+  async postRiderPayout(client, { payoutId, riderId, amountPaise, description = '' }) {
+    const amount = Math.round(Number(amountPaise) || 0);
+    if (amount <= 0) return null;
+    return this.recordTransaction({
+      referenceType: 'RIDER_PAYOUT',
+      referenceId: payoutId,
+      description: description || `Rider payout ${payoutId}`,
+      entries: [
+        { entryType: 'DEBIT', accountType: 'RIDER_PAYABLE', accountId: riderId, amountPaise: amount, description: `Payout settled to rider ${riderId}` },
+        { entryType: 'CREDIT', accountType: 'PLATFORM_BANK', accountId: 'PLATFORM', amountPaise: amount, description: `Bank disbursement for rider payout ${payoutId}` },
+      ],
+      client,
+      postingKey: `RIDER_PAYOUT:${payoutId}`,
+    });
+  }
+
+  /**
+   * Books a customer wallet top-up: debits the payment gateway receivable (or
+   * bank clearing account) and credits the customer's wallet liability.
+   * Idempotent via postingKey (`WALLET_TOPUP:<topupId>`).
+   */
+  async postWalletTopup(client, { topupId, userId, amountPaise, sourceAccount = 'GATEWAY_RECEIVABLE', description = '' }) {
+    const amount = Math.round(Number(amountPaise) || 0);
+    if (amount <= 0) return null;
+    return this.recordTransaction({
+      referenceType: 'WALLET_TOPUP',
+      referenceId: topupId,
+      description: description || `Wallet top-up ${topupId}`,
+      entries: [
+        { entryType: 'DEBIT', accountType: sourceAccount, accountId: topupId, amountPaise: amount, description: `Top-up funds received for ${topupId}` },
+        { entryType: 'CREDIT', accountType: 'CUSTOMER_WALLET', accountId: userId, amountPaise: amount, description: `Wallet credited for user ${userId}` },
+      ],
+      client,
+      postingKey: `WALLET_TOPUP:${topupId}`,
+    });
+  }
+
+  /**
    * The trial balance: every transaction whose debits and credits differ (there
    * must be none), and the totals over the whole book. Balances are reproducible
    * from the entries alone, and this is how to prove it.

@@ -177,7 +177,7 @@ export function parseNodeTestLog(logPath, platform) {
 /**
  * Computes honest status for all features based on evidence test reports.
  */
-export function verifyFeatures({ evidenceDir, writeStatus = false, featuresPath } = {}) {
+export function verifyFeatures({ evidenceDir, writeStatus = false, featuresPath, allowApiOnlyVerification = false } = {}) {
   const featPath = featuresPath || path.join(ROOT, 'docs', 'launch', 'features.json');
   if (!fs.existsSync(featPath)) {
     throw new Error(`features.json not found at ${featPath}`);
@@ -291,14 +291,15 @@ export function verifyFeatures({ evidenceDir, writeStatus = false, featuresPath 
       
       // API-only features like P1, P2, P3, P4, P5, P8, P9, P10 require milestone-specific completion
       // (e.g. P10 needs restore rehearsal V9, P1 needs D9 canonical pipeline, P8 Sentry V7).
-      // Until full launch verification in V10, API-only features remain CODE COMPLETE.
+      // Until full launch verification in V10 (full run with G1-G17 all passing), API-only features remain CODE COMPLETE.
       const isApiOnly = reqPlatforms.length === 1 && reqPlatforms[0] === 'api';
+      const apiOnlyReady = isApiOnly && allowApiOnlyVerification;
 
       const passedWebUnit = passedTests.filter(t => t.platform === 'web');
       const failedWebUnit = failedTests.filter(t => t.platform === 'web');
       const hasPassedWebUnit = passedWebUnit.length > 0 && failedWebUnit.length === 0;
 
-      if (allPlatformsPassed && evidenceAllTracked && !isApiOnly) {
+      if (allPlatformsPassed && evidenceAllTracked && (!isApiOnly || apiOnlyReady)) {
         computedStatus = 'VERIFIED';
       } else if (
         (reqPlatforms.includes('api') && passedSqliteApi.length > 0 && passedPostgresApi.length > 0 && failedApi.length === 0) ||

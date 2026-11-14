@@ -668,8 +668,10 @@ const gates = [
     id: 'G18',
     name: 'Target Feature Verification (features.json)',
     category: 'Feature Verification',
-    run: () => {
-      const report = verifyFeatures({ evidenceDir, writeStatus: isWriteStatusMode });
+    run: (priorResults = []) => {
+      const priorGates = priorResults.filter(r => r.id !== 'G18');
+      const allPriorGatesPassed = !onlyGates && priorGates.length === 17 && priorGates.every(r => r.passed && !r.skipped);
+      const report = verifyFeatures({ evidenceDir, writeStatus: isWriteStatusMode, allowApiOnlyVerification: allPriorGatesPassed });
       const summary = `${report.verifiedCount} / ${report.launchTotal} launch features verified (${report.launchTotal > 0 ? ((report.verifiedCount / report.launchTotal) * 100).toFixed(1) : 0}%) [${report.codeCompleteCount} CODE COMPLETE, ${report.inProgressCount} IN PROGRESS]`;
       const log = writeLog('G18', `=== Feature Verification Summary ===\nTotal Launch Features: ${report.launchTotal}\nVerified: ${report.verifiedCount}\nCode Complete: ${report.codeCompleteCount}\nIn Progress: ${report.inProgressCount}\nNot Started: ${report.notStartedCount}\n\nDiscrepancies (${report.discrepancies.length}):\n${JSON.stringify(report.discrepancies, null, 2)}\n\nFeatures Breakdown:\n${JSON.stringify(report.features, null, 2)}`);
       return {
@@ -718,7 +720,7 @@ async function main() {
     const start = Date.now();
     let res;
     try {
-      res = gate.run();
+      res = gate.run(results);
     } catch (err) {
       res = {
         passed: false,

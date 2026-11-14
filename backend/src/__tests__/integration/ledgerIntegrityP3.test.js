@@ -229,3 +229,55 @@ describe('[P3.10] balances can be reproduced from the entries', () => {
     expect(Number((await ledger.getAccountBalance('SELLER_PAYABLE', shop)).balancePaise)).toBe(-3000);
   });
 });
+
+describe('[P3.11] seller payouts, rider payouts and wallet top-ups balance against PLATFORM_BANK', () => {
+  test('[P3.11] completing a seller payout posts Dr SELLER_PAYABLE / Cr PLATFORM_BANK once', async () => {
+    const PayoutService = require('../../services/payout.service');
+    const payoutId = uid();
+    await query(
+      `INSERT INTO shop_payouts (id, shop_id, period_start, period_end, gross_gmv, total_orders, platform_commission, commission_rate, net_payout, payout_status)
+       VALUES ($1, $2, '2026-11-01', '2026-11-07', 500, 1, 0, 0, 500, 'initiated')`,
+      [payoutId, SHOP]
+    );
+    try {
+      await PayoutService.markPayoutCompleted(payoutId);
+      await PayoutService.markPayoutCompleted(payoutId); // idempotent on retry
+
+      const entries = await queryMany(
+        'SELECT entry_type, account_type, account_id, amount_paise FROM platform_ledger_entries WHERE reference_type = $1 AND reference_id = $2 ORDER BY entry_type',
+        ['SELLER_PAYOUT', payoutId]
+      );
+      expect(entries).toHaveLength(2);
+      expect(entries.find((e) => e.entry_type === 'DEBIT')).toMatchObject({ account_type: 'SELLER_PAYABLE', account_id: SHOP, amount_paise: 50000 });
+      expect(entries.find((e) => e.entry_type === 'CREDIT')).toMatchObject({ account_type: 'PLATFORM_BANK', account_id: 'PLATFORM', amount_paise: 50000 });
+    } finally {
+      await query('DELETE FROM shop_payouts WHERE id = $1', [payoutId]);
+    }
+  });
+
+  test('[P3.11] rider payout and wallet top-up post balanced entries and keep trial balance clean', async () => {
+    const riderPayoutId = uid();
+    const topupId = uid();
+    await ledger.postRiderPayout(null, { payoutId: riderPayoutId, riderId: RIDER, amountPaise: 12000 });
+    await ledger.postRiderPayout(null, { payoutId: riderPayoutId, riderId: RIDER, amountPaise: 12000 });
+    await ledger.postWalletTopup(null, { topupId, userId: BUYER, amountPaise: 25000 });
+    await ledger.postWalletTopup(null, { topupId, userId: BUYER, amountPaise: 25000 });
+
+    const riderEntries = await queryMany(
+      'SELECT entry_type, account_type, amount_paise FROM platform_ledger_entries WHERE reference_type = $1 AND reference_id = $2',
+      ['RIDER_PAYOUT', riderPayoutId]
+    );
+    expect(riderEntries).toHaveLength(2);
+
+    const topupEntries = await queryMany(
+      'SELECT entry_type, account_type, amount_paise FROM platform_ledger_entries WHERE reference_type = $1 AND reference_id = $2',
+      ['WALLET_TOPUP', topupId]
+    );
+    expect(topupEntries).toHaveLength(2);
+    expect(topupEntries.find((e) => e.entry_type === 'CREDIT')).toMatchObject({ account_type: 'CUSTOMER_WALLET', amount_paise: 25000 });
+
+    const trial = await ledger.trialBalance();
+    expect(trial.unbalancedTransactions).toEqual([]);
+    expect(trial.balanced).toBe(true);
+  });
+});

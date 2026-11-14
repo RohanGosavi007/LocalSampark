@@ -44,6 +44,7 @@ const logger = require('../config/logger');
 const crypto = require('crypto');
 const commission = require('./commission.service');
 const platformConfig = require('./platformConfig.service');
+const ledger = require('./ledger.service');
 
 // An order ready to be settled: delivered, paid — by whatever route — and not
 // yet in any payout. `o` is the orders alias.
@@ -335,14 +336,30 @@ class PayoutService {
   }
 
   /**
-   * Mark payout as completed (webhook confirmation)
+   * Mark payout as completed (webhook confirmation) and book the disbursement
+   * into the double-entry ledger (idempotent per payoutId).
    */
   static async markPayoutCompleted(payoutId) {
-    await query(
-      `UPDATE shop_payouts SET payout_status = 'completed', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [payoutId]
-    );
+    return withTransaction(async (client) => {
+      const payout = (await client.query(
+        'SELECT id, shop_id, net_payout FROM shop_payouts WHERE id = $1',
+        [payoutId]
+      )).rows[0];
+
+      await client.query(
+        `UPDATE shop_payouts SET payout_status = 'completed', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [payoutId]
+      );
+
+      if (payout && Number(payout.net_payout) > 0) {
+        await ledger.postSellerPayout(client, {
+          payoutId: payout.id,
+          shopId: payout.shop_id,
+          amountPaise: Math.round(Number(payout.net_payout) * 100),
+        });
+      }
+    });
   }
 }
 
