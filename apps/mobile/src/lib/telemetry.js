@@ -21,6 +21,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
 import { API_BASE, getAuthHeaders } from './api';
+import { isAllowed, loadConsent, subscribe as onConsentChange } from '../services/analyticsConsent';
 
 const MAX_BATCH_SIZE = 25;
 const FLUSH_INTERVAL_MS = 10000;
@@ -54,6 +55,7 @@ let enabled = true;
 let flushing = false;
 let sessionToken = null;
 let appStateSub = null;
+let consentUnsub = null;
 const seenImpressions = new Set();
 
 /**
@@ -96,9 +98,14 @@ function cancelTimer() {
   }
 }
 
-/** Queues one event. Returns nothing and never throws. */
+/**
+ * Queues one event. Returns nothing and never throws.
+ *
+ * Nothing is recorded unless the user has said yes (P11): analytics are opt-in
+ * and off by default. This used to collect for everyone the server allowed.
+ */
 export function track(eventType, itemType, itemId, extra = {}) {
-  if (!enabled) return;
+  if (!enabled || !isAllowed()) return;
   try {
     if (!eventType || !itemType || itemId == null) return;
 
@@ -165,6 +172,12 @@ export const trackPurchaseIntent = (itemType, itemId, extra = {}) =>
  */
 export async function flush() {
   cancelTimer();
+  // Checked again at send time: the user may have turned analytics off since
+  // these events were queued, and then they must not be sent.
+  if (!isAllowed()) {
+    discardCollected();
+    return { sent: 0 };
+  }
   if (flushing || buffer.length === 0) return { sent: 0 };
 
   const batch = buffer;
@@ -189,6 +202,15 @@ export async function flush() {
   }
 }
 
+/** Drops everything gathered so far, and the session token that tied it together. */
+function discardCollected() {
+  cancelTimer();
+  buffer = [];
+  seenImpressions.clear();
+  sessionToken = null;
+  AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
+}
+
 export function setEnabled(value) {
   enabled = Boolean(value);
   if (!enabled) {
@@ -208,7 +230,15 @@ export function pendingCount() {
  * batch of nearly every session is lost.
  */
 export async function initTelemetry() {
-  await loadSessionToken();
+  // The saved choice first. The session token is only created once the user
+  // has agreed, and is deleted again when they withdraw.
+  await loadConsent();
+  if (isAllowed()) await loadSessionToken();
+  if (consentUnsub) consentUnsub();
+  consentUnsub = onConsentChange((choice) => {
+    if (choice === 'granted') loadSessionToken();
+    else discardCollected();
+  });
 
   try {
     const res = await fetch(`${API_BASE}/ml/config/public`);
@@ -230,6 +260,10 @@ export async function initTelemetry() {
 /** Removes the AppState listener. Used by tests and on teardown. */
 export function stopTelemetry() {
   cancelTimer();
+  if (consentUnsub) {
+    consentUnsub();
+    consentUnsub = null;
+  }
   if (appStateSub) {
     appStateSub.remove();
     appStateSub = null;

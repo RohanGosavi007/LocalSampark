@@ -177,6 +177,8 @@ try { LanguageProvider = require('../src/context/LanguageContext').LanguageProvi
 // the providers above, so a failed import cannot stop the app from opening.
 let NotificationTapHandler = () => null;
 try { NotificationTapHandler = require('../src/components/NotificationTapHandler').default; } catch (e) { console.warn('[_layout] NotificationTapHandler import failed:', e.message); }
+let AnalyticsConsentPrompt = () => null;
+try { AnalyticsConsentPrompt = require('../src/components/AnalyticsConsentPrompt').default; } catch (e) { console.warn('[_layout] AnalyticsConsentPrompt import failed:', e.message); }
 let CartSync = () => null;
 try { CartSync = require('../src/components/commerce/CartSync').default; } catch (e) { console.warn('[_layout] CartSync import failed:', e.message); }
 let SocketProvider = PassthroughProvider;
@@ -381,6 +383,7 @@ function RootLayout() {
                         <DevLoginScreen />
                         <CartSync />
                         <NotificationTapHandler />
+                        <AnalyticsConsentPrompt />
                       </LanguageProvider>
                     </NotificationProvider>
                   </OrderRingerProvider>

@@ -22,6 +22,7 @@
  */
 
 import { API_BASE, getAuthHeaders } from './api';
+import { analyticsAllowed, CONSENT_CHANGED } from './consent.mjs';
 
 const MAX_BATCH_SIZE = 25;
 const FLUSH_INTERVAL_MS = 10000;
@@ -59,7 +60,7 @@ const seenImpressions = new Set();
  * after the fact.
  */
 function getSessionToken() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' || !analyticsAllowed()) return null;
   try {
     let token = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!token) {
@@ -91,9 +92,15 @@ function cancelTimer() {
   }
 }
 
-/** Queues one event. Returns nothing and never throws. */
+/**
+ * Queues one event. Returns nothing and never throws.
+ *
+ * Nothing is recorded unless the visitor has said yes (P11). This used to
+ * collect for everyone the server allowed, whatever the consent banner said:
+ * an unanswered or declined visitor was tracked exactly like one who accepted.
+ */
 export function track(eventType, itemType, itemId, extra = {}) {
-  if (!enabled || typeof window === 'undefined') return;
+  if (!enabled || typeof window === 'undefined' || !analyticsAllowed()) return;
   try {
     if (!eventType || !itemType || itemId == null) return;
 
@@ -163,6 +170,12 @@ export const trackPurchaseIntent = (itemType, itemId, extra = {}) =>
  */
 export async function flush() {
   cancelTimer();
+  // Checked again at send time: the visitor may have withdrawn consent since
+  // these events were queued, and then they must not be sent.
+  if (!analyticsAllowed()) {
+    discardCollected();
+    return { sent: 0 };
+  }
   if (flushing || buffer.length === 0) return { sent: 0 };
 
   const batch = buffer;
@@ -188,6 +201,18 @@ export async function flush() {
     return { sent: 0, failed: batch.length };
   } finally {
     flushing = false;
+  }
+}
+
+/** Drops everything gathered so far, and the session token that tied it together. */
+function discardCollected() {
+  cancelTimer();
+  buffer = [];
+  seenImpressions.clear();
+  try {
+    if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    /* storage blocked: there is nothing stored to remove */
   }
 }
 
@@ -228,5 +253,10 @@ export async function initTelemetry() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flush();
+  });
+
+  // Withdrawing consent stops collection at once and discards what was gathered.
+  window.addEventListener(CONSENT_CHANGED, () => {
+    if (!analyticsAllowed()) discardCollected();
   });
 }

@@ -2,6 +2,7 @@
 import React from 'react';
 import { MapPin, Mail, Phone, ExternalLink } from 'lucide-react';
 import { useVisibleLinks } from '../../lib/useFeatureRegistry';
+import { OPEN_CONSENT } from '../../lib/consent.mjs';
 
 const LINKS = {
   'Explore': [
@@ -165,6 +166,13 @@ export default function Footer() {
                   {l.label} <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -mt-1" />
                 </a>
               ))}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT))}
+                className="text-sm font-medium text-text-muted hover:text-primary transition-colors inline-flex items-center min-h-[var(--tap-min)]"
+              >
+                Privacy choices
+              </button>
             </div>
           </div>
         </div>
