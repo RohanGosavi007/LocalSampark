@@ -101,13 +101,15 @@
   /* Accent. A fill and a label have different contrast jobs: the
      brand emerald (#00C880) reaches only 2.2:1 against white and #00A468 only
      3.2:1 under a white label, both of which fail AA for a 16px button label.
-     #008453 clears 4.5:1 in BOTH directions, so one value serves as the fill
-     and as text on a light ground. --brand-emerald stays available for
-     decorative fills and gradients that carry no text. */
-  --accent:       #008453;
+     #007F4F clears 4.5:1 in BOTH directions on every ground (5.06 on white,
+     4.76 on the page ground, 4.69 on the green tint), so one value serves as the
+     fill and as text on a light ground. (#008453 passed on white but was 4.46
+     on the page ground and 4.40 on the tint.) --brand-emerald stays available
+     for decorative fills and gradients that carry no text. */
+  --accent:       #007F4F;
   --accent-hover: #00734A;
-  --accent-text:  #008453;
-  --accent-quiet: rgba(0, 132, 83, 0.10);
+  --accent-text:  #007F4F;
+  --accent-quiet: rgba(0, 127, 79, 0.10);
   --on-accent:    #FFFFFF;
   /* Ink for text sitting on a saturated semantic fill (a success chip, a
      danger button). In light the fills are dark, so white is correct. */
@@ -1469,4 +1471,16 @@ body.dark-mode .glass-card-v2-light:hover,
   .reveal-actions:focus-within {
     opacity: 1;
   }
+}
+
+/* A label on the brand fill takes --on-accent (P12.6).
+   Many components were written `bg-primary text-white`. In the light theme
+   --on-accent IS white, so nothing changes there; in the dark theme the fill is
+   the bright emerald #00C880 and white on it is 2.2:1 (axe: Search, Sign in,
+   All Shops). --on-accent there is #052E21, 6.75:1. The doubled class beats
+   the .text-white utility whatever the stylesheet order. */
+.bg-primary,
+.bg-primary.text-white,
+.bg-primary :where(.text-white) {
+  color: var(--on-accent);
 }

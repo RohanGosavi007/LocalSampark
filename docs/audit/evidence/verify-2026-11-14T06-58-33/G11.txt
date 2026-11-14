@@ -1,0 +1,218 @@
+=== Playwright E2E Output ===
+[WebServer] ⚠️  Running in non-production mode. Strict validation skipped.
+[WebServer]    13 optional service keys not configured (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, FIREBASE_PROJECT_ID...)
+[WebServer] [Firebase] Warning: Valid Firebase credentials not configured. Firebase sign-in is mocked (development mode).
+[WebServer] ⚠️ Firebase credentials not configured — SMS OTP and Push will use fallback mode
+[WebServer]  ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+Running 152 tests using 1 worker
+
+  ok   1 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the home page has no WCAG 2.1 AA violations (light theme) (10.9s)
+  ok   2 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the shop directory page has no WCAG 2.1 AA violations (light theme) (2.7s)
+  ok   3 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the sign in page has no WCAG 2.1 AA violations (light theme) (2.3s)
+  ok   4 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the search page has no WCAG 2.1 AA violations (light theme) (2.4s)
+  ok   5 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the help and support page has no WCAG 2.1 AA violations (light theme) (2.5s)
+  ok   6 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the privacy policy page has no WCAG 2.1 AA violations (light theme) (2.6s)
+  ok   7 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the home page has no WCAG 2.1 AA violations (dark theme) (3.0s)
+  ok   8 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the shop directory page has no WCAG 2.1 AA violations (dark theme) (2.7s)
+  ok   9 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the sign in page has no WCAG 2.1 AA violations (dark theme) (2.2s)
+  ok  10 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the search page has no WCAG 2.1 AA violations (dark theme) (2.4s)
+  ok  11 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the help and support page has no WCAG 2.1 AA violations (dark theme) (2.5s)
+  ok  12 [web-chromium] › tests\e2e\web\accessibility.spec.js:65:5 › [P12.6] the privacy policy page has no WCAG 2.1 AA violations (dark theme) (2.8s)
+  ok  13 [web-chromium] › tests\e2e\web\auth-c1.spec.js:40:1 › [C1.19] a new customer signs up with a code emailed to them; the email code is the default way in (1.6s)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/users/me from ::1 {"timestamp":"2026-11-14T07:17:55.929Z","requestId":"req-1794640675925-qt5m5a","method":"GET","path":"/api/v1/users/me","statusCode":401,"responseTimeMs":4,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok  14 [web-chromium] › tests\e2e\web\auth-c1.spec.js:68:1 › [C1.20] signing out from the account menu ends this browser’s session only (3.1s)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/users/me from ::1 {"timestamp":"2026-11-14T07:17:57.654Z","requestId":"req-1794640677654-b1rk27","method":"GET","path":"/api/v1/users/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/users/me from ::1 {"timestamp":"2026-11-14T07:17:57.659Z","requestId":"req-1794640677658-i37bt3","method":"GET","path":"/api/v1/users/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: POST /api/v1/auth/refresh-token from ::1 {"timestamp":"2026-11-14T07:17:57.663Z","requestId":"req-1794640677662-mqqn9g","method":"POST","path":"/api/v1/auth/refresh-token","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok  15 [web-chromium] › tests\e2e\web\auth-c1.spec.js:88:1 › [C1.21] "Sign out of all devices" ends every session of the account (1.5s)
+  ok  16 [web-chromium] › tests\e2e\web\auth-flow.spec.js:11:3 › Auth Flow › should show login page with phone input (702ms)
+  ok  17 [web-chromium] › tests\e2e\web\auth-flow.spec.js:17:3 › Auth Flow › should show register page with form fields (824ms)
+  ok  18 [web-chromium] › tests\e2e\web\auth-flow.spec.js:26:3 › Auth Flow › should navigate from login to register (1.2s)
+  ok  19 [web-chromium] › tests\e2e\web\auth-flow.spec.js:43:3 › Auth Flow › should show forgot password page (922ms)
+  ok  20 [web-chromium] › tests\e2e\web\auth-flow.spec.js:49:3 › Auth Flow › should prevent empty form submission on login (753ms)
+  ok  21 [web-chromium] › tests\e2e\web\auth-flow.spec.js:70:3 › Auth Flow › should reject invalid phone number format (742ms)
+  ok  22 [web-chromium] › tests\e2e\web\cart.spec.js:28:3 › Cart › [C6.20] a cart filled in the app is on the web, grouped by shop (986ms)
+  ok  23 [web-chromium] › tests\e2e\web\cart.spec.js:42:3 › Cart › [C6.21] two shops check out together: one order per shop, one payment, and the cart is emptied (2.6s)
+  ok  24 [web-chromium] › tests\e2e\web\cart.spec.js:74:3 › Cart › [C6.22] a guest's cart is kept through signing in on the login page (2.2s)
+  ok  25 [web-chromium] › tests\e2e\web\checkout.spec.js:15:3 › Checkout › [C8.8] an order is placed with an Idempotency-Key; sending it again returns the same order (2.6s)
+  ok  26 [web-chromium] › tests\e2e\web\checkout.spec.js:54:3 › Checkout › [C8.9] the bill on the page is the server's quote, and cash is the default for a new customer (2.1s)
+  ok  27 [web-chromium] › tests\e2e\web\checkout.spec.js:71:3 › Checkout › [C8.19] a time slot can be chosen instead of ASAP, and the order keeps it (3.3s)
+  ok  28 [web-chromium] › tests\e2e\web\coupons.spec.js:13:1 › [C7.18] a coupon at checkout comes off the bill and the order (3.4s)
+  ok  29 [web-chromium] › tests\e2e\web\feature-flags.spec.js:56:1 › [A12.5] [P6.9] a module that is off has no link in the navigation, and its page is Coming Soon (1.9s)
+  ok  30 [web-chromium] › tests\e2e\web\feature-flags.spec.js:79:1 › [A12.5] [P6.9] switching the module on in the console puts it in the navigation and opens its page; switching it off takes both away again (29.8s)
+  ok  31 [web-chromium] › tests\e2e\web\homepage.spec.js:11:3 › Homepage › should load without errors and return 200 (871ms)
+  ok  32 [web-chromium] › tests\e2e\web\homepage.spec.js:16:3 › Homepage › should display the main title and tagline (921ms)
+  ok  33 [web-chromium] › tests\e2e\web\homepage.spec.js:23:3 › Homepage › should have correct SEO meta tags (1.0s)
+  ok  34 [web-chromium] › tests\e2e\web\homepage.spec.js:40:3 › Homepage › should have working navigation links (1.1s)
+  ok  35 [web-chromium] › tests\e2e\web\homepage.spec.js:50:3 › Homepage › should display platform service pillars (965ms)
+  ok  36 [web-chromium] › tests\e2e\web\homepage.spec.js:62:3 › Homepage › should be responsive on mobile viewport (1.1s)
+  ok  37 [web-chromium] › tests\e2e\web\homepage.spec.js:72:3 › Homepage › should not have any console errors (1.4s)
+  ok  38 [web-chromium] › tests\e2e\web\homepage.spec.js:90:3 › Homepage › should load within 5 seconds (performance check) (1.2s)
+  ok  39 [web-chromium] › tests\e2e\web\i18n.spec.js:24:3 › [P12.8] switching to Hindi translates the header, is remembered after a reload, and shows no raw keys (4.7s)
+  ok  40 [web-chromium] › tests\e2e\web\i18n.spec.js:24:3 › [P12.8] switching to Marathi translates the header, is remembered after a reload, and shows no raw keys (4.6s)
+  ok  41 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › / does not overflow a 1280px screen (4.7s)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:19:15.352Z","requestId":"req-1794640755352-ani198","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok  42 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /community does not overflow a 1280px screen (4.5s)
+  ok  43 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /shops does not overflow a 1280px screen (4.5s)
+  ok  44 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /login does not overflow a 1280px screen (4.4s)
+  ok  45 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /services does not overflow a 1280px screen (4.6s)
+  ok  46 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › / does not overflow a 375px screen (4.6s)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:19:38.144Z","requestId":"req-1794640778144-5qysqb","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok  47 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /community does not overflow a 375px screen (4.5s)
+  ok  48 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /shops does not overflow a 375px screen (4.5s)
+  ok  49 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /login does not overflow a 375px screen (4.6s)
+  ok  50 [web-chromium] › tests\e2e\web\layout.spec.js:16:5 › /services does not overflow a 375px screen (4.5s)
+  ok  51 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /shops does not overflow a 1280px screen while loading (3.2s)
+  ok  52 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /services does not overflow a 1280px screen while loading (3.1s)
+  ok  53 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /shops does not overflow a 375px screen while loading (3.1s)
+  ok  54 [web-chromium] › tests\e2e\web\layout.spec.js:39:5 › /services does not overflow a 375px screen while loading (3.1s)
+  ok  55 [web-chromium] › tests\e2e\web\location-discovery.spec.js:34:1 › [C2.3] inside the pilot zone, "use my current location" sets the area (1.3s)
+  ok  56 [web-chromium] › tests\e2e\web\location-discovery.spec.js:40:1 › [C2.4] outside every zone, the visitor is told so and can join the waitlist (2.9s)
+  ok  57 [web-chromium] › tests\e2e\web\location-discovery.spec.js:63:1 › [C3.3] the shop directory shows nearby shops and whether each is open now (862ms)
+  ok  58 [web-chromium] › tests\e2e\web\notifications.spec.js:26:3 › Notifications › [C13.13] an order's notification is in the inbox, opens the order, and is then read (1.5s)
+  ok  59 [web-chromium] › tests\e2e\web\notifications.spec.js:44:3 › Notifications › [C13.14] turning off offers is saved for the customer and shown again on return (1.4s)
+  ok  60 [web-chromium] › tests\e2e\web\orders.spec.js:27:3 › My orders › [C9.10] the order list shows the customer's own orders with their status (845ms)
+  ok  61 [web-chromium] › tests\e2e\web\orders.spec.js:39:3 › My orders › [C9.11] a confirmed order can be cancelled, and the server agrees (1.8s)
+  ok  62 [web-chromium] › tests\e2e\web\orders.spec.js:52:3 › My orders › [C9.12] past the cancellation window there is no cancel button, and the server refuses (840ms)
+  ok  63 [web-chromium] › tests\e2e\web\orders.spec.js:65:3 › My orders › [C9.13] the GST invoice downloads as a PDF (2.1s)
+  ok  64 [web-chromium] › tests\e2e\web\orders.spec.js:78:3 › My orders › [C9.14] order again puts the same items in the cart at today's price (1.8s)
+  ok  65 [web-chromium] › tests\e2e\web\orders.spec.js:98:3 › My orders › [C9.15] a status change made elsewhere appears without reloading the page (846ms)
+  ok  66 [web-chromium] › tests\e2e\web\orders.spec.js:118:3 › Live rider position (R4) › [R4.40] the customer follows the rider: last known position, then each update the rider sends, without a reload (865ms)
+  ok  67 [web-chromium] › tests\e2e\web\performance.spec.js:64:3 › [P13.4] / stays within its download budget (1.5s)
+  ok  68 [web-chromium] › tests\e2e\web\performance.spec.js:64:3 › [P13.4] /shops stays within its download budget (1.2s)
+  ok  69 [web-chromium] › tests\e2e\web\performance.spec.js:64:3 › [P13.4] /login stays within its download budget (1.1s)
+  ok  70 [web-chromium] › tests\e2e\web\performance.spec.js:64:3 › [P13.4] /search stays within its download budget (1.2s)
+  ok  71 [web-chromium] › tests\e2e\web\product.spec.js:16:3 › Product page › [C4.11] the page states price, MRP and discount, the seller and every declaration, naming the missing ones (931ms)
+  ok  72 [web-chromium] › tests\e2e\web\product.spec.js:40:3 › Product page › [C4.12] a chosen size goes into the cart, and the cart and checkout charge that size's price (1.2s)
+  ok  73 [web-chromium] › tests\e2e\web\product.spec.js:61:3 › Product page › [C12.11] a saved product is on the wishlist, moves to the cart, and viewed products are listed (1.6s)
+  ok  74 [web-chromium] › tests\e2e\web\returns.spec.js:14:1 › [C10.10] a delivered order can be returned from its page with a photo, and the request is then shown (4.1s)
+  ok  75 [web-chromium] › tests\e2e\web\reviews.spec.js:14:3 › Reviews › [C11.8] a delivered order can be reviewed; the review shows on the shop as a verified purchase (2.1s)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: POST /api/v1/shops/e2e00000-0000-4000-8000-0000000000d0/reviews by CUSTOMER (85f8c596-300f-4a4c-be14-bb40f7385470) {"timestamp":"2026-11-14T07:20:40.981Z","requestId":"req-1794640840978-q4bji1","method":"POST","path":"/api/v1/shops/e2e00000-0000-4000-8000-0000000000d0/reviews","statusCode":403,"responseTimeMs":3,"userRole":"CUSTOMER","userId":"85f8c596-300f-4a4c-be14-bb40f7385470","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok  76 [web-chromium] › tests\e2e\web\reviews.spec.js:33:3 › Reviews › [C11.9] someone the shop has not served cannot review it (184ms)
+  ok  77 [web-chromium] › tests\e2e\web\search.spec.js:14:1 › [C5.14] a product is found with a typo, suggested while typing, filtered, and opened (2.4s)
+  ok  78 [web-chromium] › tests\e2e\web\security-p9.spec.js:26:1 › [P9.40] pages carry a nonce-based CSP and the security headers, and run under them (1.9s)
+  ok  79 [web-chromium] › tests\e2e\web\security-p9.spec.js:63:1 › rate limiting › [P9.41] a rate-limited sign-in shows the server's message and is not retried behind the customer's back (2.5s)
+  ok  80 [web-chromium] › tests\e2e\web\seller-studio.spec.js:32:1 › [S5.2] a seller makes a coupon for their own shop, and it does not work at another shop (1.6s)
+  ok  81 [web-chromium] › tests\e2e\web\seller-studio.spec.js:67:1 › [S6.2] a seller replies to a customer review and the reply is what customers see (1.1s)
+  ok  82 [web-chromium] › tests\e2e\web\seller-studio.spec.js:88:1 › [S7.2] the analytics tab shows the shop's real totals (1.1s)
+  ok  83 [web-chromium] › tests\e2e\web\seller-studio.spec.js:104:1 › [S4.2] the ledger shows the shop's real earnings and how settlement works, with no fake payout request (1.1s)
+  ok  84 [web-chromium] › tests\e2e\web\seller-studio.spec.js:148:1 › [S3.4] a seller moves a pickup order from new to handed over, and prints its packing slip (6.9s)
+  ok  85 [web-chromium] › tests\e2e\web\seller-studio.spec.js:191:1 › [S3.5] a change the server refuses is shown to the seller, not swallowed (1.6s)
+  ok  86 [web-chromium] › tests\e2e\web\seller-studio.spec.js:209:1 › [S2.8] a seller adds a product, adds options with their own price and stock, unlists it, and refusals are explained (5.4s)
+  ok  87 [web-chromium] › tests\e2e\web\seo.spec.js:28:3 › SEO and metadata › [P7.2] a shop page is server-rendered with its own title, description, Open Graph and canonical (24ms)
+  ok  88 [web-chromium] › tests\e2e\web\seo.spec.js:40:3 › SEO and metadata › [P7.3] a shop page carries LocalBusiness, Product/Offer and breadcrumb JSON-LD from real data (30ms)
+  ok  89 [web-chromium] › tests\e2e\web\seo.spec.js:70:3 › SEO and metadata › [P7.4] the sitemap lists active shops and robots.txt points at it on the same site (37ms)
+  ok  90 [web-chromium] › tests\e2e\web\seo.spec.js:84:3 › SEO and metadata › [P7.5] every public page declares itself, not the homepage, as canonical (64ms)
+  ok  91 [web-chromium] › tests\e2e\web\seo.spec.js:93:3 › SEO and metadata › [P7.6] an unknown shop is not indexed (27ms)
+  ok  92 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:11:3 › Shop Browsing › should load shops listing page (863ms)
+  ok  93 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:16:3 › Shop Browsing › should display shop cards or empty state (1.3s)
+  ok  94 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:24:3 › Shop Browsing › should have search/filter functionality (1.3s)
+  ok  95 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:37:3 › Services Page › should load services page (813ms)
+  ok  96 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:42:3 › Services Page › should display service categories (1.4s)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/feed/posts?limit=50 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:21:13.244Z","requestId":"req-1794640873244-z8brd2","method":"GET","path":"/api/v1/feed/posts?limit=50","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok  97 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:53:3 › Community Pages › should load community page (827ms)
+  ok  98 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:58:3 › Community Pages › should load townsquare page (733ms)
+  ok  99 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:63:3 › Community Pages › should load events page (735ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/delivery/my-jobs from ::1 {"timestamp":"2026-11-14T07:21:15.470Z","requestId":"req-1794640875469-g0f15r","method":"GET","path":"/api/v1/delivery/my-jobs","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/delivery/analytics from ::1 {"timestamp":"2026-11-14T07:21:15.475Z","requestId":"req-1794640875471-vyxcre","method":"GET","path":"/api/v1/delivery/analytics","statusCode":401,"responseTimeMs":4,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 100 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:71:3 › Dashboard Pages › should load delivery dashboard (755ms)
+  ok 101 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:76:3 › Dashboard Pages › should load shop dashboard (693ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/franchise/dashboard from ::1 {"timestamp":"2026-11-14T07:21:16.964Z","requestId":"req-1794640876964-05te9d","method":"GET","path":"/api/v1/franchise/dashboard","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/franchise/territory-customers?limit=200 from ::1 {"timestamp":"2026-11-14T07:21:16.967Z","requestId":"req-1794640876967-awdrn8","method":"GET","path":"/api/v1/franchise/territory-customers?limit=200","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/franchise/reports?months=6 from ::1 {"timestamp":"2026-11-14T07:21:16.969Z","requestId":"req-1794640876969-6hycvq","method":"GET","path":"/api/v1/franchise/reports?months=6","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 102 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:81:3 › Dashboard Pages › should load franchise dashboard (732ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/orders/my-orders from ::1 {"timestamp":"2026-11-14T07:21:17.714Z","requestId":"req-1794640877714-8qsla5","method":"GET","path":"/api/v1/orders/my-orders","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 103 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:88:3 › Dashboard Pages › should load the order tracking page (730ms)
+  ok 104 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:96:3 › Static Pages › should load about page (734ms)
+  ok 105 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:101:3 › Static Pages › should load download page (954ms)
+  ok 106 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:106:3 › Static Pages › should load premium page (704ms)
+  ok 107 [web-chromium] › tests\e2e\web\shop-checkout.spec.js:111:3 › Static Pages › should show 404 page for unknown routes (707ms)
+  ok 108 [web-chromium] › tests\e2e\web\shop-onboarding.spec.js:14:1 › [S1.2] a new seller registers a shop, is told what to fix in their KYC, and submits it for review (3.3s)
+  ok 109 [web-chromium] › tests\e2e\web\shop-onboarding.spec.js:63:1 › [S1.2] a signed-out visitor is asked to sign in, not shown a form that goes nowhere (834ms)
+  ok 110 [web-chromium] › tests\e2e\web\support.spec.js:12:3 › Help & support › [C14.10] a signed-out visitor is asked to sign in, not shown someone else's tickets (788ms)
+  ok 111 [web-chromium] › tests\e2e\web\support.spec.js:18:3 › Help & support › [C14.11] order help: a ticket raised from an order keeps that order and reaches the support queue (1.3s)
+  ok 112 [web-chromium] › tests\e2e\web\support.spec.js:43:3 › Help & support › [C14.12] a formal grievance is marked as such and shows its resolution deadline (1.6s)
+  ok 113 [web-chromium] › tests\e2e\web\support.spec.js:58:3 › Help & support › [C14.13] an empty ticket is refused before it is sent (853ms)
+  ok 114 [web-chromium] › tests\e2e\web\support.spec.js:66:3 › Help & support › [C14.14] the public grievance page shows the configured Grievance Officer (824ms)
+  ok 115 [web-chromium] › tests\e2e\web\theme.spec.js:76:5 › theme system › a stored "light" preference survives hydration (8.8s)
+  ok 116 [web-chromium] › tests\e2e\web\theme.spec.js:76:5 › theme system › a stored "dark" preference survives hydration (8.8s)
+  ok 117 [web-chromium] › tests\e2e\web\theme.spec.js:94:3 › theme system › all three DOM markers agree (8.7s)
+  ok 118 [web-chromium] › tests\e2e\web\theme.spec.js:116:5 › theme system › "system" follows an OS set to light (8.7s)
+  ok 119 [web-chromium] › tests\e2e\web\theme.spec.js:116:5 › theme system › "system" follows an OS set to dark (8.8s)
+  ok 120 [web-chromium] › tests\e2e\web\theme.spec.js:126:3 › theme system › the header toggle changes the page, without a reload (1.6s)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:18.197Z","requestId":"req-1794640938196-fe98jo","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:18.316Z","requestId":"req-1794640938316-1k9cmh","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin/commerce/kpis from ::1 {"timestamp":"2026-11-14T07:22:18.327Z","requestId":"req-1794640938327-3bfggn","method":"GET","path":"/api/v1/admin/commerce/kpis","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 121 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:59:3 › Commerce Ops console › [A8.3] the console sends a signed-out visitor to the login page (412ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:18.504Z","requestId":"req-1794640938504-n6obm2","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:18.849Z","requestId":"req-1794640938849-v0g19w","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 122 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:69:3 › Commerce Ops console › [A8.4] an admin signs in with phone, OTP and PIN (1.1s)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:19.656Z","requestId":"req-1794640939656-e6bnpy","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 123 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:85:3 › Commerce Ops console › [A1.3] KPIs on screen are the live aggregates (204ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:19.828Z","requestId":"req-1794640939828-tpolm3","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 124 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:96:3 › Commerce Ops console › [A2.2] [S1.4] KYC queue: documents, mandatory reason, resubmission and approval (423ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:20.258Z","requestId":"req-1794640940257-g3ugkh","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 125 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:116:3 › Commerce Ops console › [A2.3] shop kill switch needs a reason and can be reversed (383ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:20.647Z","requestId":"req-1794640940647-ebz6nb","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 126 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:129:3 › Commerce Ops console › [A3.4] category taxonomy and restricted-goods moderation (466ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:21.180Z","requestId":"req-1794640941180-g598oy","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 127 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:143:3 › Commerce Ops console › [A4.10] order search, timeline, capped refund and forced cancellation (870ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:22.004Z","requestId":"req-1794640942004-dp2eek","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 128 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:177:3 › Commerce Ops console › [A5.3] disputes and returns are settled from the queue (522ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:22.579Z","requestId":"req-1794640942579-4uknye","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 129 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:195:3 › Commerce Ops console › [A6.4] [S4.4] commission, payout approval and COD settlement (352ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:22.930Z","requestId":"req-1794640942930-86y6q9","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 130 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:211:3 › Commerce Ops console › [A7.3] platform coupon and homepage banner (489ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:23.444Z","requestId":"req-1794640943444-lfymn4","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 131 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:231:3 › Commerce Ops console › [C7.19] a "₹ off" coupon with per-customer rules, then paused (603ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:24.040Z","requestId":"req-1794640944040-9efgam","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 132 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:257:3 › Commerce Ops console › [A8.5] every console action above is in the audit log (187ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:24.223Z","requestId":"req-1794640944222-r1vuec","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 133 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:266:3 › Commerce Ops console › [A9.4] zone switch and waitlist export (577ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:24.808Z","requestId":"req-1794640944808-72xx4h","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 134 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:286:3 › Commerce Ops console › [A10.3] fleet status and COD deposit reconciliation (401ms)
+  ok 135 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:307:3 › Commerce Ops console › [R5.30] a deposit recorded in the console is what the rider sees in their own cash ledger (29ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:25.248Z","requestId":"req-1794640945247-c9bxdu","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 136 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:330:3 › Commerce Ops console › [R1.30] a rider application is reviewed in the console: reason required, resubmission, approval (391ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:25.650Z","requestId":"req-1794640945650-pf8380","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 137 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:357:3 › Commerce Ops console › [A11.5] statutory grievance: 48h breach, reply and resolution (368ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:26.062Z","requestId":"req-1794640946062-3repde","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 138 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:370:3 › Commerce Ops console › [C14.21] a ticket a customer raises reaches the console, and the reply reaches the customer (327ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:26.421Z","requestId":"req-1794640946421-d125c5","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:26.746Z","requestId":"req-1794640946746-7dotvr","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 139 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:395:3 › Commerce Ops console › [C10.11] a customer’s return is approved in the console and the refund paid out and recorded (620ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:27.014Z","requestId":"req-1794640947014-tyxpqs","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 140 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:426:3 › Commerce Ops console › [C11.10] a reported review is in the moderation queue; hiding it removes it from the shop (320ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:27.329Z","requestId":"req-1794640947328-4i4u3o","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/krishi/listings by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:27.375Z","requestId":"req-1794640947375-ep8nx2","method":"GET","path":"/api/v1/krishi/listings","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/krishi/listings by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:27.512Z","requestId":"req-1794640947512-h401pj","method":"GET","path":"/api/v1/krishi/listings","statusCode":403,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 141 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:444:3 › Commerce Ops console › [A12.4] [P6.8] a kill switch reaches the public registry and API gating (287ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:27.625Z","requestId":"req-1794640947624-h9mn6t","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 142 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:462:3 › Commerce Ops console › [A13.5] financial and tax exports download from the console (432ms)
+[WebServer] 🔒 [SECURITY AUDIT] Forbidden access attempt: GET /api/v1/properties?limit=100 by ANONYMOUS (N/A) {"timestamp":"2026-11-14T07:22:28.066Z","requestId":"req-1794640948065-kmipjw","method":"GET","path":"/api/v1/properties?limit=100","statusCode":403,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"UNAUTHORIZED_ACCESS_ATTEMPT"}
+  ok 143 [admin-chromium] › tests\e2e\admin\commerce-ops.spec.js:478:3 › Commerce Ops console › [A14.6] broadcast reaches only consenting users and is kept in history (266ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:28.537Z","requestId":"req-1794640948536-w8oo9b","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 144 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:11:3 › Admin Panel › should load admin login page (271ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:28.786Z","requestId":"req-1794640948786-1bfwcn","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 145 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:16:3 › Admin Panel › should show login form with required fields (236ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:29.062Z","requestId":"req-1794640949061-ed6uhz","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 146 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:24:3 › Admin Panel › should load dashboard page (255ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:29.275Z","requestId":"req-1794640949275-005f3u","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:29.386Z","requestId":"req-1794640949385-g27usf","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 147 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:29:3 › Admin Panel › should load territories page (5.2s)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:34.480Z","requestId":"req-1794640954480-wed3is","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:34.578Z","requestId":"req-1794640954577-yiupyg","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 148 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:34:3 › Admin Panel › should load audit page (5.2s)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:39.646Z","requestId":"req-1794640959646-l0gref","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 149 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:39:3 › Admin Panel › should load settings page (189ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:39.898Z","requestId":"req-1794640959897-57zx20","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:39.996Z","requestId":"req-1794640959996-x72vyd","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 150 [admin-chromium] › tests\e2e\admin\dashboard.spec.js:44:3 › Admin Panel › should not have console errors on dashboard (907ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:40.784Z","requestId":"req-1794640960784-uzk8ny","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":0,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 151 [admin-chromium] › tests\e2e\admin\security-p9.spec.js:17:1 › [P9.30] the console is served with a nonce-based CSP and runs under it (290ms)
+[WebServer] 🔑 [AUTH AUDIT] Authentication failure: GET /api/v1/admin-auth/me from ::1 {"timestamp":"2026-11-14T07:22:41.099Z","requestId":"req-1794640961098-6xhrnr","method":"GET","path":"/api/v1/admin-auth/me","statusCode":401,"responseTimeMs":1,"userRole":"ANONYMOUS","userId":"N/A","ip":"::1","alert":"AUTH_FAILURE"}
+  ok 152 [admin-chromium] › tests\e2e\admin\security-p9.spec.js:38:1 › [P9.31] a rate-limited admin sign-in shows the server's message and stays on the phone step (326ms)
+
+  152 passed (8.0m)
+

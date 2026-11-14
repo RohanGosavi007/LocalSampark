@@ -313,8 +313,11 @@ export default function Header() {
         
         {/* Logo */}
         <a href="/" className="flex items-center group">
+          {/* 192 px (4x the 48 px it is shown at) instead of the 1024 px, 528 KB original that
+              every page downloaded; width/height reserve the space so the header does not shift. */}
           <img 
-            src="/logo.png" 
+            src="/logo-192.jpg" 
+            width={48} height={48} 
             alt="Local Sampark" 
             className="h-12 object-contain group-hover:scale-105 transition-transform" 
           />
@@ -324,7 +327,9 @@ export default function Header() {
         <div className="flex-1 max-w-2xl hidden md:flex items-center gap-3 relative z-50">
           <button 
             onClick={() => setShowLocationModal(!showLocationModal)}
-            aria-label="Select Delivery Location"
+            // The name contains the visible text (WCAG 2.5.3 label in name); "Select
+            // Delivery Location" alone did not include "Select your location" / the area.
+            aria-label={`Select Delivery Location, currently ${location?.addressLabel || t('set_loc')}`}
             className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-background-alt border border-border hover:border-primary/50 transition-colors shadow-sm shrink-0 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus:outline-none"
           >
             <MapPin className="w-4 h-4 text-primary" />

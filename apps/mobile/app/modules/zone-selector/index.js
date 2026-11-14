@@ -46,7 +46,7 @@ export default function ZoneSelectorScreen() {
         <View style={styles.zoneActions}>
           {isActive && <Ionicons name="checkmark-circle" size={24} color="#3b82f6" />}
           {!savedZones.some(z => z.id === item.id) && (
-            <TouchableOpacity onPress={() => saveZone(item.id, 'Favorite')} style={{marginLeft: 10}}>
+            <TouchableOpacity onPress={() => saveZone(item.id, 'Favorite')} style={{marginLeft: 10}} accessibilityRole="button" accessibilityLabel={`Save ${item.name}`}>
               <Ionicons name="heart-outline" size={24} color="#9ca3af" />
             </TouchableOpacity>
           )}
@@ -58,7 +58,7 @@ export default function ZoneSelectorScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.title}>Select Your Zone</Text>

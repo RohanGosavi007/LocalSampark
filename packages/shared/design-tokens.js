@@ -153,14 +153,18 @@ const theme = {
     // Accent. Two values, because a fill and a label have different jobs:
     // #00C880 is the brand fill; it only reaches 2.2:1 against white, so text
     // and icons on a light ground use accentText instead.
-    // #008453 clears 4.5:1 against white in both directions, so one value
-    // serves as the fill (with a white label) and as text on a light ground.
+    // #007F4F clears 4.5:1 in both directions on every ground the app uses, so
+    // one value serves as the fill (with a white label) and as text on a light
+    // ground: 5.06 on white, 4.76 on the page ground #F6F8FB and 4.69 on the
+    // tinted #E6FBF3. The earlier #008453 passed on white (4.75) but fell to
+    // 4.46 on the page ground and 4.40 on the tint, which axe reports as a
+    // failure for every small green label (P12.6).
     // The previous #00A468 reached only 3.23:1 under a white label, which
     // fails AA for button text at 16px.
-    accent:      '#008453',
+    accent:      '#007F4F',
     accentHover: '#00734A',
-    accentText:  '#008453',
-    accentQuiet: 'rgba(0, 132, 83, 0.10)',
+    accentText:  '#007F4F',
+    accentQuiet: 'rgba(0, 127, 79, 0.10)',
     onAccent:    '#FFFFFF',
 
     secondary:      '#E85D00',

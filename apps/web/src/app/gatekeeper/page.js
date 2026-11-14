@@ -14,7 +14,10 @@ export default function GatekeeperPortal() {
   const [status, setStatus] = useState(null); // 'waiting', 'approved', 'denied'
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncs, setPendingSyncs] = useState(0);
-  const { t, language, setLanguage } = useLanguage();
+  // The provider exposes lang and changeLanguage. This read language and
+  // setLanguage, which do not exist: the toggle always showed "EN" and threw
+  // when pressed.
+  const { t, lang: language, changeLanguage: setLanguage } = useLanguage();
 
   /*
    * The gate room, joined once on mount rather than per submit.
@@ -159,7 +162,7 @@ export default function GatekeeperPortal() {
               <p className="text-text-muted text-sm">{t("gatekeeper.subtitle")}</p>
             </div>
             <button 
-              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+              onClick={() => setLanguage(language === 'en' ? 'hi' : language === 'hi' ? 'mr' : 'en')}
               className="flex items-center gap-2 bg-card-bg hover:bg-background-alt text-text px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
             >
               {/* language is undefined during prerender, where the provider

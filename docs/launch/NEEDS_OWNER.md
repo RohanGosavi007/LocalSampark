@@ -143,3 +143,17 @@ This document tracks items that strictly require the project owner's credentials
   1. Generate a key once: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
   2. Set it as `KYC_ENCRYPTION_KEY` in the production API environment (Render), and keep a copy in your password manager — losing it makes stored account numbers unreadable.
   3. Never commit it, and never change it without a re-encryption step (not built yet; ask before rotating).
+
+---
+
+### Item 17: Hindi and Marathi wording needs a native-speaker review (P12)
+- **Context:** The web dictionary was missing the 19 strings the gatekeeper page asks for (it showed raw keys such as `gatekeeper.title`), and the Android dictionary was missing the 11 labels on the merchant dashboard tabs (it showed `[missing "en.nav_retail" translation]`). I added all of them in English, Hindi and Marathi. The Hindi and Marathi are my own translations and have not been reviewed by a native speaker.
+- **Action Required by Owner:** Have someone fluent read `gatekeeper.*` in `apps/web/src/app/data/translations.js` and the `nav_*` entries in `apps/mobile/src/i18n/index.js`, and correct anything that reads oddly. Tests only check that every key exists and is in Devanagari, not that the wording is good.
+
+### Item 18: How much of the Android app should be translated? (P12)
+- **Context:** The web interface is fully translated into Hindi and Marathi (apart from the Krishi module, which is off at launch). The Android app has **25 translated strings in total**; every other label, button and message in its screens is English text written directly into the code. The More tab offers "Regional Languages", so a Hindi- or Marathi-speaking user will see that the language changes only a handful of labels.
+- **Action Required by Owner:** Decide whether launch needs a translated Android app. If yes, it is a separate piece of work: move several hundred strings out of the screens into the dictionary, then translate and review them. If no, consider hiding the language chooser on Android until then so it does not promise more than it does.
+
+### Item 19: Two oversized images in the Android app (P13)
+- **Context:** `apps/mobile/assets/favicon.png` and `splash.png` are about 1.6 MB each (the whole `assets/` folder is 4.3 MB). I did not change them: recompressing or resizing artwork can change how it looks, and the splash screen is the first thing a user sees. The web logo, by comparison, was shrunk from 528 KB to 11 KB with no visible difference (done in this change).
+- **Action Required by Owner:** Ask whoever made the artwork to export both at sensible sizes (the splash at the largest phone screen size, the favicon at 48 to 192 px). A test caps any single image at 2 MB and all images at 6 MB, so they cannot grow further.

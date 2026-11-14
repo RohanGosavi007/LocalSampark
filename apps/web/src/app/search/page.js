@@ -115,6 +115,7 @@ function SearchPageInner() {
           <input
             id="catalog-search"
             type="search"
+            role="combobox"
             autoComplete="off"
             value={text}
             onChange={(e) => { setText(e.target.value); setOpen(true); }}

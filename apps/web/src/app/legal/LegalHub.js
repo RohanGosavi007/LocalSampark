@@ -51,7 +51,7 @@ export default function LegalHub({ initialTab = 'terms' }) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-4">
+        <div role="tablist" aria-label="Legal documents" className="flex gap-2 overflow-x-auto pb-4 mb-4">
           {tabs.map((tab) => (
             <button
               key={tab.id}

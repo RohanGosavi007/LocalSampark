@@ -85,7 +85,7 @@ export default function Footer() {
               </p>
 
               {/* Zone badge */}
-              <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-600 px-4 py-2 rounded-full text-sm font-semibold mb-8 border border-green-500/20">
+              <div className="inline-flex items-center gap-2 bg-green-500/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-8 border border-green-500/20">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                 Live in Dhanori, Pune
               </div>

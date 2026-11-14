@@ -27,7 +27,11 @@ test('P12.3 [a11y]: Header declares accessible banner and navigation landmarks',
 
 test('P12.4 [a11y]: interactive action buttons carry explicit aria-label attributes', () => {
   const headerSrc = fs.readFileSync(path.join(APP, 'components', 'Header.js'), 'utf8');
-  assert.ok(headerSrc.includes('aria-label="Select Delivery Location"'), 'location button missing aria-label');
+  // The location button's name starts "Select Delivery Location" and CONTAINS the
+  // text it shows (WCAG 2.5.3, label in name; axe: label-content-name-mismatch).
+  const locationLabel = headerSrc.match(/aria-label=\{`(Select Delivery Location[^`]*)`\}/);
+  assert.ok(locationLabel, 'location button missing aria-label');
+  assert.ok(locationLabel[1].includes("${location?.addressLabel || t('set_loc')}"), 'location button name must include the visible text');
   assert.ok(headerSrc.includes('aria-label="Voice Search"'), 'voice search button missing aria-label');
   assert.ok(headerSrc.includes('aria-label="Open Shopping Cart"'), 'cart button missing aria-label');
   assert.ok(headerSrc.includes('aria-label="Messages"'), 'chat link missing aria-label');

@@ -377,6 +377,7 @@ export default function ShopsPage() {
             
             <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
               <select 
+                aria-label="Sort shops"
                 className="bg-background border border-border rounded-full py-2 px-4 min-h-[var(--tap-min)] text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
@@ -389,12 +390,16 @@ export default function ShopsPage() {
               <div className="flex bg-card-bg border border-border rounded-full p-1">
                 <button 
                   onClick={() => setViewMode('list')} 
+                  aria-label="List view"
+                  aria-pressed={viewMode === 'list'}
                   className={`p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full transition-colors ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-text-muted hover:text-text'}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={() => setViewMode('map')} 
+                  aria-label="Map view"
+                  aria-pressed={viewMode === 'map'}
                   className={`p-2 min-w-[var(--tap-min)] min-h-[var(--tap-min)] inline-flex items-center justify-center rounded-full transition-colors ${viewMode === 'map' ? 'bg-background shadow-sm text-primary' : 'text-text-muted hover:text-text'}`}
                 >
                   <MapIcon className="w-4 h-4" />

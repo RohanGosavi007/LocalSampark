@@ -1,0 +1,1438 @@
+--------- beginning of system
+W/ActivityTaskManager(  559): callingPackage for (uid=2000, pid=4260) has no WPC
+D/CompatibilityChangeReporter(  559): Compat change id reported: 244637991; UID 2000; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265464455; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265452344; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 266124927; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265451093; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265456536; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 255940284; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 236283604; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 263959004; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 264304459; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 264301586; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 254631730; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 273509367; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 263259275; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 174042980; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 174042936; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 181136395; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 194480991; UID 10218; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 184838306; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 185004937; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 197654537; UID 10218; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 205907456; UID 10218; state: ENABLED
+V/WindowManagerShell(  775): Transition requested: android.os.BinderProxy@5a5252b TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=60 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=in.localsampark.app/.MainActivity } baseActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} topActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} origActivity=null realActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} numActivities=1 lastActiveTime=61575 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@2e61d88} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{82a3321 in.localsampark.app.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+I/ActivityTaskManager(  559): START u0 {flg=0x10000000 cmp=in.localsampark.app/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+D/CompatibilityChangeReporter(  559): Compat change id reported: 135634846; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 143937733; UID 10218; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265195908; UID 10218; state: ENABLED
+--------- beginning of main
+D/Zygote  (  366): Forked child process 4263
+I/ActivityManager(  559): Start proc 4263:in.localsampark.app/u0a218 for next-top-activity {in.localsampark.app/in.localsampark.app.MainActivity}
+I/BpBinder(  401): onLastStrongRef automatically unlinking death recipients: 
+D/SplashScreenView(  775): Build android.window.SplashScreenView{155e05d V.E...... ......ID 0,0-0,0}
+D/SplashScreenView(  775): Icon: view: android.widget.ImageView{db0dd2 V.ED..... ......I. 0,0-0,0 #10204f0 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@f952559 size: 528
+D/SplashScreenView(  775): Branding: view: android.view.View{fb8351e G.ED..... ......I. 0,0-0,0 #10204ef android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+D/EGL_emulation( 1054): app_time_stats: avg=5056.35ms min=127.03ms max=9985.68ms count=2
+I/ocalsampark.app( 4263): Using CollectorTypeCC GC.
+D/CoreBackPreview(  559): Window{6f62be7 u0 Splash Screen in.localsampark.app}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b19d632, mPriority=0, mIsAnimationCallback=false}
+W/ocalsampark.app( 4263): Unexpected CPU variant for x86: x86_64.
+W/ocalsampark.app( 4263): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+E/ocalsampark.app( 4263): Not starting debugger since process cannot load the jdwp agent.
+D/ActivityManager(  559): freezing 1746 com.google.android.onetimeinitializer
+D/IntervalStats(  559): Unable to parse usage stats packages: [215, 216, 227]
+D/IntervalStats(  559): Unable to parse event packages: [227]
+D/IntervalStats(  559): Unable to parse usage stats packages: [230, 231, 232, 234]
+D/IntervalStats(  559): Unable to parse event packages: [234]
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 171979766; UID 10218; state: ENABLED
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 242716250; UID 10218; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 170503758; UID 10218; state: ENABLED
+D/nativeloader( 4263): Configuring clns-6 for other apk /system/framework/org.apache.http.legacy.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/lib/x86_64:/data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/in.localsampark.app
+D/nativeloader( 4263): Configuring clns-7 for other apk /data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/lib/x86_64:/data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/in.localsampark.app
+V/GraphicsEnvironment( 4263): Currently set values for:
+V/GraphicsEnvironment( 4263):   angle_gl_driver_selection_pkgs=[]
+V/GraphicsEnvironment( 4263):   angle_gl_driver_selection_values=[]
+V/GraphicsEnvironment( 4263): ANGLE GameManagerService for in.localsampark.app: false
+V/GraphicsEnvironment( 4263): in.localsampark.app is not listed in per-application setting
+V/GraphicsEnvironment( 4263): Neither updatable production driver nor prerelease driver is supported.
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 183155436; UID 10218; state: ENABLED
+I/FirebaseApp( 4263): Device unlocked: initializing all Firebase APIs for app [DEFAULT]
+I/FirebaseInitProvider( 4263): FirebaseApp initialization successful
+D/Sentry  ( 4263): io.sentry.auto-init read: false
+D/WM-WrkMgrInitializer( 4263): Initializing WorkManager with default configuration.
+D/PackageManager(  559): Instant App installer not found with android.intent.action.INSTALL_INSTANT_APP_PACKAGE
+D/PackageManager(  559): Clear ephemeral installer activity
+W/SoLoader( 4263): Initializing SoLoader: 0
+W/SoLoader( 4263): Recording new base apk path: /data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/base.apk
+W/SoLoader( 4263): Previously recorded 0 base apk paths.
+I/SoLoader( 4263): Preparing SO source: DirectorySoSource[root = /vendor/lib64 flags = 2]
+I/SoLoader( 4263): Preparing SO source: DirectorySoSource[root = /system/lib64 flags = 2]
+I/SoLoader( 4263): Preparing SO source: DirectApkSoSource[root = [/data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/base.apk!/lib/x86_64]]
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/SoLoader( 4263): Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~yFIgMo05fh_vEzHdE7Ye2A==/in.localsampark.app-3HuKPhUCvReWhQw4isSflA==/lib/x86_64 flags = 0]]
+I/SoLoader( 4263): init finish: 4 SO sources prepared
+W/SoLoader( 4263): SoLoader initialized: 8
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 160794467; UID 10218; state: ENABLED
+V/WindowManagerShell(  775): onTransitionReady android.os.BinderProxy@5a5252b: {id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@81e21f7} m=OPEN f=NONE leash=Surface(name=Task=60)/@0x61ff8b8 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@f37e864} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xfb52691 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManager(  559): Sent Transition #7 createdAt=11-14 12:53:49.559 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=60 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=in.localsampark.app/.MainActivity } baseActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} topActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} origActivity=null realActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} numActivities=1 lastActiveTime=61575 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{a476f73 Task{c86ace #60 type=standard A=10218:in.localsampark.app}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{a51ae30 in.localsampark.app.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+V/WindowManager(  559):     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+V/WindowManagerShell(  775): Playing animation for (#7)android.os.BinderProxy@5a5252b@0
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.DefaultMixedHandler@f2a94a7
+V/WindowManager(  559):     info={id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{a476f73 Task{c86ace #60 type=standard A=10218:in.localsampark.app}}} m=OPEN f=NONE leash=Surface(name=Task=60)/@0xf2100ad sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0},{WCT{RemoteToken{f9faa9 Task{92c8259 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x64f1f77 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@e965d54
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@96d84fd
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.recents.RecentsTransitionHandler@ad4e5f2
+V/ShellRecents(  775): RecentsTransitionHandler.startAnimation: no controller found
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.pip.PipTransition@5e1d443
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.splitscreen.StageCoordinator@ea5fac0
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.RemoteTransitionHandler@f9273f9
+V/WindowManagerShell(  775): Transition doesn't have explicit remote, search filters for match for {id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@81e21f7} m=OPEN f=NONE leash=Surface(name=Task=60)/@0x61ff8b8 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@f37e864} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xfb52691 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@4f49acd, appThread = android.app.IApplicationThread$Stub$Proxy@ade8f82, debugName = LauncherToDream }}
+V/WindowManagerShell(  775):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@108e693, appThread = android.app.IApplicationThread$Stub$Proxy@fbd26d0, debugName = QuickstepLaunchHome }}
+V/WindowManagerShell(  775):  Delegate animation for #7 to null
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.DefaultTransitionHandler@c476f3e
+V/WindowManagerShell(  775): start default transition animation, info = {id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@81e21f7} m=OPEN f=NONE leash=Surface(name=Task=60)/@0x61ff8b8 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@f37e864} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xfb52691 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775): loadAnimation: anim=android.view.animation.AnimationSet@16a21ce animAttr=0x13 type=OPEN isEntrance=false
+V/WindowManagerShell(  775): loadAnimation: anim=android.view.animation.AnimationSet@40a8cda animAttr=0x12 type=OPEN isEntrance=true
+V/WindowManagerShell(  775):  animated by com.android.wm.shell.transition.DefaultTransitionHandler@c476f3e
+V/WindowManagerShell(  775): Transition animation finished (aborted=false), notifying core (#7)android.os.BinderProxy@5a5252b@0
+V/WindowManager(  559): Finish Transition #7: created at 11-14 12:53:49.559 collect-started=0.015ms request-sent=16.35ms started=19.714ms ready=141.723ms sent=269.788ms finished=282.133ms
+V/WindowManagerShell(  775): Track 0 became idle
+V/WindowManagerShell(  775): All active transition animations finished
+D/jni_lib_merge( 4263): Entering merged library JNI_OnLoad.
+D/jni_lib_merge( 4263): Preparing 12 pre-merged libs (including stub)
+D/jni_lib_merge( 4263): Preparing to register libfabricjni_so.  onload_func: 0x7170dfeb0ba0
+D/jni_lib_merge( 4263): Preparing to register libreact_devsupportjni_so.  onload_func: 0x7170dff8c530
+D/jni_lib_merge( 4263): Preparing to register libreact_featureflagsjni_so.  onload_func: 0x7170dff9f0a0
+D/jni_lib_merge( 4263): Preparing to register libreact_newarchdefaults_so.  onload_func: 0x7170dffc5fa0
+D/jni_lib_merge( 4263): Preparing to register libreactnativeblob_so.  onload_func: 0x7170e006da50
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_so.  onload_func: 0x7170e00888c0
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_common_so.  onload_func: 0x7170e008f150
+D/jni_lib_merge( 4263): Preparing to register librninstance_so.  onload_func: 0x7170e00ad450
+D/jni_lib_merge( 4263): Preparing to register libturbomodulejsijni_so.  onload_func: 0x7170e0158b80
+D/jni_lib_merge( 4263): Preparing to register libuimanagerjni_so.  onload_func: 0x7170e0160ab0
+D/jni_lib_merge( 4263): Preparing to register libyoga_so.  onload_func: 0x7170e0168130
+D/jni_lib_merge( 4263): About to register 11 actual methods.
+D/jni_lib_merge( 4263): Entering merged library JNI_OnLoad.
+D/jni_lib_merge( 4263): Preparing 12 pre-merged libs (including stub)
+D/jni_lib_merge( 4263): Preparing to register libfabricjni_so.  onload_func: 0x7170dfeb0ba0
+D/jni_lib_merge( 4263): Preparing to register libreact_devsupportjni_so.  onload_func: 0x7170dff8c530
+D/jni_lib_merge( 4263): Preparing to register libreact_featureflagsjni_so.  onload_func: 0x7170dff9f0a0
+D/jni_lib_merge( 4263): Preparing to register libreact_newarchdefaults_so.  onload_func: 0x7170dffc5fa0
+D/jni_lib_merge( 4263): Preparing to register libreactnativeblob_so.  onload_func: 0x7170e006da50
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_so.  onload_func: 0x7170e00888c0
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_common_so.  onload_func: 0x7170e008f150
+I/resolv  (  365): res_nsend: used send_dg 182 terrno: 0
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=182
+I/resolv  (  365): res_nsend: used send_dg 278 terrno: 0
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=278
+D/jni_lib_merge( 4263): Preparing to register librninstance_so.  onload_func: 0x7170e00ad450
+D/jni_lib_merge( 4263): Preparing to register libturbomodulejsijni_so.  onload_func: 0x7170e0158b80
+D/jni_lib_merge( 4263): Preparing to register libuimanagerjni_so.  onload_func: 0x7170e0160ab0
+D/jni_lib_merge( 4263): Preparing to register libyoga_so.  onload_func: 0x7170e0168130
+D/jni_lib_merge( 4263): About to register 11 actual methods.
+D/TrafficStats( 4263): tagSocket(67) with statsTag=0x8001, statsUid=-1
+D/jni_lib_merge( 4263): Entering merged library JNI_OnLoad.
+D/jni_lib_merge( 4263): Preparing 12 pre-merged libs (including stub)
+D/jni_lib_merge( 4263): Preparing to register libfabricjni_so.  onload_func: 0x7170dfeb0ba0
+D/jni_lib_merge( 4263): Preparing to register libreact_devsupportjni_so.  onload_func: 0x7170dff8c530
+D/jni_lib_merge( 4263): Preparing to register libreact_featureflagsjni_so.  onload_func: 0x7170dff9f0a0
+D/jni_lib_merge( 4263): Preparing to register libreact_newarchdefaults_so.  onload_func: 0x7170dffc5fa0
+D/jni_lib_merge( 4263): Preparing to register libreactnativeblob_so.  onload_func: 0x7170e006da50
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_so.  onload_func: 0x7170e00888c0
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_common_so.  onload_func: 0x7170e008f150
+D/jni_lib_merge( 4263): Preparing to register librninstance_so.  onload_func: 0x7170e00ad450
+D/jni_lib_merge( 4263): Preparing to register libturbomodulejsijni_so.  onload_func: 0x7170e0158b80
+D/jni_lib_merge( 4263): Preparing to register libuimanagerjni_so.  onload_func: 0x7170e0160ab0
+D/jni_lib_merge( 4263): Preparing to register libyoga_so.  onload_func: 0x7170e0168130
+D/jni_lib_merge( 4263): About to register 11 actual methods.
+I/ActivityManager(  559): Flag disabled. Ignoring finishAttachApplication from uid: 10218. pid: 4263
+D/libEGL  ( 4263): loaded /vendor/lib64/egl/libEGL_emulation.so
+D/AppCompatDelegate( 4263): Checking for metadata for AppLocalesMetadataHolderService : Service not found
+D/libEGL  ( 4263): loaded /vendor/lib64/egl/libGLESv1_CM_emulation.so
+D/libEGL  ( 4263): loaded /vendor/lib64/egl/libGLESv2_emulation.so
+W/unknown:BridgelessReact( 4263): ReactHost{0}.startSurface(surfaceId = 0): Schedule
+W/unknown:BridgelessReact( 4263): ReactHost{0}.attachSurface(surfaceId = 0)
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactInstanceTask()
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactInstanceTask(): Start
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getJSBundleLoader()
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactContext(): Creating BridgelessReactContext
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactInstanceTask(): Creating ReactInstance
+D/EGL_emulation(  775): app_time_stats: avg=5066.60ms min=51.82ms max=14642.35ms count=3
+W/unknown:BridgelessReact( 4263): ReactHost{0}.onHostResume(activity)
+W/unknown:BridgelessReact( 4263): ReactContext.onHostResume()
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 237531167; UID 10218; state: DISABLED
+W/OpenGLRenderer( 4263): Unknown dataspace 0
+D/jni_lib_merge( 4263): Entering merged library JNI_OnLoad.
+D/jni_lib_merge( 4263): Preparing 4 pre-merged libs (including stub)
+D/jni_lib_merge( 4263): Preparing to register libhermes_executor_so.  onload_func: 0x7170dd116730
+D/jni_lib_merge( 4263): Preparing to register libhermesinstancejni_so.  onload_func: 0x7170dd11ddb0
+D/jni_lib_merge( 4263): Preparing to register libjsijniprofiler_so.  onload_func: 0x7170dd11e540
+D/jni_lib_merge( 4263): About to register 3 actual methods.
+D/EGL_emulation(  775): app_time_stats: avg=21270.65ms min=21270.65ms max=21270.65ms count=1
+I/NitroImageOnLoad( 4263): Loading NitroImage C++ library...
+D/CoreBackPreview(  559): Window{8b238de u0 in.localsampark.app/in.localsampark.app.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@da504ea, mPriority=0, mIsAnimationCallback=false}
+I/NitroImageOnLoad( 4263): Successfully loaded NitroImage C++ library!
+I/VisionCameraOnLoad( 4263): Loading VisionCamera C++ library...
+I/VisionCameraOnLoad( 4263): Successfully loaded VisionCamera C++ library!
+I/VisionCameraFaceDetectorOnLoad( 4263): Loading VisionCameraFaceDetector C++ library...
+I/VisionCameraFaceDetectorOnLoad( 4263): Successfully loaded VisionCameraFaceDetector C++ library!
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10218 pid=0
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10218 pid=4263
+D/PermissionCache(  401): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10218 => denied (443 us)
+D/PermissionCache(  401): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10218 => denied (754 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10218 pid=0
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10218 pid=4263
+D/PermissionCache(  401): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10218 => denied (526 us)
+D/PermissionCache(  401): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10218 => denied (555 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10218 pid=4263
+D/PermissionCache(  401): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10218 => denied (677 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10218 pid=0
+D/PermissionCache(  401): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10218 => denied (961 us)
+I/DropBoxManagerService(  559): add tag=system_server_strictmode isTagEnabled=true flags=0x2
+W/OpenGLRenderer( 4263): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+I/ExpoModulesCore( 4263): ✅ AppContext was initialized
+D/RNCallKeep( 4263): [RNCallKeepModule] getInstance : ok
+D/RNCallKeep( 4263): [RNCallKeepModule] constructor
+--------- beginning of kernel
+I/servicemanager(    0): Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest.
+D/RNCallKeep( 4263): [RNCallKeepModule] updating react context
+I/org.webrtc.Logging( 4263): NativeLibrary: Loading native library: jingle_peerconnection_so
+I/hwservicemanager(  166): getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+I/org.webrtc.Logging( 4263): LibraryLoader: Loading library: jingle_peerconnection_so
+I/Gralloc4( 4263): mapper 4.x is not supported
+I/org.webrtc.Logging( 4263): PeerConnectionFactory: PeerConnectionFactory was initialized without an injected Loggable. Any existing Loggable will be deleted.
+I/org.webrtc.Logging( 4263): EglBase14Impl: Using OpenGL ES version 2
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 263076149; UID 10218; state: ENABLED
+D/RNCallKeep( 4263): [VoiceConnectionService] startObserving, event count: 0
+I/org.webrtc.Logging( 4263): WebRtcAudioManagerExternal: Running emulator, overriding sample rate to 8 kHz.
+I/org.webrtc.Logging( 4263): WebRtcAudioManagerExternal: Running emulator, overriding sample rate to 8 kHz.
+I/org.webrtc.Logging( 4263): JavaAudioDeviceModule: createAudioDeviceModule
+I/org.webrtc.Logging( 4263): JavaAudioDeviceModule: HW NS will not be used.
+I/org.webrtc.Logging( 4263): JavaAudioDeviceModule: HW AEC will not be used.
+I/org.webrtc.Logging( 4263): WebRtcAudioEffectsExternal: ctor@[name=pool-10-thread-1, id=59]
+I/org.webrtc.Logging( 4263): WebRtcAudioRecordExternal: ctor@[name=pool-10-thread-1, id=59]
+I/org.webrtc.Logging( 4263): WebRtcAudioTrackExternal: ctor@[name=pool-10-thread-1, id=59]
+D/com.oney.WebRTCModule.WebRTCModule( 4263): Using video encoder factory: com.oney.WebRTCModule.webrtcutils.H264AndSoftwareVideoEncoderFactory
+D/com.oney.WebRTCModule.WebRTCModule( 4263): Using video decoder factory: com.oney.WebRTCModule.webrtcutils.H264AndSoftwareVideoDecoderFactory
+I/org.webrtc.Logging( 4263): PeerConnectionFactory: onNetworkThreadReady
+I/org.webrtc.Logging( 4263): PeerConnectionFactory: onSignalingThreadReady
+I/org.webrtc.Logging( 4263): PeerConnectionFactory: onWorkerThreadReady
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactInstanceTask(): Loading JS Bundle
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactInstanceTask(): Calling DevSupportManagerBase.onNewReactContextCreated(reactContext)
+W/unknown:BridgelessReact( 4263): ReactHost{0}.startSurface(surfaceId = 0): Execute
+W/unknown:BridgelessReact( 4263): ReactContext.onHostResume()
+W/unknown:BridgelessReact( 4263): ReactHost{0}.getOrCreateReactInstanceTask(): Executing ReactInstanceEventListeners
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 210923482; UID 10218; state: ENABLED
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapUrlTileManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.uimanager.LayoutShadowNode
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenFooterManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.gamma.tabs.TabScreenViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenContainerViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class expo.modules.kotlin.views.GroupViewManagerWrapper
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.gamma.tabs.TabsHostViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapMarkerManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapLocalTileManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class io.sentry.react.replay.RNSentryReplayUnmaskManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ModalScreenViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapPolylineManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapCircleManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.margelo.nitro.camera.views.HybridFrameRendererViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.margelo.nitro.image.views.HybridNitroImageViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.th3rdwave.safeareacontext.SafeAreaViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.th3rdwave.safeareacontext.SafeAreaViewShadowNode
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class expo.modules.kotlin.views.SimpleViewManagerWrapper
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.margelo.nitro.camera.views.HybridPreviewViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenStackViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class io.sentry.react.RNSentryOnDrawReporterManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapCalloutManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.th3rdwave.safeareacontext.SafeAreaProviderManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.SearchBarManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapGradientPolylineManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapHeatmapManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.reactnativecommunity.webview.RNCWebViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapWMSTileManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenStackHeaderConfigViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenContentWrapperManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.oney.WebRTCModule.RTCVideoViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapPolygonManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.rnscreens.ScreenStackHeaderSubviewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class io.sentry.react.replay.RNSentryReplayMaskManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.rnmaps.maps.MapOverlayManager
+D/ConnectivityService(  559): reportNetworkConnectivity(101, false) by 10132
+D/NetworkMonitor/101(  834): Forcing reevaluation for UID 10132. Dns signal count: 0
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(109) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(108) with statsTag=0xffffff81, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$DefsViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.VirtualViewManager$c
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8877c59510
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4d850
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeMergeManager
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8887c4bad0
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.safeareaview.ReactSafeAreaViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.safeareaview.c
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4b470
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LinearGradientManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeGaussianBlurManager
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.progressbar.ReactProgressBarViewManager
+D/NetworkMonitor/101(  834): PROBE_DNS connectivitycheck.gstatic.com 11ms OK 142.251.150.120,2001:4860:4826:7800::
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.progressbar.b
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollViewManager
+I/resolv  (  365): GetAddrInfoHandler::run: {101 983141 101 983141 1073 1}
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4b470
+I/resolv  (  365): doQuery: rcode=0, ancount=1, return value=63
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4d850
+I/resolv  (  365): doQuery: rcode=0, ancount=1, return value=75
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.ReactTextViewManager
+D/TrafficStats(  834): tagSocket(109) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.k
+D/TrafficStats(  834): tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeColorMatrixManager
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollContainerViewManager
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ClipPathViewManager
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/NetworkMonitor/101(  834): PROBE_DNS www.google.com 21ms OK 142.251.151.119,142.251.154.119,142.251.150.119,142.251.157.119,142.251.153.119,142.251.155.119,142.251.156.119,142.251.152.119,2001:4860:4828:7700::,2001:4860:4829:7700::,2001:4860:4826:7700::,2001:4860:4827:7700::,2001:4860:482b:7700::,2001:4860:482d:7700::,2001:4860:482a:7700::,2001:4860:482c:7700::
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$SymbolManager
+I/resolv  (  365): GetAddrInfoHandler::run: {101 983141 101 983141 1073 1}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8877c59510
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=256
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8887c4bad0
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=160
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffff81, statsUid=-1
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PatternManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeBlendManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.view.ReactViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.SvgViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.switchview.ReactSwitchManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.switchview.d
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$UseViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$CircleViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TSpanViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FilterManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MarkerManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.gesturehandler.react.RNGestureHandlerButtonViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.modal.ReactModalHostManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ForeignObjectManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$EllipseViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LineViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.frescosupport.FrescoBasedReactTextInlineImageViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.frescosupport.a
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeFloodManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$GroupViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ImageViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeCompositeManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.image.ReactImageManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RadialGradientManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MaskManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.unimplementedview.ReactUnimplementedViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RectViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextPathViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.scroll.ReactScrollViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeOffsetManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PathViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.drawer.ReactDrawerLayoutManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.ReactVirtualTextViewManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.t
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.swiperefresh.SwipeRefreshLayoutManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.ReactRawTextManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.text.f
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.textinput.ReactTextInputManager
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.facebook.react.views.textinput.F
+W/unknown:ViewManagerPropertyUpdater( 4263): Could not find generated setter for class com.swmansion.gesturehandler.react.RNGestureHandlerRootViewManager
+W/b       ( 4263): [WARNING] Bridgeless doesn't support CatalystInstance. Accessing an API that's not part of the new architecture is not encouraged usage.
+I/ExpoModulesCore( 4263): ✅ JSI interop was installed
+D/CompatibilityChangeReporter(  559): Compat change id reported: 261072174; UID 10218; state: ENABLED
+I/ExpoModulesCore( 4263): ✅ Constants were exported
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 289878283; UID 10218; state: ENABLED
+I/ReactNativeJS( 4263): [sentry] EXPO_PUBLIC_SENTRY_DSN not set - crash reporting disabled
+I/FontLog ( 1306): Received query Noto Color Emoji Compat, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+I/FontLog ( 1306): Query [emojicompat-emoji-font] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+I/FontLog ( 1306): Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+I/ReactNativeJS( 4263): Running "main"
+I/FontLog ( 1306): Pulling font file for id = 13, cache size = 13 [CONTEXT service_id=132 ]
+I/FontLog ( 1306): Pulling font file for id = 13, cache size = 13 [CONTEXT service_id=132 ]
+W/ReactNativeJS( 4263): `expo-notifications` functionality is not fully supported in Expo Go:
+W/ReactNativeJS( 4263): We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+V/AsyncStorageExpoMigration( 4263): No scoped database found
+D/ConnectivityService(  559): requestNetwork for uid/pid:10218/4263 activeRequest: null callbackRequest: 124 [NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+D/ConnectivityService(  559): NetReassign [125 : null → 101] [c 0] [a 1] [i 0]
+D/WifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/UntrustedWifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/OemPaidWifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/MultiInternetWifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+W/ReactNativeJS( 4263): [🍉] JSI SQLiteAdapter not available… falling back to asynchronous operation. This will happen if you're using remote debugger, and may happen if you forgot to recompile native app after WatermelonDB update
+I/ReactNativeJS( 4263): [🍉] [SQLite] Setting up database with schema version 1
+W/ServiceManagerCppClient(  559): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10218 pid=0
+D/PermissionCache(  559): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10218 => denied (74 us)
+W/ServiceManagerCppClient(  559): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10218 pid=0
+D/PermissionCache(  559): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10218 => denied (20 us)
+W/ServiceManagerCppClient(  559): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10218 pid=0
+D/PermissionCache(  559): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10218 => denied (14 us)
+D/OneSearchSuggestProvider( 1054): Shut down the binder channel
+I/ActivityTaskManager(  559): Displayed in.localsampark.app/.MainActivity for user 0: +1s126ms
+I/IPCThreadState( 1054): oneway function results for code 2 on binder at 0x7172ac5deb90 will be dropped but finished with status UNKNOWN_TRANSACTION
+W/ProcessStats(  559): Tracking association SourceState{44f7e3e in.localsampark.app/10218 BTop #2744} whose proc state 2 is better than process ProcessState{cf30df9 com.google.android.gms.persistent/10128 pkg=com.google.android.gms} proc state 4 (19060 skipped)
+D/CompatibilityChangeReporter(  559): Compat change id reported: 214016041; UID 10218; state: ENABLED
+I/ImeTracker(  559): in.localsampark.app:bd2c2443: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+I/ImeTracker(  559): in.localsampark.app:bd2c2443: onCancelled at PHASE_SERVER_SHOULD_HIDE
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onFinishInput():3227 
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 0, unlocked = true
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=in.localsampark.app fieldId=0 fieldName=null extras=null}, false)
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+I/ReactNativeJS( 4263): [🍉] [SQLite] Schema set up successfully
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+D/NetworkMonitor/101(  834): PROBE_HTTP http://connectivitycheck.gstatic.com/generate_204 time=397ms ret=204 request={Connection=[close], User-Agent=[Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.32 Safari/537.36]} headers={null=[HTTP/1.1 204 No Content], Connection=[close], Content-Length=[0], Cross-Origin-Resource-Policy=[cross-origin], Date=[Sat, 14 Nov 2026 07:23:53 GMT], X-Android-Received-Millis=[1794641030705], X-Android-Response-Source=[NETWORK 204], X-Android-Selected-Protocol=[http/1.1], X-Android-Sent-Millis=[1794641030447]}
+I/ImeTracker( 1054): com.google.android.apps.nexuslauncher:df435ae1: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT
+I/ImeTracker( 1054): com.google.android.apps.nexuslauncher:df435ae1: onFailed at PHASE_CLIENT_VIEW_SERVED
+D/SplashScreenView( 4263): Building from parcel drawable: android.graphics.drawable.BitmapDrawable@629934d
+D/SplashScreenView( 4263): Build android.window.SplashScreenView{e3fd313 V.E...... ......ID 0,0-0,0}
+D/SplashScreenView( 4263): Icon: view: androidx.appcompat.widget.AppCompatImageView{72ed950 V.ED..... ......I. 0,0-0,0 #10204f0 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@629934d size: 528
+D/SplashScreenView( 4263): Branding: view: android.view.View{9091749 G.ED..... ......I. 0,0-0,0 #10204ef android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+D/NetworkMonitor/101(  834): PROBE_HTTPS https://www.google.com/generate_204 time=502ms ret=204 request={Connection=[close], User-Agent=[Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.32 Safari/537.36]} headers={null=[HTTP/1.1 204 No Content], Alt-Svc=[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000], Connection=[close], Content-Length=[0], Cross-Origin-Resource-Policy=[cross-origin], Date=[Sat, 14 Nov 2026 07:23:54 GMT], X-Android-Received-Millis=[1794641030825], X-Android-Response-Source=[NETWORK 204], X-Android-Selected-Protocol=[http/1.1], X-Android-Sent-Millis=[1794641030713]}
+W/WindowOnBackDispatcher(  775): sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@4d1f1ff
+W/InputManager-JNI(  559): Input channel object '6f62be7 Splash Screen in.localsampark.app (client)' was disposed without first being removed with the input manager!
+W/WindowManager(  559): Failed looking up window session=Session{ea6ec88 775:u0a10169} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6034 com.android.server.wm.Session.setOnBackInvokedCallbackInfo:944 android.view.IWindowSession$Stub.onTransact:1145 
+I/WindowManager(  559): setOnBackInvokedCallback(): No window state for package:com.android.systemui
+D/NetworkMonitor/101(  834): isCaptivePortal: isSuccessful()=true isPortal()=false RedirectUrl=null isPartialConnectivity()=false Time=571ms
+D/ConnectivityService(  559): [101 WIFI] validation passed
+D/SplashScreenView( 4263): remove starting view
+W/ReactNativeJS( 4263): SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+I/ReactNativeJS( 4263): [expo-image]: Prop "resizeMode" is deprecated, use "contentFit" instead
+I/Nearby  ( 1306): Successfully shutdown executor MBleClient.backgroundExecutor. [CONTEXT service_id=49 ]
+I/Nearby  ( 1306): Successfully shutdown executor MBleClient.alarmExecutor. [CONTEXT service_id=49 ]
+D/ConnectivityService(  559): requestNetwork for uid/pid:10218/4263 activeRequest: null callbackRequest: 126 [NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+D/WifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/UntrustedWifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/OemPaidWifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/MultiInternetWifiNetworkFactory(  559): got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10218 RequestorUid: 10218 RequestorPkg: in.localsampark.app UnderlyingNetworks: Null] ]
+D/ConnectivityService(  559): NetReassign [127 : null → 101] [c 0] [a 0] [i 1]
+W/unknown:ReactNative( 4263): StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+W/unknown:ReactNative( 4263): StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+W/unknown:ReactNative( 4263): StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+W/unknown:ReactNative( 4263): StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+D/jni_lib_merge( 4263): Entering merged library JNI_OnLoad.
+D/jni_lib_merge( 4263): Preparing 12 pre-merged libs (including stub)
+D/jni_lib_merge( 4263): Preparing to register libfabricjni_so.  onload_func: 0x7170dfeb0ba0
+D/jni_lib_merge( 4263): Preparing to register libreact_devsupportjni_so.  onload_func: 0x7170dff8c530
+D/jni_lib_merge( 4263): Preparing to register libreact_featureflagsjni_so.  onload_func: 0x7170dff9f0a0
+D/jni_lib_merge( 4263): Preparing to register libreact_newarchdefaults_so.  onload_func: 0x7170dffc5fa0
+D/jni_lib_merge( 4263): Preparing to register libreactnativeblob_so.  onload_func: 0x7170e006da50
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_so.  onload_func: 0x7170e00888c0
+D/jni_lib_merge( 4263): Preparing to register libreactnativejni_common_so.  onload_func: 0x7170e008f150
+D/jni_lib_merge( 4263): Preparing to register librninstance_so.  onload_func: 0x7170e00ad450
+D/jni_lib_merge( 4263): Preparing to register libturbomodulejsijni_so.  onload_func: 0x7170e0158b80
+D/jni_lib_merge( 4263): Preparing to register libuimanagerjni_so.  onload_func: 0x7170e0160ab0
+D/jni_lib_merge( 4263): Preparing to register libyoga_so.  onload_func: 0x7170e0168130
+D/jni_lib_merge( 4263): About to register 11 actual methods.
+I/WebViewFactory( 4263): Loading com.google.android.webview version 113.0.5672.136 (code 567263637)
+W/ziparchive( 4263): Unable to open '/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.dm': No such file or directory
+W/ziparchive( 4263): Unable to open '/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.dm': No such file or directory
+W/ocalsampark.app( 4263): Entry not found
+D/nativeloader( 4263): Configuring clns-8 for other apk /data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.apk. target_sdk_version=34, uses_libraries=ALL, library_path=/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/lib/x86_64:/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+D/BoundBrokerSvc( 1637): onUnbind: Intent { act=com.google.android.gms.people.contactssync.service.START pkg=com.google.android.gms }
+D/nativeloader( 4263): Configuring clns-9 for other apk /data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/WebViewGoogle.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/lib/x86_64:/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+W/[RNScreens]( 4263): backTitleVisible prop is not available on Android
+W/[RNScreens]( 4263): backTitleFontFamily prop is not available on Android
+W/[RNScreens]( 4263): disableBackButtonMenu prop is not available on Android
+W/[RNScreens]( 4263): largeTitleFontFamily prop is not available on Android
+W/[RNScreens]( 4263): largeTitleFontWeight prop is not available on Android
+W/[RNScreens]( 4263): largeTitleHideShadow prop is not available on Android
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 171228096; UID 10218; state: ENABLED
+I/ReactNative( 4263): [GESTURE HANDLER] Initialize gesture handler for root view p6.e0{fb3b29c V.E...... .......D 0,0-1080,2280 #1}
+I/netd    (  365): setProcSysNet(4, 2, wlan0, retrans_time_ms, 750) <0.19ms>
+I/netd    (  365): setProcSysNet(4, 2, wlan0, ucast_solicit, 10) <0.03ms>
+I/netd    (  365): setProcSysNet(6, 2, wlan0, retrans_time_ms, 750) <0.04ms>
+I/netd    (  365): setProcSysNet(6, 2, wlan0, ucast_solicit, 10) <0.02ms>
+I/cr_WVCFactoryProvider( 4263): Loaded version=113.0.5672.136 minSdkVersion=29 isBundle=false multiprocess=true packageId=2
+W/ocalsampark.app( 4263): Long monitor contention with owner OkHttp https://localsampark-api.onrender.com/... (4357) at android.content.pm.PackageInfo android.webkit.WebViewFactory.getLoadedPackageInfo()(WebViewFactory.java:262) waiters=2 in android.webkit.WebViewFactoryProvider android.webkit.WebViewFactory.getProvider() for 129ms
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265464455; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265452344; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 266124927; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265451093; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265456536; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 255940284; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 236283604; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 263959004; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 264304459; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 264301586; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 254631730; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 273509367; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 263259275; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 174042980; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 174042936; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 181136395; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 194480991; UID 10186; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 184838306; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 185004937; UID 10186; state: DISABLED
+I/cr_VariationsUtils( 4263): Failed reading seed file "/data/user/0/in.localsampark.app/app_webview/variations_seed_new"
+I/cr_VariationsUtils( 4263): Failed reading seed file "/data/user/0/in.localsampark.app/app_webview/variations_seed"
+E/Transition(  559): Trying to add a ready-group twice: Display{#0 state=ON size=1080x2280 ROTATION_0}
+V/WindowManagerShell(  775): Transition requested: android.os.BinderProxy@e3c4439 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=60 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=in.localsampark.app/.MainActivity } baseActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} topActivity=ComponentInfo{com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity} origActivity=null realActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} numActivities=2 lastActiveTime=63273 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@9889a7e} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{9b05bdf com.android.permissioncontroller.permission.ui.GrantPermissionsActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+I/ActivityTaskManager(  559): START u0 {act=android.content.pm.action.REQUEST_PERMISSIONS pkg=com.google.android.permissioncontroller cmp=com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity (has extras)} with LAUNCH_MULTIPLE from uid 10218 (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+I/cr_VariationsUtils( 4263): Requesting new seed from IVariationsSeedServer
+D/CompatibilityChangeReporter(  559): Compat change id reported: 143937733; UID 10133; state: ENABLED
+I/BpBinder(  401): onLastStrongRef automatically unlinking death recipients: 
+D/Zygote  (  366): Forked child process 4368
+I/ActivityManager(  559): Start proc 4368:com.google.android.webview:webview_service/u0a133 for service {com.google.android.webview/org.chromium.android_webview.services.VariationsSeedServer}
+I/cr_LibraryLoader( 4263): Successfully loaded native library
+I/cr_CachingUmaRecorder( 4263): Flushed 8 samples from 8 histograms.
+I/webview_service( 4368): Using CollectorTypeCC GC.
+W/webview_service( 4368): Unexpected CPU variant for x86: x86_64.
+W/webview_service( 4368): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+E/webview_service( 4368): Not starting debugger since process cannot load the jdwp agent.
+D/CompatibilityChangeReporter(  559): Compat change id reported: 168419799; UID 10133; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 273564678; UID 10133; state: DISABLED
+W/unknown:BridgelessReact( 4263): ReactHost{0}.onUserLeaveHint(activity)
+W/unknown:BridgelessReact( 4263): ReactHost{0}.onHostPause(activity)
+W/unknown:BridgelessReact( 4263): ReactContext.onHostPause()
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265195908; UID 10133; state: ENABLED
+D/CompatibilityChangeReporter( 4368): Compat change id reported: 171979766; UID 10133; state: ENABLED
+D/CompatibilityChangeReporter( 4368): Compat change id reported: 242716250; UID 10133; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 170503758; UID 10133; state: ENABLED
+W/ziparchive( 4368): Unable to open '/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.dm': No such file or directory
+W/ziparchive( 4368): Unable to open '/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.dm': No such file or directory
+W/webview_service( 4368): Entry not found
+D/nativeloader( 4368): Configuring clns-6 for other apk /data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.apk. target_sdk_version=34, uses_libraries=ALL, library_path=/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/lib/x86_64:/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.webview
+D/nativeloader( 4368): Configuring clns-7 for other apk /data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/WebViewGoogle.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/lib/x86_64:/data/app/~~Lnz9fSd12cIHdYTarw_qhw==/com.google.android.webview-HcAaOLf0CcB84jEdRfXpPw==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~KAUK2bl18DzfCBugMttkPA==/com.google.android.trichromelibrary_567263637-XC8RduuxFcpcUBclsIzQQQ==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.webview
+V/GraphicsEnvironment( 4368): Currently set values for:
+V/GraphicsEnvironment( 4368):   angle_gl_driver_selection_pkgs=[]
+V/GraphicsEnvironment( 4368):   angle_gl_driver_selection_values=[]
+V/GraphicsEnvironment( 4368): ANGLE GameManagerService for com.google.android.webview: false
+V/GraphicsEnvironment( 4368): com.google.android.webview is not listed in per-application setting
+V/GraphicsEnvironment( 4368): Neither updatable production driver nor prerelease driver is supported.
+I/LoadedApk( 4368): No resource references to update in package com.google.android.trichromelibrary
+I/cr_WebViewApkApp( 4368): Launched version=113.0.5672.136 minSdkVersion=29 isBundle=false processName=com.google.android.webview:webview_service
+I/ActivityManager(  559): Flag disabled. Ignoring finishAttachApplication from uid: 10133. pid: 4368
+D/CompatibilityChangeReporter( 1330): Compat change id reported: 171228096; UID 10186; state: ENABLED
+D/CompatibilityChangeReporter( 1330): Compat change id reported: 210923482; UID 10186; state: ENABLED
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: Waiting for previous request
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: Waiting for previous request
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: Waiting for previous request
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: Waiting for previous request
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: Waiting for previous request
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: Waiting for previous request
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.clearcut.bootcount.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+W/LOTTIE  ( 1330): Animation contains merge paths. Merge paths are only supported on KitKat+ and must be manually enabled by calling enableMergePathsForKitKatAndAbove().
+W/LOTTIE  ( 1330): Animation contains merge paths but they are disabled.
+D/CompatibilityChangeReporter( 1330): Compat change id reported: 237531167; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 168419799; UID 10186; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 273564678; UID 10186; state: DISABLED
+D/CoreBackPreview(  559): Window{aaf2cb9 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@4e63d98, mPriority=0, mIsAnimationCallback=false}
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10186 pid=1330
+D/PermissionCache(  401): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10186 => denied (317 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10186 pid=0
+D/PermissionCache(  401): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10186 => denied (416 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10186 pid=0
+D/PermissionCache(  401): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10186 => denied (223 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10186 pid=1330
+D/PermissionCache(  401): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10186 => denied (407 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10186 pid=0
+D/PermissionCache(  401): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10186 => denied (398 us)
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10186 pid=1330
+D/PermissionCache(  401): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10186 => denied (348 us)
+W/ServiceManagerCppClient(  559): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10186 pid=0
+D/PermissionCache(  559): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10186 => denied (298 us)
+W/ServiceManagerCppClient(  559): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10186 pid=0
+D/PermissionCache(  559): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10186 => denied (2654 us)
+W/ServiceManagerCppClient(  559): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10186 pid=0
+D/PermissionCache(  559): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10186 => denied (49 us)
+V/WindowManagerShell(  775): onTransitionReady android.os.BinderProxy@e3c4439: {id=8 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0x98f402c sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2280) d=-1->0 r=-1->0:-1}]}
+V/WindowManagerShell(  775): Playing animation for (#8)android.os.BinderProxy@e3c4439@0
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.DefaultMixedHandler@f2a94a7
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@e965d54
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@96d84fd
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.recents.RecentsTransitionHandler@ad4e5f2
+V/ShellRecents(  775): RecentsTransitionHandler.startAnimation: no controller found
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.pip.PipTransition@5e1d443
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.splitscreen.StageCoordinator@ea5fac0
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.RemoteTransitionHandler@f9273f9
+V/WindowManagerShell(  775): Transition doesn't have explicit remote, search filters for match for {id=8 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0x98f402c sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2280) d=-1->0 r=-1->0:-1}]}
+V/WindowManagerShell(  775):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@4f49acd, appThread = android.app.IApplicationThread$Stub$Proxy@ade8f82, debugName = LauncherToDream }}
+V/WindowManagerShell(  775):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@108e693, appThread = android.app.IApplicationThread$Stub$Proxy@fbd26d0, debugName = QuickstepLaunchHome }}
+V/WindowManagerShell(  775):  Delegate animation for #8 to null
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.DefaultTransitionHandler@c476f3e
+V/WindowManagerShell(  775): start default transition animation, info = {id=8 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0x98f402c sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2280) d=-1->0 r=-1->0:-1}]}
+V/WindowManagerShell(  775): loadAnimation: anim=null animAttr=0x4 type=OPEN isEntrance=true
+V/WindowManagerShell(  775): Transition animation finished (aborted=false), notifying core (#8)android.os.BinderProxy@e3c4439@0
+I/ActivityTaskManager(  559): Displayed com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity for user 0: +449ms
+V/WindowManager(  559): Sent Transition #8 createdAt=11-14 12:53:51.268 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=60 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=in.localsampark.app/.MainActivity } baseActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} topActivity=ComponentInfo{com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity} origActivity=null realActivity=ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity} numActivities=2 lastActiveTime=63273 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{a476f73 Task{c86ace #60 type=standard A=10218:in.localsampark.app}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{b9fad62 com.android.permissioncontroller.permission.ui.GrantPermissionsActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+V/WindowManager(  559):     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+V/WindowManager(  559):     info={id=8 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0x85cb9f1 sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2280) d=-1->0 r=-1->0:-1}]}
+V/WindowManager(  559): Finish Transition #8: created at 11-14 12:53:51.268 collect-started=0.018ms request-sent=6.142ms started=8.691ms ready=158.661ms sent=445.175ms finished=455.169ms
+V/WindowManagerShell(  775): Track 0 became idle
+V/WindowManagerShell(  775): All active transition animations finished
+V/WindowManagerShell(  775):  animated by com.android.wm.shell.transition.DefaultTransitionHandler@c476f3e
+V/WindowManagerShell(  775): Track 0 became idle
+V/WindowManagerShell(  775): All active transition animations finished
+D/CompatibilityChangeReporter(  559): Compat change id reported: 214016041; UID 10186; state: ENABLED
+I/ImeTracker(  559): com.google.android.permissioncontroller:352d4d06: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_ALWAYS_HIDDEN_STATE
+I/ImeTracker(  559): com.google.android.permissioncontroller:352d4d06: onCancelled at PHASE_SERVER_SHOULD_HIDE
+D/EGL_emulation(  775): app_time_stats: avg=1717.25ms min=1717.25ms max=1717.25ms count=1
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onFinishInput():3227 
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 0, unlocked = true
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.google.android.permissioncontroller fieldId=0 fieldName=null extras=null}, false)
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+V/WindowManagerShell(  775): Transition requested: android.os.BinderProxy@2c63318 TransitionRequestInfo { type = CLOSE, triggerTask = null, remoteTransition = null, displayChange = null }
+V/WindowManager(  559): Sent Transition #9 createdAt=11-14 12:53:51.763 via request=TransitionRequestInfo { type = CLOSE, triggerTask = null, remoteTransition = null, displayChange = null }
+V/WindowManager(  559):     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+V/WindowManager(  559):     info={id=9 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0x85cb9f1 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775): onTransitionReady android.os.BinderProxy@2c63318: {id=9 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0xe854171 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775): Playing animation for (#9)android.os.BinderProxy@2c63318@0
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.DefaultMixedHandler@f2a94a7
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@e965d54
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@96d84fd
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.recents.RecentsTransitionHandler@ad4e5f2
+V/ShellRecents(  775): RecentsTransitionHandler.startAnimation: no controller found
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.pip.PipTransition@5e1d443
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.splitscreen.StageCoordinator@ea5fac0
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.RemoteTransitionHandler@f9273f9
+V/WindowManagerShell(  775): Transition doesn't have explicit remote, search filters for match for {id=9 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0xe854171 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@4f49acd, appThread = android.app.IApplicationThread$Stub$Proxy@ade8f82, debugName = LauncherToDream }}
+V/WindowManagerShell(  775):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@108e693, appThread = android.app.IApplicationThread$Stub$Proxy@fbd26d0, debugName = QuickstepLaunchHome }}
+V/WindowManagerShell(  775):  Delegate animation for #9 to null
+V/WindowManagerShell(  775):  try handler com.android.wm.shell.transition.DefaultTransitionHandler@c476f3e
+V/WindowManagerShell(  775): start default transition animation, info = {id=9 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{null m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{56571c6 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity)/@0xe854171 sb=Rect(0, 0 - 1080, 2280) eb=Rect(0, 0 - 1080, 2280) d=0}]}
+V/WindowManagerShell(  775): loadAnimation: anim=null animAttr=0x7 type=CLOSE isEntrance=false
+V/WindowManagerShell(  775): Transition animation finished (aborted=false), notifying core (#9)android.os.BinderProxy@2c63318@0
+V/WindowManager(  559): Finish Transition #9: created at 11-14 12:53:51.763 collect-started=0.037ms request-sent=0.15ms started=4.365ms ready=18.333ms sent=21.401ms finished=34.327ms
+V/WindowManagerShell(  775): Track 0 became idle
+I/resolv  (  365): res_nsend: used send_dg 205 terrno: 0
+V/WindowManagerShell(  775): All active transition animations finished
+V/WindowManagerShell(  775):  animated by com.android.wm.shell.transition.DefaultTransitionHandler@c476f3e
+V/WindowManagerShell(  775): Track 0 became idle
+V/WindowManagerShell(  775): All active transition animations finished
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): res_nsend: used send_dg 182 terrno: 0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+D/TrafficStats( 4263): tagSocket(173) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats( 4263): tagSocket(174) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats( 4263): tagSocket(178) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats( 4263): tagSocket(176) with statsTag=0xffffffff, statsUid=-1
+W/WindowOnBackDispatcher( 1330): sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@5d7f59e
+D/CoreBackPreview(  559): Window{aaf2cb9 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity}: Setting back callback null
+W/InputManager-JNI(  559): Input channel object 'aaf2cb9 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity (client)' was disposed without first being removed with the input manager!
+D/OomAdjuster(  559): Not killing cached processes
+W/A       ( 1671): [Download] response code: 400
+D/EGL_emulation( 4263): app_time_stats: avg=325.83ms min=29.97ms max=894.77ms count=5
+I/Choreographer( 4263): Skipped 51 frames!  The application may be doing too much work on its main thread.
+I/OpenGLRenderer( 4263): Davey! duration=1030ms; Flags=0, FrameTimelineVsyncId=3421, IntendedVsync=63185715059, Vsync=63269048389, InputEventId=0, HandleInputStart=63277180915, AnimationStart=63277181941, PerformTraversalsStart=63284963782, DrawStart=63286111742, FrameDeadline=63452381715, FrameInterval=63277174092, FrameStartTime=16666666, SyncQueued=63310012651, SyncStart=63413841656, IssueDrawCommandsStart=63414043886, SwapBuffers=64250556398, FrameCompleted=64319645713, DequeueBufferDuration=4115, QueueBufferDuration=233163, GpuCompleted=64319645713, SwapBuffersCompleted=64307985649, DisplayPresentTime=0, CommandSubmissionCompleted=64250556398, 
+I/ImeTracker(  559): in.localsampark.app:fee966e6: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+I/ImeTracker(  559): in.localsampark.app:fee966e6: onCancelled at PHASE_SERVER_SHOULD_HIDE
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 78294732; UID 10218; state: ENABLED
+W/unknown:BridgelessReact( 4263): ReactHost{0}.onHostResume(activity)
+W/unknown:BridgelessReact( 4263): ReactContext.onHostResume()
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onFinishInput():3227 
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 0, unlocked = true
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=in.localsampark.app fieldId=0 fieldName=null extras=null}, false)
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+I/ImeTracker(  559): in.localsampark.app:d4d1e893: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_SAME_WINDOW_FOCUSED_WITHOUT_EDITOR
+I/ImeTracker(  559): in.localsampark.app:d4d1e893: onCancelled at PHASE_SERVER_SHOULD_HIDE
+I/OpenGLRenderer( 4263): Davey! duration=910ms; Flags=0, FrameTimelineVsyncId=3483, IntendedVsync=63452381715, Vsync=64302381681, InputEventId=0, HandleInputStart=64309853518, AnimationStart=64309854038, PerformTraversalsStart=64309993835, DrawStart=64310398701, FrameDeadline=64385715011, FrameInterval=64309707068, FrameStartTime=16666666, SyncQueued=64310459589, SyncStart=64351027761, IssueDrawCommandsStart=64351191369, SwapBuffers=64352194712, FrameCompleted=64403069353, DequeueBufferDuration=3413, QueueBufferDuration=131361, GpuCompleted=64403069353, SwapBuffersCompleted=64389990985, DisplayPresentTime=0, CommandSubmissionCompleted=64352194712, 
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onFinishInput():3227 
+I/cr_VariationsUtils( 4368): Throttling seed download job
+I/cr_VariationsUtils( 4368): Writing new seed to app's data directory
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 0, unlocked = true
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=in.localsampark.app fieldId=0 fieldName=null extras=null}, false)
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+I/GoogleInputMethodService( 1431): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+W/ReactNativeJS( 4263): '[Socket.io] Connection error:', 'websocket error'
+E/TaskPersister(  559): File error accessing recents directory (directory doesn't exist?).
+I/NearbySharing( 1306): FastInitiation warming period has ended [CONTEXT service_id=194 ]
+D/StatusBarIconController(  775): ignoring old pipeline callbacks, because the new mobile icons are enabled
+I/wpa_supplicant(  760): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.contextmanager.service.ContextManagerService.START pkg=com.google.android.gms }
+W/YouTubeMusic( 1660): Could not register for notifications with InnerTube: 
+W/YouTubeMusic( 1660): abqx: zvm: Precondition check failed.
+W/YouTubeMusic( 1660): 	at abqn.apply(Unknown Source:4)
+W/YouTubeMusic( 1660): 	at yyi.r(PG:5)
+W/YouTubeMusic( 1660): 	at yyi.b(PG:2)
+W/YouTubeMusic( 1660): 	at abqp.d(PG:4)
+W/YouTubeMusic( 1660): 	at agsb.c(PG:63)
+W/YouTubeMusic( 1660): 	at agsb.j(PG:38)
+W/YouTubeMusic( 1660): 	at agsb.d(PG:3)
+W/YouTubeMusic( 1660): 	at agrz.run(Unknown Source:2)
+W/YouTubeMusic( 1660): 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+W/YouTubeMusic( 1660): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+W/YouTubeMusic( 1660): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+W/YouTubeMusic( 1660): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+W/YouTubeMusic( 1660): 	at smg.run(PG:2)
+W/YouTubeMusic( 1660): 	at java.lang.Thread.run(Thread.java:1012)
+W/YouTubeMusic( 1660): 	at snu.run(PG:5)
+W/YouTubeMusic( 1660): Caused by: zvm: Precondition check failed.
+W/YouTubeMusic( 1660): 	at abpb.e(PG:5)
+W/YouTubeMusic( 1660): 	at zhp.f(PG:1)
+W/YouTubeMusic( 1660): 	at zhp.e(PG:1)
+W/YouTubeMusic( 1660): 	at zgl.run(PG:19)
+W/YouTubeMusic( 1660): 	at aosb.run(PG:3)
+W/YouTubeMusic( 1660): 	at snd.run(PG:1)
+W/YouTubeMusic( 1660): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+W/YouTubeMusic( 1660): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+W/YouTubeMusic( 1660): 	at smj.run(PG:2)
+W/YouTubeMusic( 1660): 	... 2 more
+W/YouTubeMusic( 1660): Caused by: efc
+W/YouTubeMusic( 1660): 	at zgl.run(PG:13)
+W/YouTubeMusic( 1660): 	... 7 more
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.nearby.exposurenotification.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiServiceNoInstantApps }
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+D/TrafficStats( 4263): tagSocket(172) with statsTag=0xffffffff, statsUid=-1
+D/ConnectivityService(  559): handleLingerComplete for [100 CELLULAR]
+W/ssioncontroller( 1330): Cleared Reference was only reachable from finalizer (only reported once)
+D/ProfileInstaller( 4263): Installing profile for in.localsampark.app
+D/CompatibilityChangeReporter( 3482): Compat change id reported: 150939131; UID 10124; state: ENABLED
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.instantapps.START pkg=com.google.android.gms }
+W/ReactNativeJS( 4263): '[Socket.io] Connection error:', 'websocket error'
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.pseudonymous.service.START pkg=com.google.android.gms }
+D/CarrierSvcBindHelper(  958): onPackageModified: com.google.android.gms
+D/CarrierSvcBindHelper(  958): No carrier app for: 0
+I/InputReader(  559): Reconfiguring input devices, changes=KEYBOARD_LAYOUTS
+I/RoleService(  559): Granting default roles...
+D/CompatibilityChangeReporter(  559): Compat change id reported: 218533173; UID 10218; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 262645982; UID 10218; state: ENABLED
+V/MediaPlayerList(  874): mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+V/MediaPlayerList(  874): mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+V/MediaPlayerList(  874): mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+I/InputReader(  559): Reconfiguring input devices, changes=KEYBOARD_LAYOUTS
+V/MediaPlayerList(  874): mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+I/PermissionControllerServiceImpl( 1330): Updating user sensitive for uid 10128
+I/PermissionControllerServiceImpl( 1330): Updating user sensitive for uid 10218
+D/StylusManager(  775): Stylus InputDevice changed: 14 virtio_input_multi_touch_11
+D/StylusManager(  775): Stylus InputDevice changed: 12 virtio_input_multi_touch_9
+I/CredManSysServiceImpl(  559): CredentialManagerServiceImpl constructed for: com.google.android.gms/.auth.api.credentials.credman.service.PasswordAndPasskeyService
+I/CredManSysServiceImpl(  559): newServiceInfoLocked, mInfo null, com.google.android.gms/com.google.android.gms.auth.api.credentials.credman.service.PasswordAndPasskeyService
+D/StylusManager(  775): Stylus InputDevice changed: 9 virtio_input_multi_touch_6
+D/ControlsListingControllerImpl(  775): ServiceConfig reloaded, count: 0
+I/AiAiEcho( 1507): AppFetcherImpl onPackageChanged com.google.android.gms.
+D/StylusManager(  775): Stylus InputDevice changed: 13 virtio_input_multi_touch_10
+I/AiAiEcho( 1507): AppIndexer Package:[com.google.android.gms] UserProfile:[0] Enabled:[true].
+I/AiAiEcho( 1507): AppFetcherImplV2 updateApps package:[com.google.android.gms], userId:[0], reason:[package is updated.].
+D/StylusManager(  775): Stylus InputDevice changed: 8 virtio_input_multi_touch_5
+D/StylusManager(  775): Stylus InputDevice changed: 7 virtio_input_multi_touch_4
+D/ControlsListingControllerImpl(  775): ServiceConfig reloaded, count: 0
+D/CarrierSvcBindHelper(  958): onPackageModified: in.localsampark.app
+D/ImsResolver(  958): maybeAddedImsService, packageName: com.google.android.gms
+D/CarrierSvcBindHelper(  958): No carrier app for: 0
+D/StylusManager(  775): Stylus InputDevice changed: 6 virtio_input_multi_touch_3
+D/StylusManager(  775): Stylus InputDevice changed: 10 virtio_input_multi_touch_7
+D/StylusManager(  775): Stylus InputDevice changed: 5 virtio_input_multi_touch_2
+D/StylusManager(  775): Stylus InputDevice changed: 11 virtio_input_multi_touch_8
+D/StylusManager(  775): Stylus InputDevice changed: 4 virtio_input_multi_touch_1
+D/CompatibilityChangeReporter(  559): Compat change id reported: 261072174; UID 10128; state: DISABLED
+D/StylusManager(  775): Stylus InputDevice changed: 14 virtio_input_multi_touch_11
+I/AiAiEcho( 1507): AppFetcherImpl onPackageChanged in.localsampark.app.
+I/AiAiEcho( 1507): AppIndexer Package:[in.localsampark.app] UserProfile:[0] Enabled:[true].
+I/AiAiEcho( 1507): AppFetcherImplV2 updateApps package:[in.localsampark.app], userId:[0], reason:[package is updated.].
+D/WifiNl80211Manager(  559): Scan result ready event
+D/WifiNative(  559): Scan result ready event
+D/ImsResolver(  958): maybeAddedImsService, packageName: in.localsampark.app
+E/RoleControllerServiceImpl( 1330): Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION
+I/Role    ( 1330): com.google.android.gms not qualified for android.app.role.SYSTEM_CALL_STREAMING due to missing RequiredComponent{mIntentFilterData=IntentFilterData{mAction='android.telecom.CallStreamingService', mCategories='[]', mDataScheme='null', mDataType='null'}, mMinTargetSdkVersion=1, mFlags='0', mPermission='android.permission.BIND_CALL_STREAMING_SERVICE', mQueryFlags=0, mMetaData=[]}
+E/RoleControllerServiceImpl( 1330): Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.SYSTEM_CALL_STREAMING
+W/Role    ( 1330): Default holder doesn't have required signing certificate: com.google.android.apps.work.clouddpc:23962F4B43B9857638EA66F4D419518EAE282491ACDA4B94707BD59003C45E58
+W/System  (  958): A resource failed to call AbstractCursor.close. 
+W/System  (  958): A resource failed to call AbstractCursor.close. 
+W/System  (  958): A resource failed to call AbstractCursor.close. 
+W/System  (  958): A resource failed to call AbstractCursor.close. 
+W/System  (  958): A resource failed to call AbstractCursor.close. 
+D/ActivityManager(  559): freezing 1612 com.android.traceur
+D/ActivityManager(  559): freezing 3844 com.android.emergency
+D/CompatibilityChangeReporter( 3304): Compat change id reported: 150939131; UID 10153; state: ENABLED
+D/OomAdjuster(  559): Not killing cached processes
+V/ContactsProvider( 1392): Scheduled notifyChange started.
+D/BluetoothPbapService(  874):  onChange on contact uri 
+D/BluetoothPbapUtils(  874): primaryVersionCounter = 0, secondaryVersionCounter=0
+D/CompatibilityChangeReporter(  559): Compat change id reported: 161145287; UID 10128; state: ENABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 161145287; UID 10128; state: DISABLED
+I/NetworkScheduler.Stats( 1306): Task com.google.android.gms/com.google.android.gms.icing.proxy.IcingInternalCorporaUpdateService started execution. cause:9 exec_start_elapsed_seconds: 69 [CONTEXT service_id=218 ]
+I/NetworkScheduler.Stats( 1306): Task com.google.android.gms/com.google.android.gms.icing.proxy.IcingInternalCorporaUpdateService finished executing. cause:9 result: 1 elapsed_millis: 8 uptime_millis: 8 exec_start_elapsed_seconds: 69 [CONTEXT service_id=218 ]
+D/ActivityManager(  559): freezing 3892 com.google.android.healthconnect.controller
+D/ActivityManager(  559): freezing 3911 com.google.android.marvin.talkback
+I/Bugle   ( 2257): BroadcastReceiverAsyncWorkTracker: Acknowledging broadcast of bdxy@f64fe53
+I/Bugle   ( 2257): BroadcastReceiverAsyncWorkTracker: Acknowledging broadcast of bdxy@f64fe53
+I/PeopleGalProvider( 1637): Gal directories started.
+I/PeopleGalProvider( 1637): Method 1 completed.
+I/PeopleGalProvider( 1637): Method 1 finished successfully.
+I/Fitness ( 1306): OnPackageChangedOperation got intent: Intent { act=android.intent.action.PACKAGE_CHANGED dat=package: flg=0x45000010 pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) } [CONTEXT service_id=17 ]
+I/Icing   ( 1637): updateResources: need to parse arkh{com.google.android.gms}
+I/Icing   ( 1637): IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=AppsCorpus serviceId=36
+W/ChimeraUtils( 1306): Module com.google.android.gms.nearby_en missing resource null(0)
+W/ChimeraUtils( 1306): Module com.google.android.gms.nearby_en missing resource null(0)
+I/Fitness ( 1306): OnPackageChangedOperation got intent: Intent { act=android.intent.action.PACKAGE_CHANGED dat=package: flg=0x45000010 pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) } [CONTEXT service_id=17 ]
+D/CompatibilityChangeReporter(  559): Compat change id reported: 161252188; UID 10218; state: DISABLED
+I/Fitness ( 1306): FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_CHANGED [CONTEXT service_id=17 ]
+I/Fitness ( 1306): FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_CHANGED [CONTEXT service_id=17 ]
+W/ChimeraUtils( 1306): Module com.google.android.gms.nearby_en missing resource null(0)
+W/ChimeraUtils( 1306): Module com.google.android.gms.nearby_en missing resource null(0)
+I/Icing   ( 1637): Usage reports ok 2, Failed Usage reports 0, indexed 0, rejected 0
+I/Icing   ( 1637): IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=null serviceId=30
+I/Icing   ( 1637): Indexing com.google.android.gms-apps from com.google.android.gms
+I/Icing   ( 1637): Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+I/Icing   ( 1637): Indexing done com.google.android.gms-apps
+I/Icing   ( 1637): Indexing com.google.android.gms-apps from com.google.android.gms
+I/Icing   ( 1637): Indexing done com.google.android.gms-apps
+E/A       ( 1671): disposing SearchServiceClient after timeout []
+I/ChimeraConfigurator( 1637): Starting update, reason: 4 urgentFeatures: vision.ocr:-1
+I/ChimeraConfigurator( 1637): Detected pending changes for urgent request: [vision.ocr]. Pending module sets: container:2318189190800+mlkit.ocr.common,tflite_dynamite:2640104055100800+tflite_dynamite,vision_ocr:2316024025100000+vision.ocr
+I/GmsDebugLogger( 1637): [73] 1801
+W/ZappDownloader( 1637): No successful module downloads for requested features [vision.ocr].
+I/GmsDebugLogger( 1637): [30] [VisionOcrDynamite.integ:231602402100000],[TfliteDynamiteDynamite.integ:264010405100800],[MlkitOcrCommon.optional:231818100800]
+W/ChimeraConfigService( 1637): Retry attempt was throttled. [CONTEXT service_id=264 ]
+I/GmsDebugLogger( 1637): [83] 1 [vision.ocr]
+W/Vision  ( 1637): Request for optional module download of ocr failed. Request again.
+W/Vision  ( 1637): Would have logged:
+W/Vision  ( 1637): # dsae@37884fe7
+I/Vision  ( 1637): Schedule retrying download ocr at 69347 with backoff 20 seconds
+I/logd    (    0): start watching /data/system/packages.list ...
+I/logd    (    0): ReadPackageList, total packages: 200
+E/JobScheduler.JobStatus(  559): App com.google.android.contacts became active but still in NEVER bucket
+W/JobScheduler(  559): Job didn't exist in JobStore: 5b86f07 #u0a153/7 com.google.android.contacts/com.google.android.apps.contacts.shortcut.ShortcutJobService
+I/keystore2(  188): system/security/keystore2/src/watchdog.rs:319 - Watchdog thread idle -> terminating. Have a great day.
+W/healthd (    0): battery l=100 v=5000 t=25.0 h=2 st=2 c=900000 fc=3000000 cc=10 chg=a
+E/JobScheduler.JobStatus(  559): App com.google.android.contacts became active but still in NEVER bucket
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+D/EGL_emulation(  775): app_time_stats: avg=2499.47ms min=1.39ms max=9093.77ms count=4
+W/PageIndicator(  775): Total number of pages invalid: 0. Assuming 1 page.
+W/System  ( 4263): A resource failed to call close. 
+W/System  ( 4263): A resource failed to call release. 
+D/StatusBarIconController(  775): ignoring old pipeline callback because the new wifi icon is enabled
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.auth.account.workaccount.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.auth.proximity.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+W/ProcessStats(  559): Tracking association SourceState{1e5d052 com.google.android.gms.persistent/10128 BTop #3025} whose proc state 2 is better than process ProcessState{4df4dbb com.google.android.gms/10128 pkg=com.google.android.gms} proc state 8 (2059 skipped)
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+D/TrafficStats( 4263): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/BoundBrokerSvc( 1637): onUnbind: Intent { act=com.google.android.gms.checkin.START pkg=com.google.android.gms }
+D/BoundBrokerSvc( 1637): onUnbind: Intent { act=com.google.android.gms.auth.cryptauth.cryptauthservice.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.auth.proximity.devicesyncservice.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+D/ActivityManager(  559): freezing 2751 com.google.android.dialer
+D/ActivityManager(  559): freezing 2974 com.android.imsserviceentitlement
+D/ActivityManager(  559): freezing 1136 com.google.android.cellbroadcastreceiver
+D/OomAdjuster(  559): Not killing cached processes
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.presencemanager.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.presencemanager.service.INTERNAL_IDENTITY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+D/BoundBrokerSvc( 1637): onUnbind: Intent { act=com.google.android.gms.chimera.container.moduleinstall.ModuleInstallService.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsApiService }
+D/BoundBrokerSvc( 1637): onUnbind: Intent { act=com.google.android.mobstore.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+D/BoundBrokerSvc( 1637): onUnbind: Intent { act=com.google.android.mdd.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.pseudonymous.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+D/ActivityManager(  559): freezing 4368 com.google.android.webview:webview_service
+W/ReactNativeJS( 4263): '[Socket.io] Connection error:', 'websocket error'
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.tapandpay.service.BIND dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+D/StatusBarIconController(  775): ignoring old pipeline callbacks, because the new mobile icons are enabled
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.phenotype.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+D/ActivityManager(  559): freezing 3095 com.android.camera2
+D/ActivityManager(  559): freezing 2335 android.process.media
+D/StatusBarIconController(  775): ignoring old pipeline callback because the new wifi icon is enabled
+D/ActivityManager(  559): freezing 3187 com.android.providers.calendar
+D/ActivityManager(  559): freezing 2402 com.google.android.apps.wallpaper
+D/ActivityManager(  559): freezing 983 com.android.settings
+D/ActivityManager(  559): freezing 3176 com.android.dynsystem:dynsystem
+D/ActivityManager(  559): freezing 3127 com.android.dynsystem
+D/ActivityManager(  559): freezing 2129 com.android.keychain
+D/ActivityManager(  559): freezing 1933 com.android.localtransport
+D/ActivityManager(  559): freezing 2285 com.google.android.deskclock
+D/ActivityManager(  559): freezing 3267 com.google.android.configupdater
+I/wpa_supplicant(  760): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/ActivityManager(  559): freezing 3863 com.google.android.gms.ui
+D/ActivityManager(  559): freezing 4078 com.google.android.gms.unstable
+D/ActivityManager(  559): freezing 1726 com.google.android.projection.gearhead:shared
+D/ActivityManager(  559): freezing 2665 com.google.android.tts
+D/StatusBarIconController(  775): ignoring old pipeline callback because the new wifi icon is enabled
+D/ActivityManager(  559): freezing 3562 com.google.android.rkpdapp
+D/ActivityManager(  559): freezing 3482 com.google.android.partnersetup
+D/ActivityManager(  559): freezing 1688 com.google.android.youtube
+D/ActivityManager(  559): freezing 2590 com.android.chrome
+D/OomAdjuster(  559): Not killing cached processes
+D/ActivityManager(  559): freezing 1660 com.google.android.apps.youtube.music
+D/ActivityManager(  559): freezing 3400 com.google.android.gm
+D/ActivityManager(  559): freezing 3597 com.google.android.settings.intelligence
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+D/TrafficStats( 4263): tagSocket(173) with statsTag=0xffffffff, statsUid=-1
+D/ActivityManager(  559): freezing 3304 com.google.android.contacts
+D/StatusBarIconController(  775): ignoring old pipeline callback because the new wifi icon is enabled
+I/PermissionControllerServiceImpl( 1330): Updating user sensitive for user 0
+W/ReactNativeJS( 4263): '[Socket.io] Connection error:', 'websocket error'
+D/OomAdjuster(  559): Not killing cached processes
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+W/ProcessStats(  559): Tracking association SourceState{4ae49ee com.google.android.gms.persistent/10128 BTop #3085} whose proc state 2 is better than process ProcessState{4df4dbb com.google.android.gms/10128 pkg=com.google.android.gms} proc state 8 (329 skipped)
+W/Bugle   ( 2257): TextClassifierLibManagerImpl: Reclaiming memory at level: 40
+D/StatusBarIconController(  775): ignoring old pipeline callbacks, because the new mobile icons are enabled
+D/EGL_emulation(  775): app_time_stats: avg=12879.30ms min=12879.30ms max=12879.30ms count=1
+I/wpa_supplicant(  760): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/BoundBrokerSvc( 1306): onUnbind: Intent { act=com.google.android.gms.clearcut.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+D/StatusBarIconController(  775): ignoring old pipeline callback because the new wifi icon is enabled
+D/CompatibilityChangeReporter(  559): Compat change id reported: 168419799; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 273564678; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 184838306; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 185004937; UID 10218; state: DISABLED
+D/AndroidRuntime( 4457): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+I/AndroidRuntime( 4457): Using default boot image
+I/AndroidRuntime( 4457): Leaving lock profiling enabled
+I/app_process( 4457): Core platform API reporting enabled, enforcing=false
+I/app_process( 4457): Using CollectorTypeCC GC.
+D/nativeloader( 4457): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+D/app_process( 4457): Time zone APEX ICU file found: /apex/com.android.tzdata/etc/icu/icu_tzdata.dat
+D/app_process( 4457): I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt72l.dat
+W/app_process( 4457): Unexpected CPU variant for x86: x86_64.
+W/app_process( 4457): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+W/app_process( 4457): ClassLoaderContext shared library size mismatch. Expected=2, found=0 (PCL[]{PCL[/system/framework/android.test.base.jar*836642756]#PCL[/system/framework/android.test.mock.jar*3186112116]} | PCL[])
+W/app_process( 4457): ClassLoaderContext classpath size mismatch. expected=0, found=1 (PCL[]{PCL[/system/framework/android.test.runner.jar*4168958247]{PCL[/system/framework/android.test.base.jar*836642756]#PCL[/system/framework/android.test.mock.jar*3186112116]}#PCL[/system/framework/android.test.base.jar*836642756]} | PCL[/system/framework/android.test.runner.jar*4168958247])
+W/libc    ( 4457): Access denied finding property "ro.product.name_for_attestation"
+W/libc    ( 4457): Access denied finding property "ro.product.brand_for_attestation"
+W/libc    ( 4457): Access denied finding property "ro.product.model_for_attestation"
+D/AndroidRuntime( 4457): Calling main entry com.android.commands.uiautomator.Launcher
+W/main    ( 4457): type=1400 audit(0.0:26): avc:  denied  { read } for  name="u:object_r:build_attestation_prop:s0" dev="tmpfs" ino=86 scontext=u:r:shell:s0 tcontext=u:object_r:build_attestation_prop:s0 tclass=file permissive=0
+D/UiAutomationConnection( 4457): Created on user UserHandle{0}
+I/UiAutomation( 4457): Initialized for user 0 on display 0
+W/UiAutomation( 4457): Created with deprecatead constructor, assumes DEFAULT_DISPLAY
+D/AccessibilityManagerService(  559): changeCurrentUserForTestAutomationIfNeededLocked(0): ignoring because device doesn't support visible background users
+I/UiAutomationManager(  559): Registering UiTestAutomationService (id=com.android.server.accessibility/UiAutomation) when called by user 0
+W/main    ( 4457): type=1400 audit(0.0:27): avc:  denied  { read } for  name="u:object_r:build_attestation_prop:s0" dev="tmpfs" ino=86 scontext=u:r:shell:s0 tcontext=u:object_r:build_attestation_prop:s0 tclass=file permissive=0
+W/main    ( 4457): type=1400 audit(0.0:28): avc:  denied  { read } for  name="u:object_r:build_attestation_prop:s0" dev="tmpfs" ino=86 scontext=u:r:shell:s0 tcontext=u:object_r:build_attestation_prop:s0 tclass=file permissive=0
+W/WindowMagnificationMgr(  559): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+I/AiAiEcho( 1507): Settings changed for uri: content://settings/secure/accessibility_enabled
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+V/UiAutomation( 4457): Init UiAutomation@aa6eeb7[id=1, displayId=0, flags=0]
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface media_data_manager with targets# 0 (types=[])
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+D/SsMediaDataProvider(  775): Forwarding Smartspace updates []
+W/PageIndicator(  775): Total number of pages invalid: 0. Assuming 1 page.
+D/BatterySaverPolicy(  559): accessibility changed to true, updating policy.
+W/WindowMagnificationMgr(  559): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+I/A       ( 1671): NGA disabled since it's running Panthera and at least one a11y feature is on.
+I/A       ( 1671): Nga state changed to NgaStateDetails{state=DISABLED, isSpecialExperience=false}
+I/AiAiEcho( 1507): Settings changed for uri: content://settings/secure/accessibility_enabled
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/A       ( 1521): APA or Classic session decision: SessionDecision(sessionVariance=CLASSIC, platformVariance=CLASSIC, justification=CURRENT_PLATFORM_VARIANCE).
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/A       ( 1521): [Memory] eligibility: StashEligibility{4}
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface media_data_manager with targets# 0 (types=[])
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+I/A       ( 1521): Unsubscribed to apa or classic variant change.
+D/SsMediaDataProvider(  775): Forwarding Smartspace updates []
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+W/PageIndicator(  775): Total number of pages invalid: 0. Assuming 1 page.
+D/SafetySourceDataValidator(  559): No cert check requested for package com.google.android.permissioncontroller
+I/NearbySharing( 1637): SharingTileService destroyed [CONTEXT service_id=194 ]
+D/ActivityManager(  559): freezing 1448 com.google.android.apps.wellbeing
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@25887; boundsInParent: Rect(0, 0 - 1080, 0); boundsInScreen: Rect(0, 0 - 1080, 0); boundsInWindow: Rect(0, 0 - 1080, 0); packageName: in.localsampark.app; className: android.widget.LinearLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@254c6; boundsInParent: Rect(0, 0 - 1080, 0); boundsInScreen: Rect(0, 0 - 1080, 0); boundsInWindow: Rect(0, 0 - 1080, 0); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@12ff8; boundsInParent: Rect(0, 0 - 132, 132); boundsInScreen: Rect(96, 2330 - 228, 2280); boundsInWindow: Rect(96, 2330 - 228, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@13efc; boundsInParent: Rect(0, 0 - 359, 57); boundsInScreen: Rect(96, 2500 - 455, 2280); boundsInWindow: Rect(96, 2500 - 455, 2280); packageName: in.localsampark.app; className: android.widget.TextView; text: Community; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_SET_SELECTION - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@142bd; boundsInParent: Rect(0, 0 - 359, 94); boundsInScreen: Rect(96, 2574 - 455, 2280); boundsInWindow: Rect(96, 2574 - 455, 2280); packageName: in.localsampark.app; className: android.widget.TextView; text: Share local updates & stories.; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_SET_SELECTION - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@151c1; boundsInParent: Rect(0, 0 - 132, 132); boundsInScreen: Rect(625, 2330 - 757, 2280); boundsInWindow: Rect(625, 2330 - 757, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@160c5; boundsInParent: Rect(0, 0 - 359, 57); boundsInScreen: Rect(625, 2500 - 984, 2280); boundsInWindow: Rect(625, 2500 - 984, 2280); packageName: in.localsampark.app; className: android.widget.TextView; text: Local Shops; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_SET_SELECTION - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@16486; boundsInParent: Rect(0, 0 - 359, 94); boundsInScreen: Rect(625, 2574 - 984, 2280); boundsInWindow: Rect(625, 2574 - 984, 2280); packageName: in.localsampark.app; className: android.widget.TextView; text: Order from neighborhood stores.; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_SET_SELECTION - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@16847; boundsInParent: Rect(0, 0 - 463, 453); boundsInScreen: Rect(44, 2765 - 507, 2280); boundsInWindow: Rect(44, 2765 - 507, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@18a10; boundsInParent: Rect(0, 0 - 463, 453); boundsInScreen: Rect(573, 2765 - 1036, 2280); boundsInWindow: Rect(573, 2765 - 1036, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@1abd9; boundsInParent: Rect(0, 0 - 463, 454); boundsInScreen: Rect(44, 3251 - 507, 2280); boundsInWindow: Rect(44, 3251 - 507, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@1cda2; boundsInParent: Rect(0, 0 - 463, 454); boundsInScreen: Rect(573, 3251 - 1036, 2280); boundsInWindow: Rect(573, 3251 - 1036, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@1ef6b; boundsInParent: Rect(0, 0 - 463, 453); boundsInScreen: Rect(44, 3738 - 507, 2280); boundsInWindow: Rect(44, 3738 - 507, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@21134; boundsInParent: Rect(0, 0 - 463, 453); boundsInScreen: Rect(573, 3738 - 1036, 2280); boundsInWindow: Rect(573, 3738 - 1036, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+I/AccessibilityNodeInfoDumper( 4457): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@232fd; boundsInParent: Rect(0, 0 - 463, 454); boundsInScreen: Rect(44, 4224 - 507, 2280); boundsInWindow: Rect(44, 4224 - 507, 2280); packageName: in.localsampark.app; className: android.view.ViewGroup; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+W/AccessibilityNodeInfoDumper( 4457): Fetch time: 29ms
+W/WindowMagnificationMgr(  559): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+D/AccessibilityManagerService(  559): restoreCurrentUserForTestAutomationIfNeededLocked(): ignoring because device doesn't support visible background users
+I/AiAiEcho( 1507): Settings changed for uri: content://settings/secure/accessibility_enabled
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): Predicting[0]: 
+D/AndroidRuntime( 4457): Shutting down VM
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): Predicting[0]: 
+I/AiAiEcho( 1507): EchoTargets: 
+I/AiAiEcho( 1507): Filtered by AiAi flag check: 
+I/AiAiEcho( 1507): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface media_data_manager with targets# 0 (types=[])
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+I/AiAiEcho( 1507): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+D/SsMediaDataProvider(  775): Forwarding Smartspace updates []
+W/PageIndicator(  775): Total number of pages invalid: 0. Assuming 1 page.
+D/BatterySaverPolicy(  559): accessibility changed to false, updating policy.
+I/A       ( 1671): NGA enabled in interactor.
+I/A       ( 1671): Nga state changed to NgaStateDetails{state=ENABLED, isSpecialExperience=false}
+I/A       ( 1521): Initializing all components
+I/A       ( 1521): onIsEnabledChanged, isEnabled: false
+I/A       ( 1521): APA or Classic session decision: SessionDecision(sessionVariance=CLASSIC, platformVariance=CLASSIC, justification=CURRENT_PLATFORM_VARIANCE).
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+I/A       ( 1521): [Memory] eligibility: StashEligibility{6}
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+I/A       ( 1521): onOpaVisibilityChanged: false
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+I/A       ( 1521): on opa visibility changed false
+I/A       ( 1521): Setting session to type: NO_SESSION
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+I/A       ( 1521): setNavBarVisible: GestureNavBarVisible{navbarVisible=true}
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+W/A       ( 1521): Disposing empty manager. Did you forgot to subscribe observables?
+I/A       ( 1521): onDisabled. Registered: false
+I/A       ( 1521): State changed: IDLE => IDLE by NGA_STATE_CHANGED and N/A with Optional.empty
+I/A       ( 1521): Recognizer choice: (recognizer_type: 1, recognizer_mode: 1, choice_reason: 4)
+I/A       ( 1521): onActiveStateChangeEvent: IDLE => IDLE
+W/A       ( 1521): Missing generator mapping for generator GENERATOR_CONTEXTUAL_SUGGESTIONS
+W/A       ( 1521): Missing generator mapping for generator GENERATOR_FRE_SUGGESTIONS_ON_TIMEOUT
+W/A       ( 1521): Missing generator mapping for generator GENERATOR_FRE_SUGGESTIONS_ON_INVOCATION
+I/A       ( 1521): #onActiveStateChangeEvent, newState: IDLE, previousState: IDLE.
+I/A       ( 1521): Initialize
+D/OomAdjuster(  559): Not killing cached processes
+E/GsaVoiceSerConnection( 1521): gsaVis null binding
+D/CompatibilityChangeReporter(  559): Compat change id reported: 197654537; UID 10218; state: ENABLED
+I/A       ( 1521): stopListening(NGA_PAUSED_UNKNOWN_REASON, NGA_CREATE), idleOverride=NOT_LISTENING
+I/NgaEntryPointEventSendr( 1521): setupConnection
+I/A       ( 1521): on opa visibility changed false
+W/A       ( 1521): Routing took 3 ms
+I/NgaEntryPointEventSendr( 1521): State changed: Disconnected => Connecting
+I/A       ( 1671): Creating pss binder().
+I/NgaEntryPointEventSendr( 1521): onServiceConnected
+I/A       ( 1671): Calling beginBinderSession().
+I/A       ( 1671): beginBinderSession(): calling binder
+I/NgaEntryPointEventSendr( 1521): State changed: Connecting => Ready
+I/A       ( 1521): Successfully initialized all components
+W/ActivityManager(  559): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+W/A       ( 1671): UiCallbackStub-onGenericEvent[ServiceEvent = 60] task was not run. Callback from Service received after client was disposed.
+I/PBSessionCacheImpl( 1671): Deleted sessionId[7350930361058613] from persistence.
+W/SearchServiceCore( 1671): Abort, client detached.
+I/NgaEntryPointEventSendr( 1521): State changed: Ready => Disconnected (onOpaDisconnected)
+V/ClearcutMetricXmitter( 1521): Transmission is done.
+W/BpBinder( 4481): Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+W/ProcessState( 4481): Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+W/ServiceManagerCppClient(  401): Permission failure: android.permission.CAPTURE_BLACKOUT_CONTENT from uid=2000 pid=4481
+D/PermissionCache(  401): checking android.permission.CAPTURE_BLACKOUT_CONTENT for uid=2000 => denied (515 us)
+I/hwservicemanager(  166): getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+I/servicemanager(    0): Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest.
+I/Gralloc4( 4481): mapper 4.x is not supported
+W/ActivityTaskManager(  559): callingPackage for (uid=2000, pid=4486) has no WPC
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265464455; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265452344; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 266124927; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265451093; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 265456536; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 255940284; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 236283604; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 263959004; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 264304459; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 264301586; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 254631730; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 273509367; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 263259275; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 174042980; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 174042936; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 181136395; UID 10218; state: DISABLED
+D/CompatibilityChangeReporter(  559): Compat change id reported: 194480991; UID 10218; state: ENABLED
+I/ActivityTaskManager(  559): START u0 {act=android.intent.action.VIEW dat=localsampark://shops/... flg=0x10000000 pkg=in.localsampark.app cmp=in.localsampark.app/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+D/KeyguardService(  775): setOccluded(false)
+D/KeyguardViewMediator(  775): setOccluded(false)
+D/KeyguardViewMediator(  775): handleSetOccluded(false)
+D/WindowManagerShell(  775): onActivityRestartAttempt: ComponentInfo{in.localsampark.app/in.localsampark.app.MainActivity}
+W/unknown:BridgelessReact( 4263): ReactHost{0}.onHostPause(activity)
+W/unknown:BridgelessReact( 4263): ReactContext.onHostPause()
+W/unknown:BridgelessReact( 4263): ReactHost{0}.onHostResume(activity)
+W/unknown:BridgelessReact( 4263): ReactContext.onHostResume()
+D/CompatibilityChangeReporter( 4263): Compat change id reported: 247079863; UID 10218; state: ENABLED
+W/[RNScreens]( 4263): backTitleVisible prop is not available on Android
+W/[RNScreens]( 4263): backTitleFontFamily prop is not available on Android
+W/[RNScreens]( 4263): disableBackButtonMenu prop is not available on Android
+W/[RNScreens]( 4263): largeTitleFontFamily prop is not available on Android
+W/[RNScreens]( 4263): largeTitleFontWeight prop is not available on Android
+W/[RNScreens]( 4263): largeTitleHideShadow prop is not available on Android
+W/unknown:ReactNative( 4263): StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+W/unknown:ReactNative( 4263): StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+D/TrafficStats( 4263): tagSocket(193) with statsTag=0xffffffff, statsUid=-1
+D/EGL_emulation(  775): app_time_stats: avg=6035.69ms min=6035.69ms max=6035.69ms count=1
+D/EGL_emulation( 4263): app_time_stats: avg=8943.76ms min=38.94ms max=26749.38ms count=3
+D/EGL_emulation(  775): app_time_stats: avg=27454.43ms min=27454.43ms max=27454.43ms count=1
+W/ReactNativeJS( 4263): '[Socket.io] Connection error:', 'websocket error'
+I/wpa_supplicant(  760): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/StatusBarIconController(  775): ignoring old pipeline callback because the new wifi icon is enabled
+I/resolv  (  365): GetAddrInfoHandler::run: {101 101 101 983141 10218 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c505b0
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): doQuery: rcode=0, ancount=4, return value=182
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c4e610
+I/resolv  (  365): doQuery: rcode=0, ancount=2, return value=205
+D/TrafficStats( 4263): tagSocket(166) with statsTag=0xffffffff, statsUid=-1
+W/ProcessStats(  559): Tracking association SourceState{9e8560c in.localsampark.app/10218 BTop #3120} whose proc state 2 is better than process ProcessState{cf30df9 com.google.android.gms.persistent/10128 pkg=com.google.android.gms} proc state 4 (87 skipped)
+D/ActivityManager(  559): freezing 2257 com.google.android.apps.messaging
+D/StatusBarIconController(  775): ignoring old pipeline callbacks, because the new mobile icons are enabled
+D/EGL_emulation( 4263): app_time_stats: avg=748.66ms min=5.70ms max=3699.77ms count=5
+W/ReactNativeJS( 4263): '[Socket.io] Connection error:', 'websocket error'
+W/BatteryExternalStatsWorker(  559): error reading Bluetooth stats: 11
+D/TelephonyManager(  559): requestModemActivityInfo: Sending result to app: ModemActivityInfo{ mTimestamp=96173 mSleepTimeMs=0 mIdleTimeMs=96169 mActivityStatsTechSpecificInfo=[{mRat=UNKNOWN,mFrequencyRange=UNKNOWN,mTxTimeMs[]=[0, 0, 0, 0, 0],mRxTimeMs=0}]}
+I/netd    (  365): tetherGetStats() -> {[]} <0.62ms>
+D/OomAdjuster(  559): Not killing cached processes
+I/BgTaskExecutorImpl( 1671): Starting EXCLUSIVE background task UPLOAD_ASSISTANT_DEVICE_SETTINGS.
+I/NetworkRecognitionRnr( 1671): Using pair HTTP connection
+W/LocationOracle( 1671): getBestLocation(): no location is available
+I/A       ( 1671): [Upload] Connected
+W/CronetNetworkRqstWrppr( 1671): Upload request without a content type.
+W/LocationOracle( 1671): No location returned by GMS core getLastLocation()
+E/A       ( 1671): onError
+E/A       ( 1671): com.google.android.apps.gsa.shared.speech.a.m: errorCode: 65561, engine: 2
+E/A       ( 1671): 	at com.google.android.apps.gsa.staticplugins.dc.a.e.a(PG:3)
+E/A       ( 1671): 	at com.google.android.apps.gsa.s3.n.hh(PG:1)
+E/A       ( 1671): 	at com.google.cd.g.a.f.e(PG:2)
+E/A       ( 1671): 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:22)
+E/A       ( 1671): 	at com.google.android.apps.gsa.speech.k.a.g.ks(PG:6)
+E/A       ( 1671): 	at com.google.android.apps.gsa.s3.o.e(PG:14)
+E/A       ( 1671): 	at com.google.android.apps.gsa.s3.p.run(PG:1)
+E/A       ( 1671): 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+E/A       ( 1671): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+E/A       ( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.e.run(PG:2)
+E/A       ( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.bi.run(PG:1)
+E/A       ( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.bi.run(PG:1)
+E/A       ( 1671): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+E/A       ( 1671): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+E/A       ( 1671): 	at java.lang.Thread.run(Thread.java:1012)
+E/A       ( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.l.run(PG:5)
+E/A       ( 1671): Caused by: com.google.android.apps.gsa.shared.speech.a.o: errorCode: 65586, engine: 2
+E/A       ( 1671): 	... 15 more
+E/A       ( 1671): Caused by: com.google.android.apps.gsa.shared.speech.a.k: errorCode: 401, engine: 2
+E/A       ( 1671): 	at com.google.android.apps.gsa.assistant.shared.n.h.a(PG:5)
+E/A       ( 1671): 	at com.google.android.apps.gsa.s3.producers.j.hE(PG:2)
+E/A       ( 1671): 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:16)
+E/A       ( 1671): 	... 12 more
+E/cr_CronetUrlRequestContext( 1671): Exception in upload method
+E/cr_CronetUrlRequestContext( 1671): com.google.android.apps.gsa.shared.r.d: Error code: 262182
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.shared.ab.bk.d(PG:5)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.libraries.gsa.c.a.ar.d(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.libraries.gsa.c.a.bo.b(PG:5)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.libraries.gsa.c.a.e.a(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.libraries.gsa.c.a.a.run(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.bf.execute(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.i(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:12)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.j.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.j.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.j.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.j.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.c.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.bu.cancel(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:17)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.staticplugins.bk.b.h.run(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.bf.execute(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.i(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:12)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.j.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.shared.util.c.aj.a(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.m(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.c.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.l(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.common.util.concurrent.d.cancel(PG:8)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.s3.o.c(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.s3.r.a(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.staticplugins.dc.a.c.e(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.staticplugins.dc.a.c.c(PG:3)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.staticplugins.dc.a.e.a(PG:5)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.s3.n.hh(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.cd.g.a.f.e(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:22)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.speech.k.a.g.ks(PG:6)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.s3.o.e(PG:14)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.s3.p.run(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+E/cr_CronetUrlRequestContext( 1671): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.e.run(PG:2)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.bi.run(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.bi.run(PG:1)
+E/cr_CronetUrlRequestContext( 1671): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+E/cr_CronetUrlRequestContext( 1671): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+E/cr_CronetUrlRequestContext( 1671): 	at java.lang.Thread.run(Thread.java:1012)
+E/cr_CronetUrlRequestContext( 1671): 	at com.google.android.apps.gsa.shared.util.c.a.l.run(PG:5)
+I/NetworkRecognitionRnr( 1671): Using pair HTTP connection
+I/A       ( 1671): [Upload] Connected
+W/A       ( 1671): Failed to sync device settings.
+I/A       ( 1671): Retrying to sync device settings.
+I/NetworkScheduler.Stats( 1306): Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService started execution. cause:4 exec_start_elapsed_seconds: 96 [CONTEXT service_id=218 ]
+V/NFC     ( 1306): this device does not have NFC support
+W/TapAndPay( 1306): NfcAdapter is null while obtaining CardEmulation instance. [CONTEXT service_id=79 ]
+W/TapAndPay( 1306): java.lang.NullPointerException: NfcAdapter is null
+W/TapAndPay( 1306): 	at android.nfc.cardemulation.CardEmulation.getInstance(CardEmulation.java:152)
+W/TapAndPay( 1306): 	at cdoy.<init>(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/TapAndPay( 1306): 	at com.google.android.gms.tapandpay.hce.task.TapAndPayAidRegistrationTaskOperation.a(:com.google.android.gms@231818047@23.18.18 (190800-535401451):5)
+W/TapAndPay( 1306): 	at com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskChimeraService.a(:com.google.android.gms@231818047@23.18.18 (190800-535401451):4)
+W/TapAndPay( 1306): 	at avzs.call(:com.google.android.gms@231818047@23.18.18 (190800-535401451):4)
+W/TapAndPay( 1306): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+W/TapAndPay( 1306): 	at aced.c(:com.google.android.gms@231818047@23.18.18 (190800-535401451):6)
+W/TapAndPay( 1306): 	at aced.run(:com.google.android.gms@231818047@23.18.18 (190800-535401451):7)
+W/TapAndPay( 1306): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+W/TapAndPay( 1306): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+W/TapAndPay( 1306): 	at acjn.run(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/TapAndPay( 1306): 	at java.lang.Thread.run(Thread.java:1012)
+W/JobScheduler(  559): Job didn't exist in JobStore: f73c91 #u0a132/-353 com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService
+I/NetworkScheduler.Stats( 1306): Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService finished executing. cause:4 result: 3 elapsed_millis: 19 uptime_millis: 19 exec_start_elapsed_seconds: 96 [CONTEXT service_id=218 ]
+I/ChimeraConfigurator( 1637): Starting update, reason: 4 urgentFeatures: vision.ocr:-1
+I/ChimeraConfigurator( 1637): Detected pending changes for urgent request: [vision.ocr]. Pending module sets: container:2318189190800+mlkit.ocr.common,tflite_dynamite:2640104055100800+tflite_dynamite,vision_ocr:2316024025100000+vision.ocr
+I/GmsDebugLogger( 1637): [73] 1801
+W/ZappDownloader( 1637): No successful module downloads for requested features [vision.ocr].
+I/GmsDebugLogger( 1637): [30] [VisionOcrDynamite.integ:231602402100000],[TfliteDynamiteDynamite.integ:264010405100800],[MlkitOcrCommon.optional:231818100800]
+I/NetworkScheduler.Stats( 1306): Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService started execution. cause:5 exec_start_elapsed_seconds: 96 [CONTEXT service_id=218 ]
+W/ChimeraConfigService( 1637): Retry attempt was throttled. [CONTEXT service_id=264 ]
+I/GmsDebugLogger( 1637): [83] 1 [vision.ocr]
+W/Vision  ( 1637): Request for optional module download of ocr failed. Request again.
+W/Vision  ( 1637): Would have logged:
+W/Vision  ( 1637): # dsae@37884fe7
+I/Vision  ( 1637): Schedule retrying download ocr at 96568 with backoff 40 seconds
+I/gle.android.gms( 1637): Compiler allocated 4747KB to compile boolean zec.j(int, zdr, java.util.List, zeb)
+D/ActivityManager(  559): sync unfroze 4078 com.google.android.gms.unstable for 6
+I/resolv  (  365): GetAddrInfoHandler::run: {101 786533 101 983141 10128 0}
+D/TrafficStats( 4078): tagSocket(80) with statsTag=0x1809, statsUid=-1
+W/libc    ( 4078): Access denied finding property "persist.adb.tls_server.enable"
+W/libc    ( 4078): Access denied finding property "service.adb.tls.port"
+W/binder:4078_1( 4078): type=1400 audit(0.0:29): avc:  denied  { read } for  name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=292 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:system_adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+W/binder:4078_1( 4078): type=1400 audit(0.0:30): avc:  denied  { read } for  name="u:object_r:adbd_prop:s0" dev="tmpfs" ino=60 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+W/GmsUrlRequestImpl( 1306): Content-Type header is overwritten.
+I/resolv  (  365): GetAddrInfoHandler::run: {101 786533 101 983141 10128 0}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8877c59f90
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=264
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8897c509d0
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=168
+D/TrafficStats( 1306): tagSocket(84) with statsTag=0x401, statsUid=10128
+W/GLSUser ( 1306): [AppCertManager] Exception while requesting key: 
+W/GLSUser ( 1306): java.util.concurrent.ExecutionException: avvw: Parse Proto Exception.
+W/GLSUser ( 1306): 	at dlnv.s(:com.google.android.gms@231818047@23.18.18 (190800-535401451):3)
+W/GLSUser ( 1306): 	at dlnv.get(:com.google.android.gms@231818047@23.18.18 (190800-535401451):7)
+W/GLSUser ( 1306): 	at oub.b(:com.google.android.gms@231818047@23.18.18 (190800-535401451):78)
+W/GLSUser ( 1306): 	at otz.b(:com.google.android.gms@231818047@23.18.18 (190800-535401451):4)
+W/GLSUser ( 1306): 	at otu.a(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at otx.a(:com.google.android.gms@231818047@23.18.18 (190800-535401451):6)
+W/GLSUser ( 1306): 	at lzq.call(:com.google.android.gms@231818047@23.18.18 (190800-535401451):14)
+W/GLSUser ( 1306): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+W/GLSUser ( 1306): 	at aced.c(:com.google.android.gms@231818047@23.18.18 (190800-535401451):6)
+W/GLSUser ( 1306): 	at aced.run(:com.google.android.gms@231818047@23.18.18 (190800-535401451):7)
+W/GLSUser ( 1306): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+W/GLSUser ( 1306): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+W/GLSUser ( 1306): 	at acjn.run(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at java.lang.Thread.run(Thread.java:1012)
+W/GLSUser ( 1306): Caused by: avvw: Parse Proto Exception.
+W/GLSUser ( 1306): 	at avwn.f(:com.google.android.gms@231818047@23.18.18 (190800-535401451):5)
+W/GLSUser ( 1306): 	at avxk.onSucceeded(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at jf.onSucceeded(:com.google.android.gms.dynamite_cronetdynamite@231818047@23.18.18 (190800-0):0)
+W/GLSUser ( 1306): 	at ie.run(:com.google.android.gms.dynamite_cronetdynamite@231818047@23.18.18 (190800-0):4)
+W/GLSUser ( 1306): 	... 6 more
+W/GLSUser ( 1306): Caused by: dzfz: Protocol message contained an invalid tag (zero).
+W/GLSUser ( 1306): 	at dzdb.k(:com.google.android.gms@231818047@23.18.18 (190800-535401451):13)
+W/GLSUser ( 1306): 	at dzha.c(:com.google.android.gms@231818047@23.18.18 (190800-535401451):47)
+W/GLSUser ( 1306): 	at dzha.h(:com.google.android.gms@231818047@23.18.18 (190800-535401451):45)
+W/GLSUser ( 1306): 	at dzfd.A(:com.google.android.gms@231818047@23.18.18 (190800-535401451):2)
+W/GLSUser ( 1306): 	at dzex.f(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at dzcx.d(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at dzcx.c(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at dzcx.n(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+W/GLSUser ( 1306): 	at avwn.h(:com.google.android.gms@231818047@23.18.18 (190800-535401451):7)
+W/GLSUser ( 1306): 	at avwn.f(:com.google.android.gms@231818047@23.18.18 (190800-535401451):1)
+W/GLSUser ( 1306): 	... 9 more
+I/NetworkScheduler.Stats( 1306): Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService finished executing. cause:5 result: 3 elapsed_millis: 418 uptime_millis: 418 exec_start_elapsed_seconds: 96 [CONTEXT service_id=218 ]
+D/ConnectivityService(  559): reportNetworkConnectivity(101, false) by 10132
+D/NetworkMonitor/101(  834): Forcing reevaluation for UID 10132. Dns signal count: 0
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(69) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(108) with statsTag=0xffffff81, statsUid=-1
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8877c59510
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4d850
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4b470
+I/resolv  (  365): ResNSendHandler::run: 0 / {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8887c4bad0
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/NetworkMonitor/101(  834): PROBE_DNS www.google.com 17ms OK 142.251.151.119,142.251.154.119,142.251.150.119,142.251.157.119,142.251.153.119,142.251.155.119,142.251.156.119,142.251.152.119,2001:4860:4828:7700::,2001:4860:4829:7700::,2001:4860:4826:7700::,2001:4860:4827:7700::,2001:4860:482b:7700::,2001:4860:482d:7700::,2001:4860:482a:7700::,2001:4860:482c:7700::
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+D/NetworkMonitor/101(  834): PROBE_DNS connectivitycheck.gstatic.com 18ms OK 142.251.150.120,2001:4860:4826:7800::
+I/resolv  (  365): GetAddrInfoHandler::run: {101 983141 101 983141 1073 1}
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): GetAddrInfoHandler::run: {101 983141 101 983141 1073 1}
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8877c59510
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=256
+I/resolv  (  365): res_nmkquery: (QUERY, IN, AAAA)
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8887c4bad0
+I/resolv  (  365): res_nmkquery: (QUERY, IN, A)
+I/resolv  (  365): doQuery: rcode=0, ancount=8, return value=160
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4d850
+I/resolv  (  365): doQuery: rcode=0, ancount=1, return value=75
+I/resolv  (  365): resolv_cache_lookup: FOUND IN CACHE entry=0x7d8a47c4b470
+I/resolv  (  365): doQuery: rcode=0, ancount=1, return value=63
+D/TrafficStats(  834): tagSocket(6) with statsTag=0xffffff81, statsUid=-1
+D/TrafficStats(  834): tagSocket(69) with statsTag=0xffffff81, statsUid=-1
+D/NetworkMonitor/101(  834): PROBE_HTTP http://connectivitycheck.gstatic.com/generate_204 time=312ms ret=204 request={Connection=[close], User-Agent=[Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.32 Safari/537.36]} headers={null=[HTTP/1.1 204 No Content], Connection=[close], Content-Length=[0], Cross-Origin-Resource-Policy=[cross-origin], Date=[Sat, 14 Nov 2026 07:24:30 GMT], X-Android-Received-Millis=[1794641066854], X-Android-Response-Source=[NETWORK 204], X-Android-Selected-Protocol=[http/1.1], X-Android-Sent-Millis=[1794641066605]}
+D/NetworkMonitor/101(  834): PROBE_HTTPS https://www.google.com/generate_204 time=345ms ret=204 request={Connection=[close], User-Agent=[Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.32 Safari/537.36]} headers={null=[HTTP/1.1 204 No Content], Alt-Svc=[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000], Connection=[close], Content-Length=[0], Cross-Origin-Resource-Policy=[cross-origin], Date=[Sat, 14 Nov 2026 07:24:30 GMT], X-Android-Received-Millis=[1794641066886], X-Android-Response-Source=[NETWORK 204], X-Android-Selected-Protocol=[http/1.1], X-Android-Sent-Millis=[1794641066857]}
+D/NetworkMonitor/101(  834): isCaptivePortal: isSuccessful()=true isPortal()=false RedirectUrl=null isPartialConnectivity()=false Time=365ms
+D/ConnectivityService(  559): [101 WIFI] validation passed
+I/logd    (    0): logdr: UID=2000 GID=2000 PID=4526 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns

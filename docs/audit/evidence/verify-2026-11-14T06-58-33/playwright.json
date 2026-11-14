@@ -1,0 +1,5783 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\localsampark 04-09-2026\\localsampark 25-10-2026\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--project=web-chromium",
+      "--project=admin-chromium",
+      "--global-timeout=1680000"
+    ],
+    "configFile": "C:\\localsampark 04-09-2026\\localsampark 25-10-2026\\playwright.config.js",
+    "rootDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 1680000,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "web-chromium",
+        "name": "web-chromium",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "web-firefox",
+        "name": "web-firefox",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "web-webkit",
+        "name": "web-webkit",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "admin-chromium",
+        "name": "admin-chromium",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/admin",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "mobile-chrome",
+        "name": "mobile-chrome",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "mobile-safari",
+        "name": "mobile-safari",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/web",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "visual",
+        "name": "visual",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/visual",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "api",
+        "name": "api",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/api",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "a11y",
+        "name": "a11y",
+        "testDir": "C:/localsampark 04-09-2026/localsampark 25-10-2026/tests/e2e/accessibility",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "web\\accessibility.spec.js",
+      "file": "web/accessibility.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[P12.6] the home page has no WCAG 2.1 AA violations (light theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10910,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:12.075Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-721f44b8b372c7eacc73",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the shop directory page has no WCAG 2.1 AA violations (light theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2664,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:23.235Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-cda29db714b7a55b0a20",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the sign in page has no WCAG 2.1 AA violations (light theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2297,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:25.913Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-a78d2323761b9d865bf7",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the search page has no WCAG 2.1 AA violations (light theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2386,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:28.222Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-8913f1398cd2c23ec2f1",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the help and support page has no WCAG 2.1 AA violations (light theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2489,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:30.622Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-08a6d9785087e662e920",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the privacy policy page has no WCAG 2.1 AA violations (light theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2589,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:33.122Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-9ba9f589810e636e35b2",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the home page has no WCAG 2.1 AA violations (dark theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2986,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:35.727Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-aa10858d3a5182aeac0f",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the shop directory page has no WCAG 2.1 AA violations (dark theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2705,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:38.730Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-9f34e47f0277360483ff",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the sign in page has no WCAG 2.1 AA violations (dark theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2249,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:41.454Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-9b5613d3be4eb58ed643",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the search page has no WCAG 2.1 AA violations (dark theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2407,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:43.719Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-23a22f9fe52907345e2f",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the help and support page has no WCAG 2.1 AA violations (dark theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2469,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:46.141Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-0ac7fd74243ad3484c75",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        },
+        {
+          "title": "[P12.6] the privacy policy page has no WCAG 2.1 AA violations (dark theme)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2817,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:48.624Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d316df4bad39fab891ed-065888fae0b23470cba3",
+          "file": "web/accessibility.spec.js",
+          "line": 65,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "web\\auth-c1.spec.js",
+      "file": "web/auth-c1.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[C1.19] a new customer signs up with a code emailed to them; the email code is the default way in",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1599,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:51.462Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae6a794b6c70b6cc32ec-f5b1f37bc5a318dfdf31",
+          "file": "web/auth-c1.spec.js",
+          "line": 40,
+          "column": 1
+        },
+        {
+          "title": "[C1.20] signing out from the account menu ends this browser’s session only",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3088,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:53.085Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae6a794b6c70b6cc32ec-33423bc9c38ce36275fb",
+          "file": "web/auth-c1.spec.js",
+          "line": 68,
+          "column": 1
+        },
+        {
+          "title": "[C1.21] \"Sign out of all devices\" ends every session of the account",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1505,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:17:56.190Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae6a794b6c70b6cc32ec-2e2b9d5852e8216e67a4",
+          "file": "web/auth-c1.spec.js",
+          "line": 88,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\auth-flow.spec.js",
+      "file": "web/auth-flow.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Auth Flow",
+          "file": "web/auth-flow.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should show login page with phone input",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 702,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:17:57.719Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aef6bad9893b4e192b58-05abc4081274dd7238a6",
+              "file": "web/auth-flow.spec.js",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "should show register page with form fields",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 824,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:17:58.431Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aef6bad9893b4e192b58-5449965547382fb1ba4a",
+              "file": "web/auth-flow.spec.js",
+              "line": 17,
+              "column": 3
+            },
+            {
+              "title": "should navigate from login to register",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1186,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:17:59.267Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aef6bad9893b4e192b58-6de569b2fc3ab3bae33a",
+              "file": "web/auth-flow.spec.js",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "should show forgot password page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 922,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:00.468Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aef6bad9893b4e192b58-e6491e41ede7c03be3be",
+              "file": "web/auth-flow.spec.js",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "should prevent empty form submission on login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 753,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:01.406Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aef6bad9893b4e192b58-9592c18698a403e9647d",
+              "file": "web/auth-flow.spec.js",
+              "line": 49,
+              "column": 3
+            },
+            {
+              "title": "should reject invalid phone number format",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 742,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:02.172Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aef6bad9893b4e192b58-b9020e3bb5c49c3a9e1e",
+              "file": "web/auth-flow.spec.js",
+              "line": 70,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\cart.spec.js",
+      "file": "web/cart.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Cart",
+          "file": "web/cart.spec.js",
+          "line": 27,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C6.20] a cart filled in the app is on the web, grouped by shop",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 986,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:02.930Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ceb0bea1dd12be5aadb7-95439146b6cfdba0a26e",
+              "file": "web/cart.spec.js",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "[C6.21] two shops check out together: one order per shop, one payment, and the cart is emptied",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2597,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:03.928Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ceb0bea1dd12be5aadb7-8bfa1ae1e1c44aa547f9",
+              "file": "web/cart.spec.js",
+              "line": 42,
+              "column": 3
+            },
+            {
+              "title": "[C6.22] a guest's cart is kept through signing in on the login page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2232,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:06.536Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ceb0bea1dd12be5aadb7-d67455537ee2f71efe1c",
+              "file": "web/cart.spec.js",
+              "line": 74,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\checkout.spec.js",
+      "file": "web/checkout.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Checkout",
+          "file": "web/checkout.spec.js",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C8.8] an order is placed with an Idempotency-Key; sending it again returns the same order",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2618,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:08.787Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "24e4b3ac21f7f473b7e5-2434558a19967acc857f",
+              "file": "web/checkout.spec.js",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "[C8.9] the bill on the page is the server's quote, and cash is the default for a new customer",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2127,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:11.418Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "24e4b3ac21f7f473b7e5-7166e10be3e5feca16da",
+              "file": "web/checkout.spec.js",
+              "line": 54,
+              "column": 3
+            },
+            {
+              "title": "[C8.19] a time slot can be chosen instead of ASAP, and the order keeps it",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3253,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:13.558Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "24e4b3ac21f7f473b7e5-a087c1b2402129d55490",
+              "file": "web/checkout.spec.js",
+              "line": 71,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\coupons.spec.js",
+      "file": "web/coupons.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[C7.18] a coupon at checkout comes off the bill and the order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3411,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:18:16.825Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ee5f23484eada9382bef-53257424817b242f53e4",
+          "file": "web/coupons.spec.js",
+          "line": 13,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\feature-flags.spec.js",
+      "file": "web/feature-flags.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[A12.5] [P6.9] a module that is off has no link in the navigation, and its page is Coming Soon",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1929,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:18:20.253Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8c32b95e64091bf12513-5d9d564852ab7eee1ca2",
+          "file": "web/feature-flags.spec.js",
+          "line": 56,
+          "column": 1
+        },
+        {
+          "title": "[A12.5] [P6.9] switching the module on in the console puts it in the navigation and opens its page; switching it off takes both away again",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 29828,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:18:22.218Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8c32b95e64091bf12513-17a6224f24ba20fd24e3",
+          "file": "web/feature-flags.spec.js",
+          "line": 79,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\homepage.spec.js",
+      "file": "web/homepage.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Homepage",
+          "file": "web/homepage.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load without errors and return 200",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 871,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:52.109Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-734c6cf1465b3cf6722b",
+              "file": "web/homepage.spec.js",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "should display the main title and tagline",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 921,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:52.996Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-6091a08bbc29db9e0cef",
+              "file": "web/homepage.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "should have correct SEO meta tags",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1027,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:53.932Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-1721cd29a39860eddc4d",
+              "file": "web/homepage.spec.js",
+              "line": 23,
+              "column": 3
+            },
+            {
+              "title": "should have working navigation links",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1100,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:54.973Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-c91af4d417d6a894b787",
+              "file": "web/homepage.spec.js",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "should display platform service pillars",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 965,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:56.086Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-3dc660bff0e23f26568f",
+              "file": "web/homepage.spec.js",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "should be responsive on mobile viewport",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1120,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:57.065Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-cb1014017f826b952409",
+              "file": "web/homepage.spec.js",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "should not have any console errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1358,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:58.198Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-b4949d18a53004a2e4ff",
+              "file": "web/homepage.spec.js",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "should load within 5 seconds (performance check)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1227,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:18:59.575Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4ffee829137744e3cd-d7f098b4980bb611cefb",
+              "file": "web/homepage.spec.js",
+              "line": 90,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\i18n.spec.js",
+      "file": "web/i18n.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[P12.8] switching to Hindi translates the header, is remembered after a reload, and shows no raw keys",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4699,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:00.824Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a353259dd088e7db040-8f9ed3848b796ba84f0c",
+          "file": "web/i18n.spec.js",
+          "line": 24,
+          "column": 3
+        },
+        {
+          "title": "[P12.8] switching to Marathi translates the header, is remembered after a reload, and shows no raw keys",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4578,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:05.537Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a353259dd088e7db040-e858a082e85c93832d27",
+          "file": "web/i18n.spec.js",
+          "line": 24,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "web\\layout.spec.js",
+      "file": "web/layout.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "/ does not overflow a 1280px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4707,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:10.135Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-c8ba7f30a50221ebc669",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/community does not overflow a 1280px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4536,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:14.856Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-f3cd3ec0db0c0a8fe44e",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/shops does not overflow a 1280px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4503,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:19.409Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-33e86971e0937b1a8fd3",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/login does not overflow a 1280px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4431,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:23.923Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-837f8094f69f69ee04e0",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/services does not overflow a 1280px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4643,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:28.364Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-6de63fb55ace5ceca97d",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/ does not overflow a 375px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4614,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:33.022Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-2ca06a22b5bb9a2ed984",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/community does not overflow a 375px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4502,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:37.650Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-89d7dbf4f60268b6713a",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/shops does not overflow a 375px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4504,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:42.168Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-140200449e95f3a9dd89",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/login does not overflow a 375px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4574,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:46.683Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-16c77082629bb989837d",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/services does not overflow a 375px screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4544,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:51.267Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-ffda0ae9d4653213952b",
+          "file": "web/layout.spec.js",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "/shops does not overflow a 1280px screen while loading",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3180,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:55.822Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-554ba4c6b8cc8353f9c9",
+          "file": "web/layout.spec.js",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "title": "/services does not overflow a 1280px screen while loading",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3147,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:19:59.015Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-24bf62c4ca820efe068c",
+          "file": "web/layout.spec.js",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "title": "/shops does not overflow a 375px screen while loading",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3071,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:02.173Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-9a062f7c51b72e8eab42",
+          "file": "web/layout.spec.js",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "title": "/services does not overflow a 375px screen while loading",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3134,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:05.255Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cd5d3c9e268db0af7513-0a1dea9d1a994171c771",
+          "file": "web/layout.spec.js",
+          "line": 39,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "web\\location-discovery.spec.js",
+      "file": "web/location-discovery.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[C2.3] inside the pilot zone, \"use my current location\" sets the area",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1290,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:08.404Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c5b404d2b01a81795d75-08eb6cda6591eaeaf6d0",
+          "file": "web/location-discovery.spec.js",
+          "line": 34,
+          "column": 1
+        },
+        {
+          "title": "[C2.4] outside every zone, the visitor is told so and can join the waitlist",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2898,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:09.708Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c5b404d2b01a81795d75-3affb431ff54f7cfe426",
+          "file": "web/location-discovery.spec.js",
+          "line": 40,
+          "column": 1
+        },
+        {
+          "title": "[C3.3] the shop directory shows nearby shops and whether each is open now",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 862,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:12.622Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c5b404d2b01a81795d75-b33f4cc3378e5760b55c",
+          "file": "web/location-discovery.spec.js",
+          "line": 63,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\notifications.spec.js",
+      "file": "web/notifications.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Notifications",
+          "file": "web/notifications.spec.js",
+          "line": 25,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C13.13] an order's notification is in the inbox, opens the order, and is then read",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1544,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:13.501Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6eacf2b8e2b45284b7c-3573fe304bd6d4902586",
+              "file": "web/notifications.spec.js",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "[C13.14] turning off offers is saved for the customer and shown again on return",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1363,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:15.058Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6eacf2b8e2b45284b7c-8d558ccc0273ce81795d",
+              "file": "web/notifications.spec.js",
+              "line": 44,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\orders.spec.js",
+      "file": "web/orders.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "My orders",
+          "file": "web/orders.spec.js",
+          "line": 26,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C9.10] the order list shows the customer's own orders with their status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 845,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:16.439Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-0e5c4d15600e080ea469",
+              "file": "web/orders.spec.js",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "[C9.11] a confirmed order can be cancelled, and the server agrees",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1819,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:17.296Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-52acd33875ffdf287925",
+              "file": "web/orders.spec.js",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "[C9.12] past the cancellation window there is no cancel button, and the server refuses",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 840,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:19.125Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-1ca4bebef3ec11225446",
+              "file": "web/orders.spec.js",
+              "line": 52,
+              "column": 3
+            },
+            {
+              "title": "[C9.13] the GST invoice downloads as a PDF",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2107,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:19.977Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-785ae17fab55ad648eac",
+              "file": "web/orders.spec.js",
+              "line": 65,
+              "column": 3
+            },
+            {
+              "title": "[C9.14] order again puts the same items in the cart at today's price",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1805,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:22.096Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-a1d87ab40f3622411501",
+              "file": "web/orders.spec.js",
+              "line": 78,
+              "column": 3
+            },
+            {
+              "title": "[C9.15] a status change made elsewhere appears without reloading the page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 846,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:23.911Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-d3d411a4c4160881b242",
+              "file": "web/orders.spec.js",
+              "line": 98,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Live rider position (R4)",
+          "file": "web/orders.spec.js",
+          "line": 115,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[R4.40] the customer follows the rider: last known position, then each update the rider sends, without a reload",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 865,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:24.769Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d83f1d63205cda7f8dda-395be95b5d9bf32e96a4",
+              "file": "web/orders.spec.js",
+              "line": 118,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\performance.spec.js",
+      "file": "web/performance.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[P13.4] / stays within its download budget",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1501,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:25.653Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0395ec5c307b4a8c0388-fbb2209293197703e920",
+          "file": "web/performance.spec.js",
+          "line": 64,
+          "column": 3
+        },
+        {
+          "title": "[P13.4] /shops stays within its download budget",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1221,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:27.169Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0395ec5c307b4a8c0388-84ac05643bd132bf16f4",
+          "file": "web/performance.spec.js",
+          "line": 64,
+          "column": 3
+        },
+        {
+          "title": "[P13.4] /login stays within its download budget",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1140,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:28.404Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0395ec5c307b4a8c0388-a47d7efaf8bddd21c5d2",
+          "file": "web/performance.spec.js",
+          "line": 64,
+          "column": 3
+        },
+        {
+          "title": "[P13.4] /search stays within its download budget",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1234,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:29.554Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0395ec5c307b4a8c0388-16fa721f19df9c644434",
+          "file": "web/performance.spec.js",
+          "line": 64,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "web\\product.spec.js",
+      "file": "web/product.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Product page",
+          "file": "web/product.spec.js",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C4.11] the page states price, MRP and discount, the seller and every declaration, naming the missing ones",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 931,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:30.806Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "acdf0ae4f62a43156007-e27d0dd18a727c08b0af",
+              "file": "web/product.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "[C4.12] a chosen size goes into the cart, and the cart and checkout charge that size's price",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1233,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:31.749Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "acdf0ae4f62a43156007-196e030aad70a9e4d0e6",
+              "file": "web/product.spec.js",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "[C12.11] a saved product is on the wishlist, moves to the cart, and viewed products are listed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1638,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:32.994Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "acdf0ae4f62a43156007-6b63c9b02a2365c807ec",
+              "file": "web/product.spec.js",
+              "line": 61,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\returns.spec.js",
+      "file": "web/returns.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[C10.10] a delivered order can be returned from its page with a photo, and the request is then shown",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4058,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:34.646Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a47db2e9cd8092ad2e4a-f0f5f0bb86005972a43b",
+          "file": "web/returns.spec.js",
+          "line": 14,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\reviews.spec.js",
+      "file": "web/reviews.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Reviews",
+          "file": "web/reviews.spec.js",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C11.8] a delivered order can be reviewed; the review shows on the shop as a verified purchase",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2106,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:38.720Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf5ca6465d754e79f02b-6a4f762f98054c278e49",
+              "file": "web/reviews.spec.js",
+              "line": 14,
+              "column": 3
+            },
+            {
+              "title": "[C11.9] someone the shop has not served cannot review it",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 184,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:40.840Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf5ca6465d754e79f02b-77b7d950824caf90cbd2",
+              "file": "web/reviews.spec.js",
+              "line": 33,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\search.spec.js",
+      "file": "web/search.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[C5.14] a product is found with a typo, suggested while typing, filtered, and opened",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2398,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:41.044Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e6ea2b6d72fedbaa223-f50e3d682e20e42fea40",
+          "file": "web/search.spec.js",
+          "line": 14,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\security-p9.spec.js",
+      "file": "web/security-p9.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[P9.40] pages carry a nonce-based CSP and the security headers, and run under them",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1900,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:43.458Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "affe27be7d2937331455-60d65bb8b06f24315d89",
+          "file": "web/security-p9.spec.js",
+          "line": 26,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "rate limiting",
+          "file": "web/security-p9.spec.js",
+          "line": 58,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[P9.41] a rate-limited sign-in shows the server's message and is not retried behind the customer's back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2497,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:20:45.371Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "affe27be7d2937331455-258b28367f3e3b83cc74",
+              "file": "web/security-p9.spec.js",
+              "line": 63,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\seller-studio.spec.js",
+      "file": "web/seller-studio.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[S5.2] a seller makes a coupon for their own shop, and it does not work at another shop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1616,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:47.886Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-f33a2f5cc2b4ad44dbe5",
+          "file": "web/seller-studio.spec.js",
+          "line": 32,
+          "column": 1
+        },
+        {
+          "title": "[S6.2] a seller replies to a customer review and the reply is what customers see",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1113,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:49.513Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-5512ba3ad5c4143d9c6c",
+          "file": "web/seller-studio.spec.js",
+          "line": 67,
+          "column": 1
+        },
+        {
+          "title": "[S7.2] the analytics tab shows the shop's real totals",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1143,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:50.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-a9f7e9892a4091807659",
+          "file": "web/seller-studio.spec.js",
+          "line": 88,
+          "column": 1
+        },
+        {
+          "title": "[S4.2] the ledger shows the shop's real earnings and how settlement works, with no fake payout request",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1052,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:51.795Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-f8cd82dae78d4a893b03",
+          "file": "web/seller-studio.spec.js",
+          "line": 104,
+          "column": 1
+        },
+        {
+          "title": "[S3.4] a seller moves a pickup order from new to handed over, and prints its packing slip",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6882,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:52.861Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-9bd15f50527abdd218b0",
+          "file": "web/seller-studio.spec.js",
+          "line": 148,
+          "column": 1
+        },
+        {
+          "title": "[S3.5] a change the server refuses is shown to the seller, not swallowed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1571,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:20:59.754Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-7fae953f3969cfd34df5",
+          "file": "web/seller-studio.spec.js",
+          "line": 191,
+          "column": 1
+        },
+        {
+          "title": "[S2.8] a seller adds a product, adds options with their own price and stock, unlists it, and refusals are explained",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5435,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:21:01.338Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "de1c23f35bc89a1dc6de-6b1bb67acb390ef30927",
+          "file": "web/seller-studio.spec.js",
+          "line": 209,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\seo.spec.js",
+      "file": "web/seo.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "SEO and metadata",
+          "file": "web/seo.spec.js",
+          "line": 27,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[P7.2] a shop page is server-rendered with its own title, description, Open Graph and canonical",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 24,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:06.790Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492e88247ecdf7201f5-fdb7f4cc14ae6ca1e40b",
+              "file": "web/seo.spec.js",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "[P7.3] a shop page carries LocalBusiness, Product/Offer and breadcrumb JSON-LD from real data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 30,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:06.822Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492e88247ecdf7201f5-8ccd8c61c5e48753b65f",
+              "file": "web/seo.spec.js",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "[P7.4] the sitemap lists active shops and robots.txt points at it on the same site",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 37,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:06.859Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492e88247ecdf7201f5-5785a088ceaea2e2f92d",
+              "file": "web/seo.spec.js",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "[P7.5] every public page declares itself, not the homepage, as canonical",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 64,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:06.903Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492e88247ecdf7201f5-554b5814a34feea74548",
+              "file": "web/seo.spec.js",
+              "line": 84,
+              "column": 3
+            },
+            {
+              "title": "[P7.6] an unknown shop is not indexed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 27,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:06.975Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492e88247ecdf7201f5-7d7bc6bf543d6c01e869",
+              "file": "web/seo.spec.js",
+              "line": 93,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\shop-checkout.spec.js",
+      "file": "web/shop-checkout.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Shop Browsing",
+          "file": "web/shop-checkout.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load shops listing page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 863,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:07.013Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-1ee335841030aa082914",
+              "file": "web/shop-checkout.spec.js",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "should display shop cards or empty state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1289,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:07.887Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-d0d1a147de88262c9de0",
+              "file": "web/shop-checkout.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "should have search/filter functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1256,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:09.187Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-065cb9d7dbff78eedd55",
+              "file": "web/shop-checkout.spec.js",
+              "line": 24,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Services Page",
+          "file": "web/shop-checkout.spec.js",
+          "line": 35,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load services page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 813,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:10.455Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-c90279cc80cdcd39bd6e",
+              "file": "web/shop-checkout.spec.js",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "should display service categories",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1355,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:11.279Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-ebb9076698d40be08826",
+              "file": "web/shop-checkout.spec.js",
+              "line": 42,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Community Pages",
+          "file": "web/shop-checkout.spec.js",
+          "line": 51,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load community page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 827,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:12.645Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-d0382a6088f2626916d8",
+              "file": "web/shop-checkout.spec.js",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "should load townsquare page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 733,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:13.482Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-bff7b5236766761b6ce1",
+              "file": "web/shop-checkout.spec.js",
+              "line": 58,
+              "column": 3
+            },
+            {
+              "title": "should load events page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 735,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:14.226Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-8eb3ff367a3ec64055c1",
+              "file": "web/shop-checkout.spec.js",
+              "line": 63,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Dashboard Pages",
+          "file": "web/shop-checkout.spec.js",
+          "line": 69,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load delivery dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 755,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:14.971Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-d49ed16384cad49de131",
+              "file": "web/shop-checkout.spec.js",
+              "line": 71,
+              "column": 3
+            },
+            {
+              "title": "should load shop dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 693,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:15.738Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-349812fbeb72c0a568be",
+              "file": "web/shop-checkout.spec.js",
+              "line": 76,
+              "column": 3
+            },
+            {
+              "title": "should load franchise dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 732,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:16.440Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-e3811e57e9a4603509d9",
+              "file": "web/shop-checkout.spec.js",
+              "line": 81,
+              "column": 3
+            },
+            {
+              "title": "should load the order tracking page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 730,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:17.185Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-d862096b346697a8766f",
+              "file": "web/shop-checkout.spec.js",
+              "line": 88,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Static Pages",
+          "file": "web/shop-checkout.spec.js",
+          "line": 94,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load about page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 734,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:17.928Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-1eea0fdf77afc43c07cf",
+              "file": "web/shop-checkout.spec.js",
+              "line": 96,
+              "column": 3
+            },
+            {
+              "title": "should load download page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 954,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:18.673Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-559ebb0f5ccfe46472a2",
+              "file": "web/shop-checkout.spec.js",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "should load premium page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 704,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:19.638Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-2afbcc04b28f1272d105",
+              "file": "web/shop-checkout.spec.js",
+              "line": 106,
+              "column": 3
+            },
+            {
+              "title": "should show 404 page for unknown routes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 707,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:20.352Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9421924589636044ce20-f560ebdffabbbb761064",
+              "file": "web/shop-checkout.spec.js",
+              "line": 111,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\shop-onboarding.spec.js",
+      "file": "web/shop-onboarding.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[S1.2] a new seller registers a shop, is told what to fix in their KYC, and submits it for review",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3267,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:21:21.073Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "73d953610148a4c85630-71ba306426bf48572d8a",
+          "file": "web/shop-onboarding.spec.js",
+          "line": 14,
+          "column": 1
+        },
+        {
+          "title": "[S1.2] a signed-out visitor is asked to sign in, not shown a form that goes nowhere",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "web-chromium",
+              "projectName": "web-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 834,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:21:24.351Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "73d953610148a4c85630-7118d7659eadf77420ac",
+          "file": "web/shop-onboarding.spec.js",
+          "line": 63,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "web\\support.spec.js",
+      "file": "web/support.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Help & support",
+          "file": "web/support.spec.js",
+          "line": 11,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[C14.10] a signed-out visitor is asked to sign in, not shown someone else's tickets",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 788,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:25.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "96d8322699672883e8d2-3daba303fdc53bdd8281",
+              "file": "web/support.spec.js",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "[C14.11] order help: a ticket raised from an order keeps that order and reaches the support queue",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1332,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:26.001Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "96d8322699672883e8d2-8528f12eec73fa6fbcf7",
+              "file": "web/support.spec.js",
+              "line": 18,
+              "column": 3
+            },
+            {
+              "title": "[C14.12] a formal grievance is marked as such and shows its resolution deadline",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1553,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:27.344Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "96d8322699672883e8d2-dbc706c66bbc25aa1f38",
+              "file": "web/support.spec.js",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "[C14.13] an empty ticket is refused before it is sent",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 853,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:28.908Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "96d8322699672883e8d2-2d9fed36b5182b556d22",
+              "file": "web/support.spec.js",
+              "line": 58,
+              "column": 3
+            },
+            {
+              "title": "[C14.14] the public grievance page shows the configured Grievance Officer",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 824,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:29.772Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "96d8322699672883e8d2-593ab3a9a449f3317c2d",
+              "file": "web/support.spec.js",
+              "line": 66,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "web\\theme.spec.js",
+      "file": "web/theme.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "theme system",
+          "file": "web/theme.spec.js",
+          "line": 70,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a stored \"light\" preference survives hydration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8763,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:30.614Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a256222dfb5f87c657fc-0f57ea7fde5ecf68e2c9",
+              "file": "web/theme.spec.js",
+              "line": 76,
+              "column": 5
+            },
+            {
+              "title": "a stored \"dark\" preference survives hydration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8850,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:39.389Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a256222dfb5f87c657fc-4c3a7e569ba3058cbea6",
+              "file": "web/theme.spec.js",
+              "line": 76,
+              "column": 5
+            },
+            {
+              "title": "all three DOM markers agree",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8719,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:48.250Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a256222dfb5f87c657fc-f20f9587a150c2d25a43",
+              "file": "web/theme.spec.js",
+              "line": 94,
+              "column": 3
+            },
+            {
+              "title": "\"system\" follows an OS set to light",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8736,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:21:56.983Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a256222dfb5f87c657fc-cc1be46f33b663782d28",
+              "file": "web/theme.spec.js",
+              "line": 116,
+              "column": 5
+            },
+            {
+              "title": "\"system\" follows an OS set to dark",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8752,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:05.733Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a256222dfb5f87c657fc-e6c0a6d4efd4e483c030",
+              "file": "web/theme.spec.js",
+              "line": 116,
+              "column": 5
+            },
+            {
+              "title": "the header toggle changes the page, without a reload",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "web-chromium",
+                  "projectName": "web-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1636,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:14.499Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a256222dfb5f87c657fc-f9625b27a1068fdd7e80",
+              "file": "web/theme.spec.js",
+              "line": 126,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin\\commerce-ops.spec.js",
+      "file": "admin/commerce-ops.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Commerce Ops console",
+          "file": "admin/commerce-ops.spec.js",
+          "line": 58,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[A8.3] the console sends a signed-out visitor to the login page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 412,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:17.711Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-dc6592b94e1ad239d363",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "[A8.4] an admin signs in with phone, OTP and PIN",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1101,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:18.372Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-b66783106017bbb0404a",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 69,
+              "column": 3
+            },
+            {
+              "title": "[A1.3] KPIs on screen are the live aggregates",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 204,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:19.492Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-80392a28fef4df2f1982",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 85,
+              "column": 3
+            },
+            {
+              "title": "[A2.2] [S1.4] KYC queue: documents, mandatory reason, resubmission and approval",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 423,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:19.707Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-e935803706ba2146e054",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 96,
+              "column": 3
+            },
+            {
+              "title": "[A2.3] shop kill switch needs a reason and can be reversed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 383,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:20.138Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-3923eb83bf0d489a9a16",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 116,
+              "column": 3
+            },
+            {
+              "title": "[A3.4] category taxonomy and restricted-goods moderation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 466,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:20.530Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-e09f11d3505752070cd0",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 129,
+              "column": 3
+            },
+            {
+              "title": "[A4.10] order search, timeline, capped refund and forced cancellation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 870,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:21.007Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-8a291eebd134e4ec4a0e",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 143,
+              "column": 3
+            },
+            {
+              "title": "[A5.3] disputes and returns are settled from the queue",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 522,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:21.889Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-63ef0bedd0d01a2d3a20",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 177,
+              "column": 3
+            },
+            {
+              "title": "[A6.4] [S4.4] commission, payout approval and COD settlement",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 352,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:22.427Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-6b45fdc088aa9d0fbf30",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 195,
+              "column": 3
+            },
+            {
+              "title": "[A7.3] platform coupon and homepage banner",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 489,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:22.796Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-2a36aa3c46d913d94131",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 211,
+              "column": 3
+            },
+            {
+              "title": "[C7.19] a \"₹ off\" coupon with per-customer rules, then paused",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 603,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:23.296Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-e80638bd9080578ed633",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 231,
+              "column": 3
+            },
+            {
+              "title": "[A8.5] every console action above is in the audit log",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 187,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:23.914Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-b81fa5d8cf554bd2534f",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 257,
+              "column": 3
+            },
+            {
+              "title": "[A9.4] zone switch and waitlist export",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 577,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:24.112Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-70f282a67888de1324f1",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 266,
+              "column": 3
+            },
+            {
+              "title": "[A10.3] fleet status and COD deposit reconciliation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 401,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:24.695Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-6c618ac0efb4d1b8fab5",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 286,
+              "column": 3
+            },
+            {
+              "title": "[R5.30] a deposit recorded in the console is what the rider sees in their own cash ledger",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 29,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:25.103Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-1888e3713aeab76ef429",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 307,
+              "column": 3
+            },
+            {
+              "title": "[R1.30] a rider application is reviewed in the console: reason required, resubmission, approval",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 391,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:25.138Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-047e65c940b02b8b76c6",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 330,
+              "column": 3
+            },
+            {
+              "title": "[A11.5] statutory grievance: 48h breach, reply and resolution",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 368,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:25.535Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-422ad9ea4be1457d693f",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 357,
+              "column": 3
+            },
+            {
+              "title": "[C14.21] a ticket a customer raises reaches the console, and the reply reaches the customer",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 327,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:25.919Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-12c2c7dc7998aa0f321c",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 370,
+              "column": 3
+            },
+            {
+              "title": "[C10.11] a customer’s return is approved in the console and the refund paid out and recorded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 620,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:26.257Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-f361ab46ad3f551f0ce4",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 395,
+              "column": 3
+            },
+            {
+              "title": "[C11.10] a reported review is in the moderation queue; hiding it removes it from the shop",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 320,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:26.885Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-91a38e85934a9f2136ed",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 426,
+              "column": 3
+            },
+            {
+              "title": "[A12.4] [P6.8] a kill switch reaches the public registry and API gating",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 287,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:27.215Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-d1a5b917abc631a132b3",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 444,
+              "column": 3
+            },
+            {
+              "title": "[A13.5] financial and tax exports download from the console",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 432,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:27.511Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-d1983dccfc701ec038cb",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 462,
+              "column": 3
+            },
+            {
+              "title": "[A14.6] broadcast reaches only consenting users and is kept in history",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 266,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:27.949Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c492f23d083bdf0fe77d-17ea5f2593f3bd5c0c73",
+              "file": "admin/commerce-ops.spec.js",
+              "line": 478,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin\\dashboard.spec.js",
+      "file": "admin/dashboard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Panel",
+          "file": "admin/dashboard.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load admin login page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 271,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:28.303Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-c1a8d5a485f5197a36da",
+              "file": "admin/dashboard.spec.js",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "should show login form with required fields",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 236,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:28.590Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-46b53789e5568ee0c00f",
+              "file": "admin/dashboard.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "should load dashboard page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 255,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:28.835Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-7a624cb8097eedf172f7",
+              "file": "admin/dashboard.spec.js",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "should load territories page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5163,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:29.104Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-2f15063c9ccc3077a06f",
+              "file": "admin/dashboard.spec.js",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "should load audit page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5195,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:34.282Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-5d6838a20967fcb79edc",
+              "file": "admin/dashboard.spec.js",
+              "line": 34,
+              "column": 3
+            },
+            {
+              "title": "should load settings page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 189,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:39.490Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-1d41bf29df771eff422c",
+              "file": "admin/dashboard.spec.js",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "should not have console errors on dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 907,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-14T07:22:39.691Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1bb41a2bd6df77ed2f7-72f121771d0ff7843012",
+              "file": "admin/dashboard.spec.js",
+              "line": 44,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin\\security-p9.spec.js",
+      "file": "admin/security-p9.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "[P9.30] the console is served with a nonce-based CSP and runs under it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "admin-chromium",
+              "projectName": "admin-chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 290,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:22:40.616Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "affe27be7d2937331455-890af2926825072d4b61",
+          "file": "admin/security-p9.spec.js",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "[P9.31] a rate-limited admin sign-in shows the server's message and stays on the phone step",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "admin-chromium",
+              "projectName": "admin-chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 326,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-14T07:22:40.915Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "affe27be7d2937331455-d067b2e5f5e840480aed",
+          "file": "admin/security-p9.spec.js",
+          "line": 38,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-14T07:14:43.244Z",
+    "duration": 479588.869,
+    "expected": 152,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
