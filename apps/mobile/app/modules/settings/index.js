@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { loadConsent, setConsent, subscribe } from '../../../src/services/analyticsConsent';
+import { useLanguage } from '../../../src/context/LanguageContext';
 
 /**
  * Settings (More > Settings). The More tab has always linked here; the screen
@@ -15,6 +16,7 @@ import { loadConsent, setConsent, subscribe } from '../../../src/services/analyt
  */
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [choice, setChoice] = useState('unset');
 
   useEffect(() => {
@@ -27,30 +29,29 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('back')} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.title} accessibilityRole="header">Settings</Text>
+        <Text style={styles.title} accessibilityRole="header">{t('settings')}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.row}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>Share usage analytics</Text>
+            <Text style={styles.label}>{t('share_analytics')}</Text>
             <Text style={styles.hint}>
-              Lets LocalSampark see which shops and items people view and tap, to improve search and the order of
-              results. No name, phone number or address is included. Off by default; turn it off at any time.
+              {t('share_analytics_hint')}
             </Text>
           </View>
           <Switch
             value={choice === 'granted'}
             onValueChange={(on) => setConsent(on)}
-            accessibilityLabel="Share usage analytics"
+            accessibilityLabel={t('share_analytics')}
             trackColor={{ true: '#007F4F' }}
           />
         </View>
         <Text style={styles.status} accessibilityLiveRegion="polite">
-          {choice === 'granted' ? 'Analytics are on.' : 'Analytics are off.'}
+          {choice === 'granted' ? t('analytics_on') : t('analytics_off')}
         </Text>
       </View>
     </SafeAreaView>

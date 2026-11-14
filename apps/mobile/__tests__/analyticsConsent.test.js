@@ -194,9 +194,10 @@ describe('[P11.14] the screens that ask and that change the answer exist and are
     expect(fs.existsSync(path.join(ROOT, 'app/modules/settings/index.js'))).toBe(true);
     const screen = read('app/modules/settings/index.js');
     expect(screen).toMatch(/<Switch/);
-    expect(screen).toMatch(/Share usage analytics/);
+    expect(screen).toMatch(/Share usage analytics|t\('share_analytics'\)/);
     expect(screen).toMatch(/setConsent\(on\)/);
-    expect(screen).toMatch(/accessibilityLabel="Share usage analytics"/);
+    expect(screen).toMatch(/accessibilityLabel=\{t\('share_analytics'\)\}|accessibilityLabel="Share usage analytics"/);
+    expect(read('src/i18n/index.js')).toMatch(/share_analytics:\s*'Share usage analytics'/);
   });
 
   test('[P11.14] telemetry is gated in source: track, flush and the session token', () => {

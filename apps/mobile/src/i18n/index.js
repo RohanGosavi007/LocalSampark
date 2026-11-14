@@ -1,8 +1,15 @@
 import { I18n } from 'i18n-js';
 import * as Localization from 'expo-localization';
 
+export const SUPPORTED_LANGUAGES = ['en', 'hi', 'mr'];
+
+export function normalizeLanguage(code) {
+  const short = String(code || 'en').trim().toLowerCase().slice(0, 2);
+  return SUPPORTED_LANGUAGES.includes(short) ? short : 'en';
+}
+
 // Define translations
-const translations = {
+export const translations = {
   en: {
     welcome: 'Welcome to LocalSampark',
     delivery_dashboard: 'Delivery Dashboard',
@@ -29,6 +36,37 @@ const translations = {
     nav_edu: 'Education & events',
     nav_fleet: 'Fleet',
     nav_analytics: 'Analytics',
+    // Language Picker, Settings, More & Navigation
+    select_language: 'Select Language',
+    choose_language_subtitle: 'Choose your preferred language for LocalSampark.',
+    save_changes: 'Save Changes',
+    all_services: 'All Services',
+    discover_subtitle: 'Discover everything LocalSampark has to offer',
+    account: 'Account',
+    my_profile: 'My Profile',
+    regional_languages: 'Regional Languages',
+    settings: 'Settings',
+    help_support: 'Help & Support',
+    log_out: 'Log Out',
+    home_services: 'Home Services',
+    share_analytics: 'Share usage analytics',
+    share_analytics_hint: 'Lets LocalSampark see which shops and items people view and tap, to improve search and the order of results. No name, phone number or address is included. Off by default; turn it off at any time.',
+    analytics_on: 'Analytics are on.',
+    analytics_off: 'Analytics are off.',
+    tab_index: 'Home',
+    tab_directory: 'Shops',
+    tab_shops: 'Shops',
+    tab_orders: 'Orders',
+    tab_products: 'Products',
+    tab_more: 'More',
+    tab_profile: 'Profile',
+    tab_reviews: 'Reviews',
+    tab_services: 'Services',
+    tab_wallet: 'Wallet',
+    tab_earnings: 'Earnings',
+    tab_available: 'Available',
+    tab_active: 'Active',
+    tab_bookings: 'Bookings',
   },
   hi: {
     welcome: 'लोकलसम्पर्क में आपका स्वागत है',
@@ -56,6 +94,36 @@ const translations = {
     nav_edu: 'शिक्षा और कार्यक्रम',
     nav_fleet: 'फ़्लीट',
     nav_analytics: 'विश्लेषण',
+    select_language: 'भाषा चुनें',
+    choose_language_subtitle: 'लोकलसम्पर्क के लिए अपनी पसंदीदा भाषा चुनें।',
+    save_changes: 'बदलाव सहेजें',
+    all_services: 'सभी सेवाएँ',
+    discover_subtitle: 'लोकलसम्पर्क की सभी सेवाएँ देखें',
+    account: 'खाता',
+    my_profile: 'मेरी प्रोफ़ाइल',
+    regional_languages: 'क्षेत्रीय भाषाएँ',
+    settings: 'सेटिंग्स',
+    help_support: 'सहायता और समर्थन',
+    log_out: 'लॉग आउट',
+    home_services: 'घरेलू सेवाएँ',
+    share_analytics: 'उपयोग विश्लेषण साझा करें',
+    share_analytics_hint: 'इससे लोकलसम्पर्क को खोज और परिणाम सुधारने में मदद मिलती है। इसमें कोई नाम, फ़ोन नंबर या पता शामिल नहीं होता। डिफ़ॉल्ट रूप से बंद; कभी भी बंद करें।',
+    analytics_on: 'विश्लेषण चालू है।',
+    analytics_off: 'विश्लेषण बंद है।',
+    tab_index: 'होम',
+    tab_directory: 'दुकानें',
+    tab_shops: 'दुकानें',
+    tab_orders: 'ऑर्डर',
+    tab_products: 'उत्पाद',
+    tab_more: 'अधिक',
+    tab_profile: 'प्रोफ़ाइल',
+    tab_reviews: 'समीक्षाएँ',
+    tab_services: 'सेवाएँ',
+    tab_wallet: 'वॉलेट',
+    tab_earnings: 'कमाई',
+    tab_available: 'उपलब्ध',
+    tab_active: 'सक्रिय',
+    tab_bookings: 'बुकिंग',
   },
   mr: {
     welcome: 'लोकलसंपर्क मध्ये आपले स्वागत आहे',
@@ -83,14 +151,43 @@ const translations = {
     nav_edu: 'शिक्षण आणि कार्यक्रम',
     nav_fleet: 'फ्लीट',
     nav_analytics: 'विश्लेषण',
+    select_language: 'भाषा निवडा',
+    choose_language_subtitle: 'लोकलसंपर्कसाठी तुमची पसंतीची भाषा निवडा.',
+    save_changes: 'बदल जतन करा',
+    all_services: 'सर्व सेवा',
+    discover_subtitle: 'लोकलसंपर्कच्या सर्व सेवा पहा',
+    account: 'खाते',
+    my_profile: 'माझे प्रोफाइल',
+    regional_languages: 'प्रादेशिक भाषा',
+    settings: 'सेटिंग्ज',
+    help_support: 'मदत आणि सहाय्य',
+    log_out: 'लॉग आउट',
+    home_services: 'घरगुती सेवा',
+    share_analytics: 'वापर विश्लेषण शेअर करा',
+    share_analytics_hint: 'शोध आणि निकाल सुधारण्यासाठी लोकलसंपर्कला मदत होते. यामध्ये नाव, फोन नंबर किंवा पत्ता नसतो. डीफॉल्टनुसार बंद; कधीही बंद करा.',
+    analytics_on: 'विश्लेषण सुरू आहे.',
+    analytics_off: 'विश्लेषण बंद आहे.',
+    tab_index: 'होम',
+    tab_directory: 'दुकाने',
+    tab_shops: 'दुकाने',
+    tab_orders: 'ऑर्डर्स',
+    tab_products: 'उत्पादने',
+    tab_more: 'अधिक',
+    tab_profile: 'प्रोफाइल',
+    tab_reviews: 'पुनरावलोकने',
+    tab_services: 'सेवा',
+    tab_wallet: 'वॉलेट',
+    tab_earnings: 'कमाई',
+    tab_available: 'उपलब्ध',
+    tab_active: 'सक्रिय',
+    tab_bookings: 'बुकिंग',
   }
 };
 
 const i18n = new I18n(translations);
 
-// Set the locale once at the beginning of your app.
-// Fallback to 'en' if the current locale is not supported
-i18n.locale = Localization.getLocales()[0].languageCode;
+const deviceCode = Localization.getLocales?.()?.[0]?.languageCode;
+i18n.locale = normalizeLanguage(deviceCode);
 i18n.enableFallback = true;
 i18n.defaultLocale = 'en';
 

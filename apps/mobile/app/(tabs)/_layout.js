@@ -4,9 +4,11 @@ import { Text, Platform, View } from 'react-native';
 import { getTabsForRole, ROLES, ROLE_ICONS } from '../../src/utils/permissions';
 import RoleSwitcher from '../../src/components/RoleSwitcher';
 import MorphingBottomTabs from '../../src/navigation/MorphingBottomTabs';
+import { useLanguage } from '../../src/context/LanguageContext';
 
 export default function TabLayout() {
   const { user, activeRole } = useAuth();
+  const { t } = useLanguage();
 
   if (!user || !activeRole) {
     return <Redirect href="/login" />;
@@ -36,7 +38,7 @@ export default function TabLayout() {
               key={tab.name}
               name={routeName}
               options={{
-                title: tab.title,
+                title: t(`tab_${tab.name}`, { defaultValue: tab.title }),
                 tabBarIcon: ({ color, focused }) => (
                   <View style={{
                     backgroundColor: focused ? 'rgba(59, 130, 246, 0.1)' : 'transparent',

@@ -4,18 +4,20 @@ import { router } from 'expo-router';
 import { useVisibleModules } from '../../src/hooks/useFeatures';
 import { Wallet, Briefcase, Building2, Store, Truck, Car, Home, IndianRupee, Heart, Cross, Stethoscope, Ticket, User, Settings, LogOut, ShieldCheck, Globe } from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
+import { useLanguage } from '../../src/context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 const colWidth = (width - 48) / 3; // 3 columns with padding
 
 export default function MoreScreen() {
   const { user, activeRole, logout } = useAuth();
+  const { t } = useLanguage();
 
   const MODULES = [
     { title: 'Wallet & Pay', icon: Wallet, route: '/modules/wallet', feature: 'wallet_coins', bg: '#e0e7ff', color: '#4f46e5' },
     { title: 'Local Jobs', icon: Briefcase, route: '/modules/jobs', feature: 'jobs', bg: '#fef3c7', color: '#d97706' },
     { title: 'Real Estate', icon: Building2, route: '/modules/properties', feature: 'properties', bg: '#f3e8ff', color: '#7e22ce' },
-    { title: 'Home Services', icon: Store, route: '/(tabs)/services', bg: '#dcfce7', color: '#15803d' },
+    { title: t('home_services'), icon: Store, route: '/(tabs)/services', bg: '#dcfce7', color: '#15803d' },
     { title: 'Medical', icon: Stethoscope, route: '/modules/medical', feature: 'medical', bg: '#ffe4e6', color: '#be123c' },
     { title: 'Events', icon: Ticket, route: '/modules/events', feature: 'community_events', bg: '#fae8ff', color: '#c026d3' },
     { title: 'Carpool', icon: Car, route: '/modules/carpool', feature: 'carpool', bg: '#e0f2fe', color: '#0369a1' },
@@ -27,18 +29,18 @@ export default function MoreScreen() {
   const visibleModules = useVisibleModules(MODULES);
 
   const ACCOUNT_ACTIONS = [
-    { title: 'My Profile', icon: User, route: '/(tabs)/profile' },
-    { title: 'Regional Languages', icon: Globe, route: '/modules/languages' },
-    { title: 'Settings', icon: Settings, route: '/modules/settings' },
-    { title: 'Help & Support', icon: ShieldCheck, route: '/modules/support' },
+    { title: t('my_profile'), icon: User, route: '/(tabs)/profile' },
+    { title: t('regional_languages'), icon: Globe, route: '/modules/languages' },
+    { title: t('settings'), icon: Settings, route: '/modules/settings' },
+    { title: t('help_support'), icon: ShieldCheck, route: '/modules/support' },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>All Services</Text>
-          <Text style={styles.headerSubtitle}>Discover everything LocalSampark has to offer</Text>
+          <Text style={styles.headerTitle}>{t('all_services')}</Text>
+          <Text style={styles.headerSubtitle}>{t('discover_subtitle')}</Text>
         </View>
 
         {/* Super-App Grid */}
@@ -63,7 +65,7 @@ export default function MoreScreen() {
 
         {/* Account Settings List */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>{t('account')}</Text>
           <View style={styles.listContainer}>
             {ACCOUNT_ACTIONS.map((action, index) => {
               const ActionIcon = action.icon;
@@ -86,7 +88,7 @@ export default function MoreScreen() {
               <View style={[styles.listIconBox, { backgroundColor: '#fee2e2' }]}>
                 <LogOut size={20} color="#ef4444" />
               </View>
-              <Text style={[styles.listText, { color: '#ef4444' }]}>Log Out</Text>
+              <Text style={[styles.listText, { color: '#ef4444' }]}>{t('log_out')}</Text>
             </TouchableOpacity>
 
             {/* C1: every session of this account, on every device. */}

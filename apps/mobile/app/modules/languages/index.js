@@ -1,36 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft, Check, Globe } from 'lucide-react-native';
+import { useLanguage } from '../../../src/context/LanguageContext';
 
 export default function LanguagesScreen() {
-  const [selectedLang, setSelectedLang] = useState('en');
+  const { language, setLanguage, t } = useLanguage();
+  const [selectedLang, setSelectedLang] = useState(language || 'en');
+
+  useEffect(() => {
+    setSelectedLang(language || 'en');
+  }, [language]);
 
   const languages = [
     { code: 'en', name: 'English', native: 'English' },
     { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
     { code: 'mr', name: 'Marathi', native: 'मराठी' },
-    { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી' },
-    { code: 'bn', name: 'Bengali', native: 'বাংলা' },
-    { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
-    { code: 'te', name: 'Telugu', native: 'తెలుగు' },
-    { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' },
-    { code: 'ml', name: 'Malayalam', native: 'മലയാളം' },
   ];
+
+  const handleSave = async () => {
+    await setLanguage(selectedLang);
+    router.back();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => router.back()}>
           <ArrowLeft size={24} color="#0f172a" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Language</Text>
+        <Text style={styles.headerTitle}>{t('select_language')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.iconWrapper}>
           <Globe size={48} color="#3b82f6" />
-          <Text style={styles.subtitle}>Choose your preferred language for LocalSampark.</Text>
+          <Text style={styles.subtitle}>{t('choose_language_subtitle')}</Text>
         </View>
 
         <View style={styles.listContainer}>
@@ -59,8 +64,8 @@ export default function LanguagesScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={() => router.back()}>
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>{t('save_changes')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
