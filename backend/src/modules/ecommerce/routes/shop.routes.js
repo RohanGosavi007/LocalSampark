@@ -1805,6 +1805,18 @@ router.put('/:id/orders/:orderId/assign-rider', authenticate, async (req, res, n
     const rider = await queryOne('SELECT id FROM users WHERE id = $1', [riderId]);
     if (!rider) return res.status(404).json({ error: 'Rider not found' });
 
+    // Through the lifecycle: only a ready order can be given a rider (this
+    // used to move any order, delivered or cancelled included, to "assigned"),
+    // and the change is recorded in the order's history.
+    try {
+      await lifecycle.assignRider({ orderId: req.params.orderId, riderUserId: riderId, user: req.user, shopId: req.params.id });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ error: error.message, code: error.code });
+      }
+      throw error;
+    }
+
     // order_tracking holds one row per order, created at checkout.
     await query(
       `INSERT INTO order_tracking (order_id, runner_id)
@@ -1813,10 +1825,6 @@ router.put('/:id/orders/:orderId/assign-rider', authenticate, async (req, res, n
       [req.params.orderId, riderId]
     );
 
-    await query(
-      `UPDATE orders SET order_status = 'assigned', assigned_agent_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      [req.params.orderId, riderId]
-    );
 
     const io = req.app.get('io');
     if (io) {

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { query, queryOne, withTransaction } = require('../../../config/database');
+const lifecycle = require('../../../services/orderLifecycle.service');
 const platformConfig = require('../../../services/platformConfig.service');
 const payments = require('../../../services/payments.service');
 const ledgerService = require('../../../services/ledger.service');
@@ -400,13 +401,24 @@ const getOrderTimeline = async (req, res, next) => {
     // alone (placed / current status / delivered), so an admin cancellation,
     // a refund, a rider reassignment, a dispute or a return never appeared in
     // it. Those are now read from where they are recorded.
-    const timeline = [
-      { status: 'placed', timestamp: order.created_at, detail: 'Order placed by customer', source: 'order' },
-    ];
-    if (order.order_status !== 'placed') {
+    // The order's own history (migration 148) is the record of how it moved:
+    // who, from what, to what, when and why. An order from before that
+    // migration has none, and keeps the summary built from the order row.
+    const history = await lifecycle.historyFor(id);
+    const timeline = history.length
+      ? history.map((h) => (h.from_status == null
+        ? { status: 'placed', timestamp: h.created_at, detail: 'Order placed by customer', source: 'order' }
+        : {
+          status: h.to_status,
+          timestamp: h.created_at,
+          detail: `${h.from_status} → ${h.to_status} by ${h.actor_role || 'system'}${h.reason ? ` (${String(h.reason).replace(/_/g, ' ')})` : ''}`,
+          source: 'order',
+        }))
+      : [{ status: 'placed', timestamp: order.created_at, detail: 'Order placed by customer', source: 'order' }];
+    if (!history.length && order.order_status !== 'placed') {
       timeline.push({ status: order.order_status, timestamp: order.updated_at || order.created_at, detail: `Current status: ${order.order_status}${order.cancellation_reason ? ` (${order.cancellation_reason})` : ''}`, source: 'order' });
     }
-    if (order.delivered_at) {
+    if (!history.length && order.delivered_at) {
       timeline.push({ status: 'delivered', timestamp: order.delivered_at, detail: 'Order delivered successfully', source: 'order' });
     }
 
@@ -474,42 +486,30 @@ const cancelOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, error: `Order is already ${order.order_status}` });
     }
 
-    await withTransaction(async (client) => {
-      await client.query(
-        `UPDATE orders
-            SET order_status = 'cancelled', status = 'cancelled', cancellation_reason = $1, updated_at = ${NOW}
-          WHERE id = $2`,
-        [reason, id]
-      );
-
-      // Release rider back to available if assigned
-      if (order.assigned_agent_id) {
-        await client.query(
-          "UPDATE delivery_agents SET status = 'available' WHERE user_id = $1",
-          [order.assigned_agent_id]
-        );
+    // The same cancellation every other actor goes through, so an admin's
+    // cancel also puts the stock back (both counters), voids the shop's
+    // commission, returns a wallet payment, queues a Razorpay refund, frees the
+    // rider, and is written to the order's history. This used to be a copy that
+    // did only the stock and the rider: a customer who had paid online and was
+    // cancelled by an admin was left without their money.
+    let outcome;
+    try {
+      outcome = await lifecycle.changeStatus({ orderId: id, to: 'cancelled', user: req.user, reason });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ success: false, error: error.message, code: error.code });
       }
-
-      // Restore inventory
-      const items = (await client.query('SELECT product_id, quantity FROM order_items WHERE order_id = $1', [id])).rows;
-      for (const item of items) {
-        if (item.product_id) {
-          await client.query(
-            'UPDATE shop_products SET inventory_count = COALESCE(inventory_count, 0) + $1 WHERE id = $2',
-            [item.quantity, item.product_id]
-          );
-        }
-      }
-    });
+      throw error;
+    }
 
     await recordAudit(req, {
       action: 'admin_force_cancel_order',
       targetType: 'order',
       targetId: id,
-      details: { previousStatus: order.order_status, reason },
+      details: { previousStatus: order.order_status, reason, refund: outcome.refund },
     });
 
-    res.json({ success: true, message: 'Order cancelled by admin', orderStatus: 'cancelled' });
+    res.json({ success: true, message: 'Order cancelled by admin', orderStatus: 'cancelled', refund: outcome.refund });
   } catch (error) {
     next(error);
   }
@@ -584,25 +584,18 @@ const reassignOrder = async (req, res, next) => {
     if (riderUserId) {
       const agent = await queryOne('SELECT user_id, is_online FROM delivery_agents WHERE user_id = $1', [riderUserId]);
       if (!agent) return res.status(404).json({ success: false, error: 'Rider not found' });
+    }
 
-      await query(
-        `UPDATE orders
-            SET assigned_agent_id = $1, order_status = 'assigned', status = 'assigned', updated_at = ${NOW}
-          WHERE id = $2`,
-        [riderUserId, id]
-      );
-      await query("UPDATE delivery_agents SET status = 'on_delivery' WHERE user_id = $1", [riderUserId]);
-    } else {
-      // Unassign back to ready pool
-      if (order.assigned_agent_id) {
-        await query("UPDATE delivery_agents SET status = 'available' WHERE user_id = $1", [order.assigned_agent_id]);
+    // Through the lifecycle: an order can be given a rider, or have one taken
+    // off, only while it is ready or assigned. This used to set "assigned" or
+    // "ready" on any order, delivered and cancelled ones included.
+    try {
+      await lifecycle.assignRider({ orderId: id, riderUserId: riderUserId || null, user: req.user });
+    } catch (error) {
+      if (error instanceof lifecycle.LifecycleError) {
+        return res.status(error.status).json({ success: false, error: error.message, code: error.code });
       }
-      await query(
-        `UPDATE orders
-            SET assigned_agent_id = NULL, order_status = 'ready', status = 'ready', updated_at = ${NOW}
-          WHERE id = $1`,
-        [id]
-      );
+      throw error;
     }
 
     await recordAudit(req, {

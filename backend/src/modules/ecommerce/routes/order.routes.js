@@ -123,6 +123,30 @@ router.get('/shop/:shopId', authenticate, async (req, res, next) => {
 
 // The rules are in services/orderLifecycle.service.js. This handler let a
 // shop set any status from any other, with no check on payment.
+// GET /orders/:orderId/history — every status the order has been in, who moved
+// it and why (append-only: migration 148), and how it ended if it was
+// cancelled. Visible to the customer, the shop that owns it, the rider holding
+// it, and administrators; anyone else is told the order does not exist.
+router.get('/:orderId/history', authenticate, async (req, res, next) => {
+  try {
+    const order = await queryOne(
+      `SELECT o.id, o.user_id, o.assigned_agent_id, s.owner_id AS shop_owner_id
+         FROM orders o LEFT JOIN local_shops s ON s.id = o.shop_id
+        WHERE o.id = $1`,
+      [req.params.orderId]
+    );
+    const me = String(req.user.id);
+    const isAdmin = Boolean(req.user.is_admin) || ['admin', 'super_admin', 'territory_admin', 'moderator'].includes(String(req.user.role || '').toLowerCase());
+    const involved = order && (isAdmin || [order.user_id, order.assigned_agent_id, order.shop_owner_id].some((id) => id && String(id) === me));
+    if (!involved) return res.status(404).json({ error: 'Order not found' });
+
+    const history = await lifecycle.historyFor(order.id);
+    res.json({ success: true, history, terminalState: lifecycle.terminalState(history) });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put('/:orderId/status', authenticate, async (req, res, next) => {
   try {
     let outcome;

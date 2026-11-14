@@ -1063,45 +1063,17 @@ async function searchDirectory(req, res, next) {
  * a delivery. The order must be this shop's, and the rider one of its own and
  * free.
  */
-async function assignRiderToOrder(req, res, next) {
-  try {
-    const { orderId } = req.params;
-    const { riderId } = req.body || {};
-    const shop = req.shop;
-    if (!riderId) return res.status(400).json({ error: 'riderId is required' });
-
-    const order = await queryOne(
-      'SELECT id, status FROM universal_orders WHERE CAST(id AS TEXT) = $1 AND shop_id = $2',
-      [String(orderId), shop.id]
-    );
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    if (['completed', 'cancelled', 'dispatched'].includes(String(order.status || '').toLowerCase())) {
-      return res.status(409).json({ error: `This order is ${String(order.status).toLowerCase()} and cannot be dispatched.` });
-    }
-
-    const rider = await queryOne('SELECT id, status FROM delivery_riders WHERE id = $1 AND shop_id = $2', [riderId, shop.id]);
-    if (!rider) return res.status(404).json({ error: 'Rider not found in your fleet' });
-
-    // The rider is claimed only if still free, so two orders cannot take them at once.
-    const claimed = await query(
-      "UPDATE delivery_riders SET status = 'on_delivery', current_order_id = $1 WHERE id = $2 AND shop_id = $3 AND COALESCE(status, 'available') <> 'on_delivery'",
-      [String(order.id), rider.id, shop.id]
-    );
-    if (!(claimed.rowCount ?? claimed.changes)) return res.status(409).json({ error: 'That rider is already out on a delivery.' });
-
-    await query(
-      "UPDATE universal_orders SET rider_id = $1, status = 'dispatched', updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND shop_id = $3",
-      [rider.id, order.id, shop.id]
-    );
-
-    // Broadcast Socket
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`order_${orderId}`).emit('RIDER_ASSIGNED', { riderId });
-    }
-
-    res.json({ success: true, message: 'Rider assigned successfully' });
-  } catch (error) { next(error); }
+/**
+ * Retired (P1, D5). This looked orders up in universal_orders, which checkout
+ * stopped writing to, so for every real order it answered "Order not found".
+ * No client calls it. Riders are assigned to an order, in the canonical
+ * pipeline, with PUT /shops/:id/orders/:orderId/assign-rider.
+ */
+async function assignRiderToOrder(req, res) {
+  return res.status(410).json({
+    success: false,
+    error: 'This endpoint has been retired. Use PUT /api/v1/shops/:shopId/orders/:orderId/assign-rider.',
+  });
 }
 
 
@@ -1180,34 +1152,18 @@ async function createDispute(req, res, next) {
   } catch (error) { next(error); }
 }
 
-async function createReturn(req, res, next) {
-  try {
-    const { orderId, reason, description, photoUrls, returnItems } = req.body;
-    const userId = req.user.id;
-
-    const order = await queryOne('SELECT * FROM shop_orders WHERE id = $1 AND user_id = $2', [orderId, userId]);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    if (order.status !== 'delivered') return res.status(400).json({ error: 'Only delivered orders can be returned' });
-
-    const id = crypto.randomUUID();
-    const returnRecord = await queryOne(`INSERT INTO shop_returns (id, order_id, shop_id, user_id, reason, description, photo_urls, return_items)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [id, orderId, order.shop_id, userId, reason, description || '',
-       JSON.stringify(photoUrls || []), JSON.stringify(returnItems || [])]
-    );
-
-    // Update order status
-    await query("UPDATE shop_orders SET status = 'return_requested' WHERE id = $1", [orderId]);
-
-    // Notify shop owner
-    await notificationService.sendToShopOwner(order.shop_id, {
-      type: 'return_update', title: 'Return Requested 📦',
-      body: `A return has been requested for order #${orderId.slice(0, 8)}`,
-      data: { returnId: id, orderId }, actionUrl: '/shop-dashboard', icon: '📦',
-    });
-
-    res.status(201).json({ success: true, return: returnRecord });
-  } catch (error) { next(error); }
+/**
+ * Retired (P1, D5). This read shop_orders, which checkout stopped writing to, so
+ * every real order was "Order not found", and it moved shop_orders to a status
+ * of its own. No client calls it. A return is requested with
+ * POST /orders/:orderId/returns, which the shop and an administrator then work
+ * through the return queue.
+ */
+async function createReturn(req, res) {
+  return res.status(410).json({
+    success: false,
+    error: 'This endpoint has been retired. Use POST /api/v1/orders/:orderId/returns.',
+  });
 }
 
 async function getChatMessages(req, res, next) {

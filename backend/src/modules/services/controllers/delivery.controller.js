@@ -323,9 +323,10 @@ const acceptJob = async (req, res, next) => {
     // at the same moment cannot both win.
     const claimed = await query(
       `UPDATE orders
-          SET assigned_agent_id = $1, order_status = 'assigned', updated_at = ${NOW}
+          SET assigned_agent_id = $1, order_status = 'assigned', status = 'assigned', updated_at = ${NOW},
+              status_changed_by = $3, status_changed_role = 'rider', status_change_reason = 'rider_accepted'
         WHERE id = $2 AND id IN (SELECT o.id FROM orders o WHERE o.id = $2 AND ${AVAILABLE_JOB})`,
-      [userId, jobId]
+      [userId, jobId, String(userId)]
     );
 
     const affected = claimed?.rowCount ?? claimed?.changes ?? 0;
@@ -368,9 +369,10 @@ const rejectJob = async (req, res, next) => {
     // Release job back to ready pool if not yet picked up
     const released = await query(
       `UPDATE orders
-          SET assigned_agent_id = NULL, order_status = 'ready', updated_at = ${NOW}
+          SET assigned_agent_id = NULL, order_status = 'ready', status = 'ready', updated_at = ${NOW},
+              status_changed_by = $3, status_changed_role = 'rider', status_change_reason = 'rider_released'
         WHERE id = $1 AND assigned_agent_id = $2 AND LOWER(order_status) = 'assigned'`,
-      [jobId, userId]
+      [jobId, userId, String(userId)]
     );
 
     const affected = released?.rowCount ?? released?.changes ?? 0;
@@ -401,9 +403,10 @@ const pickupJob = async (req, res, next) => {
 
     const updated = await query(
       `UPDATE orders
-          SET order_status = 'out_for_delivery', status = 'out_for_delivery', updated_at = ${NOW}
+          SET order_status = 'out_for_delivery', status = 'out_for_delivery', updated_at = ${NOW},
+              status_changed_by = $3, status_changed_role = 'rider', status_change_reason = 'picked_up'
         WHERE id = $1 AND assigned_agent_id = $2 AND LOWER(order_status) = 'assigned'`,
-      [jobId, userId]
+      [jobId, userId, String(userId)]
     );
 
     const affected = updated?.rowCount ?? updated?.changes ?? 0;
@@ -472,9 +475,10 @@ const completeJob = async (req, res, next) => {
     const completed = await withTransaction(async (client) => {
       const delivered = await client.query(
         `UPDATE orders
-            SET order_status = 'delivered', status = 'delivered', delivered_at = ${NOW}, updated_at = ${NOW}
+            SET order_status = 'delivered', status = 'delivered', delivered_at = ${NOW}, updated_at = ${NOW},
+                status_changed_by = $3, status_changed_role = 'rider', status_change_reason = 'handover_code_verified'
           WHERE id = $1 AND assigned_agent_id = $2 AND LOWER(order_status) IN ('assigned', 'out_for_delivery')`,
-        [jobId, userId]
+        [jobId, userId, String(userId)]
       );
       if (!delivered.rowCount) return false;
 
@@ -555,9 +559,11 @@ const updateJobStatus = async (req, res, next) => {
 
     const updated = await query(
       `UPDATE orders
-          SET order_status = $1, updated_at = ${NOW}
-        WHERE id = $2 AND assigned_agent_id = $3 AND LOWER(order_status) = 'assigned'`,
-      [status, jobId, userId]
+          SET order_status = $1, status = $2, updated_at = ${NOW},
+              status_changed_by = $5, status_changed_role = 'rider', status_change_reason = 'picked_up'
+        WHERE id = $3 AND assigned_agent_id = $4 AND LOWER(order_status) = 'assigned'`,
+      // One parameter per column: PostgreSQL refuses a reused one across types.
+      [String(status).toLowerCase(), String(status).toLowerCase(), jobId, userId, String(userId)]
     );
 
     const affected = updated?.rowCount ?? updated?.changes ?? 0;

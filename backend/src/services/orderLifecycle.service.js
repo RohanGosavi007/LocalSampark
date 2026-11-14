@@ -58,6 +58,20 @@ const TRANSITIONS = {
   cancelled: [],
 };
 
+/**
+ * Handing an order to a rider, taking it back, or swapping the rider. These are
+ * not status requests (nobody asks for "assigned"), so they are not in
+ * TRANSITIONS, but they are moves all the same and are written down here, in
+ * one place: an order can be (re)assigned only while it is ready or already
+ * assigned. Before this, any order in any status could be given a rider,
+ * including a delivered one, which then went round again and paid the rider
+ * and counted the cash a second time.
+ */
+const ASSIGNMENT_MOVES = {
+  ready: ['assigned'],
+  assigned: ['assigned', 'ready'],
+};
+
 const ADMIN_ROLES = new Set(['admin', 'super_admin', 'territory_admin', 'moderator']);
 const CUSTOMER_CANCELLABLE_FROM = new Set(['pending', 'confirmed']);
 const SHOP_CANCELLABLE_FROM = new Set(['pending', 'confirmed', 'preparing', 'ready']);
@@ -73,6 +87,14 @@ function normaliseStatus(input) {
   if (v === 'ready_for_pickup') return 'ready';
   if (v === 'completed') return 'delivered';
   return v;
+}
+
+/** The name an actor goes by in an order's history. */
+function roleOf(actor) {
+  if (actor.admin) return 'admin';
+  if (actor.shop) return 'shop';
+  if (actor.rider) return 'rider';
+  return 'customer';
 }
 
 const isPaid = (order) => lower(order.payment_status) === 'paid';
@@ -368,7 +390,17 @@ async function changeStatus({ orderId, to: requested, user, shopId = null, reaso
     if (to === 'cancelled' && reason) {
       params.push(`[Cancelled] ${String(reason).slice(0, 300)}`);
       sets.push(`special_instructions = $${params.length}`);
+      params.push(String(reason).slice(0, 300));
+      sets.push(`cancellation_reason = $${params.length}`);
     }
+    // Who is making the change and why, for the order's history (migration
+    // 148). The database copies these into a history row and clears them.
+    params.push(user && user.id != null ? String(user.id) : null);
+    sets.push(`status_changed_by = $${params.length}`);
+    params.push(roleOf(actor));
+    sets.push(`status_changed_role = $${params.length}`);
+    params.push(reason ? String(reason).slice(0, 300) : null);
+    sets.push(`status_change_reason = $${params.length}`);
     const moved = await client.query(
       `UPDATE orders SET ${sets.join(', ')} WHERE id = $3 AND LOWER(COALESCE(order_status, 'pending')) = $4`,
       params
@@ -376,7 +408,13 @@ async function changeStatus({ orderId, to: requested, user, shopId = null, reaso
     if (!moved.rowCount) throw new LifecycleError(409, 'CONFLICT', 'This order has just been updated by someone else. Refresh and try again.');
 
     if (to === 'delivered') delivery = await recordDelivery(client, order);
-    if (to === 'cancelled') refund = await undoOrder(client, order);
+    if (to === 'cancelled') {
+      refund = await undoOrder(client, order);
+      // A rider holding a cancelled order is free to take another.
+      if (order.assigned_agent_id) {
+        await client.query("UPDATE delivery_agents SET status = 'available' WHERE user_id = $1", [order.assigned_agent_id]);
+      }
+    }
   });
 
   if (refund === 'gateway') {
@@ -416,7 +454,8 @@ async function expireUnpaidOrders({ minutes = 30, now = new Date() } = {}) {
       const moved = await client.query(
         `UPDATE orders
             SET order_status = 'cancelled', status = 'cancelled', updated_at = CURRENT_TIMESTAMP,
-                special_instructions = '[Cancelled] Payment was not completed.'
+                special_instructions = '[Cancelled] Payment was not completed.',
+                status_changed_role = 'system', status_change_reason = 'payment_expired'
           WHERE id = $1 AND LOWER(COALESCE(order_status, 'pending')) = 'pending'
             AND LOWER(COALESCE(payment_status, 'pending')) <> 'paid'`,
         [row.id]
@@ -438,8 +477,99 @@ async function expireUnpaidOrders({ minutes = 30, now = new Date() } = {}) {
   return { cancelled, refunded };
 }
 
+/**
+ * Gives an order to a rider (`riderUserId`), or takes it off the current one
+ * (null: back to ready). The shop that owns the order and administrators may
+ * do this, and only while the order is ready or assigned (ASSIGNMENT_MOVES).
+ * The previous rider is freed, the new one marked on delivery, and the change
+ * is written to the order's history. Returns { order, from, to }.
+ */
+async function assignRider({ orderId, riderUserId = null, user, shopId = null }) {
+  const order = await loadOrder(orderId);
+  if (!order || (shopId !== null && String(order.shop_id) !== String(shopId))) {
+    throw new LifecycleError(404, 'NOT_FOUND', 'Order not found');
+  }
+  const actor = actorOf(order, user);
+  if (!(actor.admin || actor.shop)) {
+    throw new LifecycleError(403, 'FORBIDDEN', 'Only the shop that owns this order, or an administrator, can assign a rider.');
+  }
+
+  const from = normaliseStatus(order.order_status || 'pending');
+  const to = riderUserId ? 'assigned' : 'ready';
+  if (!(ASSIGNMENT_MOVES[from] || []).includes(to)) {
+    throw new LifecycleError(409, 'NOT_ASSIGNABLE',
+      from === 'pending' || from === 'confirmed' || from === 'preparing'
+        ? 'The order is not ready yet. A rider can be assigned once it is ready.'
+        : `This order is ${from} and cannot be given to a rider.`);
+  }
+  if (riderUserId) {
+    if (isPickup(order)) throw new LifecycleError(409, 'NOT_ASSIGNABLE', 'A pickup order is collected by the customer and needs no rider.');
+    if (lower(order.payment_method) === 'razorpay' && !isPaid(order)) {
+      throw new LifecycleError(409, 'PAYMENT_PENDING', 'This order has not been paid for yet.');
+    }
+  } else if (!order.assigned_agent_id) {
+    throw new LifecycleError(409, 'NOT_ASSIGNABLE', 'No rider is assigned to this order.');
+  }
+
+  await withTransaction(async (client) => {
+    const moved = await client.query(
+      `UPDATE orders
+          SET assigned_agent_id = $1, order_status = $2, status = $3, updated_at = CURRENT_TIMESTAMP,
+              status_changed_by = $4, status_changed_role = $5, status_change_reason = $6
+        WHERE id = $7 AND LOWER(COALESCE(order_status, 'pending')) = $8`,
+      // One parameter per column: PostgreSQL refuses a reused one across types.
+      [riderUserId || null, to, to, user && user.id != null ? String(user.id) : null, roleOf(actor),
+        riderUserId ? 'rider_assigned' : 'rider_removed', orderId, from]
+    );
+    if (!moved.rowCount) throw new LifecycleError(409, 'CONFLICT', 'This order has just been updated by someone else. Refresh and try again.');
+    if (order.assigned_agent_id) {
+      await client.query("UPDATE delivery_agents SET status = 'available' WHERE user_id = $1", [order.assigned_agent_id]);
+    }
+    if (riderUserId) {
+      await client.query("UPDATE delivery_agents SET status = 'on_delivery' WHERE user_id = $1", [riderUserId]);
+    }
+  });
+
+  return { order: await loadOrder(orderId), from, to };
+}
+
+/**
+ * Every status an order has been in, oldest first: who moved it, from what, to
+ * what, when, and why. Read from order_status_history, which the database
+ * writes and refuses to change.
+ */
+function historyFor(orderId) {
+  return queryMany(
+    `SELECT id, from_status, to_status, actor_user_id, actor_role, reason, created_at
+       FROM order_status_history
+      WHERE order_id = $1
+      ORDER BY id ASC`,
+    [String(orderId)]
+  );
+}
+
+/**
+ * The named way an order ended, from its history: CANCELLED_BY_CUSTOMER,
+ * REJECTED_BY_SELLER, CANCELLED_BY_ADMIN, EXPIRED (an online payment never
+ * arrived) or PAYMENT_FAILED. Null for an order that is not cancelled.
+ */
+function terminalState(history) {
+  const last = [...(history || [])].reverse().find((h) => lower(h.to_status) === 'cancelled');
+  if (!last) return null;
+  if (lower(last.reason) === 'payment_expired') return 'EXPIRED';
+  if (lower(last.reason) === 'payment_failed') return 'PAYMENT_FAILED';
+  if (last.actor_role === 'admin') return 'CANCELLED_BY_ADMIN';
+  if (last.actor_role === 'shop') return 'REJECTED_BY_SELLER';
+  if (last.actor_role === 'customer') return 'CANCELLED_BY_CUSTOMER';
+  return 'CANCELLED_BY_ADMIN';
+}
+
 module.exports = {
   LifecycleError,
+  historyFor,
+  terminalState,
+  assignRider,
+  ASSIGNMENT_MOVES,
   TRANSITIONS,
   normaliseStatus,
   cashDue,
