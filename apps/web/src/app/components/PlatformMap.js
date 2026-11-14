@@ -7,6 +7,7 @@ import {
   HeartHandshake, Dog, Package, ArrowRight,
 } from 'lucide-react';
 import { useLanguage } from './LanguageToggle';
+import { useVisibleLinks } from '../../lib/useFeatureRegistry';
 
 /**
  * The map of what LocalSampark actually is.
@@ -125,6 +126,10 @@ function Tile({ label, href, note, Icon }) {
 
 export default function PlatformMap({ compact = false, heading, children }) {
   const { t } = useLanguage();
+  // Only modules that are on (the live registry): the map used to advertise
+  // every one, each leading to "Coming soon" at launch.
+  const visible = useVisibleLinks();
+  const clusters = CLUSTERS.map((c) => ({ ...c, items: visible(c.items) })).filter((c) => c.items.length > 0);
 
   return (
     <section
@@ -160,7 +165,7 @@ export default function PlatformMap({ compact = false, heading, children }) {
         )}
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {CLUSTERS.map((cluster) => (
+          {clusters.map((cluster) => (
             <div
               key={cluster.id}
               className="rounded-[var(--radius)] border border-[color:var(--line)]
@@ -188,7 +193,7 @@ export default function PlatformMap({ compact = false, heading, children }) {
             the three clusters someone actually came for. */}
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <span className="text-sm text-[color:var(--ink-muted)] mr-1">Also here:</span>
-          {ALSO.map(({ label, href, Icon }) => (
+          {visible(ALSO).map(({ label, href, Icon }) => (
             <a
               key={href}
               href={href}
@@ -239,11 +244,12 @@ export { CLUSTERS, ALSO };
  * stacking more translucency on top is what makes low-end Android drop frames.
  */
 export function PlatformRail({ className = '' }) {
-  const items = [
+  const visible = useVisibleLinks();
+  const items = visible([
     ...CLUSTERS[0].items.slice(0, 4),
     ...CLUSTERS[1].items.slice(0, 3),
     ...CLUSTERS[2].items.slice(0, 4),
-  ];
+  ]);
 
   return (
     <nav

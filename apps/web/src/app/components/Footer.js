@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { MapPin, Mail, Phone, ExternalLink } from 'lucide-react';
+import { useVisibleLinks } from '../../lib/useFeatureRegistry';
 
 const LINKS = {
   'Explore': [
@@ -41,6 +42,10 @@ const STATS = [
 ];
 
 export default function Footer() {
+  // The footer listed every module, including the ones that are off (at launch,
+  // most of them): each link led to "Coming soon". A link to a gated module is
+  // shown only while its feature is on, by the same live registry as the header.
+  const shown = useVisibleLinks();
   return (
     <footer className="bg-background-alt border-t border-border mt-20 relative overflow-hidden">
       {/* Decorative gradient blur at bottom */}
@@ -105,7 +110,7 @@ export default function Footer() {
                 <div key={heading}>
                   <h4 className="text-text font-heading font-bold text-lg mb-6">{heading}</h4>
                   <ul className="space-y-4">
-                    {links.map(link => (
+                    {shown(links).map(link => (
                       <li key={link.href}>
                         <a href={link.href} className="text-text-muted hover:text-primary text-sm font-medium transition-colors inline-flex items-center gap-2 group min-h-[var(--tap-min)]">
                           <span className="w-1.5 h-1.5 rounded-full bg-border group-hover:bg-primary transition-colors"></span>

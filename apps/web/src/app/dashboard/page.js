@@ -18,6 +18,7 @@ import StoriesRow from '../components/StoriesRow';
 import WebRTCIntercom from '../../components/WebRTCIntercom';
 import { useAuth } from '@/context/AuthContext';
 import { apiGet } from '@/lib/api';
+import { useVisibleLinks } from '@/lib/useFeatureRegistry';
 import PlatformMap from '../components/PlatformMap';
 
 // Map service IDs to lucide icons
@@ -118,7 +119,11 @@ export default function DashboardPage() {
 
   const money = (n) => (n === null ? '—' : `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
-  const quickLinks = [
+  // Only modules that are on (the live registry): the dashboard listed Wallet,
+  // Society, Carpool, Jobs and more, each leading to "Coming soon" at launch.
+  const visibleLinks = useVisibleLinks();
+
+  const quickLinks = visibleLinks([
     { label: 'My Wallet', href: '/wallet', sub: money(walletBalance) },
     { label: 'Society', href: '/society', sub: 'Gate Pass & Notices' },
     { label: 'Carpool', href: '/carpool', sub: 'Find or offer a ride' },
@@ -129,9 +134,9 @@ export default function DashboardPage() {
     { label: 'Refer & Earn', href: '/referral', sub: 'Invite your neighbours' },
     { label: 'SamparkPlus', href: '/premium', sub: 'Membership benefits' },
     { label: 'Events', href: '/events', sub: "What's on nearby" },
-  ];
+  ]);
 
-  const glanceTiles = [
+  const glanceTiles = visibleLinks([
     { label: 'Wallet', value: money(walletBalance), note: 'Tap to top up', href: '/wallet', Icon: Wallet, tone: 'var(--accent-text)' },
     {
       label: 'Active orders',
@@ -140,7 +145,7 @@ export default function DashboardPage() {
     },
     { label: 'Community', value: feedItems.length, note: 'Recent neighbourhood posts', href: '/community', Icon: Building2, tone: 'var(--info)' },
     { label: 'Bookings', value: appointments.length, note: 'Service bookings', href: '/services', Icon: CalendarDays, tone: 'var(--info)' },
-  ];
+  ]);
 
   const priorityConfig = {
     high: { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20' },

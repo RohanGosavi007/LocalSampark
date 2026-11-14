@@ -15,7 +15,7 @@ import LocationServiceability from '../../components/LocationServiceability';
 import { ThemeToggle } from './ui/ThemeToggle';
 import { apiGet, apiPut } from '@/lib/api';
 import { useCartStore } from '../../store/cartStore';
-import { isFeatureEnabled } from '../../lib/features';
+import { useFeatureRegistry } from '../../lib/useFeatureRegistry';
 
 const AccountDropdown = dynamic(() => import('./AccountDropdown'), { ssr: false });
 
@@ -28,6 +28,8 @@ export default function Header() {
   useEffect(() => { setMounted(true); }, []);
     const { user, activeRole, assignedRoles, switchRole, logout, demoLogin } = useAuth();
   const { t } = useLanguage();
+  // A12/P6: follows the live registry, so an admin's kill switch hides the link without a rebuild.
+  const featureOn = useFeatureRegistry();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   // The signed-in person's own notifications. The dropdown used to show one fixed line, "Sharma
@@ -111,13 +113,13 @@ export default function Header() {
           <a href="/marketplace" className="inline-flex min-h-[44px] items-center text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_market')}</a>
           <a href="/delivery" className="inline-flex min-h-[44px] items-center text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_delivery')}</a>
           
-          {isFeatureEnabled('properties') && (
+          {featureOn('properties') && (
             <a href="/properties" className="text-text font-bold text-sm hover:text-primary transition-colors flex min-h-[44px] items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Building className="w-4 h-4 text-emerald-500" />
               <span>{t('nav_properties')}</span>
             </a>
           )}
-          {isFeatureEnabled('jobs') && (
+          {featureOn('jobs') && (
             <a href="/jobs" className="inline-flex min-h-[44px] items-center text-text font-medium text-sm hover:text-primary transition-colors">{t('nav_jobs')}</a>
           )}
           
@@ -149,37 +151,37 @@ export default function Header() {
                     <div className="p-2 bg-blue-500/10 text-blue-500 rounded-md"><Bike className="w-4 h-4" /></div>
                     <div><p className="text-sm font-semibold">{t('nav_delivery')}</p><p className="text-xs text-text-muted">Local logistics</p></div>
                   </a>
-                  {isFeatureEnabled('chef') && (
+                  {featureOn('chef') && (
                     <a href="/chef" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                       <div className="p-2 bg-secondary/10 text-secondary rounded-md"><ChefHat className="w-4 h-4" /></div>
                       <div><p className="text-sm font-semibold">{t('nav_home_chefs')}</p><p className="text-xs text-text-muted">Authentic local meals</p></div>
                     </a>
                   )}
-                  {isFeatureEnabled('carpool') && (
+                  {featureOn('carpool') && (
                     <a href="/carpool" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                       <div className="p-2 bg-yellow-500/10 text-yellow-600 rounded-md"><Car className="w-4 h-4" /></div>
                       <div><p className="text-sm font-semibold">{t('nav_carpool')}</p><p className="text-xs text-text-muted">Daily commute</p></div>
                     </a>
                   )}
-                  {isFeatureEnabled('properties') && (
+                  {featureOn('properties') && (
                     <a href="/properties" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                       <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-md"><Building className="w-4 h-4" /></div>
                       <div><p className="text-sm font-semibold">{t('nav_properties')}</p><p className="text-xs text-text-muted">Flats, PGs & 0% Brokerage</p></div>
                     </a>
                   )}
-                  {isFeatureEnabled('pets') && (
+                  {featureOn('pets') && (
                     <a href="/pets" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                       <div className="p-2 bg-pink-500/10 text-pink-500 rounded-md"><Dog className="w-4 h-4" /></div>
                       <div><p className="text-sm font-semibold">{t('nav_pets')}</p><p className="text-xs text-text-muted">Adoption & services</p></div>
                     </a>
                   )}
-                  {isFeatureEnabled('equipment_rental') && (
+                  {featureOn('equipment_rental') && (
                     <a href="/equipment" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                       <div className="p-2 bg-orange-500/10 text-orange-500 rounded-md"><Package className="w-4 h-4" /></div>
                       <div><p className="text-sm font-semibold">{t('nav_rentals')}</p><p className="text-xs text-text-muted">Equipment on rent</p></div>
                     </a>
                   )}
-                  {isFeatureEnabled('scrap') && (
+                  {featureOn('scrap') && (
                     <a href="/scrap" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                       <div className="p-2 bg-gray-500/10 text-gray-500 rounded-md"><Trash2 className="w-4 h-4" /></div>
                       <div><p className="text-sm font-semibold">{t('nav_scrap')}</p><p className="text-xs text-text-muted">Sell scrap locally</p></div>
@@ -190,7 +192,7 @@ export default function Header() {
             </AnimatePresence>
           </div>
 
-          {Boolean(isFeatureEnabled('townsquare') || isFeatureEnabled('community_events')) && (
+          {Boolean(featureOn('townsquare') || featureOn('community_events')) && (
             <div 
               className="relative" 
               onMouseEnter={() => setActiveDropdown('community')} 
@@ -205,19 +207,19 @@ export default function Header() {
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full left-0 mt-2 w-64 glass-card p-2 rounded-xl border border-border shadow-2xl z-50 flex flex-col gap-1"
                   >
-                    {isFeatureEnabled('townsquare') && (
+                    {featureOn('townsquare') && (
                       <a href="/townsquare" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                         <div className="p-2 bg-purple-500/10 text-purple-500 rounded-md"><Users className="w-4 h-4" /></div>
                         <div><p className="text-sm font-semibold">{t('nav_townsquare')}</p><p className="text-xs text-text-muted">Local news & updates</p></div>
                       </a>
                     )}
-                    {isFeatureEnabled('community_events') && (
+                    {featureOn('community_events') && (
                       <a href="/events" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                         <div className="p-2 bg-pink-500/10 text-pink-500 rounded-md"><Calendar className="w-4 h-4" /></div>
                         <div><p className="text-sm font-semibold">{t('nav_events')}</p><p className="text-xs text-text-muted">Discover happenings</p></div>
                       </a>
                     )}
-                    {isFeatureEnabled('donations_volunteer') && (
+                    {featureOn('donations_volunteer') && (
                       <>
                         <a href="/volunteer" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                           <div className="p-2 bg-green-500/10 text-green-500 rounded-md"><HeartHandshake className="w-4 h-4" /></div>
@@ -229,7 +231,7 @@ export default function Header() {
                         </a>
                       </>
                     )}
-                    {isFeatureEnabled('society_management') && activeRole === 'resident_member' && (
+                    {featureOn('society_management') && activeRole === 'resident_member' && (
                       <a href="/society" className="flex items-center gap-3 p-2 rounded-lg hover:bg-border/40 transition-colors">
                         <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-md"><Building2 className="w-4 h-4" /></div>
                         <div><p className="text-sm font-semibold">{t('nav_society_hub')}</p><p className="text-xs text-text-muted">Manage your apartment</p></div>
@@ -241,7 +243,7 @@ export default function Header() {
             </div>
           )}
 
-          {Boolean(isFeatureEnabled('premium_saas') || isFeatureEnabled('medical')) && (
+          {Boolean(featureOn('premium_saas') || featureOn('medical')) && (
             <div 
               className="relative" 
               onMouseEnter={() => setActiveDropdown('utilities')} 
@@ -256,13 +258,13 @@ export default function Header() {
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full left-0 mt-2 w-56 glass-card p-2 rounded-xl border border-border shadow-2xl z-50 flex flex-col gap-1"
                   >
-                    {isFeatureEnabled('premium_saas') && (
+                    {featureOn('premium_saas') && (
                       <>
                         <a href="/subscriptions" className="p-2 text-sm hover:bg-border/40 rounded-lg transition-colors">{t('nav_subs')}</a>
                         <a href="/bills" className="p-2 text-sm hover:bg-border/40 rounded-lg transition-colors">{t('nav_bills')}</a>
                       </>
                     )}
-                    {isFeatureEnabled('medical') && (
+                    {featureOn('medical') && (
                       <>
                         <a href="/health" className="p-2 text-sm hover:bg-border/40 rounded-lg transition-colors flex items-center justify-between">
                           {t('nav_health_well')} <Activity className="w-4 h-4 text-emerald-500" />
@@ -532,48 +534,48 @@ export default function Header() {
                   <a href="/shops" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_shops_dir')}</a>
                   <a href="/marketplace" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_market')}</a>
                   <a href="/delivery" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_delivery')}</a>
-                  {isFeatureEnabled('properties') && (
+                  {featureOn('properties') && (
                     <a href="/properties" className="p-3 font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl flex items-center gap-2.5">
                       <Building className="w-5 h-5 text-emerald-500 shrink-0" />
                       <span>{t('nav_properties')}</span>
                     </a>
                   )}
-                  {isFeatureEnabled('jobs') && (
+                  {featureOn('jobs') && (
                     <a href="/jobs" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_jobs')}</a>
                   )}
-                  {isFeatureEnabled('carpool') && (
+                  {featureOn('carpool') && (
                     <a href="/carpool" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_carpool')}</a>
                   )}
                   {process.env.NODE_ENV !== 'production' && <a href="/investor-demo" className="p-3 font-semibold text-emerald-500 hover:bg-border/40 rounded-xl">Investor Demo</a>}
                 </div>
 
-                {Boolean(isFeatureEnabled('townsquare') || isFeatureEnabled('community_events')) && (
+                {Boolean(featureOn('townsquare') || featureOn('community_events')) && (
                   <div className="flex flex-col gap-2">
                     <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Community</p>
-                    {isFeatureEnabled('townsquare') && <a href="/townsquare" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_townsquare')}</a>}
-                    {isFeatureEnabled('community_events') && <a href="/events" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_events')}</a>}
-                    {isFeatureEnabled('donations_volunteer') && (
+                    {featureOn('townsquare') && <a href="/townsquare" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_townsquare')}</a>}
+                    {featureOn('community_events') && <a href="/events" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_events')}</a>}
+                    {featureOn('donations_volunteer') && (
                       <>
                         <a href="/volunteer" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_volunteer')}</a>
                         <a href="/donations" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_charity')}</a>
                       </>
                     )}
-                    {isFeatureEnabled('society_management') && activeRole === 'resident_member' && (
+                    {featureOn('society_management') && activeRole === 'resident_member' && (
                       <a href="/society" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_society_hub')}</a>
                     )}
                   </div>
                 )}
 
-                {Boolean(isFeatureEnabled('premium_saas') || isFeatureEnabled('medical')) && (
+                {Boolean(featureOn('premium_saas') || featureOn('medical')) && (
                   <div className="flex flex-col gap-2">
                     <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Utilities</p>
-                    {isFeatureEnabled('premium_saas') && (
+                    {featureOn('premium_saas') && (
                       <>
                         <a href="/subscriptions" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_subs')}</a>
                         <a href="/bills" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_bills')}</a>
                       </>
                     )}
-                    {isFeatureEnabled('medical') && (
+                    {featureOn('medical') && (
                       <>
                         <a href="/health" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_health_well')}</a>
                         <a href="/care" className="p-3 font-semibold text-text hover:bg-border/40 rounded-xl">{t('nav_elder_care')}</a>

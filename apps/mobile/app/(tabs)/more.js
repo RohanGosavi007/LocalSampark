@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useVisibleModules } from '../../src/hooks/useFeatures';
 import { Wallet, Briefcase, Building2, Store, Truck, Car, Home, IndianRupee, Heart, Cross, Stethoscope, Ticket, User, Settings, LogOut, ShieldCheck, Globe } from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
 
@@ -11,16 +12,19 @@ export default function MoreScreen() {
   const { user, activeRole, logout } = useAuth();
 
   const MODULES = [
-    { title: 'Wallet & Pay', icon: Wallet, route: '/modules/wallet', bg: '#e0e7ff', color: '#4f46e5' },
-    { title: 'Local Jobs', icon: Briefcase, route: '/modules/jobs', bg: '#fef3c7', color: '#d97706' },
-    { title: 'Real Estate', icon: Building2, route: '/modules/properties', bg: '#f3e8ff', color: '#7e22ce' },
+    { title: 'Wallet & Pay', icon: Wallet, route: '/modules/wallet', feature: 'wallet_coins', bg: '#e0e7ff', color: '#4f46e5' },
+    { title: 'Local Jobs', icon: Briefcase, route: '/modules/jobs', feature: 'jobs', bg: '#fef3c7', color: '#d97706' },
+    { title: 'Real Estate', icon: Building2, route: '/modules/properties', feature: 'properties', bg: '#f3e8ff', color: '#7e22ce' },
     { title: 'Home Services', icon: Store, route: '/(tabs)/services', bg: '#dcfce7', color: '#15803d' },
-    { title: 'Medical', icon: Stethoscope, route: '/modules/medical', bg: '#ffe4e6', color: '#be123c' },
-    { title: 'Events', icon: Ticket, route: '/modules/events', bg: '#fae8ff', color: '#c026d3' },
-    { title: 'Carpool', icon: Car, route: '/modules/carpool', bg: '#e0f2fe', color: '#0369a1' },
-    { title: 'Society', icon: Home, route: '/modules/society', bg: '#ccfbf1', color: '#0f766e' },
-    { title: 'Earn Money', icon: IndianRupee, route: '/modules/earn', bg: '#fef9c3', color: '#a16207' },
+    { title: 'Medical', icon: Stethoscope, route: '/modules/medical', feature: 'medical', bg: '#ffe4e6', color: '#be123c' },
+    { title: 'Events', icon: Ticket, route: '/modules/events', feature: 'community_events', bg: '#fae8ff', color: '#c026d3' },
+    { title: 'Carpool', icon: Car, route: '/modules/carpool', feature: 'carpool', bg: '#e0f2fe', color: '#0369a1' },
+    { title: 'Society', icon: Home, route: '/modules/society', feature: 'society_management', bg: '#ccfbf1', color: '#0f766e' },
+    { title: 'Earn Money', icon: IndianRupee, route: '/modules/earn', feature: 'wallet_coins', bg: '#fef9c3', color: '#a16207' },
   ];
+
+  // A12/P6: only modules that are on (the live registry); the rest led to a 403.
+  const visibleModules = useVisibleModules(MODULES);
 
   const ACCOUNT_ACTIONS = [
     { title: 'My Profile', icon: User, route: '/(tabs)/profile' },
@@ -39,7 +43,7 @@ export default function MoreScreen() {
 
         {/* Super-App Grid */}
         <View style={styles.gridContainer}>
-          {MODULES.map((mod, index) => {
+          {visibleModules.map((mod, index) => {
             const IconComponent = mod.icon;
             return (
               <TouchableOpacity 

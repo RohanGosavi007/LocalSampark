@@ -1,0 +1,21 @@
+=== Backend Jest on PostgreSQL Execution ===
+Database: localsampark_test on 127.0.0.1:5432
+Exit Code: 0
+Summary: 1827 passed, 0 failed in 162 suites on PostgreSQL (localsampark_test); 9 @engine sqlite-only suite(s) excluded
+
+STDOUT:
+10:57:37 [32minfo[39m: 📂 SQLite connected. Database location: C:\localsampark 04-09-2026\localsampark 25-10-2026\backend\src\data\test.db
+[0mGET /health [32m200[0m 36.609 ms - 294[0m
+[0mGET /ready [32m200[0m 13.516 ms - 136[0m
+[0mGET /metrics [32m200[0m 0.494 ms - 392[0m
+
+
+STDERR:
+
+Test Suites: 162 passed, 162 total
+Tests:       1827 passed, 1827 total
+Snapshots:   0 total
+Time:        207.75 s, estimated 266 s
+Ran all test suites.
+Test results written to: ..\docs\audit\evidence\verify-2026-11-14T05-22-15\jest-postgres.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

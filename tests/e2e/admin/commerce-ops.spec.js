@@ -93,7 +93,7 @@ test.describe('Commerce Ops console', () => {
     await expect(page.getByTestId('kpi-active-shops')).toContainText(String(kpis.activeShops));
   });
 
-  test('[A2.2] KYC queue: documents, mandatory reason, resubmission and approval', async () => {
+  test('[A2.2] [S1.4] KYC queue: documents, mandatory reason, resubmission and approval', async () => {
     await openSection('sellers');
     const row = page.getByTestId(`kyc-row-${IDS.kyc}`);
     await expect(row).toContainText('E2E Fresh Bakery');
@@ -192,7 +192,7 @@ test.describe('Commerce Ops console', () => {
     await expect(page.getByTestId(`return-row-${IDS.returnRequest}`)).toHaveCount(0);
   });
 
-  test('[A6.4] commission, payout approval and COD settlement', async () => {
+  test('[A6.4] [S4.4] commission, payout approval and COD settlement', async () => {
     await openSection('payouts');
     await expect(page.getByTestId('default-commission')).toContainText('0%');
     await page.getByLabel('Default commission percent').fill('60');
@@ -441,7 +441,7 @@ test.describe('Commerce Ops console', () => {
     expect(listed.data.map((r) => String(r.id))).not.toContain(IDS.reportedReview);
   });
 
-  test('[A12.4] a kill switch reaches the public registry and API gating', async () => {
+  test('[A12.4] [P6.8] a kill switch reaches the public registry and API gating', async () => {
     await openSection('flags');
     const row = page.getByTestId('flag-row-krishi');
     await expect(row).toContainText('Off');

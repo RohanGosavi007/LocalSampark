@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { featureForPath, isWebFeatureEnabled } from './lib/featureRoutes.mjs';
+import { loadFeatureRegistry, resolveFeature } from './lib/featureRegistry.mjs';
 import { makeNonce, buildCsp } from './lib/csp.mjs';
 import { API_URL } from './lib/apiUrl.js';
 
@@ -21,7 +22,7 @@ import { API_URL } from './lib/apiUrl.js';
  *    passed to the layout in x-ls-pathname so each page gets a
  *    self-referencing canonical.
  */
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // 3. The page's Content-Security-Policy (P9), with a nonce for this
@@ -36,7 +37,13 @@ export function middleware(request) {
 
   const feature = featureForPath(pathname);
   let response;
-  if (feature && !isWebFeatureEnabled(feature)) {
+  // The live registry decides (A12/P6: an admin's kill switch must block the page,
+  // not only the API); the build-time default applies when it cannot be read.
+  // Only gated paths ask, and the answer is kept for a few seconds.
+  const enabled = feature
+    ? resolveFeature(feature, await loadFeatureRegistry(API_URL), isWebFeatureEnabled(feature))
+    : true;
+  if (feature && !enabled) {
     const url = request.nextUrl.clone();
     url.pathname = '/coming-soon';
     url.search = '';
