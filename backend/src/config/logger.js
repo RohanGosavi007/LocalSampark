@@ -1,6 +1,7 @@
 const winston = require('winston');
 const path = require('path');
 const fs = require('fs');
+const { winstonRedactor } = require('../utils/logRedaction');
 
 const logDirectory = path.join(__dirname, '../../logs');
 if (!fs.existsSync(logDirectory)) {
@@ -19,11 +20,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const consoleFormat = isProduction
   ? winston.format.combine(
+      winstonRedactor(winston),
       winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
       winston.format.errors({ stack: true }),
       winston.format.json()
     )
   : winston.format.combine(
+      winstonRedactor(winston),
       winston.format.colorize(),
       winston.format.timestamp({ format: 'HH:mm:ss' }),
       winston.format.printf(({ timestamp, level, message, ...meta }) => {
@@ -36,9 +39,11 @@ const consoleFormat = isProduction
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
+  // The redactor runs first: nothing reaches the console or a log file unmasked.
   format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
     winston.format.errors({ stack: true }),
+    winstonRedactor(winston),
+    winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
     winston.format.json()
   ),
   defaultMeta: {

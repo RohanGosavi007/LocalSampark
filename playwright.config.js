@@ -199,6 +199,14 @@ module.exports = defineConfig({
         PORT: '3000',
         // apps/web/src/lib/api.js appends /api/v1 to this origin.
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
+        // Error reporting is on in the E2E builds, pointed at a DSN that goes
+        // nowhere: tests/e2e/web/observability.spec.js intercepts what the page
+        // sends to it (P8). Tracing is off so a page load sends nothing; only a
+        // real error does.
+        NEXT_PUBLIC_SENTRY_DSN: 'https://e2epublickey@o0.ingest.sentry.io/1',
+        NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0',
+        SENTRY_TRACES_SAMPLE_RATE: '0',
+        NEXT_PUBLIC_SENTRY_RELEASE: 'e2e-release',
         // apps/web/.env holds a live Firebase project; with it the login page
         // put a real Google reCAPTCHA in front of every E2E sign-in. Set to ''
         // (Next does not override a variable that is already set), so the
@@ -221,6 +229,14 @@ module.exports = defineConfig({
       timeout: 600000,
       env: {
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
+        // Error reporting is on in the E2E builds, pointed at a DSN that goes
+        // nowhere: tests/e2e/web/observability.spec.js intercepts what the page
+        // sends to it (P8). Tracing is off so a page load sends nothing; only a
+        // real error does.
+        NEXT_PUBLIC_SENTRY_DSN: 'https://e2epublickey@o0.ingest.sentry.io/1',
+        NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0',
+        SENTRY_TRACES_SAMPLE_RATE: '0',
+        NEXT_PUBLIC_SENTRY_RELEASE: 'e2e-release',
       },
     },
   ],

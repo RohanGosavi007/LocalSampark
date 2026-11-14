@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@localsampark/shared": "*",
+    "@sentry/nextjs": "^10.74.0",
     "leaflet": "^1.9.4",
     "next": "^15.5.25",
     "react": "^18.3.0",

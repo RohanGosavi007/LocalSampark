@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { sentryDsn } from './lib/sentryDsn';
+import { scrubEvent, scrubBreadcrumb } from '@localsampark/shared/redact';
 
 /**
  * Browser-side Sentry initialisation.
@@ -34,6 +35,13 @@ if (dsn) Sentry.init({
   tracesSampleRate,
   debug: false,
   environment: process.env.NODE_ENV,
+  // Ties a report to the deployed commit (and to the source maps uploaded for it).
+  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || undefined,
+  // Nothing personal leaves the browser or server: no IP, cookies or request
+  // bodies by default, and what remains is scrubbed (packages/shared/redact.js).
+  sendDefaultPii: false,
+  beforeSend: scrubEvent,
+  beforeBreadcrumb: scrubBreadcrumb,
 });
 
 // No onRouterTransitionStart export: @sentry/nextjs 10.74.0 as installed here

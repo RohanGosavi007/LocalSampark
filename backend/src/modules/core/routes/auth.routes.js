@@ -704,15 +704,20 @@ router.post('/send-whatsapp-otp', authLimiter, async (req, res, next) => {
         return res.status(503).json({ error: 'We could not send the code on WhatsApp. Please use SMS or Email.', code: 'WHATSAPP_UNAVAILABLE' });
       }
     } else {
-      logger.info(`[WHATSAPP OTP DEBUG] ${otp} for ${phoneNumber} (Free/Dev mode active)`);
+      // Developer machines only (the guard above refuses anything else when
+      // WhatsApp is not configured). The code itself is never logged.
+      logger.info(`[WHATSAPP OTP] WhatsApp is not configured; code generated for ${phoneNumber} (development mode)`);
     }
 
-    const waLink = whatsapp.getWhatsAppWebLink(phoneNumber, `Your LocalSampark verification code is: ${otp}`);
+    // The wa.me link CONTAINS the code (?text=Your code is 123456). It used to be
+    // returned to every caller, so anyone could request a code for any number and
+    // read it from this response: a login as that person. It is part of the
+    // response only on a developer machine, where the code is shown anyway.
     res.json({
       success: true,
       message: whatsapp.isConfigured() ? 'WhatsApp OTP sent successfully' : 'WhatsApp code generated. Use code or tap link below.',
       otp: (developer && isFreeMode) ? otp : undefined,
-      whatsappWebLink: waLink
+      whatsappWebLink: developer ? whatsapp.getWhatsAppWebLink(phoneNumber, `Your LocalSampark verification code is: ${otp}`) : undefined
     });
   } catch (error) {
     next(error);
@@ -790,7 +795,8 @@ router.post('/register-email',
        <a href="${verifyLink}" style="padding:10px 20px;background:blue;color:white;text-decoration:none;border-radius:5px">Verify Email</a>`
     ).catch(e => console.warn('[EMAIL] Best-effort verify email failed:', e.message));
 
-    logger.info(`[EMAIL VERIFY DEBUG] Verification link: ${verifyLink}`);
+    // The link carries the one-time token, so it is not logged.
+    logger.info(`[EMAIL] Verification link issued for user ${user.id}`);
 
     // Generate JWT tokens directly so user can be automatically authenticated
     const { accessToken, refreshToken } = generateTokens(
@@ -908,7 +914,9 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
        <h3 style="background:#f4f4f4;padding:10px;display:inline-block;letter-spacing:2px;">${token}</h3>`
     ).catch(e => console.warn('[EMAIL] Best-effort forgot password send failed:', e.message));
 
-    logger.info(`[PASSWORD RESET DEBUG] Reset token: ${token}`);
+    // The token is a credential: anyone who could read this log could take the
+    // account over. It was logged in full, in production too.
+    logger.info(`[PASSWORD RESET] Reset issued for user ${user.id}`);
     res.json({
       success: true,
       message: 'Password reset link sent to email',

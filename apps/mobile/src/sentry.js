@@ -17,6 +17,7 @@
  * or a launch.
  */
 import Constants from 'expo-constants';
+import { scrubEvent, scrubBreadcrumb } from './redact';
 
 let Sentry = null;
 let initialised = false;
@@ -52,9 +53,13 @@ if (Sentry && DSN) {
       // Breadcrumbs make a startup crash far easier to place, but console
       // breadcrumbs can capture noisy PII-adjacent logs, so they stay off.
       enableCaptureFailedRequests: true,
-      beforeBreadcrumb(breadcrumb) {
-        return breadcrumb?.category === 'console' ? null : breadcrumb;
-      },
+      // Nothing personal leaves the phone: no default PII, and every event and
+      // breadcrumb is scrubbed of auth headers, request bodies, secret query
+      // values, phone numbers and e-mail addresses (src/redact.js). Console
+      // breadcrumbs are dropped.
+      sendDefaultPii: false,
+      beforeSend: scrubEvent,
+      beforeBreadcrumb: scrubBreadcrumb,
     });
 
     initialised = true;

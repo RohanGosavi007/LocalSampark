@@ -19,19 +19,16 @@ try {
   console.warn('Sentry profiling-node module not found. Profiling will be disabled.');
 }
 
-// Initialize Sentry before everything else
-if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+// Initialize Sentry before everything else. The settings (sampling, release,
+// scrubbing of credentials and personal details) are in config/sentry.js.
+const { sentryConfig } = require('./config/sentry');
+const sentry = sentryConfig(undefined, require('../package.json').version);
+if (sentry.enabled) {
   const integrations = [];
-  if (nodeProfilingIntegration) {
+  if (nodeProfilingIntegration && sentry.options.profilesSampleRate > 0) {
     integrations.push(nodeProfilingIntegration());
   }
-  
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    integrations,
-    tracesSampleRate: 1.0, 
-    profilesSampleRate: 1.0,
-  });
+  Sentry.init({ ...sentry.options, integrations });
 }
 
 const { connectDB, pool, query } = require('./config/database');
@@ -74,10 +71,10 @@ const supabaseRealtime = require('./modules/core/services/supabaseRealtime.servi
 
 // ─── TELEMETRY & LOGGING ────────────────────────────────────
 const logger = require('./config/logger');
-if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
-  logger.info('✅ Sentry Error-Tracking SDK initialized successfully (Production)');
+if (sentry.enabled) {
+  logger.info(`Sentry error reporting is on (release ${sentry.options.release}, traces ${sentry.options.tracesSampleRate})`);
 } else {
-  logger.info('Sentry Error-Tracking SDK initialized successfully (Staging)');
+  logger.info('Sentry error reporting is off (needs NODE_ENV=production and a valid SENTRY_DSN)');
 }
 
 // ─── MIDDLEWARE ──────────────────────────────────────────────
@@ -296,6 +293,12 @@ app.get('/ready', async (req, res) => {
 
     checks.schema = count >= 3 ? 'ready' : 'incomplete';
     if (count < 3) isReady = false;
+
+    // 3. Every migration this build ships has been applied (PostgreSQL).
+    const migrations = await require('./services/readiness.service').migrationStatus((sql) => query(sql), { isSqlite });
+    checks.migrations = migrations.state;
+    if (migrations.pending.length) checks.pendingMigrations = migrations.pending.slice(0, 10);
+    if (!migrations.ready) isReady = false;
   } catch (err) {
     checks.schema = 'check_failed';
     isReady = false;
@@ -344,7 +347,7 @@ app.use(API_PREFIX, apiRouter);
 app.use('/api', apiRouter); // Backward compatibility fallback mount
 
 // ─── ERROR HANDLING ─────────────────────────────────────────
-if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+if (sentry.enabled) {
   Sentry.setupExpressErrorHandler(app);
 }
 
@@ -738,6 +741,8 @@ if (process.env.NODE_ENV !== 'test') {
         require('./jobs/amc-expiry-alert.job');
         require('./jobs/subscription-expiry.job');
         require('./jobs/unpaid-order-expiry.job');
+    // Asks Razorpay about payments whose outcome never reached us (P2).
+    require('./jobs/payment-reconciliation.job');
     // Starts and ends merchants' scheduled campaigns.
     require('./jobs/campaign-schedule.job');
     // Prunes spent refresh-token records and stale job locks.

@@ -5,7 +5,8 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
-    "./territoryTopology": "./territoryTopology.js"
+    "./territoryTopology": "./territoryTopology.js",
+    "./redact": "./redact.js"
   },
   "dependencies": {
     "@turf/turf": "^7.4.0"

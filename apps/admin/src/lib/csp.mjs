@@ -35,7 +35,8 @@ export function buildCsp({ nonce, apiUrl, dev = false } = {}) {
     'font-src': ["'self'", 'data:'],
     // KYC documents come from storage signed URLs; map tiles from OSM.
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
-    'connect-src': ["'self'", ...apiOrigins(apiUrl), ...(dev ? ['ws:'] : [])],
+    // Sentry's ingest hosts: error reports (scrubbed of personal data first).
+    'connect-src': ["'self'", ...apiOrigins(apiUrl), 'https://*.ingest.sentry.io', 'https://*.sentry.io', ...(dev ? ['ws:'] : [])],
     'frame-src': ["'none'"],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],

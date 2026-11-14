@@ -1,3 +1,7 @@
+// From '@sentry/nextjs/config', not '@sentry/nextjs': the root re-export is
+// deprecated in v10 and stops working in v11 (same as apps/web/next.config.mjs).
+import { withSentryConfig } from '@sentry/nextjs/config';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -54,4 +58,17 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Source maps are uploaded (and hidden from the browser) only when a
+// SENTRY_AUTH_TOKEN is present; without one the build is untouched.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  hideSourceMaps: true,
+  widenClientFileUpload: false,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  webpack: {
+    treeshake: { removeDebugLogging: true },
+    automaticVercelMonitors: false,
+  },
+});
