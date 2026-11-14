@@ -49,7 +49,24 @@ const CONNECT_HOSTS = [
 ];
 const FRAME_HOSTS = ['https://api.razorpay.com', 'https://checkout.razorpay.com', 'https://www.google.com', 'https://*.firebaseapp.com'];
 
-export function buildCsp({ nonce, apiUrl, dev = false } = {}) {
+/**
+ * The origin of the configured Sentry DSN, so error reports can leave the page
+ * for it. The fixed Sentry hosts above cover sentry.io; a self-hosted Sentry, or
+ * a relay on a custom domain, would otherwise be blocked by this policy and
+ * every report lost. Only an https origin, or an http one on this machine.
+ */
+export function dsnOrigin(dsn) {
+  try {
+    const u = new URL(String(dsn || '').trim());
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname);
+    return u.protocol === 'https:' || (u.protocol === 'http:' && loopback) ? u.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+export function buildCsp({ nonce, apiUrl, dev = false, sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN } = {}) {
+  const sentry = dsnOrigin(sentryDsn);
   const directives = {
     'default-src': ["'self'"],
     'script-src': ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...SCRIPT_HOSTS, ...(dev ? ["'unsafe-eval'"] : [])],
@@ -58,7 +75,7 @@ export function buildCsp({ nonce, apiUrl, dev = false } = {}) {
     // Shop and product photos come from whichever storage a seller's upload
     // went to, and avatars from a generator; any https image is allowed.
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
-    'connect-src': ["'self'", ...apiOrigins(apiUrl), ...CONNECT_HOSTS, ...(dev ? ['ws:'] : [])],
+    'connect-src': ["'self'", ...apiOrigins(apiUrl), ...CONNECT_HOSTS, ...(sentry ? [sentry] : []), ...(dev ? ['ws:'] : [])],
     'frame-src': FRAME_HOSTS,
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],

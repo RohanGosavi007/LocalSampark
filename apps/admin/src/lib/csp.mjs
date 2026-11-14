@@ -27,7 +27,23 @@ export function apiOrigins(apiUrl) {
   }
 }
 
-export function buildCsp({ nonce, apiUrl, dev = false } = {}) {
+/**
+ * The origin of the configured Sentry DSN, so error reports can leave the page
+ * for it (a self-hosted Sentry or a custom-domain relay would otherwise be
+ * blocked by this policy). Only https, or http on this machine.
+ */
+export function dsnOrigin(dsn) {
+  try {
+    const u = new URL(String(dsn || '').trim());
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname);
+    return u.protocol === 'https:' || (u.protocol === 'http:' && loopback) ? u.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+export function buildCsp({ nonce, apiUrl, dev = false, sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN } = {}) {
+  const sentry = dsnOrigin(sentryDsn);
   const directives = {
     'default-src': ["'self'"],
     'script-src': ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(dev ? ["'unsafe-eval'"] : [])],
@@ -36,7 +52,7 @@ export function buildCsp({ nonce, apiUrl, dev = false } = {}) {
     // KYC documents come from storage signed URLs; map tiles from OSM.
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
     // Sentry's ingest hosts: error reports (scrubbed of personal data first).
-    'connect-src': ["'self'", ...apiOrigins(apiUrl), 'https://*.ingest.sentry.io', 'https://*.sentry.io', ...(dev ? ['ws:'] : [])],
+    'connect-src': ["'self'", ...apiOrigins(apiUrl), 'https://*.ingest.sentry.io', 'https://*.sentry.io', ...(sentry ? [sentry] : []), ...(dev ? ['ws:'] : [])],
     'frame-src': ["'none'"],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],

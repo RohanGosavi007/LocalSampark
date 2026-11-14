@@ -184,6 +184,14 @@ module.exports = defineConfig({
       },
     },
     {
+      // The stand-in for Sentry (see the file): started first so the page never
+      // sees a refused connection.
+      command: 'node scripts/e2e/sentry-sink.js',
+      url: 'http://127.0.0.1:5099',
+      reuseExistingServer: false,
+      timeout: 30000,
+    },
+    {
       // A production build by default: what ships, and fast per request.
       // Under `next dev` every first visit to a route compiled it, and with
       // parallel workers the compiles queued behind each other: plain page
@@ -199,12 +207,12 @@ module.exports = defineConfig({
         PORT: '3000',
         // apps/web/src/lib/api.js appends /api/v1 to this origin.
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
-        // Error reporting is on in the E2E builds, pointed at the E2E API on this
-        // machine (never at Sentry): tests/e2e/web/observability.spec.js intercepts
-        // what the page sends there (P8). The E2E API answers 404 to it, which the
-        // console-error specs already ignore. Tracing is off so a page load sends
-        // no performance data; only sessions and real errors are sent.
-        NEXT_PUBLIC_SENTRY_DSN: 'http://e2epublickey@localhost:5000/1',
+        // Error reporting is on in the E2E builds, pointed at a local stand-in
+        // (scripts/e2e/sentry-sink.js, started below), never at Sentry and never at
+        // the API (whose per-IP rate limit it would eat). The observability specs
+        // intercept what the page sends. Tracing is off so a page load sends no
+        // performance data; only sessions and real errors are sent.
+        NEXT_PUBLIC_SENTRY_DSN: 'http://e2epublickey@localhost:5099/1',
         NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0',
         SENTRY_TRACES_SAMPLE_RATE: '0',
         NEXT_PUBLIC_SENTRY_RELEASE: 'e2e-release',
@@ -230,12 +238,12 @@ module.exports = defineConfig({
       timeout: 600000,
       env: {
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
-        // Error reporting is on in the E2E builds, pointed at the E2E API on this
-        // machine (never at Sentry): tests/e2e/web/observability.spec.js intercepts
-        // what the page sends there (P8). The E2E API answers 404 to it, which the
-        // console-error specs already ignore. Tracing is off so a page load sends
-        // no performance data; only sessions and real errors are sent.
-        NEXT_PUBLIC_SENTRY_DSN: 'http://e2epublickey@localhost:5000/1',
+        // Error reporting is on in the E2E builds, pointed at a local stand-in
+        // (scripts/e2e/sentry-sink.js, started below), never at Sentry and never at
+        // the API (whose per-IP rate limit it would eat). The observability specs
+        // intercept what the page sends. Tracing is off so a page load sends no
+        // performance data; only sessions and real errors are sent.
+        NEXT_PUBLIC_SENTRY_DSN: 'http://e2epublickey@localhost:5099/1',
         NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0',
         SENTRY_TRACES_SAMPLE_RATE: '0',
         NEXT_PUBLIC_SENTRY_RELEASE: 'e2e-release',

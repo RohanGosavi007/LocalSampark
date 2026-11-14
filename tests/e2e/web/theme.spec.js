@@ -140,8 +140,11 @@ test.describe('theme system', () => {
     // The control is also the smallest thing in a crowded header, so it is
     // worth pinning: 63-93% of interactive elements were under 44px.
     const box = await toggle.boundingBox();
-    expect(box.width).toBeGreaterThanOrEqual(44);
-    expect(box.height).toBeGreaterThanOrEqual(44);
+    // 44 px is the minimum tap target. A box is measured in fractions of a pixel
+    // (it read 43.9999995 for a 44 px button), so a hair of tolerance: the check
+    // is that the button is not 40 px, not that floating point agrees.
+    expect(box.width).toBeGreaterThanOrEqual(43.5);
+    expect(box.height).toBeGreaterThanOrEqual(43.5);
 
     // The old implementation called window.location.reload(), throwing away
     // cart state and scroll position to change a colour.
