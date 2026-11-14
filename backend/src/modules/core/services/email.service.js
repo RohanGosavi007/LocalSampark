@@ -1,5 +1,6 @@
 const logger = require('../../../config/logger.js');
 const nodemailer = require('nodemailer');
+const emailProviders = require('./emailProviders');
 
 // ─── EMAIL TRANSPORTER ──────────────────────────────────────────
 // Uses Gmail SMTP (free: 500 emails/day) or any SMTP provider
@@ -11,6 +12,11 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '', // Use App Password for Gmail
   },
+  // Bounded: sendEmail is awaited inside request handlers, and nodemailer's own
+  // defaults wait up to two minutes for a server that is not answering.
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 const FROM_ADDRESS = process.env.SMTP_FROM || 'LocalSampark <noreply@localsampark.in>';
@@ -74,23 +80,24 @@ function getBaseTemplate(content, title) {
  */
 async function sendEmail(to, subject, htmlContent) {
   try {
-    if (!process.env.SMTP_USER) {
-      logger.info(`[EMAIL] Would send to ${to}: ${subject}`);
-      logger.info(`[EMAIL] Content preview: ${htmlContent.substring(0, 200)}...`);
-      return { success: true, mock: true };
+    // The carrier is chosen in emailProviders.js (Resend, Brevo, SMTP, a local
+    // outbox in development, or none). A message body is never logged.
+    const result = await emailProviders.deliver(
+      { from: FROM_ADDRESS, to, subject: `${subject} | LocalSampark`, html: htmlContent },
+      { transporter }
+    );
+    if (result.success) {
+      logger.info(`[EMAIL] ${result.mock ? 'Written to the development outbox' : 'Sent'} via ${result.provider}: ${subject}`);
+      return { success: true, messageId: result.messageId, mock: result.mock, provider: result.provider };
     }
-
-    const info = await transporter.sendMail({
-      from: FROM_ADDRESS,
-      to,
-      subject: `${subject} | LocalSampark`,
-      html: htmlContent,
-    });
-
-    logger.info(`[EMAIL] Sent to ${to}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    if (result.notConfigured) {
+      logger.warn(`[EMAIL] Not sent (no email carrier is configured: set RESEND_API_KEY, BREVO_API_KEY or SMTP_USER): ${subject}`);
+    } else {
+      console.error(`[EMAIL] Failed via ${result.provider}: ${result.error}`);
+    }
+    return { success: false, error: result.error, provider: result.provider };
   } catch (error) {
-    console.error(`[EMAIL] Failed to send to ${to}:`, error.message);
+    console.error('[EMAIL] Failed to send:', error.message);
     return { success: false, error: error.message };
   }
 }

@@ -55,7 +55,6 @@ describe('Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4)', () => {
     );
 
     // Clean up
-    await query('DELETE FROM platform_ledger_entries WHERE account_id = $1 OR reference_id IN ($2, $3)', [TEST_SHOP_ID, TEST_ORDER_PENDING_ID, TEST_ORDER_DELIVERED_ID]);
     await query('DELETE FROM order_items WHERE order_id IN ($1, $2)', [TEST_ORDER_PENDING_ID, TEST_ORDER_DELIVERED_ID]);
     await query('DELETE FROM orders WHERE id IN ($1, $2)', [TEST_ORDER_PENDING_ID, TEST_ORDER_DELIVERED_ID]);
     await query('DELETE FROM vendor_kyc WHERE shop_id = $1', [TEST_SHOP_ID]);
@@ -125,7 +124,6 @@ describe('Milestone M4.1: Seller Operations Hub (S1, S2, S3, S4)', () => {
   });
 
   afterAll(async () => {
-    await query('DELETE FROM platform_ledger_entries WHERE account_id = $1 OR reference_id IN ($2, $3)', [TEST_SHOP_ID, TEST_ORDER_PENDING_ID, TEST_ORDER_DELIVERED_ID]);
     await query('DELETE FROM order_items WHERE order_id IN ($1, $2)', [TEST_ORDER_PENDING_ID, TEST_ORDER_DELIVERED_ID]);
     await query('DELETE FROM orders WHERE id IN ($1, $2)', [TEST_ORDER_PENDING_ID, TEST_ORDER_DELIVERED_ID]);
     await query('DELETE FROM vendor_kyc WHERE shop_id = $1', [TEST_SHOP_ID]);

@@ -16,8 +16,24 @@ class S3StorageProvider extends StorageProvider {
     this.publicBaseUrl = config.publicBaseUrl || process.env.STORAGE_PUBLIC_URL || '';
   }
 
+  get isRemote() {
+    return true;
+  }
+
   isConfigured() {
     return Boolean(this.endpoint && this.bucket && this.accessKey && this.secretKey);
+  }
+
+  /**
+   * A key as it appears in the request path: each segment URI-encoded, slashes
+   * kept. SigV4 signs the encoded path, so a key with a space or a non-ASCII
+   * character ("Aadhaar copy (1).jpg") signed raw is rejected by the store with
+   * a signature mismatch, for the upload and for the link alike.
+   */
+  _encodeKey(key) {
+    return String(key).replace(/^\/+/, '').split('/')
+      .map((part) => encodeURIComponent(part).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`))
+      .join('/');
   }
 
   _getHmac(key, string) {
@@ -39,7 +55,7 @@ class S3StorageProvider extends StorageProvider {
 
     const cleanKey = key.replace(/^\/+/, '');
     const cleanEndpoint = this.endpoint.replace(/\/+$/, '');
-    const url = `${cleanEndpoint}/${this.bucket}/${cleanKey}`;
+    const url = `${cleanEndpoint}/${this.bucket}/${this._encodeKey(cleanKey)}`;
     const date = new Date();
     const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = amzDate.slice(0, 8);
@@ -65,7 +81,7 @@ class S3StorageProvider extends StorageProvider {
 
     const canonicalRequest = [
       'PUT',
-      `/${this.bucket}/${cleanKey}`,
+      `/${this.bucket}/${this._encodeKey(cleanKey)}`,
       '',
       canonicalHeaders,
       signedHeaders,
@@ -98,13 +114,20 @@ class S3StorageProvider extends StorageProvider {
     }
 
     const publicUrl = this.publicBaseUrl
-      ? `${this.publicBaseUrl.replace(/\/+$/, '')}/${cleanKey}`
-      : `${cleanEndpoint}/${this.bucket}/${cleanKey}`;
+      ? `${this.publicBaseUrl.replace(/\/+$/, '')}/${this._encodeKey(cleanKey)}`
+      : `${cleanEndpoint}/${this.bucket}/${this._encodeKey(cleanKey)}`;
 
     return {
       key: cleanKey,
       url: isPublic ? publicUrl : `/api/v1/upload/files/${cleanKey}`,
     };
+  }
+
+  /** An object's bytes, read through a short-lived signed link. */
+  async getObject(key) {
+    const res = await fetch(await this.getSignedUrl(key, 120));
+    if (!res.ok) throw new Error(`getObject ${key}: ${res.status}`);
+    return { buffer: Buffer.from(await res.arrayBuffer()), mimeType: res.headers.get('content-type') || undefined };
   }
 
   async getSignedUrl(key, expiresInSeconds = 600) {
@@ -135,7 +158,7 @@ class S3StorageProvider extends StorageProvider {
 
     const canonicalRequest = [
       'GET',
-      `/${this.bucket}/${cleanKey}`,
+      `/${this.bucket}/${this._encodeKey(cleanKey)}`,
       canonicalQueryString,
       `host:${host}\n`,
       'host',
@@ -152,14 +175,14 @@ class S3StorageProvider extends StorageProvider {
     const signingKey = this._getSignatureKey(this.secretKey, dateStamp, this.region, 's3');
     const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
 
-    return `${cleanEndpoint}/${this.bucket}/${cleanKey}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
+    return `${cleanEndpoint}/${this.bucket}/${this._encodeKey(cleanKey)}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
   }
 
   async deleteObject(key) {
     if (!this.isConfigured()) return false;
     const cleanKey = key.replace(/^\/+/, '');
     const cleanEndpoint = this.endpoint.replace(/\/+$/, '');
-    const url = `${cleanEndpoint}/${this.bucket}/${cleanKey}`;
+    const url = `${cleanEndpoint}/${this.bucket}/${this._encodeKey(cleanKey)}`;
 
     const date = new Date();
     const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -177,7 +200,7 @@ class S3StorageProvider extends StorageProvider {
 
     const canonicalRequest = [
       'DELETE',
-      `/${this.bucket}/${cleanKey}`,
+      `/${this.bucket}/${this._encodeKey(cleanKey)}`,
       '',
       canonicalHeaders,
       signedHeaders,

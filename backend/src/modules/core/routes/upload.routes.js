@@ -50,6 +50,14 @@ router.get('/files/:id', optionalAuth, async (req, res, next) => {
     );
     if (!allowed) return res.status(404).json({ success: false, error: 'File not found' });
 
+    // Object storage: the file is not on this machine. Hand the caller a link to
+    // it that works for five minutes (access was decided above).
+    const storage = require('../../../services/storage').getStorageProvider();
+    if (storage.isRemote) {
+      res.set('Cache-Control', 'private, no-store');
+      return res.redirect(302, await storage.getSignedUrl(row.file_path, 300));
+    }
+
     const full = uploads.diskPath(row);
     if (!full || !fs.existsSync(full)) return res.status(404).json({ success: false, error: 'File not found' });
 

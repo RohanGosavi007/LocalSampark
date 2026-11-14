@@ -292,6 +292,7 @@ class ReturnService {
         if (offGateway === 'wallet') {
           await ledgerService.recordTransaction({
             referenceType: 'ORDER_REFUND', referenceId: returnRecord.order_id,
+            postingKey: `RETURN_REFUND:${returnId}`,
             description: `Refund to wallet for return #${returnId}`,
             entries: [
               { entryType: 'DEBIT', accountType: 'SELLER_PAYABLE', accountId: returnRecord.shop_id, amountPaise: refundPaise },
@@ -299,7 +300,7 @@ class ReturnService {
             ],
           });
         } else {
-          await ledgerService.recordOrderRefund({ orderId: returnRecord.order_id, shopId: returnRecord.shop_id, refundAmountPaise: refundPaise, reason: `return ${returnId}` });
+          await ledgerService.recordOrderRefund({ orderId: returnRecord.order_id, shopId: returnRecord.shop_id, refundAmountPaise: refundPaise, reason: `return ${returnId}`, postingKey: `RETURN_REFUND:${returnId}` });
         }
       } catch (ledgerErr) {
         logger.warn(`⚠️ Ledger logging notice for return ${returnId}: ${ledgerErr.message}`);

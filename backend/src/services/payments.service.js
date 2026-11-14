@@ -251,7 +251,8 @@ async function createPayment({ user, purpose, referenceId, amount }) {
 
   const kind = PURPOSES[purpose];
   if (!kind) throw new PaymentError(400, 'UNKNOWN_PURPOSE', `Unknown payment purpose: ${purpose}`);
-  if (!razorpay.isConfigured()) throw new razorpay.PaymentsUnavailableError();
+  // Keys AND the switch (ENABLE_ONLINE_PAYMENTS): see razorpay.onlinePaymentsEnabled.
+  if (!razorpay.acceptingPayments()) throw new razorpay.PaymentsUnavailableError();
 
   let amountPaise;
   let reference = null;
@@ -435,7 +436,7 @@ module.exports = {
     handleWebhookEvent,
   settle,
   paymentMethod,
-  onlinePaymentAvailable: () => razorpay.isConfigured(),
+  onlinePaymentAvailable: () => razorpay.acceptingPayments(),
     debitWallet,
   creditWallet,
   activateSubscription,

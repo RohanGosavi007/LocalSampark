@@ -112,6 +112,7 @@ async function markPaid({ id, reference, adminId, payeeUpi }) {
     await require('./ledger.service').recordTransaction({
       referenceType: 'ORDER_REFUND',
       referenceId: payout.order_id,
+      postingKey: `REFUND_PAYOUT:${id}`,
       description: `Manual refund payout ${id} (ref ${ref})`,
       entries: [
         { entryType: 'DEBIT', accountType: 'REFUND_PAYABLE', accountId: payout.order_id, amountPaise: paise },

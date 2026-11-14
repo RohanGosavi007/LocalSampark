@@ -22,6 +22,12 @@ const fs = require('fs');
 const { TEST_DB_PATH } = require('./jest.globalSetup');
 
 process.env.NODE_ENV = 'test';
+// The development email outbox (services/emailProviders.js) writes one file per
+// message; tests send a lot of them and should not leave them in the repository.
+process.env.EMAIL_OUTBOX_DIR = require('path').join(require('os').tmpdir(), 'localsampark-test-outbox');
+// A developer's backend/.env may hold real email credentials. Set to '' (not
+// deleted: dotenv fills in anything that is unset), so no test can send a real email.
+for (const key of ['RESEND_API_KEY', 'BREVO_API_KEY', 'SMTP_USER', 'SMTP_PASS', 'EMAIL_PROVIDER']) process.env[key] = '';
 process.env.BYPASS_FEATURE_FLAGS = 'true';
 const usePg = process.env.TEST_USE_POSTGRES === '1' || process.env.TEST_USE_POSTGRES === 'true';
 process.env.USE_SQLITE = usePg ? 'false' : 'true';

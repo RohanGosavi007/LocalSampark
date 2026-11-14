@@ -54,6 +54,30 @@ function isConfigured() {
   return Boolean(keyId() && keySecret());
 }
 
+/**
+ * The switch for TAKING new online payments (decision D4: off at launch, until
+ * the business KYC with Razorpay is complete). Having keys is not enough: a
+ * test key pasted into the production environment would otherwise have turned
+ * online payment on for customers.
+ *
+ *   ENABLE_ONLINE_PAYMENTS=true    on
+ *   ENABLE_ONLINE_PAYMENTS=false   off, even with keys
+ *   unset                          on in development and test, OFF in production
+ *
+ * Refunds, webhooks and reconciliation are not gated by it: money already taken
+ * must still be settled and returned after the switch is turned off.
+ */
+function onlinePaymentsEnabled(env = { ENABLE_ONLINE_PAYMENTS: process.env.ENABLE_ONLINE_PAYMENTS, NODE_ENV: process.env.NODE_ENV }) {
+  if (env.ENABLE_ONLINE_PAYMENTS === 'true') return true;
+  if (env.ENABLE_ONLINE_PAYMENTS === 'false') return false;
+  return ['development', 'test'].includes(env.NODE_ENV);
+}
+
+/** True when a new online payment may be started: keys are set and the switch is on. */
+function acceptingPayments() {
+  return isConfigured() && onlinePaymentsEnabled();
+}
+
 let client = null;
 let clientFor = null;
 let injected = null;
@@ -131,6 +155,12 @@ function verifyWebhookSignature(rawBody, signature) {
   return safeEqual(expected, String(signature));
 }
 
+/** The payments Razorpay holds against one of its orders (reconciliation). */
+async function fetchOrderPayments(razorpayOrderId) {
+  const result = await sdk().orders.fetchPayments(razorpayOrderId);
+  return (result && result.items) || [];
+}
+
 /** The payment as Razorpay holds it: status, amount in paise, order id. */
 async function fetchPayment(razorpayPaymentId) {
   return sdk().payments.fetch(razorpayPaymentId);
@@ -159,12 +189,15 @@ function _setClientForTests(fake) {
 module.exports = {
   PaymentsUnavailableError,
   isConfigured,
+  onlinePaymentsEnabled,
+  acceptingPayments,
   isWebhookConfigured: () => Boolean(webhookSecret()),
   keyId,
   createOrder,
   verifyCheckoutSignature,
   verifyWebhookSignature,
-    fetchPayment,
+  fetchPayment,
+  fetchOrderPayments,
   refundPayment,
   _setClientForTests,
 };

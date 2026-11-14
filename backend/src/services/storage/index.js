@@ -17,8 +17,14 @@ function getStorageProvider() {
   return currentProvider;
 }
 
+/** Tests substitute the provider; passing null restores the configured one. */
+function _setProviderForTests(provider) {
+  currentProvider = provider;
+}
+
 module.exports = {
   getStorageProvider,
+  _setProviderForTests,
   LocalStorageProvider,
   S3StorageProvider,
 };

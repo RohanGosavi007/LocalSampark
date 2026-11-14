@@ -45,7 +45,7 @@ function sendPaymentError(res, err, next) {
 // The key id is public: the browser needs it to open Checkout, and it
 // identifies the merchant without authorising anything.
 router.get('/config', (req, res) => {
-  const enabled = razorpay.isConfigured();
+  const enabled = razorpay.acceptingPayments();
   res.json({ success: true, enabled, keyId: enabled ? razorpay.keyId() : null, purposes: payments.PURPOSES });
 });
 

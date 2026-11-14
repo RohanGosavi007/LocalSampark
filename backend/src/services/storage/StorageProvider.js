@@ -3,6 +3,11 @@
  * Defines uniform methods for saving, retrieving, and signing object storage URLs.
  */
 class StorageProvider {
+  /** True when files live off this machine (object storage), so they cannot be read from disk. */
+  get isRemote() {
+    return false;
+  }
+
   /**
    * Save an object into storage.
    * @param {Object} params

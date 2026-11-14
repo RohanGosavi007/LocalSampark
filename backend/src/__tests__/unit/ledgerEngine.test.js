@@ -8,19 +8,13 @@ describe('P3 Double-Entry Platform Payments Ledger', () => {
   const TEST_ORDER_ID = crypto.randomUUID();
 
   beforeAll(async () => {
-    await query('DELETE FROM platform_ledger_entries WHERE account_id IN ($1, $2, $3)', [
-      TEST_SHOP_ID,
-      TEST_USER_ID,
-      TEST_ORDER_ID
-    ]);
+    // Nothing to clean up: the ledger is append-only (migration 149), and these
+    // ids are new each run, so earlier runs cannot affect the balances below.
   });
 
   afterAll(async () => {
-    await query('DELETE FROM platform_ledger_entries WHERE account_id IN ($1, $2, $3)', [
-      TEST_SHOP_ID,
-      TEST_USER_ID,
-      TEST_ORDER_ID
-    ]);
+    // Nothing to clean up: the ledger is append-only (migration 149), and these
+    // ids are new each run, so earlier runs cannot affect the balances below.
   });
 
   test('[P3.1] rejects imbalanced transactions', async () => {

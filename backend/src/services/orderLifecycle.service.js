@@ -35,6 +35,7 @@ const crypto = require('crypto');
 const { queryOne, queryMany, query, withTransaction } = require('../config/database');
 const payments = require('./payments.service');
 const razorpay = require('./razorpay.service');
+const ledger = require('./ledger.service');
 
 class LifecycleError extends Error {
   constructor(status, code, message) {
@@ -161,6 +162,11 @@ async function recordDelivery(client, order) {
   if (earnings > 0) {
     await payments.creditWallet({ userId: riderId, amount: earnings, purpose: 'delivery_earnings', referenceId: String(order.id), client });
   }
+
+  // The book of record (P3): where the customer's money goes, once per order, in
+  // the same transaction as the delivery. Before this nothing posted a delivered
+  // order to the ledger, so only refunds ever appeared in it.
+  await ledger.postDeliveredOrder(client, order);
 
   return { cashCollected: cash, cashCollectedBy, riderEarnings: earnings };
 }

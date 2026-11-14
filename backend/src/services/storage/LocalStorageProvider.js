@@ -15,7 +15,13 @@ class LocalStorageProvider extends StorageProvider {
   _resolvePath(key, isPublic = true) {
     const base = isPublic ? this.publicBase : this.privateBase;
     const cleanKey = isPublic ? key.replace(/^uploads\//, '') : key.replace(/^private\//, '');
-    return path.join(base, cleanKey);
+    // A key never leaves its folder. path.join(base, '../../.env') used to
+    // resolve outside it, for a read, a write or a delete.
+    const full = path.resolve(base, cleanKey);
+    if (full !== base && !full.startsWith(base + path.sep)) {
+      throw new Error(`Invalid storage key: ${String(key).slice(0, 80)}`);
+    }
+    return full;
   }
 
   async putObject({ key, buffer, mimeType, isPublic = true }) {
