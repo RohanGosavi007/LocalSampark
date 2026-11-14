@@ -14,15 +14,15 @@ const SECRET_TEXT = 'P8 admin failure password=hunter2 token=abc123def456 for +9
 
 test('[P8.7] an uncaught error in the admin console is reported with the release, and without credentials or personal data', async ({ page }) => {
   const bodies = [];
-  await page.route(/ingest\.sentry\.io/, async (route) => {
+  await page.route(/\/api\/1\/envelope\//, async (route) => {
     bodies.push(route.request().postData() || '');
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{}' });
   });
 
   await page.goto('/login');
   await page.waitForLoadState('load');
 
-  const sent = page.waitForRequest((req) => /ingest\.sentry\.io/.test(req.url()) && req.method() === 'POST' && /exception/.test(req.postData() || ''), { timeout: 20000 });
+  const sent = page.waitForRequest((req) => /\/api\/1\/envelope\//.test(req.url()) && req.method() === 'POST' && /exception/.test(req.postData() || ''), { timeout: 20000 });
   await page.evaluate((text) => { setTimeout(() => { throw new Error(text); }, 0); }, SECRET_TEXT);
   await sent;
   await expect.poll(() => bodies.some((b) => /exception/.test(b)), { timeout: 10000 }).toBe(true);

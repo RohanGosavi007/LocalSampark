@@ -15,13 +15,13 @@ const SECRET_TEXT = 'P8 e2e failure password=hunter2 token=abc123def456 for +919
 function captureSentry(page) {
   /** @type {{ raw: string, headers: Record<string,string>, events: any[] }[]} */
   const envelopes = [];
-  page.route(/ingest\.sentry\.io/, async (route) => {
+  page.route(/\/api\/1\/envelope\//, async (route) => {
     const req = route.request();
     const raw = req.postData() || '';
     const events = raw.split('\n').filter(Boolean).map((line) => { try { return JSON.parse(line); } catch { return null; } })
       .filter((item) => item && (item.exception || item.message || item.event_id) && item.level !== undefined || (item && item.exception));
     envelopes.push({ raw, headers: req.headers(), events });
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{}' });
   });
   return envelopes;
 }
@@ -37,7 +37,7 @@ test('[P8.6] an uncaught browser error is reported to Sentry with the release, a
   await page.goto('/');
   await page.waitForLoadState('load');
 
-  const sent = page.waitForRequest((req) => /ingest\.sentry\.io/.test(req.url()) && req.method() === 'POST' && /exception/.test(req.postData() || ''), { timeout: 20000 });
+  const sent = page.waitForRequest((req) => /\/api\/1\/envelope\//.test(req.url()) && req.method() === 'POST' && /exception/.test(req.postData() || ''), { timeout: 20000 });
   await page.evaluate((text) => { setTimeout(() => { throw new Error(text); }, 0); }, SECRET_TEXT);
   await sent;
   await expect.poll(() => envelopes.some((e) => /exception/.test(e.raw)), { timeout: 10000 }).toBe(true);

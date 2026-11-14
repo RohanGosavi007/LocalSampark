@@ -10,7 +10,11 @@ export function sentryDsn(value = process.env.NEXT_PUBLIC_SENTRY_DSN) {
   if (!value || typeof value !== 'string') return undefined;
   try {
     const url = new URL(value.trim());
-    if (url.protocol !== 'https:' || !url.username || !url.hostname || !/\/\d+$/.test(url.pathname)) return undefined;
+    // https, or http to this machine (a Sentry relay running locally, or a test
+    // build): a loopback address cannot be a real Sentry, so it is harmless.
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    const schemeOk = url.protocol === 'https:' || (url.protocol === 'http:' && loopback);
+    if (!schemeOk || !url.username || !url.hostname || !/\/\d+$/.test(url.pathname)) return undefined;
     return value.trim();
   } catch {
     return undefined;

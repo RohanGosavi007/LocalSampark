@@ -364,3 +364,23 @@ describe('[P1.9] retired legacy routes refuse with 410 and name the canonical ro
     expect(await rowOf(id)).toMatchObject({ order_status: 'ready', assigned_agent_id: null });
   });
 });
+
+describe('[P1.10] an order that still carries an older status name can be moved', () => {
+  test('[P1.10] "placed" is "pending": an administrator can cancel it, and the history records the move from the stored name', async () => {
+    const id = await orderIn('placed');
+    const out = await lifecycle.changeStatus({ orderId: id, to: 'cancelled', user: U(ADMIN, 'admin'), reason: 'legacy status' });
+    expect(out).toMatchObject({ from: 'pending', to: 'cancelled' });
+    expect(await rowOf(id)).toMatchObject({ order_status: 'cancelled' });
+    expect((await historyOf(id)).pop()).toMatchObject({ from_status: 'placed', to_status: 'cancelled', actor_role: 'admin' });
+  });
+
+  test('[P1.10] the shop can confirm a "placed" order, and a stored "dispatched" order can be delivered', async () => {
+    const placed = await orderIn('placed');
+    await lifecycle.changeStatus({ orderId: placed, to: 'confirmed', user: U(OWNER, 'shop_owner') });
+    expect(await rowOf(placed)).toMatchObject({ order_status: 'confirmed' });
+
+    const dispatched = await orderIn('dispatched');
+    await lifecycle.changeStatus({ orderId: dispatched, to: 'delivered', user: U(OWNER, 'shop_owner') });
+    expect(await rowOf(dispatched)).toMatchObject({ order_status: 'delivered' });
+  });
+});

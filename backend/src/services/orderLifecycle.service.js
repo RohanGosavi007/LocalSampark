@@ -85,6 +85,7 @@ function normaliseStatus(input) {
   const v = lower(input);
   if (v === 'dispatched' || v === 'picked_up') return 'out_for_delivery';
   if (v === 'accepted') return 'confirmed';
+  if (v === 'placed') return 'pending'; // an older name for an order not yet confirmed
   if (v === 'ready_for_pickup') return 'ready';
   if (v === 'completed') return 'delivered';
   return v;
@@ -391,7 +392,9 @@ async function changeStatus({ orderId, to: requested, user, shopId = null, reaso
     // still in that status, so two requests cannot both apply the effects of
     // one transition (two refunds, two rider payments).
     const sets = ['order_status = $1', 'status = $2', 'updated_at = CURRENT_TIMESTAMP'];
-    const params = [to, to, orderId, from];
+    // The gate compares what is STORED (an order may still carry an older name,
+    // "placed" or "dispatched"), not the normalised name used to apply the rules.
+    const params = [to, to, orderId, lower(order.order_status || 'pending')];
     if (to === 'delivered') sets.push('delivered_at = CURRENT_TIMESTAMP');
     if (to === 'cancelled' && reason) {
       params.push(`[Cancelled] ${String(reason).slice(0, 300)}`);
@@ -525,7 +528,7 @@ async function assignRider({ orderId, riderUserId = null, user, shopId = null })
         WHERE id = $7 AND LOWER(COALESCE(order_status, 'pending')) = $8`,
       // One parameter per column: PostgreSQL refuses a reused one across types.
       [riderUserId || null, to, to, user && user.id != null ? String(user.id) : null, roleOf(actor),
-        riderUserId ? 'rider_assigned' : 'rider_removed', orderId, from]
+        riderUserId ? 'rider_assigned' : 'rider_removed', orderId, lower(order.order_status || 'pending')]
     );
     if (!moved.rowCount) throw new LifecycleError(409, 'CONFLICT', 'This order has just been updated by someone else. Refresh and try again.');
     if (order.assigned_agent_id) {

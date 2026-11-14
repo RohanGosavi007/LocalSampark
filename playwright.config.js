@@ -199,11 +199,12 @@ module.exports = defineConfig({
         PORT: '3000',
         // apps/web/src/lib/api.js appends /api/v1 to this origin.
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
-        // Error reporting is on in the E2E builds, pointed at a DSN that goes
-        // nowhere: tests/e2e/web/observability.spec.js intercepts what the page
-        // sends to it (P8). Tracing is off so a page load sends nothing; only a
-        // real error does.
-        NEXT_PUBLIC_SENTRY_DSN: 'https://e2epublickey@o0.ingest.sentry.io/1',
+        // Error reporting is on in the E2E builds, pointed at the E2E API on this
+        // machine (never at Sentry): tests/e2e/web/observability.spec.js intercepts
+        // what the page sends there (P8). The E2E API answers 404 to it, which the
+        // console-error specs already ignore. Tracing is off so a page load sends
+        // no performance data; only sessions and real errors are sent.
+        NEXT_PUBLIC_SENTRY_DSN: 'http://e2epublickey@localhost:5000/1',
         NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0',
         SENTRY_TRACES_SAMPLE_RATE: '0',
         NEXT_PUBLIC_SENTRY_RELEASE: 'e2e-release',
@@ -229,11 +230,12 @@ module.exports = defineConfig({
       timeout: 600000,
       env: {
         NEXT_PUBLIC_API_URL: 'http://localhost:5000',
-        // Error reporting is on in the E2E builds, pointed at a DSN that goes
-        // nowhere: tests/e2e/web/observability.spec.js intercepts what the page
-        // sends to it (P8). Tracing is off so a page load sends nothing; only a
-        // real error does.
-        NEXT_PUBLIC_SENTRY_DSN: 'https://e2epublickey@o0.ingest.sentry.io/1',
+        // Error reporting is on in the E2E builds, pointed at the E2E API on this
+        // machine (never at Sentry): tests/e2e/web/observability.spec.js intercepts
+        // what the page sends there (P8). The E2E API answers 404 to it, which the
+        // console-error specs already ignore. Tracing is off so a page load sends
+        // no performance data; only sessions and real errors are sent.
+        NEXT_PUBLIC_SENTRY_DSN: 'http://e2epublickey@localhost:5000/1',
         NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0',
         SENTRY_TRACES_SAMPLE_RATE: '0',
         NEXT_PUBLIC_SENTRY_RELEASE: 'e2e-release',
